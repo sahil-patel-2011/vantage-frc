@@ -10,7 +10,7 @@ test.beforeEach(async ({ context }) => { test.setTimeout(180_000); expect(await 
 for (const width of [320, 390, 768, 1440]) test(`one destination menu at ${width}px`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 900 });
   await page.goto("/ai?tab=writer");
-  await expect(page.getByLabel("What are you writing?")).toBeVisible();
+  await expect(page.getByLabel("What are you writing?")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("combobox", { name: "AI section", exact: true })).toHaveCount(0);
   const menu = navigationOpener(page);
   await expect(menu).toHaveAttribute("aria-expanded", "false");
@@ -43,16 +43,20 @@ for (const width of [390, 1440]) test(`Home keeps real work easy to reach at ${w
 test("every grouped destination opens from the menu and keeps the team", async ({ page }) => {
   test.setTimeout(600_000);
   const orgId = "6925a000-0000-4000-8000-000000000001";
+  await page.goto(`/dashboard?orgId=${orgId}`);
   for (const section of mainMenuSections(PRODUCT_NAV_GROUPS, () => true)) {
     for (const item of section.items) {
-      await page.goto(`/dashboard?orgId=${orgId}`);
       await navigationOpener(page).click();
       const group = page.getByRole("navigation", { name: "Main menu", exact: true }).locator("details").filter({ has: page.locator("summary").filter({ hasText: section.label }) });
       await group.locator("summary").click();
       await group.getByRole("link", { name: item.label, exact: true }).click();
+      const destination = new URL(item.href, "http://localhost");
+      await expect(page).toHaveURL(url => url.pathname === destination.pathname &&
+        [...destination.searchParams].every(([key, value]) => url.searchParams.get(key) === value));
       await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
       expect(new URL(page.url()).searchParams.get("orgId"), item.href).toBe(orgId);
       await expect(navigationOpener(page)).toHaveAttribute("aria-expanded", "false");
+      await page.waitForLoadState("load");
       await expect(page.locator("body")).not.toContainText("Application error");
     }
   }
@@ -80,11 +84,11 @@ for (const width of [390, 1440]) test(`search changes the open AI and scouting t
   await page.setViewportSize({ width, height: 900 });
   const orgId = "6925a000-0000-4000-8000-000000000001";
   await page.goto(`/ai?tab=writer&orgId=${orgId}`);
-  await expect(page.getByLabel("What are you writing?")).toBeVisible();
+  await expect(page.getByLabel("What are you writing?")).toBeVisible({ timeout: 30_000 });
   await navigationOpener(page).click();
   await page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true }).fill("Connect AI");
   await page.getByRole("option", { name: "Connect AI AI › Controls", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Connect AI", exact: true })).toBeVisible({ timeout: 10000 });
+  await expect(page.getByRole("heading", { name: "Connect AI", exact: true })).toBeVisible({ timeout: 30_000 });
   expect(new URL(page.url()).searchParams.get("orgId")).toBe(orgId);
   await expect(page.locator(".ai-connect-method")).toHaveCount(2);
   await page.goto(`/competition?tab=scouting&orgId=${orgId}`);

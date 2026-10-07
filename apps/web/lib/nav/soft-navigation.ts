@@ -4,6 +4,14 @@ import { URL_CHANGE_EVENT } from "./url-change";
 /** Notify mounted hub views after Next commits a query-only navigation. */
 export function pushAppNavigation(push: (href: string) => void, href: string): void {
   const before = window.location.href;
+  const destination = new URL(href, before);
+  if (destination.pathname === "/workspace" && destination.searchParams.has("next")) {
+    // The picker is the boundary between team documents. Keeping it in the
+    // previous team's router tree breaks Back after choosing another team.
+    destination.searchParams.delete("orgId");
+    window.location.assign(`${destination.pathname}${destination.search}${destination.hash}`);
+    return;
+  }
   try {
     push(href);
   } catch {
@@ -67,12 +75,16 @@ export function softNavigationTarget(click: SoftClick, anchor: SoftAnchor, curre
   if (url.origin !== current.origin) return null;
   if (HARD_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) return null;
   if (FILE_PATH.test(url.pathname)) return null;
+  const explicitTeamPicker = url.pathname === "/workspace" && url.searchParams.has("next");
+  // The picker lists memberships across teams. Adding the current scope turns
+  // it into a team workspace and prevents the person from choosing another.
+  if (explicitTeamPicker) url.searchParams.delete("orgId");
   const currentOrg = current.searchParams.get("orgId");
   const nextOrg = url.searchParams.get("orgId");
   // A workspace change is a document boundary. Many tools resolve their team at
   // mount; reusing them after a query-only navigation can save into the old team.
   if (nextOrg && nextOrg !== currentOrg) return null;
-  if (currentOrg && !nextOrg && !ORG_EXEMPT_HREFS.has(url.pathname) && !url.pathname.startsWith("/admin")) {
+  if (currentOrg && !nextOrg && !explicitTeamPicker && !ORG_EXEMPT_HREFS.has(url.pathname) && !url.pathname.startsWith("/admin")) {
     url.searchParams.set("orgId", currentOrg);
   }
   // Same page, only the #hash differs: the browser scrolls to it without a reload.

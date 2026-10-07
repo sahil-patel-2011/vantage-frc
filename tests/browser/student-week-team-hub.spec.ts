@@ -68,7 +68,7 @@ test("student this week can walk Team hub People → Invites → Season roles", 
     .getByRole("link", { name: /Choose your team|Invite an exact email|Sign in again/i })
     .or(page.getByRole("button", { name: /Send invite|Create invite|Retry/i }));
   await expect(adminPrimary.first()).toBeVisible({ timeout: 12_000 });
-  await expect(page.getByText(/waitlist/i).first()).toBeVisible();
+  await expect(page.getByText(/waitlist/i)).toHaveCount(0);
 
   const islandTeam = page.getByTestId("soft-island").getByRole("link", { name: "Team", exact: true });
   if (await islandTeam.isVisible()) {
@@ -97,7 +97,7 @@ test("student this week can walk Team hub People → Invites → Season roles", 
     await expect(page.locator("body"), `Season roles still shows ${phrase}`).not.toContainText(phrase);
   }
   const rolesHeading = page.getByRole("heading", {
-    name: /Roles & Responsibilities|Choose your team/i,
+    name: /Team responsibilities|Choose your team/i,
   });
   await expect(rolesHeading.first()).toBeVisible({ timeout: 12_000 });
   const rolesPrimary = page

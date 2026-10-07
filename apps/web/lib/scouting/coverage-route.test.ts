@@ -68,6 +68,7 @@ const state = vi.hoisted(() => ({
   session: null as { user: { id: string } } | null,
   member: true,
   role: "admin" as string,
+  lead: false,
   priorityTeamKeys: [] as string[],
   view: null as unknown,
   compute: vi.fn(),
@@ -87,6 +88,7 @@ vi.mock("@vantage/db", () => ({
   withRls: async (_context: unknown, work: (client: unknown) => Promise<unknown>) =>
     work({
       query: async (sql: string) => {
+        if (sql.includes("has_org_capability")) return {rows:[{allowed:state.member && (["owner","admin"].includes(state.role) || state.lead)}],rowCount:1};
         if (sql.includes("FROM memberships")) {
           return state.member
             ? { rows: [{ role: state.role }], rowCount: 1 }
@@ -134,6 +136,7 @@ beforeEach(() => {
   state.session = { user: { id: USER } };
   state.member = true;
   state.role = "admin";
+  state.lead = false;
   state.priorityTeamKeys = [];
   state.view = emptyLive();
   state.compute.mockReset();

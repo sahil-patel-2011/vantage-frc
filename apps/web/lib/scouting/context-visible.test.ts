@@ -19,6 +19,17 @@ const fields = [
   { key: "defenseTime", label: "Defense time", visibleWhen: { fieldKey: "playingDefense", isTrue: true } },
 ];
 
+describe("custom match phase keys", () => {
+  it("uses the author's actual phase key and keeps autonomous climbs in auto", () => {
+    const configured = withInferredPhaseRules([
+      { key: "game_phase" }, { key: "auto_tower_level" }, { key: "teleop_fuel" },
+      { key: "climb", config: { scoutPhase: "auto" } },
+    ]);
+    expect(visibleFields(configured, { game_phase: "auto" }).map(field => field.key)).toEqual(["game_phase", "auto_tower_level", "climb"]);
+    expect(visibleFields(configured, { game_phase: "teleop" }).map(field => field.key)).toEqual(["game_phase", "teleop_fuel"]);
+  });
+});
+
 describe("context-aware match fields", () => {
   it("shows auto questions until a later phase is chosen — never invents teleop", () => {
     const auto = visibleFields(fields, {}).map((field) => field.key);

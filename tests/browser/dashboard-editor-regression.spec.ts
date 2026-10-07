@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Route } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { signInAs } from "./session";
 
@@ -11,9 +11,10 @@ for (const width of [1440, 390]) test(`explicit cards resize, undo, save, reload
   const create = await context.request.post("/api/dashboards", { data: { orgId, action: "create", name: `Editor regression ${Date.now()}`, layout: [], activate: true } });
   expect(create.ok()).toBe(true); const board = await create.json();
   let rejectSave = false, rejectHome = false;
+  const pendingReads = new Set<Promise<void>>();
   try {
     await page.setViewportSize({ width, height: 900 });
-    await page.route("**/api/dashboards*", async route => {
+    const handleDashboard = async (route: Route) => {
       if (route.request().method() === "POST") {
         if (rejectSave) return route.fulfill({ status: 503, json: { error: "Could not save right now." } });
         return route.continue();
@@ -23,6 +24,11 @@ for (const width of [1440, 390]) test(`explicit cards resize, undo, save, reload
       if (body.context) body.context = { ...body.context, setupRequired: true, eventKey: null, eventName: null, dataSourceHealth: null };
       if (body.widgets?.prediction_summary) body.widgets.prediction_summary = { type: "prediction_summary", status: "setup_required", message: "Choose an event to see predictions." };
       await route.fulfill({ response, json: body });
+    };
+    await page.route("**/api/dashboards*", route => {
+      const read = handleDashboard(route);
+      pendingReads.add(read);
+      return read.finally(() => pendingReads.delete(read));
     });
     await page.goto(`/dashboard?orgId=${orgId}`);
     await page.getByTestId("dash-customize").click();
@@ -109,9 +115,14 @@ for (const width of [1440, 390]) test(`explicit cards resize, undo, save, reload
     await page.reload(); await expect(page.getByTestId("home-tasks")).toBeVisible();
     await expect(card).toHaveCount(0);
     rejectHome = false;
+    const refreshed = page.waitForResponse(response => new URL(response.url()).pathname === "/api/dashboards" && new URL(response.url()).searchParams.get("mode") === "home" && response.request().method() === "GET");
     await page.reload(); await expect(page.getByTestId("home-tasks")).toBeVisible();
+    expect((await refreshed).ok()).toBe(true);
     await page.screenshot({ path: info.outputPath(`reset-home-${width}.png`), fullPage: false });
   } finally {
+    // A cached card can render before its refresh has finished. Finish the
+    // actual read before removing interception or Playwright handles it twice.
+    while (pendingReads.size) await Promise.all([...pendingReads]);
     await page.unrouteAll({ behavior: "wait" });
     await context.request.delete("/api/dashboards", { data: { orgId, id: board.id } });
     if (initial.active.id) await context.request.post("/api/dashboards", { data: { orgId, id: initial.active.id, action: "activate" } });

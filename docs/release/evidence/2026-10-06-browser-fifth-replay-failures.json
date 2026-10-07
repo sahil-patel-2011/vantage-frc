@@ -1,0 +1,71 @@
+{
+  "run": 37548968612,
+  "head": "c56260e3f76a5d444ed90f688b331db0398ad63c",
+  "url": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37548968612",
+  "conclusion": "failure",
+  "jobs": [
+    {
+      "name": "Lint, types, unit, build",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (3/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (7/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (6/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Database-free UI and accessibility",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (5/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (1/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (8/8)",
+      "conclusion": "failure"
+    },
+    {
+      "name": "Playwright (4/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Postgres migrations and RLS",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (2/8)",
+      "conclusion": "success"
+    }
+  ],
+  "validation": {
+    "quality": "11,418 unit tests passed; lint, types, audit and optimized build passed",
+    "postgres": "9 integration cases and 40 RLS proofs passed",
+    "databaseFreeUI": "40 cases and 248 census states passed, zero findings",
+    "scoutingGroup": "73 passed; 3 explicit skips; no retries"
+  },
+  "remainingFailures": [
+    {
+      "file": "tests/browser/team-switching.spec.ts",
+      "width": 1440,
+      "reason": "A union locator matched both the desktop sidebar link and the topbar button. The story now identifies the single topbar button for its first switch."
+    },
+    {
+      "file": "tests/browser/team-switching.spec.ts",
+      "width": 390,
+      "reason": "Account has a back-button header; team selection lives in the This team panel. Its actual Switch team link used /workspace without next, bypassing the picker via remembered-team middleware. The product link now preserves the current Account path, section and scope through the canonical picker. The story uses that visible panel link at both sizes."
+    }
+  ],
+  "repairVerification": "Two database-free phone/desktop Account picker regressions pass. Lint and web types pass. Fresh full exact-head CI remains required."
+}

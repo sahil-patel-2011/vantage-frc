@@ -1,6 +1,8 @@
 import { currentSeasonYear, defaultMatchSchema, defaultPitSchema, type GameField } from "@vantage/game-year";
 import { lockScoutPayload } from "./identity";
 import { ACTION_HISTORY_KEY, validateActionHistory } from "./action-history";
+import { MATCH_CAPTURE_KEY, validateMatchCapture } from "./match-capture";
+export * from "./match-capture";
 export { ACTION_HISTORY_KEY, actionHistory, recordScoutAction, undoableScoutAction, undoScoutAction, validateActionHistory, type ScoutActionHistory, type ScoutAction, type ScoutActionChange } from "./action-history";
 import {
   assertStorageKeyForOrg,
@@ -563,6 +565,7 @@ function gameFieldToDefinition(field: GameField): FieldDefinition {
     required: field.required,
     options: field.options,
     helpText: field.helpText,
+    ...(field.config ? { config: field.config } : {}),
     widget,
   };
 }
@@ -880,8 +883,9 @@ export function validatePayload(
   const errors: string[] = [];
   const allowed = new Set(schema.fields.map((field) => field.key));
   errors.push(...validateActionHistory(payload[ACTION_HISTORY_KEY], allowed));
+  errors.push(...validateMatchCapture(payload[MATCH_CAPTURE_KEY]));
   for (const key of Object.keys(payload)) {
-    if (key === ACTION_HISTORY_KEY) continue;
+    if (key === ACTION_HISTORY_KEY || key === MATCH_CAPTURE_KEY) continue;
     if (!allowed.has(key)) errors.push(`Unknown field: ${key}`);
   }
   for (const field of schema.fields) {

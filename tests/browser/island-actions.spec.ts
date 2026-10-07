@@ -40,7 +40,7 @@ test("bottom bar customization traps focus, retries a failed save, and persists 
     await expect(island.getByRole("link")).toHaveText(labels);
     await island.getByRole("link", { name: "Business", exact: true }).click();
     await expect(page).toHaveURL(/\/business\?orgId=6925a000-0000-4000-8000-000000000001/);
-    await expect(page.getByRole("heading", { name: "Business", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
   } finally {
     await page.unroute("**/api/navigation/preferences");
     expect((await context.request.put("/api/navigation/preferences", { data: { tabs: original.tabs } })).ok()).toBe(true);

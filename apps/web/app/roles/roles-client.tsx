@@ -206,7 +206,7 @@ export default function RolesClient() {
       <main className="module-page">
         <PageHeader
           breadcrumbs="Team / Roles"
-          title="Roles & Responsibilities"
+          title="Team responsibilities"
           description="Map every role — leads and positions — to a person and what they own."
         >
           {related}
@@ -238,7 +238,7 @@ export default function RolesClient() {
         <main className="module-page">
           <PageHeader
             breadcrumbs="Team / Roles"
-            title="Roles & Responsibilities"
+            title="Team responsibilities"
             description="Map every role — leads and positions — to a person and what they own."
           >
             {related}
@@ -265,10 +265,11 @@ export default function RolesClient() {
     <main className="module-page">
       <PageHeader
         breadcrumbs="Team / Roles"
-        title="Roles & Responsibilities"
-        description="Map every role — leads and positions — to a person and what they own. Coverage gaps are surfaced so no responsibility falls through the cracks mid-season."
+        title="Team responsibilities"
+        description="Assign the jobs and responsibilities people own this season. These assignments do not grant app permissions."
       >
         {related}
+        <a href={withOrgHref("/team/admin/presets", orgId)}>Manage custom access roles and scouting leads</a>
         {view.seasons.length > 0 ? (
           <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
             Season

@@ -41,6 +41,8 @@ function detectOs(): Os {
 }
 
 function CommandBlock({ lines }: { lines: string[] }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const text = lines.join("\n");
@@ -52,6 +54,7 @@ function CommandBlock({ lines }: { lines: string[] }) {
       <button
         type="button"
         className="ds-copy"
+        disabled={!ready}
         onClick={async () => {
           setCopyError(false);
           try {

@@ -1,0 +1,259 @@
+{
+  "run": 37537400923,
+  "head": "6bd1a9e74a3b9be4c6a4793170d5bc3048190766",
+  "cases": [
+    {
+      "shard": 1,
+      "case": "tests/browser/ai-writing-experience.spec.ts:8:7 \u203a writing stays focused and preserves draft details at 1440px"
+    },
+    {
+      "shard": 1,
+      "case": "tests/browser/chemistry-shell.spec.ts:10:5 \u203a Chemistry hub still loads after the Saturday shell pass"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/completion-settings.spec.ts:12:7 \u203a display choices save without opening extra settings at 390px"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/completion-settings.spec.ts:140:5 \u203a command copying confirms actual clipboard success and permits retry"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/completion-settings.spec.ts:192:5 \u203a alliance edits stay inside their slot and survive a reload"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/dashboard-context.spec.ts:104:5 \u203a missing match results share one prompt while unrelated work remains"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/dashboard-context.spec.ts:38:7 \u203a missing event is one compact prompt with real work retained at 1440px"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/dashboard-context.spec.ts:38:7 \u203a missing event is one compact prompt with real work retained at 390px"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/dashboard-context.spec.ts:63:5 \u203a a board waiting for competition setup is not described as an empty board"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/dashboard-context.spec.ts:76:5 \u203a scouts get practice scouting instead of team-admin setup"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/dashboard-editor-regression.spec.ts:7:38 \u203a explicit cards resize, undo, save, reload and reset in Settings at 390px"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/docs-tool-strip.spec.ts:9:5 \u203a docs manual views and season moments are a tool strip, not a tab bar"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/event-day-shells.spec.ts:36:5 \u203a strategy empty setup hides fabricated probabilities"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/event-day-shells.spec.ts:43:5 \u203a Event day identifies the actual selected event inside Competition"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/feature-integration.spec.ts:233:7 \u203a hub chrome \u203a hub tab bars list every workbench exactly once"
+    },
+    {
+      "shard": 2,
+      "case": "tests/browser/feature-integration.spec.ts:49:7 \u203a one control per destination \u203a team admin offers each related destination once"
+    },
+    {
+      "shard": 3,
+      "case": "tests/browser/forms-shell.spec.ts:10:5 \u203a Form builder still loads after the panel split"
+    },
+    {
+      "shard": 3,
+      "case": "tests/browser/home-edit-mode.spec.ts:113:7 \u203a as the team owner \u203a cards Home is hiding sit in one row under the board, and can be always shown"
+    },
+    {
+      "shard": 3,
+      "case": "tests/browser/home-edit-mode.spec.ts:204:7 \u203a on a phone \u203a the remove and move controls are finger-sized"
+    },
+    {
+      "shard": 3,
+      "case": "tests/browser/home-edit-mode.spec.ts:23:5 \u203a removing a card offers Undo, and Ctrl+Z steps back too"
+    },
+    {
+      "shard": 3,
+      "case": "tests/browser/home-edit-mode.spec.ts:47:5 \u203a Escape asks before discarding changes, and Reset only changes the draft"
+    },
+    {
+      "shard": 3,
+      "case": "tests/browser/home-edit-mode.spec.ts:86:5 \u203a the widget sheet searches, and cards hidden on Home are labelled"
+    },
+    {
+      "shard": 3,
+      "case": "tests/browser/home-tap-to-place.spec.ts:42:7 \u203a Home add widget on a phone \u203a tapping a widget in the sheet puts it on the board and shows it"
+    },
+    {
+      "shard": 3,
+      "case": "tests/browser/inbox-remaining.spec.ts:20:5 \u203a Inbox and preferences keep one primary and drop leftover engineering copy"
+    },
+    {
+      "shard": 4,
+      "case": "tests/browser/island-actions.spec.ts:4:5 \u203a bottom bar customization traps focus, retries a failed save, and persists the chosen order"
+    },
+    {
+      "shard": 4,
+      "case": "tests/browser/island-preferences.spec.ts:12:7 \u203a late preference loading preserves editing island choices"
+    },
+    {
+      "shard": 4,
+      "case": "tests/browser/island-preferences.spec.ts:12:7 \u203a late preference loading preserves saved island choices"
+    },
+    {
+      "shard": 4,
+      "case": "tests/browser/messages-shell.spec.ts:10:5 \u203a Team chat still loads after the panel split"
+    },
+    {
+      "shard": 5,
+      "case": "tests/browser/palette.spec.ts:23:7 \u203a theme choices preserve contrast and navigation at 1440px"
+    },
+    {
+      "shard": 5,
+      "case": "tests/browser/palette.spec.ts:23:7 \u203a theme choices preserve contrast and navigation at 390px"
+    },
+    {
+      "shard": 5,
+      "case": "tests/browser/pick-clock-shell.spec.ts:10:5 \u203a Pick clock hub still loads after the Saturday shell pass"
+    },
+    {
+      "shard": 5,
+      "case": "tests/browser/pick-desk-shell.spec.ts:10:5 \u203a Pick desk still loads after the Saturday shell pass"
+    },
+    {
+      "shard": 6,
+      "case": "tests/browser/product-shell.spec.ts:46:5 \u203a dashboard editor rearranges widgets with drag-and-drop"
+    },
+    {
+      "shard": 6,
+      "case": "tests/browser/product-shell.spec.ts:9:5 \u203a dashboard home is decluttered and exposes customize controls"
+    },
+    {
+      "shard": 6,
+      "case": "tests/browser/scouting-analysis-workflow.spec.ts:35:5 \u203a one pick-list page creates, saves and reloads a new ordered list"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/scouting-completion.spec.ts:18:7 \u203a real match answers, correction and reload keep one report at 1440px"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/scouting-completion.spec.ts:18:7 \u203a real match answers, correction and reload keep one report at 320px"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/scouting-completion.spec.ts:18:7 \u203a real match answers, correction and reload keep one report at 390px"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/scouting-form-builder.spec.ts:187:5 \u203a a delegated custom scouting lead can publish but cannot administer people, and revocation takes effect"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/scouting-workflow.spec.ts:9:40 \u203a phase scouting, undo, review and offline recovery"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/scouting-workflow.spec.ts:9:40 \u203a phase scouting, undo, review and real API save"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/shared-ui-accessibility.spec.ts:21:7 \u203a shared navigation and event UI accessibility at 1280px"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/shared-ui-accessibility.spec.ts:21:7 \u203a shared navigation and event UI accessibility at 390px"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/stock-home.spec.ts:10:38 \u203a stock Home works immediately and reflects committed changes at 1440px"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/stock-home.spec.ts:10:38 \u203a stock Home works immediately and reflects committed changes at 390px"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/strategy-shell.spec.ts:10:5 \u203a Strategy hub still loads after the panel split"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/student-week-actions.spec.ts:15:5 \u203a student this week can walk Home \u2192 My Day/Scout \u2192 Video paste \u2192 CAD link"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/student-week-event-slice.spec.ts:12:5 \u203a student this week can walk Event day packing/checklist \u2192 My Hours clock-in \u2192 Pick desk"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/student-week-gui.spec.ts:146:7 \u203a student-week GUI path \u203a Pick desk lock or Open Scouting is reachable"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/student-week-gui.spec.ts:168:7 \u203a student-week GUI path \u203a Team invites Send invite is on the board"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/student-week-gui.spec.ts:216:7 \u203a student-week GUI path \u203a Business Sponsors tab is a real click"
+    },
+    {
+      "shard": 7,
+      "case": "tests/browser/student-week-gui.spec.ts:97:7 \u203a student-week GUI path \u203a Event day Packing is a real click from the related strip"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/student-week-team-hub.spec.ts:11:5 \u203a student this week can walk Team hub People \u2192 Invites \u2192 Season roles"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/team-join-code.spec.ts:33:7 \u203a team code, verified-email signup, rotation and disable at 390px"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/team-lifecycle.spec.ts:30:38 \u203a student setup, invited mentor, student member and ownership handover at 390px"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/team-switching.spec.ts:11:38 \u203a switching teams updates data, permissions and Home at 1440px"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/team-switching.spec.ts:11:38 \u203a switching teams updates data, permissions and Home at 390px"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/workspace-chrome.spec.ts:18:7 \u203a shared chrome stays usable across core pages at 1440px"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/workspace-chrome.spec.ts:18:7 \u203a shared chrome stays usable across core pages at 320px"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/workspace-chrome.spec.ts:18:7 \u203a shared chrome stays usable across core pages at 768px"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/workspace-chrome.spec.ts:47:5 \u203a page options keep forms, filters and help operable"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/workspace-navigation.spec.ts:43:5 \u203a every grouped destination opens from the menu and keeps the team"
+    },
+    {
+      "shard": 8,
+      "case": "tests/browser/workspace-polish.spec.ts:63:5 \u203a the tool picker stays above the phone bar on narrow and landscape screens"
+    }
+  ],
+  "finalAcceptance": false
+}

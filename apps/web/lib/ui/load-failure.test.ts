@@ -11,8 +11,10 @@ describe("classifyLoadFailure", () => {
     expect(classifyLoadFailure({ status: 403 })).toBe("forbidden");
   });
 
-  it("treats 503 as setup required", () => {
-    expect(classifyLoadFailure({ status: 503 })).toBe("setup");
+  it("distinguishes a temporary service outage from missing configuration", () => {
+    expect(classifyLoadFailure({ status: 503 })).toBe("unknown");
+    expect(classifyLoadFailure({ status: 503, message: "This service is temporarily unavailable. Try again." })).toBe("unknown");
+    expect(classifyLoadFailure({ status: 503, message: "Database is not configured." })).toBe("setup");
   });
 
   it("prefers offline over any status, since nothing else can succeed", () => {

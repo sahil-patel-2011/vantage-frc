@@ -273,14 +273,18 @@ a.soft-profile-link:hover{background:color-mix(in srgb,var(--bg) 70%,transparent
 .soft-panel-search-clear svg{width:15px;height:15px}
 /* Results replace the workspace list in place — no second overlay. */
 .soft-nav-results{display:block;padding:0 2px 12px}
+.soft-drawer[data-searching="true"]{overflow:hidden}
+.soft-drawer[data-searching="true"]>.soft-nav-results{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scroll-padding:6px}
+.soft-drawer[data-searching="true"]>:not(.soft-nav-results){flex-shrink:0}
 .soft-nav-results nav{display:grid}
-.soft-nav-results nav a{
+.soft-nav-results [role="option"]{
   display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;min-height:46px;
   margin:2px 0;padding:8px 10px;border-radius:var(--radius-xs);color:var(--ink);text-decoration:none;
 }
-.soft-nav-results nav a:hover{background:var(--accent-soft)}
-.soft-nav-results nav a svg{width:18px;height:18px;color:var(--muted)}
-.soft-nav-results nav a small{color:var(--muted)}
+.soft-nav-results [role="option"]:hover{background:var(--accent-soft)}
+.soft-nav-results [role="option"] svg{width:18px;height:18px;color:var(--muted)}
+.soft-nav-results [role="option"] small{color:var(--muted)}
+.soft-nav-results [role="option"] span{min-width:0;overflow-wrap:anywhere}
 .soft-nav-results [role="option"].is-active{
   background:var(--accent-soft);
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent);

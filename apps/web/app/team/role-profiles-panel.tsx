@@ -12,7 +12,7 @@
  * database enforces is unchanged — see packages/core/src/role-profiles.ts.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card } from "../../components/ui";
 import {
   BASE_ROLE_COPY,
@@ -41,6 +41,7 @@ type Draft = {
   baseRole: ProfileBaseRole;
   capabilities: string[];
   hubs: string[];
+  hubAccess: Record<string, string[]>;
 };
 
 const emptyDraft = (): Draft => ({
@@ -49,7 +50,8 @@ const emptyDraft = (): Draft => ({
   description: "",
   baseRole: "scout",
   capabilities: [],
-  hubs: [],
+  hubs: PROFILE_HUBS.map(hub => hub.id),
+  hubAccess: {},
 });
 
 const draftOf = (profile: Profile): Draft => ({
@@ -58,7 +60,8 @@ const draftOf = (profile: Profile): Draft => ({
   description: profile.description,
   baseRole: profile.baseRole,
   capabilities: [...profile.capabilities],
-  hubs: Object.keys(profile.hubAccess),
+  hubs: Object.keys(profile.hubAccess).length ? Object.keys(profile.hubAccess) : PROFILE_HUBS.map(hub => hub.id),
+  hubAccess: structuredClone(profile.hubAccess),
 });
 
 /** One line a student can read: what this profile actually opens. */
@@ -89,54 +92,67 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  const generation = useRef(0);
   const load = useCallback(async () => {
+    const request = ++generation.current;
     setError("");
+    setActorRole(null);
     try {
       const [profileResponse, memberResponse] = await Promise.all([
-        fetch(`/api/organizations/role-profiles?orgId=${encodeURIComponent(orgId)}`),
-        fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`),
+        fetch(`/api/organizations/role-profiles?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store", signal: AbortSignal.timeout(8000) }),
+        fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store", signal: AbortSignal.timeout(8000) }),
       ]);
       const profileData = await profileResponse.json();
+      if (request !== generation.current) return;
       if (!profileResponse.ok) throw new Error(profileData.error ?? "Could not load role profiles");
       setActorRole(typeof profileData.actorRole === "string" ? profileData.actorRole : null);
       setProfiles(profileData.profiles ?? []);
+      if (!memberResponse.ok) throw new Error("Could not load members. Retry before assigning a role.");
       if (memberResponse.ok) {
         const memberData = await memberResponse.json();
+        if (request !== generation.current) return;
         setMembers(
           (memberData.members ?? []).filter((member: Member) => member.role !== "owner"),
         );
       }
     } catch (cause) {
-      setProfiles([]);
+      if (request !== generation.current) return;
+      setProfiles(null);
+      setMembers([]);
       setError(cause instanceof Error ? cause.message : "Could not load role profiles");
     }
   }, [orgId]);
 
   useEffect(() => {
+    setDraft(null); setNotice(""); setProfiles(null); setMembers([]); setApplyTo({}); setBusy(false);
     void load();
+    return () => { generation.current++; };
   }, [load]);
 
   const post = useCallback(
     async (body: Record<string, unknown>, success: string) => {
+      const started = generation.current;
       setBusy(true);
       setError("");
       setNotice("");
       try {
         const response = await fetch("/api/organizations/role-profiles", {
+          signal: AbortSignal.timeout(8000),
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...body }),
         });
         const data = await response.json();
+        if (generation.current !== started) return false;
         if (!response.ok) throw new Error(data.error ?? "That did not save");
         setNotice(success);
         await load();
-        return true;
+        return generation.current === started + 1;
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "That did not save");
+        if (generation.current === started) setError(cause instanceof Error ? cause.message : "That did not save");
         return false;
       } finally {
-        setBusy(false);
+        if (generation.current === started || generation.current === started + 1) setBusy(false);
       }
     },
     [load, orgId],
@@ -153,9 +169,9 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
         baseRole: draft.baseRole,
         capabilities: draft.baseRole === "admin" ? [] : draft.capabilities,
         hubAccess:
-          draft.baseRole === "admin"
+          draft.baseRole === "admin" || (PROFILE_HUBS.every(hub => draft.hubs.includes(hub.id)) && draft.hubs.every(hub => !draft.hubAccess[hub]?.length))
             ? {}
-            : Object.fromEntries(draft.hubs.map((hub) => [hub, [] as string[]])),
+            : Object.fromEntries(draft.hubs.map((hub) => [hub, draft.hubAccess[hub] ?? []])),
       },
       `Saved ${draft.name}.`,
     );
@@ -170,7 +186,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
   return (
     <Card
       className="rpf"
-      title="Presets"
+      title="Custom roles"
       subtitle={
         canEdit
           ? "Name the jobs on your team once, then give someone that job in one click. A preset sets the same role, sections and extra powers you could set by hand."
@@ -179,12 +195,12 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
       actions={
         draft || error || profiles === null || !canEdit ? null : (
           <Button variant="primary" onClick={() => setDraft(emptyDraft())}>
-            New preset
+            New custom role
           </Button>
         )
       }
     >
-      {error ? <p className="rpf-error">{error}</p> : null}
+      {error ? <div role="alert"><p className="rpf-error">{error}</p><Button onClick={() => void load()}>Retry role access</Button></div> : null}
       {notice ? <p className="rpf-notice">{notice}</p> : null}
 
       {draft ? (
@@ -199,6 +215,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
             <label>
               <span>Name</span>
               <input
+                disabled={busy}
                 value={draft.name}
                 onChange={(event) => setDraft({ ...draft, name: event.target.value })}
                 placeholder="Drive coach"
@@ -209,6 +226,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
             <label>
               <span>What they are</span>
               <select
+                disabled={busy}
                 value={draft.baseRole}
                 onChange={(event) =>
                   setDraft({ ...draft, baseRole: event.target.value as ProfileBaseRole })
@@ -227,6 +245,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
           <label className="rpf-wide">
             <span>Description</span>
             <input
+              disabled={busy}
               value={draft.description}
               onChange={(event) => setDraft({ ...draft, description: event.target.value })}
               placeholder="Runs the pit and calls the match."
@@ -238,13 +257,14 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
             <>
               <fieldset className="rpf-set">
                 <legend>Sections they can open</legend>
-                <p className="rpf-hint">Pick none to leave every section open.</p>
+                <p className="rpf-hint">All selected means every section is open. Untick a section to restrict access.</p>
                 <div className="rpf-checks">
                   {PROFILE_HUBS.map((hub) => (
                     <label key={hub.id}>
                       <input
                         type="checkbox"
-                        checked={draft.hubs.includes(hub.id)}
+                        checked={draft.hubs.includes(hub.id) || (hub.id === "competition" && draft.capabilities.includes("manage_scouting"))}
+                        disabled={busy || (draft.hubs.length === 1 && draft.hubs.includes(hub.id)) || (hub.id === "competition" && draft.capabilities.includes("manage_scouting"))}
                         onChange={() => setDraft({ ...draft, hubs: toggle(draft.hubs, hub.id) })}
                       />
                       <span>
@@ -258,16 +278,22 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
 
               <fieldset className="rpf-set">
                 <legend>Extra permissions</legend>
+                {draft.capabilities.includes("manage_scouting") ? <p className="rpf-hint">Scouting leads can open every Competition page. Other section limits are kept.</p> : null}
                 <div className="rpf-checks">
                   {PROFILE_CAPABILITIES.map((capability) => (
                     <label key={capability.id}>
                       <input
                         type="checkbox"
+                        disabled={busy}
                         checked={draft.capabilities.includes(capability.id)}
                         onChange={() =>
                           setDraft({
                             ...draft,
                             capabilities: toggle(draft.capabilities, capability.id),
+                            ...(capability.id === "manage_scouting" && !draft.capabilities.includes(capability.id) && draft.hubs.length ? {
+                              hubs: [...new Set([...draft.hubs, "competition"])],
+                              hubAccess: { ...draft.hubAccess, competition: [] },
+                            } : {}),
                           })
                         }
                       />
@@ -286,7 +312,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
             <Button type="submit" variant="primary" disabled={busy || !draft.name.trim()}>
               {busy ? "Saving…" : "Save profile"}
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setDraft(null)}>
+            <Button type="button" variant="ghost" disabled={busy} onClick={() => setDraft(null)}>
               Cancel
             </Button>
           </div>
@@ -311,11 +337,13 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
               </div>
               {profile.description ? <p className="rpf-desc">{currentStarterCopy(profile.description)}</p> : null}
               <p className="rpf-grants">{profileSummary(profile)}</p>
+              {Object.entries(profile.hubAccess).some(([,tabs]) => tabs.length) ? <p className="rpf-hint">Selected tabs: {Object.entries(profile.hubAccess).filter(([,tabs]) => tabs.length).map(([hub,tabs]) => `${hub}: ${tabs.join(", ")}`).join(" · ")}. Editing preserves these limits.</p> : null}
               {canEdit ? (
               <div className="rpf-item-actions">
                 <label className="rpf-apply">
                   <span className="rpf-sr">Apply {profile.name} to</span>
                   <select
+                    disabled={busy}
                     value={applyTo[profile.key] ?? ""}
                     onChange={(event) =>
                       setApplyTo({ ...applyTo, [profile.key]: event.target.value })
@@ -344,7 +372,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
                 >
                   Apply
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setDraft(draftOf(profile))}>
+                <Button variant="ghost" size="sm" disabled={busy} onClick={() => setDraft(draftOf(profile))}>
                   Edit
                 </Button>
                 <Button

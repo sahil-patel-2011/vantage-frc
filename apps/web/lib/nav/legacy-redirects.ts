@@ -16,6 +16,8 @@ export type LegacyRedirect = {
    * These are re-emitted as `?sub=`, which nothing else claims.
    */
   subTabs?: readonly string[];
+  /** Promoted sub-views open their canonical hub task rather than a second copy. */
+  subTabDestinations?: Readonly<Record<string, string>>;
 };
 
 export type ExpandedRedirect = {
@@ -39,7 +41,7 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
   { source: "/command", destination: "/competition?tab=command" },
   { source: "/my-day", destination: "/competition?tab=my-day" },
   { source: "/picklist-collab", destination: "/competition?tab=picks&view=discussion" },
-  { source: "/strategy", destination: "/competition?tab=strategy", subTabs: ["picks"] },
+  { source: "/strategy", destination: "/competition?tab=strategy", subTabs: ["picks"], subTabDestinations: { picks: "/competition?tab=picks" } },
   { source: "/scouting", destination: "/competition?tab=scouting" },
   { source: "/pick-clock", destination: "/competition?tab=pick-clock" },
   { source: "/chemistry", destination: "/competition?tab=chemistry" },
@@ -79,7 +81,7 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
 
 /** Next.js overwrites the request query when the destination already has one. */
 export function expandLegacyRedirects(entries: LegacyRedirect[] = LEGACY_HUB_REDIRECTS): ExpandedRedirect[] {
-  return entries.flatMap(({ source, destination, subTabs }) => {
+  return entries.flatMap(({ source, destination, subTabs, subTabDestinations }) => {
     if (!destination.includes("?")) {
       return [{ source, destination, permanent: false as const }];
     }
@@ -88,20 +90,24 @@ export function expandLegacyRedirects(entries: LegacyRedirect[] = LEGACY_HUB_RED
     // Sub-tab rules go first: Next takes the first rule that matches, and these
     // are strictly narrower than the catch-alls below. Each needs an orgId and
     // a no-orgId form, because `has` is an AND.
-    const subRules = (subTabs ?? []).flatMap((sub) => [
-      {
-        source,
-        has: [{ type: "query" as const, key: "tab", value: sub }, orgIdMatch],
-        destination: `${destination}${join}sub=${sub}&orgId=:orgId`,
-        permanent: false as const,
-      },
-      {
-        source,
-        has: [{ type: "query" as const, key: "tab", value: sub }],
-        destination: `${destination}${join}sub=${sub}`,
-        permanent: false as const,
-      },
-    ]);
+    const subRules = (subTabs ?? []).flatMap((sub) => {
+      const subDestination = subTabDestinations?.[sub] ?? `${destination}${join}sub=${sub}`;
+      const subJoin = subDestination.includes("?") ? "&" : "?";
+      return [
+        {
+          source,
+          has: [{ type: "query" as const, key: "tab", value: sub }, orgIdMatch],
+          destination: `${subDestination}${subJoin}orgId=:orgId`,
+          permanent: false as const,
+        },
+        {
+          source,
+          has: [{ type: "query" as const, key: "tab", value: sub }],
+          destination: subDestination,
+          permanent: false as const,
+        },
+      ];
+    });
     return [
       ...subRules,
       {

@@ -296,3 +296,7 @@ textarea {
   min-width: 0;
   max-width: 100%;
 }
+
+/* Private-message pickers live above workspace chrome, including when embedded in Team. */
+.messages-member-panel{display:flex;position:fixed;z-index:95;inset:0 0 0 auto;width:min(360px,100%);flex-direction:column;border-left:1px solid var(--line);padding:20px;background:var(--surface);overflow:auto}
+.messages-member-panel .memory-panel-close{display:inline-flex;min-height:44px;align-items:center;justify-content:center}

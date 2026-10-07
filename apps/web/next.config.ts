@@ -15,7 +15,7 @@ const isolatedBrowserRun = process.env.NODE_ENV === "development"
   && /^\.next\/browser-tests\/\d+-\d+-\d+$/.test(browserDistDir);
 
 const config: NextConfig = {
-  ...(isolatedBrowserRun ? { distDir: browserDistDir } : {}),
+  ...(isolatedBrowserRun ? { distDir: browserDistDir, devIndicators: false } : {}),
   // Leftover volume kits under app/win-kit, app/lovat-kit, app/agent-kit are
   // moved out of app/ for `next build` by scripts/build-without-leftover-kits.mjs
   // (same skip as eslint / tsconfig / vitest / copy-lint / route-coverage). Do

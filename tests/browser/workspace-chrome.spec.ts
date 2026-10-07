@@ -32,8 +32,10 @@ for (const width of [320, 768, 1440]) {
       expect(overflow, route).toBe(false);
       const actionGroups = page.locator(".app-page-header > .app-page-actions");
       for (const actions of await actionGroups.all()) {
-        const count = await actions.locator("button, a, summary").evaluateAll(nodes => nodes.filter(node => node.getClientRects().length > 0).length);
-        expect(count, `${route}: shared header actions`).toBeLessThanOrEqual(1);
+        const count = await actions.locator(".primary, .is-primary").evaluateAll(nodes => nodes.filter(node => node.getClientRects().length > 0).length);
+        expect(count, `${route}: primary header actions`).toBeLessThanOrEqual(1);
+        const names = await actions.locator("button, a, summary").evaluateAll(nodes => nodes.filter(node => node.getClientRects().length > 0).map(node => node.getAttribute("aria-label") || node.textContent?.trim()).filter(Boolean));
+        expect(new Set(names).size, `${route}: duplicate header controls`).toBe(names.length);
       }
       report.push({ route, status: response!.status(), overflow, options: await page.locator(".page-options").count() });
     }
@@ -49,18 +51,19 @@ test("page options keep forms, filters and help operable", async ({ page, contex
   expect(await signInAs(context, "owner")).toBe(true);
   await page.goto("/inventory");
   await expect(page.getByRole("button", { name: "Add a part", exact: true })).toBeVisible();
-  const options = page.locator(".app-page-header .page-options");
-  await options.locator("summary").click();
-  const audit = await new AxeBuilder({ page }).include(".page-options").analyze();
-  expect(audit.violations).toEqual([]);
-  await options.getByRole("button", { name: "Scan / labels", exact: true }).click();
-  await page.keyboard.press("Escape");
-  await expect(options).not.toHaveAttribute("open");
+  const labels = page.getByRole("button", { name: "Scan / labels", exact: true });
+  await labels.click();
+  const tools = page.locator(".inventory-label-tools");
+  await expect(tools.getByRole("heading", { name: "Find a bin instantly", exact: true })).toBeVisible();
+  await tools.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(tools).toHaveCount(0);
   await page.getByRole("button", { name: "Add a part", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Name", exact: true })).toBeVisible();
   await page.getByRole("textbox", { name: "Name", exact: true }).fill("Unsaved navigation check");
-  await options.locator("summary").click();
-  await page.keyboard.press("Escape");
+  await labels.click();
+  const audit = await new AxeBuilder({ page }).include(".inventory-label-tools").analyze();
+  expect(audit.violations).toEqual([]);
+  await tools.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Name", exact: true })).toHaveValue("Unsaved navigation check");
   await page.goto("/notifications");
   const filters = page.getByRole("combobox", { name: "Inbox filters", exact: true });

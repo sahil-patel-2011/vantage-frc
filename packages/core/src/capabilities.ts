@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { assertAdminTenureAllowsRoleChange } from "./admin-tenure";
 import { hashEmail } from "./email";
 import { lockTeamAdministration } from "./team-handover";
+import { listMemberHubAccess, setMemberHubAccess } from "./hub-access";
 
 type OrgRole = "owner" | "admin" | "scout" | "viewer";
 
@@ -16,11 +17,16 @@ export const ORG_CAPABILITIES = [
   "manage_team_settings",
   "manage_members",
   "manage_billing",
+  "manage_scouting",
 ] as const;
 
 export type OrgCapability = (typeof ORG_CAPABILITIES)[number];
 
 export const CAPABILITY_LABELS: Record<OrgCapability, { title: string; description: string }> = {
+  manage_scouting: {
+    title: "Scouting lead",
+    description: "Manage scouting forms, assignments, reports, sharing, formulas and data quality without team-wide administrator access.",
+  },
   manage_api_keys: {
     title: "Manage API keys / connectors",
     description: "BYOK providers, TBA connectors, API budgets, and model routing controls.",
@@ -185,6 +191,16 @@ export async function setMemberCapabilities(
        VALUES ($1, $2, $3::org_capability, $4)`,
       [input.orgId, input.userId, capability, actorUserId],
     );
+  }
+
+  // A delegated lead must be able to reach every scouting tool even if the
+  // person previously had a scout-only tab allowlist. Keep their other hubs.
+  if (unique.includes("manage_scouting")) {
+    const access = await listMemberHubAccess(client, input.orgId, input.userId);
+    if (access.length) await setMemberHubAccess(client, actorUserId, {
+      orgId: input.orgId, userId: input.userId,
+      access: [...access.filter(row => row.hubId !== "competition"), { hubId: "competition", allowedTabIds: [] }],
+    });
   }
 
   await auditMembership(client, {

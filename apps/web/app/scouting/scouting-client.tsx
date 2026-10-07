@@ -499,7 +499,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       editingRef.current = null;
       setEntryClientId(stableClientId());
     }
-    if (loadedDraftKey !== draftKey || editingRef.current || userEdited || type !== "match" || !draftKey) return;
+    // Refresh before restoring cached answers so newer corrections can arrive.
+    if (!settled || loadedDraftKey !== draftKey || editingRef.current || userEdited || type !== "match" || !draftKey) return;
     const storedTeam = normalizeTeamKey(teamKey);
     const report = mine.find(
       (entry) => entry.type === "match" && entry.matchKey === matchKey && entry.teamKey === storedTeam && entry.clientId,
@@ -519,8 +520,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     setMessage(
       `You already scouted ${teamNumberOf(storedTeam ?? teamKey)} in this match. Change what's wrong, then Save; it replaces your report.`,
     );
-  }, [draftKey, loadedDraftKey, mine, savedHere, userEdited, type, matchKey, teamKey]);
-
+  }, [draftKey, loadedDraftKey, mine, savedHere, userEdited, type, matchKey, teamKey, settled]);
   // A draft is only what the scout typed: never a report loaded to be corrected.
   useEffect(() => {
     // A commit that changed the robot still contains the previous form's state.

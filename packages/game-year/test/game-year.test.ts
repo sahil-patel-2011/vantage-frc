@@ -8,6 +8,15 @@ import {
 } from "../src";
 
 describe("game-year packs", () => {
+  it("keeps released/passed fuel separate from scoring and asks about both tower climbs", () => {
+    const pack = packForYear(2026);
+    expect(pack.scoringKeys).not.toContain("fuel_passed");
+    expect(pack.scoringKeys).not.toContain("disabled");
+    expect(pack.scoringKeys).toContain("auto_tower_level");
+    expect(pack.matchSchema.fields.find(field => field.key === "auto_tower_level")?.options).toEqual(["none", "L1"]);
+    expect(pack.matchSchema.fields.find(field => field.key === "tower_level")?.options).toEqual(["none", "L1", "L2", "L3"]);
+    expect(pack.matchSchema.fields.find(field => field.key === "auto_fuel")?.config?.requireObservation).toBe(true);
+  });
   it("ships published 2026 REBUILT scoring keys", () => {
     const pack = packForYear(2026);
     expect(pack.status).toBe("published");

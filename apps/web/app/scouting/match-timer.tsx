@@ -37,9 +37,9 @@ function saveFromTimer() {
  * stay on the field and their thumb finds the right counters. When the match ends the bar
  * becomes "Save this match" and the form scrolls to its last answers. Restarting is one tap.
  */
-export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear = null, stage = "all", onStageChange, onPhaseChange, undoButton }: {
+export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear = null, stage = "all", onStageChange, onPhaseChange, undoButton, resetDisabled = false, showControls = true }: {
   stage?: ScoutFormStage; onStageChange?: (stage: ScoutFormStage) => void; onPhaseChange?: (phase: MatchPhase) => void; undoButton?: ReactNode;
-  fields: Array<{ key: string; label: string }>; resetKey: string; storageKey: string | null; onStarted?: () => void; seasonYear?: number | null;
+  fields: Array<{ key: string; label: string }>; resetKey: string; storageKey: string | null; onStarted?: () => void; seasonYear?: number | null; resetDisabled?: boolean; showControls?: boolean;
 }) {
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -90,6 +90,8 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear
       document.querySelector(".scout-save-button")?.scrollIntoView({ behavior, block: "center" });
       return;
     }
+    const recorder = document.querySelector<HTMLElement>("[data-live-match-recorder]");
+    if (recorder) { recorder.scrollIntoView({ behavior, block: "start" }); return; }
     const key = anchors[phase];
     if (!key) return;
     const target = document.getElementById(`scout-field-${encodeURIComponent(key)}`);
@@ -121,7 +123,7 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear
               {clockLabel(secondsLeft * 1000)}
             </span>
           )}
-          <button type="button" onClick={() => { writeScoutClock(storageKey, null); setStartedAt(null); }}>
+          <button type="button" disabled={resetDisabled} title={resetDisabled ? "Recorded activity uses this clock. Start a new report for a new match." : undefined} onClick={() => { writeScoutClock(storageKey, null); setStartedAt(null); }}>
             {done ? "Restart" : "Reset"}
           </button>
         </>
@@ -134,11 +136,16 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear
         </button>
       )}
     </div>
-    <div className="scout-phase-controls">
-      <TabBar className="scout-phase-tabs" aria-label="Match form section" value={stage} onChange={id => onStageChange?.(id as ScoutFormStage)}
-        tabs={(["all", "pre", "auto", "teleop", "endgame", "review"] as const).map(key => ({ id: key, label: STAGE_LABEL[key] }))} />{undoButton}
-    </div>
+    {showControls ? <MatchFormControls stage={stage} onStageChange={onStageChange} undoButton={undoButton} /> : null}
     {seasonYear !== 2026 ? <small className="app-muted">Practice timing: 15s auto / 135s teleop. Follow the field clock.</small> : null}
     </div>
   );
+}
+
+/** Phase navigation stays in normal flow, so it never covers the live input on a phone. */
+export function MatchFormControls({ stage, onStageChange, undoButton }: { stage: ScoutFormStage; onStageChange?: (stage: ScoutFormStage) => void; undoButton?: ReactNode }) {
+  return <div className="scout-phase-controls">
+      <TabBar className="scout-phase-tabs" aria-label="Match form section" value={stage} onChange={id => onStageChange?.(id as ScoutFormStage)}
+        tabs={(["all", "pre", "auto", "teleop", "endgame", "review"] as const).map(key => ({ id: key, label: STAGE_LABEL[key] }))} />{undoButton}
+    </div>;
 }

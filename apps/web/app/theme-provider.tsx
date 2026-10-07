@@ -67,15 +67,17 @@ function readStoredPreference(): ThemePreference {
 }
 
 /** Keep the OS browser chrome on the same colour as --bg. */
-function syncBrowserColor(theme: Theme) {
+function syncBrowserColor() {
+  const background = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+  if (!background) return;
   document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
-    .forEach((meta) => { meta.content = theme === "dark" ? "#11161c" : "#f6f7f9"; });
+    .forEach((meta) => { meta.content = background; });
 }
 
 function applyResolvedTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
-  syncBrowserColor(theme);
+  syncBrowserColor();
   localStorage.setItem(STORAGE_KEY, theme);
   document.cookie = `vantage-theme=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;
   window.dispatchEvent(new CustomEvent("vantage-theme", { detail: theme }));
@@ -96,7 +98,7 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
     setPreference(pref);
     const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
     setTheme(current);
-    syncBrowserColor(current);
+    syncBrowserColor();
 
     const syncTheme = (event: Event) => setTheme((event as CustomEvent<Theme>).detail);
     const syncPref = (event: Event) => {
@@ -171,6 +173,14 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   const productRoute = pathnameUsesAppShell(pathname);
 
   useEffect(() => {
+    // The product palette arrives with the shell; public pages use their own palette.
+    syncBrowserColor();
+    const observer = new MutationObserver(syncBrowserColor);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, [productRoute]);
+
+  useEffect(() => {
     if (!productRoute) return;
     let cancelled = false;
     const markReady = () => document.documentElement.classList.add("theme-ready");
@@ -211,7 +221,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       if (next) applyPreference(next);
       // No preference anywhere: leave storage untouched and only bring the OS
       // browser chrome in line with whatever the boot script already painted.
-      else syncBrowserColor(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+      else syncBrowserColor();
       markReady();
     };
 

@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 const root = fileURLToPath(new URL("../", import.meta.url));
 const web = resolve(root, "apps/web");
 const mode = process.argv.includes("--build") ? "build" : process.argv.includes("--production") ? "start" : "dev";
+const databaseFree = process.argv.includes("--database-free");
 const origin = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3419";
 const target = new URL(origin);
 if (target.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(target.hostname)
@@ -14,7 +15,7 @@ if (target.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(target.h
   throw new Error("GUI audit requires a plain loopback HTTP origin with an explicit port.");
 }
 const keys = ["DATABASE_URL", "DATABASE_AUTH_URL", "DATABASE_ADMIN_URL"];
-for (const key of keys) {
+for (const key of databaseFree ? [] : keys) {
   const url = new URL(process.env[key] ?? "");
   if (!["postgres:", "postgresql:"].includes(url.protocol)
     || !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
@@ -39,14 +40,14 @@ Object.assign(env, {
   NODE_ENV: mode === "dev" ? "development" : "production",
   CI: "true",
   E2E_AUTH_FIXTURE: mode === "dev" ? "1" : "",
-  VANTAGE_BROWSER_DIST_DIR: ".next/browser-tests/9-20260929-1",
+  VANTAGE_BROWSER_DIST_DIR: databaseFree ? mode === "dev" ? ".next/ui-audit" : ".next/ui-build" : ".next/browser-tests/9-20260929-1",
   NODE_OPTIONS: "--max-old-space-size=4096",
   NEXT_TELEMETRY_DISABLED: "1",
   DATABASE_DRIVER: "pg",
-  DATABASE_URL: process.env.DATABASE_URL,
-  DATABASE_AUTH_URL: process.env.DATABASE_AUTH_URL,
-  DATABASE_ADMIN_URL: process.env.DATABASE_ADMIN_URL,
-  DATABASE_URL_UNPOOLED: process.env.DATABASE_URL,
+  DATABASE_URL: databaseFree ? "" : process.env.DATABASE_URL,
+  DATABASE_AUTH_URL: databaseFree ? "" : process.env.DATABASE_AUTH_URL,
+  DATABASE_ADMIN_URL: databaseFree ? "" : process.env.DATABASE_ADMIN_URL,
+  DATABASE_URL_UNPOOLED: databaseFree ? "" : process.env.DATABASE_URL,
   MARKETING_DATABASE_URL: "",
   BETTER_AUTH_SECRET: "isolated-gui-audit-local-only-secret-2026",
   DEV_OTP_SECRET: "isolated-gui-audit-local-only-otp",
@@ -67,6 +68,6 @@ const args = mode === "build" ? ["build"] : [mode, "--hostname", target.hostname
 const child = spawn(process.execPath, [resolve(root, "node_modules/next/dist/bin/next"), ...args], {
   cwd: web, env, stdio: "inherit",
 });
-console.log(`Isolated GUI audit ${mode} at ${target.origin}; external credentials masked, signup closed.`);
+console.log(`Isolated GUI audit ${mode} at ${target.origin}; ${databaseFree ? "database connections disabled, " : ""}external credentials masked, signup closed.`);
 child.on("exit", code => { process.exitCode = code ?? 1; });
 for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, () => child.kill(signal));

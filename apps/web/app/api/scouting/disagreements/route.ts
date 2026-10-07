@@ -161,7 +161,7 @@ export async function PATCH(request: Request) {
 
     const result = await withScoutingRequest(body.orgId ?? null, async (client) => {
       const allowed = await client.query(
-        `SELECT has_org_role($1, ARRAY['owner','admin']::org_role[]) AS allowed`,
+        `SELECT has_org_capability($1, 'manage_scouting'::org_capability) AS allowed`,
         [body.orgId],
       );
       if (!allowed.rows[0]?.allowed) throw new Error("Coach role required");

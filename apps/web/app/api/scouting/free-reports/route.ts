@@ -69,7 +69,7 @@ export async function DELETE(request: Request) {
     if (typeof body.id !== "string" || !UUID_PATTERN.test(body.id)) throw new ScoutingHttpError(400, "Report ID is invalid.");
     await withScoutingRequest(body.orgId, async (client) => {
       const result = await client.query("DELETE FROM free_scout_reports WHERE id=$1 AND org_id=$2 RETURNING id", [body.id, body.orgId]);
-      if (!result.rowCount) throw new ScoutingHttpError(403, "Only the author or a team admin can delete this report.");
+      if (!result.rowCount) throw new ScoutingHttpError(403, "Only the author or a scouting lead can delete this report.");
     });
     return Response.json({ deleted: true });
   } catch (error) { return scoutingErrorResponse(error); }

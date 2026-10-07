@@ -5,5 +5,5 @@ export const metadata = {
 };
 
 export default function ParentsPage() {
-  return <ParentsClient />;
+  return <main className="module-page"><ParentsClient /></main>;
 }

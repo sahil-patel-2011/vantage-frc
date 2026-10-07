@@ -39,6 +39,7 @@ const MATCH_ROWS = [
 
 function liveHandler(overrides: Partial<Record<string, unknown[]>> = {}): Handler {
   return (sql) => {
+    if (sql.includes("has_org_capability")) return { rows: [{ allowed: true }] };
     if (sql.includes("FROM memberships") && sql.includes("o.team_number")) {
       return { rows: [{ orgId: ORG, teamNumber: 1234, role: "admin" }] };
     }
@@ -149,6 +150,7 @@ describe("computeScoutingCoverageView", () => {
       if (sql.includes("FROM memberships") && sql.includes("o.team_number")) {
         return { rows: [{ orgId: ORG, teamNumber: 1234, role: "scout" }] };
       }
+      if (sql.includes("has_org_capability")) return { rows: [{ allowed: false }] };
       return liveHandler()(sql, params);
     });
 

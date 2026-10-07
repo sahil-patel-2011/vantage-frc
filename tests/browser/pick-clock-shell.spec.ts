@@ -9,10 +9,10 @@ test.beforeEach(async ({ context }) => {
 
 test("Pick clock hub still loads after the Saturday shell pass", async ({ page }) => {
   await page.goto("/competition?tab=pick-clock");
-  await expect(page.getByRole("tab", { name: "Strategy" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Match plan" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
-  const tools = page.getByRole("navigation", { name: "Tools in Strategy" });
+
   // The board is headed "Pick Clock" now; it used to say "45-second pick
   // clock". The old names are kept in the pattern so a deployment that has
   // not caught up still matches.
@@ -40,8 +40,9 @@ test("Pick clock hub still loads after the Saturday shell pass", async ({ page }
     return;
   }
 
-  await expect(tools.getByRole("button", { name: "Pick clock", exact: true })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Strategy" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("navigation", { name: "Tools in Strategy" })).toHaveCount(0);
+  await expect(page.locator(".product-hub-panel")).toHaveAttribute("data-hub-tab", "pick-clock");
+  await expect(page.getByRole("tab", { name: "Match plan" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText("org-scoped")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Setup steps" })).toHaveCount(0);
   await page.screenshot({ path: "test-results/pick-clock-after-shell.png", fullPage: true });

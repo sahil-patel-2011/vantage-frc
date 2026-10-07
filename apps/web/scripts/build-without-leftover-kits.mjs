@@ -10,6 +10,14 @@ import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkProductionSchema } from "../../../scripts/production-schema-preflight.mjs";
+
+try {
+  await checkProductionSchema();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : "Production schema verification failed.");
+  process.exit(1);
+}
 
 const require = createRequire(import.meta.url);
 const webRoot = join(dirname(fileURLToPath(import.meta.url)), "..");

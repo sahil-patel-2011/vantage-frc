@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { Pool } from "pg";
-import { addSessionCookies, baseOrigin, LOCAL_FIXTURE_PASSWORD, normalizeLocalApiSession } from "./session";
+import { addSessionCookies, baseOrigin, LOCAL_FIXTURE_PASSWORD, normalizeLocalApiSession, passwordSignIn } from "./session";
 test.use({ actionTimeout: 15_000 });
 
 async function login(context: BrowserContext, email: string) {
-  const response = await context.request.post("/api/auth/sign-in/email", { headers: { origin: baseOrigin() }, data: { email, password: LOCAL_FIXTURE_PASSWORD } });
+  const response = await passwordSignIn(context, email, LOCAL_FIXTURE_PASSWORD);
   expect(response.status(), "Fresh account password sign-in").toBe(200);
   await normalizeLocalApiSession(context);
   await addSessionCookies(context, []);
@@ -49,6 +49,9 @@ for (const width of [1440, 390]) test(`student setup, invited mentor, student me
     await page.getByRole("button", { name: "Submit access request", exact: true }).click();
     expect((await completed).ok()).toBe(true);
     await page.getByRole("link", { name: "Create this team", exact: true }).click();
+    // The first claim page is compiled on demand in CI. Wait for its real navigation
+    // before asserting the persisted onboarding prefill.
+    await expect(page).toHaveURL(/\/claim(?:\?|$)/, { timeout: 30_000 });
     await expect(page.getByLabel("FRC team number", { exact: true })).toHaveValue(String(teamNumber));
     await page.getByLabel("Team name", { exact: true }).fill(`Lifecycle Team ${teamNumber}`);
     if (width === 390) await page.getByLabel("Team join code (optional)").fill("239487");

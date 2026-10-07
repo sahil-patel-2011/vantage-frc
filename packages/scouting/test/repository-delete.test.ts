@@ -2,11 +2,12 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it } from "vitest";
 import { ScoutingRepository } from "../src/repository";
 
-function recordingClient(role: string, deletedClientId: string | null, closedIds: string[] = []) {
+function recordingClient(role: string, deletedClientId: string | null, closedIds: string[] = [], delegated = false) {
   const calls: Array<{ sql: string; params: unknown[] }> = [];
   const client = {
     async query(sql: string, params: unknown[] = []) {
       calls.push({ sql, params });
+      if (sql.includes("has_org_capability")) return { rows:[{allowed:role === "owner" || role === "admin" || delegated}],rowCount:1 };
       if (sql.includes("FROM memberships")) return { rows: [{ role }], rowCount: 1 };
       if (sql.includes("DELETE FROM match_scout_entries") || sql.includes("DELETE FROM pit_scout_entries")) {
         return deletedClientId
@@ -42,10 +43,15 @@ describe("deleting a scout report", () => {
     expect(calls.some((call) => call.sql.includes("scout_sync_receipts"))).toBe(false);
   });
 
+  it("allows a delegated scout to manage reports without admin access", async () => {
+    const { client } = recordingClient("scout", "phone-lead", [], true);
+    expect(await new ScoutingRepository(client).deleteEntry("org-1", "lead-1", {entryId:"e1",type:"match"})).toBe(true);
+  });
+
   it("refuses a scout", async () => {
     const { client } = recordingClient("scout", "phone-abc");
     await expect(
       new ScoutingRepository(client).deleteEntry("org-1", "s1", { entryId: "e1", type: "match" }),
-    ).rejects.toThrow(/Coach role/);
+    ).rejects.toThrow(/Scouting lead/);
   });
 });

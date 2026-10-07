@@ -11,7 +11,8 @@
     "./identity": "./src/identity.ts",
     "./org-isolation": "./src/org-isolation.ts",
     "./trust": "./src/trust.ts",
-    "./resolution": "./src/resolution.ts"
+    "./resolution": "./src/resolution.ts",
+    "./permissions": "./src/permissions.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

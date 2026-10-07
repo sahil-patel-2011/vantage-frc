@@ -37,6 +37,17 @@ describe("mounted views follow router navigation", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it("opens the team picker as its own document for consistent browser history", () => {
+    const { target, changed } = browser();
+    const push = vi.fn();
+    const next = encodeURIComponent("/account?tab=appearance&orgId=old-team");
+    pushAppNavigation(push, `/workspace?next=${next}&orgId=old-team`);
+    expect(target.location.assign).toHaveBeenCalledWith(`/workspace?next=${next}`);
+    expect(push).not.toHaveBeenCalled();
+    expect(changed).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("falls back to a document navigation if the router is unavailable", () => {
     const { target, changed } = browser();
     pushAppNavigation(() => { throw new Error("Router unavailable"); }, "/ai/connect");
@@ -58,6 +69,13 @@ const anchor = (href: string, extra: Partial<Parameters<typeof softNavigationTar
 const here = new URL("https://vantagefrc.vercel.app/dashboard?orgId=o1");
 
 describe("softNavigationTarget", () => {
+  it("keeps explicit membership pickers outside the current team scope", () => {
+    const picker = `/workspace?next=${encodeURIComponent("/account?tab=appearance&orgId=o1")}`;
+    expect(softNavigationTarget(click, anchor(picker), here)).toBe(picker);
+    expect(softNavigationTarget(click, anchor(`${picker}&orgId=o1`), here)).toBe(picker);
+    expect(softNavigationTarget(click, anchor(`${picker}&orgId=o2`), here)).toBe(picker);
+  });
+
   it("routes plain in-app links through the router", () => {
     expect(softNavigationTarget(click, anchor("/competition?orgId=o1"), here)).toBe("/competition?orgId=o1");
     expect(softNavigationTarget(click, anchor("https://vantagefrc.vercel.app/team#roster"), here)).toBe("/team?orgId=o1#roster");

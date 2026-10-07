@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
 import { signInAs } from "./session";
 import type { Bootstrap } from "../../apps/web/app/scouting/scouting-model";
+import { MATCH_CAPTURE_KEY } from "../../packages/scouting/src";
 
 const orgId = "6925a000-0000-4000-8000-000000000001";
 function testDatabase() {
@@ -20,7 +21,16 @@ for (const width of [320, 390, 1440]) {
     expect(await signInAs(context, "owner")).toBe(true);
     const db = testDatabase();
     const marker = `Scouting correction ${randomUUID()}`;
+    let schemaId: string | undefined;
     try {
+      // Each correction story publishes its own custom form; it cannot inherit
+      // whichever season/editor questions another story last selected.
+      const setup=await (await context.request.get(`/api/scouting/schemas?orgId=${orgId}`)).json();
+      const published=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"match",definition:{title:marker,fields:[
+        {key:"autoPoints",label:"Auto points",type:"number",config:{requireObservation:true,scoutPhase:"auto",min:0,integer:true}},
+        {key:"notes",label:"Notes",type:"text",required:false},
+      ]}}});
+      expect(published.status(),await published.text()).toBe(201); schemaId=(await published.json()).id;
       const response = await context.request.get(`/api/scouting/bootstrap?orgId=${orgId}`);
       expect(response.ok()).toBe(true);
       const data = await response.json() as Bootstrap;
@@ -45,10 +55,24 @@ for (const width of [320, 390, 1440]) {
       await expect(auto).toHaveValue("");
       await page.getByRole("button", { name: "Auto points: one more", exact: true }).click();
       await page.getByRole("button", { name: "Auto points: one more", exact: true }).click();
-      await page.getByRole("button", { name: "Undo last action", exact: true }).click();
+      await page.getByRole("button", { name: "Undo last answer", exact: true }).click();
       await expect(auto).toHaveValue("1");
       await page.getByRole("textbox", { name: "Notes", exact: true }).fill(marker);
+      const activity = page.getByRole("region", { name: "Live match activity", exact: true });
+      const epoch = Date.now();
+      await page.clock.setFixedTime(new Date(epoch));
+      await page.getByRole("button", { name: "Start match timer when auto starts", exact: true }).click();
+      await page.clock.setFixedTime(new Date(epoch + 1000));
+      await expect(activity).toContainText("0:01 elapsed");
+      await activity.getByRole("button", { name: "Shooting", exact: true }).click();
+      await page.clock.setFixedTime(new Date(epoch + 11000));
+      await expect(activity).toContainText("0:11 elapsed");
+      await activity.getByRole("button", { name: "Stop shooting", exact: true }).click();
+      await activity.getByLabel("Fuel released in last shooting bout", { exact: true }).fill("20");
+      await page.getByRole("tablist", { name: "Match form section", exact: true }).getByRole("tab", { name: "Review", exact: true }).click();
       await page.getByRole("radio", { name: "Guessing", exact: true }).click();
+      await page.locator(".scout-save-button").click();
+      await expect(page.locator(".scout-save-button")).toHaveText("Tap again to save");
       await page.locator(".scout-save-button").click();
       await expect(page.locator("#scout-save-confirmation")).toContainText(`Saved ${team!.replace("frc", "")}`);
       const saved = async () => (await db.query("SELECT client_id, payload, confidence FROM match_scout_entries WHERE org_id=$1 AND payload->>'notes'=$2", [orgId, marker])).rows;
@@ -56,22 +80,28 @@ for (const width of [320, 390, 1440]) {
       const clientId = (await saved())[0].client_id;
       expect((await saved())[0].payload.autoPoints).toBe(1);
       expect((await saved())[0].confidence).toBe("low");
+      const captured = (await saved())[0].payload[MATCH_CAPTURE_KEY];
+      expect(captured).toMatchObject({ version: 1, seasonYear: 2026, bouts: [{ kind: "shooting", startMs: 1000, endMs: 11000, count: 20 }] });
       await page.getByRole("button", { name: "Fix it", exact: true }).click();
       await expect(auto).toHaveValue("1");
       await auto.fill("9");
       await page.locator(".scout-save-button").click();
       await expect.poll(async () => (await saved())[0]?.payload.autoPoints).toBe(9);
       expect((await saved()).map(row => row.client_id)).toEqual([clientId]);
+      expect((await saved())[0].payload[MATCH_CAPTURE_KEY]).toEqual(captured);
       await page.goto(href);
       await expect(auto).toHaveValue("9", { timeout: 30_000 });
       await expect(page.locator(".scout-answers")).toContainText("You already scouted");
       await expect(page.getByRole("radio", { name: "Guessing", exact: true })).toBeChecked();
+      await activity.getByText("Review recorded activity", { exact: true }).click();
+      await expect(activity).toContainText("20 in 10.0s");
       const audit = await new AxeBuilder({ page }).include(".scout-page").analyze();
       expect(audit.violations).toEqual([]);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: info.outputPath(`match-correction-${width}.png`), fullPage: true });
     } finally {
       await db.query("DELETE FROM match_scout_entries WHERE org_id=$1 AND payload->>'notes'=$2", [orgId, marker]);
+      if(schemaId) await db.query("DELETE FROM scout_schemas WHERE org_id=$1 AND id=$2",[orgId,schemaId]);
       await db.end();
     }
   });

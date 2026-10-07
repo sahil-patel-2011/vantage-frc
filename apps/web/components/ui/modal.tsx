@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useExitPresence } from "./use-exit-presence";
 import styles from "./ui.module.css";
 
 export function useDialog(initial = false) {
@@ -49,6 +50,7 @@ export function Modal({
   className,
   variant = "dialog",
 }: ModalProps) {
+  const presence = useExitPresence(open);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
   const autoId = useId();
@@ -117,11 +119,14 @@ export function Modal({
     };
   }, [open, mounted]);
 
-  if (!open || !mounted) return null;
+  if (!presence.present || !mounted) return null;
 
   return createPortal(
     <div
       className={[styles.overlay, variant === "sheet" ? styles.sheetOverlay : ""].filter(Boolean).join(" ")}
+      data-closing={presence.closing || undefined}
+      aria-hidden={presence.closing || undefined}
+      inert={presence.closing}
       onMouseDown={(e) => e.target === e.currentTarget && onCloseRef.current()}
     >
       <div

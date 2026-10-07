@@ -35,9 +35,8 @@ function readDismissed(): boolean {
   try {
     return window.localStorage.getItem(TOUR_STORAGE_KEY) === "done";
   } catch {
-    // Private windows and locked-down school browsers throw here. Showing the
-    // tour again is a smaller harm than crashing the page.
-    return false;
+    // If the once-only marker cannot be read, keep the working app unobstructed.
+    return true;
   }
 }
 
@@ -45,7 +44,7 @@ function markDismissed() {
   try {
     window.localStorage.setItem(TOUR_STORAGE_KEY, "done");
   } catch {
-    // Nothing to do: the tour just may appear again on the next visit.
+    // The account claim remains authoritative if browser storage is unavailable.
   }
 }
 
@@ -104,6 +103,8 @@ export function AppTour() {
     setSteps(null);
   }, []);
 
+  useEffect(() => { if (pathname !== "/dashboard") setSteps(null); }, [pathname]);
+
   // Decide once, after paint, so the targets have actually rendered.
   useEffect(() => {
     if (readDismissed()) return;
@@ -123,8 +124,8 @@ export function AppTour() {
     let id: number | undefined;
     void requestMe().then((me) => {
       if (cancelled) return;
-      const memberSince = (me.data as { memberSince?: string | null } | null)?.memberSince;
-      if (!tourIsForNewMember(memberSince)) return;
+      const account = me.data as { userId?: string; memberSince?: string | null; appTourSeen?: boolean; onboardingComplete?: boolean } | null;
+      if (!me.ok || !account?.userId || account.appTourSeen !== false || !account.onboardingComplete || !tourIsForNewMember(account.memberSince)) return;
       id = window.setInterval(() => {
         elapsed += 400;
         if (consentShowing() || tourShouldYield(openDialogLabels())) {
@@ -140,9 +141,12 @@ export function AppTour() {
         const usable = availableSteps(TOUR_STEPS, present);
         // One lonely step is not a tour worth interrupting anyone for.
         if (usable.length < 2) return;
-        // Counted as seen now, so leaving mid-tour does not start it again.
-        markDismissed();
-        setSteps(usable);
+        // The server claim is atomic and account-scoped. If unavailable, defer the
+        // automatic tour rather than risk replaying it on another browser.
+        void fetch("/api/account/tour", { method: "POST", headers: { "content-type": "application/json" }, body: "{}", signal: AbortSignal.timeout(8000) })
+          .then(async response => response.ok ? response.json() : null)
+          .then(result => { if (cancelled || result?.start !== true) return; markDismissed(); setSteps(usable); })
+          .catch(() => { /* No replay-prone browser-only fallback. */ });
       }, 400);
     });
     return () => {

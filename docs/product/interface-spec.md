@@ -25,6 +25,18 @@ Every widget and tool must distinguish loading, empty, needs setup, saved data a
 
 ## Verification
 
+### Match observation contract
+
+For REBUILT, the live recorder shares the persisted match clock with the form. Keep only robot context and the clock sticky; phase navigation must never cover recording buttons. Start/stop shooting, feeding, defense and disabled intervals with match-relative timestamps. Reloading an unfinished interval preserves it; saving requires stopping it. Removal retains the interval for review and can be restored when it does not overlap another observation.
+
+Released fuel, scored fuel and passed fuel are separate observations. Throughput divides counted released fuel by the duration of those same counted bouts. Exclude unknown counts from both numerator and denominator; explicit zero remains zero. Do not extrapolate an observed rate into full-match points or treat an inactive hub as scoring. Confirm the first inactive alliance from FMS, including autonomous ties; unconfirmed hub order stays unknown.
+
+Use the actual published season starter for a new form. Preserve collection phases, observed-count rules and stable field keys when editing it. Record autonomous and endgame tower climbs separately. Saved timelines and CSV evidence must retain the versioned activity metadata. Private activity metadata stays outside the existing cross-team projection.
+
+Robot capabilities and comparisons must work without a scoring formula. Show recorded samples, confidence filtering, missing observations and disagreements. Combine repeated reports within a match before giving each match equal weight. Scoring and pick ranking continue to require their own explicit point definitions.
+
+For database-free presentation and client-interaction checks, use `npm run test:ui`. Its isolated Next server masks local and inherited credentials, disables database connections, and intercepts browser APIs. The regular census checks 31 primary and repaired destinations at 320, 390, 768 and 1440px in both appearances. `PRODUCT_UI_FULL=1` expands it to the registered non-media workspace destinations. This supplements the persisted workflow stories below; it cannot establish database or external-provider readiness.
+
 Use `tests/browser/product-ui-audit.spec.ts` for the complete registered workspace presentation census. Set `PRODUCT_UI_AUDIT=1`, choose `PRODUCT_UI_WIDTH`, `PRODUCT_UI_DARK` and `PRODUCT_UI_OUT`; it records every route's status, page errors, overflow and WCAG findings, plus screenshots. This census is separate from functional browser stories that trace UI → API → PostgreSQL → rendered result.
 
 Run fresh invitation and team lifecycle journeys, custom form publishing/response journeys, scouting online/offline journeys, dashboard board/task journeys and representative Team/Build/Business operations. Validate the shared UI at 320/390, 768 and 1440px, and dark appearance. Do not start a local database on the user’s laptop. Database-backed journeys require an explicitly authorized remote test environment; existing guarded fixture tests belong in the isolated test runner. Clean up only rows created by a journey.
@@ -38,3 +50,17 @@ Five functional browser journeys passed: real email-code invitation signup, memb
 The local database and app/test processes were stopped at the user's request. Final unit, type, lint and build checks require no running database. Live external providers and the proposed fresh-team custom-match analysis simulation were not verified in this interrupted audit.
 
 Final database-free checks passed: 11,358 unit tests (45 skipped), repository lint, all workspace type checks, and the optimized production build (753 static/dynamic routes generated). Browser verification of the final contrast corrections and unavailable-widget retry UI remains outstanding after the stop.
+
+The subsequent database-free audit and reliability repairs are tracked in [UI readiness](../release/UI-READINESS-2026-10-06.md). It preserves the original full-census findings and records bounded replay evidence separately from the still-open production gates.
+
+## Scouting trends and delegated leads
+
+Event trends live in the existing Teams observation view. They show schema-defined outcomes and numeric averages, confidence filters, counted versus missing robot-match answers, earlier/later qualification samples and their contributing evidence. Deduplicate reports before aggregating. A recorded no-climb outcome does not establish intent; never describe missing answers as a choice not to climb. Different units/types are not pooled. This view complements individual robot comparisons and official EPA trends rather than adding a competing scouting dashboard.
+
+Scouting leads use a dedicated `manage_scouting` capability. Owners/admins retain it implicitly. Delegated leads can manage forms, assignments, report review/deletion, formulas, sharing, trust/voice/accuracy and their active/custom event without gaining membership, billing or API-key administration. Leads have full Competition navigation; other hub limits remain. Custom access roles are authored/applied on Team admin → Custom roles. Season responsibilities track jobs and do not grant permissions. Editing a role template preserves its tab limits and does not silently update previously assigned members; applying it is explicit.
+
+Automatic walkthroughs require an atomic account claim before display. Existing accounts are marked introduced on migration; new accounts can claim once after onboarding. Concurrent tabs, a different browser, lost device storage and mid-tour reload must not replay it. If the claim is unavailable, leave the app unobstructed. Signed-in users receive no automatic cookie banner; Privacy can still explicitly change consent, and analytics still require a recorded grant.
+
+Dialog and cookie-card exits use a short fade/movement, release focus/scroll promptly, and become inert immediately. Reduced motion removes the exit delay. Preserve dialog content while it leaves the screen.
+
+The user authorized isolated GitHub Actions database-backed acceptance tests on October 6. This authorization does not permit any laptop database or production data changes.

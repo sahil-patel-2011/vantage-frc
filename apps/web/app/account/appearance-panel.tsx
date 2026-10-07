@@ -62,9 +62,14 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
   const [islandBusy, setIslandBusy] = useState(false);
   const [islandNote, setIslandNote] = useState<string | null>(null);
   const [islandLoaded, setIslandLoaded] = useState(false);
+  const [islandProblem, setIslandProblem] = useState(false);
+  const [islandAttempt, setIslandAttempt] = useState(0);
   const [cockpitSaved, setCockpitSaved] = useState<CockpitPrefs>({ ...DEFAULT_COCKPIT_PREFS });
   const [cockpit, setCockpit] = useState<CockpitPrefs>({ ...DEFAULT_COCKPIT_PREFS });
   const [cockpitBusy, setCockpitBusy] = useState(false);
+  const [cockpitLoaded, setCockpitLoaded] = useState(false);
+  const [cockpitProblem, setCockpitProblem] = useState(false);
+  const [cockpitAttempt, setCockpitAttempt] = useState(0);
   const [cockpitNote, setCockpitNote] = useState<Status>(null);
 
   const access = useClientAccessProfile();
@@ -93,8 +98,10 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/account/cockpit", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
+    setCockpitLoaded(false);
+    setCockpitProblem(false);
+    void fetch("/api/account/cockpit", { cache: "no-store", signal: AbortSignal.timeout(8_000) })
+      .then((response) => { if (!response.ok) throw new Error("Preferences unavailable"); return response.json(); })
       .then((data: { cockpit?: unknown } | null) => {
         if (cancelled) return;
         const next = parseCockpitPrefs(data?.cockpit);
@@ -102,11 +109,18 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
         setCockpit(next);
       })
       .catch(() => {
-        /* defaults stay */
-      });
+        if (!cancelled) setCockpitProblem(true);
+      })
+      .finally(() => { if (!cancelled) setCockpitLoaded(true); });
+    return () => { cancelled = true; };
+  }, [cockpitAttempt]);
 
-    void fetch("/api/navigation/preferences", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
+  useEffect(() => {
+    let cancelled = false;
+    setIslandLoaded(false);
+    setIslandProblem(false);
+    void fetch("/api/navigation/preferences", { cache: "no-store", signal: AbortSignal.timeout(8_000) })
+      .then((response) => { if (!response.ok) throw new Error("Shortcuts unavailable"); return response.json(); })
       .then((data: { tabs?: unknown } | null) => {
         if (cancelled) return;
         const tabs = isValidIslandSelection(data?.tabs) ? data.tabs : defaultIslandHrefs();
@@ -114,7 +128,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
         setIslandDraft(tabs);
       })
       .catch(() => {
-        /* offline: the editor still works, it just starts from the defaults */
+        if (!cancelled) setIslandProblem(true);
       })
       .finally(() => {
         if (!cancelled) setIslandLoaded(true);
@@ -123,7 +137,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [islandAttempt]);
 
   const visibleCatalog = useMemo(
     () =>
@@ -153,6 +167,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
     setStatus(null);
     try {
       const response = await fetch("/api/branding/appearance", {
+        signal: AbortSignal.timeout(8_000),
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ appearance: next }),
@@ -180,6 +195,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
     setCockpitNote(null);
     try {
       const response = await fetch("/api/account/cockpit", {
+        signal: AbortSignal.timeout(8_000),
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ cockpit: next }),
@@ -212,6 +228,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
     setIslandNote(null);
     try {
       const response = await fetch("/api/navigation/preferences", {
+        signal: AbortSignal.timeout(8_000),
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ tabs }),
@@ -248,7 +265,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           </p>
         ) : !org.accentColor ? (
           <p>
-            Using Vantage teal.{" "}
+            Using the Vantage accent.{" "}
             {org.canEdit ? (
               <a href={`/team/admin?orgId=${encodeURIComponent(org.orgId)}#team-branding`}>
                 Set the team colour
@@ -259,7 +276,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           </p>
         ) : !org.applyAccentToApp ? (
           <p>
-            Team colours are off. Using Vantage teal.
+            Team colours are off. Using the Vantage accent.
           </p>
         ) : (
           <>
@@ -267,7 +284,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
               Choose your accent. This only changes your view.
             </p>
             <ChoiceField label="Accent colour" value={prefs.teamAccent ? "team" : "vantage"} disabled={busy || !loaded || loadProblem}
-              choices={[{ value: "team", label: "Team accent", hint: `Match ${org.orgName ?? "your team"}` }, { value: "vantage", label: "Vantage", hint: "Default teal" }]}
+              choices={[{ value: "team", label: "Team accent", hint: `Match ${org.orgName ?? "your team"}` }, { value: "vantage", label: "Vantage", hint: "Default accent" }]}
               onChange={value => preview({ ...prefs, teamAccent: value === "team" })} />
           </>
         )}
@@ -322,11 +339,12 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
         <p>
           Code review and live-update preferences.
         </p>
+        {!cockpitLoaded ? <p role="status">Loading code preferences…</p> : cockpitProblem ? <div><p role="alert">Your code preferences could not load.</p><Button type="button" variant="secondary" onClick={() => setCockpitAttempt(current => current + 1)}>Retry code preferences</Button></div> : null}
         <label className="appearance-check">
           <input
             type="checkbox"
             checked={cockpit.confirmWrites}
-            disabled={cockpitBusy}
+            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
             onChange={(event) => setCockpit({ ...cockpit, confirmWrites: event.target.checked })}
           />
           Confirm before Bugbot opens a pull request
@@ -335,7 +353,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           <input
             type="checkbox"
             checked={cockpit.pauseLiveWhenHidden}
-            disabled={cockpitBusy}
+            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
             onChange={(event) => setCockpit({ ...cockpit, pauseLiveWhenHidden: event.target.checked })}
           />
           Pause live boards (My Day, schedule, rankings) when this tab is hidden
@@ -344,7 +362,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           <input
             type="checkbox"
             checked={cockpit.includeScanTests}
-            disabled={cockpitBusy}
+            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
             onChange={(event) => setCockpit({ ...cockpit, includeScanTests: event.target.checked })}
           />
           Include our own tests when Bugbot scans a repo
@@ -353,7 +371,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           Default Bugbot mode
           <select
             value={cockpit.defaultBugbotMode}
-            disabled={cockpitBusy}
+            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
             onChange={(event) =>
               setCockpit({
                 ...cockpit,
@@ -371,7 +389,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
             value={cockpit.bugbotInstructions}
             maxLength={BUGBOT_INSTRUCTION_MAX}
             rows={3}
-            disabled={cockpitBusy}
+            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
             placeholder="e.g. Never retune CAN id 3. Phoenix 6 current limit is 40 A."
             onChange={(event) => setCockpit({ ...cockpit, bugbotInstructions: event.target.value })}
           />
@@ -383,7 +401,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           <button
             type="button"
             className="primary"
-            disabled={cockpitBusy || cockpitEquals(cockpit, cockpitSaved)}
+            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem || cockpitEquals(cockpit, cockpitSaved)}
             onClick={() => void saveCockpit(parseCockpitPrefs(cockpit))}
           >
             {cockpitBusy ? "Saving…" : "Save code preferences"}
@@ -421,7 +439,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
             );
           })}
         </div>
-        {!islandLoaded ? (
+        {islandProblem ? <div><p role="alert">Your shortcuts could not load.</p><Button type="button" variant="secondary" onClick={() => setIslandAttempt(current => current + 1)}>Retry shortcuts</Button></div> : !islandLoaded ? (
           <p className="app-muted">Loading your island…</p>
         ) : (
           <div className="appearance-island-grid">
@@ -452,7 +470,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           <button
             type="button"
             className="primary"
-            disabled={islandBusy || !islandDirty}
+            disabled={islandBusy || !islandLoaded || islandProblem || !islandDirty}
             onClick={() =>
               void saveIsland(islandDraft, "Shortcuts saved.")
             }
@@ -461,7 +479,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           </button>
           <button
             type="button"
-            disabled={islandBusy || isDefaultIslandSelection(islandSaved)}
+            disabled={islandBusy || !islandLoaded || islandProblem || isDefaultIslandSelection(islandSaved)}
             onClick={() =>
               void saveIsland(
                 defaultIslandHrefs(),

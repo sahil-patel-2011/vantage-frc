@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { applyVoiceTranscriptToForm, isLayoutOnlyField, undoableScoutAction, type ScoutSchema } from "@vantage/scouting";
+import { applyVoiceTranscriptToForm, isLayoutOnlyField, matchCapture, undoableScoutAction, type ScoutSchema } from "@vantage/scouting";
+import { MatchActivityRecorder } from "./match-activity-recorder";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
@@ -13,7 +14,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { PitTeamField, ScoutTargetChoices } from "./scout-target-by-hand";
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
 import { formatDraftSavedAgo, payloadHasDraftContent, scoutDraftStorageKey, rememberActiveScoutDraft } from "../../lib/scouting/draft-autosave";
-import { scoutContext } from "../../lib/scouting/scout-context";
+import { robotStation, scoutContext } from "../../lib/scouting/scout-context";
 import { hubHref } from "../../lib/nav/hubs";
 import type { QuarantinedItem } from "../../lib/scout-offline";
 import {
@@ -49,7 +50,7 @@ import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
 import { fieldsForMatchStage, SCOUT_STAGE_LABELS, type ScoutFormStage } from "../../lib/scouting/match-form-flow";
 import { NextMatchCard } from "./next-match-card";
-import { MatchTimer } from "./match-timer";
+import { MatchFormControls, MatchTimer } from "./match-timer";
 import { ScoutSaveConfirmation } from "./scout-save-confirmation";
 import { ScoutViewSwitcher } from "./scout-view-switcher";
 import "./match-mode.css";
@@ -699,9 +700,9 @@ return (
                   </button>
                 </div>
                 {formFields.length ? (
-                  <MatchTimer fields={formFields} stage={stage} onStageChange={setStage}
+                  <MatchTimer fields={formFields} stage={stage} onStageChange={setStage} showControls={false}
+                    resetDisabled={Boolean(matchCapture(payload))}
                     onPhaseChange={phase => setStage(phase === "done" ? "review" : phase === "pre" ? "all" : phase === "transition" ? "auto" : phase)}
-                    undoButton={onUndo ? <button type="button" disabled={!undo} onClick={onUndo} title={undo ? `Undo ${undo.changes.map(change => formFields.find(field => field.key === change.field)?.label ?? change.field).join(", ")}` : "Nothing to undo"}>Undo last action</button> : null}
                     resetKey={`${matchKey}|${teamKey}`}
                     seasonYear={data?.eventKey ? Number(data.eventKey.slice(0,4)) : schema?.year ?? null}
                     storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })}
@@ -713,10 +714,12 @@ return (
                     }} />
                 ) : null}
               </div>
+              <MatchFormControls stage={stage} onStageChange={setStage} undoButton={onUndo ? <button type="button" disabled={!undo} onClick={onUndo} title={undo ? `Undo ${undo.changes.map(change => formFields.find(field => field.key === change.field)?.label ?? change.field).join(", ")}` : "Nothing to undo"}>Undo last answer</button> : null} />
             </>
           ) : null}
 
           {type === "match" && context ? <div className="scout-stage-heading"><h3>{SCOUT_STAGE_LABELS[stage]}</h3><p>{collecting ? "The form follows the match clock. Switch phase to correct an earlier answer." : "Record what you observed. Leave answers you couldn't see blank."}</p></div> : null}
+          {type === "match" && context && Number(data?.eventKey?.slice(0, 4) ?? schema?.year) === 2026 ? <MatchActivityRecorder key={`${matchKey}|${teamKey}`} payload={payload} setPayload={setPayload} alliance={robotStation(data?.matches.find(match => match.matchKey === matchKey), teamKey)?.alliance ?? null} storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })} /> : null}
 
           {liveConflicts.length ? (
             <div className="scout-official-flags" role="status">

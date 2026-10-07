@@ -133,13 +133,13 @@ export function stripHiddenAnswers<T extends VisibleField & { type?: string; con
  * Typical Lovat match-flow rules: auto questions while the phase is auto,
  * teleop after auto ends, endgame once teleop is underway.
  */
-export function defaultMatchPhaseRules(): Record<string, VisibleWhen> {
+export function defaultMatchPhaseRules(phaseField = "gamePhase"): Record<string, VisibleWhen> {
   return {
-    auto: { anyOf: [{ fieldKey: "gamePhase", equals: "auto" }, { fieldKey: "gamePhase", isSet: false }] },
-    teleop: { fieldKey: "gamePhase", oneOf: ["teleop", "endgame"] },
-    endgame: { fieldKey: "gamePhase", equals: "endgame" },
+    auto: { anyOf: [{ fieldKey: phaseField, equals: "auto" }, { fieldKey: phaseField, isSet: false }] },
+    teleop: { fieldKey: phaseField, oneOf: ["teleop", "endgame"] },
+    endgame: { fieldKey: phaseField, equals: "endgame" },
     defense: { anyOf: [{ fieldKey: "playingDefense", isTrue: true }, { fieldKey: "defense", isTrue: true }] },
-    climb: { anyOf: [{ fieldKey: "gamePhase", equals: "endgame" }, { fieldKey: "attemptedClimb", isTrue: true }] },
+    climb: { anyOf: [{ fieldKey: phaseField, equals: "endgame" }, { fieldKey: "attemptedClimb", isTrue: true }] },
   };
 }
 
@@ -162,13 +162,13 @@ export function inferPhaseFromKey(key: string): InferredPhase | null {
   const normalized = key.replace(/[^a-z0-9]/gi, "").toLowerCase();
   if (!normalized) return null;
   if (normalized === "gamephase" || normalized === "phase") return null;
+  if (normalized.startsWith("auto") || normalized.includes("auton")) return "auto";
   if (normalized.includes("defense") || normalized.includes("defend") || normalized.includes("defendtime")) {
     return "defense";
   }
   if (normalized.includes("climb") || normalized.includes("tower") || normalized.includes("endgame")) {
     return "endgame";
   }
-  if (normalized.startsWith("auto") || normalized.includes("auton")) return "auto";
   if (normalized.startsWith("tele") || normalized.includes("teleop")) return "teleop";
   return null;
 }
@@ -196,12 +196,13 @@ export function ensureGamePhaseField<T extends { key: string }>(fields: readonly
 export function withInferredPhaseRules<T extends VisibleField & { key: string; type?: string; config?: Record<string, unknown> | null }>(
   fields: readonly T[],
 ): T[] {
-  const authorHasPhase = fields.some((field) => field.key === "gamePhase" || field.key === "game_phase");
-  if (!authorHasPhase) return [...fields];
-  const rules = defaultMatchPhaseRules();
+  const phaseField = fields.find((field) => field.key === "gamePhase" || field.key === "game_phase")?.key;
+  if (!phaseField) return [...fields];
+  const rules = defaultMatchPhaseRules(phaseField);
   return fields.map((field) => {
     if (readVisibleWhen(field)) return field;
-    const phase = inferPhaseFromKey(field.key);
+    const configured = field.config?.scoutPhase;
+    const phase = configured === "auto" || configured === "teleop" || configured === "endgame" ? configured : inferPhaseFromKey(field.key);
     if (!phase) return field;
     const rule = rules[phase];
     if (!rule) return field;

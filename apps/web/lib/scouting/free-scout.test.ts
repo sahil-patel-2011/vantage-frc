@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { freeScoutDefinition, parseFreeScoutReport } from "./free-scout";
+import { MATCH_CAPTURE_KEY, type MatchCapture } from "@vantage/scouting";
 
 const base = { id: "aa000000-0000-4000-8000-000000000001", year: 2026, type: "pit", teamNumber: 6925, label: "Practice 1", observedAt: "2026-09-27T12:00:00Z", payload: {} };
 
 describe("scouting without an event", () => {
+  it("preserves timed activity in practice reports and rejects unfinished or malformed activity", () => {
+    const capture: MatchCapture = { version: 1, seasonYear: 2026, clockStartedAt: 1791288000000, bouts: [{ id: "shoot", kind: "shooting", startMs: 1000, endMs: 11000, count: 0 }] };
+    expect(parseFreeScoutReport({ ...base, type: "match", payload: { [MATCH_CAPTURE_KEY]: capture } }).payload[MATCH_CAPTURE_KEY]).toEqual(capture);
+    expect(() => parseFreeScoutReport({ ...base, type: "match", payload: { [MATCH_CAPTURE_KEY]: { ...capture, bouts: [{ ...capture.bouts[0], endMs: null, count: null }] } } })).toThrow(/Stop the current/);
+    expect(() => parseFreeScoutReport({ ...base, type: "match", payload: { [MATCH_CAPTURE_KEY]: { version: 2 } } })).toThrow(/unsupported/);
+  });
   it("accepts real match observations without an event, preserving recorded zero and missing answers", () => {
     const result = parseFreeScoutReport({ ...base, type: "match", payload: { auto_fuel: 0, teleop_fuel: 2, notes: "No collection observed" } });
     expect(result).not.toHaveProperty("eventKey");

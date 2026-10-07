@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { listScoutingCoordinators } from "@vantage/scouting/permissions";
 import { emitNotification } from "@vantage/core";
 import {
   buildChoseScoutResolution,
@@ -185,12 +186,7 @@ export async function applyDisagreementResolution(
     );
   }
 
-  const coordinators = await client.query<{ userId: string }>(
-    `SELECT user_id::text AS "userId"
-     FROM memberships
-     WHERE org_id = $1::uuid AND role IN ('owner', 'admin')`,
-    [input.orgId],
-  );
+  const coordinators = await listScoutingCoordinators(client, input.orgId);
   const subject = `${row.matchKey} · ${row.teamKey} · ${row.fieldKey}`;
   const message =
     input.status === "resolved"
@@ -199,7 +195,7 @@ export async function applyDisagreementResolution(
         : `Disagreement resolved for ${subject}. Pick-desk/strategy trust updated.`
       : `Disagreement dismissed for ${subject}.`;
   let coordinatorsNotified = 0;
-  for (const coordinator of coordinators.rows) {
+  for (const coordinator of coordinators) {
     await emitNotification(client, {
       userId: coordinator.userId,
       orgId: input.orgId,

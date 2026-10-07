@@ -14,11 +14,11 @@
 
 export const ACCENT_CONTRAST_TARGET = 4.5;
 
-/** Mirrors the `--surface` values in app/system.css. */
-export const SOFT_CARD_SURFACE = { light: "#ffffff", dark: "#1b222a" } as const;
+/** Mirrors the product card surfaces in app/macos-product.css. */
+export const SOFT_CARD_SURFACE = { light: "#ffffff", dark: "#20232b" } as const;
 
-/** Mirrors the stock `--accent` values in app/system.css. */
-export const DEFAULT_ACCENT = { light: "#155e68", dark: "#86cdd0" } as const;
+/** Mirrors the stock product accents in app/macos-product.css. */
+export const DEFAULT_ACCENT = { light: "#075dcc", dark: "#8db7ff" } as const;
 
 export type ThemeKey = "light" | "dark";
 

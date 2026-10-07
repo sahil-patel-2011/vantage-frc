@@ -1,3 +1,4 @@
+import { canManageScouting } from "@vantage/scouting/permissions";
 import { assertOrgAuthentication, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies, headers } from "next/headers";
@@ -69,7 +70,7 @@ export async function GET(request: Request) {
       return {
         role: membership.rows[0]!.role,
         activeEventKey: membership.rows[0]!.eventKey,
-        canSetEvent: ["owner", "admin"].includes(membership.rows[0]!.role),
+        canSetEvent: await canManageScouting(client, orgId),
         year,
         events: events.rows,
       };
@@ -120,8 +121,8 @@ export async function POST(request: Request) {
         [orgId, session.user.id],
       );
       if (!membership.rowCount) throw new Error("Organization membership required");
-      if (!["owner", "admin"].includes(membership.rows[0]!.role)) {
-        throw new Error("Owner or admin role required to set the active event");
+      if (!await canManageScouting(client, orgId)) {
+        throw new Error("Scouting lead access required to set the active event");
       }
       // Scouting already refuses a sign-in method this team turned off. Setting
       // the event is the same kind of team change, so a password session cannot

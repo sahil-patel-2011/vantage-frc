@@ -1,3 +1,4 @@
+import { navigationOpener } from "./nav";
 import { expect, test, type Page } from "@playwright/test";
 import { loadFailureHeading } from "./hub-org-gate";
 import { waitForLoadingGone } from "./ready";
@@ -97,22 +98,16 @@ test.describe("student-week GUI path", () => {
   test("Event day Packing is a real click from the related strip", async ({ page }) => {
     await openStudent(page, "/command");
     await expectNoBanned(page, "Event day");
-    // Packing used to sit in a "Related" strip below the page. Those strips
-    // were removed — they duplicated the hub's own tool row — so the tool row
-    // is where it lives, and with three chips on screen it may be behind
-    // "More tools". This is the real path a student takes.
-    const strip = page.locator(".hub-tool-strip");
-    const more = strip.getByRole("button", { name: /More tools|Tools/ });
-    if (await more.count()) await more.first().click();
-    const packing = strip.getByRole("link", { name: "Packing" }).or(
-      strip.getByRole("button", { name: "Packing" }),
-    );
+    await navigationOpener(page).click();
+    const search = page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true });
+    await search.fill("Packing");
+    const packing = page.getByRole("option", { name: /^Packing / });
     const setup = page.getByRole("link", { name: /Choose your team/i });
     await expect(packing.first().or(setup.first()).first()).toBeVisible({ timeout: 15_000 });
     if (await packing.count()) {
       await packing.first().click();
       await waitForLoadingGone(page);
-      await expect(page).toHaveURL(/\/packing/);
+      await expect(page).toHaveURL(/tab=packing|\/packing/);
       await expect(page.locator("body")).not.toContainText("Application error");
       const packingPrimary = page
         .getByRole("link", { name: /Choose your team|Create competition load-out|Sign in again/i })
@@ -143,20 +138,20 @@ test.describe("student-week GUI path", () => {
     }
   });
 
-  test("Pick desk lock or Open Scouting is reachable", async ({ page }) => {
+  test("Pick list save or Open Scouting is reachable", async ({ page }) => {
     await openStudent(page, "/strategy?tab=picks");
     await expectNoBanned(page, "Pick desk");
     await expect(page.getByText(/\bEPA\b/)).toHaveCount(0);
     const heading = page.getByRole("heading", {
-      name: /Pick desk|Rank, pick, and lock|No teams to rank yet|Choose your team/i,
+      name: /Pick list|Pick desk|Rank, pick, and lock|No teams to rank yet|Choose your team/i,
     });
     await expect(heading.first()).toBeVisible({ timeout: 12_000 });
     const primary = page
-      .getByRole("button", { name: /Lock this list|Retry/i })
+      .getByRole("button", { name: /Save pick list|Retry/i })
       .or(page.getByRole("link", { name: /Open Scouting|Choose your team|Set active event|Sign in again/i }));
     await expect(primary.first()).toBeVisible();
-    if (await page.getByRole("button", { name: /Lock this list/i }).count()) {
-      await page.getByRole("button", { name: /Lock this list/i }).click();
+    if (await page.getByRole("button", { name: /Save pick list/i }).count()) {
+      await page.getByRole("button", { name: /Save pick list/i }).click();
       await expect(page.locator("body")).not.toContainText("Application error");
     } else if (await page.getByRole("link", { name: "Open Scouting" }).count()) {
       await page.getByRole("link", { name: "Open Scouting" }).click();
@@ -210,13 +205,13 @@ test.describe("student-week GUI path", () => {
     } else {
       await expect(page.getByRole("link", { name: /Choose your team|Invite an exact email/i }).first()).toBeVisible();
     }
-    await expect(page.getByText(/waitlist/i).first()).toBeVisible();
+    await expect(page.getByText(/waitlist/i)).toHaveCount(0);
   });
 
   test("Business Sponsors tab is a real click", async ({ page }) => {
     await openStudent(page, "/business");
     await expectNoBanned(page, "Business", ["Stripe", "STRIPE_"]);
-    const heading = page.getByRole("heading", { level: 1, name: "Business" });
+    const heading = page.getByRole("heading", { level: 1, name: "Overview" });
     await expect(heading.or(loadFailureHeading(page)).first()).toBeVisible({ timeout: 20_000 });
     const tabs = page.getByRole("tablist", { name: "Business sections" });
     const sponsorsTab = tabs.getByRole("tab", { name: "Sponsors" });

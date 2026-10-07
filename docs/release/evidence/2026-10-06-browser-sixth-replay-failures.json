@@ -1,0 +1,74 @@
+{
+  "run": 37550720081,
+  "head": "d4a1081df8f14f564d31acbceded5bdcc96feeb1",
+  "url": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37550720081",
+  "conclusion": "failure",
+  "jobs": [
+    {
+      "name": "Lint, types, unit, build",
+      "conclusion": "success"
+    },
+    {
+      "name": "Postgres migrations and RLS",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (4/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Database-free UI and accessibility",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (6/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (1/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (5/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (7/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (3/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (2/8)",
+      "conclusion": "success"
+    },
+    {
+      "name": "Playwright (8/8)",
+      "conclusion": "failure"
+    }
+  ],
+  "validation": {
+    "quality": "11,418 unit tests, lint, types, zero production web audit findings and 754-page build pass",
+    "postgres": "9 integration cases and 40 RLS proofs pass",
+    "ui": "42 client cases and 248 presentation states pass",
+    "scouting": "Full scouting browser group passes"
+  },
+  "remainingFailures": [
+    {
+      "file": "tests/browser/team-switching.spec.ts",
+      "widths": [
+        390,
+        1440
+      ],
+      "reason": "Account picker href preserved next correctly, but the shared soft-navigation handler added the current orgId to the actual request. The server interpreted that hint as a workspace and rendered its legacy event page instead of the membership picker."
+    }
+  ],
+  "repairs": [
+    "Soft navigation removes outer team scope from explicit picker requests while preserving the nested return destination",
+    "Server picker intent ignores an outer scope hint and does not auto-redirect a sole membership when the user explicitly requests selection",
+    "Phone/desktop regressions now click the Account link and assert the actual router request contains no outer orgId; destination responses are intercepted before server data access"
+  ],
+  "localVerification": "17 navigation/workspace unit cases and 2 actual-navigation client cases pass; lint and web types pass. Full exact-head remote CI is still required."
+}

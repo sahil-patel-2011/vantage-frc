@@ -89,7 +89,7 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
     {
       id: "command",
       label: "Open Event Day",
-      detail: "An owner or admin sets the event match and pit forms use.",
+      detail: "A scouting lead or team admin sets the event match and pit forms use.",
       href: hubHref("/competition", "command", orgId),
     },
     {
@@ -311,7 +311,7 @@ export function scoutingNextActions(input: {
         {
           id: "command",
           label: "Open Event Day",
-          detail: "An owner or admin sets the event match and pit forms use.",
+          detail: "A scouting lead or team admin sets the event match and pit forms use.",
           href: hubHref("/competition", "command", orgId),
           primary: true,
         },
@@ -386,7 +386,7 @@ export function scoutingNextActions(input: {
         label: input.canManageSchemas ? "Open Form builder" : "Ask for Form builder",
         detail: input.canManageSchemas
           ? `Publish a ${typeLabel} form, or create starter forms.`
-          : `Build a ${typeLabel} form — anyone on the team can.`,
+          : `Ask a scouting lead or team admin to publish the ${typeLabel} form.`,
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       },

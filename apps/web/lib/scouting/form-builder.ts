@@ -193,6 +193,8 @@ export type DraftQuestion = {
   settings: DraftFieldSettings;
   chart?: "auto" | "bar" | "trend" | "none";
   helpText?: string;
+  /** Collection rules survive opening, editing and republishing a season starter. */
+  collectionConfig?: Record<string, unknown>;
 };
 
 export const COUNTER_STEPS_TEXT = DEFAULT_COUNTER_STEPS.join(", ");
@@ -237,6 +239,7 @@ export function newDraftQuestion(partial?: Partial<DraftQuestion>): DraftQuestio
       (kind === "drivetrain" ? DRIVETRAIN_OPTIONS_TEXT : ""),
     chart: partial?.chart ?? "auto",
     helpText: partial?.helpText ?? "",
+    ...(partial?.collectionConfig ? { collectionConfig: { ...partial.collectionConfig } } : {}),
     role: partial?.role ?? "none",
     reset: partial?.reset ?? "reset",
     settings: { ...defaultSettingsForKind(kind), ...(partial?.settings ?? {}) },
@@ -482,6 +485,7 @@ export function draftFromDefinition(definition: SchemaDefinition): {
         reset: fieldResetBehavior(field),
         settings: settingsFromField(field),
         chart: ["bar", "trend", "none"].includes(String(field.config?.chart)) ? field.config?.chart as DraftQuestion["chart"] : "auto",
+        collectionConfig: Object.fromEntries(Object.entries(field.config ?? {}).filter(([key]) => ["scoutPhase", "requireObservation", "integer", "min"].includes(key))),
       }),
     ),
   };
@@ -561,9 +565,21 @@ export function studioConfigForQuestion(
  * — a preview that diverged from entry would be worse than no preview at all.
  * Not for persistence: `definitionFromDraft` owns key assignment.
  */
+function collectionConfigForQuestion(question: DraftQuestion, type: FieldType): Record<string, unknown> {
+  const collection = question.collectionConfig ?? {};
+  const config: Record<string, unknown> = {};
+  if (typeof collection.scoutPhase === "string" && ["pre", "auto", "teleop", "endgame", "review"].includes(collection.scoutPhase)) config.scoutPhase = collection.scoutPhase;
+  if (["number", "counter", "multi_counter"].includes(type)) {
+    if (collection.requireObservation === true) config.requireObservation = true;
+    if (collection.integer === true) config.integer = true;
+    if (typeof collection.min === "number" && Number.isFinite(collection.min)) config.min = collection.min;
+  }
+  return config;
+}
+
 export function previewFieldForQuestion(question: DraftQuestion): FieldDefinition {
   const type = kindToFieldType(question.kind);
-  const config = studioConfigForQuestion(question, type);
+  const config = { ...collectionConfigForQuestion(question, type), ...studioConfigForQuestion(question, type) };
   const field: FieldDefinition = {
     key: question.key?.trim() || question.id,
     label: question.label.trim() || "Untitled",
@@ -695,6 +711,7 @@ export function definitionFromDraft(
       widget: question.kind,
     };
     const config: Record<string, unknown> = {};
+    Object.assign(config, collectionConfigForQuestion(question, type));
     // "none" means auto-detect by key name — persist only explicit mappings so
     // untouched conventional fields keep reaching strategy via inference.
     if (question.role !== "none") config.role = question.role;
@@ -1165,10 +1182,10 @@ export function formBuilderNextActions(input: {
     return [
       {
         id: "publish",
-        label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Choose your team",
+        label: input.canManageSchemas ? `Publish ${typeLabel} form` : "Preview published forms",
         detail: input.canManageSchemas
           ? `Publish a real ${typeLabel} form so Scouting and Coverage can use it.`
-          : `Join a team and you can build ${typeLabel} forms with everyone else.`,
+          : `A scouting lead or team admin publishes ${typeLabel} forms. You can preview and use published forms.`,
         href: hubHref("/competition", "forms", orgId),
         primary: true,
       },
@@ -1241,9 +1258,7 @@ export function formBuilderPublishBlockedReason(input: {
   acknowledgeBudget: boolean;
 }): string | null {
   if (!input.canManageSchemas) {
-    // Anyone on the team may build and publish a form; the only people this
-    // stops are those who have not joined one yet.
-    return "Choose your team before publishing a form.";
+    return "A scouting lead or team admin must publish this form.";
   }
   if (input.year == null) {
     return "Choose a game before publishing.";

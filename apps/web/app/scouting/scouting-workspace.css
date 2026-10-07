@@ -97,3 +97,15 @@
   .scout-recording-layout { grid-template-columns: 1fr; }
   .scout-target-panel,.scout-page .scout-context-bar { position: static; }
 }
+
+/* Only robot context and the clock stick. Phase navigation scrolls with the form. */
+.scout-page .scout-context-bar:has(.match-timer[data-running="true"]) { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; padding: 8px 12px; }
+.scout-page .scout-context-bar:has(.match-timer[data-running="true"]) .scout-context-line { margin-bottom: 0; flex: 1 1 auto; min-width: 0; }
+.scout-page .scout-context-bar:has(.match-timer[data-running="true"]) > div:last-child { flex: 0 0 auto; }
+.scout-page .scout-field-wrap { scroll-margin-top: 155px; }
+@media (max-width: 640px) {
+  .scout-page .scout-context-bar:has(.match-timer[data-running="true"]) { padding: 8px; }
+  .scout-page .scout-context-bar:has(.match-timer[data-running="true"]) .match-timer-phase { display: none; }
+  .scout-page .scout-context-bar:has(.match-timer[data-running="true"]) .match-timer-clock { font-size: 22px; }
+  .scout-page .scout-field-wrap { scroll-margin-top: 145px; }
+}

@@ -1,4 +1,5 @@
-﻿// THE coverage read/write compute behind /scouting/lineup.
+import { canManageScouting } from "@vantage/scouting/permissions";
+// THE coverage read/write compute behind /scouting/lineup.
 //
 // /scouting/lineup polled /api/scouting/coverage, which never existed, so the page 404'd in a
 // loop while /scout-coverage-live sat next to it with a second, differently-shaped model. This
@@ -68,7 +69,7 @@ export type ScoutingCoverageView =
       eventName: string | null;
       generatedAt: string;
       qualsOnly: boolean;
-      /** True when this member's role may write scout_assignments (owner/admin only). */
+      /** True for an owner, admin or delegated scouting lead. */
       canAssign: boolean;
       summary: CoverageGapSummary;
       live: {
@@ -200,8 +201,8 @@ const SCHEDULE_STEP: CoverageSetupStep = {
   href: "/competition",
 };
 
-export function canWriteAssignments(role: string | null | undefined): boolean {
-  return role === "owner" || role === "admin";
+export function canWriteAssignments(role: string | null | undefined, delegated = false): boolean {
+  return role === "owner" || role === "admin" || delegated;
 }
 
 async function resolveEventKey(
@@ -234,7 +235,7 @@ async function loadScouts(
        FROM memberships m
        JOIN users u ON u.id = m.user_id
       WHERE m.org_id = $1::uuid
-        AND m.role::text = ANY(ARRAY['owner','admin','scout'])
+        AND (m.role::text = ANY(ARRAY['owner','admin','scout']) OR EXISTS (SELECT 1 FROM membership_capabilities c WHERE c.org_id=m.org_id AND c.user_id=m.user_id AND c.capability='manage_scouting'::org_capability))
       ORDER BY u.name NULLS LAST, m.user_id`,
     [input.orgId, input.eventKey],
   );
@@ -357,7 +358,7 @@ export async function computeScoutingCoverageView(
     eventName: eventNameRow.rows[0]?.eventName ?? null,
     generatedAt: new Date().toISOString(),
     qualsOnly,
-    canAssign: canWriteAssignments(org.role),
+    canAssign: await canManageScouting(client, org.orgId),
     summary,
     live,
     slots,

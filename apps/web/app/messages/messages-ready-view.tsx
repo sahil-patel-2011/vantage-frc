@@ -1,5 +1,7 @@
 "use client";
 
+import { createPortal } from "react-dom";
+
 import {
   useState,
   type Dispatch,
@@ -888,7 +890,7 @@ export function MessagesReadyView({
         </div>
       )}
 
-      {pickerOpen ? (
+      {pickerOpen ? createPortal(
         <aside className="memory-panel open messages-member-panel" aria-label="Start private message">
           <button type="button" className="memory-panel-close" onClick={() => setPickerOpen(false)}>
             Close
@@ -933,7 +935,7 @@ export function MessagesReadyView({
               </article>
             ))
           )}
-        </aside>
+        </aside>, document.body
       ) : null}
     </main>
   );

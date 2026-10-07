@@ -27,7 +27,7 @@ export async function GET(request: Request) {
           canManage: boolean;
         }>(
           `SELECT COALESCE((SELECT enabled FROM org_scouting_sharing WHERE org_id=$1),true) AS enabled,
-          has_org_role($1,ARRAY['owner','admin']::org_role[]) AS "canManage"`,
+          has_org_capability($1, 'manage_scouting'::org_capability) AS "canManage"`,
           [orgId],
         );
         return result.rows[0];
@@ -49,13 +49,13 @@ export async function POST(request: Request) {
     return response(
       await withIntelRequest(body.orgId, async (client) => {
         const permission = await client.query<{ allowed: boolean }>(
-          "SELECT has_org_role($1,ARRAY['owner','admin']::org_role[]) AS allowed",
+          "SELECT has_org_capability($1, 'manage_scouting'::org_capability) AS allowed",
           [body.orgId],
         );
         if (!permission.rows[0]?.allowed)
           throw new IntelHttpError(
             403,
-            "Only an owner or admin can change scouting sharing.",
+            "Scouting lead access is required to change scouting sharing.",
           );
         const result = await client.query(
           `INSERT INTO org_scouting_sharing(org_id,enabled,updated_by) VALUES($1,$2,$3)

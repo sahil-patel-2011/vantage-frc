@@ -103,6 +103,7 @@ describe("computeScoutVoiceView", () => {
 
   it("returns live when org and user have current consent", async () => {
     const client = makeClient((sql) => {
+      if (sql.includes("has_org_capability")) return {rows:[{allowed:true}]};
       if (sql.includes("FROM memberships")) {
         return { rows: [{ orgId: ORG, teamNumber: 254, role: "admin" }] };
       }

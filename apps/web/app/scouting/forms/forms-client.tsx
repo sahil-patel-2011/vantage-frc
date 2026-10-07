@@ -42,6 +42,7 @@ import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./f
 import { OptionEditor } from "./forms-option-editor";
 import { FormsTabletPreview } from "./forms-tablet-preview";
 import { StudioSettingsEditor } from "./forms-settings-editor";
+import { CollectionSettings } from "./forms-collection-settings";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 
 function isSchemasPayload(value: unknown): value is SchemasPayload {
@@ -79,7 +80,10 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
    */
   const [removed, setRemoved] = useState<{ question: DraftQuestion; index: number } | null>(null);
   const [year, setYear] = useState<number | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const busy = publishing || loading;
+  const loadGenerationRef = useRef(0);
   const publishingRef = useRef(false);
   const draftsRef = useRef<Partial<Record<EntryType, { title: string; questions: DraftQuestion[]; acknowledgeBudget: boolean }>>>({});
   const [message, setMessage] = useState("");
@@ -115,7 +119,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   // so the imported draft beats — rather than races — the initial schema fetch.
   const importedDraftRef = useRef<SchemaDefinition | null | undefined>(undefined);
 
-  const loadSchemaIntoDraft = useCallback((schema: ScoutSchema | undefined, nextType: EntryType) => {
+  const loadSchemaIntoDraft = useCallback((schema: ScoutSchema | undefined, nextType: EntryType, seasonYear?: number | null) => {
     if (importedDraftRef.current === undefined) {
       importedDraftRef.current = null;
       try {
@@ -142,18 +146,21 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       return;
     }
     setTitle(nextType === "pit" ? "Pit scouting" : "Match scouting");
-    setQuestions(defaultQuestions(nextType));
+    setQuestions(defaultQuestions(nextType, seasonYear));
   }, []);
 
   const load = useCallback(async (requestedYear?: number) => {
+    const generation = ++loadGenerationRef.current;
+    setLoading(true);
     let hadCache = Boolean(payloadRef.current);
     try {
       const cached = await getFeatureSnapshot<SchemasPayload>("scout-forms", orgId || "_");
+      if (generation !== loadGenerationRef.current) return;
       if (!payloadRef.current && cached?.data && isSchemasPayload(cached.data)) {
         setPayload(cached.data);
         if (cached.data.year != null) setYear(cached.data.year);
         const active = cached.data.schemas.find((schema) => schema.type === type);
-        loadSchemaIntoDraft(active, type);
+        loadSchemaIntoDraft(active, type, cached.data.year);
         setFromCache(true);
         setCachedAt(cached.cachedAt);
         hadCache = true;
@@ -169,6 +176,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const body: unknown = await response.json().catch(() => null);
+      if (generation !== loadGenerationRef.current) return;
       if (response.status === 401 || response.status === 403) {
         setPayload(null);
         setFromCache(false);
@@ -200,11 +208,12 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       if (requestedYear) draftsRef.current = {};
       if (body.year != null) setYear(body.year);
       const active = body.schemas.find((schema) => schema.type === type);
-      loadSchemaIntoDraft(active, type);
+      loadSchemaIntoDraft(active, type, body.year);
       setFromCache(false);
       setCachedAt(null);
       await persistScoutFormsSnapshot(orgId, body);
     } catch {
+      if (generation !== loadGenerationRef.current) return;
       if (hadCache || payloadRef.current) {
         setFromCache(true);
         setMessage("Could not refresh scout forms. Showing the last copy on this device.");
@@ -212,12 +221,22 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         return;
       }
       setLoadError("Could not load scout forms.");
+    } finally {
+      if (generation === loadGenerationRef.current) setLoading(false);
     }
   }, [orgId, type, loadSchemaIntoDraft]);
 
   useEffect(() => {
+    // A previous team's snapshot must never become this team's fallback.
+    payloadRef.current = null;
+    setPayload(null);
+    setFromCache(false);
+    setCachedAt(null);
+    setPublished(null);
+    setMessage("");
     draftsRef.current = {};
     void load();
+    return () => { loadGenerationRef.current++; };
     // Mount / org only — type switches reuse the loaded schema list.
   }, [orgId]);
 
@@ -231,7 +250,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
   }
 
   function switchType(next: EntryType) {
-    if (publishingRef.current || next === type) return;
+    if (busy || publishingRef.current || next === type) return;
     draftsRef.current[type] = { title, questions, acknowledgeBudget };
     setType(next);
     setEditingQuestionId(null);
@@ -246,7 +265,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       setAcknowledgeBudget(draft.acknowledgeBudget);
     } else {
       const schema = payload?.schemas.find((entry) => entry.type === next);
-      loadSchemaIntoDraft(schema, next);
+      loadSchemaIntoDraft(schema, next, payload?.year);
     }
     if (payload?.year != null) setYear(payload.year);
   }
@@ -292,7 +311,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       return;
     }
     publishingRef.current = true;
-    setBusy(true);
+    setPublishing(true);
     try {
       const definition: SchemaDefinition = definitionFromDraft(title, questions);
       const response = await fetch("/api/scouting/schemas", {
@@ -331,7 +350,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
       setMessage("Network error — try again.");
     } finally {
       publishingRef.current = false;
-      setBusy(false);
+      setPublishing(false);
     }
   }
 
@@ -380,7 +399,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
     acknowledgeBudget,
   });
   const publishLabel = formBuilderPublishLabel({
-    busy,
+    busy: publishing,
     entryType: type,
     status: publishStatus,
   });
@@ -403,7 +422,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
             badge="Needs setup"
             badgeTone="setup"
             title="Choose your team"
-            description="Choose your team and you can build scouting forms with everyone else."
+            description="Choose your team to view its scouting forms. A scouting lead or team admin can publish them."
           />
         ) : null}
       </FormBuilderShell>
@@ -432,18 +451,19 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
       {shell === "empty" ? (
         <section className="sfb-shell-empty sfb-published-card" role="status">
-          <div><strong>Ready to publish</strong><span>Start with these questions or tailor them below.</span></div>
+          <div><strong>{payload.canManageSchemas ? "Ready to publish" : "No published form yet"}</strong><span>{payload.canManageSchemas ? "Start with these questions or tailor them below." : "Ask a scouting lead or team admin to publish a form. The questions below are a preview."}</span></div>
           {/* The step people arrive for is publishing; "Open Scouting" left the page. */}
-          <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
+          {payload.canManageSchemas ? <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
             {publishLabel}
-          </Button>
+          </Button> : null}
         </section>
       ) : null}
 
       {!payload.canManageSchemas ? (
-        <p className="app-muted">You can preview this form and review responses. Editing is unavailable for this account.</p>
+        <p className="app-muted">You can preview this form and review responses. A scouting lead or team admin can edit and publish forms.</p>
       ) : null}
 
+      {loading ? <p className="app-muted" role="status">Checking the latest forms…</p> : null}
       <fieldset className="sfb-type-switch" disabled={busy}>
         <ToolStrip
           aria-label="Form type"
@@ -479,7 +499,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
         </FormRow>
         <FormRow label="Game"><select aria-label="Form game" disabled={busy} value={year ?? latestScoutingYear()} onChange={event => {
           if (publishStatus.kind !== "published" && !window.confirm("Change game? Unpublished changes to this form will be discarded.")) return;
-          setBusy(true); setPublished(null); void load(Number(event.target.value)).finally(() => setBusy(false));
+          setPublished(null); void load(Number(event.target.value));
         }}>{Array.from(new Set([year ?? latestScoutingYear(), latestScoutingYear(), 2025, 2024])).sort((a,b) => b-a).map(value => <option key={value} value={value}>{scoutingGameLabel(value)}</option>)}</select></FormRow>
         <ToolStrip presentation="segments" aria-label="Form workspace" value={mode} onChange={id => setMode(id as FormBuilderMode)} items={[{ id: "edit", label: "Questions" }, { id: "preview", label: "Preview" }, { id: "responses", label: "Responses" }]} />
       </div>
@@ -538,7 +558,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    {questions.length} questions · Select a question to edit. Drag to reorder.
+                    {questions.length} {questions.length === 1 ? "question" : "questions"} · Select a question to edit. Drag to reorder.
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" type="button" aria-pressed={showAllQuestions} onClick={() => setShowAllQuestions(previous => !previous)}>
@@ -713,6 +733,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
                         {/* The settings most forms never change, folded: every question showed all of them. */}
                         <details className="sfb-more">
                           <summary data-disclosure>Description, chart and advanced options</summary>
+                          <CollectionSettings question={question} index={index} match={type === "match"} disabled={!payload.canManageSchemas || busy} onChange={collectionConfig => updateQuestion(question.id, { collectionConfig })} />
                           <FormRow label="Description"><input value={question.helpText ?? ""} disabled={!payload.canManageSchemas || busy} onChange={event => updateQuestion(question.id, { helpText: event.target.value })} placeholder="Optional guidance for scouts" /></FormRow>
                           <FormRow label="Response chart"><select aria-label={`Chart for question ${index+1}`} value={question.chart ?? "auto"} disabled={!payload.canManageSchemas || busy} onChange={event => updateQuestion(question.id, { chart: event.target.value as DraftQuestion["chart"] })}><option value="auto">Automatic</option><option value="bar">Answer counts</option><option value="trend">Number trend</option><option value="none">Table only</option></select></FormRow>
                           <FormRow
@@ -825,7 +846,7 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
               </p>
             ) : null}
             {currentSchema && publishStatus.kind === "draft_changes" ? (
-                    <Button variant="secondary" type="button" disabled={busy} onClick={() => loadSchemaIntoDraft(currentSchema, type)}>
+                    <Button variant="secondary" type="button" disabled={busy} onClick={() => loadSchemaIntoDraft(currentSchema, type, year)}>
                       Undo my changes
                     </Button>
             ) : null}

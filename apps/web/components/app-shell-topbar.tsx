@@ -147,7 +147,7 @@ export function AppShellTopbar({
         </div>
       </div>
       <div className="soft-topbar-actions">
-        <button hidden={navOpen} className="app-topbar-search" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>
+        <button hidden={navOpen} className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>
         <ShellOutboxStatus orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-ask-ai"

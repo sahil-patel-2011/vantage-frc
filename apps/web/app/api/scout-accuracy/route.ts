@@ -1,3 +1,4 @@
+import { assertScoutingLead } from "@vantage/scouting/permissions";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { isScoutForbidden, scoutForbiddenResponse } from "../../../lib/scout-org-access";
@@ -77,10 +78,7 @@ export async function POST(request: Request) {
         [orgId, userId],
       );
       if (!member.rowCount) throw new Error("forbidden");
-      const role = String(member.rows[0]?.role ?? "");
-      if (role !== "owner" && role !== "admin") {
-        throw new Error("Organization administrator access required");
-      }
+      await assertScoutingLead(client, orgId);
 
       switch (action) {
         case "record-snapshot": {
@@ -106,7 +104,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = publicErrorMessage(error, "Scout accuracy request failed");
     const status =
-      message === "forbidden" || /administrator access required/i.test(message) ? 403 : 400;
+      message === "forbidden" || /administrator access required|scouting lead/i.test(message) ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },
       { status },

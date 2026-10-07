@@ -35,7 +35,7 @@ for (const viewport of VIEWPORTS) {
 
 test("strategy empty setup hides fabricated probabilities", async ({ page }) => {
   await page.goto("/strategy");
-  await expect(page.getByRole("tab", { name: "Strategy" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Match plan" })).toBeVisible();
   await expect(page.getByText("65%")).toHaveCount(0);
   await expect(page.getByText("Deterministic demo")).toHaveCount(0);
 });
@@ -49,8 +49,8 @@ test("Event day identifies the actual selected event inside Competition", async 
   expect(response.ok()).toBe(true);
   const snapshot = await response.json() as { eventName: string; eventKey: string };
   expect(snapshot.eventKey).toBeTruthy();
-  await expect(page.getByRole("region", { name: "Selected event", exact: true })).toContainText(snapshot.eventName || snapshot.eventKey);
-  await expect(page.getByRole("heading", { level: 1, name: "Competition" })).toHaveCount(1);
+  await expect(page.locator(".scout-status-event")).toContainText(snapshot.eventName || snapshot.eventKey);
+  await expect(page.getByRole("heading", { level: 1, name: "Scout" })).toHaveCount(1);
 });
 
 test("scout P2P relay renders without invented mesh counts", async ({ page }) => {

@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { signInAs, signInFixture } from "./session";
+import { signInAs } from "./session";
+import { resetHomeBoard } from "./dashboard-fixture";
 import { openNav, navigationOpener } from "./nav";
 
 test.beforeEach(async ({ context }) => {
-  await signInFixture(context);
+  expect(await signInAs(context, "owner")).toBe(true);
+    await resetHomeBoard(context);
 });
 
 test("dashboard home is decluttered and exposes customize controls", async ({ page }) => {
@@ -12,10 +14,10 @@ test("dashboard home is decluttered and exposes customize controls", async ({ pa
   // One quiet "Edit" beside the greeting — not folded inside "More", where
   // testers could not find it, and not a row of editing controls either.
   await expect(page.getByTestId("dash-customize")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Edit Home/ })).toHaveText("Edit");
+  await expect(page.getByRole("button", { name: /Edit Home/ })).toHaveText("Customize");
   await expect(page.getByTestId("dash-edit-toolbar")).toHaveCount(0);
   await expect(page.getByText("Competition Command Center")).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "First-run setup" })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("dialog", { name: "Tour of Vantage" })).toHaveCount(0);
 });
 
 test("dashboard editor can enter edit mode and show widget catalog", async ({ page }) => {
@@ -65,8 +67,11 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   // Measured from where the drag started (the grip's centre), not the grip's
   // corner: the grip's hit area is finger-sized now, so its corner is further
   // from its centre than it was.
-  // Far enough to reach the card beside it: My day and Hours start half width each.
-  await page.mouse.move(box!.x + box!.width / 2 + 640, box!.y + box!.height / 2 + 90, { steps: 20 });
+  // Different-size cards insert before/after rather than swap. Drop in the
+  // far half of the next card; dropping before it would preserve this order.
+  const neighbor = await page.locator('[data-widget-type="scouting_coverage"]').boundingBox();
+  expect(neighbor).toBeTruthy();
+  await page.mouse.move(neighbor!.x + neighbor!.width * 0.8, neighbor!.y + neighbor!.height / 2, { steps: 20 });
   await expect(page.locator(".dash-snap-hud")).toBeVisible();
   // A lifted copy of the card follows the pointer while its slot shows the target.
   await expect(page.locator(".dash-drag-proxy.is-card .dash-widget-hit")).toHaveCount(1);
@@ -248,9 +253,11 @@ test("strategy defaults to empty setup and hides fabricated probabilities", asyn
   await expect(page.getByText("weighted-current-v1")).toHaveCount(0);
 });
 
-test("code route requires a real team and never falls back to fixture findings", async ({ page }) => {
+test("code route requires a real team and never falls back to fixture findings", async ({ page, context }) => {
+  expect(await signInAs(context, "no-team")).toBe(true);
   await page.goto("/code");
-  await expect(page.locator(".workspace-hub-header h1")).toHaveText("Code");
-  await expect(page.getByRole("heading", { name: "Choose your team" })).toBeVisible();
+  await expect(page).toHaveURL(/\/onboarding\?state=pending/);
+  await expect(page.getByRole("heading", { level: 1, name: "Your profile is ready. Join your team next.", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Have an invite?", exact: true })).toBeVisible();
   await expect(page.getByText("blocking robot loop")).toHaveCount(0);
 });

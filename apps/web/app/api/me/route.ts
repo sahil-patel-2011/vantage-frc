@@ -27,6 +27,7 @@ export async function GET(request: Request) {
         primaryFocus: string | null;
         teamRole: string | null;
         onboardingCompletedAt: string | null;
+        appTourSeenAt: string | null;
         hasProfile: boolean;
       }>(
         `SELECT EXISTS (SELECT 1 FROM platform_admins WHERE user_id=$1::uuid) AS "platformAdmin",
@@ -37,6 +38,7 @@ export async function GET(request: Request) {
                 p.primary_focus AS "primaryFocus",
                 p.team_role AS "teamRole",
                 p.onboarding_completed_at::text AS "onboardingCompletedAt",
+                p.app_tour_seen_at::text AS "appTourSeenAt",
                 (p.user_id IS NOT NULL) AS "hasProfile"
          FROM (SELECT 1) AS one
          LEFT JOIN profiles p ON p.user_id=$1::uuid`,
@@ -172,6 +174,7 @@ export async function GET(request: Request) {
           role: row.role,
         })),
         memberSince: selfRow?.createdAt ?? null,
+        appTourSeen: Boolean(selfRow?.appTourSeenAt),
         unreadNotificationCount: unreadCount,
         unreadMessageCount,
         profile: selfRow?.hasProfile
@@ -224,6 +227,7 @@ export async function GET(request: Request) {
       memberships: profile.memberships,
       platformAdmin: profile.platformAdmin,
       memberSince: profile.memberSince,
+      appTourSeen: profile.appTourSeen,
       unreadNotificationCount: profile.unreadNotificationCount,
       unreadMessageCount: profile.unreadMessageCount,
       onboardingComplete: Boolean(profile.profile?.onboardingCompletedAt),

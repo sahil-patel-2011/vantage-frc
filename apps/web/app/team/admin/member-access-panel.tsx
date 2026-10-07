@@ -30,7 +30,7 @@ export type AccessMember = {
 
 export type HubAccessRow = { hubId: string; allowedTabIds: string[] };
 
-type Preset = { key: string; name: string; description: string; baseRole?: string };
+type Preset = { key: string; name: string; description: string; baseRole: string; capabilities: string[]; hubAccess: Record<string, string[]> };
 
 const ROLE_CHOICES: Array<{ id: "scout" | "admin" | "viewer"; label: string; hint: string }> = [
   { id: "scout", label: "Team member", hint: "Scouts and uses team tools." },
@@ -255,21 +255,30 @@ export function MemberAccessPanel({
     setError("");
     const changed: string[] = [];
     try {
-      if (roleEditable && role !== member.role) {
+      const selectedPreset = presets.find((entry) => entry.key === preset);
+      if (selectedPreset) {
+        const failure = await applyPreset();
+        if (failure) return setError(failure);
+        changed.push(`${selectedPreset.name} applied.`);
+      }
+      if (roleEditable && role !== (selectedPreset?.baseRole ?? member.role)) {
         const failure = await patchMember(orgId, { userId: member.userId, action: "set_role", role });
         if (failure) return setError(failure);
         changed.push(`${who} is now ${ROLE_WORDS[role] ?? role}.`);
       }
-      // A preset is a starting point: it applies first, and anything changed by hand below
-      // it in this dialog is saved on top.
-      if (limited && preset) {
-        const failure = await applyPreset();
-        if (failure) return setError(failure);
-        changed.push(`${presets.find((entry) => entry.key === preset)?.name ?? "The preset"} applied.`);
-      }
       if (limited) {
-        const nextHubs = hubPayload(hubs);
-        if (!samePayload(nextHubs, originalHubs)) {
+        const beforeCaps = selectedPreset?.capabilities ?? member.capabilities ?? [];
+        if ([...caps].sort().join(",") !== [...beforeCaps].sort().join(",")) {
+          const failure = await patchMember(orgId, { userId: member.userId, action: "set_capabilities", capabilities: caps });
+          if (failure) return setError(failure);
+          changed.push(caps.length ? "Extra powers updated." : "Extra powers removed.");
+        }
+        // Revoke the lead capability before restricting Competition. A lead always has full scouting access.
+        const nextHubs = hubPayload(caps.includes("manage_scouting")
+          ? { open: [...new Set([...hubs.open, "competition" as const])], tabs: { ...hubs.tabs, competition: [] } }
+          : hubs);
+        const beforeHubs = selectedPreset ? Object.entries(selectedPreset.hubAccess).map(([hubId, allowedTabIds]) => ({ hubId, allowedTabIds })) : originalHubs;
+        if (!samePayload(nextHubs, beforeHubs)) {
           const failure = await patchMember(orgId, {
             userId: member.userId,
             action: "set_hub_access",
@@ -281,16 +290,6 @@ export function MemberAccessPanel({
               ? "They can open every section."
               : `They can open ${hubs.open.map((id) => hubLabel(id).label).join(", ")}.`,
           );
-        }
-        const before = [...(member.capabilities ?? [])].sort().join(",");
-        if ([...caps].sort().join(",") !== before) {
-          const failure = await patchMember(orgId, {
-            userId: member.userId,
-            action: "set_capabilities",
-            capabilities: caps,
-          });
-          if (failure) return setError(failure);
-          changed.push(caps.length ? "Extra powers updated." : "Extra powers removed.");
         }
         if (budgetKnown && budgetDraft !== budgetGranted) {
           const response = await fetch(`/api/budget?orgId=${encodeURIComponent(orgId)}`, {
@@ -311,6 +310,8 @@ export function MemberAccessPanel({
       }
       await onSaved(changed.length ? `Saved. ${changed.join(" ")}` : "No changes to save.");
       onClose();
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Access did not save. Check your connection and try again.");
     } finally {
       setBusy(false);
     }
@@ -355,7 +356,14 @@ export function MemberAccessPanel({
               <div className="member-access-preset">
                 <label>
                   <span>Fill in from a job (Drive coach, Scout…)</span>
-                  <select value={preset} onChange={(event) => setPreset(event.target.value)} disabled={busy}>
+                  <select value={preset} onChange={(event) => {
+                    const key = event.target.value; setPreset(key);
+                    const profile = presets.find((entry) => entry.key === key);
+                    if (profile) {
+                      setRole(profile.baseRole); setCaps([...profile.capabilities]);
+                      setHubs(hubDraftFromRows(Object.entries(profile.hubAccess).map(([hubId, allowedTabIds]) => ({ hubId, allowedTabIds }))));
+                    }
+                  }} disabled={busy}>
                     <option value="">Choose a preset…</option>
                     {presets.map((entry) => (
                       <option key={entry.key} value={entry.key}>
@@ -389,8 +397,8 @@ export function MemberAccessPanel({
                     <label className="member-access-check">
                       <input
                         type="checkbox"
-                        checked={open}
-                        disabled={busy || (open && hubs.open.length === 1)}
+                        checked={open || (hubId === "competition" && caps.includes("manage_scouting"))}
+                        disabled={busy || (hubId === "competition" && caps.includes("manage_scouting")) || (open && hubs.open.length === 1)}
                         onChange={() => toggleHub(hubId)}
                       />
                       <span>
@@ -398,7 +406,7 @@ export function MemberAccessPanel({
                         <small>{open ? (chosen.length ? `Only ${chosen.length} of its pages` : hint) : "Hidden"}</small>
                       </span>
                     </label>
-                    {open && tabs.length ? (
+                    {caps.includes("manage_scouting") && hubId === "competition" ? <p className="app-muted">Scouting leads can open every Competition page.</p> : open && tabs.length ? (
                       tabsOpenFor === hubId || chosen.length ? (
                         <div className="member-access-tabs">
                           <small className="app-muted">Untick a page to hide it from them.</small>
@@ -407,6 +415,7 @@ export function MemberAccessPanel({
                               <input
                                 type="checkbox"
                                 checked={chosen.length === 0 || chosen.includes(tab.id)}
+                                disabled={busy}
                                 onChange={() => toggleTab(hubId, tab.id)}
                               />{" "}
                               {tab.label}
@@ -470,8 +479,8 @@ export function MemberAccessPanel({
               </section>
             ) : null}
             <p className="app-muted member-access-note">
-              Presets for jobs like &ldquo;Drive coach&rdquo; live on{" "}
-              <a href={withOrgHref("/team/admin/presets", orgId)}>Access presets</a>.
+              Custom roles like &ldquo;Scouting lead&rdquo; live on{" "}
+              <a href={withOrgHref("/team/admin/presets", orgId)}>Custom roles</a>.
             </p>
           </details>
         ) : !isOwnerRow ? (

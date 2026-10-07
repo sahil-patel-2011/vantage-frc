@@ -1,4 +1,5 @@
 /* What your scouting says — one row per robot. See scouting-team-profiles.tsx. */
+.stp-observations { min-width: 0; max-width: 100%; }
 .stp {
   display: grid;
   gap: 12px;

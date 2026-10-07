@@ -1,3 +1,7 @@
+import { readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createHash } from "node:crypto";
 import type { BrowserContext, Cookie } from "@playwright/test";
 import { playwrightOrigin } from "./origin";
 
@@ -39,11 +43,11 @@ async function dismissFirstRunOverlays(context: BrowserContext) {
   }, TOUR_DONE_KEY);
 }
 
-export async function addSessionCookies(context: BrowserContext, cookies: CookieSpec[]) {
+export async function addSessionCookies(context: BrowserContext, cookies: CookieSpec[], dismissTour = true) {
   await context.addCookies(
     cookies.map((cookie) => ({ sameSite: "Lax" as const, ...cookie, url: baseOrigin() })),
   );
-  await dismissFirstRunOverlays(context);
+  if (dismissTour) await dismissFirstRunOverlays(context);
 }
 
 /** Chromium sends Secure cookies to loopback HTTP; Playwright's API transport does not. */
@@ -66,10 +70,10 @@ export async function normalizeLocalApiSession(context: BrowserContext) {
  * not one. Specs that must run against a build use `signInAs` instead, which
  * mints a real Better Auth session and works in either mode.
  */
-export async function signInFixture(context: BrowserContext) {
+export async function signInFixture(context: BrowserContext, dismissTour = true) {
   await addSessionCookies(context, [
     { name: "vantage-e2e-session", value: "authenticated", httpOnly: true },
-  ]);
+  ], dismissTour);
 }
 
 // ---------------------------------------------------------------------------
@@ -129,17 +133,48 @@ export function fixtureAccount(role: FixtureRole): { email: string; password: st
  */
 const cookieCache = new Map<string, string | null>();
 
+
+// Worker restarts must not sign every fixture account in again. This cache is
+// confined to one isolated GitHub run and its loopback app, outside reports.
+function runnerCookiePath(email: string): string | null {
+  const origin = new URL(baseOrigin());
+  if (process.env.GITHUB_ACTIONS !== "true" || !/^\d+$/.test(process.env.GITHUB_RUN_ID ?? "") || !["127.0.0.1", "localhost"].includes(origin.hostname)) return null;
+  const scope = [process.env.GITHUB_RUN_ID, process.env.GITHUB_RUN_ATTEMPT, process.env.GITHUB_JOB, origin.origin, email].join("|");
+  return join(tmpdir(), `vantage-fixture-session-${createHash("sha256").update(scope).digest("hex")}`);
+}
+
+/** Respect the auth server's retry window when a shared runner has filled it. */
+export async function passwordSignIn(context: BrowserContext, email: string, password: string) {
+  const send = () => context.request.post(`${baseOrigin()}/api/auth/sign-in/email`, {
+    headers: { "content-type": "application/json", origin: baseOrigin() },
+    data: { email, password }, failOnStatusCode: false,
+  });
+  let response = await send();
+  if (response.status() === 429 && process.env.GITHUB_ACTIONS === "true") {
+    const seconds = Math.max(1, Number(response.headers()["retry-after"]) || 11);
+    if (seconds <= 60) {
+      await new Promise(resolve => setTimeout(resolve, seconds * 1000 + 100));
+      response = await send();
+    }
+  }
+  return response;
+}
+
 async function fetchSessionCookie(
   context: BrowserContext,
   email: string,
   password: string,
 ): Promise<string | null> {
-  const response = await context.request.post(`${baseOrigin()}/api/auth/sign-in/email`, {
-    // Better Auth rejects a same-origin POST with no Origin header outright.
-    headers: { "content-type": "application/json", origin: baseOrigin() },
-    data: { email, password },
-    failOnStatusCode: false,
-  });
+  const path = runnerCookiePath(email);
+  if (path) {
+    try {
+      const cookie = await readFile(path, "utf8");
+      await addSessionCookies(context, [{ name: "better-auth.session_token", value: cookie, httpOnly: true }]);
+      const existing = await context.request.get(`${baseOrigin()}/api/auth/get-session`);
+      if (existing.ok() && (await existing.json())?.user?.email === email) return cookie;
+    } catch { /* A missing or revoked session needs a real sign-in. */ }
+  }
+  const response = await passwordSignIn(context, email, password);
   if (!response.ok()) {
     if (process.env.GITHUB_ACTIONS === "true") {
       throw new Error(`Seeded account sign-in returned HTTP ${response.status()} at /api/auth/sign-in/email.`);
@@ -167,13 +202,15 @@ async function fetchSessionCookie(
   // never reaches the fallback. The session cookie is the thing being looked
   // for, so look for it everywhere this origin's host could have put it.
   const jar = await context.cookies();
-  return (
+  const cookie = (
     jar.find(
       (cookie) =>
         cookie.name.includes("session_token") &&
         (cookie.domain === host || cookie.domain === `.${host}`),
     )?.value ?? null
   );
+  if (path && cookie) await writeFile(path, cookie, { mode: 0o600 });
+  return cookie;
 }
 
 /**

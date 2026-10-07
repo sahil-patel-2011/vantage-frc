@@ -39,6 +39,9 @@ export function ConfirmDialog({
   opts: ConfirmOpts | null;
   onResolve: (ok: boolean) => void;
 }) {
+  const [lastOpts, setLastOpts] = useState(opts);
+  useEffect(() => { if (opts) setLastOpts(opts); }, [opts]);
+  const visibleOpts = opts ?? lastOpts;
   const [typed, setTyped] = useState("");
   const cancelRef = useRef<HTMLButtonElement | null>(null);
 
@@ -51,15 +54,15 @@ export function ConfirmDialog({
     }
   }, [open]);
 
-  if (!opts) return null;
-  const critical = opts.tone === "critical";
-  const phrase = opts.confirmPhrase ?? "DELETE";
+  if (!visibleOpts) return null;
+  const critical = visibleOpts.tone === "critical";
+  const phrase = visibleOpts.confirmPhrase ?? "DELETE";
   const confirmDisabled = critical && typed.trim() !== phrase;
 
   return (
-    <Modal open={open} onClose={() => onResolve(false)} title={opts.title} hideClose>
+    <Modal open={open} onClose={() => onResolve(false)} title={visibleOpts.title} hideClose>
       <div className={styles.dialogBody}>
-        <p style={{ margin: 0 }}>{opts.body}</p>
+        <p style={{ margin: 0 }}>{visibleOpts.body}</p>
         {critical ? (
           <div style={{ marginTop: 14 }}>
             <label className={styles.stackKey} htmlFor="confirm-phrase" style={{ display: "block", marginBottom: 6 }}>
@@ -84,15 +87,15 @@ export function ConfirmDialog({
           className={[styles.btn, styles.btnSm, styles.btnSecondary].join(" ")}
           onClick={() => onResolve(false)}
         >
-          {opts.cancelLabel ?? "Cancel"}
+          {visibleOpts.cancelLabel ?? "Cancel"}
         </button>
         <Button
-          variant={opts?.tone === "neutral" ? "primary" : "danger"}
+          variant={visibleOpts?.tone === "neutral" ? "primary" : "danger"}
           size="sm"
           disabled={confirmDisabled}
           onClick={() => onResolve(true)}
         >
-          {opts.confirmLabel}
+          {visibleOpts.confirmLabel}
         </Button>
       </div>
     </Modal>

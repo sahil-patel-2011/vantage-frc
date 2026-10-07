@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./first-run-tour": "./src/first-run-tour.ts",
     ".": "./src/index.ts",
     "./public-signup": "./src/public-signup.ts",
     "./legal": "./src/legal.ts"

@@ -1,0 +1,33 @@
+
+> vantage@0.2.0 test:ui
+> playwright test -c playwright.ui.config.ts tests/ui/workspace-audit.spec.ts --grep (390px light|1440px dark)
+
+
+Running 2 tests using 1 worker
+
+(node:56058) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+UI recovery census: 25/243; 0 findings
+UI recovery census: 50/243; 0 findings
+UI recovery census: 75/243; 0 findings
+UI recovery census: 100/243; 0 findings
+UI recovery census: 125/243; 0 findings
+UI recovery census: 150/243; 0 findings
+UI recovery census: 175/243; 0 findings
+UI recovery census: 200/243; 0 findings
+UI recovery census: 225/243; 0 findings
+  ✓  1 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 390px light (5.5m)
+UI recovery census: 25/243; 0 findings
+UI recovery census: 50/243; 0 findings
+UI recovery census: 75/243; 0 findings
+UI recovery census: 100/243; 0 findings
+UI recovery census: 125/243; 0 findings
+UI recovery census: 150/243; 0 findings
+UI recovery census: 175/243; 0 findings
+UI recovery census: 200/243; 0 findings
+UI recovery census: 225/243; 0 findings
+  ✓  2 tests/ui/workspace-audit.spec.ts:13:87 › workspace recovery states are accessible at 1440px dark (5.0m)
+
+  Slow test file: tests/ui/workspace-audit.spec.ts (10.5m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  2 passed (10.5m)

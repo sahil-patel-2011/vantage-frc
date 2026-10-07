@@ -428,6 +428,7 @@ const STANDALONE: CommandEntry[] = [
   { id: "exports", label: "Export data", context: "Settings", href: "/exports", kind: "destination", keywords: ["export", "download", "csv", "takeout", "backup"] },
   { id: "search", label: "Search", context: "Settings", href: "/search", kind: "destination", keywords: ["search", "find", "look up", "global search", "search tasks", "search parts"] },
   { id: "help", label: "Help centre", context: "Support", href: "/help", kind: "destination", keywords: ["help", "how do i", "support", "docs", "manual", "articles", "tutorial", "faq"] },
+  { id: "custom-access-roles", label: "Custom roles and scouting leads", context: "Team admin", href: "/team/admin/presets", kind: "destination", keywords: ["custom roles", "permissions", "scouting lead", "access presets", "delegate"] },
   { id: "app-manual", label: "App manual", context: "Support", href: "/docs", kind: "destination", keywords: ["manual", "app manual", "section guide", "section by section", "walkthrough", "how vantage works", "guide"] },
   { id: "support", label: "Contact support", context: "Support", href: "/support", kind: "destination", keywords: ["support", "contact", "problem", "stuck"] },
   { id: "report-bug", label: "Report a bug", context: "Support", href: "/report-bug", kind: "destination", keywords: ["bug", "broken", "report a problem", "feedback", "something is wrong", "glitch"] },
@@ -466,7 +467,9 @@ export function commandCatalog(): CommandEntry[] {
     const route = new URL(tab.legacyHref, "https://vantage.local");
     route.searchParams.delete("from");
     const key = route.pathname + route.search + route.hash;
-    if (!canonicalHref.has(key)) canonicalHref.set(key, hubHref(hub.href, tab.id));
+    // Connection setup has a dedicated page. Routing through the hub first
+    // paints a second "Connect AI" heading while that hub redirects again.
+    if (!canonicalHref.has(key)) canonicalHref.set(key, key === "/ai/connect" ? key : hubHref(hub.href, tab.id));
     canonicalHref.set(hubHref(hub.href, tab.id), canonicalHref.get(key)!);
   }
 

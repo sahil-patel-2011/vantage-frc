@@ -1,0 +1,96 @@
+{
+  "run": 37545419695,
+  "head": "ab968f2131ea763060c69bceaed62935c9e3cf83",
+  "url": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37545419695",
+  "conclusion": "failure",
+  "jobs": [
+    {
+      "databaseId": 112548139198,
+      "name": "Postgres migrations and RLS",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139327,
+      "name": "Lint, types, unit, build",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139417,
+      "name": "Playwright (2/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139457,
+      "name": "Database-free UI and accessibility",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139563,
+      "name": "Playwright (5/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139642,
+      "name": "Playwright (3/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139664,
+      "name": "Playwright (6/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139703,
+      "name": "Playwright (8/8)",
+      "conclusion": "failure"
+    },
+    {
+      "databaseId": 112548139723,
+      "name": "Playwright (1/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139734,
+      "name": "Playwright (4/8)",
+      "conclusion": "success"
+    },
+    {
+      "databaseId": 112548139751,
+      "name": "Playwright (7/8)",
+      "conclusion": "success"
+    }
+  ],
+  "databaseFreeUI": {
+    "passed": 38,
+    "censusStates": 248,
+    "findings": 0
+  },
+  "remainingBrowserFailures": [
+    {
+      "file": "tests/browser/team-switching.spec.ts",
+      "widths": [
+        1440,
+        390
+      ],
+      "reason": "Test searched an unused match name after saving a pit report; real report label is Pit scouting. Unique persisted notes now identify the report and SQL checks still assert selected organization."
+    }
+  ],
+  "flaky": [
+    {
+      "file": "tests/browser/team-lifecycle.spec.ts",
+      "width": 1440,
+      "reason": "First claim-page RSC navigation still pending at five-second prefill assertion; retry passes. Trace records /claim RSC in flight. Test now awaits actual claim URL before asserting persisted team number."
+    },
+    {
+      "file": "tests/browser/scouting-form-builder.spec.ts",
+      "width": 390,
+      "reason": "Reload hydrated the cached pit form before its live GET completed. Switching to match allowed that late pit response to overwrite the selected draft. Builder now locks editing/type changes while refreshing, rejects superseded requests and clears previous-team fallback snapshots. Delayed-response phone/desktop regressions cover fresh data, draft switching and cache fallback on service failure."
+    }
+  ],
+  "additionalCoverage": "Three scouting completion cases now verify actual shooting-bout persistence through save, correction and reload in isolated PostgreSQL.",
+  "boundaries": [
+    "No laptop database started",
+    "No production database or settings accessed",
+    "Fresh exact-head replay required before merge"
+  ]
+}

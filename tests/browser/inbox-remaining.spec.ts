@@ -38,7 +38,7 @@ test("Inbox and preferences keep one primary and drop leftover engineering copy"
     const empty = page.getByRole("heading", { name: "No notifications yet" });
     if (await empty.isVisible()) {
       await expect(page.getByRole("button", { name: "Show all" })).toHaveCount(0);
-      await page.getByRole("button", { name: "Unread" }).click();
+      await page.getByRole("combobox", { name: "Inbox filters", exact: true }).selectOption("unread");
       await expect(page.getByRole("heading", { name: "No unread notifications" })).toBeVisible();
       await expect(page.getByRole("button", { name: "Show all" })).toHaveCount(1);
       await page.getByRole("button", { name: "Show all" }).click();

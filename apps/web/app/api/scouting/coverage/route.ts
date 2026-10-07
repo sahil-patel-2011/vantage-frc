@@ -1,3 +1,4 @@
+import { canManageScouting } from "@vantage/scouting/permissions";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
@@ -5,7 +6,6 @@ import { headers } from "next/headers";
 import {
   applyAutoAssignments,
   assignCoverageSlot,
-  canWriteAssignments,
   computeScoutingCoverageView,
   planAutoAssignments,
   swapCoverageSlot,
@@ -115,12 +115,7 @@ export async function POST(request: Request) {
     }
 
     const view = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const membership = await client.query<{ role: string }>(
-        `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
-        [orgId, session.user.id],
-      );
-      const role = membership.rows[0]?.role ?? null;
-      if (!canWriteAssignments(role)) {
+      if (!await canManageScouting(client, orgId)) {
         throw Object.assign(new Error("Organization access denied"), { status: 403 });
       }
 

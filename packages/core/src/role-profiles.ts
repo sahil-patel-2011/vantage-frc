@@ -48,11 +48,12 @@ export type RoleProfileInput = {
 };
 
 /**
- * The four jobs almost every FRC team has, seeded once so a new team starts with
+ * The starter jobs FRC teams commonly use, seeded once so a new team starts with
  * something to apply instead of an empty page. They are ordinary rows after
  * seeding: rename them, retune them, delete them.
  */
 export const STARTER_ROLE_PROFILES: readonly RoleProfileInput[] = [
+  { key: "scouting-lead", name: "Scouting lead", description: "Runs scouting forms, assignments, reports, sharing and data quality. No team-wide admin access.", baseRole: "scout", capabilities: ["manage_scouting"], hubAccess: { competition: [] } },
   {
     key: "team-lead",
     name: "Team lead",
@@ -127,6 +128,7 @@ function normalize(input: RoleProfileInput): Required<Omit<RoleProfileInput, "de
       hubAccess[hubId] = [...new Set(Array.isArray(tabs) ? tabs.filter((tab) => typeof tab === "string") : [])];
     }
   }
+  if (capabilities.includes("manage_scouting") && Object.keys(hubAccess).length) hubAccess.competition = [];
   return {
     key,
     name,

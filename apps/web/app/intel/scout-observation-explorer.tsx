@@ -1,4 +1,5 @@
 "use client";
+import { MatchActivityReport } from "../scouting/match-activity-report";
 
 import { useMemo, useState } from "react";
 import type { IntelScoutNote } from "../../lib/intel/intel-related";
@@ -233,6 +234,7 @@ export function ScoutObservationExplorer({
                       </div>
                     ))}
                 </dl>
+                {privateNotes ? <MatchActivityReport payload={row.payload} /> : null}
               </details>
             ))}
           {!breakdown.matches ? (

@@ -8,7 +8,7 @@
  * question under the question's own label.
  */
 import type { PoolClient } from "@neondatabase/serverless";
-import { ACTION_HISTORY_KEY, isLayoutOnlyField, type FieldDefinition } from "@vantage/scouting";
+import { ACTION_HISTORY_KEY, MATCH_CAPTURE_KEY, captureSummary, matchCapture, isLayoutOnlyField, type FieldDefinition } from "@vantage/scouting";
 import { matchLabelFromKey } from "../matches/no-next-match";
 import { scoutOptionLabel } from "./option-label";
 
@@ -59,9 +59,14 @@ export function exportColumns(fields: readonly ScoutExportField[], rows: readonl
 
 export function matchScoutingCsv(input: { fields: readonly ScoutExportField[]; rows: readonly ScoutExportRow[] }): string {
   const columns = exportColumns(input.fields, input.rows);
-  const header = ["Match", "Team", "Scout", ...columns.map((field) => field.label || field.key), "How sure", "Saved at", "Observation history (versioned JSON)"];
+  const hasCapture = input.rows.some(row => matchCapture(row.payload));
+  const captureHeaders = hasCapture ? ["Observed shooting seconds", "Counted released fuel", "Observed shooting fuel/s", "Observed feeding seconds", "Observed defense seconds", "Observed disabled seconds", "Match activity (versioned JSON)"] : [];
+  const header = ["Match", "Team", "Scout", ...columns.map((field) => field.label || field.key), "How sure", "Saved at", "Observation history (versioned JSON)", ...captureHeaders];
   const lines = [header.map((value) => cell(value)).join(",")];
   for (const row of input.rows) {
+    const capture = matchCapture(row.payload);
+    const summary = capture ? captureSummary(capture) : null;
+    const captureCells = hasCapture ? [summary?.shooting.bouts ? summary.shooting.seconds : "", summary?.shooting.countedBouts ? summary.shooting.count : "", summary?.shooting.perSecond ?? "", summary?.feeding.bouts ? summary.feeding.seconds : "", summary?.defending.bouts ? summary.defending.seconds : "", summary?.disabled.bouts ? summary.disabled.seconds : "", capture ? JSON.stringify(row.payload[MATCH_CAPTURE_KEY]) : ""] : [];
     lines.push(
       [
         matchLabelFromKey(row.matchKey),
@@ -71,6 +76,7 @@ export function matchScoutingCsv(input: { fields: readonly ScoutExportField[]; r
         row.confidence ? (CONFIDENCE[row.confidence] ?? row.confidence) : "",
         row.savedAt ?? "",
         row.payload?.[ACTION_HISTORY_KEY] === undefined ? "" : JSON.stringify(row.payload[ACTION_HISTORY_KEY]),
+        ...captureCells,
       ]
         .map((value) => cell(value))
         .join(","),

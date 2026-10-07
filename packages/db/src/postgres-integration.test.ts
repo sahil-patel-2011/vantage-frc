@@ -1,3 +1,9 @@
+import type { PoolClient as DomainClient } from "@neondatabase/serverless";
+import { setMemberCapabilities } from "../../core/src/capabilities";
+import { listMemberHubAccess, setMemberHubAccess } from "../../core/src/hub-access";
+import { saveRoleProfile, applyRoleProfile } from "../../core/src/role-profiles";
+import { claimFirstTour } from "../../core/src/first-run-tour";
+import { listScoutingCoordinators } from "../../scouting/src/permissions";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Pool, type PoolClient } from "pg";
@@ -54,7 +60,7 @@ async function visibleOrganizations(client: PoolClient, role: "vantage_app" | "v
 }
 
 describeWithDatabase(
-  "real Postgres migrations and RLS (set TEST_DATABASE_ADMIN_URL to run locally)",
+  "real Postgres migrations and RLS (isolated authorized test runner)",
   () => {
     let pool: Pool;
     let migrationCount = 0;
@@ -130,6 +136,70 @@ describeWithDatabase(
       } finally {
         client.release();
       }
+    });
+
+    it("delegates scouting without global admin and revokes it immediately at RLS", async () => {
+      const lead="00000000-0000-4000-8000-000000000003", member="00000000-0000-4000-8000-000000000004";
+      const owner="00000000-0000-4000-8000-000000000001", org="10000000-0000-4000-8000-000000000001", foreign="10000000-0000-4000-8000-000000000002";
+      const client=await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(`INSERT INTO users(id,email,name) VALUES($1,'lead@example.test','Lead'),($2,'scout@example.test','Scout')`,[lead,member]);
+        await client.query(`INSERT INTO profiles(user_id,date_of_birth,onboarding_completed_at) VALUES($1,'2000-01-01',now()),($2,'2000-01-01',now())`,[lead,member]);
+        await client.query(`INSERT INTO memberships(org_id,user_id,role) VALUES($1,$2,'scout'),($1,$3,'scout')`,[org,lead,member]);
+        await client.query("SET LOCAL ROLE vantage_app");
+        await client.query("SELECT set_config('app.user_id',$1,true)",[owner]);
+        await setMemberHubAccess(client as unknown as DomainClient,owner,{orgId:org,userId:lead,access:[{hubId:"competition",allowedTabIds:["scouting"]},{hubId:"team",allowedTabIds:["people"]}]});
+        await setMemberCapabilities(client as unknown as DomainClient,owner,{orgId:org,userId:lead,capabilities:["manage_scouting"]});
+        expect(await listMemberHubAccess(client as unknown as DomainClient,org,lead)).toEqual([{hubId:"competition",allowedTabIds:[]},{hubId:"team",allowedTabIds:["people"]}]);
+        const profile=await saveRoleProfile(client as unknown as DomainClient,owner,org,{key:"test-lead",name:"Test lead",baseRole:"scout",capabilities:["manage_scouting"],hubAccess:{competition:["scouting"],team:["people"]}});
+        expect(profile.hubAccess).toEqual({competition:[],team:["people"]});
+        await applyRoleProfile(client as unknown as DomainClient,owner,{orgId:org,userId:lead,key:profile.key});
+        expect(await listScoutingCoordinators(client as unknown as DomainClient,org)).toEqual([{userId:owner},{userId:lead}]);
+        expect((await client.query(`INSERT INTO notifications(user_id,org_id,type,payload) VALUES($1,$2,'scouting_disagreement_resolved','{}')`,[lead,org])).rowCount).toBe(1);
+        await client.query("SAVEPOINT reject_non_coordinator");
+        await expect(client.query(`INSERT INTO notifications(user_id,org_id,type,payload) VALUES($1,$2,'scouting_disagreement_resolved','{}')`,[member,org])).rejects.toThrow(/row-level security/);
+        await client.query("ROLLBACK TO SAVEPOINT reject_non_coordinator");
+        await client.query("SELECT set_config('app.user_id',$1,true)",[lead]);
+        expect((await client.query(`SELECT has_org_capability($1,'manage_scouting') AS scout,has_org_capability($1,'manage_members') AS members,can_manage_scouting($2) AS foreign`,[org,foreign])).rows[0]).toEqual({scout:true,members:false,foreign:false});
+        expect(await listScoutingCoordinators(client as unknown as DomainClient,foreign)).toEqual([]);
+        const schema=await client.query(`INSERT INTO scout_schemas(org_id,year,type,version,schema,created_by) VALUES($1,2026,'match',987,'{"title":"Lead form","fields":[]}',$2) RETURNING id`,[org,lead]);
+        expect(schema.rowCount).toBe(1);
+        const event=await client.query(`INSERT INTO events_ref(event_key,year,name,org_id,created_by) VALUES('2026custom-12345678-lead',2026,'Lead offseason',$1,$2) RETURNING event_key`,[org,lead]);
+        expect(event.rowCount).toBe(1);
+        await client.query(`INSERT INTO org_active_context(org_id,active_event_key) VALUES($1,'2026custom-12345678-lead') ON CONFLICT(org_id) DO UPDATE SET active_event_key=EXCLUDED.active_event_key`,[org]);
+        await client.query("SAVEPOINT foreign_write");
+        await expect(client.query(`INSERT INTO scout_schemas(org_id,year,type,version,schema,created_by) VALUES($1,2026,'match',987,'{"fields":[]}',$2)`,[foreign,lead])).rejects.toThrow(/row-level security/);
+        await client.query("ROLLBACK TO SAVEPOINT foreign_write");
+        await client.query("SELECT set_config('app.user_id',$1,true)",[member]);
+        expect((await client.query("SELECT id FROM scout_schemas WHERE id=$1",[schema.rows[0].id])).rowCount).toBe(1);
+        expect((await client.query("DELETE FROM scout_schemas WHERE id=$1 RETURNING id",[schema.rows[0].id])).rowCount).toBe(0);
+        await client.query("RESET ROLE");
+        await client.query("DELETE FROM membership_capabilities WHERE org_id=$1 AND user_id=$2",[org,lead]);
+        await client.query("SET LOCAL ROLE vantage_app");
+        await client.query("SELECT set_config('app.user_id',$1,true)",[lead]);
+        expect((await client.query("SELECT can_manage_scouting($1) AS allowed",[org])).rows[0].allowed).toBe(false);
+        expect((await client.query("DELETE FROM scout_schemas WHERE id=$1 RETURNING id",[schema.rows[0].id])).rowCount).toBe(0);
+        expect(await listScoutingCoordinators(client as unknown as DomainClient,org)).toEqual([{userId:owner}]);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[owner]);
+        await client.query("SAVEPOINT reject_revoked_notice");
+        await expect(client.query(`INSERT INTO notifications(user_id,org_id,type,payload) VALUES($1,$2,'scouting_disagreement_resolved','{}')`,[lead,org])).rejects.toThrow(/row-level security/);
+        await client.query("ROLLBACK TO SAVEPOINT reject_revoked_notice");
+      } finally { await client.query("ROLLBACK");client.release(); }
+    });
+
+    it("stores the first-run tour once per account and denies another user's claim", async () => {
+      const client=await pool.connect(), user="00000000-0000-4000-8000-000000000001", other="00000000-0000-4000-8000-000000000002";
+      try {
+        await client.query("BEGIN");
+        await client.query("UPDATE profiles SET onboarding_completed_at=now(),app_tour_seen_at=NULL WHERE user_id=$1",[user]);
+        await client.query("SET LOCAL ROLE vantage_app");
+        await client.query("SELECT set_config('app.user_id',$1,true)",[user]);
+        expect(await claimFirstTour(client as unknown as DomainClient,user)).toBe(true);
+        expect(await claimFirstTour(client as unknown as DomainClient,user)).toBe(false);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[other]);
+        expect(await claimFirstTour(client as unknown as DomainClient,user)).toBe(false);
+      } finally {await client.query("ROLLBACK");client.release();}
     });
 
     it("keeps event-free observations team-scoped and binds the author at the database", async () => {
