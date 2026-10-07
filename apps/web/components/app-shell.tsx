@@ -252,6 +252,9 @@ export default function AppShell() {
     const wantsSearch = focusSearchOnOpen.current;
     focusSearchOnOpen.current = false;
     const focusTimer = window.setTimeout(() => {
+      // A person may already have moved to a destination while the drawer
+      // animates. Delayed initial focus must not steal their next keystroke.
+      if (document.activeElement?.closest(".soft-drawer")) return;
       if (wantsSearch) searchInputRef.current?.focus();
       else panelCloseRef.current?.focus();
     }, 40);

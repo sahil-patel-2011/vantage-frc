@@ -1,0 +1,133 @@
+{
+  "run": 37554781317,
+  "head": "a34438c3f33363801c1ad3b30c20dfd803671fb0",
+  "url": "https://github.com/sahil-patel-2011/vantage-frc/actions/runs/37554781317",
+  "failedGroups": [
+    2,
+    8
+  ],
+  "failures": [
+    {
+      "group": 2,
+      "file": "dashboard-editor-regression.spec.ts",
+      "title": "explicit cards resize, undo, save, reload and reset in Settings at 390px",
+      "status": "unexpected",
+      "results": [
+        {
+          "retry": 0,
+          "status": "failed",
+          "duration": 16392,
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/dashboard-editor-regression.spec.ts",
+                "column": 19,
+                "line": 25
+              },
+              "message": "Error: route.fulfill: Route is already handled!\n\n  23 |       if (body.context) body.context = { ...body.context, setupRequired: true, eventKey: null, eventName: null, dataSourceHealth: null };\n  24 |       if (body.widgets?.prediction_summary) body.widgets.prediction_summary = { type: \"prediction_summary\", status: \"setup_required\", message: \"Choose an event to see predictions.\" };\n> 25 |       await route.fulfill({ response, json: body });\n     |                   ^\n  26 |     });\n  27 |     await page.goto(`/dashboard?orgId=${orgId}`);\n  28 |     await page.getByTestId(\"dash-customize\").click();\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/dashboard-editor-regression.spec.ts:25:19"
+            },
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/dashboard-editor-regression.spec.ts",
+                "column": 33,
+                "line": 116
+              },
+              "message": "Error: apiRequestContext.delete: Test ended.\n\n  114 |   } finally {\n  115 |     await page.unrouteAll({ behavior: \"wait\" });\n> 116 |     await context.request.delete(\"/api/dashboards\", { data: { orgId, id: board.id } });\n      |                                 ^\n  117 |     if (initial.active.id) await context.request.post(\"/api/dashboards\", { data: { orgId, id: initial.active.id, action: \"activate\" } });\n  118 |   }\n  119 | });\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/dashboard-editor-regression.spec.ts:116:33"
+            }
+          ]
+        },
+        {
+          "retry": 1,
+          "status": "failed",
+          "duration": 17087,
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/dashboard-editor-regression.spec.ts",
+                "column": 19,
+                "line": 25
+              },
+              "message": "Error: route.fulfill: Route is already handled!\n\n  23 |       if (body.context) body.context = { ...body.context, setupRequired: true, eventKey: null, eventName: null, dataSourceHealth: null };\n  24 |       if (body.widgets?.prediction_summary) body.widgets.prediction_summary = { type: \"prediction_summary\", status: \"setup_required\", message: \"Choose an event to see predictions.\" };\n> 25 |       await route.fulfill({ response, json: body });\n     |                   ^\n  26 |     });\n  27 |     await page.goto(`/dashboard?orgId=${orgId}`);\n  28 |     await page.getByTestId(\"dash-customize\").click();\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/dashboard-editor-regression.spec.ts:25:19"
+            },
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/dashboard-editor-regression.spec.ts",
+                "column": 33,
+                "line": 116
+              },
+              "message": "Error: apiRequestContext.delete: Test ended.\n\n  114 |   } finally {\n  115 |     await page.unrouteAll({ behavior: \"wait\" });\n> 116 |     await context.request.delete(\"/api/dashboards\", { data: { orgId, id: board.id } });\n      |                                 ^\n  117 |     if (initial.active.id) await context.request.post(\"/api/dashboards\", { data: { orgId, id: initial.active.id, action: \"activate\" } });\n  118 |   }\n  119 | });\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/dashboard-editor-regression.spec.ts:116:33"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": 8,
+      "file": "workspace-navigation.spec.ts",
+      "title": "one destination menu at 390px",
+      "status": "flaky",
+      "results": [
+        {
+          "retry": 0,
+          "status": "failed",
+          "duration": 6782,
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/workspace-navigation.spec.ts",
+                "column": 71,
+                "line": 23
+              },
+              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('navigation', { name: 'Main menu', exact: true }).locator('details').filter({ has: locator('summary').filter({ hasText: /^AI$/ }) }).getByRole('link', { name: 'Writer', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('navigation', { name: 'Main menu', exact: true }).locator('details').filter({ has: locator('summary').filter({ hasText: /^AI$/ }) }).getByRole('link', { name: 'Writer', exact: true })\u001b[22m\n\n\n  21 |   const ai = nav.locator(\"details\").filter({ has: page.locator(\"summary\").filter({ hasText: /^AI$/ }) });\n  22 |   await ai.locator(\"summary\").focus(); await page.keyboard.press(\"Enter\");\n> 23 |   await expect(ai.getByRole(\"link\", { name: \"Writer\", exact: true })).toBeVisible();\n     |                                                                       ^\n  24 |   expect((await new AxeBuilder({ page }).include(\".soft-drawer\").analyze()).violations).toEqual([]);\n  25 |   await page.screenshot({ path: info.outputPath(`menu-${width}.png`) });\n  26 |   await page.keyboard.press(\"Escape\"); await expect(menu).toBeFocused();\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/workspace-navigation.spec.ts:23:71"
+            }
+          ]
+        },
+        {
+          "retry": 1,
+          "status": "passed",
+          "duration": 3386,
+          "errors": []
+        }
+      ]
+    },
+    {
+      "group": 8,
+      "file": "workspace-navigation.spec.ts",
+      "title": "one destination menu at 768px",
+      "status": "unexpected",
+      "results": [
+        {
+          "retry": 0,
+          "status": "failed",
+          "duration": 6681,
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/workspace-navigation.spec.ts",
+                "column": 71,
+                "line": 23
+              },
+              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('navigation', { name: 'Main menu', exact: true }).locator('details').filter({ has: locator('summary').filter({ hasText: /^AI$/ }) }).getByRole('link', { name: 'Writer', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('navigation', { name: 'Main menu', exact: true }).locator('details').filter({ has: locator('summary').filter({ hasText: /^AI$/ }) }).getByRole('link', { name: 'Writer', exact: true })\u001b[22m\n\n\n  21 |   const ai = nav.locator(\"details\").filter({ has: page.locator(\"summary\").filter({ hasText: /^AI$/ }) });\n  22 |   await ai.locator(\"summary\").focus(); await page.keyboard.press(\"Enter\");\n> 23 |   await expect(ai.getByRole(\"link\", { name: \"Writer\", exact: true })).toBeVisible();\n     |                                                                       ^\n  24 |   expect((await new AxeBuilder({ page }).include(\".soft-drawer\").analyze()).violations).toEqual([]);\n  25 |   await page.screenshot({ path: info.outputPath(`menu-${width}.png`) });\n  26 |   await page.keyboard.press(\"Escape\"); await expect(menu).toBeFocused();\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/workspace-navigation.spec.ts:23:71"
+            }
+          ]
+        },
+        {
+          "retry": 1,
+          "status": "failed",
+          "duration": 6894,
+          "errors": [
+            {
+              "location": {
+                "file": "/home/runner/work/vantage-frc/vantage-frc/tests/browser/workspace-navigation.spec.ts",
+                "column": 71,
+                "line": 23
+              },
+              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('navigation', { name: 'Main menu', exact: true }).locator('details').filter({ has: locator('summary').filter({ hasText: /^AI$/ }) }).getByRole('link', { name: 'Writer', exact: true })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('navigation', { name: 'Main menu', exact: true }).locator('details').filter({ has: locator('summary').filter({ hasText: /^AI$/ }) }).getByRole('link', { name: 'Writer', exact: true })\u001b[22m\n\n\n  21 |   const ai = nav.locator(\"details\").filter({ has: page.locator(\"summary\").filter({ hasText: /^AI$/ }) });\n  22 |   await ai.locator(\"summary\").focus(); await page.keyboard.press(\"Enter\");\n> 23 |   await expect(ai.getByRole(\"link\", { name: \"Writer\", exact: true })).toBeVisible();\n     |                                                                       ^\n  24 |   expect((await new AxeBuilder({ page }).include(\".soft-drawer\").analyze()).violations).toEqual([]);\n  25 |   await page.screenshot({ path: info.outputPath(`menu-${width}.png`) });\n  26 |   await page.keyboard.press(\"Escape\"); await expect(menu).toBeFocused();\n    at /home/runner/work/vantage-frc/vantage-frc/tests/browser/workspace-navigation.spec.ts:23:71"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "boundary": "Only user-authorized isolated GitHub Actions test databases; no laptop or production database access."
+}

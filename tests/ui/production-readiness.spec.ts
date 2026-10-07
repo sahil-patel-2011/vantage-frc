@@ -1,6 +1,27 @@
 import { expect, test } from "@playwright/test";
 import { accessible, isolateUi, orgId, responses, schema } from "./fixture";
 
+for (const width of [390, 768]) test(`opening menu preserves an already focused destination at ${width}px`, async ({ page, context }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await isolateUi(page, context);
+  await page.goto(`/account?orgId=${orgId}`);
+  await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible();
+  await page.clock.install();
+  await page.clock.pauseAt(new Date(Date.now() + 1000));
+  const opener = page.getByRole("button", { name: "Menu and search", exact: true });
+  await opener.click();
+  const ai = page.getByRole("navigation", { name: "Main menu", exact: true }).locator("details").filter({ has: page.locator("summary").filter({ hasText: /^AI$/ }) });
+  const summary = ai.locator("summary");
+  await summary.focus();
+  await page.clock.runFor(80);
+  await expect(summary).toBeFocused();
+  await summary.press("Enter");
+  await expect(ai.getByRole("link", { name: "Writer", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.clock.runFor(80);
+  await expect(opener).toBeFocused();
+});
+
 for (const width of [390, 1440]) test(`Account team picker preserves the active settings section at ${width}px`, async ({ page, context }) => {
   await page.setViewportSize({ width, height: 900 });
   await isolateUi(page, context);
