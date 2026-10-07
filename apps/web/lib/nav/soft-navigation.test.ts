@@ -58,6 +58,13 @@ const anchor = (href: string, extra: Partial<Parameters<typeof softNavigationTar
 const here = new URL("https://vantagefrc.vercel.app/dashboard?orgId=o1");
 
 describe("softNavigationTarget", () => {
+  it("keeps explicit membership pickers outside the current team scope", () => {
+    const picker = `/workspace?next=${encodeURIComponent("/account?tab=appearance&orgId=o1")}`;
+    expect(softNavigationTarget(click, anchor(picker), here)).toBe(picker);
+    expect(softNavigationTarget(click, anchor(`${picker}&orgId=o1`), here)).toBe(picker);
+    expect(softNavigationTarget(click, anchor(`${picker}&orgId=o2`), here)).toBe(picker);
+  });
+
   it("routes plain in-app links through the router", () => {
     expect(softNavigationTarget(click, anchor("/competition?orgId=o1"), here)).toBe("/competition?orgId=o1");
     expect(softNavigationTarget(click, anchor("https://vantagefrc.vercel.app/team#roster"), here)).toBe("/team?orgId=o1#roster");
