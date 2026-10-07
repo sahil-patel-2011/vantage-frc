@@ -3,6 +3,7 @@ import { isManualPublished } from "@vantage/game-year";
 import { draftFromDefinition, DRIVETRAIN_OPTIONS_TEXT, newDraftQuestion, type DraftQuestion } from "../../../lib/scouting/form-builder";
 
 export type SchemasPayload = {
+  userId?: string;
   eventKey: string | null;
   year: number | null;
   schemas: ScoutSchema[];

@@ -37,6 +37,7 @@ import {
 } from "@vantage/prediction-strategy";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { cyclicVisibilityKeys, isVisibleWhen, readVisibleWhen, type VisibleWhen } from "@vantage/scouting/visibility";
 
 export { SCOUT_IDENTITY_LOCK_COPY };
 export type AnswerKind = FieldWidget;
@@ -176,6 +177,7 @@ export type DraftFieldSettings = {
 
 export type DraftQuestion = {
   id: string;
+  visibleWhen?: VisibleWhen | null;
   /**
    * Stable published key. Once a field has shipped in a schema version, renaming
    * its label must NEVER change this — payloads stored under it stay reachable.
@@ -486,6 +488,7 @@ export function draftFromDefinition(definition: SchemaDefinition): {
         settings: settingsFromField(field),
         chart: ["bar", "trend", "none"].includes(String(field.config?.chart)) ? field.config?.chart as DraftQuestion["chart"] : "auto",
         collectionConfig: Object.fromEntries(Object.entries(field.config ?? {}).filter(([key]) => ["scoutPhase", "requireObservation", "integer", "min"].includes(key))),
+        visibleWhen: readVisibleWhen(field),
       }),
     ),
   };
@@ -586,6 +589,7 @@ export function previewFieldForQuestion(question: DraftQuestion): FieldDefinitio
     type,
     required: type !== "section_header" && question.required ? true : undefined,
     widget: question.kind,
+    ...(question.visibleWhen != null ? { visibleWhen: question.visibleWhen } : {}),
   };
   if (Object.keys(config).length) field.config = config;
   if (
@@ -709,6 +713,7 @@ export function definitionFromDraft(
       // A section header is a heading; "required" on it would block saves forever.
       required: (type !== "section_header" && question.required) || undefined,
       widget: question.kind,
+      ...(question.visibleWhen != null ? { visibleWhen: question.visibleWhen } : {}),
     };
     const config: Record<string, unknown> = {};
     Object.assign(config, collectionConfigForQuestion(question, type));
@@ -809,6 +814,7 @@ export type DraftPublishStatus = {
 function stableConfigFingerprint(field: FieldDefinition): string {
   const config = { ...(field.config as Record<string, unknown> | undefined) };
   delete config.role;
+  delete config.visibleWhen;
   const keys = Object.keys(config).sort();
   if (!keys.length) return "";
   return JSON.stringify(keys.map((key) => [key, config[key]]));
@@ -820,11 +826,12 @@ function stableDefinitionFingerprint(definition: SchemaDefinition): string {
     fields: definition.fields.map((field) => ({
       key: field.key,
       label: field.label,
-      type: field.type,
+      type: kindToFieldType(fieldToAnswerKind(field)),
       required: Boolean(field.required),
       options: field.options ?? [],
-      widget: field.widget ?? null,
+      widget: fieldToAnswerKind(field),
       helpText: field.helpText ?? null,
+      visibleWhen: readVisibleWhen(field),
       config: stableConfigFingerprint(field),
       // Effective role (explicit config.role, else key inference) so publishing
       // roles onto a legacy schema does not flag a phantom draft change.
@@ -1393,6 +1400,19 @@ export function validateDraft(
     errors.push(...studioQuestionErrors(question, n));
   }
   const definition = definitionFromDraft(title, questions);
+  const fieldKeys = new Set(definition.fields.map(field => field.key));
+  const cyclic = new Set(cyclicVisibilityKeys(definition.fields));
+  for (const [index, field] of definition.fields.entries()) {
+    if (cyclic.has(field.key)) errors.push(`Question ${index + 1} has a circular answer condition. Choose a question that does not depend on it.`);
+    const rule = readVisibleWhen(field);
+    if (rule == null) continue;
+    if (!isVisibleWhen(rule)) {
+      errors.push(`Question ${index + 1} has an invalid answer condition.`);
+      continue;
+    }
+    const clauses = "allOf" in rule ? rule.allOf : "anyOf" in rule ? rule.anyOf : [rule];
+    if (clauses.some(clause => clause.fieldKey === field.key || !fieldKeys.has(clause.fieldKey))) errors.push(`Question ${index + 1} depends on a missing question. Restore that question or remove its condition.`);
+  }
   const identityError = assertSchemaIdentityLock(definition);
   if (identityError) errors.push(identityError);
   // Section headers are layout, not questions — they must not eat the accuracy

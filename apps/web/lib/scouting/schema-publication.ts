@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isVisibleWhen, type VisibleWhen } from "@vantage/scouting/visibility";
+import { cyclicVisibilityKeys, isVisibleWhen, type VisibleWhen } from "@vantage/scouting/visibility";
 
 const fieldTypes = ["number", "boolean", "text", "select", "dropdown", "multiple_choice", "short_answer", "long_text",
   "drivetrain_type", "robot_image", "counter", "multi_counter", "timer", "rating", "multi_select", "slider",
@@ -26,7 +26,9 @@ export const scoutSchemaDefinitionShape = z.object({
 const definition = scoutSchemaDefinitionShape.superRefine((value, context) => {
   const keys = new Set<string>();
   const availableKeys = new Set(value.fields.map(field => field.key));
+  const cyclic = new Set(cyclicVisibilityKeys(value.fields));
   for (const [index, field] of value.fields.entries()) {
+    if (cyclic.has(field.key)) context.addIssue({ code: "custom", path: ["fields", index, "visibleWhen"], message: "Conditional questions cannot depend on each other in a circle." });
     if (keys.has(field.key)) context.addIssue({ code: "custom", path: ["fields", index, "key"], message: "Question keys must be unique." });
     keys.add(field.key);
     const rule = field.visibleWhen ?? field.config?.visibleWhen;
@@ -54,5 +56,6 @@ export const schemaPublicationRequest = z.union([
   z.object({
     orgId: z.string().uuid(), year: z.number().int().min(1992).max(2100), type: z.enum(["match", "pit"]),
     definition, acknowledgeBudget: z.boolean().optional(),
+    baseSchemaId: z.string().uuid().nullable().optional(),
   }).strict(),
 ]);

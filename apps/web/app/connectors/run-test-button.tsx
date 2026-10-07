@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "../../components/ui";
 
 type Step = { step: string; ok: boolean; detail?: string };
@@ -11,9 +11,12 @@ type Step = { step: string; ok: boolean; detail?: string };
  */
 export function RunTestButton({ endpoint, body, label = "Run a test" }: { endpoint: string; body: Record<string, unknown>; label?: string }) {
   const [running, setRunning] = useState(false);
+  const runningRef = useRef(false);
   const [result, setResult] = useState<{ passed: boolean; steps: Step[] } | null>(null);
 
   async function run() {
+    if (runningRef.current) return;
+    runningRef.current = true;
     setRunning(true);
     setResult(null);
     try {
@@ -21,16 +24,18 @@ export function RunTestButton({ endpoint, body, label = "Run a test" }: { endpoi
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...body, action: "test" }),
+        signal: AbortSignal.timeout(30_000),
       });
       const data = (await response.json().catch(() => ({}))) as { passed?: boolean; steps?: Step[]; error?: string };
       setResult(
-        data.steps
-          ? { passed: Boolean(data.passed), steps: data.steps }
+        Array.isArray(data.steps) && data.steps.length > 0 && data.steps.every(step => step && typeof step.step === "string" && typeof step.ok === "boolean" && (step.detail === undefined || typeof step.detail === "string"))
+          ? { passed: response.ok && data.passed === true && data.steps.every(step => step.ok), steps: data.steps }
           : { passed: false, steps: [{ step: "Run the test", ok: false, detail: data.error ?? "No answer from Vantage." }] },
       );
     } catch {
       setResult({ passed: false, steps: [{ step: "Reach Vantage", ok: false, detail: "Check your connection and try again." }] });
     }
+    runningRef.current = false;
     setRunning(false);
   }
 
@@ -41,7 +46,7 @@ export function RunTestButton({ endpoint, body, label = "Run a test" }: { endpoi
       </Button>
       {result ? (
         <div className={`run-test-result${result.passed ? " passed" : " failed"}`} role="status">
-          <strong>{result.passed ? "Everything works." : "Something needs fixing."}</strong>
+          <strong>{result.passed ? "Connection check passed." : "Connection check needs attention."}</strong>
           <ul>
             {result.steps.map((step) => (
               <li key={step.step} data-ok={step.ok}>

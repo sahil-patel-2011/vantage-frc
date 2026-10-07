@@ -4,9 +4,11 @@ Implementation branch: `codex/production-completion`.
 
 The release is **not verified**. Use inventory.json and completion-matrix.md to track shipped routes and feature evidence. Pending checks must not be represented as complete.
 
+October 7 current constraint: `codex/scouting-readiness-fixes` / draft PR #2346 contains source-only follow-ups. Laptop tests/builds/databases are prohibited; Actions remains disabled and the previous remote-test authorization is superseded by the cost restriction. The user authorized the existing Google Sheets connection, which was identified read-only; PostgreSQL remains primary. Candidate build, hosted acceptance and migrations 0710–0715 remain unverified. Historical checks below are not proof for the current candidate. See [current source/evidence record](NAVIGATION-TEAM-AND-SCOUTING-RECOVERY-2026-10-07.md).
+
 ## Settled requirements
 
-- PostgreSQL is authoritative; operator-owned Google workbooks provide readable mirrors and encrypted recovery data.
+- Current implementation: PostgreSQL is authoritative; operator-owned Google workbooks provide copies. The user's requested Sheets-primary replacement remains unfinished.
 - The operator uses personal Gmail. [Account capacity](GOOGLE-CAPACITY.md) must pass without assuming Workspace entitlements.
 - Personal local AI connections never execute another person's jobs.
 - Age 13+ eligibility; model-training opt-out remains available and enforced.

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { accessible, isolateUi, orgId, responses, schema } from "./fixture";
+import { accessible, isolateUi, orgId, responses, schema, userId } from "./fixture";
 
 for (const width of [390, 768]) test(`opening menu preserves an already focused destination at ${width}px`, async ({ page, context }) => {
   await page.setViewportSize({ width, height: 900 });
@@ -62,7 +62,7 @@ for (const width of [390, 1440]) test(`cached form refresh cannot overwrite a se
     refreshing = true;
     if (delay) await delay;
     await route.fulfill({ status: unavailable ? 503 : 200, json: unavailable ? { error: "Forms unavailable." } : {
-      eventKey: "2026test", year: 2026, canManageSchemas: true,
+      userId, eventKey: "2026test", year: 2026, canManageSchemas: true,
       schemas: ["pit", "match"].map(type => ({ ...schema, id: type === "pit" ? schema.id : "6925a000-0000-4000-8000-000000000004", type, version: revision,
         definition: { title: `${type} version ${revision}`, fields: [{ key: "notes", label: `${type} observation`, type: "text" }] },
       })),
@@ -101,7 +101,80 @@ for (const width of [390, 1440]) test(`cached form refresh cannot overwrite a se
   await expect(type).toBeEnabled();
   await expect(builder).toContainText("Showing the last copy on this device");
   await type.selectOption("match");
-  await expect(title).toHaveValue("match version 2");
+  await expect(title).toHaveValue("Edited match form");
+});
+
+test("a lead can recover a draft, review a competing publication and explicitly keep their version", async ({ page, context }) => {
+  await isolateUi(page, context);
+  const newerId = "6925a000-0000-4000-8000-000000000004";
+  const publishedId = "6925a000-0000-4000-8000-000000000005";
+  let latest = schema;
+  const baselines: unknown[] = [];
+  await page.route("**/api/scouting/schemas**", async route => {
+    if (route.request().method() === "GET") return route.fulfill({ json: { userId, year: 2026, eventKey: "2026test", canManageSchemas: true, schemas: [latest] } });
+    const body = route.request().postDataJSON();
+    baselines.push(body.baseSchemaId);
+    if (baselines.length === 1) {
+      latest = { ...schema, id: newerId, version: 2, definition: { ...schema.definition, title: "Another lead's form" } };
+      return route.fulfill({ status: 409, json: { error: "Another lead published a newer form." } });
+    }
+    return route.fulfill({ status: 201, json: { id: publishedId, version: 3, definition: body.definition } });
+  });
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  const builder = page.locator(".sfb-page");
+  const title = builder.getByLabel("Form title", { exact: true });
+  await expect(title).toBeEnabled();
+  await title.fill("My revised form");
+  await expect(builder).toContainText("Draft saved on this device");
+  await page.reload();
+  await expect(title).toHaveValue("My revised form");
+  await builder.getByRole("button", { name: "Publish changes", exact: true }).click();
+  await expect(builder.getByRole("region", { name: "Form version conflict" })).toBeVisible();
+  await expect(builder.getByRole("button", { name: "Publish changes", exact: true })).toBeDisabled();
+  await builder.getByRole("button", { name: "Review latest form", exact: true }).click();
+  await expect(title).toHaveValue("Another lead's form");
+  await builder.locator("summary").filter({ hasText: "Saved drafts on this device" }).click();
+  await builder.getByRole("button", { name: /^My revised form ·/ }).click();
+  await expect(title).toHaveValue("My revised form");
+  await builder.getByRole("button", { name: "Keep my draft over this version", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Keep my draft", exact: true }).click();
+  await builder.getByRole("button", { name: "Publish changes", exact: true }).click();
+  await expect(builder.getByRole("status").filter({ hasText: "Scouts see this form" })).toBeVisible();
+  expect(baselines).toEqual([schema.id, newerId]);
+});
+
+test("blocked draft storage keeps unpublished answers open when switching form type", async ({ page, context }) => {
+  await isolateUi(page, context);
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  const builder = page.locator(".sfb-page");
+  const title = builder.getByLabel("Form title", { exact: true });
+  await expect(title).toBeEnabled();
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(key, value) {
+      if (key.startsWith("vantage:form-editor:")) throw new DOMException("Full", "QuotaExceededError");
+      original.call(this, key, value);
+    };
+  });
+  await title.fill("Do not lose these questions");
+  await expect(builder.getByRole("alert")).toContainText("could not be saved");
+  await builder.getByRole("combobox", { name: "Form type", exact: true }).selectOption("match");
+  await expect(title).toHaveValue("Do not lose these questions");
+  await expect(builder.getByRole("combobox", { name: "Form type", exact: true })).toHaveValue("pit");
+});
+
+test("manually reverting a form edit does not resurrect its older autosave", async ({ page, context }) => {
+  await isolateUi(page, context);
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  const builder = page.locator(".sfb-page");
+  const title = builder.getByLabel("Form title", { exact: true });
+  await expect(title).toBeEnabled();
+  await title.fill("Temporary title");
+  await expect(builder).toContainText("Draft saved on this device");
+  await title.fill(schema.definition.title);
+  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith("vantage:form-editor:")).length)).toBe(0);
+  await page.reload();
+  await expect(title).toHaveValue(schema.definition.title);
 });
 
 for (const width of [390, 1440]) for (const theme of ["light", "dark"]) {

@@ -645,6 +645,13 @@
 .sfb-published-card strong { color: #15803d; font-size: 16px; }
 .sfb-published-card span { color: var(--ink); font-size: 14px; }
 
+.sfb-conflict { display: grid; gap: 12px; padding: 18px; margin-bottom: 16px; }
+.sfb-conflict > p, .sfb-conflict > h2 { margin: 0; }
+.sfb-conflict > h2 { font-size: var(--title-3, 17px); overflow-wrap: anywhere; }
+.sfb-conflict > ol { margin: 0; padding-inline-start: 24px; max-height: 220px; overflow: auto; }
+.sfb-conflict li { padding-block: 4px; overflow-wrap: anywhere; }
+.sfb-visibility-editor { display: grid; gap: 10px; padding-block: 12px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+
 /* "What scouts see": the scout form's own fields in a phone-width frame. */
 .sfb-tablet-panel h2 { margin: 0 0 6px; font-size: var(--title-3); }
 .sfb-tablet { display: flex; justify-content: center; margin-top: 12px; }

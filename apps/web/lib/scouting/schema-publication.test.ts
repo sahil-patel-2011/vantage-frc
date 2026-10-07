@@ -36,5 +36,9 @@ describe("scouting schema publication boundary", () => {
       { key: "seconds", label: "Seconds", type: "number", config: { visibleWhen: { fieldKey: "attempted", isTrue: true } } },
     ] };
     expect(schemaPublicationRequest.safeParse({ ...request, definition }).success).toBe(true);
+    expect(schemaPublicationRequest.safeParse({ ...request, definition: { title: "Cycle", fields: [
+      { key: "a", label: "A", type: "boolean", visibleWhen: { fieldKey: "b", isTrue: true } },
+      { key: "b", label: "B", type: "boolean", visibleWhen: { fieldKey: "a", isTrue: true } },
+    ] } }).success).toBe(false);
   });
 });

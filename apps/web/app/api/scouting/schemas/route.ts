@@ -47,6 +47,7 @@ export async function GET(request: Request) {
         ? requestedYear : context.rows[0]?.year ?? latestScoutingYear();
       if (!year) {
         return {
+          userId: session.user.id,
           eventKey,
           year: null,
           canManageSchemas: allowed,
@@ -68,6 +69,7 @@ export async function GET(request: Request) {
         [orgId, year],
       );
       return {
+        userId: session.user.id,
         eventKey,
         year,
         canManageSchemas: allowed,
@@ -122,6 +124,14 @@ export async function POST(request: Request) {
       // withScoutingRequest supplies a transaction. Serialize competing lead
       // publications before reading MAX(version), including the first version.
       await lockScoutingSchemaVersion(client, body.orgId, body.year, body.type);
+      const latest = await client.query<{ id: string; version: number }>(
+        `SELECT id, version FROM scout_schemas WHERE org_id=$1 AND year=$2 AND type=$3 ORDER BY version DESC LIMIT 1`,
+        [body.orgId, body.year, body.type],
+      );
+      if (body.baseSchemaId === undefined) throw new RequestSecurityError(409, "Refresh the form editor before publishing so its current version can be checked.");
+      if ((latest.rows[0]?.id ?? null) !== body.baseSchemaId) {
+        throw new RequestSecurityError(409, "Another lead published a newer form. Your draft is safe. Review the latest form before publishing.");
+      }
       const result = await client.query(
         `INSERT INTO scout_schemas (org_id,year,type,version,schema,created_by)
          SELECT $1,$2,$3,COALESCE(MAX(version),0)+1,$4::jsonb,$5

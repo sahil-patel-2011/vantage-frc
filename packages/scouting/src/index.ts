@@ -2,7 +2,7 @@ import { currentSeasonYear, defaultMatchSchema, defaultPitSchema, type GameField
 import { lockScoutPayload } from "./identity";
 import { ACTION_HISTORY_KEY, validateActionHistory } from "./action-history";
 import { MATCH_CAPTURE_KEY, validateMatchCapture } from "./match-capture";
-import { readVisibleWhen, visibleWhenMatches, withInferredPhaseRules, type VisibleWhen } from "./visibility";
+import { visibleFields, withInferredPhaseRules, type VisibleWhen } from "./visibility";
 export * from "./match-capture";
 export { ACTION_HISTORY_KEY, actionHistory, recordScoutAction, undoableScoutAction, undoScoutAction, validateActionHistory, type ScoutActionHistory, type ScoutAction, type ScoutActionChange } from "./action-history";
 import {
@@ -896,7 +896,9 @@ export function validatePayload(
     if (key === ACTION_HISTORY_KEY || key === MATCH_CAPTURE_KEY) continue;
     if (!allowed.has(key)) errors.push(`Unknown field: ${key}`);
   }
-  for (const field of withInferredPhaseRules(schema.fields)) {
+  const fields = withInferredPhaseRules(schema.fields);
+  const visibleKeys = new Set(visibleFields(fields, payload).map(field => field.key));
+  for (const field of fields) {
     const value = payload[field.key];
     // Section headers group Auto | Teleop | Endgame — they carry no answer, and
     // "required" is meaningless on them, so they never gate a save.
@@ -912,7 +914,7 @@ export function validatePayload(
       value === "" ||
       (Array.isArray(value) && value.length === 0) ||
       (field.type === "multi_counter" && isPlainObject(value) && Object.keys(value).length === 0);
-    if (!visibleWhenMatches(readVisibleWhen(field), payload)) {
+    if (!visibleKeys.has(field.key)) {
       if (!empty) errors.push(`${field.label} is hidden by this form's answer rules`);
       continue;
     }

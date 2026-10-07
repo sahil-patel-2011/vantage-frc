@@ -51,7 +51,7 @@ for (const width of [1280, 390]) {
       // the actual builder. Existing team versions remain untouched underneath.
       for (const type of ["match", "pit"]) {
         const response = await context.request.post("/api/scouting/schemas", { data: {
-          orgId, year: initialData.year, type,
+          orgId, year: initialData.year, type, baseSchemaId: initialData.schemas.find((schema: {type:string; id:string}) => schema.type === type)?.id ?? null,
           definition: { title: `${marker} ${type} starter`, fields: [{ key: "notes", label: "Notes", type: "text", widget: "short", required: false }] },
         } });
         expect(response.status()).toBe(201);
@@ -115,16 +115,9 @@ for (const width of [1280, 390]) {
       await expect(builder.locator(".sfb-message")).toHaveText("Publish temporarily unavailable");
       await expect(builder.getByLabel("Form title", { exact: true })).toHaveValue(`${marker} Match`);
       async function publishCurrent() {
-        let release!: () => void;
-        let refreshBlocked = false;
-        const refresh = new Promise<void>(resolve => { release = resolve; });
         const refreshUrl = "**/api/scouting/schemas?*";
-        await page.route(refreshUrl, async route => {
-          const response = await route.fetch();
-          refreshBlocked = true;
-          await refresh;
-          await route.fulfill({ response });
-        });
+        // A confirmed POST is sufficient even when a follow-up read is unavailable.
+        await page.route(refreshUrl, route => route.fulfill({ status: 503, json: { error: "Refresh unavailable" } }));
         try {
           const responsePromise = page.waitForResponse(r => r.url().endsWith("/api/scouting/schemas") && r.request().method() === "POST");
           await publish.click();
@@ -132,16 +125,11 @@ for (const width of [1280, 390]) {
           expect(response.status()).toBe(201);
           const result = await response.json();
           schemas.push(result.id);
-          await expect.poll(() => refreshBlocked).toBe(true);
-          await expect(types).toBeDisabled();
-          await expect(builder.locator(".sfb-published-card")).toHaveCount(0);
-          release();
           await expect(builder.locator(".sfb-published-card")).toContainText("Published");
           await expect(publish).toHaveCount(0);
           await expect(types).toBeEnabled();
           return result.id as string;
         } finally {
-          release();
           await page.unroute(refreshUrl);
         }
       }
@@ -204,7 +192,7 @@ test("a delegated custom scouting lead can publish but cannot administer people,
     expect(applied.ok(),await applied.text()).toBe(true);
     expect((await context.request.get(`/api/organizations/members?orgId=${orgId}`)).status()).toBe(403);
     const setup=await (await context.request.get(`/api/scouting/schemas?orgId=${orgId}`)).json(); expect(setup.canManageSchemas).toBe(true);
-    const schema=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"pit",definition:{title:key,fields:[{key:"notes",label:"Notes",type:"text",required:false}]}}});
+    const schema=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"pit",baseSchemaId:setup.schemas.find((entry:{type:string;id:string})=>entry.type==="pit")?.id??null,definition:{title:key,fields:[{key:"notes",label:"Notes",type:"text",required:false}]}}});
     expect(schema.status(),await schema.text()).toBe(201); created.push((await schema.json()).id);
     await page.goto(`/competition?tab=forms&orgId=${orgId}`);
     const builder=page.locator(".sfb-page");

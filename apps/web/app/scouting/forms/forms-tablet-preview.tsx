@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { isLayoutOnlyField } from "@vantage/scouting";
+import { visibleFields, withInferredPhaseRules } from "@vantage/scouting/visibility";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { definitionFromDraft, type DraftQuestion } from "../../../lib/scouting/form-builder";
 import { Field } from "../scouting-field";
@@ -46,9 +47,9 @@ export function FormsTabletPreview({ title, questions }: { title: string; questi
         {definition.fields.length === 0 ? (
           <p className="app-muted">Add a question to see it here.</p>
         ) : (
-          definition.fields.map((field, index) => (
+          visibleFields(withInferredPhaseRules(definition.fields), payload).map((field) => (
             <Field
-              key={`${field.key}-${index}`}
+              key={field.key}
               field={field}
               value={payload[field.key]}
               flags={[]}

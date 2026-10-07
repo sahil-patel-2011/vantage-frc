@@ -10,8 +10,8 @@ export const maxDuration = 120;
 
 /*
   One press writes the same tables to both copies. Both providers throttle per app, so a
-  team gets six syncs per ten minutes — the same budget as the Excel-only sync — and the
-  nightly run keeps both copies at most a day old without anybody pressing anything.
+  team gets six syncs per ten minutes — the same budget as the Excel-only sync.
+  Repository schedules are disabled; this endpoint runs only when requested.
 */
 const syncLimiter = createRateLimiter({ limit: 6, windowMs: 10 * 60_000, namespace: "spreadsheet-mirror-sync" });
 

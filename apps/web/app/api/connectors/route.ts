@@ -16,6 +16,7 @@
 import { auth, isPlatformAdmin } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { isUuid } from "../../../lib/microsoft/authz";
 import { connectorAudienceFromRole } from "../../../lib/connectors/catalog";
 import { connectorsForViewer } from "../../../lib/connectors/team-view";
 import {
@@ -25,10 +26,12 @@ import {
 } from "../../../lib/connectors/load-connector-status";
 
 export async function GET(request: Request) {
+  const privateHeaders = { "Cache-Control": "private, no-store" };
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401, headers: privateHeaders });
 
   const requestedOrgId = new URL(request.url).searchParams.get("orgId")?.trim() || null;
+  if (requestedOrgId && !isUuid(requestedOrgId)) return Response.json({ error: "Choose a valid team." }, { status: 400, headers: privateHeaders });
 
   try {
     const resolved = await withRls({ userId: session.user.id }, async (client) => {
@@ -45,6 +48,7 @@ export async function GET(request: Request) {
     });
 
     const orgId = resolved.membership?.orgId ?? null;
+    if (requestedOrgId && !orgId) return Response.json({ error: "You no longer have access to this team's connections." }, { status: 403, headers: privateHeaders });
     const role = resolved.membership?.role ?? null;
     const canManage = role === "owner" || role === "admin";
     const audience = connectorAudienceFromRole(canManage);
@@ -69,7 +73,7 @@ export async function GET(request: Request) {
       platformAdmin: resolved.platformAdmin,
       summary: summarizeConnectors(connectors),
       connectors,
-    });
+    }, { headers: privateHeaders });
   } catch {
     // A connectors page that 500s is the exact complaint. Answer with the
     // environment-only view. Role is unknown here, so student copy — env-var
@@ -83,6 +87,6 @@ export async function GET(request: Request) {
       connectors,
       degraded:
         "Could not read this team's stored links, so only deployment-level configuration is shown. Anything linked per team is not reflected below.",
-    });
+    }, { headers: privateHeaders });
   }
 }

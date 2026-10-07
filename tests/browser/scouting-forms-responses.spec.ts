@@ -21,7 +21,8 @@ for (const width of [1440, 390]) test(`published pit form collects real answers,
       { key: "drive", label: "Drivetrain", type: "select", options: ["Swerve", "Tank"], config: { chart: "bar" } },
       { key: "notes", label: "Notes", type: "text", widget: "short" },
     ] };
-    const created = await context.request.post("/api/scouting/schemas", { data: { orgId, year: 2026, type: "pit", definition } });
+    const before = await (await context.request.get(`/api/scouting/schemas?orgId=${orgId}&year=2026`)).json();
+    const created = await context.request.post("/api/scouting/schemas", { data: { orgId, year: 2026, type: "pit", baseSchemaId: before.schemas.find((entry: {type:string;id:string}) => entry.type === "pit")?.id ?? null, definition } });
     expect(created.status()).toBe(201); schemaId = (await created.json()).id;
     await page.setViewportSize({ width, height: 950 });
     await page.goto(`/competition?tab=scouting&mode=free&orgId=${orgId}`);
@@ -55,7 +56,7 @@ for (const width of [1440, 390]) test(`published pit form collects real answers,
     const response = await context.request.get(`/api/scouting/form-responses?orgId=${orgId}&schemaId=${schemaId}`);
     expect(response.ok()).toBe(true);
     expect((await response.json()).rows.filter((row: { payload: { notes?: string } }) => row.payload.notes === marker)).toHaveLength(1);
-    const revised = await context.request.post("/api/scouting/schemas", { data: { orgId, year: 2026, type: "pit", definition: { ...definition, fields: [...definition.fields, { key: "added", label: "New question", type: "text" }] } } });
+    const revised = await context.request.post("/api/scouting/schemas", { data: { orgId, year: 2026, type: "pit", baseSchemaId: schemaId, definition: { ...definition, fields: [...definition.fields, { key: "added", label: "New question", type: "text" }] } } });
     expect(revised.status()).toBe(201); revisedId = (await revised.json()).id;
     const history = await (await context.request.get(`/api/scouting/form-responses?orgId=${orgId}&schemaId=${revisedId}`)).json();
     expect(history.rows.find((row: { payload: { notes?: string } }) => row.payload.notes === marker).payload).toEqual({ cycles: 0, drive: "Swerve", notes: marker });

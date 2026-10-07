@@ -49,10 +49,10 @@ export function summarizeMirror(states: State[], now: Date): MirrorSummary {
       return {
         copy: state.copy,
         health: "resting" as const,
-        detail: `${label} asked Vantage to slow down; the other copy is carrying the load and ${label} catches up on the next sync.`,
+        detail: `${label} asked Vantage to slow down. Wait before choosing Sync now again.`,
       };
     }
-    if (state.lastError && /sign-in expired|reconnect|decrypt|secret|disconnect|sign-in page|no longer exists|older version/i.test(state.lastError)) {
+    if (state.lastError) {
       return { copy: state.copy, health: "attention" as const, detail: state.lastError };
     }
     if (!state.lastSyncHash) {
@@ -65,23 +65,23 @@ export function summarizeMirror(states: State[], now: Date): MirrorSummary {
         detail: `${label} holds an older copy than ${mirrorCopyLabel(newest.copy)}; the next sync brings it level.`,
       };
     }
-    return { copy: state.copy, health: "in_sync" as const, detail: `${label} holds the latest copy.` };
+    return { copy: state.copy, health: "in_sync" as const, detail: `${label}'s last sync completed. Choose Sync now to include changes made since then.` };
   });
 
   const single = states.length === 1 ? states[0]! : null;
   const headline = single
     ? !single.connected
-      ? `Connect ${mirrorCopyLabel(single.copy)} to keep a live copy of this team's data.`
+      ? `Connect ${mirrorCopyLabel(single.copy)} to save a copy of this team's data.`
       : single.lastSyncAt
         ? `${mirrorCopyLabel(single.copy)} is connected.`
         : "Connected. Press Sync now to fill it."
     : connected.length === 0
-      ? "Connect Google Sheets and Microsoft Excel to keep two live copies of this team's data."
+      ? "Connect a spreadsheet to save a copy of this team's data."
       : connected.length === 1
-        ? `Only ${mirrorCopyLabel(connected[0]!.copy)} is connected. Connect the other for a second, independent copy.`
+        ? `${mirrorCopyLabel(connected[0]!.copy)} is connected.`
         : identical
-          ? "Both copies are identical."
-          : "The copies differ right now — the next sync brings them level.";
+          ? "Both copies contain the same last synced data."
+          : "The copies differ. Choose Sync now to update them.";
 
   return { identical, connected: connected.length, headline, copies };
 }

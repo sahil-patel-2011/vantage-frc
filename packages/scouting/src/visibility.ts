@@ -80,7 +80,7 @@ export function clauseMatches(clause: VisibleWhenClause, payload: Record<string,
     if (watched !== clause.equals) return false;
   }
   if ("notEquals" in clause && clause.notEquals !== undefined) {
-    if (watched === clause.notEquals) return false;
+    if (!isSet(watched) || watched === clause.notEquals) return false;
   }
   if (clause.gte != null) {
     const number = asNumber(watched);
@@ -116,6 +116,28 @@ export function readVisibleWhen(field: { config?: Record<string, unknown> | null
   return raw as VisibleWhen;
 }
 
+/** Cyclic conditions can leave a whole section impossible to answer. */
+export function cyclicVisibilityKeys(fields: readonly { key: string; config?: Record<string, unknown> | null; visibleWhen?: unknown }[]): string[] {
+  const dependencies = new Map(fields.map(field => {
+    const rule = readVisibleWhen(field);
+    const clauses = rule && isVisibleWhen(rule) ? "allOf" in rule ? rule.allOf : "anyOf" in rule ? rule.anyOf : [rule] : [];
+    return [field.key, clauses.map(clause => clause.fieldKey)] as const;
+  }));
+  const done = new Set<string>();
+  const path: string[] = [];
+  const cycles = new Set<string>();
+  const visit = (key: string) => {
+    const at = path.indexOf(key);
+    if (at >= 0) { path.slice(at).forEach(item => cycles.add(item)); return; }
+    if (done.has(key) || !dependencies.has(key)) return;
+    path.push(key);
+    for (const dependency of dependencies.get(key)!) visit(dependency);
+    path.pop(); done.add(key);
+  };
+  for (const key of dependencies.keys()) visit(key);
+  return [...cycles];
+}
+
 /**
  * Fields the scout should see right now. Layout-only fields (section headers)
  * stay visible so the form does not jump; answers stay gated.
@@ -124,10 +146,26 @@ export function visibleFields<T extends VisibleField & { type?: string; config?:
   fields: readonly T[],
   payload: Record<string, unknown>,
 ): T[] {
-  return fields.filter((field) => {
+  const byKey = new Map(fields.map(field => [field.key, field]));
+  const resolved = new Map<string, boolean>();
+  const cyclic = new Set(cyclicVisibilityKeys(fields));
+  const shown = (key: string): boolean => {
+    if (resolved.has(key)) return resolved.get(key)!;
+    const field = byKey.get(key);
+    if (!field) return true;
     if (field.type === "section_header") return true;
-    return visibleWhenMatches(readVisibleWhen(field), payload);
-  });
+    if (cyclic.has(key)) return false;
+    const rule = readVisibleWhen(field);
+    if (rule == null) return true;
+    if (!isVisibleWhen(rule)) return false;
+    // A stale answer on a hidden controller cannot reveal its dependants.
+    // anyOf still permits a different, visible controller to satisfy the rule.
+    const matches = (clause: VisibleWhenClause) => shown(clause.fieldKey) && clauseMatches(clause, payload);
+    const visible = "allOf" in rule ? rule.allOf.every(matches) : "anyOf" in rule ? rule.anyOf.some(matches) : matches(rule);
+    resolved.set(key, visible);
+    return visible;
+  };
+  return fields.filter(field => shown(field.key));
 }
 
 /** Hidden answer keys that should not leak into a save after the form gated them off. */
