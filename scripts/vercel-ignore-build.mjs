@@ -3,5 +3,6 @@
 // A quote-free script so ignoreCommand cannot crash on nested JSON/shell quoting.
 // A crashed ignore step is reported as Deployment Error, not Ignored.
 
-const ref = process.env.VERCEL_GIT_COMMIT_REF ?? "";
-process.exit(ref === "main" ? 1 : 0);
+// Every Git push, including main, stores code only. An intentional release uses
+// a manual deployment after the operator checks the remaining free allowance.
+process.exit(0);

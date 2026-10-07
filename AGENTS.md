@@ -2,10 +2,32 @@
 
 The user explicitly prohibits starting a local database on their laptop. Never start
 PostgreSQL, Docker database services, or another local database for this repository
-on the laptop. Use database-free unit/lint/type/build checks. Database-backed
-verification requires an explicitly authorized remote test environment. The Base44
+on the laptop. Do not run local tests, builds, development servers, browser test
+runners, or other background workloads either. Only edit/inspect code, use
+lightweight Git operations, and view hosted pages through the browser.
+Database-backed verification requires an explicitly authorized remote test environment. The Base44
 microVM setup notes below are environment documentation, not authorization to run a
 laptop database.
+
+# Hosting and compute policy
+
+GitHub is for code storage/integration. Actions is disabled for the entire
+repository; both saved workflows are disabled and manual-only. Never enable or
+dispatch them without fresh authorization and a
+verified free allowance. The former authorization for isolated GitHub Actions
+tests does not authorize more runs after the user's October 6 cost restriction.
+
+Vercel is for website hosting and intentional deployments. Automatic Git builds
+and repository cron schedules are disabled. Do not redeploy repeatedly, start
+paid background workers, or purchase/upgrade services. Verify actual account
+allowance before a deployment; do not infer zero cost from a free-tier document.
+
+The user requests Google Sheets as primary storage until their NAS is connected.
+The existing implementation still uses PostgreSQL as its primary store and
+Sheets as copies. Do not claim the migration is complete, change data ownership,
+delete existing data, or bypass the production schema gate to publish incompatible
+code. A real migration needs an authorized private Google destination, deployed
+app access, replacement of auth/tenant persistence, and hosted acceptance proof.
 
 # Base44 dev environment notes
 
@@ -43,5 +65,7 @@ Verify: `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` → 200.
 - PostgreSQL remains the app's database. No Base44 database migration has been
   performed: native Base44 database provisioning/access is unavailable in this
   imported-app environment. A second PostgreSQL connection is not configured.
-- Regression checks: `npm test -- apps/web/lib/media-availability.test.ts
-  apps/web/lib/dashboard/grid-drag.test.ts apps/web/lib/dashboard/catalog.test.ts`.
+- Regression check sources (do not run them on this laptop):
+  `apps/web/lib/media-availability.test.ts`,
+  `apps/web/lib/dashboard/grid-drag.test.ts`,
+  `apps/web/lib/dashboard/catalog.test.ts`.
