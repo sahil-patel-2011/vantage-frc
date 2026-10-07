@@ -51,3 +51,7 @@ Main's previous [CI run](https://github.com/sahil-patel-2011/vantage-frc/actions
 Fresh users/teams, invitations, custom form publication, persisted scouting/analysis, provider operations, recovery restore and capacity/cost proof still require the authorized remote environment and production verification. Public signup and media upload switches remain unchanged.
 
 The trends, scouting lead, role-editor and first-run follow-up is recorded in [trends/access review](SCOUTING-TRENDS-ACCESS-2026-10-06.md).
+
+## Production schema deployment boundary
+
+Main deploys automatically, but this release requires migrations 0710 through 0713 before its tour and delegated scouting queries can run. The web build now checks those exact migration records in a read-only transaction when `VERCEL_ENV=production`; missing/unverifiable records fail the build before publishing. It never applies migrations or changes privileges. Non-Vercel and preview builds remain database-free, and laptop database URLs are refused. The isolated GitHub Actions PostgreSQL job exercises the same gate after migration replay. Seven mocked unit cases cover unavailable/missing schema, read-only cleanup, connection redaction and database-free builds. The production migration/configuration/provider work remains open; no production connection was opened during implementation.

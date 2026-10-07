@@ -239,6 +239,11 @@ jobs:
         run: npm run test:db:integration
         env:
           TEST_DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
+      - name: Verify production schema deployment gate against isolated test database
+        run: node scripts/production-schema-preflight.mjs
+        env:
+          VERCEL_ENV: production
+          DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
       - name: Prove newest org-scoped tables as vantage_app
         env:
           RLS_PROOF_SUPERUSER_URL: postgresql://postgres:postgres@127.0.0.1:5432/vantage_ci
