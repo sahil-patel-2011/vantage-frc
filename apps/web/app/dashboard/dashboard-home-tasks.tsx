@@ -1,11 +1,12 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { Button } from "../../components/ui";
 import { Icon } from "../../components/icon";
 import { useDashboardActions } from "./dashboard-quick-actions";
 import { homeTasks } from "./dashboard-overview-model";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 
 /** The stock task surface uses the same authorized API as the full task page. */
 export function DashboardHomeTasks({ orgId, role, payload }: {
@@ -18,6 +19,8 @@ export function DashboardHomeTasks({ orgId, role, payload }: {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const requestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => { requestRef.current?.abort(); }, []);
   const items = homeTasks(payload);
   const known = payload?.status === "live" || payload?.status === "empty";
   const canWrite = Boolean(actions && role && role !== "viewer" && known);
@@ -25,29 +28,42 @@ export function DashboardHomeTasks({ orgId, role, payload }: {
   const open = typeof payload?.data?.open === "number" ? payload.data.open : null;
 
   async function save(key: string, body: Record<string, unknown>) {
-    if (busy || !actions) return;
+    if (busy || !actions || requestRef.current) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
     setBusy(key); setError(""); setNotice("");
     try {
       const response = await fetch("/api/todos", {
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, ...body }),
       });
       const data = await response.json();
+      if (controller.signal.aborted) return;
       if (!response.ok || data.status !== "live") throw new Error(data.error || "Could not save the task. Try again.");
       if (key === "create") setTitle("");
       setNotice(key === "create" ? "Task added." : "Task completed.");
       try { await actions.refresh("team_todos"); }
-      catch { setNotice("Task saved. Open tasks to see the latest changes."); }
+      catch { if (!controller.signal.aborted) setNotice("Task saved. Open tasks to see the latest changes."); }
     } catch (cause) {
+      if (controller.signal.aborted) return;
+      if (cause instanceof DOMException && cause.name === "TimeoutError") {
+        setError("Couldn’t confirm the task. Open all tasks to check before trying again.");
+        return;
+      }
       setError(cause instanceof Error ? cause.message : "Could not save the task. Try again.");
     } finally {
-      setBusy(null);
-      requestAnimationFrame(() => {
-        const article = articleRef.current;
-        if (!article || (document.activeElement !== document.body && !article.contains(document.activeElement))) return;
-        const target = key === "create" ? 'input[aria-label="New team task"]' : 'input[type="checkbox"]:not(:disabled), header a';
-        article.querySelector<HTMLElement>(target)?.focus();
-      });
+      if (!controller.signal.aborted) {
+        requestRef.current = null;
+        setBusy(null);
+        requestAnimationFrame(() => {
+          if (controller.signal.aborted) return;
+          const article = articleRef.current;
+          if (!article || (document.activeElement !== document.body && !article.contains(document.activeElement))) return;
+          const target = key === "create" ? 'input[aria-label="New team task"]' : 'input[type="checkbox"]:not(:disabled), header a';
+          article.querySelector<HTMLElement>(target)?.focus();
+        });
+      }
     }
   }
 

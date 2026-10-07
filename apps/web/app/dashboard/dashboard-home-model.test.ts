@@ -87,6 +87,14 @@ describe("homeHeaderDetail", () => {
 });
 
 describe("homeNowAction", () => {
+  it("never turns failed widget payloads into task, match, or calendar instructions", () => {
+    const now = homeNowFromWidgets({ orgId: "org-1", loaded: true, widgets: {
+      tasks: { type: "team_todos", status: "unavailable", data: { open: 4, mine: 2 } },
+      match: { type: "next_match", status: "unavailable", data: { compLevel: "qm", matchNumber: 12 } },
+      day: { type: "my_day", status: "unavailable", data: { duties: [{ title: "Battery cart" }] } },
+    } });
+    expect(now.quiet).toBe(true);
+  });
   it("picks one next step from real data and stays calm when none exists", () => {
     expect(homeNowAction({ orgId: "" }).cta).toBe("Choose your team");
     expect(homeNowAction({ orgId: "org-1", nextMatchLabel: "Qual 12" })).toEqual({

@@ -12,6 +12,8 @@ export type DashboardOfflineCache = {
   layout: DashboardWidgetLayout[];
   widgets: Record<string, WidgetPayload>;
   context: Record<string, unknown>;
+  /** Data freshness is independent of when board placement was saved. */
+  dataUpdatedAt?: string;
 };
 
 /** A successful write supersedes the old device copy before any refresh can use it. */
@@ -38,6 +40,7 @@ export function isDashboardOfflineCache(value: unknown): value is DashboardOffli
   if (!Array.isArray(value.layout)) return false;
   if (!isRecord(value.widgets)) return false;
   if (!isRecord(value.context)) return false;
+  if (value.dataUpdatedAt !== undefined && (typeof value.dataUpdatedAt !== "string" || !Number.isFinite(Date.parse(value.dataUpdatedAt)))) return false;
   return true;
 }
 

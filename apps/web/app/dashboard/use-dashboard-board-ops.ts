@@ -29,6 +29,9 @@ import { type GridCell, type NudgeDirection } from "../../lib/dashboard/grid-dra
 import { boardHasGap, layoutsEqual, setAlwaysShow, tidyBoard } from "../../lib/dashboard/edit-mode";
 import { ARROW_DIRECTION } from "./dashboard-canvas";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+
+type BoardMutation = { scope: string; controller: AbortController };
 
 type LoadSnapshot = (
   id: string,
@@ -37,7 +40,7 @@ type LoadSnapshot = (
 ) => Promise<void>;
 
 /**
- * Save / add / resize / keyboard reorder for Home. The client keeps poll,
+ * Save / add / resize / keyboard reorder for Home. The client keeps data loading,
  * measurement, and the painted grid; this hook owns the mutations those
  * controls fire.
  */
@@ -132,6 +135,35 @@ export function useDashboardBoardOps(input: {
     setRenameId,
     setRenameDraft,
   } = input;
+
+  const requestScope = `${userId}:${orgId}`;
+  const activeScopeRef = useRef(requestScope);
+  const mutationRef = useRef<BoardMutation | null>(null);
+  useEffect(() => {
+    activeScopeRef.current = requestScope;
+    setSaving(false);
+    return () => {
+      activeScopeRef.current = "";
+      mutationRef.current?.controller.abort();
+      mutationRef.current = null;
+    };
+  }, [requestScope, setSaving]);
+  function beginMutation(): BoardMutation | null {
+    if (saving || mutationRef.current || activeScopeRef.current !== requestScope) return null;
+    const mutation = { scope: requestScope, controller: new AbortController() };
+    mutationRef.current = mutation;
+    setSaving(true);
+    return mutation;
+  }
+  function isCurrent(mutation: BoardMutation): boolean {
+    return mutationRef.current === mutation && activeScopeRef.current === mutation.scope && !mutation.controller.signal.aborted;
+  }
+  function finishMutation(mutation: BoardMutation) {
+    if (isCurrent(mutation)) { mutationRef.current = null; setSaving(false); }
+  }
+  function mutationSignal(mutation: BoardMutation) {
+    return AbortSignal.any([mutation.controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]);
+  }
 
   function addWidget(type: DashboardWidgetType, drop?: GridCell, displayCols?: number) {
     const result = dropWidgetOntoLayout(layoutRef.current, type, {
@@ -261,7 +293,7 @@ export function useDashboardBoardOps(input: {
       const resized = current.map((item) => {
         if (item.i !== id) return item;
         const next = applyWidgetSize(item, size, catalogEntry(item.type));
-        return { ...next, config: { ...next.config, fixedSize: true, alwaysShow: true } };
+        return { ...next, config: { ...next.config, fixedSize: true } };
       });
       return settle(resized);
     });
@@ -281,7 +313,7 @@ export function useDashboardBoardOps(input: {
         item.i === id
           ? {
               ...item,
-              config: { ...item.config, fixedSize: true, alwaysShow: true },
+              config: { ...item.config, fixedSize: true },
               w: entry.defaultW,
               h: entry.defaultH,
               minW: entry.minW,
@@ -322,7 +354,8 @@ export function useDashboardBoardOps(input: {
       setMessage("Ask a team admin to save a shared Home for the team.");
       return;
     }
-    setSaving(true);
+    const mutation = beginMutation();
+    if (!mutation) return;
     setMessage("");
     try {
       const keepId = board?.id && board.scope === activateScope ? board.id : null;
@@ -333,6 +366,7 @@ export function useDashboardBoardOps(input: {
             ? "Team board"
             : "My Home"; // the name the chip showed before the first save
       const response = await fetch("/api/dashboards", {
+        signal: mutationSignal(mutation),
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -346,6 +380,7 @@ export function useDashboardBoardOps(input: {
         }),
       });
       const data = await response.json();
+      if (!isCurrent(mutation)) return;
       if (!response.ok) {
         setMessageKind("error");
         setMessage(data.error ?? "Save failed");
@@ -373,14 +408,16 @@ export function useDashboardBoardOps(input: {
       setGrabbedId(null);
       setPreviewing(false);
       await acceptSavedBoard({ id: data.id, name: data.name, scope: data.scope, layout: data.layout });
+      if (!isCurrent(mutation)) return;
       setMessageKind("success");
       setMessageAction(null);
       setMessage(data.scope === "org" ? "Saved as the team board." : "Home saved.");
     } catch {
+      if (!isCurrent(mutation)) return;
       setMessageKind("error");
-      setMessage("Could not save your layout. Your changes are still here; please try again.");
+      setMessage("Couldn’t confirm the save. Your draft is still here; check the saved board before trying again.");
     } finally {
-      setSaving(false);
+      finishMutation(mutation);
     }
   }
 
@@ -399,10 +436,12 @@ export function useDashboardBoardOps(input: {
       return null;
     }
     const onTeamBoard = board?.scope === "org" && Boolean(board.id);
-    setSaving(true);
+    const mutation = beginMutation();
+    if (!mutation) return null;
     setMessage("");
     try {
       const response = await fetch("/api/dashboards", {
+        signal: mutationSignal(mutation),
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -418,6 +457,7 @@ export function useDashboardBoardOps(input: {
         }),
       });
       const data = await response.json().catch(() => ({}));
+      if (!isCurrent(mutation)) return null;
       if (!response.ok) {
         setMessageKind("error");
         setMessage(data.error ?? "Could not share this layout with the team.");
@@ -436,6 +476,8 @@ export function useDashboardBoardOps(input: {
         setLibraryOpen(false);
         setGrabbedId(null);
         setPreviewing(false);
+        await acceptSavedBoard({ id: data.id, name: data.name, scope: "org", layout: data.layout });
+        if (!isCurrent(mutation)) return null;
       }
       setMessageKind("success");
       setMessageAction(null);
@@ -447,11 +489,12 @@ export function useDashboardBoardOps(input: {
       setAnnounce(onTeamBoard ? `Saved ${data.name} for the team.` : `Shared with the team as ${data.name}.`);
       return { id: data.id, name: data.name };
     } catch {
+      if (!isCurrent(mutation)) return null;
       setMessageKind("error");
-      setMessage("Could not share this layout with the team. Please try again.");
+      setMessage("Couldn’t confirm sharing. Check the team boards before trying again.");
       return null;
     } finally {
-      setSaving(false);
+      finishMutation(mutation);
     }
   }
 
@@ -462,15 +505,18 @@ export function useDashboardBoardOps(input: {
   async function switchBoard(targetId: string, opts?: { leaveEditing?: boolean }) {
     if (!orgId || !targetId || targetId === board?.id || saving) return;
     if (editing && !opts?.leaveEditing) return;
-    setSaving(true);
+    const mutation = beginMutation();
+    if (!mutation) return;
     setMessage("");
     try {
       const response = await fetch("/api/dashboards", {
+        signal: mutationSignal(mutation),
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, id: targetId, action: "activate" }),
       });
       const data = await response.json();
+      if (!isCurrent(mutation)) return;
       if (!response.ok) {
         setMessageKind("error");
         setMessage(data.error ?? "Could not switch boards");
@@ -487,13 +533,15 @@ export function useDashboardBoardOps(input: {
       setLayout(layoutOrAudienceDefault(data.layout, resetAudience));
       setBoardsOpen(false);
       await loadHome(orgId, data.id);
+      if (!isCurrent(mutation)) return;
       setMessageKind("success");
       setMessage(`Switched to ${data.name}`);
     } catch {
+      if (!isCurrent(mutation)) return;
       setMessageKind("error");
       setMessage("Could not switch boards. Check your connection and try again.");
     } finally {
-      setSaving(false);
+      finishMutation(mutation);
     }
   }
 
@@ -509,10 +557,12 @@ export function useDashboardBoardOps(input: {
     const label =
       requestedName?.trim().slice(0, 80) ||
       (createScope === "org" ? `Team board ${orgCount + 1}` : `Board ${personalCount + 1}`);
-    setSaving(true);
+    const mutation = beginMutation();
+    if (!mutation) return;
     setMessage("");
     try {
       const response = await fetch("/api/dashboards", {
+        signal: mutationSignal(mutation),
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -524,6 +574,7 @@ export function useDashboardBoardOps(input: {
         }),
       });
       const data = await response.json();
+      if (!isCurrent(mutation)) return;
       if (!response.ok) {
         setMessageKind("error");
         setMessage(data.error ?? "Could not create board");
@@ -533,14 +584,16 @@ export function useDashboardBoardOps(input: {
       setEditing(true);
       setBoardsOpen(false);
       await loadHome(orgId, data.id);
+      if (!isCurrent(mutation)) return;
       setMessageKind("success");
       setMessageAction(null);
       setMessage(`Created ${data.name}. Arrange it, then tap Done.`);
     } catch {
+      if (!isCurrent(mutation)) return;
       setMessageKind("error");
-      setMessage("Could not create your board. Check your connection and try again.");
+      setMessage("Couldn’t confirm board creation. Refresh Home to check before creating another board.");
     } finally {
-      setSaving(false);
+      finishMutation(mutation);
     }
   }
 
@@ -552,10 +605,12 @@ export function useDashboardBoardOps(input: {
   async function duplicateBoard(targetId: string) {
     if (!orgId || !targetId || saving || editing) return;
     const source = boards.find((item) => item.id === targetId);
-    setSaving(true);
+    const mutation = beginMutation();
+    if (!mutation) return;
     setMessage("");
     try {
       const response = await fetch("/api/dashboards", {
+        signal: mutationSignal(mutation),
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -573,6 +628,7 @@ export function useDashboardBoardOps(input: {
         }),
       });
       const data = await response.json();
+      if (!isCurrent(mutation)) return;
       if (!response.ok) {
         setMessageKind("error");
         setMessage(data.error ?? "Could not duplicate board");
@@ -582,13 +638,15 @@ export function useDashboardBoardOps(input: {
       setRenameId(null);
       setBoardsOpen(false);
       await loadHome(orgId, data.id);
+      if (!isCurrent(mutation)) return;
       setMessageKind("success");
       setMessage(`Duplicated to ${data.name}. It is yours to edit.`);
     } catch {
+      if (!isCurrent(mutation)) return;
       setMessageKind("error");
-      setMessage("Could not copy your board. Check your connection and try again.");
+      setMessage("Couldn’t confirm the copy. Refresh Home to check before copying again.");
     } finally {
-      setSaving(false);
+      finishMutation(mutation);
     }
   }
 
@@ -600,14 +658,17 @@ export function useDashboardBoardOps(input: {
       setMessage("Board name cannot be empty.");
       return;
     }
-    setSaving(true);
+    const mutation = beginMutation();
+    if (!mutation) return;
     try {
       const response = await fetch("/api/dashboards", {
+        signal: mutationSignal(mutation),
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, id: targetId, name, action: "rename" }),
       });
       const data = await response.json();
+      if (!isCurrent(mutation)) return;
       if (!response.ok) {
         setMessageKind("error");
         setMessage(data.error ?? "Rename failed");
@@ -620,10 +681,11 @@ export function useDashboardBoardOps(input: {
       setMessageKind("success");
       setMessage(`Renamed to ${data.name}`);
     } catch {
+      if (!isCurrent(mutation)) return;
       setMessageKind("error");
       setMessage("Could not rename your board. Check your connection and try again.");
     } finally {
-      setSaving(false);
+      finishMutation(mutation);
     }
   }
 
@@ -637,14 +699,17 @@ export function useDashboardBoardOps(input: {
       return;
     }
     // The view asks first, in the app's own confirm dialog.
-    setSaving(true);
+    const mutation = beginMutation();
+    if (!mutation) return;
     try {
       const response = await fetch("/api/dashboards", {
+        signal: mutationSignal(mutation),
         method: "DELETE",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, id: targetId }),
       });
       const data = await response.json();
+      if (!isCurrent(mutation)) return;
       if (!response.ok) {
         setMessageKind("error");
         setMessage(data.error ?? "Delete failed");
@@ -653,13 +718,15 @@ export function useDashboardBoardOps(input: {
       if (board?.id === targetId) writeStoredBoardId(orgId, userId, data.activatedId ?? null);
       setRenameId(null);
       await loadHome(orgId, data.activatedId ?? null);
+      if (!isCurrent(mutation)) return;
       setMessageKind("success");
       setMessage(`Deleted ${target.name}`);
     } catch {
+      if (!isCurrent(mutation)) return;
       setMessageKind("error");
       setMessage("Could not delete your board. Check your connection and try again.");
     } finally {
-      setSaving(false);
+      finishMutation(mutation);
     }
   }
 
@@ -723,21 +790,25 @@ export function useDashboardBoardOps(input: {
   async function resetDefault() {
     let nextLayout = defaultDashboardLayoutForAudience(resetAudience);
     if (orgId) {
-      setSaving(true);
+      const mutation = beginMutation();
+      if (!mutation) return;
       try {
         const response = await fetch("/api/dashboards", {
+          signal: mutationSignal(mutation),
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, action: "reset" }),
         });
         const data = await response.json().catch(() => ({}));
+        if (!isCurrent(mutation)) return;
         if (response.ok) {
           nextLayout = layoutOrAudienceDefault(Array.isArray(data.layout) ? data.layout : null, resetAudience);
         }
       } catch {
+        if (!isCurrent(mutation)) return;
         // Offline: the built-in default for your role is still a real default.
       } finally {
-        setSaving(false);
+        finishMutation(mutation);
       }
     }
     record(layoutRef.current);

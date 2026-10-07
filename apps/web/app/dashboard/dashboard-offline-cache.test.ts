@@ -21,6 +21,12 @@ const valid = {
 };
 
 describe("dashboard offline cache", () => {
+  it("retains widget freshness when only board placement is saved", () => {
+    const dataUpdatedAt = "2026-10-07T12:00:00.000Z";
+    const next = dashboardCacheAfterSave({ ...valid, dataUpdatedAt }, { ...valid.board, name: "New name" });
+    expect(next.dataUpdatedAt).toBe(dataUpdatedAt);
+    expect(next.widgets).toBe(valid.widgets);
+  });
   it("replaces stale cached layout with the committed layout, retaining widget data", () => {
     const saved = { ...valid.board, layout: [{ ...layout[0]!, config: { alwaysShow: true, fixedSize: true }, w: 6 }] };
     const next = dashboardCacheAfterSave(valid, saved);
@@ -35,6 +41,7 @@ describe("dashboard offline cache", () => {
     expect(isDashboardOfflineCache(null)).toBe(false);
     expect(isDashboardOfflineCache({ ...valid, scope: "team" })).toBe(false);
     expect(isDashboardOfflineCache({ ...valid, widgets: [] })).toBe(false);
+    expect(isDashboardOfflineCache({ ...valid, dataUpdatedAt: "invalid" })).toBe(false);
   });
 
   it("uses the student widget set when the live layout is empty", () => {

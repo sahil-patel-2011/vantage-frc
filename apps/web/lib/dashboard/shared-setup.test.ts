@@ -21,11 +21,11 @@ describe("one shared Home setup prompt", () => {
       hotelName: null, roomLabel: null, mineOpenTodos: 0, kickoffReady: false });
     expect(strip.filter(item => item.tone !== "neutral")).toEqual([]);
   });
-  it("preserves every chosen card and size even without an event", () => {
+  it("consolidates quiet setup cards without rewriting the saved board", () => {
     const original = structuredClone(layout);
-    expect(homeViewLayout(layout, { ...input, editing: false })).toEqual(original);
+    expect(homeViewLayout(layout, { ...input, editing: false })).toEqual([original[0], original[3]]);
     expect(layout).toEqual(original);
-    expect(hiddenOnHome(layout, input).size).toBe(0);
+    expect(hiddenOnHome(layout, input).size).toBe(2);
     expect(homeViewLayout(layout, { ...input, editing: true })).toEqual(original);
   });
 
@@ -42,8 +42,8 @@ describe("one shared Home setup prompt", () => {
     const widgets = { ...input.widgets, coverage: { status: "live" } };
     const original = structuredClone(layout);
     const viewed = homeViewLayout(layout, { editing: false, shell: "ready", widgets, homeOverview: true });
-    expect(viewed).toEqual(original);
-    expect(hiddenOnHome(layout, { shell: "ready", widgets, homeOverview: true }).size).toBe(0);
+    expect(viewed).toEqual(original.filter(row => row.i !== "match"));
+    expect(hiddenOnHome(layout, { shell: "ready", widgets, homeOverview: true }).size).toBe(1);
     expect(layout).toEqual(original);
     expect(homeViewLayout(layout, { editing: true, shell: "ready", widgets, homeOverview: true })).toEqual(original);
   });

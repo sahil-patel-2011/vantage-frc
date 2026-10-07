@@ -17,12 +17,28 @@ import { loadDashboardSnapshot } from "../../../lib/dashboard/snapshot";
 import { homeAudienceFromTeamRole } from "../../../lib/home-workflows";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import { z } from "zod";
+import { parseSecureJson, RequestSecurityError } from "../../../lib/security/request";
 
 const MAX_BOARDS_PER_SCOPE = 12;
+const PRIVATE_HEADERS = { "cache-control": "private, no-store, max-age=0" };
+const mutationSchema = z.object({
+  orgId: z.string().uuid(),
+  id: z.string().uuid().nullable().optional(),
+  name: z.string().max(80).optional(),
+  scope: z.enum(["personal", "org"]).optional(),
+  layout: z.unknown().optional(),
+  activate: z.boolean().optional(),
+  action: z.enum(["reset", "save", "activate", "rename", "create", "duplicate"]).optional(),
+});
+
+class DashboardAccessError extends Error {
+  constructor(message: string, readonly status: 401 | 403) { super(message); }
+}
 
 async function requireSession() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) throw new Error("Authentication required");
+  if (!session) throw new DashboardAccessError("Authentication required", 401);
   return session;
 }
 
@@ -31,12 +47,13 @@ async function membership(client: import("@neondatabase/serverless").PoolClient,
     `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`,
     [orgId, userId],
   );
-  if (!row.rowCount) throw new Error("Organization membership required");
+  if (!row.rowCount) throw new DashboardAccessError("Organization membership required", 403);
   return row.rows[0]!.role;
 }
 
-function fail(error: unknown, status = 400) {
-  return Response.json({ error: publicErrorMessage(error, "Dashboard request failed") }, { status });
+function fail(error: unknown) {
+  const status = error instanceof DashboardAccessError || error instanceof RequestSecurityError ? error.status : 400;
+  return Response.json({ error: publicErrorMessage(error, "Dashboard request failed") }, { status, headers: PRIVATE_HEADERS });
 }
 
 function requestedWidgetTypes(url: URL): DashboardWidgetType[] | undefined {
@@ -223,24 +240,16 @@ export async function GET(request: Request) {
       };
     });
 
-    return Response.json(data);
+    return Response.json(data, { headers: PRIVATE_HEADERS });
   } catch (error) {
-    return fail(error, error instanceof Error && error.message.includes("Authentication") ? 401 : 400);
+    return fail(error);
   }
 }
 
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
-    const body = (await request.json()) as {
-      orgId?: string;
-      id?: string | null;
-      name?: string;
-      scope?: "personal" | "org";
-      layout?: unknown;
-      activate?: boolean;
-      action?: "reset" | "save" | "activate" | "rename" | "create" | "duplicate";
-    };
+    const body = await parseSecureJson(request, mutationSchema, { maxBytes: 262_144 });
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
     const action = body.action ?? "save";
@@ -524,16 +533,17 @@ export async function POST(request: Request) {
 
     return Response.json(result, {
       status: action === "rename" || action === "activate" ? 200 : 201,
+      headers: PRIVATE_HEADERS,
     });
   } catch (error) {
-    return fail(error, error instanceof Error && error.message.includes("Authentication") ? 401 : 400);
+    return fail(error);
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     const session = await requireSession();
-    const body = (await request.json()) as { orgId?: string; id?: string };
+    const body = await parseSecureJson(request, z.object({ orgId: z.string().uuid(), id: z.string().uuid() }));
     if (!body.orgId || !body.id) throw new Error("orgId and id are required");
 
     const result = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
@@ -591,7 +601,7 @@ export async function DELETE(request: Request) {
       return { ok: true, activatedId };
     });
 
-    return Response.json(result);
+    return Response.json(result, { headers: PRIVATE_HEADERS });
   } catch (error) {
     return fail(error);
   }

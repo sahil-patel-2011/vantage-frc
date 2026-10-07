@@ -104,15 +104,16 @@ describe("packKeepingOrder", () => {
 });
 
 describe("hiddenOnHome", () => {
-  it("does not tuck away selected cards when their data is empty", () => {
+  it("identifies quiet cards without removing them from the saved board", () => {
     const layout = [card("n", "next_match", 0, 0, 12, 4), card("h", "hours_month", 0, 4), card("c", "onboarding_checklist", 4, 4)];
     const hidden = hiddenOnHome(layout, {
       shell: "ready",
       widgets: { next_match: { status: "empty" }, hours_month: { status: "empty" }, onboarding_checklist: { status: "live" } },
     });
-    // Next match always stays; the empty hours card and the finished setup card do not.
-    expect(hidden.has("n")).toBe(false);
-    expect(hidden.size).toBe(0);
+    expect(hidden.get("n")).toBe("empty");
+    expect(hidden.get("h")).toBe("empty");
+    expect(hidden.get("c")).toBe("setup_done");
+    expect(layout).toHaveLength(3);
   });
 
   it("hides nothing that has data", () => {
@@ -126,7 +127,7 @@ describe("Always show", () => {
   const layout = [card("h", "hours_month", 0, 0), card("c", "onboarding_checklist", 4, 0, 6, 3)];
 
   it("keeps an empty card and a finished setup card on Home", () => {
-    expect(hiddenOnHome(layout, { shell: "ready", widgets }).size).toBe(0);
+    expect(hiddenOnHome(layout, { shell: "ready", widgets }).size).toBe(2);
     const always = setAlwaysShow(setAlwaysShow(layout, "h", true), "c", true);
     expect(hiddenOnHome(always, { shell: "ready", widgets }).size).toBe(0);
     expect(homeViewLayout(always, { editing: false, shell: "ready", widgets }).map((item) => item.i).sort()).toEqual(["c", "h"]);

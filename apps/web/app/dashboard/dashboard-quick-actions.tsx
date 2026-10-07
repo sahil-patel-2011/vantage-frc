@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Button, FormRow, Modal } from "../../components/ui";
 import type { DashboardWidgetType } from "../../lib/dashboard/catalog";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "../scouting/scouting.css";
 import "./dashboard-customization.css";
 
@@ -110,30 +111,41 @@ function QuickTaskForm({ orgId, onSaved }: { orgId: string; onSaved: () => Promi
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const requestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => { requestRef.current?.abort(); }, []);
   return (
     <form className="dash-quick-task" onSubmit={async (event) => {
       event.preventDefault();
-      if (busy || !title.trim() || !orgId) return;
+      if (busy || requestRef.current || !title.trim() || !orgId) return;
+      const controller = new AbortController();
+      requestRef.current = controller;
       setBusy(true);
       setMessage("");
       setError("");
       try {
         const response = await fetch("/api/todos", {
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
           method: "POST", headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, action: "create-todo", title: title.trim(), notes: notes.trim(), dueOn: dueOn || null }),
         });
         const data = await response.json();
+        if (controller.signal.aborted) return;
         if (!response.ok || data.status !== "live") throw new Error(data.error || "Could not create the task.");
         setTitle(""); setNotes(""); setDueOn("");
         setMessage("Team task created.");
-        try { await onSaved(); } catch { setMessage("Team task created. Refresh the card to see it."); }
+        try { await onSaved(); } catch { if (!controller.signal.aborted) setMessage("Team task created. Refresh the card to see it."); }
       } catch (cause) {
+        if (controller.signal.aborted) return;
+        if (cause instanceof DOMException && cause.name === "TimeoutError") {
+          setError("Couldn’t confirm the task. Open Team tasks to check before creating it again.");
+          return;
+        }
         setError(cause instanceof Error ? cause.message : "Could not create the task. Please try again.");
-      } finally { setBusy(false); }
+      } finally { if (!controller.signal.aborted) { requestRef.current = null; setBusy(false); } }
     }}>
-      <FormRow label="Task title"><input aria-label="Task title" required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} /></FormRow>
-      <FormRow label="Due date"><input aria-label="Due date" type="date" value={dueOn} onChange={(e) => setDueOn(e.target.value)} /></FormRow>
-      <FormRow label="Notes"><textarea aria-label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} /></FormRow>
+      <FormRow label="Task title"><input aria-label="Task title" required disabled={busy} maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} /></FormRow>
+      <FormRow label="Due date"><input aria-label="Due date" type="date" disabled={busy} value={dueOn} onChange={(e) => setDueOn(e.target.value)} /></FormRow>
+      <FormRow label="Notes"><textarea aria-label="Notes" disabled={busy} value={notes} onChange={(e) => setNotes(e.target.value)} /></FormRow>
       {error ? <p role="alert">{error}</p> : null}
       {message ? <p role="status">{message}</p> : null}
       <Button type="submit" variant="primary" disabled={busy || !orgId || !title.trim()}>{busy ? "Creating…" : "Create task"}</Button>

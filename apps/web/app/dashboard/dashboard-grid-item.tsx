@@ -46,7 +46,7 @@ type DashboardGridItemProps = {
   onRemove: (id: string) => void;
   onResize: (id: string, size: WidgetSizeKey) => void;
   onResetSize: (id: string) => void;
-  /** Turns "Always show" back off; only offered on cards that have it. */
+  onAlwaysShow: (id: string, always: boolean) => void;
 };
 
 /*
@@ -109,6 +109,7 @@ export const DashboardGridItem = memo(function DashboardGridItem({
   onRemove,
   onResize,
   onResetSize,
+  onAlwaysShow,
 }: DashboardGridItemProps) {
   const optionsButton = useRef<HTMLButtonElement>(null);
   function closeOptions() {
@@ -237,6 +238,10 @@ export const DashboardGridItem = memo(function DashboardGridItem({
                   if (isRepeatRemove(event.detail, event.clientX, event.clientY)) return;
                   onRemove(item.i); onSelect?.(null);
                 }}>Remove card</button>
+              <button type="button" className="dash-size-btn" aria-pressed={item.config?.alwaysShow === true}
+                onClick={() => { onAlwaysShow(item.i, item.config?.alwaysShow !== true); closeOptions(); }}>
+                {item.config?.alwaysShow === true ? "Hide when quiet" : "Always show on Home"}
+              </button>
             </div>
             {/* Under the buttons, inside the menu: it was drawn over the card's title. */}
             {stretched ? <p className="dash-size-note">Fills its row on Home. Size stays {WIDGET_SIZE_LABEL[currentSize]}.</p> : null}

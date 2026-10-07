@@ -55,13 +55,13 @@ describe("snapshotPollWidgetTypes", () => {
     expect(snapshotPollWidgetTypes([{ type: "next_match" }], { shell: "ready" })).toContain(
       "calendar_today",
     );
-    expect(snapshotPollWidgetTypes([], { shell: "ready" })).toEqual(["calendar_today", "my_day", "scouting_coverage", "team_todos"]);
+    expect(snapshotPollWidgetTypes([], { shell: "ready" })).toEqual(["next_match", "calendar_today", "my_day", "scouting_coverage", "team_todos"]);
   });
 
   it("does not ask for it twice when the board already shows it", () => {
     expect(
       snapshotPollWidgetTypes([{ type: "calendar_today" }], { shell: "ready" }),
-    ).toEqual(["calendar_today", "my_day", "scouting_coverage", "team_todos"]);
+    ).toEqual(["calendar_today", "next_match", "my_day", "scouting_coverage", "team_todos"]);
   });
 
   it("keeps setup widgets while the team is still configuring", () => {
