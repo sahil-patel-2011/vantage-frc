@@ -1,21 +1,8 @@
-name: Web PR CI
+name: Manual web acceptance
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-  # Also build what actually landed. 2,495 commits once reached main while CI
-  # ran on pull_request only: every small PR passed on its own branch, and the
-  # accumulated result — which no longer typechecked or tested at all — was
-  # never built once. Per-PR green does not mean main is green.
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
+  # Code pushes and PRs must not consume Actions minutes. The operator must
+  # separately authorize a manual run after checking the free allowance.
   workflow_dispatch:
 
 permissions:
@@ -23,14 +10,7 @@ permissions:
 
 concurrency:
   group: web-ci-${{ github.workflow }}-${{ github.ref }}
-  # Superseding a PR run saves minutes and costs nothing: the branch moved on.
-  # Superseding a push to main destroys the only evidence that main works.
-  #
-  # Three pushes in a row here each cancelled the one before, and a cancelled
-  # run reports as a failure — so main showed red for twenty minutes of CI that
-  # had nothing wrong with it, and a genuine break would have looked exactly
-  # the same. main is what deploys; its runs finish.
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 jobs:
   quality:

@@ -1,10 +1,9 @@
 name: Desktop packages
 
 on:
+  # Packaging consumes runner minutes, especially on macOS. Never start it
+  # automatically when code or a release tag is pushed.
   workflow_dispatch:
-  push:
-    tags:
-      - "desktop-v*"
 
 permissions:
   contents: write

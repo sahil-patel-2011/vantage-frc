@@ -9,19 +9,9 @@
   },
   "git": {
     "deploymentEnabled": {
-      "**": false,
-      "main": true
+      "**": false
     }
   },
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
-  "crons": [
-    {
-      "path": "/api/cron/tba-sync?mode=event-day",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/tba-sync?mode=season",
-      "schedule": "0 6 * * *"
-    }
-  ]
+  "crons": []
 }
