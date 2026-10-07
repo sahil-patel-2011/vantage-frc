@@ -8,6 +8,11 @@ export function scoutFieldProblem(field: FieldDefinition, fields: FieldDefinitio
 /** Put the first invalid answer in view, including for long custom forms. */
 export function focusInvalidScoutField(fields: FieldDefinition[], problems: string[]) {
   const field = fields.find(field => scoutFieldProblem(field, fields, problems));
+  focusScoutField(field);
+}
+
+/** Use the question key so repeated labels do not send a scout to another answer. */
+export function focusScoutField(field?: FieldDefinition) {
   const target = field ? document.getElementById(`scout-field-${encodeURIComponent(field.key)}`) : null;
   const destination = target ?? document.getElementById("scout-validation-summary");
   destination?.scrollIntoView({ block: "center", behavior: "instant" });

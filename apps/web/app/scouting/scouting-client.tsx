@@ -552,16 +552,10 @@ function ScoutingWorkspace({ orgId, embedded }: { orgId: string; embedded: boole
     ? formRecovery?.key === draftKey && formRecovery.id === pinnedForm.id && formRecovery.error ? "error" : "loading"
     : null;
 
-  const formFields = useMemo(
-    () =>
-      visibleFields(
-        withInferredPhaseRules(
-          schema?.definition.fields.filter((field) => !isScoutIdentityField(field)) ?? [],
-        ),
-        payload,
-      ),
-    [schema, payload],
-  );
+  const phaseFields = useMemo(() => withInferredPhaseRules(
+    schema?.definition.fields.filter(field => !isScoutIdentityField(field)) ?? [],
+  ), [schema]);
+  const formFields = useMemo(() => visibleFields(phaseFields, payload), [phaseFields, payload]);
 
   const schemaBudget = useMemo(
     () => (schema ? lintSchemaBudget(schema.definition) : null),

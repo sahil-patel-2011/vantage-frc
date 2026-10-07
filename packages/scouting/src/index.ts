@@ -884,6 +884,13 @@ function numberRangeError(field: FieldDefinition, value: number): string | null 
   return null;
 }
 
+/** Shared by validation and progress: explicit zero/false are recorded answers. */
+export function isEmptyScoutAnswer(field: FieldDefinition, value: unknown): boolean {
+  return value === undefined || value === null || value === "" ||
+    (Array.isArray(value) && value.length === 0) ||
+    (field.type === "multi_counter" && isPlainObject(value) && Object.keys(value).length === 0);
+}
+
 export function validatePayload(
   schema: SchemaDefinition,
   payload: Record<string, unknown>,
@@ -908,12 +915,7 @@ export function validatePayload(
       }
       continue;
     }
-    const empty =
-      value === undefined ||
-      value === null ||
-      value === "" ||
-      (Array.isArray(value) && value.length === 0) ||
-      (field.type === "multi_counter" && isPlainObject(value) && Object.keys(value).length === 0);
+    const empty = isEmptyScoutAnswer(field, value);
     if (!visibleKeys.has(field.key)) {
       if (!empty) errors.push(`${field.label} is hidden by this form's answer rules`);
       continue;

@@ -23,8 +23,8 @@ import {
   type ScoutingShellKind,
 } from "../../lib/scouting/scouting-related";
 import { ScoutingRelatedStrip } from "./scouting-chrome";
-import { Field } from "./scouting-field";
-import { focusInvalidScoutField, scoutFieldProblem } from "./scouting-form-focus";
+import { ScoutingAnswerField } from "./scouting-answer-field";
+import { focusInvalidScoutField, focusScoutField, scoutFieldProblem } from "./scouting-form-focus";
 import { ScoutChoice } from "./scout-choice";
 import { ScoutingLeadTools } from "./scouting-lead-tools";
 import {
@@ -59,12 +59,14 @@ import "./scout-flow.css";
 import "./scouting-workspace.css";
 import { PitProgress } from "./pit-progress";
 import { ScoutActionHistoryView } from "./scout-action-history";
+import { scoutAnswerProgress } from "../../lib/scouting/answer-progress";
 
 const CONFIDENCE_OPTIONS = [
   { value: "high", label: "Sure" },
   { value: "normal", label: "OK" },
   { value: "low", label: "Guessing" },
 ];
+const NO_FIELD_FLAGS: OfficialFlag[] = [];
 
 /** Smooth unless the phone asks for less motion. */
 function smoothOrInstant(): ScrollBehavior {
@@ -278,6 +280,7 @@ export function ScoutingReadyView({
   }, [validationAttempt, validationProblems, formFields, type]);
   const collecting = type === "match" && Boolean(context) && stage !== "all" && stage !== "review";
   const activeFields = type === "match" && context ? fieldsForMatchStage(formFields, stage) : formFields;
+  const progress = scoutAnswerProgress(formFields.filter(field => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")), payload);
   const undo = undoableScoutAction(payload);
   const scrollToFormPending = useRef(false);
 
@@ -783,25 +786,29 @@ return (
           ) : null}
 
           <div className="scout-answer-fields">
+          {canSave && !collecting ? <div className="scout-answer-progress" role="group" aria-label="Report progress">
+            <div><strong>{progress.answered} of {progress.total} answered</strong><span>{progress.requiredRemaining.length ? `${progress.requiredRemaining.length} required remaining` : "Required answers recorded"}{progress.optionalRemaining ? ` · ${progress.optionalRemaining} optional blank` : ""}</span></div>
+            {progress.requiredRemaining[0] ? <Button type="button" variant="ghost" size="sm" onClick={() => focusScoutField(progress.requiredRemaining[0])}>Next required answer</Button> : null}
+          </div> : null}
           {validationProblems.length ? <div id="scout-validation-summary" className="scout-validation-summary" role="alert" tabIndex={-1}>
             <strong>Review before saving</strong><p>Your answers are still in this form. Correct these items, then save again.</p>
             <ul>{validationProblems.map((problem, index) => <li key={`${index}:${problem}`}>{problem}</li>)}</ul>
           </div> : null}
           {(teamKey && (type === "pit" || matchKey) ? activeFields : []).filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
-            <Field
+            <ScoutingAnswerField
               key={`${type}:${matchKey}:${teamKey}:${field.key}`}
               anchorId={`scout-field-${encodeURIComponent(field.key)}`}
               field={field}
               value={payload[field.key]}
               error={scoutFieldProblem(field, formFields, validationProblems)}
-              flags={flagsByField.get(field.key) ?? []}
+              flags={flagsByField.get(field.key) ?? NO_FIELD_FLAGS}
               historyHint={fieldConfidenceHint(trustByField.get(field.key))}
               disagreementRate={trustByField.get(field.key)?.disagreementRate ?? null}
               orgId={orgId}
-              onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
-              onAttachRobotImage={
+              setPayload={setPayload}
+              attachMedia={
                 field.type === "robot_image" || field.widget === "robot_image"
-                  ? (file) => attachMedia(file, { fieldKey: field.key, tags: ["robot"] })
+                  ? attachMedia
                   : undefined
               }
             />

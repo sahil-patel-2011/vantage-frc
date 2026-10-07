@@ -99,6 +99,11 @@
   gap: 12px;
 }
 
+.sfb-edit-tools { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin: 16px 0 22px; }
+.sfb-edit-tools > label { display: grid; gap: 6px; flex: 1 1 220px; min-width: 0; color: var(--muted); font-size: 13px; }
+.sfb-edit-tools select { min-height: 44px; width: 100%; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface); color: var(--ink); font: inherit; }
+.sfb-edit-tools select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 .sfb-question {
   display: grid;
   gap: 10px;

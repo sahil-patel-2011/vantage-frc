@@ -11,19 +11,20 @@ export function mainMenuSearch(pathname: string, search: string, allowed: (href:
       : hubNavigationSections(hub, hub.tabs).find(entry => allowed(`${hub.href}?tab=${entry.id}`))?.id;
     if (tab) query.set("tab", tab);
   }
-  // Inner tools belong to a visible workbench. Forms should highlight Scouting,
-  // and a budget should keep Business open, rather than lose the location cue.
+  // Direct menu destinations keep their own cue; other inner tools highlight
+  // their visible workbench so location remains clear.
   if (hub && query.has("tab")) {
     const selected = query.get("tab")!;
     const workbench = hubWorkbenchId(hub, selected);
-    const menuTab = hubNavigationSections(hub, hub.tabs).some(entry => entry.id === selected);
+    const menuTab = hubNavigationSections(hub, hub.tabs).some(entry => entry.id === selected)
+      || (hub.id === "competition" && ["forms", "scout-coverage-live"].includes(selected));
     if (!menuTab && selected !== "pit-tv" && allowed(`${hub.href}?tab=${workbench}`)) query.set("tab", workbench);
   }
   return query.toString();
 }
 
 const DESTINATION_ICONS: Record<string, ProductNavIcon> = {
-  teams: "users", strategy: "target", picks: "stats", command: "calendar",
+  teams: "stats", strategy: "target", picks: "rank", command: "calendar",
   "match-checklist": "clipboard", "pit-tv": "display", calendar: "calendar",
   messages: "chat", attendance: "users", todos: "clipboard", knowledge: "grid",
   kickoff: "bolt", cad: "cube", code: "code", robot: "cube", finance: "stats",
@@ -47,7 +48,11 @@ export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (h
     const items = hubNavigationSections(hub, hub.tabs)
       .filter(section => !(hub.id === "competition" && section.id === "scouting"))
       .map(section => ({ href: `${hub.href}?tab=${section.id}`, label: section.label, icon: DESTINATION_ICONS[section.id] ?? definition.icon }));
-    if (hub.id === "competition") items.push({ href: "/competition?tab=pit-tv", label: "Pit display", icon: "display" });
+    if (hub.id === "competition") {
+      items.unshift({ href: "/competition?tab=forms", label: "Scouting forms", icon: "form" },
+        { href: "/competition?tab=scout-coverage-live", label: "Scout assignments", icon: "assignment" });
+      items.push({ href: "/competition?tab=pit-tv", label: "Pit display", icon: "display" });
+    }
     const permitted = items.filter(item => allowed(item.href));
     return permitted.length ? [{ ...definition, items: permitted }] : [];
   });

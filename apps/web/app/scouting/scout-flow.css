@@ -581,3 +581,7 @@
 .scout-choice button { transition: transform var(--dur-tap) var(--ease-out), border-color var(--dur-tint) var(--ease-out); }
 .team-view-heading .soft-tab-bar { flex-wrap: nowrap; }
 .team-view-heading p { font-size: 14px; }
+.scout-answer-progress { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 14px 0; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.scout-answer-progress > div { display: grid; gap: 4px; }
+.scout-answer-progress strong { color: var(--ink); font-size: 14px; font-weight: 600; }
+.scout-answer-progress span { color: var(--muted); font-size: 13px; }

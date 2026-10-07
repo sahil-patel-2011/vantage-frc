@@ -36,6 +36,15 @@ Google Sheets remains copies, with PostgreSQL still primary. The user authorized
 
 Regression sources now include publication conflicts, account-scoped/per-editor recovery, quota failures, manual reversion, conditional dependency chains, selected-team connection authorization and provider acknowledgements. These additions remain unexecuted. No local or hosted workload was started. The existing schema/release gates above remain open.
 
+## Scouting navigation, collection and new-team follow-up
+
+- Forms and scout assignments have direct, permission-filtered menu entries and their own current-page cue. Other inner tools retain their parent cue. Competition, scouting, form, assignment, pick-list, settings and help icons now describe their destinations; desktop subsection links include icons and 44 px targets.
+- The form editor mounts only expanded question controls. A jump selector brings a chosen question into view and focuses its label. The single Add question action inserts after the selected question. All answer types remain in the question's type selector; the redundant type palette and second add control are removed. Section headers are excluded from the answer-question count.
+- Collection memoizes phase definitions and individual answer widgets to reduce unrelated rendering on a counter tap. Review shows reachable answered/required/optional counts with zero and false treated as answers. Next required answer targets its unique question key, including when labels repeat. This is a source-level optimization, not a measured performance result.
+- New-team creation validates name, number, join code, legal consent and authorization before offering submission. Changing the team number clears the prior attestation. Requests are bounded and duplicate submissions blocked. Unconfirmed/malformed-success responses keep the details and point to Your teams before retrying. Server parsing rejects malformed and cross-site requests before writes; existing legal, age and authorization checks remain.
+- Read-only hosted navigation reached Your teams, Create team, practice scouting, People and invitation management. No team, report, invitation, permission, legal consent or provider setting was changed. Invitation management still displays email delivery off. These are observations of the older hosted app, not candidate acceptance.
+- Regression sources now cover long-form editor focus/insertion, retained new-team input after failed requests, changed-team attestation, malformed/cross-site claim requests, direct menu destinations and honest answer progress. They have not been executed. Repository Actions was checked again and remains disabled. The requested named remote test environment and invitation recipient have not been supplied.
+
 ## Required hosted walkthrough
 
 Use an explicitly authorized, private remote environment with confirmed free allowance. Keep Actions disabled and do not use the laptop as a runner.

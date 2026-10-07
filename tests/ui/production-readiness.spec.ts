@@ -1,6 +1,53 @@
 import { expect, test } from "@playwright/test";
 import { accessible, isolateUi, orgId, responses, schema, userId } from "./fixture";
 
+test("a long form keeps one editor mounted and adds after the selected question", async ({ page, context }) => {
+  await isolateUi(page, context);
+  await page.route("**/api/scouting/schemas?**", route => route.fulfill({ json: {
+    userId, year: 2026, eventKey: "2026test", canManageSchemas: true,
+    schemas: [{ ...schema, definition: { title: "Long form", fields: Array.from({ length: 30 }, (_, index) => ({ key: `q${index}`, label: `Question ${index + 1}`, type: "text" })) } }],
+  } }));
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  const builder = page.locator(".sfb-page");
+  await expect(builder.getByLabel("Form title", { exact: true })).toBeEnabled();
+  await expect(builder.getByLabel("Label", { exact: true })).toHaveCount(1);
+  await builder.getByRole("combobox", { name: "Jump to question", exact: true }).selectOption("q14");
+  const label = builder.getByLabel("Label", { exact: true });
+  await expect(label).toHaveValue("Question 15");
+  await expect(label).toBeFocused();
+  await label.fill("Edited middle question");
+  await builder.getByRole("button", { name: "Add question", exact: true }).click();
+  await expect(label).toBeFocused();
+  await label.fill("Inserted question");
+  await expect(builder.locator(".sfb-question").nth(15)).toContainText("Inserted question");
+  await builder.getByRole("combobox", { name: "Jump to question", exact: true }).selectOption("q14");
+  await expect(label).toHaveValue("Edited middle question");
+  await expect(builder.getByLabel("Label", { exact: true })).toHaveCount(1);
+});
+
+test("new-team details stay intact after an unconfirmed request and number changes require a fresh attestation", async ({ page, context }) => {
+  await isolateUi(page, context);
+  await page.route("**/api/onboarding", route => route.fulfill({ json: {} }));
+  await page.route("**/api/organizations/claim", route => route.abort());
+  await page.goto("/claim");
+  const create = page.getByRole("button", { name: "Create team", exact: true });
+  await expect(create).toBeDisabled();
+  await page.getByLabel("Team name", { exact: true }).fill("Acceptance Robotics");
+  await page.getByLabel("FRC team number", { exact: true }).fill("9999");
+  await page.locator("#claim-legal-terms").check();
+  await page.locator("#claim-legal-privacy").check();
+  await page.locator("#claim-authorized").check();
+  await expect(create).toBeEnabled();
+  await page.getByLabel("FRC team number", { exact: true }).fill("9998");
+  await expect(page.locator("#claim-authorized")).not.toBeChecked();
+  await expect(create).toBeDisabled();
+  await page.locator("#claim-authorized").check();
+  await create.click();
+  await expect(page.getByRole("alert")).toContainText("Check Your teams before retrying");
+  await expect(page.getByLabel("Team name", { exact: true })).toHaveValue("Acceptance Robotics");
+  await expect(page.getByLabel("FRC team number", { exact: true })).toHaveValue("9998");
+});
+
 for (const width of [390, 768]) test(`opening menu preserves an already focused destination at ${width}px`, async ({ page, context }) => {
   await page.setViewportSize({ width, height: 900 });
   await isolateUi(page, context);

@@ -31,12 +31,14 @@ describe("one main menu", () => {
     expect(sponsors.flatMap(section => section.items).some(item => item.href.includes("tab=sponsors"))).toBe(false);
   });
   it("keeps inner tools in their workbench and gives expanded destinations icons", () => {
-    expect(mainMenuSearch("/competition", "tab=forms&orgId=team")).toBe("tab=scouting&orgId=team");
+    expect(mainMenuSearch("/competition", "tab=forms&orgId=team")).toBe("tab=forms&orgId=team");
     expect(mainMenuSearch("/competition", "tab=alliance-sim")).toBe("tab=strategy");
     expect(mainMenuSearch("/competition", "tab=picks")).toBe("tab=picks");
     expect(mainMenuSearch("/competition", "tab=pit-tv")).toBe("tab=pit-tv");
     expect(mainMenuSearch("/competition", "tab=forms", href => href.endsWith("tab=forms"))).toBe("tab=forms");
     const items = mainMenuSections(PRODUCT_NAV_GROUPS, () => true).flatMap(section => section.items);
     expect(items.every(item => Boolean(item.icon))).toBe(true);
+    expect(items.filter(item => item.href === "/competition?tab=forms")).toHaveLength(1);
+    expect(items.filter(item => item.href === "/competition?tab=scout-coverage-live")).toHaveLength(1);
   });
 });

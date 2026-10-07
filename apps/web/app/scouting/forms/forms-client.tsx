@@ -79,6 +79,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
   const [mode, setMode] = useState<FormBuilderMode>("edit");
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [showAllQuestions, setShowAllQuestions] = useState(false);
+  const questionFocusRef = useRef<string | null>(null);
   const [title, setTitle] = useState("Pit scouting");
   const [questions, setQuestions] = useState(() => defaultQuestions("pit"));
   /**
@@ -354,10 +355,26 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
 
   const focusedQuestionId = questions.some(question => question.id === editingQuestionId)
     ? editingQuestionId : questions[0]?.id;
+  const answerQuestionCount = questions.filter(question => question.kind !== "section").length;
+
+  useEffect(() => {
+    const id = questionFocusRef.current;
+    if (!id || mode !== "edit") return;
+    questionFocusRef.current = null;
+    const editor = document.getElementById(`question-editor-${id}`);
+    editor?.scrollIntoView({ block: "center", behavior: "instant" });
+    editor?.querySelector<HTMLInputElement>("input:not([disabled])")?.focus({ preventScroll: true });
+  }, [focusedQuestionId, questions.length, mode]);
 
   function addQuestion(kind?: AnswerKind) {
     const question = newDraftQuestion(kind ? { kind, label: kind === "section" ? "Teleop" : "" } : undefined);
-    setQuestions(previous => [...previous, question]);
+    setQuestions(previous => {
+      const next = previous.slice();
+      const index = previous.findIndex(item => item.id === focusedQuestionId);
+      next.splice(index < 0 ? next.length : index + 1, 0, question);
+      return next;
+    });
+    questionFocusRef.current = question.id;
     setEditingQuestionId(question.id);
   }
 
@@ -733,13 +750,20 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
                 <div>
                   <h2 style={{ margin: 0 }}>Questions</h2>
                   <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                    {questions.length} {questions.length === 1 ? "question" : "questions"} · Select a question to edit. Drag to reorder.
+                    {answerQuestionCount} {answerQuestionCount === 1 ? "question" : "questions"} · Select to edit. Drag to reorder.
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" type="button" aria-pressed={showAllQuestions} onClick={() => setShowAllQuestions(previous => !previous)}>
                   {showAllQuestions ? "Focus one question" : "Expand all questions"}
                 </Button>
               </header>
+              <div className="sfb-edit-tools">
+                <label><span>Jump to question</span><select aria-label="Jump to question" value={focusedQuestionId ?? ""} onChange={event => {
+                  questionFocusRef.current = event.target.value;
+                  setShowAllQuestions(false); setEditingQuestionId(event.target.value);
+                }}>{questions.map((question, index) => <option key={question.id} value={question.id}>{index + 1}. {question.label || "Untitled question"}{question.kind === "section" ? " · Section" : ""}</option>)}</select></label>
+                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => addQuestion()}>Add question</Button>
+              </div>
               {removed ? (
                 <div className="sfb-undo" role="status">
                   <span>
@@ -855,6 +879,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
                       </div>
                     </div>
                     <div id={`question-editor-${question.id}`} className="sfb-question-editor" hidden={!showAllQuestions && focusedQuestionId !== question.id}>
+                    {showAllQuestions || focusedQuestionId === question.id ? <>
                     <div className="sfb-question-grid">
                       <FormRow label="Label">
                         <input
@@ -997,6 +1022,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
                         </label>
                       </>
                     )}
+                    </> : null}
                     </div>
                   </article>
                   </Fragment>
@@ -1005,11 +1031,6 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
                 questionDrag.slotIndex("questions")! >= questions.filter((item) => item.id !== questionDrag.drag?.id).length ? (
                   <div className="tier-drop-slot" aria-hidden="true" />
                 ) : null}
-              </div>
-              <div className="sfb-add-row">
-                <Button variant="secondary" type="button" disabled={!payload.canManageSchemas || busy} onClick={() => addQuestion()}>
-                  Add question
-                </Button>
               </div>
             </>
           )}
@@ -1044,29 +1065,6 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
               </Button>
             </div>
           </Panel>}
-          {/* Sixteen answer types were a catalogue on the first screen; they are what "Add a
-              question" opens. */}
-          <details className="app-card soft-panel sfb-add-question">
-            <summary>More question types</summary>
-            <p className="app-muted" style={{ margin: "0 0 10px", fontSize: 13 }}>
-              Pick the kind of answer, then give the question a label.
-            </p>
-            <ul className="sfb-palette">
-              {ANSWER_KIND_OPTIONS.map((option) => (
-                <li key={option.kind}>
-                  <button
-                    type="button"
-                    disabled={!payload.canManageSchemas || busy}
-                    aria-label={`Add a ${option.label} question`}
-                    onClick={() => addQuestion(option.kind)}
-                  >
-                    <strong>{option.label}</strong>
-                    <small className="app-muted">{option.hint}</small>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </details>
           <FormBuilderNextActionsPanel actions={readyActions} />
         </aside> : null}
       </div>
