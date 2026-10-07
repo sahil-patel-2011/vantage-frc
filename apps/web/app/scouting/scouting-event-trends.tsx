@@ -6,7 +6,7 @@ import { buildEventTrend, eventTrendMetrics } from "../../lib/scouting/event-tre
 import { scoutOptionLabel } from "../../lib/scouting/option-label";
 import styles from "./scouting-event-trends.module.css";
 
-export function ScoutingEventTrends({ robots, eventKey }: { robots: ObservedRobot[]; eventKey: string | null }) {
+export function ScoutingEventTrends({ robots, eventKey, teamNumber }: { robots: ObservedRobot[]; eventKey: string | null; teamNumber?: string }) {
   const [includeLow, setIncludeLow] = useState(false);
   const [selected, setSelected] = useState<{ eventKey: string | null; key: string } | null>(null);
   const metrics = useMemo(() => eventKey ? eventTrendMetrics(robots, eventKey, includeLow) : [], [robots, eventKey, includeLow]);
@@ -19,11 +19,11 @@ export function ScoutingEventTrends({ robots, eventKey }: { robots: ObservedRobo
     { label: trend.recent.lateLabel, sample: trend.recent.late },
   ] : [];
 
-  return <section className={styles.trends} aria-label="Event scouting trends">
+  return <section className={styles.trends} aria-label={teamNumber ? `Team ${teamNumber} scouting trends` : "Event scouting trends"}>
     <header>
       <span className={styles.eyebrow}>From your observations</span>
-      <h3>Event trends</h3>
-      <p>Patterns across the robots your team watched. Unanswered questions stay out of the conclusion.</p>
+      <h3>{teamNumber ? `Team ${teamNumber} trends` : "Event trends"}</h3>
+      <p>{teamNumber ? "Patterns across this robot’s observed matches." : "Patterns across the robots your team watched."} Unanswered questions stay out of the conclusion.</p>
     </header>
     <div className={styles.controls}>
       {metrics.length ? <label>Trend metric

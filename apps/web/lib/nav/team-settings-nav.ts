@@ -13,7 +13,9 @@ export type TeamSettingsPageId = "people" | "profile" | "security" | "ai" | "con
 export type TeamSettingsPage = { id: TeamSettingsPageId; label: string; href: string };
 
 export const TEAM_SETTINGS_PAGES: readonly TeamSettingsPage[] = [
-  { id: "people", label: "Team admin", href: "/team/admin" },
+  // The server redirects into People when that hub is permitted, retaining the
+  // existing access screen for delegated managers without Team hub permission.
+  { id: "people", label: "People", href: "/team/admin" },
   { id: "profile", label: "Team profile", href: "/team/admin/profile" },
   { id: "security", label: "Team security", href: "/team/security" },
   { id: "ai", label: "AI keys", href: "/team/ai-keys" },

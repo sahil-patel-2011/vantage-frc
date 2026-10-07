@@ -22,7 +22,7 @@ for(const offline of [false,true]) test(`phase scouting, undo, review and ${offl
  const bootstrap={...data,assignments:[],recentEntries:[],myEntries:[],scouted:[],matches:[{...match,actualTime:null,postResultTime:null,winningAlliance:null,predictedTime:new Date(Date.now()+600000).toISOString(),redAlliance:{teamKeys:["frc254","frc118","frc6925"]},blueAlliance:{teamKeys:["frc1114","frc2056","frc971"]}}]};
  await page.route("**/api/scouting/bootstrap?**",route=>route.fulfill({json:bootstrap}));
  await page.goto(`/competition?orgId=${orgId}`);
- const auto=page.getByLabel("Auto points",{exact:true});await expect(auto).toBeVisible({timeout:60000});
+ const auto=page.getByLabel("Auto points",{exact:true});await expect(page.getByRole("tab",{name:"Before match",exact:true})).toHaveAttribute("aria-selected","true",{timeout:60000});
  await page.emulateMedia({reducedMotion:"reduce"});
  await page.clock.install({time:new Date()});
  const phase=page.getByRole("tablist",{name:"Match form section",exact:true});

@@ -1,4 +1,15 @@
 /* Custom scouting form builder — Soft-UI, scoped .sfb-* */
+.sfb-document-actions { position: sticky; top: 72px; z-index: 5; display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-card); }
+.sfb-action-status { display: grid; gap: 3px; flex: 1; min-width: 0; font-size: 13px; }
+.sfb-action-status span { color: var(--muted); overflow-wrap: anywhere; }
+.sfb-document-actions > .app-button { flex-shrink: 0; min-height: 48px; }
+@media (max-width: 720px) {
+  .sfb-page { padding-bottom: calc(140px + env(safe-area-inset-bottom)); }
+  .sfb-document-actions { position: fixed; top: auto; bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; right: 12px; margin: 0; flex-wrap: wrap; padding: 12px; }
+  .sfb-action-status { flex-basis: 100%; }
+  .sfb-action-status span { display: none; }
+  .sfb-document-actions > .app-button { flex: 1; }
+}
 .sfb-page {
   max-width: 1120px;
 }

@@ -83,7 +83,8 @@ function wantsInvite(): boolean {
   return params.get("invite") === "1" || hash === "invite" || hash === "invite-form";
 }
 
-export default function TeamAdminClient({ orgId }: { orgId: string }) {
+export default function TeamAdminClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<TeamAdminSnapshot | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -585,17 +586,14 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         )
       : null;
 
-  const header = (
+  const accessLinks = actor.role === "owner" || actor.role === "admin" ? <nav className="team-admin-settings-links" aria-label="Team access tools"><a href={withOrgHref("/team/admin/presets", orgId)}>Custom roles</a></nav> : null;
+  const header = embedded ? <header className="people-access-heading"><div><h2>Invites & access</h2><p>Invite people and choose what each person can open.</p></div>{accessLinks}</header> : (
     <PageHeader
       breadcrumbs={teamSettingsBreadcrumb("people")}
-      title="Team admin"
+      title="Invites & access"
       description="Invite people and choose what each person can open."
     >
-      {actor.role === "owner" || actor.role === "admin" ? (
-        <nav className="team-admin-settings-links" aria-label="Team access tools">
-          <a href={withOrgHref("/team/admin/presets", orgId)}>Custom roles</a>
-        </nav>
-      ) : null}
+      {accessLinks}
     </PageHeader>
   );
 
@@ -609,7 +607,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           showRetry: membershipFetchFailed,
         };
     return (
-      <main className="module-page team-admin-page">
+      <Root className="module-page team-admin-page">
         {header}
         <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
@@ -637,12 +635,12 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   return (
-    <main className="module-page team-admin-page">
+    <Root className="module-page team-admin-page">
       {header}
       <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
       <TeamJoinCode key={orgId} orgId={orgId} />
@@ -776,6 +774,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           </Button>
         </div>
       </Modal>
-    </main>
+    </Root>
   );
 }

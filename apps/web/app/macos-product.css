@@ -154,10 +154,20 @@ body.has-app-shell .hub-tool-chip.is-active { color: var(--accent); background: 
 body.has-app-shell .hub-context-actions { border-top: 1px solid var(--line-soft); margin-top: 24px; padding-top: 16px; }
 
 /* Forms read like native controls, with explicit labels and useful focus. */
-body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { font-weight: 550; font-size: 13px; min-height: 44px; border-radius: 11px; padding: 9px 16px; letter-spacing: -.01em; box-shadow: var(--product-reflection), 0 1px 3px #00000005; }
+body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { font-weight: 550; font-size: 13px; min-height: 44px; min-width: 44px; border-radius: 11px; padding: 9px 16px; letter-spacing: -.01em; box-shadow: var(--product-reflection), 0 1px 3px #00000005; transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+body.has-app-shell :is(.app-button,.soft-btn,.primary-action):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { transition: none; } }
+@media (max-width: 720px) {
+  /* 16px prevents iOS focus zoom; action clearance leaves the last field reachable. */
+  body.has-app-shell .sfb-page, body.has-app-shell.is-scouting-form .scout-page { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+  body.has-app-shell:has(.sfb-document-actions) .soft-island { display: none; }
+}
 body.has-app-shell :is(.app-button.primary,.app-button.is-primary,.primary-action,.soft-btn.primary) { box-shadow: inset 0 1px 0 #ffffff20, 0 2px 5px color-mix(in srgb,var(--accent) 12%,transparent); }
 body.has-app-shell :is(.app-button.secondary,.soft-btn:not(.primary)):not(.ghost):not(.danger) { border-color: var(--line-soft); background: var(--surface); }
 body.has-app-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),select,textarea) { min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: color-mix(in srgb,var(--surface-2) 45%,var(--surface)); color: var(--ink); font: 400 13px/1.4 var(--font-sans); box-sizing: border-box; box-shadow: inset 0 1px 2px #00000003; }
+@media (max-width: 720px) {
+  body.has-app-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),select,textarea) { font-size: 16px; }
+}
 body.has-app-shell .soft-form-row > span, body.has-app-shell .soft-field label { color: var(--ink); font-weight: 500; font-size: 12px; }
 body.has-app-shell input::placeholder,body.has-app-shell textarea::placeholder { color: var(--muted); }
 body.has-app-shell :where(input[type="checkbox"],input[type="radio"],input[type="range"]) { accent-color: var(--accent); }

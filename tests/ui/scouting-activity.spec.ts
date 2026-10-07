@@ -23,7 +23,8 @@ for (const width of [390, 1440]) for (const theme of ["light", "dark"]) test(`ma
   const recorder = page.getByRole("region", { name: "Live match activity" });
   await expect(recorder).toBeVisible();
   await expect(recorder.getByRole("button", { name: "Shooting", exact: true })).toBeDisabled();
-  await expect(page.getByRole("spinbutton", { name: "Auto fuel scored", exact: true })).toHaveValue("");
+  await expect(page.getByRole("tab", { name: "Before match", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("spinbutton", { name: "Auto fuel scored", exact: true })).toHaveCount(0);
   const epoch = Date.parse("2026-10-06T13:00:00Z");
   await page.clock.setFixedTime(new Date(epoch));
   await page.getByRole("button", { name: "Start match timer when auto starts" }).click();
@@ -58,7 +59,8 @@ for (const width of [390, 1440]) for (const theme of ["light", "dark"]) test(`ma
   await accessible(page, '.scout-answers');
   await page.screenshot({ path: info.outputPath(`activity-${width}-${theme}.png`) });
   await page.clock.setFixedTime(new Date(epoch + 170000));
-  await expect(page.getByRole("timer").getByRole("button", { name: "Save this match", exact: true })).toBeVisible();
+  await expect(page.getByRole("timer")).toContainText("Ready to review");
+  await expect(page.getByRole("tab", { name: "Review", exact: true })).toHaveAttribute("aria-selected", "true");
   await context.setOffline(true);
   await page.getByRole("button", { name: "Save on this phone", exact: true }).click();
   await expect(page.locator("#scout-save-confirmation")).toBeVisible();

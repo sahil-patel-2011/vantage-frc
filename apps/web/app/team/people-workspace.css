@@ -1,0 +1,8 @@
+.people-workspace { display: grid; gap: 24px; min-width: 0; }
+.people-workspace-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.people-workspace .team-admin-page { padding: 0; margin: 0; max-width: none; }
+.people-workspace [hidden] { display: none; }
+.people-workspace .team-roster-head { gap: 16px; flex-wrap: wrap; }
+.people-access-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.people-access-heading h2 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+.people-access-heading p { margin: 6px 0 0; color: var(--muted); }

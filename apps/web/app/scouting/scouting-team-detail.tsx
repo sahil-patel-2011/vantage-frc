@@ -10,16 +10,18 @@
  * Arithmetic only — every number here is already on the page in the profile.
  */
 
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { CONSISTENCY_LABEL, type ScoutedTeamProfile } from "@vantage/prediction-strategy";
 import type { ObservedRobot } from "../../lib/scouting/team-profiles";
 import { ScoutObservationExplorer } from "../intel/scout-observation-explorer";
 import { ScoutingDetailCharts } from "./scouting-detail-charts";
 import { ScoutingTeamMatchLog } from "./scouting-team-match-log";
+import { ScoutingEventTrends } from "./scouting-event-trends";
 import "./scouting-team-detail.css";
 
 const SECTIONS = [
   ["overview", "Overview"],
+  ["trends", "Trends"],
   ["matches", "Matches"],
   ["capabilities", "Capabilities"],
   ["notes", "Notes"],
@@ -48,6 +50,7 @@ export function ScoutingTeamDetail({
 }) {
   const [section, setSection] = useState<ProfileSection>("overview");
   const id = useId();
+  const trendRobots = useMemo(() => observations ? [observations] : [], [observations]);
   const number = profile.teamKey.replace(/^frc/i, "");
   const consistency = profile.consistency?.consistency ?? "unknown";
   const stats: Array<{ label: string; value: string }> = [
@@ -61,7 +64,7 @@ export function ScoutingTeamDetail({
     });
   }
   if (profile.climbRate != null) {
-    stats.push({ label: "Climbs", value: `${Math.round(profile.climbRate * 100)}% of matches` });
+    stats.push({ label: "Climbs", value: `${Math.round(profile.climbRate * 100)}% of recorded climb outcomes` });
   }
   if (profile.defenseRate > 0) {
     stats.push({ label: "Plays defense", value: `${Math.round(profile.defenseRate * 100)}% of matches` });
@@ -126,6 +129,7 @@ export function ScoutingTeamDetail({
       </dl>
       <ScoutingDetailCharts profile={profile} />
       </> : null}
+      {section === "trends" ? <ScoutingEventTrends robots={trendRobots} eventKey={eventKey} teamNumber={number} /> : null}
       {section === "matches" ? <>
         {orgId ? <ScoutingTeamMatchLog orgId={orgId} eventKey={eventKey} teamKey={profile.teamKey} /> : <p className="app-muted">Match history is unavailable.</p>}
         {observations?.reports.length ? <details className="std-reports"><summary data-disclosure>Original scout reports</summary><ScoutObservationExplorer rows={observations.reports} activeEventKey={eventKey} sectionView="matches" /></details> : null}

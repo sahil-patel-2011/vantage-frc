@@ -16,14 +16,14 @@ export function mainMenuSearch(pathname: string, search: string, allowed: (href:
   if (hub && query.has("tab")) {
     const selected = query.get("tab")!;
     const workbench = hubWorkbenchId(hub, selected);
-    const menuTab = hubNavigationSections(hub, hub.tabs).some(entry => entry.id === selected)
-      || (hub.id === "competition" && ["forms", "scout-coverage-live"].includes(selected));
+    const menuTab = hubNavigationSections(hub, hub.tabs).some(entry => entry.id === selected);
     if (!menuTab && selected !== "pit-tv" && allowed(`${hub.href}?tab=${workbench}`)) query.set("tab", workbench);
   }
   return query.toString();
 }
 
 const DESTINATION_ICONS: Record<string, ProductNavIcon> = {
+  forms: "form", "scout-coverage-live": "assignment",
   teams: "stats", strategy: "target", picks: "rank", command: "calendar",
   "match-checklist": "clipboard", "pit-tv": "display", calendar: "calendar",
   messages: "chat", attendance: "users", todos: "clipboard", knowledge: "grid",
@@ -49,8 +49,6 @@ export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (h
       .filter(section => !(hub.id === "competition" && section.id === "scouting"))
       .map(section => ({ href: `${hub.href}?tab=${section.id}`, label: section.label, icon: DESTINATION_ICONS[section.id] ?? definition.icon }));
     if (hub.id === "competition") {
-      items.unshift({ href: "/competition?tab=forms", label: "Scouting forms", icon: "form" },
-        { href: "/competition?tab=scout-coverage-live", label: "Scout assignments", icon: "assignment" });
       items.push({ href: "/competition?tab=pit-tv", label: "Pit display", icon: "display" });
     }
     const permitted = items.filter(item => allowed(item.href));

@@ -45,7 +45,27 @@ Regression sources now include publication conflicts, account-scoped/per-editor 
 - Read-only hosted navigation reached Your teams, Create team, practice scouting, People and invitation management. No team, report, invitation, permission, legal consent or provider setting was changed. Invitation management still displays email delivery off. These are observations of the older hosted app, not candidate acceptance.
 - Regression sources now cover long-form editor focus/insertion, retained new-team input after failed requests, changed-team attestation, malformed/cross-site claim requests, direct menu destinations and honest answer progress. They have not been executed. Repository Actions was checked again and remains disabled. The requested named remote test environment and invitation recipient have not been supplied.
 
-## Required hosted walkthrough
+## Readiness-plan implementation checkpoint
+
+- Competition's canonical task list is Scout, Forms, Assignments, Teams, Match plan, Pick list and Event day. Our robot checklist is an Event day follow-up; its original route and permissions remain. Navigation and menu entries share this metadata.
+- Forms has one publication action bar in Questions, Preview and Responses: sticky near the desktop header, persistent at the bottom on phones. Status remains visible; scouting/assignment navigation and confirmed discard are secondary actions. The mobile app island is hidden while this bar is present to avoid overlapping action areas. Preview uses the same answer component, visibility rules and Before match → Auto → Teleop → Endgame → Review filters as collection. Switching phases retains answers.
+- Active collection defaults to Before match. One report action area handles review/save; the timer no longer duplicates Save. Lead administration, transfers, conflict review and personal report history stay outside live counting. Match and pit collection reserve space for the phone action bar. Shared controls have 44px minimum dimensions, scouting actions 48px, visible focus and reduced-motion-aware transitions. Mobile text entry uses 16px defaults to avoid focus zoom.
+- People starts with Members and provides Attendance and Invites & access views. Attendance and access screens load on demand; React Activity retains unfinished forms across those views while suspending their hidden effects. The old attendance link opens Attendance explicitly. Authorized team administrators enter the canonical access view through the existing server-guarded route, preserving query filters. Delegated member managers without Team hub permission retain their original authorized access screen. Membership departure remains in Your teams, linked as My membership.
+- Roster reads use the authoritative manage_members capability. Loading, retry, service failure and denied access are distinct. A failed attendance mutation retains entered details; duplicate submissions are blocked and success requires the API's actual acknowledgement. Access denial removes visible/cached attendance rather than falling back to private data. Superseded reads cannot replace the current view.
+- Each robot detail now includes Trends using its contributing observations and the shared trend calculation. Climb summary wording identifies recorded outcomes as the denominator. Missing observations are not converted into failed climbs.
+- Added hosted regression sources cover three viewport sizes, single publication action, shared preview phase behavior, People navigation/filter retention, roster failure recovery and retained attendance drafts. Updated existing navigation, timer, collection and team-access specifications. These sources were reviewed but **not executed**; no browser rendering, performance measurement or end-to-end acceptance of this candidate is claimed.
+
+Remaining work is explicit: the all-page button/layout audit, 200% text/focus/appearance checks, all three hosted journey passes, 40-question/1,000-report performance measurement, migration and invitation delivery acceptance, and Sheets-primary persistence. This checkpoint does not complete those gates. No local runtime, database, workflow or deployment was started.
+
+### Hosted pass order and performance evidence
+
+1. Normal: create a team, deliver a 24-hour recipient invite, set the recipient password, join, assign a lead, publish match/pit forms, collect/correct reports, inspect trends and share a pick list.
+2. Failure: expired/wrong-recipient/replaced invites; forbidden roles; interrupted responses; offline/reconnect; duplicate saves; competing publication; team departure and stale offline data.
+3. Final regression after fixes: returning onboarding/cookie behavior and critical flows for two isolated teams. Check every visible action on phone, tablet and desktop, light/dark, keyboard, reduced effects and 200% text.
+
+Use the authorized remote fixture with 40 questions and 1,000 reports. Record input-to-painted-counter timing at the 95th percentile (target <100ms), lost-input count (target zero), fixture/version, device/browser and results. Source memoization is not evidence that this target passed.
+
+## Hosted acceptance matrix
 
 Use an explicitly authorized, private remote environment with confirmed free allowance. Keep Actions disabled and do not use the laptop as a runner.
 

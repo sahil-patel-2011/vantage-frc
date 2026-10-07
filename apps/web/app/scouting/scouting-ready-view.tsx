@@ -268,7 +268,7 @@ export function ScoutingReadyView({
   }, [mine, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const [confirmRunning, setConfirmRunning] = useState(false);
-  const [stage, setStage] = useState<ScoutFormStage>("all");
+  const [stage, setStage] = useState<ScoutFormStage>("pre");
   const focusedValidationAttempt = useRef(0);
   useLayoutEffect(() => {
     if (!validationAttempt || validationAttempt === focusedValidationAttempt.current || !validationProblems.length) return;
@@ -286,7 +286,7 @@ export function ScoutingReadyView({
 
   // While a robot's form is open, a phone gives it the whole screen: the floating tab bar sat
   // on its + buttons and Save (soft-ui.css hides the bar under this class). The picker keeps it.
-  const formOpen = Boolean(context);
+  const formOpen = canSave && (tab === "match" || tab === "pit");
   useEffect(() => {
     document.body.classList.toggle("is-scouting-form", formOpen);
     return () => document.body.classList.remove("is-scouting-form");
@@ -452,6 +452,7 @@ return (
       orgId={orgId}
       embedded={embedded}
       lead={Boolean(data?.canManageSchemas)}
+      recording={formOpen}
     />
     {tab === "teams" || tab === "trust" ? <ScoutingSharing key={orgId} orgId={orgId} /> : null}
 
@@ -743,7 +744,7 @@ return (
                 {formFields.length ? (
                   <MatchTimer fields={formFields} stage={stage} onStageChange={setStage} showControls={false}
                     resetDisabled={Boolean(matchCapture(payload))}
-                    onPhaseChange={phase => setStage(phase === "done" ? "review" : phase === "pre" ? "all" : phase === "transition" ? "auto" : phase)}
+                    onPhaseChange={phase => setStage(phase === "done" ? "review" : phase === "transition" ? "auto" : phase)}
                     resetKey={`${matchKey}|${teamKey}`}
                     seasonYear={data?.eventKey ? Number(data.eventKey.slice(0,4)) : schema?.year ?? null}
                     storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })}
@@ -786,6 +787,7 @@ return (
           ) : null}
 
           <div className="scout-answer-fields">
+          {collecting && activeFields.length === 0 ? <p className="app-muted">No questions for this phase. Use the phase controls to continue or review your answers.</p> : null}
           {canSave && !collecting ? <div className="scout-answer-progress" role="group" aria-label="Report progress">
             <div><strong>{progress.answered} of {progress.total} answered</strong><span>{progress.requiredRemaining.length ? `${progress.requiredRemaining.length} required remaining` : "Required answers recorded"}{progress.optionalRemaining ? ` · ${progress.optionalRemaining} optional blank` : ""}</span></div>
             {progress.requiredRemaining[0] ? <Button type="button" variant="ghost" size="sm" onClick={() => focusScoutField(progress.requiredRemaining[0])}>Next required answer</Button> : null}
@@ -875,6 +877,7 @@ return (
               against. It used to accept the tap and answer with an error line
               below the button, after the scout had filled in the whole form. */}
           <div className="scout-report-actions"><Button variant="secondary" type="button" disabled={saving || !hasTarget} onClick={cancelReport}>{(userEdited || draftSavedAt) && payloadHasDraftContent(payload) ? "Discard draft" : "Close form"}</Button>
+          {collecting ? <Button variant="primary" type="button" onClick={() => setStage("review")}>Review answers</Button> : null}
           <Button
             variant="primary"
             type="button"
@@ -918,14 +921,14 @@ return (
               {message}
             </p>
           ) : null}
-          {editMyReport ? (
+          {!collecting && editMyReport ? (
             <MyReports reports={mine} pendingCount={counts.entries} onEdit={editMyReport} />
           ) : null}
           </div>
           </div>
         </Panel>
 
-        <ScoutingLeadTools
+        {!formOpen ? <ScoutingLeadTools
           orgId={orgId}
           data={data}
           schema={data?.schemas.find(form => form.type === "match") ?? schema}
@@ -940,7 +943,7 @@ return (
           setFormulaWeights={setFormulaWeights}
           saveFormula={saveFormula}
           sync={sync}
-        />
+        /> : null}
       </div>
     )}
   </Root>

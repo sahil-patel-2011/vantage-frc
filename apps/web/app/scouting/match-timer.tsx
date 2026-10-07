@@ -7,7 +7,7 @@ import { TabBar } from "../../components/ui";
 
 import { type ScoutFormStage } from "../../lib/scouting/match-form-flow";
 
-const STAGE_LABEL: Record<ScoutFormStage, string> = { all: "All", pre: "Before", auto: "Auto", teleop: "Teleop", endgame: "Endgame", review: "Review" };
+const STAGE_LABEL: Record<ScoutFormStage, string> = { all: "All", pre: "Before match", auto: "Auto", teleop: "Teleop", endgame: "Endgame", review: "Review" };
 
 const PHASE_LABEL: Record<MatchPhase, string> = {
   pre: "Match timer",
@@ -22,20 +22,11 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** The form's own Save button does the saving, so its checks and messages stay in one place. */
-function saveFromTimer() {
-  const save = document.querySelector<HTMLButtonElement>(".scout-save-button");
-  if (!save) return;
-  save.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
-  if (save.disabled) save.focus();
-  else save.click();
-}
-
 /**
  * Start it when the field starts. The phase follows the clock, and the form scrolls to the
  * part for that phase (auto, then teleop, then endgame) and outlines it, so a scout's eyes
  * stay on the field and their thumb finds the right counters. When the match ends the bar
- * becomes "Save this match" and the form scrolls to its last answers. Restarting is one tap.
+ * reports that review is ready. The form's single action bar handles saving.
  */
 export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear = null, stage = "all", onStageChange, onPhaseChange, undoButton, resetDisabled = false, showControls = true }: {
   stage?: ScoutFormStage; onStageChange?: (stage: ScoutFormStage) => void; onPhaseChange?: (phase: MatchPhase) => void; undoButton?: ReactNode;
@@ -114,9 +105,7 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear
       {elapsed != null ? (
         <>
           {done ? (
-            <button type="button" className="start" onClick={saveFromTimer}>
-              Save this match
-            </button>
+            <span className="match-timer-finished">Ready to review</span>
           ) : (
             // Time left in this phase is what a scout needs; time elapsed is arithmetic.
             <span className="match-timer-clock" aria-label={`${secondsLeft} seconds left in ${PHASE_LABEL[phase]}`}>
@@ -145,7 +134,7 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear
 /** Phase navigation stays in normal flow, so it never covers the live input on a phone. */
 export function MatchFormControls({ stage, onStageChange, undoButton }: { stage: ScoutFormStage; onStageChange?: (stage: ScoutFormStage) => void; undoButton?: ReactNode }) {
   return <div className="scout-phase-controls">
-      <TabBar className="scout-phase-tabs" aria-label="Match form section" value={stage} onChange={id => onStageChange?.(id as ScoutFormStage)}
-        tabs={(["all", "pre", "auto", "teleop", "endgame", "review"] as const).map(key => ({ id: key, label: STAGE_LABEL[key] }))} />{undoButton}
+      <TabBar className="scout-phase-tabs" aria-label="Match form section" value={stage === "all" ? "review" : stage} onChange={id => onStageChange?.(id as ScoutFormStage)}
+        tabs={(["pre", "auto", "teleop", "endgame", "review"] as const).map(key => ({ id: key, label: STAGE_LABEL[key] }))} />{undoButton}
     </div>;
 }

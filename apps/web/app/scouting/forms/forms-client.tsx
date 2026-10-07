@@ -16,7 +16,6 @@ import {
   classifyFormBuilderShell,
   definitionFromDraft,
   draftFromDefinition,
-  formBuilderNextActions,
   formBuilderPublishBlockedReason,
   formBuilderPublishLabel,
   duplicateQuestion,
@@ -37,14 +36,13 @@ import {
 import { hubHref } from "../../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
-import { FormBuilderNextActionsPanel, FormBuilderShell } from "./forms-chrome";
+import { FormBuilderShell } from "./forms-chrome";
 import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./forms-model";
 import { OptionEditor } from "./forms-option-editor";
 import { FormsTabletPreview } from "./forms-tablet-preview";
 import { StudioSettingsEditor } from "./forms-settings-editor";
 import { CollectionSettings } from "./forms-collection-settings";
 import { FormsVisibilityEditor } from "./forms-visibility-editor";
-import { withOrgHref } from "../../../lib/nav/product-nav";
 import { formEditorPrefix, listFormEditorDrafts, removeFormEditorDraft, saveFormEditorDraft, type FormEditorDraft, type FormEditorScope } from "../../../lib/scouting/form-editor-draft";
 
 function isSchemasPayload(value: unknown): value is SchemasPayload {
@@ -579,13 +577,6 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
     entryType: type,
     status: publishStatus,
   });
-  const readyActions = formBuilderNextActions({
-    orgId,
-    shell: "ready",
-    eventKey: payload.eventKey,
-    canManageSchemas: payload.canManageSchemas,
-    entryType: type,
-  });
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
 
@@ -608,6 +599,17 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
   return (
     <Root className="module-page sfb-page">
       <header className="sfb-heading">{!embedded ? <h1>Scouting forms</h1> : null}<p>Build your questions. Preview the form. Review the answers.</p></header>
+
+      <div className="sfb-document-actions" role="group" aria-label="Form publication">
+        <div className="sfb-action-status" role="status"><strong>{publishStatus.label}</strong><span>{publishStatus.detail}</span></div>
+        <ActionMenu overflowOnly label="Form options" actions={[
+          ...(payload.canManageSchemas && publishStatus.kind !== "published" ? [{ id: "scout", label: "Open scouting", href: scoutingHref }] : []),
+          { id: "assign", label: payload.canManageSchemas ? "Assign scouts" : "View assignments", href: hubHref("/competition", "scout-coverage-live", orgId) },
+          ...(currentSchema && publishStatus.kind === "draft_changes" && payload.canManageSchemas ? [{ id: "discard", label: "Undo my changes", disabled: busy, onClick: () => void discardChanges() }] : []),
+        ]} />
+        {payload.canManageSchemas && publishStatus.kind !== "published" ? <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} aria-describedby={publishBlocked ? "sfb-publish-reason" : undefined} onClick={() => void publish()}>{publishLabel}</Button>
+          : <Button as="a" variant={publicationConfirmed ? "primary" : "secondary"} href={scoutingHref}>Open scouting</Button>}
+      </div>
 
       <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -632,19 +634,12 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
             <strong>Published</strong>
             <span>Scouts see this form the next time they open Scout.</span>
           </div>
-          <Button as="a" variant="primary" href={withOrgHref("/competition?tab=scouting", orgId)}>
-            Open scouting
-          </Button>
         </section>
       ) : null}
 
       {shell === "empty" ? (
         <section className="sfb-shell-empty sfb-published-card" role="status">
           <div><strong>{payload.canManageSchemas ? "Ready to publish" : "No published form yet"}</strong><span>{payload.canManageSchemas ? "Start with these questions or tailor them below." : "Ask a scouting lead or team admin to publish a form. The questions below are a preview."}</span></div>
-          {/* The step people arrive for is publishing; "Open Scouting" left the page. */}
-          {payload.canManageSchemas ? <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
-            {publishLabel}
-          </Button> : null}
         </section>
       ) : null}
 
@@ -666,7 +661,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
       </fieldset>
 
       {publishBlocked && payload.canManageSchemas ? (
-        <p className="sfb-publish-blocked" role="status">
+        <p id="sfb-publish-reason" className="sfb-publish-blocked" role="status">
           {publishBlocked}
           {!payload.eventKey || year == null ? (
             <>
@@ -742,7 +737,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
                 The same buttons and steppers as the scout form on a phone. Scouts also pick the match and robot
                 first.
               </p>
-              <FormsTabletPreview title={title || "Untitled form"} questions={questions} />
+              <FormsTabletPreview key={`${year}:${type}`} type={type} title={title || "Untitled form"} questions={questions} />
             </>
           ) : (
             <>
@@ -1036,37 +1031,6 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
           )}
         </Panel>
 
-        {mode === "edit" ? <aside className="sfb-side" style={{ display: "grid", gap: 12 }}>
-          {publicationConfirmed ? null : <Panel className="sfb-publish-bar">
-            <p className={`sfb-status-inline sfb-status-${publishStatus.kind}`}>
-              <strong>{publishStatus.label}</strong>
-              <span className="app-muted">{publishStatus.detail}</span>
-            </p>
-            {publishStatus.kind === "draft_changes" ? (
-              <p className="app-muted" style={{ margin: "8px 0" }}>
-                Scouts keep the published form until you publish these changes.
-              </p>
-            ) : null}
-            {currentSchema && publishStatus.kind === "draft_changes" ? (
-                    <Button variant="secondary" type="button" disabled={busy} onClick={() => void discardChanges()}>
-                      Undo my changes
-                    </Button>
-            ) : null}
-
-            <div className="sfb-publish-actions">
-              {/* Nothing published yet: the card at the top has the Publish button, said once. */}
-              {shell === "empty" || publishStatus.kind === "published" ? null : (
-                <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} onClick={() => void publish()}>
-                  {publishLabel}
-                </Button>
-              )}
-              <Button as="a" variant="secondary" href={scoutingHref}>
-                Open Scouting
-              </Button>
-            </div>
-          </Panel>}
-          <FormBuilderNextActionsPanel actions={readyActions} />
-        </aside> : null}
       </div>
     </Root>
   );
