@@ -24,6 +24,8 @@ function makeClient(state: {
   inserts: unknown[][];
   updates: unknown[][];
 }) {
+  const targets = new Map<string, { userId: string; eventKey: string; teamKey: string; matchKey: string | null }>();
+  const receiptTypes = new Map<string, SyncEntry["type"]>();
   return {
     async query(sql: string, params: unknown[] = []) {
       if (sql.includes("FROM scout_schemas")) {
@@ -34,21 +36,27 @@ function makeClient(state: {
         const existing = state.receipts.get(clientId);
         return {
           rows: existing
-            ? [{ serverEntryId: existing.serverEntryId, payloadHash: existing.payloadHash }]
+            ? [{ serverEntryId: existing.serverEntryId, payloadHash: existing.payloadHash, entryType: receiptTypes.get(clientId) }]
             : [],
           rowCount: existing ? 1 : 0,
         };
       }
       if (sql.includes("INSERT INTO match_scout_entries")) {
         state.inserts.push(params);
+        targets.set(String(params[0]), { userId: String(params[5]), eventKey: String(params[2]), teamKey: String(params[4]), matchKey: String(params[3]) });
         return { rows: [], rowCount: 1 };
       }
       if (sql.includes("INSERT INTO scout_sync_receipts")) {
+        receiptTypes.set(String(params[1]), params[2] as SyncEntry["type"]);
         state.receipts.set(String(params[1]), {
           serverEntryId: String(params[3]),
           payloadHash: String(params[4]),
         });
         return { rows: [], rowCount: 1 };
+      }
+      if (sql.includes("FOR UPDATE")) {
+        const target = targets.get(String(params[0]));
+        return { rows: target ? [target] : [], rowCount: target ? 1 : 0 };
       }
       if (sql.includes("UPDATE match_scout_entries")) {
         state.updates.push(params);
@@ -151,5 +159,26 @@ describe("scouting sync upsert", () => {
     expect(second.duplicate).toBe(false);
     expect(second.entryId).toBe(first.entryId);
     expect(state.updates).toHaveLength(1);
+  });
+
+  it.each([
+    { teamKey: "frc1678" }, { matchKey: "2026test_qm2" }, { eventKey: "2026other" }, { type: "pit" as const },
+  ])("preserves the original report when its client ID is reused for another target: %j", async change => {
+    const state = { receipts: new Map<string, { serverEntryId: string; payloadHash: string }>(), inserts: [] as unknown[][], updates: [] as unknown[][] };
+    const repository = new ScoutingRepository(makeClient(state));
+    await repository.syncEntry("org-1", "user-1", entry);
+    const before = state.receipts.get(entry.clientId);
+    await expect(repository.syncEntry("org-1", "user-1", { ...entry, ...change, payload: { auto: 99 } })).rejects.toThrow("belongs to another");
+    expect(state.updates).toEqual([]);
+    expect(state.receipts.get(entry.clientId)).toEqual(before);
+    expect(state.inserts).toHaveLength(1);
+  });
+
+  it("checks authorship even for an identical replay", async () => {
+    const state = { receipts: new Map<string, { serverEntryId: string; payloadHash: string }>(), inserts: [] as unknown[][], updates: [] as unknown[][] };
+    const repository = new ScoutingRepository(makeClient(state));
+    await repository.syncEntry("org-1", "user-1", entry);
+    await expect(repository.syncEntry("org-1", "user-2", entry)).rejects.toThrow("author");
+    expect(state.updates).toEqual([]);
   });
 });

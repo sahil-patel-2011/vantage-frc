@@ -1,14 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { homeActivities, homeTasks, liveCount, scoutingHomeAction } from "./dashboard-overview-model";
+import { homeActivities, homeTasks, liveCount, sameHomeDestination, scoutingHomeAction } from "./dashboard-overview-model";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 const live = (data: Record<string, unknown>): WidgetPayload => ({ type: "calendar_today", status: "live", updatedAt: "", data });
 
 describe("the real Home overview", () => {
+  it("does not repeat an assigned scouting action through a generic shortcut", () => {
+    expect(sameHomeDestination("/competition?tab=scouting&scoutTab=match&teamKey=frc254", "/scouting?orgId=one")).toBe(true);
+    expect(sameHomeDestination("/todos", "/team?tab=todos&orgId=one")).toBe(true);
+    expect(sameHomeDestination("/competition?tab=forms", "/competition?tab=scouting")).toBe(false);
+    expect(sameHomeDestination("/competition?tab=teams", "/competition?tab=scouting")).toBe(false);
+  });
   it("offers practice without an event, published event forms when ready, and form setup to leaders only", () => {
     const base = { orgId: "org-1", hasEvent: false, hasForms: false, role: "scout" };
     expect(scoutingHomeAction(base).href).toContain("mode=free");
     expect(scoutingHomeAction({ ...base, hasEvent: true, hasForms: true }).label).toBe("Start scouting");
     expect(scoutingHomeAction({ ...base, hasEvent: true, role: "owner" }).href).toContain("tab=forms");
+    expect(scoutingHomeAction({ ...base, hasEvent: true, canManageScouting: true }).href).toContain("tab=forms");
     expect(scoutingHomeAction({ ...base, hasEvent: true }).href).not.toContain("tab=forms");
     expect(scoutingHomeAction({ ...base, role: "viewer" }).href).toContain("tab=teams");
   });

@@ -62,6 +62,9 @@
 .scout-validation-summary { grid-column: 1/-1; padding: 16px; border: 1px solid var(--danger, #c73535); border-radius: 15px; background: var(--surface); }
 .scout-validation-summary p, .scout-validation-summary ul { margin: 8px 0 0; font-size: 13px; line-height: 1.5; }
 .scout-validation-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.scout-form-recovery { margin: 0 0 20px; padding: 16px; border: 1px solid var(--line); border-radius: 15px; background: var(--bg); }
+.scout-form-recovery p { margin: 0; max-width: 64ch; font-size: 14px; line-height: 1.5; color: var(--muted); }
+.scout-form-recovery .app-button { margin-top: 12px; }
 .scout-answer-fields .soft-form-row { margin: 0; }
 .scout-answer-fields :is(.soft-form-row > span,.scout-choice-label) { color: var(--ink); font-size: 13px; font-weight: 550; text-transform: none; letter-spacing: 0; }
 .scout-answer-fields .tap-counter { max-width: none; grid-template-columns: 48px minmax(40px,1fr) 48px; gap: 4px; }

@@ -79,6 +79,12 @@ export async function resolveSyncTarget(
   const { orgId, userId, entry } = input;
   if (!entry?.clientId || (entry.type !== "match" && entry.type !== "pit")) return { kind: "as-sent", entry };
 
+  // The request supplies a transaction. Two devices saving the same robot at
+  // once must observe each other's report before choosing whether to insert.
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+    JSON.stringify(["scout-report", orgId.toLowerCase(), userId.toLowerCase(), entry.type, entry.eventKey, entry.type === "match" ? entry.matchKey : null, entry.teamKey]),
+  ]);
+
   const receipt = await client.query<{ entryType: "match" | "pit"; serverEntryId: string }>(
     `SELECT entry_type::text AS "entryType", server_entry_id::text AS "serverEntryId"
      FROM scout_sync_receipts WHERE org_id = $1::uuid AND client_id = $2`,
@@ -88,6 +94,7 @@ export async function resolveSyncTarget(
   if (filed) {
     if (filed.entryType !== entry.type) return { kind: "refuse", reason: OTHER_ROBOT_REASON };
     const row = await storedRow(client, orgId, filed.entryType, "id = $2::uuid", [filed.serverEntryId]);
+    if (row && row.scoutUserId !== userId) return { kind: "refuse", reason: OTHER_SCOUT_REASON };
     if (row && !sameRobot(row, entry)) return { kind: "refuse", reason: OTHER_ROBOT_REASON };
     return { kind: "as-sent", entry };
   }
@@ -101,16 +108,18 @@ export async function resolveSyncTarget(
     return { kind: "as-sent", entry };
   }
 
-  if (entry.type !== "match" || !entry.matchKey) return { kind: "as-sent", entry };
+  if (entry.type === "match" && !entry.matchKey) return { kind: "as-sent", entry };
   const mine = await storedRow(
     client,
     orgId,
-    "match",
-    "event_key = $2 AND match_key = $3 AND team_key = $4 AND scout_user_id = $5::uuid AND client_id IS NOT NULL",
-    [entry.eventKey, entry.matchKey, entry.teamKey, userId],
+    entry.type,
+    entry.type === "match"
+      ? "event_key = $2 AND match_key = $3 AND team_key = $4 AND scout_user_id = $5::uuid AND client_id IS NOT NULL"
+      : "event_key = $2 AND team_key = $3 AND scout_user_id = $4::uuid AND client_id IS NOT NULL",
+    entry.type === "match" ? [entry.eventKey, entry.matchKey, entry.teamKey, userId] : [entry.eventKey, entry.teamKey, userId],
   );
   if (!mine?.clientId) return { kind: "as-sent", entry };
-  await writeReceipt(client, orgId, mine.clientId, "match", mine.id);
+  await writeReceipt(client, orgId, mine.clientId, entry.type, mine.id);
   return { kind: "existing-report", entry: { ...entry, clientId: mine.clientId } };
 }
 

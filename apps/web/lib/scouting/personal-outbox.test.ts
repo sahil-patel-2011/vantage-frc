@@ -17,6 +17,44 @@ describe("personal scouting on shared devices", () => {
   beforeEach(() => { identity.user = "a"; vi.stubGlobal("indexedDB", new IDBFactory()); vi.stubGlobal("navigator", { onLine: true }); });
   afterEach(() => vi.unstubAllGlobals());
 
+  it.each([{ teamKey: "frc254" }, { matchKey: "2026test_qm2" }, { eventKey: "2026other" }, { type: "pit" as const }, { orgId: "team-two" }])(
+    "refuses a client ID collision without replacing an unsent report: %j", async change => {
+      const original = entry();
+      await queueEntry(original);
+      await expect(queueEntry({ ...original, ...change, payload: { score: 100 } })).rejects.toThrow("already belongs");
+      expect(await listPendingEntries()).toEqual([original]);
+    },
+  );
+
+  it("allows a newer correction for the same unsent robot report", async () => {
+    await queueEntry(entry());
+    const corrected = { ...entry(), payload: { score: 3 }, updatedAt: "2026-09-26T12:01:00Z" };
+    await queueEntry(corrected);
+    expect(await listPendingEntries()).toEqual([corrected]);
+  });
+  it("keeps a newer queued correction when another tab sends an older copy", async () => {
+    const corrected = { ...entry(), payload: { score: 3 }, updatedAt: "2026-09-26T12:01:00Z" };
+    await queueEntry(corrected);
+    await expect(queueEntry(entry())).rejects.toThrow("newer correction");
+    expect(await listPendingEntries()).toEqual([corrected]);
+  });
+  it("replaces a rejected entry only when the corrected answers commit", async () => {
+    await queueEntry(entry());
+    await quarantineEntry(entry(), "Required answer missing");
+    await expect(queueEntry({ ...entry(), teamKey: "frc254" })).rejects.toThrow("already belongs");
+    expect(await listQuarantine()).toHaveLength(1);
+    const correction = { ...entry(), payload: { score: 3 }, updatedAt: "2026-09-26T12:01:00Z" };
+    await queueEntry(correction);
+    expect(await listQuarantine()).toEqual([]);
+    expect(await listPendingEntries()).toEqual([correction]);
+  });
+  it("does not discard a rejected revision that changed after confirmation opened", async () => {
+    await queueEntry(entry());
+    await quarantineEntry(entry(), "Rejected");
+    expect(await discardQuarantined("shared-id", "older-revision-time")).toBe(false);
+    expect(await listQuarantine()).toHaveLength(1);
+  });
+
   it("blocks new read caches at quota but preserves and accepts unsent reports", async () => {
     await cacheEvent(ORG, { saved: "event" });
     vi.stubGlobal("navigator", { onLine: true, storage: { estimate: async () => ({ usage: 1024, quota: 1024 }) } });
@@ -135,6 +173,17 @@ describe("personal scouting on shared devices", () => {
     await expect(syncOutbox(ORG, { maxAttempts: 1 })).rejects.toThrow("account changed");
     identity.user = "a";
     expect(await listPendingEntries()).toHaveLength(1);
+  });
+
+  it("ties official checks to the acknowledged observation's identity", async () => {
+    const report = entry();
+    await queueEntry(report);
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ acknowledgements: [{ clientId: report.clientId,
+      validations: [{ fieldKey: "score", status: "conflict", scoutValue: 0, officialValue: 3, officialSource: "breakdown", detail: "Scores differ." }] }] }) })));
+    expect((await syncOutbox(ORG, { maxAttempts: 1 })).validations).toEqual([expect.objectContaining({
+      clientId: report.clientId, orgId: ORG, eventKey: report.eventKey, matchKey: report.matchKey,
+      teamKey: report.teamKey, schemaId: report.schemaId, type: report.type,
+    })]);
   });
 
   it("rolls back interrupted transactions instead of claiming an offline save", async () => {

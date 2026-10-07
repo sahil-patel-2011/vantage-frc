@@ -1,5 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { SCOUT_ENTRY_CSV_COLUMNS, openAssignment } from "./scouting-model";
+import { SCOUT_ENTRY_CSV_COLUMNS, myReports, officialFlagsForReport, openAssignment, type MyEntry, type OfficialFlag } from "./scouting-model";
+import type { SyncEntry } from "@vantage/scouting";
+
+describe("official checks beside the current report", () => {
+  const report = { clientId: "report", orgId: "team", eventKey: "e", type: "match" as const,
+    matchKey: "e_qm1", teamKey: "frc254", schemaId: "original-form" };
+  const flag: OfficialFlag = { ...report, fieldKey: "score", status: "conflict", scoutValue: 2,
+    officialValue: 4, officialSource: "breakdown", detail: "Scores differ." };
+  it.each([{ clientId: "other-author-report" }, { orgId: "other-team" }, { eventKey: "other-event" },
+    { matchKey: "e_qm2" }, { teamKey: "frc118" }, { schemaId: "new-form" }, { type: "pit" as const }])(
+    "does not attach another observation's warning: %j", change => {
+      expect(officialFlagsForReport([flag, { ...flag, ...change }], report)).toEqual([flag]);
+    },
+  );
+  it("keeps only the latest acknowledged correction for a field and source", () => {
+    const corrected = { ...flag, scoutValue: 4, status: "consistent", detail: "Scores agree." };
+    expect(officialFlagsForReport([flag, corrected], report)).toEqual([corrected]);
+  });
+});
+
+describe("personal reports with queued corrections", () => {
+  const saved: MyEntry = { id: "server", clientId: "original", type: "match", matchKey: "e_qm1", teamKey: "frc254",
+    schemaId: "older-form", payload: { scored: 2 }, confidence: "normal", updatedAt: "2026-10-07T12:00:00Z" };
+  const queued: SyncEntry = { clientId: "original", type: "match", orgId: "team", eventKey: "e", matchKey: "e_qm1", teamKey: "frc254",
+    schemaId: "older-form", payload: { scored: 4 }, confidence: "high", source: "manual", updatedAt: "2026-10-07T12:01:00Z" };
+  const data = { eventKey: "e", scoutIdentity: { userId: "scout", displayName: "Scout" }, recentEntries: [], myEntries: [saved] };
+  it("restores newer device answers and original questions after a reload", () => {
+    expect(myReports(data, [queued])).toHaveLength(1);
+    expect(myReports(data, [queued])[0]).toMatchObject({ clientId: "original", schemaId: "older-form", payload: { scored: 4 }, confidence: "high" });
+  });
+  it("keeps a newer server correction and excludes another event", () => {
+    expect(myReports(data, [{ ...queued, updatedAt: "2026-10-07T11:00:00Z" }])[0]).toEqual(saved);
+    expect(myReports(data, [{ ...queued, eventKey: "different" }])).toEqual([saved]);
+  });
+  it("recovers pit reports while keeping reports for distinct robots", () => {
+    const pit: SyncEntry = { ...queued, type: "pit", matchKey: undefined, clientId: "pit", teamKey: "frc118" };
+    expect(myReports(data, [pit]).map(row => [row.type, row.teamKey])).toEqual([["pit", "frc118"], ["match", "frc254"]]);
+  });
+});
 
 describe("SCOUT_ENTRY_CSV_COLUMNS", () => {
   it("exports identity and confidence with the row", () => {

@@ -34,30 +34,31 @@ body.has-app-shell .dash-home .dash-hero-greeting {
 .dash-home .dash-workspace { display: grid; gap: 14px; min-width: 0; }
 body.has-app-shell .dash-home .dash-workspace > .dash-now {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 18px;
-  padding: 28px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
   margin: 0;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--line-soft));
-  border-radius: 24px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, var(--surface)), var(--surface) 80%);
-  box-shadow: var(--shadow-card);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  box-shadow: none;
 }
-body.has-app-shell .dash-home .dash-workspace .dash-now-main { flex: 0 1 auto; }
+body.has-app-shell .dash-home .dash-workspace .dash-now-main { flex: 1 1 240px; }
 body.has-app-shell .dash-home .dash-workspace .dash-now-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   font-size: 12px;
   font-weight: 600;
 }
 .dash-workspace .dash-now-eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-body.has-app-shell .dash-home .dash-workspace .dash-now-main > strong { font-size: clamp(22px, 2.2vw, 28px); }
-body.has-app-shell .dash-home .dash-workspace .dash-now-main > p { max-width: 44ch; margin-bottom: 0; }
+body.has-app-shell .dash-home .dash-workspace .dash-now-main > strong { font-size: clamp(19px, 2vw, 23px); }
+body.has-app-shell .dash-home .dash-workspace .dash-now-main > p { max-width: 60ch; margin-bottom: 0; }
 .dash-workspace .dash-now-quiet { color: var(--accent); font-size: 14px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .dash-workspace .dash-now-quiet:hover { text-decoration: underline; text-underline-offset: 4px; }
 .dash-workspace-actions { min-width: 0; }
@@ -80,7 +81,7 @@ body.has-app-shell .dash-home .dash-workspace .dash-now-main > p { max-width: 44
   cursor: pointer;
   transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
 }
-.dash-workspace-action > svg { width: 17px; height: 17px; flex: none; color: var(--muted); }
+.dash-workspace-action > svg { width: 22px; height: 22px; flex: none; color: var(--muted); }
 .dash-home .dash-workspace-action:hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--ink) 18%, var(--line)); box-shadow: var(--shadow); }
 .dash-workspace-action:focus-visible, .dash-workspace .dash-now-quiet:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 body.has-app-shell .dash-home.scan-workbench > .dash-role-strip { margin: 0; padding: 22px 24px; }
@@ -115,7 +116,7 @@ body.has-app-shell .dash-home .dash-stat-row strong, body.has-app-shell .dash-ho
 .dash-home .dash-sync-foot { margin: 0; font-size: 11px; }
 .dash-home .dash-workspace[data-edit-dim="true"] { display: none; }
 @media (max-width: 1000px) {
-  body.has-app-shell .dash-home .dash-workspace > .dash-now { padding: 24px; }
+  body.has-app-shell .dash-home .dash-workspace > .dash-now { padding: 20px; }
 }
 @media (max-width: 640px) {
   body.has-app-shell .dash-home.scan-workbench { padding: 24px 16px 28px; gap: 22px; }

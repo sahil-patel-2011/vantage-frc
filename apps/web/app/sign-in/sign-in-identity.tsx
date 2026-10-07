@@ -34,6 +34,7 @@ export function SignInIdentityStep({
   onPasswordSubmit,
   onPasswordChange,
   onCodeChange,
+  showTeamJoin = true,
 }: {
   googleAvailable: boolean;
   emailAvailable: boolean;
@@ -57,10 +58,11 @@ export function SignInIdentityStep({
   onPasswordSubmit: (event: FormEvent) => void;
   onPasswordChange: (password: string) => void;
   onCodeChange: (code: string) => void;
+  showTeamJoin?: boolean;
 }) {
   return (
     <>
-      <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p>
+      {showTeamJoin && passwordPanel === "closed" ? <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p> : null}
       {googleAvailable ? (
         <>
           <button className="signin-google" type="button" onClick={onGoogle} disabled={working}>

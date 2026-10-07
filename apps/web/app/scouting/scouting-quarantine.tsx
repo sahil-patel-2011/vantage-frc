@@ -22,10 +22,16 @@ export function ScoutQuarantinePanel({
   items,
   onRetry,
   onDiscard,
+  onEdit,
+  busy = false,
+  currentEventKey,
 }: {
   items: QuarantinedItem[];
   onRetry: (clientId: string) => void;
   onDiscard: (clientId: string) => void;
+  onEdit?: (clientId: string) => void;
+  busy?: boolean;
+  currentEventKey?: string | null;
 }) {
   items = items.filter((item) => item.kind === "entry" || MEDIA_ENABLED);
   if (!items.length) return null;
@@ -58,10 +64,11 @@ export function ScoutQuarantinePanel({
               <small className="app-muted">{new Date(item.quarantinedAt).toLocaleString()}</small>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <Button variant="secondary" type="button" onClick={() => onRetry(item.clientId)}>
+              {onEdit && item.kind === "entry" && item.entry.eventKey === currentEventKey ? <Button variant="secondary" type="button" disabled={busy} onClick={() => onEdit(item.clientId)}>Review answers</Button> : null}
+              <Button variant="secondary" type="button" disabled={busy} onClick={() => onRetry(item.clientId)}>
                 Retry
               </Button>
-              <button type="button" className="text-button" onClick={() => onDiscard(item.clientId)}>
+              <button type="button" className="text-button" disabled={busy} onClick={() => onDiscard(item.clientId)}>
                 Discard
               </button>
             </div>

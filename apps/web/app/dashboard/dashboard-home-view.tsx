@@ -110,6 +110,7 @@ export function DashboardHomeView(props: {
   dataError: string;
   accessDenied: boolean;
   hasScoutingSchemas: boolean;
+  canManageScouting?: boolean;
   paletteEntries: PaletteRow[];
   hiddenOnHome: Map<string, HiddenOnHomeReason>;
   homeStripItems: HomeStripItem[];
@@ -569,7 +570,7 @@ export function DashboardHomeView(props: {
       {orgId ? (
         <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
           {showDailyBrief ? <DashboardNowCard now={now} setupHero={null} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
-          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} />
+          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} canManageScouting={props.canManageScouting} primaryHref={showDailyBrief ? now.href : undefined} />
         </div>
       ) : null}
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice,

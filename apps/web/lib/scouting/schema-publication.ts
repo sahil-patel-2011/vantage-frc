@@ -7,7 +7,7 @@ const fieldTypes = ["number", "boolean", "text", "select", "dropdown", "multiple
 const widgets = ["mc", "short", "free", "dropdown", "number", "yesno", "drivetrain", "robot_image", "counter",
   "multi_counter", "timer", "rating", "multi_select", "slider", "section", "field_position", "auto_path"] as const;
 
-const definition = z.object({
+export const scoutSchemaDefinitionShape = z.object({
   title: z.string().trim().min(1).max(200),
   fields: z.array(z.object({
     key: z.string().min(1).max(200).refine(key => key.trim() === key && !["__proto__", "prototype", "constructor"].includes(key)),
@@ -21,7 +21,9 @@ const definition = z.object({
     visibleWhen: z.custom<VisibleWhen>(isVisibleWhen).nullable().optional(),
     widget: z.enum(widgets).optional(),
   }).passthrough()).min(1).max(200),
-}).passthrough().superRefine((value, context) => {
+}).passthrough();
+
+const definition = scoutSchemaDefinitionShape.superRefine((value, context) => {
   const keys = new Set<string>();
   const availableKeys = new Set(value.fields.map(field => field.key));
   for (const [index, field] of value.fields.entries()) {

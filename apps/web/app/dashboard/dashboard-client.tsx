@@ -395,6 +395,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       paletteEntries={paletteEntries}
       hiddenOnHome={hiddenOnHomeIds}
       hasScoutingSchemas={hasScoutingSchemas}
+      canManageScouting={home.context.canManageScouting === true}
       homeStripItems={homeStripItems}
       homeAudience={homeAudience}
       nextMatchData={nextMatchData}

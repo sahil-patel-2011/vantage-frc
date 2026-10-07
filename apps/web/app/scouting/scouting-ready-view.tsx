@@ -93,6 +93,8 @@ export type ScoutingReadyViewProps = {
   type: "match" | "pit";
   data: Bootstrap | null;
   schema: ScoutSchema | undefined;
+  formRecoveryStatus?: "loading" | "error" | null;
+  retryOriginalForm?: () => void;
   formFields: ScoutSchema["definition"]["fields"];
   schemaBudget: SchemaBudget | null;
   matchOptions: MatchOption[];
@@ -111,8 +113,10 @@ export type ScoutingReadyViewProps = {
   trustByField: Map<string, FieldTrustSummary>;
   liveConflicts: OfficialFlag[];
   conflicts: Array<Record<string, unknown>>;
+  conflictsStatus: "idle" | "loading" | "ready" | "error";
   selectedWinners: Record<string, string>;
   message: string;
+  leadAction?: string | null;
   saving: boolean;
   /** "Uploaded 1 entry" — shown by the queue count, not under Save. */
   syncNote: string | null;
@@ -140,8 +144,8 @@ export type ScoutingReadyViewProps = {
   cheatOpen: boolean;
   shortcuts: VenueShortcut[];
   setCheatOpen: (open: boolean) => void;
-  setMatchKey: (key: string) => void;
-  setTeamKey: (key: string) => void;
+  pickTarget: (matchKey: string, teamKey: string) => boolean;
+  pickPitTeam: (teamKey: string) => boolean;
   setPayload: Dispatch<SetStateAction<Record<string, unknown>>>;
   setConfidence: (value: "high" | "normal" | "low") => void;
   setSource: (value: "manual" | "voice") => void;
@@ -155,6 +159,7 @@ export type ScoutingReadyViewProps = {
   sync: () => Promise<void> | void;
   retryQuarantineItem: (clientId: string) => Promise<void> | void;
   discardQuarantineItem: (clientId: string) => Promise<void> | void;
+  editQuarantineItem: (clientId: string) => void;
   createStarterForms: () => Promise<void> | void;
   refreshCounts: () => Promise<void> | void;
   loadConflicts: () => Promise<void> | void;
@@ -180,6 +185,8 @@ export function ScoutingReadyView({
   type,
   data,
   schema,
+  formRecoveryStatus = null,
+  retryOriginalForm,
   formFields,
   schemaBudget,
   matchOptions,
@@ -197,8 +204,10 @@ export function ScoutingReadyView({
   trustByField,
   liveConflicts,
   conflicts,
+  conflictsStatus,
   selectedWinners,
   message,
+  leadAction = null,
   saving,
   syncNote,
   saveReceipt,
@@ -213,8 +222,8 @@ export function ScoutingReadyView({
   cheatOpen,
   shortcuts,
   setCheatOpen,
-  setMatchKey,
-  setTeamKey,
+  pickTarget,
+  pickPitTeam,
   setPayload,
   setConfidence,
   setSource,
@@ -228,6 +237,7 @@ export function ScoutingReadyView({
   sync,
   retryQuarantineItem,
   discardQuarantineItem,
+  editQuarantineItem,
   createStarterForms,
   refreshCounts,
   loadConflicts,
@@ -240,7 +250,8 @@ export function ScoutingReadyView({
 }: ScoutingReadyViewProps) {
   const context =
     type === "match" ? scoutContext({ matches: data?.matches ?? [], matchKey, teamKey }) : null;
-  const canSave = Boolean(schema) && (type === "match" ? Boolean(matchKey && teamKey) : Boolean(teamKey));
+  const hasTarget = type === "match" ? Boolean(matchKey && teamKey) : Boolean(teamKey);
+  const canSave = Boolean(schema) && hasTarget;
   // What the card counts as scouted. The server list only refreshes on reload,
   // so after Save the card still thought the match just saved was next, and
   // showed "Back to next" on the match Save had moved to.
@@ -292,11 +303,9 @@ export function ScoutingReadyView({
         return;
       }
       // The bar and anchor render with the new pick; scroll once they exist.
-      scrollToFormPending.current = true;
-      setMatchKey(nextMatch);
-      setTeamKey(nextTeam);
+      if (pickTarget(nextMatch, nextTeam)) scrollToFormPending.current = true;
     },
-    [matchKey, teamKey, scrollToForm, setMatchKey, setTeamKey],
+    [matchKey, teamKey, scrollToForm, pickTarget],
   );
   useLayoutEffect(() => {
     if (!scrollToFormPending.current) return;
@@ -307,10 +316,9 @@ export function ScoutingReadyView({
   // The robot picked for you on arrival: selected, but the page stays where it is.
   const autoPickRobot = useCallback(
     (nextMatch: string, nextTeam: string) => {
-      setMatchKey(nextMatch);
-      setTeamKey(nextTeam);
+      pickTarget(nextMatch, nextTeam);
     },
-    [setMatchKey, setTeamKey],
+    [pickTarget],
   );
 
   const backToPicker = useCallback(() => {
@@ -399,6 +407,9 @@ return (
 
     <ScoutQuarantinePanel
       items={quarantine}
+      busy={Boolean(leadAction)}
+      currentEventKey={data?.eventKey}
+      onEdit={editQuarantineItem}
       onRetry={(clientId) => void retryQuarantineItem(clientId)}
       onDiscard={(clientId) => void discardQuarantineItem(clientId)}
     />
@@ -420,8 +431,8 @@ return (
           }
         >
           {data?.canManageSchemas ? (
-            <Button variant="primary" type="button" onClick={() => void createStarterForms()}>
-              Create starter forms
+            <Button variant="primary" type="button" disabled={Boolean(leadAction)} onClick={() => void createStarterForms()}>
+              {leadAction === "forms" ? "Creating forms…" : "Create starter forms"}
             </Button>
           ) : (
             <Button as="a" variant="primary" href={hubHref("/team", "messages", orgId)}>
@@ -467,14 +478,16 @@ return (
           <div>
             <h2>Which scout was right?</h2>
             <p className="app-muted">
-              Pick the winning entry for each field conflict. Coaches resolve; every decision is audited.
+              Pick the winning entry for each field conflict. Scouting leads review; every decision is audited.
             </p>
           </div>
-          <Button variant="secondary" type="button" onClick={() => void loadConflicts()}>
-            Refresh
+          <Button variant="secondary" type="button" disabled={Boolean(leadAction) || conflictsStatus === "loading"} onClick={() => void loadConflicts()}>
+            {conflictsStatus === "loading" ? "Refreshing…" : "Refresh"}
           </Button>
         </header>
-        {conflicts.length === 0 ? (
+        {conflictsStatus === "idle" || conflictsStatus === "loading" ? <p className="app-muted" role="status">Loading conflict history…</p>
+          : conflictsStatus === "error" ? <p role="alert">Conflict history could not be loaded. Refresh before making a decision.</p>
+          : conflicts.length === 0 ? (
           <p className="app-muted">
             No disagreements for this event yet. They appear when two scouts submit overlapping fields.
           </p>
@@ -534,12 +547,12 @@ return (
                         <p className="app-muted">Entry candidates load after refresh.</p>
                       ) : null}
                       <div className="scout-conflict-actions">
-                        <Button variant="primary" type="button" disabled={!selected} onClick={() => void reviewConflict(id, "resolved")}>
+                        <Button variant="primary" type="button" disabled={!selected || Boolean(leadAction) || !data?.canManageSchemas} onClick={() => void reviewConflict(id, "resolved")}>
                           {selectedCandidate
                             ? `${conflictScoutName(selectedCandidate.scoutName)} was right`
                             : "Pick a scout"}
                         </Button>
-                        <Button variant="secondary" type="button" onClick={() => void reviewConflict(id, "dismissed")}>
+                        <Button variant="secondary" type="button" disabled={Boolean(leadAction) || !data?.canManageSchemas} onClick={() => void reviewConflict(id, "dismissed")}>
                           Dismiss
                         </Button>
                       </div>
@@ -587,7 +600,7 @@ return (
         <Panel as="section" className="scout-form-panel">
           <header className="scout-form-heading">
             <div>
-              <h2>{schema?.definition.title ?? `No ${type} form`}</h2>
+              <h2>{schema?.definition.title ?? (formRecoveryStatus ? "Your original scouting form" : `No ${type} form`)}</h2>
               {/* Whose name goes on the entry, as one quiet line. It was a
                   boxed "SCOUTING AS" card between the title and the robots. */}
               <p
@@ -616,6 +629,17 @@ return (
                   form builder and the entry viewer still show it. */}
             </div>
           </header>
+
+          {draftDirty ? <div className="scout-form-recovery" role="alert"><p>These changes could not be saved as a draft. Keep this report open and save it before leaving or choosing another robot.</p></div> : null}
+
+          {formRecoveryStatus ? (
+            <div className="scout-form-recovery" role="status" aria-live="polite">
+              <p>{formRecoveryStatus === "error"
+                ? "Your answers are preserved. The original form is unavailable; reconnect to load it before making corrections."
+                : "Loading the form version that collected these answers…"}</p>
+              {formRecoveryStatus === "error" && retryOriginalForm ? <Button type="button" variant="secondary" onClick={retryOriginalForm}>Try loading the form again</Button> : null}
+            </div>
+          ) : null}
 
           {schemaBudget && schemaBudget.status !== "healthy" ? (
             <p className={`scout-budget-banner ${schemaBudget.status}`} role="status">
@@ -680,10 +704,10 @@ return (
                 orgId={orgId}
                 eventKey={data?.eventKey ?? ""}
                 teamKey={teamKey}
-                onTeamKey={setTeamKey}
+                onTeamKey={pickPitTeam}
                 savedTeamKey={saveReceipt?.entryType === "pit" ? saveReceipt.teamKey : null}
               />
-              <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
+              <PitTeamField teamKey={teamKey} onTeamKey={pickPitTeam} />
             </>
           )}
           </div>
@@ -733,11 +757,11 @@ return (
           ) : null}
 
           {type === "match" && context ? <div className="scout-stage-heading"><h3>{SCOUT_STAGE_LABELS[stage]}</h3><p>{collecting ? "The form follows the match clock. Switch phase to correct an earlier answer." : "Record what you observed. Leave answers you couldn't see blank."}</p></div> : null}
-          {type === "match" && context && Number(data?.eventKey?.slice(0, 4) ?? schema?.year) === 2026 ? <MatchActivityRecorder key={`${matchKey}|${teamKey}`} payload={payload} setPayload={setPayload} alliance={robotStation(data?.matches.find(match => match.matchKey === matchKey), teamKey)?.alliance ?? null} storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })} /> : null}
+          {type === "match" && schema && context && Number(data?.eventKey?.slice(0, 4) ?? schema?.year) === 2026 ? <MatchActivityRecorder key={`${matchKey}|${teamKey}`} payload={payload} setPayload={setPayload} alliance={robotStation(data?.matches.find(match => match.matchKey === matchKey), teamKey)?.alliance ?? null} storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })} /> : null}
 
           {liveConflicts.length ? (
             <div className="scout-official-flags" role="status">
-              <strong>Live official checks</strong>
+              <strong>Last upload checks</strong>
               <ul>
                 {liveConflicts.map((flag) => (
                   <li
@@ -843,7 +867,7 @@ return (
           {/* Disabled, and saying why, until there is a robot to save it
               against. It used to accept the tap and answer with an error line
               below the button, after the scout had filled in the whole form. */}
-          <div className="scout-report-actions"><Button variant="secondary" type="button" disabled={saving || !canSave} onClick={cancelReport}>Cancel report</Button>
+          <div className="scout-report-actions"><Button variant="secondary" type="button" disabled={saving || !hasTarget} onClick={cancelReport}>{(userEdited || draftSavedAt) && payloadHasDraftContent(payload) ? "Discard draft" : "Close form"}</Button>
           <Button
             variant="primary"
             type="button"
@@ -897,7 +921,9 @@ return (
         <ScoutingLeadTools
           orgId={orgId}
           data={data}
-          schema={schema}
+          schema={data?.schemas.find(form => form.type === "match") ?? schema}
+          formulaSaving={leadAction === "formula"}
+          actionBusy={Boolean(leadAction)}
           trust={trust}
           showFormula={showFormula}
           formulaName={formulaName}

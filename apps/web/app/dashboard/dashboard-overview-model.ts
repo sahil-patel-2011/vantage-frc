@@ -2,12 +2,28 @@ import { hubHref } from "../../lib/nav/hubs";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { scoutDutyAction, type ScoutDuty } from "./dashboard-home-model";
 
-export function scoutingHomeAction(input: { orgId: string; role: string | null; hasEvent: boolean; hasForms: boolean; duty?: ScoutDuty | null }) {
+/** Legacy links and hub URLs represent the same task. Hide the generic shortcut
+ * when the primary action already opens it with a specific robot or match. */
+export function sameHomeDestination(left: string, right: string): boolean {
+  const destination = (href: string) => {
+    const url = new URL(href, "https://vantage.invalid");
+    if (url.pathname === "/scouting") return "scouting";
+    if (url.pathname === "/scout/teams") return "teams";
+    if (url.pathname === "/todos") return "todos";
+    if (url.pathname === "/competition") return url.searchParams.get("tab") ?? "scouting";
+    if (url.pathname === "/team") return url.searchParams.get("tab") ?? "calendar";
+    return url.pathname;
+  };
+  return destination(left) === destination(right);
+}
+
+export function scoutingHomeAction(input: { orgId: string; role: string | null; hasEvent: boolean; hasForms: boolean; canManageScouting?: boolean; duty?: ScoutDuty | null }) {
   const role = input.role?.toLowerCase();
-  if (role === "viewer") return { label: "Explore teams", href: hubHref("/competition", "teams", input.orgId) };
+  const lead = input.canManageScouting === true || role === "owner" || role === "admin";
+  if (role === "viewer" && !lead) return { label: "Explore teams", href: hubHref("/competition", "teams", input.orgId) };
   const duty = scoutDutyAction(input.duty);
   if (duty) return { label: duty.title, href: `${duty.href}&orgId=${encodeURIComponent(input.orgId)}` };
-  if (input.hasEvent && !input.hasForms && (role === "owner" || role === "admin")) {
+  if (input.hasEvent && !input.hasForms && lead) {
     return { label: "Set up scouting", href: hubHref("/competition", "forms", input.orgId) };
   }
   const practice = !input.hasEvent || !input.hasForms;

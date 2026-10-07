@@ -20,8 +20,19 @@ export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
-    const orgId = new URL(request.url).searchParams.get("orgId");
+    const query = new URL(request.url).searchParams;
+    const orgId = query.get("orgId");
+    const schemaId = query.get("schemaId");
+    if (schemaId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(schemaId)) {
+      return Response.json({ error: "Invalid form version." }, { status: 400 });
+    }
     const data = await withScoutingRequest(orgId, async (client) => {
+      // Author corrections against their original published form, including older versions.
+      // getSchema enforces both tenant ownership and the request's scouting access policy.
+      if (schemaId) {
+        const schema = await new ScoutingRepository(client).getSchema(orgId!, schemaId);
+        return { schemas: [schema] };
+      }
       const allowed = await canManageScouting(client, orgId!);
       const context = await client.query<{ eventKey: string | null; year: number | null }>(
         `SELECT c.active_event_key AS "eventKey", e.year

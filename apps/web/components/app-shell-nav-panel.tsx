@@ -146,10 +146,11 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <div className="soft-org-chip">
+          <a className="soft-org-chip" href={withOrgHref("/account/teams", orgId)} onClick={closeNav} aria-label={`${orgLabel}. Choose or manage your teams`}>
             <Icon name="users" />
             <div><strong>{orgLabel}</strong><span>{orgId ? rolePlanCue : "Choose a team in Settings"}</span></div>
-          </div>
+            <Icon name="chevron" />
+          </a>
         </div>
 
         <div className="soft-panel-search">
@@ -317,13 +318,13 @@ export function AppShellNavPanel({
               </span>
             </a>
           ) : null}
+          <button type="button" className="soft-drawer-shortcut-edit" onClick={openIslandEditor}>
+            <Icon name="grid" /><span><strong>Edit shortcuts</strong></span>
+          </button>
         </div>
         <footer className="soft-drawer-foot">
-          <button type="button" onClick={openIslandEditor}>
-            Edit shortcuts
-          </button>
           <button type="button" disabled={signingOut} onClick={onSignOut}>
-            {signingOut ? "Signing out…" : "Sign out"}
+            <Icon name="logout" />{signingOut ? "Signing out…" : "Sign out"}
           </button>
         </footer></> : null}
       </aside>

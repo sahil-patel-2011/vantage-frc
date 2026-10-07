@@ -115,12 +115,12 @@ export class ScoutingRepository {
       this.client.query(
         `SELECT e.id,'match' AS type,e.match_key AS "matchKey",e.team_key AS "teamKey",
           e.confidence,e.source,e.updated_at AS "updatedAt",
-          e.scout_user_id AS "scoutUserId",u.name AS "scoutName",e.payload,e.client_id AS "clientId"
+          e.scout_user_id AS "scoutUserId",u.name AS "scoutName",e.payload,e.client_id AS "clientId",e.schema_id AS "schemaId"
          FROM match_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          UNION ALL
          SELECT e.id,'pit' AS type,NULL,e.team_key,e.confidence,e.source,
-          e.updated_at,e.scout_user_id,u.name,e.payload,e.client_id
+          e.updated_at,e.scout_user_id,u.name,e.payload,e.client_id,e.schema_id
          FROM pit_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          ORDER BY "updatedAt" DESC LIMIT 30`,
@@ -193,13 +193,28 @@ export class ScoutingRepository {
     const receipt = await this.client.query<{
       serverEntryId: string;
       payloadHash: string;
+      entryType: SyncEntry["type"];
     }>(
-      `SELECT server_entry_id AS "serverEntryId", payload_hash AS "payloadHash"
+      `SELECT server_entry_id AS "serverEntryId", payload_hash AS "payloadHash", entry_type AS "entryType"
        FROM scout_sync_receipts WHERE org_id = $1 AND client_id = $2`,
       [orgId, locked.clientId],
     );
     const existing = receipt.rows[0];
     if (existing) {
+      if (existing.entryType !== locked.type) throw new Error("This report ID belongs to another scouting type. Keep the original report and start a new one.");
+      const targetTable = existing.entryType === "match" ? "match_scout_entries" : "pit_scout_entries";
+      const target = await this.client.query<{ userId: string; eventKey: string; teamKey: string; matchKey: string | null }>(
+        `SELECT scout_user_id AS "userId", event_key AS "eventKey", team_key AS "teamKey",
+          ${existing.entryType === "match" ? "match_key" : "NULL::text"} AS "matchKey"
+         FROM ${targetTable} WHERE id = $1 AND org_id = $2 FOR UPDATE`,
+        [existing.serverEntryId, orgId],
+      );
+      const original = target.rows[0];
+      if (!original || original.userId !== userId) throw new Error("Only the report's author can replace it.");
+      if (original.eventKey !== locked.eventKey || original.teamKey !== locked.teamKey
+        || (locked.type === "match" && original.matchKey !== locked.matchKey)) {
+        throw new Error("This report ID belongs to another robot or match. Keep the original report and start a new one.");
+      }
       if (existing.payloadHash === hash) {
         return {
           clientId: locked.clientId,

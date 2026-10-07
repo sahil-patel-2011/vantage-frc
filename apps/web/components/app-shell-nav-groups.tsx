@@ -24,16 +24,16 @@ export function AppShellNavGroups({ groups, pathname, pathSearch, orgId, navHref
         .filter(item => navHrefAllowed(item.href)).map(item => <a key={item.href}
           className="main-menu-app" href={withOrgHref(item.href, orgId)} onClick={closeNav}
           aria-current={islandTabIsActive(pathname, activeSearch, item.href) ? "page" : undefined}>
-          <Icon name={item.icon} /><span><strong>{item.label}</strong><small>{item.hint}</small></span>
+          <i className="main-menu-symbol"><Icon name={item.icon} /></i><span><strong>{item.label}</strong><small>{item.hint}</small></span>
         </a>)}
     </div>
     {sections.length > 0 ? <p className="main-menu-heading">Workspaces</p> : null}
     {sections.map(section => <details key={section.id} className="main-menu-section"
       open={section.items.some(item => islandTabIsActive(pathname, activeSearch, item.href))}>
-      <summary><Icon name={section.icon} /><strong>{section.label}</strong><Icon name="chevron" /></summary>
+      <summary><i className="main-menu-symbol"><Icon name={section.icon} /></i><strong>{section.label}</strong><Icon name="chevron" /></summary>
       <nav aria-label={section.label}>
         {section.items.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} onClick={closeNav}
-          aria-current={islandTabIsActive(pathname, activeSearch, item.href) ? "page" : undefined}>{item.label}</a>)}
+          aria-current={islandTabIsActive(pathname, activeSearch, item.href) ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
       </nav>
     </details>)}
   </>;

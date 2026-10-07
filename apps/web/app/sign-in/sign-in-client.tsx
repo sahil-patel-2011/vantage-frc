@@ -645,6 +645,7 @@ export default function SignInClient({
       <div className="signin-step">
         {flow.step === "identity" ? (
           <SignInIdentityStep
+            showTeamJoin={!inviteToken}
             googleAvailable={googleAvailable}
             emailAvailable={emailAvailable}
             preferred={preferred}
@@ -765,7 +766,7 @@ export default function SignInClient({
         {/* The not-on-a-team step leads with Join the waitlist, and the code step has its own
             "No code?" help with the same link; a second one under it was noise. */}
         {/* "Only invited emails get a code" is about codes; the password view has none. */}
-        {notInvited || flow.step === "code" ? null : <AccessFooter publicSignup={status.publicSignup} />}
+        {notInvited || flow.step === "code" || inviteToken || recoveryOpen || passwordPanel !== "closed" ? null : <AccessFooter publicSignup={status.publicSignup} />}
       </div>
     </SignInCard>
   );
