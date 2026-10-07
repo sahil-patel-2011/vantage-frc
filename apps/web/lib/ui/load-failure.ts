@@ -8,6 +8,8 @@
  * action that resolves it.
  */
 
+import { safeAppPath } from "../security/safe-navigation";
+
 export type LoadFailureKind = "auth" | "reauth" | "forbidden" | "offline" | "setup" | "unknown";
 
 export type LoadFailureCopy = {
@@ -136,6 +138,21 @@ export function loadFailureCopy(
   kind: LoadFailureKind,
   options: { nextPath?: string | null; message?: string | null } = {},
 ): LoadFailureCopy {
+  if (kind === "reauth" && /authenticator|2fa enrol[ml]/i.test(options.message ?? "")) {
+    const safeNext = safeAppPath(options.nextPath);
+    const orgId = new URL(safeNext, "https://vantage.invalid").searchParams.get("orgId");
+    const params = new URLSearchParams({ returnTo: safeNext });
+    if (orgId) {
+      params.set("orgId", orgId);
+      params.set("stepup", "1");
+    }
+    return {
+      kind, badge: "Verification needed", title: "Verify your sign-in",
+      description: options.message?.trim() || "Your team requires authenticator verification.",
+      primary: { label: "Open verification", href: `/security?${params.toString()}` },
+      showRetry: false,
+    };
+  }
   switch (kind) {
     case "auth":
       return {

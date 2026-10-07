@@ -291,42 +291,31 @@ export function AppShellNavPanel({
               pathname={pathname} pathSearch={pathSearch} orgId={orgId}
               navHrefAllowed={navHrefAllowed} closeNav={closeNav}
             />
+            {/* Settings scroll with destinations, so short screens still have room
+                to browse. Sign-out alone stays in the fixed footer. */}
+            <div className="soft-drawer-settings" aria-label="Settings">
+              {me.platformAdmin ? (
+                <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
+              ) : null}
+              <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
+                <Icon name="gear" /><span><strong>Personal settings</strong></span>
+              </a>
+              {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
+                <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
+                  <Icon name="users" /><span><strong>Team admin</strong></span>
+                </a>
+              ) : null}
+              <button type="button" className="soft-drawer-shortcut-edit" onClick={openIslandEditor}>
+                <Icon name="grid" /><span><strong>Edit shortcuts</strong></span>
+              </button>
+            </div>
           </nav>
         )}
-        {/* Settings, split the way people ask for them: "my stuff" and "the
-            team's stuff". Both used to be somewhere inside the hub lists, which
-            meant hunting through Team for a sign-in preference. The team link
-            only appears for an owner or admin, because for everyone else it is a
-            door that opens onto an error. */}
-        {!queryActive ? <><div className="soft-drawer-settings">
-          {me.platformAdmin ? (
-            <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
-          ) : null}
-          <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
-            <Icon name="gear" />
-            <span>
-              <strong>Personal settings</strong>
-
-            </span>
-          </a>
-          {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
-            <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
-              <Icon name="users" />
-              <span>
-                <strong>Team admin</strong>
-
-              </span>
-            </a>
-          ) : null}
-          <button type="button" className="soft-drawer-shortcut-edit" onClick={openIslandEditor}>
-            <Icon name="grid" /><span><strong>Edit shortcuts</strong></span>
-          </button>
-        </div>
-        <footer className="soft-drawer-foot">
+        {!queryActive ? <footer className="soft-drawer-foot">
           <button type="button" disabled={signingOut} onClick={onSignOut}>
             <Icon name="logout" />{signingOut ? "Signing out…" : "Sign out"}
           </button>
-        </footer></> : null}
+        </footer> : null}
       </aside>
     </>
   );

@@ -1,6 +1,6 @@
-import { auth } from "@vantage/core";
+import { assertOrgAuthentication, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { pickHomeBoard } from "../../../lib/dashboard/boards";
 import { HOME_ALWAYS_LOADED } from "../../../lib/dashboard/refresh";
 import {
@@ -42,12 +42,21 @@ async function requireSession() {
   return session;
 }
 
-async function membership(client: import("@neondatabase/serverless").PoolClient, orgId: string, userId: string) {
+async function membership(client: import("@neondatabase/serverless").PoolClient, orgId: string, session: Awaited<ReturnType<typeof requireSession>>) {
   const row = await client.query<{ role: string }>(
     `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`,
-    [orgId, userId],
+    [orgId, session.user.id],
   );
-  if (!row.rowCount) throw new DashboardAccessError("Organization membership required", 403);
+  if (!row.rowCount) throw new DashboardAccessError("You are not a member of this team.", 403);
+  try {
+    await assertOrgAuthentication(client, {
+      userId: session.user.id, orgId, sessionId: session.session.id,
+      authMethod: String((session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown"),
+      rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
+    });
+  } catch (error) {
+    throw new DashboardAccessError(publicErrorMessage(error, "This team requires additional sign-in verification."), 403);
+  }
   return row.rows[0]!.role;
 }
 
@@ -150,14 +159,15 @@ export async function GET(request: Request) {
     const orgId = url.searchParams.get("orgId");
     const mode = url.searchParams.get("mode") ?? "list";
     const boardId = url.searchParams.get("boardId");
-    if (!orgId) throw new Error("orgId is required");
+    if (!orgId || !z.string().uuid().safeParse(orgId).success) throw new RequestSecurityError(400, "Choose a valid team.");
+    // Check the team's sign-in method and MFA before reading widgets or starting
+    // any upstream event refresh. Membership alone does not satisfy its policy.
+    const role = await withRls({ userId: session.user.id, orgId }, client => membership(client, orgId, session));
     if (mode === "snapshot" || mode === "home") {
       await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
     }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const role = await membership(client, orgId, session.user.id);
-
       if (mode === "snapshot") {
         const fullContext = snapshotWantsFullContext(url);
         const snapshot = await loadDashboardSnapshot(client, {
@@ -255,7 +265,7 @@ export async function POST(request: Request) {
     const action = body.action ?? "save";
 
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const role = await membership(client, orgId, session.user.id);
+      const role = await membership(client, orgId, session);
       const scope = body.scope === "org" ? "org" : "personal";
 
       if (action === "reset") {
@@ -547,7 +557,7 @@ export async function DELETE(request: Request) {
     if (!body.orgId || !body.id) throw new Error("orgId and id are required");
 
     const result = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
-      const role = await membership(client, body.orgId!, session.user.id);
+      const role = await membership(client, body.orgId!, session);
       const existing = await client.query<{ id: string; scope: "personal" | "org"; isActive: boolean }>(
         `SELECT id, scope, is_active AS "isActive"
          FROM dashboards

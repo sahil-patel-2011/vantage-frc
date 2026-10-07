@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { homeActivities, homeTasks, liveCount, sameHomeDestination, scoutingHomeAction } from "./dashboard-overview-model";
+import { homeActivities, homeBriefDuplicatesWidget, homeTasks, liveCount, sameHomeDestination, scoutingHomeAction } from "./dashboard-overview-model";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 const live = (data: Record<string, unknown>): WidgetPayload => ({ type: "calendar_today", status: "live", updatedAt: "", data });
 
 describe("the real Home overview", () => {
+  it("omits a repeated task summary while keeping distinct assignments and incomplete boards actionable", () => {
+    const tasks = { href: "/todos", title: "Three open team tasks" };
+    expect(homeBriefDuplicatesWidget(tasks, ["team_todos", "calendar_today"])).toBe(true);
+    expect(homeBriefDuplicatesWidget(tasks, ["calendar_today"])).toBe(false);
+    expect(homeBriefDuplicatesWidget({ href: "/competition?tab=scouting", title: "Scout Qual 4" }, ["next_match"])).toBe(false);
+  });
   it("does not repeat an assigned scouting action through a generic shortcut", () => {
     expect(sameHomeDestination("/competition?tab=scouting&scoutTab=match&teamKey=frc254", "/scouting?orgId=one")).toBe(true);
     expect(sameHomeDestination("/todos", "/team?tab=todos&orgId=one")).toBe(true);
@@ -25,6 +31,12 @@ describe("the real Home overview", () => {
     expect(action.label).toContain("254");
     expect(action.href).toContain("teamKey=frc254");
     expect(action.href).toContain("orgId=org-1");
+  });
+  it("does not send an old assignment into missing event forms", () => {
+    const base = { orgId: "org-1", role: "scout", hasEvent: true, hasForms: false,
+      duty: { matchKey: "2026test_qm4", teamKey: "frc254", matchLabel: "Qual 4", station: "Red 1" } };
+    expect(scoutingHomeAction(base).href).toContain("mode=free");
+    expect(scoutingHomeAction({ ...base, canManageScouting: true }).href).toContain("tab=forms");
   });
   it("does not turn missing, invalid, or stale counters into zero", () => {
     expect(liveCount(undefined, "reports")).toBeNull();

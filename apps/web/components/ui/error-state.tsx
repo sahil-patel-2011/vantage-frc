@@ -65,7 +65,7 @@ export function ErrorState({
   // open: all recoverable, none of them a failure of the product. Painting them
   // in the danger colour — a red hairline and a red plate — told a team their
   // data was broken when the only thing wrong was that they were signed out.
-  const severity = kind === "auth" || kind === "forbidden" || kind === "offline" ? "notice" : "error";
+  const severity = kind === "auth" || kind === "reauth" || kind === "forbidden" || kind === "offline" ? "notice" : "error";
 
   return (
     <section
@@ -79,7 +79,7 @@ export function ErrorState({
       {/* icon={null}: the glyph above is already this state's warning mark, and
           the badge's own glyph made two of them, stacked, saying one thing. */}
       <Badge tone={severity === "notice" ? "setup" : "error"} icon={null}>
-        {kind === "auth" ? "Signed out" : kind === "forbidden" ? "No access" : kind === "offline" ? "Offline" : "Error"}
+        {copy.badge}
       </Badge>
       <h2 style={{ margin: 0 }}>{heading}</h2>
       {body != null && body !== "" ? <p className={styles.errorMessage}>{body}</p> : null}

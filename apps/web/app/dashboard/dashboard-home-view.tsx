@@ -57,6 +57,8 @@ import { DashboardHiddenRow } from "./dashboard-hidden-row";
 import { DashboardHomeHeader } from "./dashboard-home-header";
 import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
 import { DashboardWorkspaceActions } from "./dashboard-workspace-actions";
+import { homeBriefDuplicatesWidget } from "./dashboard-overview-model";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
 import "./dashboard-edit.css";
 import "./dashboard-home.css";
@@ -110,6 +112,7 @@ export function DashboardHomeView(props: {
   dataError: string;
   accessDenied: boolean;
   hasScoutingSchemas: boolean;
+  hasActiveEvent: boolean;
   canManageScouting?: boolean;
   paletteEntries: PaletteRow[];
   hiddenOnHome: Map<string, HiddenOnHomeReason>;
@@ -491,17 +494,22 @@ export function DashboardHomeView(props: {
   const closeLibrary = useCallback(() => setLibraryOpen(false), [setLibraryOpen]);
 
   if (!homeReady) return <DashboardHomeSkeleton greetingText={greetingText} />;
-  if (props.accessDenied) return (
+  if (props.accessDenied) {
+    const failure = loadFailureCopy(classifyLoadFailure({ message: props.dataError }), {
+      message: props.dataError, nextPath: withOrgHref("/dashboard", orgId),
+    });
+    return (
     <main className="dash-home scan-workbench scan-hub--dashboard">
-      <h1>Home is unavailable</h1>
-      <p role="alert">{props.dataError}</p>
+      <h1>{failure.title}</h1>
+      <p role="alert">{failure.description}</p>
       <div className="dash-board-tools">
-        <button type="button" onClick={props.onRefresh} disabled={props.refreshing}>{props.refreshing ? "Checking access…" : "Try again"}</button>
-        <a className="app-button secondary" href="/signin">Sign in</a>
-        <a className="app-button secondary" href="/team">Choose team</a>
+        {failure.showRetry ? <button type="button" onClick={props.onRefresh} disabled={props.refreshing}>{props.refreshing ? "Checking access…" : "Try again"}</button> : null}
+        {failure.primary && failure.kind !== "forbidden" ? <a className="app-button" href={failure.primary.href}>{failure.primary.label}</a> : null}
+        <a className="app-button secondary" href="/account/teams">Choose team</a>
       </div>
     </main>
-  );
+    );
+  }
 
   // Cards Home is leaving out right now, listed under the board while editing.
   const hiddenRows = editing
@@ -520,8 +528,8 @@ export function DashboardHomeView(props: {
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
   const inlineError = !editing && !previewing && messageKind === "error" && message;
-  const matchCardLeads = now.title === "Our next match" && displayLayout.some((item) => item.type === "next_match");
-  const showDailyBrief = Boolean(orgId && widgetsLoaded && !matchCardLeads && !now.quiet);
+  const briefAlreadyShown = homeBriefDuplicatesWidget(now, displayLayout.map(item => item.type));
+  const showDailyBrief = Boolean(orgId && widgetsLoaded && !briefAlreadyShown && !now.quiet);
 
   return (
     <main
@@ -570,7 +578,7 @@ export function DashboardHomeView(props: {
       {orgId ? (
         <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
           {showDailyBrief ? <DashboardNowCard now={now} setupHero={null} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
-          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} canManageScouting={props.canManageScouting} primaryHref={showDailyBrief ? now.href : undefined} />
+          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={props.hasActiveEvent} hasForms={props.hasScoutingSchemas} canManageScouting={props.canManageScouting} primaryHref={showDailyBrief ? now.href : undefined} />
         </div>
       ) : null}
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice,
@@ -579,7 +587,7 @@ export function DashboardHomeView(props: {
           still on Your first week. */}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId && !sharedSetupPrompt ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
+      {orgId && !sharedSetupPrompt && !teamSetupCard ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
       {orgId && firstWeek.error ? <div className="dash-session-failed" role="alert">
         <p>{firstWeek.error}</p>
         <button type="button" className="app-button secondary" onClick={firstWeek.retry} disabled={Boolean(firstWeek.busy)}>Refresh steps</button>
@@ -647,12 +655,13 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {!showsOverview && (sharedSetupPrompt || (dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
+      {!editing && !showsOverview && (sharedSetupPrompt || (dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
       showStandaloneSetupBanner({ editing, displayLayout }))) ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} compact={sharedSetupPrompt} />
       ) : null}
       {setupHero && !sharedSetupPrompt && !editing ? (
         <section className="dash-setup-banner dash-context-prompt" aria-label="Team setup">
+          <span className="dash-context-icon" aria-hidden="true"><Icon name="bolt" /></span>
           <div><h2>{setupHero.title}</h2><p>{setupHero.detail}</p></div>
           <Button as="a" variant="secondary" href={withOrgHref(setupHero.href, orgId)}>{setupHero.cta}</Button>
         </section>

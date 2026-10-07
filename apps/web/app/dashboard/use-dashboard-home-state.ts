@@ -22,6 +22,7 @@ import {
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { BoardMeta, BoardState, Me } from "./dashboard-board-types";
+import { apiErrorMessage } from "../../lib/ui/load-failure";
 import {
   dashboardCacheFromHomePayload,
   dashboardCacheAfterSave,
@@ -111,7 +112,7 @@ export function useDashboardHomeState(initialOrgId = "") {
   // The view can withhold the old board during the render before the scope effect runs.
   const [loadedScope, setLoadedScope] = useState("");
 
-  const revokeHome = useCallback((id: string) => {
+  const revokeHome = useCallback((id: string, reason?: string | null) => {
     deniedRef.current = true;
     homeSequence.current += 1;
     homeRequestRef.current?.abort();
@@ -137,7 +138,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     setUpdatedAt(null);
     setBoardLoaded(true);
     setWidgetsLoaded(true);
-    setDataError("Your session or team access has changed. Sign in again or choose a team you can access.");
+    setDataError(reason || "Your team permissions changed. Choose a team you can access.");
     void clearFeatureSnapshot("dashboard", id).catch(() => undefined);
   }, []);
 
@@ -189,7 +190,9 @@ export function useDashboardHomeState(initialOrgId = "") {
       const response = await fetch(`/api/dashboards?${qs.toString()}`, { signal, cache: "no-store" });
       if (signal.aborted || loadedScopeRef.current !== requestScope || homeSequence.current !== boardSequence) return;
       if (response.status === 401 || response.status === 403) {
-        revokeHome(id);
+        const reason = await apiErrorMessage(response);
+        if (signal.aborted || loadedScopeRef.current !== requestScope || homeSequence.current !== boardSequence) return;
+        revokeHome(id, reason || (response.status === 401 ? "Authentication required" : "Team access denied"));
         throw new Error("Dashboard access changed.");
       }
       if (!response.ok) throw new Error("Could not refresh dashboard data.");
@@ -278,7 +281,9 @@ export function useDashboardHomeState(initialOrgId = "") {
       });
       if (!current()) return;
       if (response.status === 401 || response.status === 403) {
-        revokeHome(id);
+        const reason = await apiErrorMessage(response);
+        if (!current()) return;
+        revokeHome(id, reason || (response.status === 401 ? "Authentication required" : "Team access denied"));
         return;
       }
       if (!response.ok) {

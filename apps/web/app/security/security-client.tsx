@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
+import { Button, ConfirmProvider, EmptyState, PageHeader, Panel, useConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { safeAppPath } from "../../lib/security/safe-navigation";
@@ -53,15 +53,17 @@ function SecurityRelated({ orgId }: { orgId?: string }) {
   );
 }
 
-export default function SecurityClient({
+type SecurityProps = { orgId?: string; stepUp?: boolean; returnTo?: string };
+
+export default function SecurityClient(props: SecurityProps) {
+  return <ConfirmProvider key={props.orgId ?? "account"}><SecuritySettings {...props} /></ConfirmProvider>;
+}
+
+function SecuritySettings({
   orgId,
   stepUp = false,
   returnTo,
-}: {
-  orgId?: string;
-  stepUp?: boolean;
-  returnTo?: string;
-}) {
+}: SecurityProps) {
   const [view, setView] = useState<SecurityView | null>(null);
   const [setup, setSetup] = useState<{
     secret: string;
@@ -76,13 +78,20 @@ export default function SecurityClient({
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const loadSequence = useRef(0);
+  const mounted = useRef(false);
+  const confirm = useConfirm();
   const viewRef = useRef<SecurityView | null>(null);
   viewRef.current = view;
 
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<SecurityView>("security", "_");
+      if (sequence !== loadSequence.current) return;
       if (!viewRef.current && cached?.data && isSecurityView(cached.data)) {
         setView(cached.data);
         setFromCache(true);
@@ -92,6 +101,7 @@ export default function SecurityClient({
     } catch {
       // IndexedDB missing or blocked; live fetch still runs.
     }
+    if (sequence !== loadSequence.current) return;
     setFetchFailed(false);
     setErrorStatus(null);
     try {
@@ -100,6 +110,7 @@ export default function SecurityClient({
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const body: unknown = await response.json().catch(() => null);
+      if (sequence !== loadSequence.current) return;
       if (response.status === 401 || response.status === 403) {
         setView(null);
         setFromCache(false);
@@ -134,6 +145,7 @@ export default function SecurityClient({
       setMessage("");
       await persistSecuritySnapshot(next);
     } catch {
+      if (sequence !== loadSequence.current) return;
       if (hadCache || viewRef.current) {
         setFromCache(true);
         setMessage("Could not refresh Security. Showing the last copy on this device.");
@@ -146,48 +158,85 @@ export default function SecurityClient({
   }, []);
 
   useEffect(() => {
+    mounted.current = true;
     void load();
+    return () => { mounted.current = false; loadSequence.current += 1; };
   }, [load]);
 
   async function action(nextAction: string, extra: Record<string, unknown> = {}) {
-    const response = await fetch("/api/security/mfa", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: nextAction, ...(code ? { code } : {}), ...extra }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error ?? "Security update failed.");
-      return;
+    if (busyRef.current || fromCache) return;
+    loadSequence.current += 1;
+    busyRef.current = true;
+    setBusy(true);
+    setMessage("");
+    if (nextAction === "confirm" || nextAction === "regenerate") setRecovery([]);
+    try {
+      const response = await fetch("/api/security/mfa", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        body: JSON.stringify({ action: nextAction, ...(nextAction !== "begin" ? { code } : {}), ...extra }),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (!mounted.current) return;
+      if (!response.ok) throw new Error(responseError(data) || "Security update failed. Try again.");
+      if (!data || typeof data !== "object") throw new Error("The update was not confirmed. Refresh Security before trying again.");
+      if (nextAction === "begin") {
+        if (!("secret" in data) || typeof data.secret !== "string" || !("uri" in data) || typeof data.uri !== "string") throw new Error("Setup details were not received. Try again.");
+        setSetup({ secret: data.secret, uri: data.uri, qrDataUri: "qrDataUri" in data && typeof data.qrDataUri === "string" ? data.qrDataUri : null });
+      }
+      if (nextAction === "confirm" || nextAction === "regenerate") {
+        if (!("recoveryCodes" in data) || !Array.isArray(data.recoveryCodes) || !data.recoveryCodes.length || !data.recoveryCodes.every((item: unknown) => typeof item === "string")) throw new Error("Recovery codes were not received. Refresh Security, then generate new recovery codes.");
+        setRecovery(data.recoveryCodes);
+        if (nextAction === "confirm") setSetup(null);
+      }
+      setCode("");
+      if (nextAction === "step-up") {
+        location.assign(safeAppPath(returnTo, "/dashboard"));
+        return;
+      }
+      await load();
+      if (!mounted.current) return;
+      setMessage(nextAction === "confirm" ? "Authenticator app enabled. Save the recovery codes below before continuing." : nextAction === "regenerate" ? "New recovery codes are ready. Save them now; your previous codes no longer work." : "Scan the code below to finish setup.");
+    } catch (error) {
+      if (!mounted.current) return;
+      setMessage(error instanceof Error && error.name !== "TimeoutError" && error.name !== "TypeError" ? error.message : "The response did not arrive. Refresh Security to check the result before trying again.");
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
-    if (nextAction === "begin") setSetup(data);
-    if (data.recoveryCodes) setRecovery(data.recoveryCodes);
-    setMessage(
-      nextAction === "confirm"
-        ? "Authenticator app enabled. Save the recovery codes now."
-        : "Security settings updated.",
-    );
-    setCode("");
-    await load();
-    if (nextAction === "step-up") location.assign(safeAppPath(returnTo, "/workspace"));
   }
 
   async function revoke(body: Record<string, unknown>) {
-    if (
-      !confirm(
-        body.revokeAll
-          ? "Disable 2FA and revoke remembered devices?"
-          : "Revoke this remembered device?",
-      )
-    ) {
-      return;
+    if (busyRef.current || fromCache) return;
+    loadSequence.current += 1;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      if (!(await confirm({
+        title: body.revokeAll ? "Disable authenticator verification?" : "Forget this device?",
+        body: body.revokeAll ? "This removes your authenticator and recovery codes and revokes all remembered devices. Teams requiring 2FA will require setup again." : "This device will need authenticator verification the next time your team requires it.",
+        confirmLabel: body.revokeAll ? "Disable 2FA" : "Forget device", tone: "destructive",
+      }))) return;
+      const response = await fetch("/api/security/mfa", {
+        method: "DELETE", headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS), body: JSON.stringify(body),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (!mounted.current) return;
+      if (!response.ok) throw new Error(responseError(data) || "The change could not be saved.");
+      if (!data || typeof data !== "object" || !("success" in data) || data.success !== true) throw new Error("The change was not confirmed. Refresh Security to check the result.");
+      if (body.revokeAll) { setSetup(null); setRecovery([]); setCode(""); }
+      await load();
+      if (!mounted.current) return;
+      setMessage(body.revokeAll ? "Authenticator verification is disabled and remembered devices have been revoked." : "Device forgotten.");
+    } catch (error) {
+      if (!mounted.current) return;
+      setMessage(error instanceof Error && error.name !== "TimeoutError" && error.name !== "TypeError" ? error.message : "The response did not arrive. Refresh Security to check the result.");
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
     }
-    await fetch("/api/security/mfa", {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    await load();
   }
 
   const failure =
@@ -248,14 +297,15 @@ export default function SecurityClient({
             description="A second sign-in step with an app like Google Authenticator, and the devices you told us to remember. Appearance and notifications are under Account."
           >
             <SecurityRelated orgId={orgId} />
+            <Button type="button" variant="secondary" disabled={busy} onClick={() => { if (!busyRef.current) void load(); }}>Refresh security</Button>
           </PageHeader>
-          <OfflineBanner feature="Security" fromCache={fromCache} cachedAt={cachedAt} />
-          {message ? (
+          <OfflineBanner feature="Security" fromCache={fromCache} cachedAt={cachedAt} force={fromCache} variant="degraded" detail={fromCache ? "Showing a saved copy. Refresh Security to verify the current settings before making changes." : undefined} />
+          {busy || message ? (
             <p role="status" className="telemetry-status">
-              {message}
+              {busy ? "Updating security…" : message}
             </p>
           ) : null}
-          {stepUp && orgId ? (
+          {stepUp && orgId && view.enrollment?.confirmedAt && !recovery.length ? (
             <Panel className="step-up-card">
               <h2>Verify for this organization</h2>
               <p>
@@ -269,12 +319,14 @@ export default function SecurityClient({
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   value={code}
+                  disabled={busy || fromCache}
                   onChange={(event) => setCode(event.target.value.replace(/[^0-9A-F-]/gi, ""))}
                 />
               </label>
               <Button
                 variant="primary"
                 type="button"
+                disabled={busy || fromCache || !code.trim()}
                 onClick={() => void action("step-up", { orgId, rememberDays: 14 })}
               >
                 Verify and continue
@@ -286,7 +338,7 @@ export default function SecurityClient({
               <h2>Authenticator app</h2>
               <p>No text messages. The codes come from the app on your phone, and Vantage keeps the setup key locked away.</p>
               {!view.enrollment?.confirmedAt && !setup ? (
-                <Button variant="primary" type="button" onClick={() => void action("begin")}>
+                <Button variant="primary" type="button" disabled={busy || fromCache} onClick={() => void action("begin")}>
                   Set up authenticator
                 </Button>
               ) : null}
@@ -336,10 +388,11 @@ export default function SecurityClient({
                       pattern="[0-9]{6}"
                       maxLength={6}
                       value={code}
+                      disabled={busy || fromCache}
                       onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
                     />
                   </label>
-                  <Button variant="primary" type="button" onClick={() => void action("confirm")}>
+                  <Button variant="primary" type="button" disabled={busy || fromCache || code.length !== 6} onClick={() => void action("confirm")}>
                     Confirm setup
                   </Button>
                 </>
@@ -354,13 +407,14 @@ export default function SecurityClient({
                       pattern="[0-9]{6}"
                       maxLength={6}
                       value={code}
+                      disabled={busy || fromCache}
                       onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
                     />
                   </label>
-                  <Button variant="secondary" type="button" onClick={() => void action("regenerate")}>
+                  <Button variant="secondary" type="button" disabled={busy || fromCache || code.length !== 6} onClick={() => void action("regenerate")}>
                     Regenerate recovery codes
                   </Button>
-                  <Button variant="secondary" type="button" onClick={() => void revoke({ revokeAll: true })}>
+                  <Button variant="secondary" type="button" disabled={busy || fromCache} onClick={() => void revoke({ revokeAll: true })}>
                     Disable 2FA
                   </Button>
                 </>
@@ -381,7 +435,7 @@ export default function SecurityClient({
                       <strong>{device.label}</strong>
                       <small>Expires {new Date(device.expiresAt).toLocaleDateString()}</small>
                     </div>
-                    <Button variant="secondary" type="button" onClick={() => void revoke({ deviceId: device.id })}>
+                    <Button variant="secondary" type="button" disabled={busy || fromCache} onClick={() => void revoke({ deviceId: device.id })}>
                       Revoke
                     </Button>
                   </div>
@@ -400,6 +454,7 @@ export default function SecurityClient({
                   <code key={item}>{item}</code>
                 ))}
               </div>
+              {stepUp && orgId ? <Button type="button" variant="primary" disabled={busy} onClick={() => setRecovery([])}>I saved my codes — continue</Button> : null}
             </Panel>
           ) : null}
         </main>

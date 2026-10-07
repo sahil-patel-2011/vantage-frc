@@ -57,6 +57,11 @@ body.has-app-shell .soft-island a { border-radius: 999px; }
 body.has-app-shell .soft-island a.active, body.has-app-shell .soft-island a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
 body.has-app-shell .soft-drawer { margin: 10px; height: calc(100dvh - 20px); width: min(380px, calc(100vw - 20px)); padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px)); border: 1px solid var(--line-soft); border-radius: 24px; background: var(--product-glass); -webkit-backdrop-filter: var(--product-filter); backdrop-filter: var(--product-filter); box-sizing: border-box; overflow: hidden; }
 body.has-app-shell .soft-drawer.open { box-shadow: 0 18px 80px #08163126; }
+body.has-app-shell .soft-drawer-head { align-items: center; margin-bottom: 10px; }
+body.has-app-shell .soft-drawer-head .soft-icon-btn > svg { width: 24px; height: 24px; }
+body.has-app-shell .soft-drawer .soft-panel-search > svg { width: 24px; height: 24px; flex: none; }
+body.has-app-shell .soft-nav-results [role="option"] > svg { width: 26px; height: 26px; flex: none; }
+body.has-app-shell .soft-nav-results [role="option"] { min-height: 52px; }
 body.has-app-shell .soft-drawer { will-change: auto; }
 body.has-app-shell .soft-scrim { background: #10152126; backdrop-filter: none; }
 body.has-app-shell .soft-drawer > :not(.soft-drawer-flat):not(.soft-nav-results) { flex-shrink: 0; }
@@ -64,6 +69,7 @@ body.has-app-shell .soft-drawer .soft-drawer-flat { display: block; overflow: au
 body.has-app-shell .soft-drawer .soft-profile-compact .soft-org-chip { padding: 8px 12px; background: color-mix(in srgb, var(--surface-2) 55%, transparent); border: 1px solid var(--line-soft); }
 body.has-app-shell .soft-drawer a.soft-org-chip { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
 body.has-app-shell .soft-drawer a.soft-org-chip > div { flex: 1; min-width: 0; }
+body.has-app-shell .soft-drawer a.soft-org-chip strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 body.has-app-shell .soft-drawer a.soft-org-chip > svg { width: 24px; height: 24px; flex: none; }
 body.has-app-shell .soft-drawer a.soft-org-chip > svg:last-child { width: 18px; height: 18px; color: var(--muted); }
 body.has-app-shell .soft-drawer a.soft-org-chip:hover { border-color: var(--accent); }

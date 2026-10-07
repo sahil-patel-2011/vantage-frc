@@ -76,8 +76,8 @@
 /* The drawer is the destination menu. Pages keep their own task controls. */
 .main-menu-launch { display: grid; gap: 6px; margin: 0 0 16px; }
 .main-menu-app { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 10px 12px; box-sizing: border-box; border: 1px solid transparent; border-radius: 14px; background: transparent; color: var(--ink); text-decoration: none; }
-.main-menu-symbol { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
-.main-menu-symbol > svg { width: 26px; height: 26px; }
+.main-menu-symbol { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 13px; background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
+.main-menu-symbol > svg { width: 28px; height: 28px; }
 .main-menu-app > span { display: grid; gap: 2px; min-width: 0; }
 .main-menu-app strong { font-size: 15px; font-weight: 600; }
 .main-menu-app small { font-size: 12px; color: var(--muted); line-height: 1.4; }
@@ -92,9 +92,9 @@
 .main-menu-section > summary > svg:last-child { width: 18px; height: 18px; color: var(--muted); flex: none; transition: transform 160ms ease; }
 .main-menu-section > summary > strong { flex: 1; font-size: 15px; font-weight: 600; }
 .main-menu-section[open] > summary > svg:last-child { transform: rotate(90deg); }
-.main-menu-section > nav { display: grid; gap: 2px; margin: 2px 0 10px 32px; padding: 0 0 0 12px; border-left: 1px solid var(--line-soft, var(--line)); }
+.main-menu-section > nav { display: grid; gap: 2px; margin: 2px 0 10px 34px; padding: 0 0 0 12px; border-left: 1px solid var(--line-soft, var(--line)); }
 .main-menu-section > nav > a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 10px 12px; box-sizing: border-box; color: var(--ink); border-radius: 12px; text-decoration: none; font-size: 14px; }
-.main-menu-section > nav > a > svg { width: 24px; height: 24px; flex: none; color: var(--muted); }
+.main-menu-section > nav > a > svg { width: 26px; height: 26px; flex: none; color: var(--muted); }
 .main-menu-section > nav > a[aria-current="page"] > svg { color: var(--accent); }
 .main-menu-section > nav > a[aria-current="page"], .main-menu-section > nav > a:hover { color: var(--accent); background: var(--accent-soft); }
 .main-menu-section > summary:focus-visible, .main-menu-section a:focus-visible, .main-menu-app:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
