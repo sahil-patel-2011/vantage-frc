@@ -23,7 +23,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`/competition?tab=scouting&mode=free&orgId=${homeOrg}&reportId=previous-team-record`);
     await expect(page.getByRole("heading", { name: "Practice scouting", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: /^Switch team —/ }).or(page.getByRole("link", { name: /^Switch team —/ })).filter({ visible: true }).click();
+    await page.getByRole("button", { name: /^Switch team —/ }).filter({ visible: true }).click();
     await expect(page.getByRole("heading", { name: "Choose your team", exact: true })).toBeVisible();
     await page.locator(".workspace-org-pick a").filter({ hasText: marker }).click();
     await expect(page).toHaveURL(new RegExp(orgId));
@@ -54,7 +54,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: /^Switch team —/ }).or(page.getByRole("link", { name: /^Switch team —/ })).filter({ visible: true }).click();
+    await page.getByRole("region", { name: "This team", exact: true }).getByRole("link", { name: "Switch team", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Choose your team", exact: true })).toBeVisible();
     await page.locator(".workspace-org-pick a").filter({ hasText: "Team 6925" }).click();
     await expect(page).toHaveURL(new RegExp(`orgId=${homeOrg}`));

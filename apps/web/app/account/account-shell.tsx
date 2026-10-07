@@ -1,6 +1,8 @@
 "use client";
 
+import { usePathname, useSearchParams } from "next/navigation";
 import { EmptyState, Panel, Button } from "../../components/ui";
+import { workspacePickerHref } from "../../lib/workspace/workspace-join";
 import {
   ACCOUNT_RELATED_INCLUDE,
   accountNextActions,
@@ -65,6 +67,10 @@ export function NextActions({
 }
 
 export function OrgContextCard({ org }: { org: OrgContext }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
+  const pickerHref = workspacePickerHref(pathname ?? "/account", query ? `?${query}` : "");
   const label = formatAccountOrgLabel(org);
   const role = formatAccountRole(org.role);
 
@@ -81,7 +87,7 @@ export function OrgContextCard({ org }: { org: OrgContext }) {
             : "You are signed in, but you are not on a team yet. Ask an owner to send you an invite."
         }
       >
-        <Button as="a" variant="primary" href="/workspace">
+        <Button as="a" variant="primary" href={pickerHref}>
           Choose your team
         </Button>
       </EmptyState>
@@ -106,7 +112,7 @@ export function OrgContextCard({ org }: { org: OrgContext }) {
           panel, same hrefs in the same order. What belongs here is the one link
           that is actually about the *active* workspace. */}
       <div className="settings-inline-links">
-        <a href="/workspace">Switch team</a>
+        <a href={pickerHref}>Switch team</a>
       </div>
     </Panel>
   );

@@ -1,6 +1,20 @@
 import { expect, test } from "@playwright/test";
 import { accessible, isolateUi, orgId, responses, schema } from "./fixture";
 
+for (const width of [390, 1440]) test(`Account team picker preserves the active settings section at ${width}px`, async ({ page, context }) => {
+  await page.setViewportSize({ width, height: 900 });
+  await isolateUi(page, context);
+  await page.goto(`/account?tab=appearance&orgId=${orgId}`);
+  const link = page.getByRole("region", { name: "This team", exact: true }).getByRole("link", { name: "Switch team", exact: true });
+  await expect(link).toBeVisible();
+  const picker = new URL(await link.getAttribute("href") ?? "", page.url());
+  expect(picker.pathname).toBe("/workspace");
+  const next = new URL(picker.searchParams.get("next") ?? "", page.url());
+  expect(next.pathname).toBe("/account");
+  expect(next.searchParams.get("tab")).toBe("appearance");
+  expect(next.searchParams.get("orgId")).toBe(orgId);
+});
+
 for (const width of [390, 1440]) test(`cached form refresh cannot overwrite a selected draft at ${width}px`, async ({ page, context }) => {
   await page.setViewportSize({ width, height: 900 });
   await isolateUi(page, context);
