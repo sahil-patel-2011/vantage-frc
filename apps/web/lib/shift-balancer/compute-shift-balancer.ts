@@ -12,7 +12,7 @@ import {
 } from ".";
 import { BACKUP_ROLE } from "../scouting/assignment-accountability";
 import { assignmentConflict, isOnDriveTeamForMatch, withAssignment } from "../scouting/assignment-conflicts";
-import { loadAssignmentConflictContext } from "../scouting/assignment-conflicts-load";
+import { loadAssignmentConflictContext, lockScoutAssignments } from "../scouting/assignment-conflicts-load";
 import type { PublishPreview, ShiftBalancerAssignment } from ".";
 import type { ShiftBalancerPlan, ShiftBalancerScout, ShiftBalancerSummary } from "./types";
 
@@ -250,6 +250,7 @@ export async function publishPlan(
   client: PoolClient,
   input: { orgId: string; planId: string },
 ): Promise<PublishPreview> {
+  await lockScoutAssignments(client, input.orgId);
   const plan = await client.query<{ assignments: unknown }>(
     `SELECT assignments FROM shift_balancer_plans WHERE id = $1::uuid AND org_id = $2::uuid`,
     [input.planId, input.orgId],

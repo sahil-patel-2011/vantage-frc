@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ScoutForbiddenError } from "../scout-org-access";
 import type { ScoutingCoverageView } from "./coverage";
+import type { AssignmentConflictContext } from "./assignment-conflicts";
 
 /**
  * Route contract for /api/scouting/coverage. Auth and withRls are stubbed; compute and
@@ -65,7 +66,7 @@ function emptyLive(overrides: Partial<Extract<ScoutingCoverageView, { status: "l
 }
 
 const state = vi.hoisted(() => ({
-  session: null as { user: { id: string } } | null,
+  session: null as { user: { id: string }; session: { id: string } } | null,
   member: true,
   role: "admin" as string,
   lead: false,
@@ -76,13 +77,20 @@ const state = vi.hoisted(() => ({
   swap: vi.fn(),
   applyAuto: vi.fn(),
   loadWatchlist: vi.fn(),
+  loadConflicts: vi.fn(),
 }));
 
-vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers(), cookies: async () => ({ get: () => undefined }) }));
 
 vi.mock("@vantage/core", () => ({
   auth: { api: { getSession: async () => state.session } },
+  assertOrgAuthentication: async () => undefined,
 }));
+
+vi.mock("./assignment-conflicts-load", async () => {
+  const actual = await vi.importActual<typeof import("./assignment-conflicts-load")>("./assignment-conflicts-load");
+  return { ...actual, loadAssignmentConflictContext: (...args: unknown[]) => state.loadConflicts(...args) };
+});
 
 vi.mock("@vantage/db", () => ({
   withRls: async (_context: unknown, work: (client: unknown) => Promise<unknown>) =>
@@ -133,7 +141,7 @@ function postRequest(body: Record<string, unknown>) {
 }
 
 beforeEach(() => {
-  state.session = { user: { id: USER } };
+  state.session = { user: { id: USER }, session: { id: "session" } };
   state.member = true;
   state.role = "admin";
   state.lead = false;
@@ -144,6 +152,9 @@ beforeEach(() => {
   state.swap.mockReset();
   state.applyAuto.mockReset();
   state.loadWatchlist.mockReset();
+  state.loadConflicts.mockReset();
+  state.loadConflicts.mockImplementation(async () => ({ ourTeamKey: "frc1234", standingDriveTeam: new Set(), driveDuties: [], assignments: [],
+    matches: new Map([1,2].map(number => [`${EVENT}_qm${number}`, { matchKey: `${EVENT}_qm${number}`, teamKeys: ["frc254", "frc118"], time: null }])) } satisfies AssignmentConflictContext));
   state.loadWatchlist.mockImplementation(async () => state.priorityTeamKeys);
   state.compute.mockImplementation(async () => state.view);
   state.assign.mockResolvedValue({ inserted: true });
@@ -317,5 +328,33 @@ describe("POST /api/scouting/coverage", () => {
       fromUserId: USER,
       toUserId: SCOUT,
     });
+  });
+
+  it("checks range conflicts even when older clients omit eventKey and reports partial results", async () => {
+    state.view = emptyLive({ slots: [1,2].map(matchNumber => ({ matchKey: `${EVENT}_qm${matchNumber}`, teamKey: "frc254", matchNumber, compLevel: "qm", status: "unscouted", assignmentCount: 0, entryCount: 0, teamNumber: 254 })) });
+    const context = await state.loadConflicts();
+    state.loadConflicts.mockResolvedValue({ ...context, assignments: [{ userId: SCOUT, matchKey: `${EVENT}_qm1`, teamKey: "frc118" }] });
+    const response = await POST(postRequest({ orgId: ORG, action: "assign-range", firstMatchKey: `${EVENT}_qm1`, lastMatchKey: `${EVENT}_qm2`, teamKey: "254", userId: SCOUT }));
+    expect(response.status).toBe(200);
+    expect(state.loadConflicts).toHaveBeenLastCalledWith(expect.anything(), { orgId: ORG, eventKey: EVENT });
+    expect(state.assign).toHaveBeenCalledTimes(1);
+    expect(state.assign.mock.calls[0][1].matchKey).toBe(`${EVENT}_qm2`);
+    const body = await response.json();
+    expect(body.mutation).toMatchObject({ action: "assign-range", eventKey: EVENT, assigned: 1, unchanged: 0 });
+    expect(body.mutation.refused).toHaveLength(1);
+    expect(body.refused).toEqual(body.mutation.refused);
+  });
+
+  it("does not report an already moved assignment as a successful swap", async () => {
+    state.swap.mockResolvedValue({ moved: false });
+    const response = await POST(postRequest({ orgId: ORG, action: "swap", matchKey: `${EVENT}_qm1`, teamKey: "frc118", fromUserId: USER, toUserId: SCOUT }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toMatch(/already changed/i);
+  });
+
+  it("refuses a robot that is not in the scheduled match", async () => {
+    const response = await POST(postRequest({ orgId: ORG, action: "assign", matchKey: `${EVENT}_qm1`, teamKey: "frc999", userId: SCOUT }));
+    expect(response.status).toBe(400);
+    expect(state.assign).not.toHaveBeenCalled();
   });
 });

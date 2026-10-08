@@ -8,6 +8,11 @@ import type { AssignmentConflictContext, ConflictMatch } from "./assignment-conf
 
 type AllianceJson = { teamKeys?: unknown; team_keys?: unknown } | null;
 
+/** All assignment publishers take this lock before reading conflicts or writing. */
+export async function lockScoutAssignments(client: PoolClient, orgId: string) {
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`scout-assignments:${orgId}`]);
+}
+
 function allianceKeys(alliance: AllianceJson): string[] {
   const keys = alliance?.teamKeys ?? alliance?.team_keys;
   return Array.isArray(keys) ? keys.filter((key): key is string => typeof key === "string" && key.length > 0) : [];

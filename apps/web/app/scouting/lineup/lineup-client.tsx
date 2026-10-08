@@ -7,7 +7,6 @@ import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failu
 import { CopyShareLink } from "../../../components/copy-share-link";
 import type { CoverageGapSlot, CoverageGapSummary } from "@vantage/scouting/coverage";
 import {
-  LINEUP_POLL_MS,
   LINEUP_RELATED_INCLUDE,
   classifyLineupShell,
   formatLineupMetric,
@@ -26,7 +25,8 @@ import { hubHref } from "../../../lib/nav/hubs";
 import { matchLabelFromKey } from "../../../lib/matches/no-next-match";
 import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
+import { assignmentReceiptMessage, isAssignmentReceipt, type AssignmentReceipt } from "../../../lib/scouting/assignment-receipt";
 import { AssignmentRangeForm } from "./assignment-range-form";
 import type { CoverageScopeSummary } from "../../../lib/scouting/coverage";
 import "./lineup.css";
@@ -54,6 +54,7 @@ type CoverageView =
     }
   | {
       status: "live";
+      orgId?: string;
       eventKey: string;
       eventName?: string | null;
       generatedAt: string;
@@ -76,7 +77,10 @@ type CoverageView =
 function isCoverageView(value: unknown): value is CoverageView {
   if (!value || typeof value !== "object") return false;
   const status = (value as { status?: unknown }).status;
-  return status === "setup_required" || status === "live";
+  if (status === "setup_required") return typeof (value as { message?: unknown }).message === "string";
+  const view = value as Extract<CoverageView, { status: "live" }>;
+  return status === "live" && typeof view.eventKey === "string" && Array.isArray(view.slots) && Array.isArray(view.scouts) && Boolean(view.summary) &&
+    Array.isArray(view.live?.focusMatchKeys) && Array.isArray(view.live?.focusSlots) && Array.isArray(view.live?.gapSlots) && Array.isArray(view.live?.doubleSlots) && Array.isArray(view.schemaRoles?.warnings);
 }
 
 async function persistLineupSnapshot(orgHint: string, data: CoverageView): Promise<void> {
@@ -252,12 +256,19 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   const [focusMatch, setFocusMatch] = useState("");
   const [updatedAt, setUpdatedAt] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [receipt, setReceipt] = useState<AssignmentReceipt | null>(null);
+  const mutationPending = useRef(false);
+  const loadGeneration = useRef(0);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<CoverageView | null>(null);
   viewRef.current = view;
 
   const load = useCallback(async () => {
+    if (mutationPending.current) return;
+    const generation = ++loadGeneration.current;
+    setLoading(true);
     const params = new URLSearchParams({ orgId, window: "4" });
     if (!qualsOnly) params.set("qualsOnly", "0");
     if (focusMatch) params.set("matchKey", focusMatch);
@@ -265,27 +276,33 @@ export default function LineupClient({ orgId }: { orgId: string }) {
     if (!viewRef.current) {
       try {
         const cached = await getFeatureSnapshot<CoverageView>("lineup", orgId || "_");
+        if (generation !== loadGeneration.current) return;
         if (!viewRef.current && cached?.data && isCoverageView(cached.data)) {
           setView(cached.data);
           setUpdatedAt(cached.data.generatedAt);
           setFromCache(true);
           setCachedAt(cached.cachedAt);
           hadCache = true;
-          if (cached.data.status === "live" && cached.data.live.focusMatchKeys[0] && !focusMatch) {
-            setFocusMatch(cached.data.live.focusMatchKeys[0]!);
-          }
         }
       } catch {
         // IndexedDB missing or blocked; live fetch still runs.
       }
     }
+    if (generation !== loadGeneration.current) return;
     try {
       const response = await fetch(`/api/scouting/coverage?${params}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as CoverageView & { error?: string };
-      if (!response.ok || !isCoverageView(data)) {
+      if (generation !== loadGeneration.current) return;
+      if (response.status === 401 || response.status === 403) {
+        viewRef.current = null; setView(null); setReceipt(null); setFromCache(false); setCachedAt(null);
+        setFetchFailed(true); setFailureStatus(response.status); setError(data?.error ?? "Your access to scouting assignments has changed.");
+        void Promise.all([clearFeatureSnapshot("lineup", orgId), clearFeatureSnapshot("lineup", "_")]).catch(() => undefined);
+        return;
+      }
+      if (!response.ok || !isCoverageView(data) || (data.status === "live" && data.orgId !== orgId)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
           setError("Could not refresh Lineup. Showing the last copy on this device.");
@@ -293,7 +310,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         } else {
           setFetchFailed(true);
           setFailureStatus(response.status);
-          setError(data.error ?? "Could not load coverage.");
+          setError(data?.error ?? "Could not load coverage.");
         }
         return;
       }
@@ -304,20 +321,18 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       setFetchFailed(false);
       setFromCache(false);
       setCachedAt(null);
-      if (data.status === "live" && data.live.focusMatchKeys[0] && !focusMatch) {
-        setFocusMatch(data.live.focusMatchKeys[0]!);
-      }
       await persistLineupSnapshot(orgId, data);
     } catch {
+      if (generation !== loadGeneration.current) return;
       if (hadCache || viewRef.current) {
         setFromCache(true);
         setError("Could not refresh Lineup. Showing the last copy on this device.");
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
-        setError("Network error — coverage will retry.");
+        setError("Could not load coverage. Refresh when your connection returns.");
       }
-    }
+    } finally { if (generation === loadGeneration.current) setLoading(false); }
   }, [focusMatch, orgId, qualsOnly]);
 
   /**
@@ -325,45 +340,53 @@ export default function LineupClient({ orgId }: { orgId: string }) {
    * refreshed board — no optimistic second source of truth to drift.
    */
   const mutate = useCallback(
-    async (body: Record<string, unknown>) => {
+    async (body: Record<string, unknown>): Promise<AssignmentReceipt | null> => {
+      if (mutationPending.current || loading || viewRef.current?.status !== "live") return null;
+      const eventKey = viewRef.current.eventKey;
+      mutationPending.current = true;
+      const generation = ++loadGeneration.current;
       setBusy(true);
+      setReceipt(null); setError("");
       try {
         const response = await fetch("/api/scouting/coverage", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, focusMatchKey: focusMatch, qualsOnly, ...body }),
+          body: JSON.stringify({ orgId, eventKey, focusMatchKey: focusMatch, qualsOnly, ...body }),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as CoverageView & { error?: string };
-        if (!response.ok) {
-          setError(data.error ?? "Could not update coverage.");
-          return;
+        const data = (await response.json()) as CoverageView & { error?: string; mutation?: unknown };
+        if (generation !== loadGeneration.current) return null;
+        if (!response.ok || !isCoverageView(data) || data.status !== "live" || data.orgId !== orgId || data.eventKey !== eventKey ||
+          !isAssignmentReceipt(data.mutation) || data.mutation.action !== body.action || data.mutation.eventKey !== eventKey) {
+          setError(data?.error ?? "The assignment could not be confirmed. Your choices are still here; refresh coverage before retrying.");
+          return null;
         }
         setView(data);
         setUpdatedAt(data.generatedAt);
         setError("");
+        setReceipt(data.mutation); setFromCache(false); setCachedAt(null);
         void persistLineupSnapshot(orgId, data);
+        return data.mutation;
       } catch {
-        setError("Network error — the assignment was not saved.");
+        setError("The assignment could not be confirmed. Your choices are still here; refresh coverage before retrying.");
+        return null;
       } finally {
+        mutationPending.current = false;
         setBusy(false);
       }
     },
-    [focusMatch, orgId, qualsOnly],
+    [focusMatch, orgId, qualsOnly, loading],
   );
 
   useEffect(() => {
     void load();
-    // Battery-safe polling: >=15s cadence, paused while the tab is hidden.
-    const timer = window.setInterval(() => {
-      if (shouldPollLineup(document.visibilityState)) void load();
-    }, LINEUP_POLL_MS);
+    // Refresh when returning to the page; no recurring polling workload.
     const onVisibility = () => {
       if (shouldPollLineup(document.visibilityState)) void load();
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.clearInterval(timer);
+      loadGeneration.current += 1;
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [load]);
@@ -479,9 +502,10 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       >
         <div className="lineup-header-meta">
           <span className="lineup-live-pill" aria-live="polite">
-            Live · refresh {LINEUP_POLL_MS / 1000}s
+            {fromCache ? "Saved on this device" : "Last updated"}
             {updatedAt ? ` · ${new Date(updatedAt).toLocaleTimeString()}` : ""}
           </span>
+          <Button variant="secondary" type="button" disabled={busy || loading} onClick={() => void load()}>{loading ? "Refreshing…" : "Refresh coverage"}</Button>
           <LineupRelatedStrip orgId={orgId} />
           <CopyShareLink orgId={orgId} />
           <Button variant="secondary" type="button" onClick={() => window.print()}>
@@ -497,11 +521,12 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           {error}
         </p>
       ) : null}
+      {receipt ? <section className="lineup-receipt" role="status"><p>{assignmentReceiptMessage(receipt)}</p>{receipt.refused.length ? <ul>{receipt.refused.map((reason, index) => <li key={index}>{reason}</li>)}</ul> : null}</section> : null}
 
       <section className="lineup-controls" aria-label="Coverage filters">
         <label>
           Focus match
-          <select value={focusMatch} onChange={(event) => setFocusMatch(event.target.value)}>
+          <select value={focusMatch || view.live.focusMatchKeys[0] || ""} disabled={busy || loading} onChange={(event) => setFocusMatch(event.target.value)}>
             {matchOptions.map((option) => (
               <option key={option.matchKey} value={option.matchKey}>
                 {option.label}
@@ -513,12 +538,13 @@ export default function LineupClient({ orgId }: { orgId: string }) {
           <input
             type="checkbox"
             checked={qualsOnly}
+            disabled={busy || loading}
             onChange={(event) => setQualsOnly(event.target.checked)}
           />
           Quals only
         </label>
         {view.canAssign ? (
-          <Button variant="secondary" type="button" disabled={busy || !view.live.gapSlots.length} onClick={() => void mutate({ action: "auto-assign" })}>
+          <Button variant="secondary" type="button" disabled={busy || loading || !view.scouts.length || !(view.scope ? view.scope.upcomingNoScout : view.summary.unscouted)} onClick={() => void mutate({ action: "auto-assign" })}>
             {busy ? "Assigning…" : "Auto-assign upcoming robots"}
           </Button>
         ) : null}
@@ -529,11 +555,12 @@ export default function LineupClient({ orgId }: { orgId: string }) {
 
       {view.canAssign ? (
         <AssignmentRangeForm
+          key={view.eventKey}
           matchKeys={view.slots}
           scouts={view.scouts}
           qualsOnly={qualsOnly}
-          busy={busy}
-          onAssign={(payload) => void mutate(payload)}
+          busy={busy || loading}
+          onAssign={mutate}
         />
       ) : null}
 
@@ -554,12 +581,10 @@ export default function LineupClient({ orgId }: { orgId: string }) {
                   </strong>
                   <p className="app-muted lineup-tip">{warning.message}</p>
                 </div>
-                <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>
-                  Open Form builder
-                </Button>
               </li>
             ))}
           </ul>
+          {view.canAssign ? <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>Review form mapping</Button> : null}
         </section>
       ) : null}
 
@@ -618,32 +643,10 @@ export default function LineupClient({ orgId }: { orgId: string }) {
                     {slotMatchLabel(slot)} · {teamLabel(slot)}
                   </strong>
                   <span>{statusLabel(slot.status)}</span>
+                  {slot.assignedScouts?.length ? <span>Assigned: {slot.assignedScouts.map(scout => scout.name).join(", ")}</span> : null}
                   <a href={lineupScoutNowHref(orgId, slot.matchKey, slot.teamKey)}>Scout now</a>
                   {view.canAssign ? (
-                    <label className="lineup-assign">
-                      <span className="app-muted">Assign</span>
-                      <select
-                        value=""
-                        disabled={busy}
-                        onChange={(event) => {
-                          const assignee = event.target.value;
-                          if (!assignee) return;
-                          void mutate({
-                            action: "assign",
-                            matchKey: slot.matchKey,
-                            teamKey: slot.teamKey,
-                            userId: assignee,
-                          });
-                        }}
-                      >
-                        <option value="">Pick a scout…</option>
-                        {view.scouts.map((scout) => (
-                          <option key={scout.userId} value={scout.userId}>
-                            {scout.isMe ? `${scout.name} (me)` : scout.name} · {scout.assignedCount}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <SlotAssignment key={`${view.eventKey}:${slot.matchKey}:${slot.teamKey}`} slot={slot} scouts={view.scouts} busy={busy || loading} mutate={mutate} />
                   ) : null}
                 </li>
               ))}
@@ -696,6 +699,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
                     <span>{teamLabel(slot)}</span>
                     <small>
                       {statusLabel(slot.status)}
+                      {slot.assignedScouts?.length ? ` · Assigned: ${slot.assignedScouts.map(scout => scout.name).join(" / ")}` : ""}
                       {slot.status === "double" && slot.scoutNames?.length
                         ? ` · ${slot.scoutNames.join(" / ")}`
                         : ""}
@@ -717,4 +721,19 @@ export default function LineupClient({ orgId }: { orgId: string }) {
 
     </main>
   );
+}
+
+function SlotAssignment({ slot, scouts, busy, mutate }: { slot: CoverageGapSlot; scouts: CoverageScout[]; busy: boolean; mutate: (body: Record<string, unknown>) => Promise<AssignmentReceipt | null> }) {
+  const [userId, setUserId] = useState("");
+  return <div className="lineup-assign"><label><span className="app-muted">Scout for {slotMatchLabel(slot)} · Team {teamLabel(slot)}</span>
+    <select value={userId} disabled={busy} onChange={event => setUserId(event.target.value)}>
+      <option value="">Choose a scout…</option>
+      {scouts.map(scout => <option key={scout.userId} value={scout.userId}>{scout.name}{scout.isMe ? " (me)" : ""} · {scout.assignedCount} assigned</option>)}
+    </select></label>
+    <Button variant="secondary" disabled={busy || !scouts.some(scout => scout.userId === userId)} onClick={() => {
+      void mutate({ action: "assign", matchKey: slot.matchKey, teamKey: slot.teamKey, userId }).then(result => {
+        if (result && !result.refused.length) setUserId("");
+      });
+    }}>Assign scout</Button>
+  </div>;
 }
