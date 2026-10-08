@@ -18,7 +18,7 @@ export async function openNav(page: Page): Promise<void> {
 /** Destination groups belong to the one hamburger menu. */
 export async function openMenuSection(page: Page, label: string) {
   await openNav(page);
-  const section = page.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ hasText: new RegExp(`^${label}$`) }) });
-  await section.locator("summary").click();
+  const section = page.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ has: page.getByText(label, { exact: true }) }) });
+  if (await section.getAttribute("open") === null) await section.locator("summary").click();
   return section.getByRole("navigation", { name: label, exact: true });
 }

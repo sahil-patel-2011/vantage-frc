@@ -4,46 +4,22 @@ import { useEffect, useState } from "react";
 import { orgNameAddsDetail } from "../../components/app-shell-model";
 import { Icon } from "../../components/icon";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { DashboardBoardSwitcher } from "./dashboard-board-bar";
-import type { BoardMeta, BoardState, Me } from "./dashboard-board-types";
-import { LiveCountdown } from "./widgets";
+import type { Me } from "./dashboard-board-types";
 
 export function DashboardHomeHeader({
   me,
-  meLoaded,
   orgId,
   greetingText,
-  board,
-  switcherBoards,
-  saving,
   editing,
-  previewing,
   detail,
   eventName,
-  nextMatchData,
-  showNextGlance,
-  onSwitch,
-  onNewBoard,
-  onManageBoards,
-  onEdit,
 }: {
   me: Me;
-  meLoaded: boolean;
   orgId: string;
   greetingText: string;
-  board: BoardState | null;
-  switcherBoards: BoardMeta[];
-  saving: boolean;
   editing: boolean;
-  previewing: boolean;
   detail: string;
   eventName: unknown;
-  nextMatchData: Record<string, unknown> | undefined;
-  showNextGlance: boolean;
-  onSwitch: (id: string) => void;
-  onNewBoard: () => void;
-  onManageBoards: () => void;
-  onEdit: () => void;
 }) {
   const [today, setToday] = useState("");
   useEffect(() => {
@@ -66,46 +42,6 @@ export function DashboardHomeHeader({
             <span>{eventName}</span>
             <Icon name="chevron" />
           </a>
-        ) : null}
-      </div>
-      <div className="dash-home-controls" role="group" aria-label="Home layout">
-        {orgId && meLoaded ? (
-          <DashboardBoardSwitcher
-            boards={switcherBoards}
-            board={board}
-            saving={saving}
-            disabled={editing || previewing}
-            onSwitch={onSwitch}
-            onNew={onNewBoard}
-            onManage={onManageBoards}
-          />
-        ) : null}
-        {!editing && !previewing ? (
-          <div className="dash-home-actions">
-            {nextMatchData && showNextGlance ? (
-              <a className="dash-next-glance" href={withOrgHref("/my-day", orgId || null)}>
-                <span>Next</span>
-                <strong>
-                  {String(nextMatchData.compLevel ?? "Match").toUpperCase()} {String(nextMatchData.matchNumber ?? "")}
-                </strong>
-                <b>
-                  <LiveCountdown iso={nextMatchData.scheduledTime as string | undefined} />
-                </b>
-              </a>
-            ) : null}
-            {/* Board selection and customization share one control group. */}
-            <button
-              type="button"
-              className="dash-edit-button"
-              data-testid="dash-customize"
-              data-tour="customise"
-              aria-label="Edit Home — rearrange, add, or remove widgets"
-              onClick={onEdit}
-            >
-              <Icon name="gear" />
-              Customize
-            </button>
-          </div>
         ) : null}
       </div>
     </header>

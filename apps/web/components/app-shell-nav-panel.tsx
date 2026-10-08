@@ -138,7 +138,7 @@ export function AppShellNavPanel({
           <button
             className="soft-icon-btn"
             type="button"
-            aria-label="Close"
+            aria-label="Close menu"
             ref={panelCloseRef}
             onClick={closeNav}
           >
@@ -294,6 +294,7 @@ export function AppShellNavPanel({
             {/* Settings scroll with destinations, so short screens still have room
                 to browse. Sign-out alone stays in the fixed footer. */}
             <div className="soft-drawer-settings" aria-label="Settings">
+              <p className="main-menu-heading">Manage</p>
               {me.platformAdmin ? (
                 <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
               ) : null}

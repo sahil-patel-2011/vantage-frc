@@ -57,7 +57,7 @@ for (const width of [390, 768]) test(`opening menu preserves an already focused 
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   const opener = page.getByRole("button", { name: "Menu and search", exact: true });
   await opener.click();
-  const ai = page.getByRole("navigation", { name: "Main menu", exact: true }).locator("details").filter({ has: page.locator("summary").filter({ hasText: /^AI$/ }) });
+  const ai = page.getByRole("navigation", { name: "Main menu", exact: true }).locator("details").filter({ has: page.locator("summary").filter({ has: page.getByText("AI", { exact: true }) }) });
   const summary = ai.locator("summary");
   await summary.focus();
   await page.clock.runFor(80);

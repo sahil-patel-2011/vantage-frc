@@ -27,10 +27,6 @@ body.has-app-shell .dash-home .dash-hero-greeting {
   letter-spacing: -.045em;
   margin-bottom: 8px;
 }
-.dash-home .dash-home-controls {
-  border-radius: 14px;
-  box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 4%, transparent);
-}
 .dash-home .dash-workspace { display: grid; gap: 14px; min-width: 0; }
 body.has-app-shell .dash-home .dash-workspace > .dash-now {
   display: flex;
@@ -86,14 +82,19 @@ body.has-app-shell .dash-home .dash-workspace .dash-now-main > p { max-width: 60
 .dash-workspace-action:focus-visible, .dash-workspace .dash-now-quiet:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 body.has-app-shell .dash-home.scan-workbench > .dash-role-strip { margin: 0; padding: 22px 24px; }
 body.has-app-shell .dash-home.scan-workbench > .dash-role-strip > ul { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.dash-home .dash-board-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.dash-home .dash-board-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; margin-bottom: 18px; padding-block: 8px; border-bottom: 1px solid var(--line-soft); }
+.dash-board-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+.dash-board-identity .dash-board-chip-wrap { margin: 0; min-width: 0; }
+body.has-app-shell .dash-home .dash-board-identity .dash-board-chip { min-height: 44px; padding-inline: 12px; max-width: min(280px, calc(100vw - 64px)); background: transparent; border-color: var(--line-soft); font-weight: 500; }
 body.has-app-shell .dash-home .dash-board-heading h2 { margin: 0; font: 600 16px/1.3 var(--font-sans); letter-spacing: -.025em; }
 .dash-board-heading p { margin: 0; color: var(--muted); font-size: 13px; }
-.dash-board-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.dash-board-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .dash-board-tools > button { min-height: 44px; border: 0; padding: 8px 10px; border-radius: 10px; color: var(--muted); background: transparent; font: 500 12px/1.4 var(--font-sans); cursor: pointer; }
 .dash-board-tools > button:hover { color: var(--ink); background: var(--surface-2); }
 .dash-board-tools > button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .dash-board-tools > button:disabled { cursor: wait; opacity: .65; }
+.dash-board-tools > .dash-board-customize { display: inline-flex; align-items: center; gap: 8px; padding-inline: 14px; border: 1px solid var(--line); color: var(--ink); background: var(--surface); font-size: 13px; }
+.dash-board-customize svg { width: 18px; height: 18px; flex: none; }
 body.has-app-shell .dash-home > details.dash-first-week { margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .dash-home > details.dash-first-week > summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 44px; color: var(--muted); cursor: pointer; font-size: 13px; list-style: none; }
 .dash-home > details.dash-first-week > summary::-webkit-details-marker { display: none; }
@@ -123,7 +124,12 @@ body.has-app-shell .dash-home .dash-stat-row strong, body.has-app-shell .dash-ho
   body.has-app-shell .dash-home.scan-workbench > .dash-home-header { align-items: stretch; gap: 14px; }
   body.has-app-shell .dash-home .dash-hero-greeting { font-size: 30px; }
   .dash-home .dash-workspace-action { padding: 10px 12px; }
-  .dash-board-heading { align-items: flex-start; }
+  .dash-home .dash-board-heading { align-items: flex-start; gap: 8px; }
+  .dash-board-identity { flex: 1 1 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 12px; }
+  .dash-board-identity .dash-board-chip-wrap { width: 100%; }
+  body.has-app-shell .dash-home .dash-board-identity .dash-board-chip { width: 100%; max-width: 100%; justify-content: space-between; }
+  .dash-board-identity .dash-board-menu { left: auto; right: 0; }
+  .dash-board-tools { width: 100%; justify-content: flex-end; }
   body.has-app-shell .dash-home:not(.is-editing) .dash-widget.app-card { padding: 20px; }
   body.has-app-shell .dash-home.scan-workbench > .dash-role-strip > ul { grid-template-columns: 1fr; }
 }

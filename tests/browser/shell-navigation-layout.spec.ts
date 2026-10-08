@@ -43,12 +43,12 @@ test("desktop destinations have one menu without repeating saved shortcuts", asy
     tabs: ["/dashboard", "/competition", "/rankings", "/ai?tab=chat"],
   } }));
   await page.goto("/dashboard");
-  const panel = page.getByRole("complementary", { name: "Product navigation", exact: true });
+  const panel = page.getByRole("dialog", { name: "Product navigation", exact: true });
   await expect(panel).toBeHidden();
   await openNav(page);
   await expect(panel.locator(".soft-drawer-shortcuts")).toHaveCount(0);
   await expect(panel.locator(".main-menu-launch a")).toHaveCount(2);
-  await panel.locator(".main-menu-section > summary").filter({ hasText: /^AI$/ }).click();
+  await panel.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) }).click();
   await panel.getByRole("navigation", { name: "AI", exact: true }).getByRole("link", { name: "Chat", exact: true }).click();
   await expect(page).toHaveURL(/\/ai/);
   await expect(panel).toBeHidden();
@@ -93,7 +93,7 @@ test("workspace navigation and search survive routes and desktop breakpoint chan
     expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(width >= 1100 ? 244 : 0);
     await page.screenshot({ path: info.outputPath(`navigation-closed-${width}.png`) });
     await openNav(page);
-    const panel = page.getByRole("complementary", { name: "Product navigation", exact: true });
+    const panel = page.getByRole("dialog", { name: "Product navigation", exact: true });
     await expect(panel).toBeVisible();
     await expect(hamburger).toBeHidden();
     await expect(page.locator(".vrail")).toBeHidden();
@@ -129,10 +129,10 @@ test("workspace navigation and search survive routes and desktop breakpoint chan
 
   // Every dismissal returns to the same closed layout, including a fresh load.
   await page.setViewportSize({ width: 1440, height: 900 });
-  const panel = page.getByRole("complementary", { name: "Product navigation", exact: true });
+  const panel = page.getByRole("dialog", { name: "Product navigation", exact: true });
   const opener = page.getByRole("button", { name: "Search pages, tools, and team data", exact: true });
   await openNav(page);
-  await panel.getByRole("button", { name: "Close", exact: true }).click();
+  await panel.getByRole("button", { name: "Close menu", exact: true }).click();
   await expect(panel).toBeHidden();
   await expect(opener).toBeFocused();
   await openNav(page);

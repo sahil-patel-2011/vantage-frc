@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { BoardMeta, BoardState } from "./dashboard-board-types";
 
 /*
-  Which board you are looking at, and the way to the others, in one chip
-  beside the greeting ("My dashboard ▾"). Boards used to be hard to find: with
-  one board the only way in was More → Your boards, and a second board brought
-  in a separate tab strip ("Match day | My dashboard | + | Your boards") that
-  pushed Home down. The chip is there with one board or ten.
+  Board selection and display preferences live beside the widgets they affect.
+  The same menu is available with one board or ten.
 */
 export function DashboardBoardSwitcher({
   boards,
@@ -18,6 +15,9 @@ export function DashboardBoardSwitcher({
   onSwitch,
   onNew,
   onManage,
+  quietWidgetCount,
+  showQuietWidgets,
+  onToggleQuietWidgets,
 }: {
   boards: BoardMeta[];
   board: BoardState | null;
@@ -27,8 +27,12 @@ export function DashboardBoardSwitcher({
   onSwitch: (id: string) => void;
   onNew: () => void;
   onManage: () => void;
+  quietWidgetCount: number;
+  showQuietWidgets: boolean;
+  onToggleQuietWidgets: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const menuId = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const current = board?.isDefault || !board ? "My Home" : board.name;
@@ -51,8 +55,8 @@ export function DashboardBoardSwitcher({
   }, [open]);
 
   useEffect(() => {
-    if (disabled) setOpen(false);
-  }, [disabled]);
+    if (disabled || saving) setOpen(false);
+  }, [disabled, saving]);
 
   const pick = (action: () => void) => () => {
     setOpen(false);
@@ -95,9 +99,17 @@ export function DashboardBoardSwitcher({
         data-scope={board?.scope ?? "personal"}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
         aria-label={`Board: ${current}. Switch or manage boards`}
-        disabled={disabled}
+        disabled={disabled || saving}
         onClick={() => setOpen((value) => !value)}
+        onKeyDown={(event) => {
+          if (!open && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(true);
+          }
+        }}
       >
         {board?.scope === "org" && !board.isDefault ? <em>Team</em> : null}
         <span>{current}</span>
@@ -106,7 +118,7 @@ export function DashboardBoardSwitcher({
         </svg>
       </button>
       {open ? (
-        <div className="dash-board-menu" role="menu" aria-label="Boards" data-testid="dash-board-menu">
+        <div id={menuId} className="dash-board-menu" role="menu" aria-label="Boards" data-testid="dash-board-menu">
           {boards.length === 0 ? (
             <button type="button" role="menuitemradio" aria-checked="true" onClick={pick(() => undefined)}>
               <span>{current}</span>
@@ -129,6 +141,13 @@ export function DashboardBoardSwitcher({
             ))
           )}
           <hr />
+          {quietWidgetCount > 0 ? <>
+            <button type="button" role="menuitemcheckbox" aria-checked={showQuietWidgets}
+              disabled={saving} onClick={pick(onToggleQuietWidgets)}>
+              <span>Show quiet widgets ({quietWidgetCount})</span>
+            </button>
+            <hr />
+          </> : null}
           <button type="button" role="menuitem" data-testid="dash-new-board" disabled={saving} onClick={pick(onNew)}>
             <span>New board…</span>
           </button>

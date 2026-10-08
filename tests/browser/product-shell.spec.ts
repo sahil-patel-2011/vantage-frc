@@ -123,7 +123,7 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(drawer.getByRole("link", { name: /^Home/ })).toBeVisible();
   await expect(drawer.getByRole("link", { name: /^Scouting/ })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Competition", exact: true })).toHaveCount(0);
-  await expect(drawer.locator(".main-menu-section > summary").filter({ hasText: /^AI$/ })).toBeVisible();
+  await expect(drawer.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Forms", exact: true })).toHaveCount(0);
   await expect(drawer.getByRole("link", { name: "Personal settings", exact: true })).toHaveCount(1);
   await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
