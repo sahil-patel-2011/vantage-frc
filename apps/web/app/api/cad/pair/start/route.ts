@@ -1,7 +1,19 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getCadRelayPool } from "@vantage/db/cad-relay";
 import { isRelayDatabaseUnconfigured, relaySetupResponse } from "../../../../../lib/connectors/pairing-setup";
-import { publicErrorMessage } from "../../../../../lib/security/public-error";
+import { z } from "zod";
+import { parseSecureJson, RequestSecurityError } from "../../../../../lib/security/request";
+
+const startSchema = z.object({
+  machineName: z.string().trim().min(1).max(100),
+  cliVersion: z.string().trim().min(1).max(100),
+  platform: z.enum(["onshape", "fusion360"]).optional(),
+}).strict();
+
+function privateResponse(response: Response) {
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
 
 /** Ambiguous alphabet (no I/O/0/1) for human + QR entry. */
 function code() {
@@ -13,10 +25,8 @@ function code() {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as { machineName?: string; cliVersion?: string; platform?: string };
-    if (!body.machineName?.trim() || body.machineName.length > 100 || !body.cliVersion?.trim()) {
-      throw new Error("Machine name and CLI version are required");
-    }
+    // CLI callers omit Origin; browser callers must still be same-origin JSON.
+    const body = await parseSecureJson(request, startSchema, { maxBytes: 2048 });
 
     const pool = getCadRelayPool();
     const machine = body.machineName.trim();
@@ -26,10 +36,10 @@ export async function POST(request: Request) {
       [machine],
     );
     if (Number(recent.rows[0]?.count ?? 0) >= 8) {
-      return Response.json(
+      return privateResponse(Response.json(
         { error: "Too many pairing attempts from this machine. Wait a few minutes and try again." },
         { status: 429 },
-      );
+      ));
     }
 
     const userCode = code();
@@ -43,14 +53,14 @@ export async function POST(request: Request) {
         hash(pollToken),
         machine,
         body.cliVersion,
-        String(body.platform ?? "") || null,
+        body.platform ?? null,
       ],
     );
 
     const base = process.env.BETTER_AUTH_URL ?? new URL(request.url).origin;
     const requestedPlatform = body.platform === "onshape" || body.platform === "fusion360" ? body.platform : null;
     const verificationUri = `${base.replace(/\/$/, "")}/cad/pair?code=${encodeURIComponent(userCode)}${requestedPlatform ? `&platform=${requestedPlatform}` : ""}`;
-    return Response.json({
+    return privateResponse(Response.json({
       userCode,
       pollToken,
       verificationUri,
@@ -58,14 +68,15 @@ export async function POST(request: Request) {
       interval: 3,
       // QR UIs: short code only — never encode pollToken.
       qrPayload: verificationUri,
-    });
+    }));
   } catch (error) {
     // Same as the storage node: a deployment missing the relay role is a 503,
     // not a 400 the CLI on someone's laptop will treat as its own fault.
-    if (isRelayDatabaseUnconfigured(error)) return relaySetupResponse();
-    return Response.json(
-      { error: publicErrorMessage(error, "Pairing could not start") },
-      { status: 400 },
-    );
+    if (error instanceof RequestSecurityError) return privateResponse(Response.json({ error: error.message }, { status: error.status }));
+    if (isRelayDatabaseUnconfigured(error)) return privateResponse(relaySetupResponse());
+    return privateResponse(Response.json(
+      { error: "Pairing could not start. Check your connection and deployment setup before trying again." },
+      { status: 503 },
+    ));
   }
 }

@@ -115,7 +115,7 @@ export function createOnshapeUiBrowserSession(options: {
     async action(command: UiCommand) {
       const beforePopup = popupVersion;
       const result = await current().execute(command);
-      if (popupVersion !== beforePopup) return { ...result, status: "unverified" as const, verification: "none" as const, message: "The action opened another browser tab. This engine still owns its original page; inspect the new tab manually. Geometry and navigation were not verified." };
+      if (popupVersion !== beforePopup) return { ...result, status: "unverified" as const, verification: "none" as const, requiresInspection: true, message: "The action opened another browser tab. This engine still owns its original page; inspect the new tab manually. Geometry and navigation were not verified." };
       return result;
     },
     stop,

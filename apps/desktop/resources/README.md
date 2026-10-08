@@ -13,6 +13,9 @@ Each directory contains its own worker, manifest, Playwright packages and browse
 Run staging only in an authorized release environment with a browser build matching
 the pinned Playwright version. The operator supplies `--browser-dir` and
 `--browser-executable` as absolute paths to that pre-provisioned browser.
+Staging checks the executable's native OS/CPU header and matching Playwright/core
+versions before replacing a prior staged bundle. It rejects absolute or escaping
+symlinks that would break after copying resources off the release computer.
 
 Resources are specific to the release host's OS and CPU architecture. The staging
 helper replaces only its host's directory and preserves other target directories.
@@ -23,6 +26,11 @@ The running shell selects only its matching platform/architecture directory,
 checks the manifest and refuses mismatches. Missing matching resources report
 `setup_required`; there is no fallback to a different architecture. Accept each
 architecture separately, including its signing and browser launch behavior.
+Both resource trees are included unchanged in each half of the universal shell.
+The narrowly scoped `mac.x64ArchFiles` rule tells Electron's universal merger to
+retain those identical per-architecture Mach-O files instead of rejecting or
+combining them. Despite the option's name, this retention rule covers both trees;
+runtime still selects only its matching manifest and executable.
 
 The worker communicates only with Electron's parent message port. It exposes no
 TCP server, does not reuse the legacy API MCP transport and receives no Vantage

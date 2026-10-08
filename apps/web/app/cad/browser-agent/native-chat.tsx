@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "../../../components/ui/button";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import type { BrowserDecision, BrowserTurnInput } from "../../../lib/cad/browser-turn";
+import { browserActionProgress } from "../../../lib/cad/browser-progress";
 import styles from "./browser-agent.module.css";
 
 export type NativeCadTools = {
@@ -25,9 +26,13 @@ function readObservation(value: unknown): Observation {
     typeof row.screenshotBase64 !== "string" || !viewport || typeof viewport.width !== "number" || typeof viewport.height !== "number" || !object(row.controls)) {
     throw new Error("The browser did not return a complete view. No new CAD action was sent.");
   }
+  if (!("binding" in row) || (row.binding !== null && !object(row.binding)) || !object(row.canvasBounds)) {
+    throw new Error("This desktop connector does not provide current document context. Use the matching browser pilot build before starting a CAD task.");
+  }
   return {
     id: row.id, url: row.url, aria: row.aria.slice(0, 50000), screenshotBase64: row.screenshotBase64,
     viewport: { width: viewport.width, height: viewport.height }, controls: row.controls as Observation["controls"],
+    binding: row.binding as Observation["binding"], canvasBounds: row.canvasBounds as Observation["canvasBounds"],
   };
 }
 
@@ -38,6 +43,7 @@ function readDecision(value: unknown): BrowserDecision {
     const tool = object(row.tool);
     if (!tool || !["bind", "action"].includes(String(tool.name)) || !object(tool.arguments)) throw new Error("The assistant returned an unsupported action.");
   }
+  if (row.kind === "reply" && !["complete", "partial", "unsupported"].includes(String(row.outcome))) throw new Error("The assistant did not identify which work remains.");
   return value as BrowserDecision;
 }
 
@@ -129,7 +135,7 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
 
   async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (run.current || !ready || attaching || !input.trim()) return;
+    if (run.current || stopPending.current || !ready || attaching || !input.trim()) return;
     const userText = input.trim();
     const task = pendingTask ? `${pendingTask}\n\nUser follow-up: ${userText}` : userText;
     if (task.length > 6000) { setError("This task has reached its context limit. Start a new task with the dimensions and remaining work."); return; }
@@ -170,8 +176,13 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
         addReply(decision.text);
         if (decision.kind !== "action") {
           setContinuation(decision.kind === "clarification" ? "clarification" : null);
-          setPendingTask(decision.kind === "clarification" ? task : null);
-          setStatus(decision.kind === "clarification" ? "Waiting for your answer. No more actions will run." : "Assistant response received. Review its evidence and any remaining checks.");
+          // Keep dimensions and the original brief for follow-ups, including a
+          // manual handoff. Only New task deliberately resets the task context.
+          setPendingTask(task);
+          setStatus(decision.kind === "clarification" ? "Waiting for your answer. No more actions will run."
+            : decision.outcome === "complete" ? "The assistant reports the requested work is complete. Review its measurements and evidence."
+              : decision.outcome === "unsupported" ? "Paused for an unsupported operation. Review the assistant's manual handoff before continuing."
+                : "Work is partial or unverified. Review what remains before continuing.");
           return;
         }
         if (controller.signal.aborted) break;
@@ -179,11 +190,15 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
         const result = await bridge.tool(decision.tool);
         if (controller.signal.aborted) break;
         evidence.current = [...evidence.current, compactEvidence(result, decision.tool.name)].slice(-12);
-        const outcome = object(result);
         if (decision.tool.name === "action") {
-          const label = outcome?.verification === "ui-postcondition" ? "UI check passed. Geometry still requires measurement." : outcome?.actionPerformed === true ? "Action performed; its result still needs verification." : "The tool returned without confirming a performed action. Inspect the current view.";
-          addReply(label);
-          setStatus(label);
+          const progress = browserActionProgress(result, Boolean(decision.tool.arguments.postcondition));
+          addReply(progress.message);
+          setStatus(progress.message);
+          if (progress.pause) {
+            setContinuation("limit");
+            setStatus("Paused for review. Check the reported result in Onshape before continuing; no automatic retry will run.");
+            return;
+          }
         } else {
           addReply("Current document, workspace and tab bound for this session. Geometry has not been verified.");
         }

@@ -115,6 +115,21 @@ export function createOnshapeUiEngine(options: OnshapeUiEngineOptions) {
         if (visible && definition.locator.kind === "named-item") {
           state.names = (await namedItems(id)).map((item) => item.name);
         }
+        if (visible && definition.read) {
+          if (definition.read === "value") {
+            // Defensive even for trusted atlas entries: never expose a password
+            // if the upstream site changes the mapped element's input type.
+            if ((await target.getAttribute("type"))?.toLowerCase() !== "password") {
+              state.value = (await target.inputValue({ timeout: TIMEOUT_MS })).slice(0, 2000);
+            }
+          } else if (definition.read === "checked") {
+            state.checked = await target.isChecked({ timeout: TIMEOUT_MS });
+          } else {
+            state.text = (await target.innerText({ timeout: TIMEOUT_MS })).trim().slice(0, 6000);
+          }
+          const title = await target.getAttribute("data-bs-original-title") ?? await target.getAttribute("title");
+          if (title) state.title = title.slice(0, 2000);
+        }
         const bounds = visible && definition.canvas ? await target.boundingBox() : null;
         return { id, state, bounds };
       }));
@@ -136,7 +151,7 @@ export function createOnshapeUiEngine(options: OnshapeUiEngineOptions) {
     // viewportSize() is null (a normal headed desktop browser window).
     const viewport = { width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20) };
     if (page.url() !== url) throw new Error("The page navigated during observation. Observe again.");
-    latest = { id: randomUUID(), at: now(), url, aria, screenshotBase64: screenshot.toString("base64"), viewport, controls, canvasBounds };
+    latest = { id: randomUUID(), at: now(), url, binding: binding ? { ...binding } : null, aria, screenshotBase64: screenshot.toString("base64"), viewport, controls, canvasBounds };
     return structuredClone(latest);
   }
 

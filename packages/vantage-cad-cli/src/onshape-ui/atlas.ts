@@ -70,8 +70,8 @@ export const ONSHAPE_UI_CONTROLS: Readonly<Record<string, UiControl>> = {
   "feature.accept": css(".ns-dialog-button-ok", "edit"),
   "feature.cancel": css(".ns-dialog-button-cancel", "edit"),
   "feature.dialog": { ...css(".ns-dialog-header"), allowedActions: [] },
-  "feature.depth": { ...css('input[data-bs-original-title^="Depth:"]', "edit", ["fill", "press"]), allowedKeys: ["Tab", "Enter"] },
-  "sketch.dimension": { ...css('input.os-canvas-text-edit', "edit", ["fill", "press"]), allowedKeys: ["Enter", "Escape", "Tab"] },
+  "feature.depth": { ...css('input[data-bs-original-title^="Depth:"]', "edit", ["fill", "press"]), allowedKeys: ["Tab", "Enter"], read: "value" },
+  "sketch.dimension": { ...css('input.os-canvas-text-edit', "edit", ["fill", "press"]), allowedKeys: ["Enter", "Escape", "Tab"], read: "value" },
   "feature.filter": { locator: { kind: "role", role: "textbox", name: "Filter by name or type" }, scope: "document", impact: "inspect", allowedActions: ["fill", "press"], allowedKeys: ["Escape"] },
   "plane.top": css('.os-list-item-label[data-bs-original-title="Top"]', "edit"),
   "plane.front": css('.os-list-item-label[data-bs-original-title="Front"]', "edit"),
@@ -86,10 +86,14 @@ export const ONSHAPE_UI_CONTROLS: Readonly<Record<string, UiControl>> = {
   "document.menu": css(".nav-hamburger-menu"),
   "document.home": { locator: { kind: "role", role: "link", name: "The Onshape logo." }, scope: "document", impact: "inspect", allowedActions: ["click"] },
   "document.units": { locator: { kind: "text", text: "Workspace units…", scope: '.hamburger-menu' }, scope: "document", impact: "inspect", allowedActions: ["click"] },
-  "units.length": css('select.selection-list-workspace:has(option[value="4: millimeter"])', "edit", ["select"]),
-  "units.angle": css('select.selection-list-workspace:has(option[value="1: radian"])', "edit", ["select"]),
-  "units.mass": css('select.selection-list-workspace:has(option[value="1: kilogram"])', "edit", ["select"]),
+  "units.length": { ...css('select.selection-list-workspace:has(option[value="4: millimeter"])', "edit", ["select"]), read: "value" },
+  "units.angle": { ...css('select.selection-list-workspace:has(option[value="1: radian"])', "edit", ["select"]), read: "value" },
+  "units.mass": { ...css('select.selection-list-workspace:has(option[value="1: kilogram"])', "edit", ["select"]), read: "value" },
   "material.assign": { locator: { kind: "text", text: "Assign material…" }, scope: "document", impact: "edit", allowedActions: ["click"] },
+  "material.edit": { locator: { kind: "text", text: "Edit material…" }, scope: "document", impact: "inspect", allowedActions: ["click"] },
+  "material.library": { ...css('.material-dialog-content select.material-library-select-options', "edit", ["select"]), read: "value" },
+  "material.name": { ...css('.material-dialog-content [data-parameter-id="Name"] input'), allowedActions: [], read: "value" },
+  "material.density": { ...css('.material-dialog-content input[data-bs-original-title^="Density ("]'), allowedActions: [], read: "value" },
   "camera.isometric": { locator: { kind: "text", text: "Isometric" }, scope: "document", impact: "inspect", allowedActions: ["click"] },
   "select.open": button("Select box focus"),
   "select.search": { locator: { kind: "role", role: "searchbox", name: "Select box" }, scope: "document", impact: "inspect", allowedActions: ["fill"] },
@@ -98,13 +102,25 @@ export const ONSHAPE_UI_CONTROLS: Readonly<Record<string, UiControl>> = {
     `mate.${label}`, css(`#osToolbar [command-id="mate"][data-bs-original-title="${label} mate (m)"]`, "edit"),
   ])),
   "canvas": { ...css("canvas#canvas", "edit", ["canvas-click", "press"]), canvas: true, allowedKeys: ["Escape"] },
+  // Read-only physical-property context observed 2026-10-08. Overrides are
+  // reported, never enabled by the agent to manufacture a desired result.
+  ...Object.fromEntries(["PARTS", "MATE_CONNECTOR", "EnableInertia"].map(parameter => [
+    `mass.context.${parameter}`, { ...css(`.mass-property-dialog [data-parameter-id="${parameter}"]`), allowedActions: [], read: "text" as const },
+  ])),
+  ...Object.fromEntries(["EnableMass", "EnableCoM", "EnableInertia", "SHOW_VARIANCE"].map(parameter => [
+    `mass.checked.${parameter}`, { ...css(`.mass-property-dialog [data-parameter-id="${parameter}"] input[type="checkbox"]`), allowedActions: [], read: "checked" as const },
+  ])),
+  ...Object.fromEntries(["x", "y", "z"].map(axis => [
+    `property.center.${axis}`, { ...css(`.mass-property-dialog input[data-bs-original-title^="Center of mass ${axis} coordinate:"]`), allowedActions: [], read: "value" as const },
+  ])),
   ...Object.fromEntries(["Mass", "Volume", "Surface area", "Lxx", "Lxy", "Lxz", "Lyx", "Lyy", "Lyz", "Lzx", "Lzy", "Lzz"].map(label => [
-    `property.${label}`, { ...css(`input[data-bs-original-title^="${label}:"]`), allowedActions: [] },
+    `property.${label}`, { ...css(`.mass-property-dialog input[data-bs-original-title^="${label}:"]`), allowedActions: [], read: "value" as const },
   ])),
 };
 
 export const ONSHAPE_UI_ATLAS_STATUS = {
   observedAt: "2026-10-07", onshapeBuild: "1.221.89963.13d10d36cb23",
+  readbackObservedAt: "2026-10-08",
   transport: "playwright-ui-only", stage: "development-pilot",
   verifiedManually: ["new-document", "new-folder", "move-disposable-document", "sketch-top-plane", "rectangle", "explicit-sketch-dimensions", "extrude-explicit-mm", "missing-material-warning", "assign-material", "display-mass-inertia", "workspace-unit-changes", "isometric-view", "switch-document-tabs", "insert-existing-part-into-assembly", "part-studio-submenus"],
   notVerified: ["complete-toolbar-coverage", "assembly-mates", "drawings", "macOS-packaging", "Windows-packaging", "four-minute-complex-drawing"],

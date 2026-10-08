@@ -49,8 +49,11 @@ export default function PairClient({
         data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "";
       const success = response.ok && data && typeof data === "object" && "success" in data && data.success === true;
       if (success) setApproved(true);
+      const auditWarning = success && data && typeof data === "object" && "warning" in data && data.warning === "audit_unavailable"
+        ? " The device is approved, but its activity record could not be saved. No repeat approval is needed."
+        : "";
       setMessage(success
-        ? machineName ? `${machineName} is paired. Return to your CAD client to continue.` : CAD_PAIR_APPROVED
+        ? `${machineName ? `${machineName} is paired. Return to your CAD client to continue.` : CAD_PAIR_APPROVED}${auditWarning}`
         : error || "Pairing could not be confirmed. Check the code and try again.");
     } catch {
       setMessage("Pairing was not confirmed. Check your connection and check pairing in your CAD client before submitting again; the approval may have completed.");

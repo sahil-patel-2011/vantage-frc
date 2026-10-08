@@ -33,6 +33,7 @@ function fixture() {
     press: vi.fn(async () => undefined),
     waitFor: vi.fn(async () => undefined),
     inputValue: vi.fn(async () => value),
+    isChecked: vi.fn(async () => false),
     innerText: vi.fn(async () => "Saved"),
   };
   const png = Buffer.alloc(24);
@@ -50,6 +51,53 @@ function fixture() {
 }
 
 describe("Onshape UI engine safety and evidence", () => {
+  it("keeps the authoritative binding visible across observations and manual tab changes", async () => {
+    const f = fixture();
+    const initial = await f.engine.observe(["length"]);
+    expect(initial.binding).toBeNull();
+    const bound = await f.engine.bind(initial.id);
+    expect((await f.engine.observe(["length"])).binding).toEqual(bound);
+    f.setUrl(DOCUMENT.replace(/c{24}$/, "dddddddddddddddddddddddd"));
+    const changed = await f.engine.observe(["length"]);
+    expect(changed.binding?.elementId).toBe("cccccccccccccccccccccccc");
+    expect(parseUiDocumentBinding(changed.url)?.elementId).toBe("dddddddddddddddddddddddd");
+    await f.engine.clearBinding();
+    expect((await f.engine.observe(["length"])).binding).toBeNull();
+  });
+
+  it("reads only opted-in visible fields with bounded values and unit labels", async () => {
+    const f = fixture();
+    const controls: Record<string, UiControl> = {
+      measured: { ...CONTROLS.length!, read: "value" },
+      warning: { ...CONTROLS.done!, read: "text" },
+      override: { ...CONTROLS.done!, read: "checked" },
+      ordinary: CONTROLS.length!,
+    };
+    f.target.getAttribute.mockImplementation(async (name) => name === "data-bs-original-title" ? "Mass: 0.065 kg" : null);
+    f.target.inputValue.mockResolvedValue("0.065 kg");
+    const engine = createOnshapeUiEngine({ page: f.page as unknown as Page, controls, authorize: f.authorize });
+    const seen = await engine.observe();
+    expect(seen.controls.measured).toMatchObject({ value: "0.065 kg", title: "Mass: 0.065 kg" });
+    expect(seen.controls.warning?.text).toBe("Saved");
+    expect(seen.controls.override?.checked).toBe(false);
+    expect(seen.controls.ordinary).not.toHaveProperty("value");
+    expect(f.target.inputValue).toHaveBeenCalledTimes(1);
+    f.target.inputValue.mockResolvedValue("1".repeat(3000));
+    expect((await engine.observe(["measured"])).controls.measured?.value).toHaveLength(2000);
+    f.target.isVisible.mockResolvedValue(false);
+    expect((await engine.observe(["measured"])).controls.measured).not.toHaveProperty("value");
+    expect(f.target.inputValue).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not read a mapped input if the site changes it into a password field", async () => {
+    const f = fixture();
+    f.target.getAttribute.mockImplementation(async (name) => name === "type" ? "password" : null);
+    const engine = createOnshapeUiEngine({ page: f.page as unknown as Page,
+      controls: { field: { ...CONTROLS.length!, read: "value" } }, authorize: f.authorize });
+    expect((await engine.observe()).controls.field).not.toHaveProperty("value");
+    expect(f.target.inputValue).not.toHaveBeenCalled();
+  });
+
   it("bounds independent observation reads to eight and preserves requested order", async () => {
     const f = fixture();
     const controls: Record<string, UiControl> = {};

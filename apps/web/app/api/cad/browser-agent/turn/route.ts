@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       // A malformed model response still incurred usage. Return the parse failure
       // instead of throwing inside the transaction and rolling its receipt back.
       try {
-        return { decision: parseBrowserDecision(String(text), body.observation.id), model: { provider: adapter.provider, name: adapter.model } };
+        return { decision: parseBrowserDecision(String(text), body.observation.id, body.observation), model: { provider: adapter.provider, name: adapter.model } };
       } catch {
         return { error: "The assistant returned an unusable next step. No CAD action was run. Review the current document before trying again." };
       }

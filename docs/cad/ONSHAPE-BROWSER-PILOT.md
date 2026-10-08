@@ -38,6 +38,12 @@ browser automation bypasses Onshape terms, limits or service capacity.
   and requires re-observation. Ordinary exact-locator actions retain the UI-state
   checks without pixel equality. An uncertain action consumes its observation;
   callers must inspect before retrying.
+  Observations carry the engine's exact current binding, including a mismatch
+  after manual navigation, and opt-in visible field readback. Values retain
+  displayed units and tooltip precision; absent values are never replaced by zero.
+  Readback covers dimensions, workspace units, material name/density, selected
+  parts/reference connector, mass, center of mass, inertia and override states.
+  Property and override controls are read-only in the action registry.
 - `atlas.ts`: observed locator registry, with manual verification status kept
   separate from supported action types. Tool command IDs are more stable than
   hardcoded screen coordinates, but still require current DOM verification.
@@ -70,6 +76,9 @@ browser automation bypasses Onshape terms, limits or service capacity.
   structured single-action decisions, and no Onshape server transport. The native
   client displays action evidence, pauses for clarification and stops after twelve
   planning steps. Drawings and screenshots are not added to persisted chat history.
+  Failed dispatch, failed requested UI checks and unowned popup results pause for
+  inspection. Partial and unsupported replies retain the task for an explicit
+  follow-up; only New task clears it. Model-reported completion is not certification.
 
 One engine owns one browser page. Concurrent calls serialize; two writes with the
 same observation cannot both run. Parallel drawing interpretation, planning and
@@ -247,6 +256,14 @@ No Actions runs, deployments, builds, local browser processes, installs or datab
 services were started for this work. Do not merge or publish this as production
 ready until these gates pass.
 
+The October 8 follow-up source review also repaired pairing authorization order,
+request/platform validation, uncertain approval reporting and post-commit audit
+failures. Packaging recipes now inspect native CPU/OS headers and relocatable
+file links, require the actual native Windows credential module, and account for
+both architecture-specific browser resource trees in universal Mac packages.
+These file inspections do not prove Chromium revision compatibility, native module
+loading, successful packaging or signed installation; those checks remain open.
+
 Release inspection on 2026-10-07 confirmed repository Actions remain disabled
 and Git-triggered Vercel deployments are disabled. The Vercel connector identified
 the `vantage-frc-web` project, but returned no remaining allowance. Browser access
@@ -264,3 +281,25 @@ not this project's cost or proof of remaining free allowance. The connector was
 authenticated while browser Usage still required login. No deployment or workflow
 was started. The canonical `https://vantagefrc.vercel.app` homepage loaded in the
 hosted browser; it does not contain the unmerged CAD candidate.
+
+## October 8 hosted readback follow-up
+
+After the user restored the expired Onshape session, reopened the existing
+disposable verification part's mass dialog. No geometry or material was changed.
+Confirmed directly in visible input values and rendered tooltip attributes:
+
+- Part selection: Part 1; no reference mate connector selected.
+- Volume: 24000 mm³; surface area: 6800 mm².
+- Mass field: 0.065 kg; its tooltip: 0.06528 kg.
+- Center of mass: (30, -20, 5) mm.
+- Inertia diagonal: 9.248, 20.128, 28.288 kg mm²; displayed cross terms zero.
+- Mass, center-of-mass and inertia overrides unchecked; variance unchecked.
+- Existing material uses the **Edit material…** context action, whereas an
+  unassigned part uses **Assign material…**. Both are now mapped. The material
+  dialog displayed Aluminum - 6061 and density 0.098 lb/in³ at its shown precision.
+
+Added the observed scoped selectors for those readouts, read-only overrides and
+material library selection. Closed the material dialog with Cancel. This is a
+manual hosted UI check, not execution of the new connector or native agent loop.
+The latest Vercel production deployment is still the same failed build; browser
+Usage still redirects to sign-in and the connector returns no remaining allowance.

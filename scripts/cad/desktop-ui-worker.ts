@@ -88,7 +88,7 @@ parent.on("message", (event) => {
         const before = popupVersion;
         const result = await engine.execute(args as UiCommand);
         value = before === popupVersion ? result : {
-          ...result, status: "unverified", verification: "none",
+          ...result, status: "unverified", verification: "none", requiresInspection: true,
           message: "This action opened another tab. That tab has not been observed or bound; inspect it before claiming the action is complete.",
         };
       }

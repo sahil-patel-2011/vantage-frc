@@ -19,6 +19,8 @@ export type UiControl = {
   /** Explicit subset of the engine's safe keys; no free-form key chords. */
   allowedKeys?: readonly string[];
   canvas?: boolean;
+  /** Read only a mapped visible CAD field; never generic or authentication inputs. */
+  read?: "value" | "checked" | "text";
 };
 
 export type UiDocumentBinding = {
@@ -33,10 +35,12 @@ export type UiObservation = {
   id: string;
   at: number;
   url: string;
+  /** Current engine binding; may differ from URL after a manual tab change. */
+  binding: UiDocumentBinding | null;
   aria: string;
   screenshotBase64: string;
   viewport: { width: number; height: number };
-  controls: Record<string, { visible: boolean; enabled: boolean; count: number; names?: string[] }>;
+  controls: Record<string, { visible: boolean; enabled: boolean; count: number; names?: string[]; value?: string; checked?: boolean; text?: string; title?: string }>;
   canvasBounds: Record<string, UiBounds>;
 };
 
@@ -78,6 +82,8 @@ export type OnshapeUiEngineOptions = {
 export type UiCommandResult = {
   status: "verified" | "unverified";
   actionPerformed: boolean;
+  /** The action may have opened a popup or another unowned surface. Pause. */
+  requiresInspection?: boolean;
   /** This verifies UI evidence only, never certifies model geometry. */
   verification: "ui-postcondition" | "none";
   message: string;

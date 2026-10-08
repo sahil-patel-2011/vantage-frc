@@ -19,7 +19,7 @@ const orgId = "00000000-0000-4000-8000-000000000001";
 const input = () => ({
   orgId, requestId: "00000000-0000-4000-8000-000000000002", consent: true,
   task: "Measure this part", step: 0, history: [], evidence: [],
-  observation: { id: "current", url: "https://cad.onshape.com/documents", aria: "Documents", screenshotBase64: "png-data", viewport: { width: 1440, height: 900 }, controls: {} },
+  observation: { id: "current", url: "https://cad.onshape.com/documents", aria: "Documents", screenshotBase64: "png-data", viewport: { width: 1440, height: 900 }, controls: {}, binding: null, canvasBounds: {} },
 });
 const request = (body = input()) => new Request("https://vantage.example/api/cad/browser-agent/turn", {
   method: "POST", headers: { "content-type": "application/json", origin: "https://vantage.example" }, body: JSON.stringify(body),

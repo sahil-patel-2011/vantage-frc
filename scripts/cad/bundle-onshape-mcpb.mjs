@@ -7,6 +7,7 @@ import { cp, mkdir, readFile, realpath, rm, stat, writeFile } from "node:fs/prom
 import { createRequire } from "node:module";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertNativeTarget, assertRelocatableTree } from "./packaging-resources.mjs";
 
 const require = createRequire(import.meta.url);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -25,6 +26,28 @@ if (!relativeExecutable || relativeExecutable.startsWith("..") || isAbsolute(rel
 const playwrightPackage = JSON.parse(await readFile(join(resources, "node_modules", "playwright", "package.json"), "utf8"));
 const corePackage = JSON.parse(await readFile(join(resources, "node_modules", "playwright-core", "package.json"), "utf8"));
 if (playwrightPackage.version !== metadata.playwrightVersion || corePackage.version !== metadata.playwrightVersion) throw new Error("The staged browser and Playwright package versions must match.");
+await assertNativeTarget(executable, process.platform, process.arch);
+await assertRelocatableTree(join(resources, "browser"));
+await assertRelocatableTree(join(resources, "node_modules"));
+
+// Resolve and inspect native credential support before replacing any staged
+// extension. A package.json without its compiled adapter is not a working vault.
+const keytarArg = process.argv.indexOf("--keytar-dir");
+if (keytarArg >= 0 && !process.argv[keytarArg + 1]) throw new Error("--keytar-dir requires an already provisioned target keytar package directory.");
+let keytarRoot;
+if (keytarArg >= 0) keytarRoot = await realpath(resolve(process.argv[keytarArg + 1]));
+else {
+  try { keytarRoot = dirname(require.resolve("keytar/package.json")); }
+  catch (error) { if (error?.code !== "MODULE_NOT_FOUND") throw error; }
+}
+if (process.platform === "win32" && !keytarRoot) throw new Error("Windows MCPB requires an already provisioned native keytar adapter; provide --keytar-dir. Nothing was installed.");
+if (keytarRoot) {
+  const keytarPackage = JSON.parse(await readFile(join(keytarRoot, "package.json"), "utf8"));
+  if (keytarPackage.name !== "keytar" || keytarPackage.main !== "./lib/keytar.js") throw new Error("Use the approved native keytar package layout.");
+  if (!(await stat(join(keytarRoot, "lib", "keytar.js"))).isFile()) throw new Error("The keytar loader is missing.");
+  await assertNativeTarget(join(keytarRoot, "build", "Release", "keytar.node"), process.platform, process.arch);
+  await assertRelocatableTree(keytarRoot);
+}
 
 const esbuild = await import("esbuild");
 const source = join(root, "packages", "vantage-cad-cli");
@@ -42,13 +65,9 @@ await cp(join(resources, "node_modules"), join(output, "node_modules"), { recurs
 await cp(join(resources, "browser"), join(output, "browser"), { recursive: true, verbatimSymlinks: true });
 // Preserve existing OS-vault pairings when the target release environment already
 // provides the optional matching native credential adapter. Never install one.
-let keytarBundled = false;
-try {
-  const keytarRoot = dirname(require.resolve("keytar/package.json"));
+const keytarBundled = Boolean(keytarRoot);
+if (keytarRoot) {
   await cp(keytarRoot, join(output, "node_modules", "keytar"), { recursive: true, verbatimSymlinks: true });
-  keytarBundled = true;
-} catch (error) {
-  if (error?.code !== "MODULE_NOT_FOUND") throw error;
 }
 template.compatibility.platforms = [process.platform];
 await writeFile(join(output, "manifest.json"), JSON.stringify(template, null, 2) + "\n");

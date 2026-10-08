@@ -36,7 +36,12 @@ current Browser CAD approval. Credential values never appear in tool output.
 Existing device pairing is loaded from the current Vantage credential store, not
 from extension configuration. If the authorized release host has the optional
 native `keytar` adapter, the recipe copies it; validate its target architecture
-and native dependencies before shipping. Windows refuses to save new pairings
+and native dependencies before shipping. The operator may supply `--keytar-dir`
+for an already provisioned target package. Staging verifies the loader and
+`build/Release/keytar.node` native header; it refuses a Windows extension without
+that adapter before replacing the previous output. Browser headers and copied
+symlink boundaries are also checked without executing any binary.
+Windows refuses to save new pairings
 without the native vault adapter because POSIX file mode does not establish a
 private Windows ACL. macOS can use the existing permission-restricted credential
 file fallback. Do not copy any user's credential file into the release. Installing
