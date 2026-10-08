@@ -2,6 +2,20 @@ import { hubHref } from "../../lib/nav/hubs";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import { scoutDutyAction, type ScoutDuty } from "./dashboard-home-model";
 
+/** Hide a generic shortcut when the next action already opens the same workspace. */
+export function sameHomeDestination(left: string, right: string): boolean {
+  const destination = (href: string) => {
+    const url = new URL(href, "https://vantage.invalid");
+    if (url.pathname === "/scouting") return "scouting";
+    if (url.pathname === "/scout/teams") return "teams";
+    if (url.pathname === "/todos") return "todos";
+    if (url.pathname === "/competition") return url.searchParams.get("tab") ?? "scouting";
+    if (url.pathname === "/team") return url.searchParams.get("tab") ?? "calendar";
+    return url.pathname;
+  };
+  return destination(left) === destination(right);
+}
+
 export function scoutingHomeAction(input: { orgId: string; role: string | null; hasEvent: boolean; hasForms: boolean; duty?: ScoutDuty | null }) {
   const role = input.role?.toLowerCase();
   if (role === "viewer") return { label: "Explore teams", href: hubHref("/competition", "teams", input.orgId) };

@@ -18,7 +18,7 @@ for (const width of [320, 390, 768, 1440]) test(`one destination menu at ${width
   const nav = page.getByRole("navigation", { name: "Main menu", exact: true });
   await expect(nav.getByRole("link", { name: /^Home/ })).toBeVisible();
   await expect(nav.getByRole("link", { name: /^Scouting/ })).toBeVisible();
-  const ai = nav.locator("details").filter({ has: page.locator("summary").filter({ hasText: /^AI$/ }) });
+  const ai = nav.locator("details").filter({ has: page.locator("summary").filter({ has: page.getByText("AI", { exact: true }) }) });
   await ai.locator("summary").focus(); await page.keyboard.press("Enter");
   await expect(ai.getByRole("link", { name: "Writer", exact: true })).toBeVisible();
   expect((await new AxeBuilder({ page }).include(".soft-drawer").analyze()).violations).toEqual([]);
@@ -67,7 +67,7 @@ test("menu destinations respect workspace and sponsor restrictions", async ({ pa
   await page.route("**/api/me**", route => route.fulfill({ json: { ...me, hubAccess: [{ hubId: "ai", allowedTabIds: ["chat"] }] } }));
   await page.goto("/ai"); await navigationOpener(page).click();
   const ai = page.getByRole("navigation", { name: "AI", exact: true });
-  await page.locator(".main-menu-section > summary").filter({ hasText: /^AI$/ }).click();
+  await page.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) }).click();
   await expect(ai.getByRole("link", { name: "Chat", exact: true })).toBeVisible();
   await expect(ai.getByRole("link", { name: "Writer", exact: true })).toHaveCount(0);
 });

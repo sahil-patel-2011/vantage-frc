@@ -115,13 +115,15 @@ export function AppShellNavPanel({
     : null;
   return (
     <>
-      {navOpen ? (
-        <button className="soft-scrim" type="button" aria-label="Close navigation" onClick={closeNav} />
-      ) : null}
+      <button className={`soft-scrim soft-navigation-scrim${navOpen ? " open" : ""}`} type="button" aria-label="Close navigation" aria-hidden={!navOpen} inert={!navOpen} tabIndex={-1} onClick={closeNav} />
       <aside
         id="vantage-navigation-panel"
         className={`soft-drawer ${navOpen ? "open" : ""}`}
         data-searching={queryActive}
+        role="dialog"
+        aria-modal={navOpen || undefined}
+        aria-hidden={!navOpen}
+        inert={!navOpen}
         aria-label="Product navigation"
         onKeyDown={navOpen ? keepTabInsidePanel : undefined}
       >
@@ -136,7 +138,7 @@ export function AppShellNavPanel({
           <button
             className="soft-icon-btn"
             type="button"
-            aria-label="Close"
+            aria-label="Close menu"
             ref={panelCloseRef}
             onClick={closeNav}
           >
@@ -144,10 +146,11 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <div className="soft-org-chip">
+          <a className="soft-org-chip" href={withOrgHref("/account/teams", orgId)} onClick={closeNav} aria-label={`${orgLabel}. Choose or manage your teams`}>
             <Icon name="users" />
             <div><strong>{orgLabel}</strong><span>{orgId ? rolePlanCue : "Choose a team in Settings"}</span></div>
-          </div>
+            <Icon name="chevron" />
+          </a>
         </div>
 
         <div className="soft-panel-search">
@@ -283,47 +286,37 @@ export function AppShellNavPanel({
           </div>
         ) : (
           <nav className="soft-drawer-flat" aria-label="Main menu">
-            <AppShellNavGroups key={`${navOpen}-${activeGroupLabel}`}
+            <AppShellNavGroups key={`${navOpen}-${orgId}-${pathname}-${pathSearch}`}
               groups={visibleNavGroups} activeGroupLabel={activeGroupLabel}
               pathname={pathname} pathSearch={pathSearch} orgId={orgId}
               navHrefAllowed={navHrefAllowed} closeNav={closeNav}
             />
+            {/* Settings scroll with destinations, so short screens still have room
+                to browse. Sign-out alone stays in the fixed footer. */}
+            <div className="soft-drawer-settings" aria-label="Settings">
+              <p className="main-menu-heading">Manage</p>
+              {me.platformAdmin ? (
+                <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
+              ) : null}
+              <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
+                <Icon name="gear" /><span><strong>Personal settings</strong></span>
+              </a>
+              {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
+                <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
+                  <Icon name="users" /><span><strong>Team admin</strong></span>
+                </a>
+              ) : null}
+              <button type="button" className="soft-drawer-shortcut-edit" onClick={openIslandEditor}>
+                <Icon name="grid" /><span><strong>Edit shortcuts</strong></span>
+              </button>
+            </div>
           </nav>
         )}
-        {/* Settings, split the way people ask for them: "my stuff" and "the
-            team's stuff". Both used to be somewhere inside the hub lists, which
-            meant hunting through Team for a sign-in preference. The team link
-            only appears for an owner or admin, because for everyone else it is a
-            door that opens onto an error. */}
-        {!queryActive ? <><div className="soft-drawer-settings">
-          {me.platformAdmin ? (
-            <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
-          ) : null}
-          <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
-            <Icon name="gear" />
-            <span>
-              <strong>Personal settings</strong>
-
-            </span>
-          </a>
-          {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
-            <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
-              <Icon name="users" />
-              <span>
-                <strong>Team admin</strong>
-
-              </span>
-            </a>
-          ) : null}
-        </div>
-        <footer className="soft-drawer-foot">
-          <button type="button" onClick={openIslandEditor}>
-            Edit shortcuts
-          </button>
+        {!queryActive ? <footer className="soft-drawer-foot">
           <button type="button" disabled={signingOut} onClick={onSignOut}>
-            {signingOut ? "Signing out…" : "Sign out"}
+            <Icon name="logout" />{signingOut ? "Signing out…" : "Sign out"}
           </button>
-        </footer></> : null}
+        </footer> : null}
       </aside>
     </>
   );
