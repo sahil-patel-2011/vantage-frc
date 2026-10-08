@@ -33,6 +33,7 @@
  * on, and why private context is filtered out before the prompt is built.
  */
 
+import { assertTextOnlyChatInput } from "./chat-image";
 import type {
   ChatAdapter,
   ChatCompletionResult,
@@ -376,6 +377,7 @@ export class AiHordeAdapter implements ChatAdapter {
     context: ContextItem[];
     history?: ChatMessage[];
   }): Promise<ChatCompletionResult> {
+    assertTextOnlyChatInput(input);
     const prompt = buildAiHordePrompt({
       capability: this.capability,
       message: input.message,

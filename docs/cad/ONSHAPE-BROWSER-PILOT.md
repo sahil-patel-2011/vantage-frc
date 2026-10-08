@@ -1,6 +1,6 @@
 # Onshape browser CAD pilot — implementation and evidence
 
-Status: development candidate, not a production release. Updated 2026-10-07.
+Status: development candidate, not a production release. Updated 2026-10-08.
 
 ## Product decision
 
@@ -9,6 +9,12 @@ Vantage controls membership, device approval and the execution boundary. An AI
 client supplies planning and visual interpretation. Do not embed Claude Code or
 Codex terminal sessions as a shared team backend. Consumer subscriptions are not
 server API credentials.
+
+The native desktop workspace also has a source implementation of conversational
+planning through Vantage's existing metered remote model adapter. It sends the
+current viewport and an optional PNG drawing only after Start, then proposes one
+registered UI operation at a time. This is separate from the external MCP client's
+model connection; neither route launches a local model or terminal agent.
 
 The new `ui-mcp` command is separate from legacy `mcp`, `login`, `onshape` and
 hosted OAuth integrations. Those older paths use Onshape API calls, including
@@ -59,6 +65,11 @@ browser automation bypasses Onshape terms, limits or service capacity.
   Migration 0716 stores references to the approval session/MFA proof, not raw
   credentials. Leaving the team, revoked device, expired/deleted session or
   insufficient current authentication proof denies subsequent operations.
+- `/api/cad/browser-agent/turn` and `browser-turn.ts`: current membership and
+  authentication checks, metered remote image planning, bounded transient PNGs,
+  structured single-action decisions, and no Onshape server transport. The native
+  client displays action evidence, pauses for clarification and stops after twelve
+  planning steps. Drawings and screenshots are not added to persisted chat history.
 
 One engine owns one browser page. Concurrent calls serialize; two writes with the
 same observation cannot both run. Parallel drawing interpretation, planning and
@@ -82,18 +93,24 @@ package download or legacy API command on connection:
 ```
 
 This is a development configuration, not a downloadable or verified desktop
-extension. The candidate must be packaged before nontechnical team rollout.
-The intended member flow is: sign in to Vantage, enable its installed connector,
-then sign in to Onshape directly in the visible browser. Current source MCP mode
-still requires an existing paired Onshape device and explicit browser approval
-at `/cad/browser-agent`; native desktop launch instead uses its own current
-Vantage session. These are separate browser owners and must not run competing
-writers against the same document.
+extension. MCPB manifest and platform resource staging sources are included for
+compatible desktop clients. They use an already provisioned browser and never
+install or download one on connection. No signed extension has been produced.
 
-Do not claim the native page currently supplies an AI model or bridges a running
-external assistant into its browser. It provides the execution bridge and start/
-stop UI; the MCP client supplies planning for its own connector session. Packaging
-that client connection into the intended short setup remains a release task.
+The connector initializes before pairing or browser launch. Its explicit setup
+tools return a human approval link and short code, retain the polling secret only
+in memory, and check once when asked after approval. Onshape is preselected on the
+pairing page. The returned device platform is verified before credentials are
+saved. Browser access then requires a separate current-session approval at
+`/cad/browser-agent`; explicit Start opens the visible browser for human Onshape
+sign-in. Native desktop launch instead uses its current Vantage session. These
+are separate browser owners and must not run competing writers on one document.
+
+Native conversation requires a configured, eligible remote image provider and
+the existing team budget. An unsupported provider reports setup required instead
+of falling back to local compute. The external MCP client supplies its own model.
+The new native conversation, extension staging and guided setup have been reviewed
+as source only; packaged execution and hosted acceptance remain release tasks.
 
 ## Hosted browser walkthrough
 
@@ -215,10 +232,11 @@ fixtures private. The test source files are not evidence that these checks pass.
   The Electron shell is wired in source, but has not been
   built or executed; this is not a shipped desktop feature. No installer was
   run or computer configuration changed during development.
-- Complete the native conversational model orchestration and package compatible
-  MCP client installation. The desktop bridge and source MCP command are
-  development entry points, not the final one-click AI setup. Do not point new
-  users at the old API-backed MCP.
+- Build and accept the native conversation and guided MCP setup on both platforms,
+  including image limits, provider failures, usage accounting, cancellation and
+  pairing recovery. Produce signed desktop and compatible MCP extension artifacts.
+  Their source implementations are not proof of a working installed feature. Do
+  not point new users at the old API-backed MCP.
 - Run representative drawing-to-part benchmarks including dimensions, constraints,
   regeneration, corrections, materials and independent measurement. No sub-four-
   minute complex-drawing guarantee has been demonstrated.
@@ -235,3 +253,14 @@ the `vantage-frc-web` project, but returned no remaining allowance. Browser acce
 to Usage reached the account's authenticator/passkey challenge. No allowance was
 inferred from plan labels and no deployment was started. Migration 0716 is now
 included in the production schema preflight; it was not applied or bypassed.
+
+Release inspection on 2026-10-08 found the latest production attempt failed at
+the schema preflight because migrations 0710–0713 were absent. The stacked
+candidate additionally depends on later migrations through 0716; redeployment
+does not apply them. Existing Vercel billing data for the returned period
+2026-09-30 07:00 UTC through 2026-10-08 07:00 UTC showed approximately $0.71 billed
+and $8.38 effective usage across the account. These are historical account totals,
+not this project's cost or proof of remaining free allowance. The connector was
+authenticated while browser Usage still required login. No deployment or workflow
+was started. The canonical `https://vantagefrc.vercel.app` homepage loaded in the
+hosted browser; it does not contain the unmerged CAD candidate.

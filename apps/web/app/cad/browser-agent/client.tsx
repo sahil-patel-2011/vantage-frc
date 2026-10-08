@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "../../../components/ui/button";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import NativeCadChat, { type NativeCadTools } from "./native-chat";
 import styles from "./browser-agent.module.css";
 
 type Device = { id: string; name: string };
@@ -16,6 +17,7 @@ type DesktopCadBridge = {
   start(input: { orgId: string; url?: string }): Promise<DesktopStatus>;
   stop(): Promise<DesktopStatus>;
   onState(callback: (status: DesktopStatus) => void): () => void;
+  tool?: NativeCadTools["tool"];
 };
 type View =
   | { status: "loading" }
@@ -187,6 +189,7 @@ function DesktopControl({ orgId, bridge }: { orgId: string; bridge: DesktopCadBr
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [taskRunning, setTaskRunning] = useState(false);
   const pending = useRef(false);
   const operationVersion = useRef(0);
   const alive = useRef(true);
@@ -255,13 +258,15 @@ function DesktopControl({ orgId, bridge }: { orgId: string; bridge: DesktopCadBr
       ) : null}
       {status?.phase === "browser_open" ? (
         <>
-          <p className={styles.note}>{status.orgId && status.orgId !== orgId ? "A browser is open for another team. Stop that session before opening one for this team. " : ""}The browser is open. Check the Onshape tab to sign in or choose a document; this status does not confirm a CAD connection or completed geometry.</p>
-          <Button variant="secondary" onClick={() => void act("stop")} disabled={busy}>{busy ? "Stopping…" : "Stop browser"}</Button>
+          <p className={styles.note}>{status.orgId && status.orgId !== orgId ? "A browser is open for another team. Stop that session before opening one for this team." : "Sign in to Onshape and choose a document, then describe your task below."}</p>
+          {!taskRunning ? <Button variant="secondary" onClick={() => void act("stop")} disabled={busy}>{busy ? "Stopping…" : "Stop browser"}</Button> : null}
         </>
       ) : null}
       {status?.phase === "starting" ? <Button variant="secondary" onClick={() => void act("stop")}>Cancel opening</Button> : null}
       {status?.phase === "error" ? <Button variant="secondary" onClick={() => void act("stop")} disabled={busy}>{busy ? "Resetting…" : "Reset browser"}</Button> : null}
       {error ? <p role="alert" className={styles.error}>{error}</p> : null}
+      {typeof bridge.tool === "function" ? <NativeCadChat orgId={orgId} bridge={bridge as DesktopCadBridge & NativeCadTools}
+        ready={status?.phase === "browser_open" && status.orgId === orgId} onRunningChange={setTaskRunning} /> : null}
     </div>
   );
 }

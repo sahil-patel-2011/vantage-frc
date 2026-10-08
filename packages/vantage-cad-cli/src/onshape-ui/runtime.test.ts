@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { validateOnshapeUiUrl, validateUiToolArguments, validateVantagePairingOrigin } from "./runtime";
 
 describe("Onshape UI connector boundary validation", () => {
+  it("accepts explicit setup/lifecycle tools but never accepts credential or executable fields", () => {
+    for (const name of ["onshape_ui_status", "onshape_ui_stop", "onshape_ui_pair_check"]) {
+      expect(validateUiToolArguments(name, {})).toEqual({});
+      expect(() => validateUiToolArguments(name, { token: "secret" })).toThrow();
+    }
+    expect(validateUiToolArguments("onshape_ui_pair_start", { replaceExisting: true })).toEqual({ replaceExisting: true });
+    expect(() => validateUiToolArguments("onshape_ui_pair_start", { replaceExisting: "yes" })).toThrow();
+    expect(() => validateUiToolArguments("onshape_ui_pair_start", { vantageUrl: "https://attacker.test" })).toThrow();
+    expect(() => validateUiToolArguments("onshape_ui_start", { executablePath: "/bin/sh" })).toThrow();
+    expect(() => validateUiToolArguments("onshape_ui_start", { url: "https://cad.onshape.com/api/v6/users/current" })).toThrow();
+  });
   it("never sends a pairing bearer token to arbitrary HTTPS hosts or paths", () => {
     expect(validateVantagePairingOrigin("https://vantagefrc.vercel.app").origin).toBe("https://vantagefrc.vercel.app");
     for (const value of ["https://attacker.test", "https://vantagefrc.vercel.app.attacker.test", "https://vantagefrc.vercel.app:8443", "https://user:password@vantagefrc.vercel.app", "http://vantagefrc.vercel.app", "https://vantagefrc.vercel.app/redirect", "https://vantagefrc.vercel.app/?target=evil"]) {

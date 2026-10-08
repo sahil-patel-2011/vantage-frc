@@ -9,11 +9,26 @@
 .eyebrow { color: var(--muted); font-size: 13px; font-weight: 600; }
 .form { display: grid; gap: 12px; }
 .form label { margin-top: 8px; font-size: 14px; font-weight: 600; }
-.form :is(select, input) { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+.form :is(select, input, textarea) { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+.form textarea { resize: vertical; line-height: 1.6; }
 .form button { justify-self: start; margin-top: 8px; min-height: 44px; }
 .note { color: var(--muted); font-size: 14px; }
 .error { padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 4px; }
 .footer { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; }
 .footer a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-underline-offset: 4px; }
-.card :is(a, button, select, input):focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.card :is(a, button, select, input, textarea, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.chat { display: grid; gap: 20px; padding-top: 24px; border-top: 1px solid var(--line); }
+.chatHeader { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.chatHeader h3 { font-size: 20px; letter-spacing: -.02em; margin: 0 0 8px; }
+.messages { display: grid; gap: 14px; list-style: none; margin: 0; padding: 0; max-height: 420px; overflow-y: auto; overscroll-behavior: contain; }
+.messages li { border-radius: 12px; padding: 14px 16px; background: var(--bg); }
+.messages li[data-role="user"] { border: 1px solid var(--line); }
+.messages p { white-space: pre-wrap; font-size: 14px; }
+.messageRole { display: block; font-size: 12px; font-weight: 650; color: var(--muted); margin-bottom: 6px; }
+.attachment { display: grid; gap: 6px; }
+.attachment input { font-size: 13px; }
+.drawing { display: grid; gap: 8px; margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+.drawing img { display: block; max-width: 100%; max-height: 240px; object-fit: contain; margin-inline: auto; background: white; }
+.drawing figcaption { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: 13px; overflow-wrap: anywhere; }
+.chatActions { display: flex; flex-wrap: wrap; gap: 12px; }
 @media (max-width: 540px) { .form button { justify-self: stretch; } }

@@ -48,7 +48,8 @@ export async function POST(request: Request) {
     );
 
     const base = process.env.BETTER_AUTH_URL ?? new URL(request.url).origin;
-    const verificationUri = `${base}/cad/pair?code=${encodeURIComponent(userCode)}`;
+    const requestedPlatform = body.platform === "onshape" || body.platform === "fusion360" ? body.platform : null;
+    const verificationUri = `${base.replace(/\/$/, "")}/cad/pair?code=${encodeURIComponent(userCode)}${requestedPlatform ? `&platform=${requestedPlatform}` : ""}`;
     return Response.json({
       userCode,
       pollToken,
