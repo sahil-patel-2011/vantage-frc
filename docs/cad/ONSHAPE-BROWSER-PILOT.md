@@ -201,6 +201,8 @@ configurations and broader failure recovery still need coverage.
 
 Run only in a named, authorized remote environment. Keep generated artifacts and
 fixtures private. The test source files are not evidence that these checks pass.
+The executable sequence and required inputs are in
+[ONSHAPE-REMOTE-ACCEPTANCE.md](./ONSHAPE-REMOTE-ACCEPTANCE.md).
 
 1. Apply migration 0716 to the remote fixture database. Exercise current and new
    members of the configured 6925 organization, another organization also named
@@ -275,12 +277,38 @@ Release inspection on 2026-10-08 found the latest production attempt failed at
 the schema preflight because migrations 0710–0713 were absent. The stacked
 candidate additionally depends on later migrations through 0716; redeployment
 does not apply them. Existing Vercel billing data for the returned period
-2026-09-30 07:00 UTC through 2026-10-08 07:00 UTC showed approximately $0.71 billed
-and $8.38 effective usage across the account. These are historical account totals,
+2026-09-30 07:00 UTC through 2026-10-08 07:00 UTC showed historical account totals,
 not this project's cost or proof of remaining free allowance. The connector was
 authenticated while browser Usage still required login. No deployment or workflow
 was started. The canonical `https://vantagefrc.vercel.app` homepage loaded in the
 hosted browser; it does not contain the unmerged CAD candidate.
+
+Later October 8, after the user signed in, the actual Vercel Usage page showed
+remaining included credit for the current billing cycle, with usage data
+potentially one hour behind. Exact account figures were reported privately to
+the user. This replaces the earlier lack of allowance evidence; it is not a
+guarantee of future zero charges. No deployment was started.
+Recheck live allowance before the eventual intentional deployment.
+
+The user explicitly prohibited Neon use and database charges. No Neon database
+was queried, migrated, provisioned or deleted. PostgreSQL remains the existing
+implementation's primary store; the Sheets-primary replacement and a permitted
+test destination are still required. Do not treat Vercel login as database access
+authorization, remove its configured storage, or skip the production schema gate.
+
+Source follow-up simplified the Browser CAD workspace into a compact connection
+row, task composer and optional document/privacy details; setup and unshipped
+build states remain explicit. The desktop release workflow now requires both
+Windows and macOS success and actual NSIS/DMG files before publishing. It remains
+disabled/manual-only, and no desktop acceptance was executed. These UI changes
+have source review only, with no rendered candidate verification.
+
+The user subsequently deferred desktop acceptance because no remote machines
+are available. The source candidate may be reviewed and committed; installed
+behavior remains unverified. The existing environment-configured Sheets bridge
+now skips the SQL URL-registry lookup, with its configuration/transport factory
+available in a database-independent module. Legacy registry fallback is retained.
+This does not replace PostgreSQL identity/domain persistence or migrate any data.
 
 ## October 8 hosted readback follow-up
 

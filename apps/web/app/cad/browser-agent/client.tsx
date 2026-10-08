@@ -147,31 +147,32 @@ function Authorization({ orgId }: { orgId: string }) {
     <section className={styles.card} aria-labelledby="pilot-authorization-title" aria-busy={view.status === "loading" || busy}>
       <header>
         <span className={styles.eyebrow}>WA Robotics · Team 6925</span>
-        <h2 id="pilot-authorization-title">{view.status === "approved" ? "Device authorized" : view.status === "desktop" ? "Onshape on this computer" : "Authorize your computer"}</h2>
+        <h2 id="pilot-authorization-title">{view.status === "approved" ? "Computer approved" : view.status === "desktop" ? "Your workspace" : view.status === "loading" ? "Preparing your workspace" : view.status === "blocked" ? "Access needed" : view.status === "error" ? "Let’s reconnect" : "Approve your computer"}</h2>
       </header>
       <div aria-live="polite" aria-atomic="true">
         {view.status === "loading" ? <p>Checking your team membership…</p> : null}
         {view.status === "blocked" || view.status === "error" ? <p>{view.message}</p> : null}
-        {view.status === "approved" ? <p><strong>{view.deviceName}</strong> is authorized for this sign-in. Access is checked again before every action and ends when this sign-in expires or is revoked.</p> : null}
+        {view.status === "approved" ? <div className={styles.success}><p><strong>{view.deviceName}</strong> is approved for this sign-in.</p><p className={styles.note}>Return to your desktop connector to continue. Approval ends when this sign-in expires or is revoked.</p></div> : null}
       </div>
       {view.status === "desktop" ? <DesktopControl orgId={orgId} bridge={view.bridge} /> : null}
       {view.status === "ready" && view.devices.length > 0 ? (
         <form onSubmit={approve} className={styles.form}>
-          <p>Choose one of your paired Onshape computers. Authorization is tied to your current team sign-in.</p>
+          <p>Choose your paired computer to approve the Onshape pilot for this sign-in.</p>
           <label htmlFor="browser-pilot-device">Your computer</label>
           <select id="browser-pilot-device" value={deviceId} onChange={(event) => setDeviceId(event.target.value)} required disabled={busy}>
             <option value="" disabled>Choose a computer</option>
             {view.devices.map((device) => <option key={device.id} value={device.id}>{device.name || "Unnamed computer"} · {device.id.slice(-6)}</option>)}
           </select>
-          <p className={styles.note}>This permission does not launch software or open your Onshape documents.</p>
+          <p className={styles.note}>Your desktop connector opens Onshape separately, when you choose to start.</p>
           {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-          <Button type="submit" variant="primary" disabled={busy || !deviceId}>{busy ? "Authorizing…" : "Authorize this computer"}</Button>
+          <Button type="submit" variant="primary" disabled={busy || !deviceId}>{busy ? "Approving…" : "Approve computer"}</Button>
         </form>
       ) : null}
       {view.status === "ready" && view.devices.length === 0 ? (
-        <div>
-          <p>Your membership is eligible. No paired Onshape computers were found for your account.</p>
-          <p className={styles.note}>Review CAD connections to manage pairing. The browser pilot desktop connector is still in development.</p>
+        <div className={styles.empty}>
+          <h3>No paired computer yet</h3>
+          <p>Your team has access. Pair an Onshape connector from CAD connections when a pilot build is available.</p>
+          <p className={styles.note}>The desktop release is still in development.</p>
         </div>
       ) : null}
       <footer className={styles.footer}>
@@ -193,6 +194,11 @@ function DesktopControl({ orgId, bridge }: { orgId: string; bridge: DesktopCadBr
   const pending = useRef(false);
   const operationVersion = useRef(0);
   const alive = useRef(true);
+  const documentOptions = useRef<HTMLDetailsElement | null>(null);
+  const documentInput = useRef<HTMLInputElement | null>(null);
+  const phaseLabel = status?.phase === "idle" ? "Ready to open" : status?.phase === "starting" ? "Opening Onshape"
+    : status?.phase === "browser_open" ? "Browser open" : status?.phase === "stopping" ? "Closing browser"
+      : status?.phase === "setup_required" ? "Setup needed" : status?.phase === "error" ? "Needs attention" : "Checking availability";
 
   useEffect(() => {
     alive.current = true;
@@ -221,6 +227,8 @@ function DesktopControl({ orgId, bridge }: { orgId: string; bridge: DesktopCadBr
         documentUrl = parsed.href;
       } catch {
         setError("Use an Onshape document or Documents page link beginning with https://cad.onshape.com/documents.");
+        if (documentOptions.current) documentOptions.current.open = true;
+        documentInput.current?.focus();
         return;
       }
     }
@@ -242,28 +250,35 @@ function DesktopControl({ orgId, bridge }: { orgId: string; bridge: DesktopCadBr
   }
 
   return (
-    <div className={styles.form} aria-busy={busy}>
-      <div aria-live="polite" aria-atomic="true">
-        <p>{status?.message || (error ? "Desktop connector unavailable." : "Checking the desktop connector…")}</p>
+    <div className={styles.desktop} aria-busy={busy}>
+      <div className={styles.connection}>
+        <div className={styles.connectionIdentity}>
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3" /><path d="M3 9h18M7 6.5h.01M10 6.5h.01" /></svg>
+          <div><strong>Onshape</strong><span className={styles.connectionState} data-phase={status?.phase} role="status" aria-live="polite">{phaseLabel}</span></div>
+        </div>
+        {status?.phase === "browser_open" && !taskRunning ? <Button variant="ghost" onClick={() => void act("stop")} disabled={busy}>{busy ? "Closing…" : "Close browser"}</Button> : null}
+        {status?.phase === "starting" ? <Button variant="ghost" onClick={() => void act("stop")}>Cancel opening</Button> : null}
       </div>
-      {status?.phase === "setup_required" ? <p className={styles.note}>This desktop package does not include a ready browser connector. A packaged pilot release is required; nothing will be downloaded or launched from this page.</p> : null}
+      {status?.phase === "setup_required" ? <div className={styles.empty}><h3>Browser CAD is not included in this build</h3><p>You’ll need a desktop pilot build with the Onshape browser included. The packaged release is not available yet.</p><p className={styles.note}>Nothing has been installed or started.</p></div> : null}
       {status?.phase === "idle" ? (
-        <form className={styles.form} onSubmit={(event) => { event.preventDefault(); void act("start"); }}>
-          <label htmlFor="pilot-onshape-url">Onshape link <span className={styles.note}>(optional)</span></label>
-          <input id="pilot-onshape-url" type="url" value={url} onChange={(event) => setUrl(event.target.value)} disabled={busy}
-            placeholder="https://cad.onshape.com/documents/…" aria-describedby="pilot-onshape-url-help" autoComplete="off" spellCheck={false} />
-          <p id="pilot-onshape-url-help" className={styles.note}>Leave blank to open Documents. Sign in directly in the Onshape browser. Your team access is checked before opening it and before each CAD action.</p>
+        <form className={styles.form} noValidate onSubmit={(event) => { event.preventDefault(); void act("start"); }}>
+          <p>Open Onshape, sign in there, then choose the document you want to work on.</p>
+          <details ref={documentOptions} className={styles.details}>
+            <summary>Open a specific document</summary>
+            <div className={styles.detailContent}>
+              <label htmlFor="pilot-onshape-url">Onshape link</label>
+              <input ref={documentInput} id="pilot-onshape-url" type="url" value={url} onChange={(event) => setUrl(event.target.value)} disabled={busy}
+                placeholder="https://cad.onshape.com/documents/…" aria-describedby="pilot-onshape-url-help" autoComplete="off" spellCheck={false} />
+              <p id="pilot-onshape-url-help" className={styles.note}>Optional. Leave blank to open your Documents page.</p>
+            </div>
+          </details>
           <Button type="submit" variant="primary" disabled={busy}>{busy ? "Opening…" : "Open Onshape"}</Button>
         </form>
       ) : null}
       {status?.phase === "browser_open" ? (
-        <>
-          <p className={styles.note}>{status.orgId && status.orgId !== orgId ? "A browser is open for another team. Stop that session before opening one for this team." : "Sign in to Onshape and choose a document, then describe your task below."}</p>
-          {!taskRunning ? <Button variant="secondary" onClick={() => void act("stop")} disabled={busy}>{busy ? "Stopping…" : "Stop browser"}</Button> : null}
-        </>
+        <p className={styles.note}>{status.orgId && status.orgId !== orgId ? "This browser belongs to another team. Close it before opening this workspace." : "Sign in to Onshape and choose a document, then describe your task below."}</p>
       ) : null}
-      {status?.phase === "starting" ? <Button variant="secondary" onClick={() => void act("stop")}>Cancel opening</Button> : null}
-      {status?.phase === "error" ? <Button variant="secondary" onClick={() => void act("stop")} disabled={busy}>{busy ? "Resetting…" : "Reset browser"}</Button> : null}
+      {status?.phase === "error" ? <div className={styles.empty}><p>{status.message}</p><Button variant="secondary" onClick={() => void act("stop")} disabled={busy}>{busy ? "Resetting…" : "Reset browser"}</Button></div> : null}
       {error ? <p role="alert" className={styles.error}>{error}</p> : null}
       {typeof bridge.tool === "function" ? <NativeCadChat orgId={orgId} bridge={bridge as DesktopCadBridge & NativeCadTools}
         ready={status?.phase === "browser_open" && status.orgId === orgId} onRunningChange={setTaskRunning} /> : null}

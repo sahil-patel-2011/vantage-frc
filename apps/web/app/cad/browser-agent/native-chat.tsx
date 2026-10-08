@@ -11,7 +11,7 @@ export type NativeCadTools = {
   tool(input: { name: "observe" | "bind" | "action"; arguments?: Record<string, unknown> }): Promise<unknown>;
   stop(): Promise<unknown>;
 };
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant"; content: string; category?: "result" };
 type Drawing = { name: string; dataBase64: string };
 type Observation = BrowserTurnInput["observation"];
 
@@ -95,6 +95,7 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
   const followTranscript = useRef(true);
   const stopPending = useRef(false);
   const composer = useRef<HTMLTextAreaElement | null>(null);
+  const attachmentInput = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     mounted.current = true;
@@ -146,8 +147,8 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
     if (!pendingTask) evidence.current = [];
     const history: Message[] = [...messages, { role: "user", content: userText }].slice(-12);
     setMessages(history);
-    const addReply = (text: string) => {
-      history.push({ role: "assistant", content: text });
+    const addReply = (text: string, category?: "result") => {
+      history.push({ role: "assistant", content: text, ...(category ? { category } : {}) });
       if (mounted.current) setMessages([...history].slice(-32));
     };
     try {
@@ -159,7 +160,7 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
         setStatus(`Step ${step + 1} of 12 · Planning the next action`);
         const body: BrowserTurnInput = {
           orgId, requestId: crypto.randomUUID(), consent: true, task, step,
-          history: history.slice(-12), evidence: evidence.current.slice(-12), observation,
+          history: history.slice(-12).map(({ role, content }) => ({ role, content })), evidence: evidence.current.slice(-12), observation,
           ...(drawing ? { drawing: { mimeType: "image/png", dataBase64: drawing.dataBase64 } } : {}),
         };
         const response = await fetch("/api/cad/browser-agent/turn", {
@@ -192,7 +193,7 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
         evidence.current = [...evidence.current, compactEvidence(result, decision.tool.name)].slice(-12);
         if (decision.tool.name === "action") {
           const progress = browserActionProgress(result, Boolean(decision.tool.arguments.postcondition));
-          addReply(progress.message);
+          addReply(progress.message, "result");
           setStatus(progress.message);
           if (progress.pause) {
             setContinuation("limit");
@@ -200,7 +201,7 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
             return;
           }
         } else {
-          addReply("Current document, workspace and tab bound for this session. Geometry has not been verified.");
+          addReply("Working document selected. Geometry checks are still pending.", "result");
         }
       }
       if (!controller.signal.aborted) {
@@ -240,23 +241,27 @@ export default function NativeCadChat({ orgId, bridge, ready, onRunningChange }:
   if (!ready && !messages.length) return null;
   return (
     <section className={styles.chat} aria-labelledby="native-cad-title">
-      <header className={styles.chatHeader}><div><h3 id="native-cad-title">CAD assistant</h3><p className={styles.note}>One observed action at a time. You stay in control.</p></div>{model ? <span className={styles.badge}>{model}</span> : null}</header>
-      {messages.length ? <ol ref={transcript} className={styles.messages} aria-label="CAD conversation" tabIndex={0} onScroll={(event) => { const list = event.currentTarget; followTranscript.current = list.scrollHeight - list.scrollTop - list.clientHeight < 60; }}>{messages.map((message, index) => <li key={index} data-role={message.role}><span className={styles.messageRole}>{message.role === "user" ? "You" : "Assistant"}</span><p id={continuation === "clarification" && index === messages.length - 1 ? "native-cad-question" : undefined}>{message.content}</p></li>)}</ol> : null}
-      <p className={styles.note} role="status" aria-live="polite">{status || "Describe your part, the correction you need, or what to measure. Include dimensions and units."}</p>
+      <header className={styles.chatHeader}><div><h3 id="native-cad-title">Make your next move</h3><p className={styles.note}>Describe a part, refine a feature or check a measurement.</p></div>{model ? <span className={styles.modelName} title={`Answering model: ${model}`}>{model}</span> : null}</header>
+      {messages.length ? <ol ref={transcript} className={styles.messages} aria-label="CAD conversation" tabIndex={0} onScroll={(event) => { const list = event.currentTarget; followTranscript.current = list.scrollHeight - list.scrollTop - list.clientHeight < 60; }}>{messages.map((message, index) => <li key={index} data-role={message.role} data-category={message.category}><span className={styles.messageRole}>{message.role === "user" ? "You" : message.category === "result" ? "Observed result" : "Assistant"}</span><p id={continuation === "clarification" && index === messages.length - 1 ? "native-cad-question" : undefined}>{message.content}</p></li>)}</ol> : null}
+      {status ? <p className={styles.taskStatus} data-active={running || stopping} role="status" aria-live="polite">{status}</p> : null}
       {error ? <div role="alert" className={styles.error}><p>{error}</p><a href={withOrgHref("/ai", orgId)}>AI settings and limits</a></div> : null}
-      {drawing ? <figure className={styles.drawing}><img src={`data:image/png;base64,${drawing.dataBase64}`} alt={`Attached drawing: ${drawing.name}`} /><figcaption>{drawing.name}<Button variant="ghost" disabled={running || stopping} onClick={() => { attachVersion.current++; setAttaching(false); setDrawing(null); }}>Remove drawing</Button></figcaption></figure> : null}
-      <form className={styles.form} onSubmit={start}>
-        <label htmlFor="native-cad-message">{continuation === "clarification" ? "Your answer" : pendingTask ? "Continue this task" : "What would you like to make?"}</label>
+      {drawing ? <figure className={styles.drawing}><img src={`data:image/png;base64,${drawing.dataBase64}`} alt={`Attached drawing: ${drawing.name}`} /><figcaption><span><strong>Reference drawing</strong><span className={styles.note}>{drawing.name}</span></span><Button variant="ghost" disabled={running || stopping} onClick={() => { attachVersion.current++; setAttaching(false); setDrawing(null); }}>Remove</Button></figcaption></figure> : null}
+      {ready ? <form className={styles.form} onSubmit={start}>
+        <label htmlFor="native-cad-message">{continuation === "clarification" ? "Your answer" : pendingTask ? "Continue this task" : "Your task"}</label>
         <textarea ref={composer} id="native-cad-message" value={input} onChange={(event) => setInput(event.target.value)} maxLength={6000} rows={4} disabled={running || stopping || !ready}
           placeholder="For example: Make a 60 mm × 40 mm plate, 5 mm thick, on the Top plane." aria-describedby={continuation === "clarification" ? "native-cad-question native-cad-disclosure" : "native-cad-disclosure"} />
-        <label className={styles.attachment}>Drawing <span className={styles.note}>Optional · PNG, up to 1 MiB</span><input type="file" accept="image/png,.png" disabled={running || attaching || !ready} onChange={(event) => { void attach(event.target.files?.[0]); event.target.value = ""; }} /></label>
-        <p id="native-cad-disclosure" className={styles.note}>Start sends your task, current Onshape view and attached drawing to your configured remote AI model. Team AI limits apply to each planning step. Up to 12 steps run per submission. Stop prevents further actions; an already-sent model request may still finish and incur usage. Screenshots and drawings stay out of saved conversation history.</p>
+        <div className={styles.attachment}>
+          <input ref={attachmentInput} type="file" hidden accept="image/png,.png" disabled={running || stopping || attaching} aria-label="Reference drawing" onChange={(event) => { void attach(event.target.files?.[0]); event.target.value = ""; }} />
+          <Button variant="ghost" disabled={running || stopping || attaching} onClick={() => attachmentInput.current?.click()}>{attaching ? "Reading drawing…" : drawing ? "Replace drawing" : "Attach drawing"}</Button>
+          <span className={styles.note}>Optional · PNG, up to 1 MiB</span>
+        </div>
+        <p id="native-cad-disclosure" className={styles.note}>Your task, Onshape view and drawing are sent to your configured remote AI model. Team AI limits apply to every planning step.</p>
+        <details className={styles.details}><summary>Usage and privacy</summary><p className={styles.note}>Up to 12 steps run per submission. Stop prevents further actions; an already-sent model request may still finish and incur usage. Screenshots and drawings are not saved in conversation history.</p></details>
         <div className={styles.chatActions}>
           {running || stopping ? <Button variant="secondary" onClick={() => void stop()} disabled={stopping}>{stopping ? "Stopping…" : "Stop task"}</Button> : <Button type="submit" variant="primary" disabled={!ready || !input.trim() || attaching}>{attaching ? "Reading drawing…" : pendingTask ? "Continue task" : "Start task"}</Button>}
-          {(pendingTask || messages.length > 0) && !running && !stopping ? <Button variant="ghost" onClick={() => { attachVersion.current++; setAttaching(false); setModel(""); setPendingTask(null); setContinuation(null); evidence.current = []; setMessages([]); setDrawing(null); setInput(""); setError(""); setStatus(""); }}>New task</Button> : null}
+          {(pendingTask || messages.length > 0) && !running && !stopping ? <Button variant="ghost" onClick={() => { attachVersion.current++; setAttaching(false); setModel(""); setPendingTask(null); setContinuation(null); evidence.current = []; setMessages([]); setDrawing(null); setInput(""); setError(""); setStatus(""); composer.current?.focus(); }}>New task</Button> : null}
         </div>
-        {!ready ? <p className={styles.note}>Open Onshape above to continue.</p> : null}
-      </form>
+      </form> : !stopping ? <p className={styles.note}>Open Onshape above to continue this task.</p> : null}
     </section>
   );
 }

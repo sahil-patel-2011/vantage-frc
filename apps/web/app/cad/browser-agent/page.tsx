@@ -4,8 +4,8 @@ import BrowserAgentClient from "./client";
 import styles from "./browser-agent.module.css";
 
 export const metadata = {
-  title: "Onshape browser pilot",
-  description: "Authorize a paired computer for the WA Robotics Team 6925 browser CAD development pilot.",
+  title: "Browser CAD",
+  description: "Build and refine Onshape parts with the WA Robotics Team 6925 development pilot.",
 };
 
 export default async function BrowserAgentPage({ searchParams }: {
@@ -15,11 +15,11 @@ export default async function BrowserAgentPage({ searchParams }: {
   const orgId = typeof params.orgId === "string" ? params.orgId : "";
   return (
     <main className={`module-page ${styles.page}`}>
-      <PageHeader breadcrumbs="CAD / Browser pilot" title="Onshape browser pilot"
-        description="CAD through the Onshape interface, with your paired computer." />
+      <PageHeader breadcrumbs="CAD / Browser CAD" title="Browser CAD"
+        description="Build, refine and inspect your Onshape models." />
       <div className={styles.preview}>
         <span className={styles.badge}>Development preview</span>
-        <p>The packaged desktop connector is not released yet. Development builds can open an Onshape browser after you choose to start it. The web version can authorize a paired device for testing.</p>
+        <p>Team 6925 pilot. The desktop release is not available yet.</p>
       </div>
       {orgId ? <BrowserAgentClient orgId={orgId} /> : (
         <section className={styles.card} aria-labelledby="choose-team-title">

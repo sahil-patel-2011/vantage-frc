@@ -52,7 +52,7 @@ jobs:
 
   release:
     needs: [windows, macos]
-    if: always() && startsWith(github.ref, 'refs/tags/') && needs.windows.result == 'success'
+    if: startsWith(github.ref, 'refs/tags/') && needs.windows.result == 'success' && needs.macos.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +72,10 @@ jobs:
           dmg="$(ls out/*.dmg 2>/dev/null | head -n1 || true)"
           if [ -z "$nsis" ]; then
             echo "Windows NSIS installer missing"
+            exit 1
+          fi
+          if [ -z "$dmg" ]; then
+            echo "macOS DMG missing"
             exit 1
           fi
           export V="$(node -p "require('./apps/desktop/package.json').version")"
@@ -130,6 +134,6 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" "${files[@]}" \
               --title "Vantage desktop $GITHUB_REF_NAME" \
-              --notes "Unsigned Windows NSIS + MSI and macOS DMG (when the macOS job succeeded). SmartScreen/Gatekeeper will warn until Authenticode and Apple notarization credentials exist. The window loads https://vantagefrc.vercel.app — the same invite-only product as the web app."
+              --notes "Unsigned Windows NSIS + MSI and macOS DMG. SmartScreen/Gatekeeper will warn until Authenticode and Apple notarization credentials exist. The window loads https://vantagefrc.vercel.app — the same invite-only product as the web app."
           fi
           gh release edit "$GITHUB_REF_NAME" --latest
