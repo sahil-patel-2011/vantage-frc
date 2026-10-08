@@ -36,7 +36,7 @@ export async function isolateUi(page: Page, context: BrowserContext, theme = "li
       "/api/navigation/preferences": { tabs: ["/dashboard", "/competition", "/competition?tab=scouting", "/team"] },
       "/api/account": { name: "Ada", email: "ada@example.test", displayName: "Ada", integrations: {} },
       "/api/account/cockpit": { cockpit: {} },
-      "/api/scouting/schemas": { eventKey: null, year: 2026, schemas: [schema], canManageSchemas: true },
+      "/api/scouting/schemas": { userId, eventKey: null, year: 2026, schemas: [schema], canManageSchemas: true },
       "/api/scouting/form-responses": responses,
       "/api/notifications": { status: "ready", userId, unreadCount: 0, items: [] },
     };

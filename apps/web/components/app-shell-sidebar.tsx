@@ -15,7 +15,7 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
   const search = mainMenuSearch(pathname, pathSearch, allowed);
   const activeSection = sections.find(section => pathname === `/${section.id}`);
   const activeItems = activeSection?.id === "competition" && allowed("/competition?tab=scouting")
-    ? [{ href: "/competition?tab=scouting", label: "Scout" }, ...activeSection.items]
+    ? [{ href: "/competition?tab=scouting", label: "Scout", icon: "scout" as const }, ...activeSection.items]
     : activeSection?.items ?? [];
   return <aside className="app-sidebar" aria-label="Workspace sidebar" data-collapsed={collapsed}>
     <div className="app-sidebar-brand">
@@ -33,7 +33,7 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
     {activeSection ? <nav className="app-sidebar-section" aria-label={`${activeSection.label} sections`}>
       <p className="app-sidebar-label">In this workspace</p>
       {activeItems.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)}
-        aria-current={islandTabIsActive(pathname, search, item.href) ? "page" : undefined}>{item.label}</a>)}
+        aria-current={islandTabIsActive(pathname, search, item.href) ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav> : <nav className="app-sidebar-section" aria-label="Daily tools">
       <p className="app-sidebar-label">Your day</p>
       {[{ href: "/my-day", label: "My day", icon: "calendar" as const }, { href: "/todos", label: "Team tasks", icon: "clipboard" as const }, { href: "/hours-self-view", label: "My hours", icon: "activity" as const }]
@@ -41,7 +41,7 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
           aria-current={pathname === item.href ? "page" : undefined}><Icon name={item.icon} />{item.label}</a>)}
     </nav>}
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
-      {[{ href: "/ai?tab=chat", label: "Ask Vantage", icon: "sparkles" as const }, { href: "/help", label: "Help & guides", icon: "pin" as const }, { href: "/account", label: "Settings", icon: "gear" as const }]
+      {[{ href: "/ai?tab=chat", label: "Ask Vantage", icon: "sparkles" as const }, { href: "/help", label: "Help & guides", icon: "book" as const }, { href: "/account", label: "Settings", icon: "gear" as const }]
         .filter(item => allowed(item.href)).map(item => <a key={item.href} data-tour={item.href.startsWith("/ai?") ? "ask-ai" : undefined} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav>
   </aside>;

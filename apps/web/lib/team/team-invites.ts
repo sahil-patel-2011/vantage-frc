@@ -1,6 +1,6 @@
 import { formatInviteRole } from "../invite/invite-flow";
 
-export type InviteDeliveryMode = "resend" | "local" | "unconfigured" | "failed";
+export type InviteDeliveryMode = "resend" | "gmail-smtp" | "local" | "unconfigured" | "failed";
 
 /** No real email leaves this server (none set up, or a local one that only logs). */
 export function inviteEmailIsOff(mode: InviteDeliveryMode | null | undefined): boolean {

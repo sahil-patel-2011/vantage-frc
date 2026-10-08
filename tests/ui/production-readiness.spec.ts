@@ -1,5 +1,52 @@
 import { expect, test } from "@playwright/test";
-import { accessible, isolateUi, orgId, responses, schema } from "./fixture";
+import { accessible, isolateUi, orgId, responses, schema, userId } from "./fixture";
+
+test("a long form keeps one editor mounted and adds after the selected question", async ({ page, context }) => {
+  await isolateUi(page, context);
+  await page.route("**/api/scouting/schemas?**", route => route.fulfill({ json: {
+    userId, year: 2026, eventKey: "2026test", canManageSchemas: true,
+    schemas: [{ ...schema, definition: { title: "Long form", fields: Array.from({ length: 30 }, (_, index) => ({ key: `q${index}`, label: `Question ${index + 1}`, type: "text" })) } }],
+  } }));
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  const builder = page.locator(".sfb-page");
+  await expect(builder.getByLabel("Form title", { exact: true })).toBeEnabled();
+  await expect(builder.getByLabel("Label", { exact: true })).toHaveCount(1);
+  await builder.getByRole("combobox", { name: "Jump to question", exact: true }).selectOption("q14");
+  const label = builder.getByLabel("Label", { exact: true });
+  await expect(label).toHaveValue("Question 15");
+  await expect(label).toBeFocused();
+  await label.fill("Edited middle question");
+  await builder.getByRole("button", { name: "Add question", exact: true }).click();
+  await expect(label).toBeFocused();
+  await label.fill("Inserted question");
+  await expect(builder.locator(".sfb-question").nth(15)).toContainText("Inserted question");
+  await builder.getByRole("combobox", { name: "Jump to question", exact: true }).selectOption("q14");
+  await expect(label).toHaveValue("Edited middle question");
+  await expect(builder.getByLabel("Label", { exact: true })).toHaveCount(1);
+});
+
+test("new-team details stay intact after an unconfirmed request and number changes require a fresh attestation", async ({ page, context }) => {
+  await isolateUi(page, context);
+  await page.route("**/api/onboarding", route => route.fulfill({ json: {} }));
+  await page.route("**/api/organizations/claim", route => route.abort());
+  await page.goto("/claim");
+  const create = page.getByRole("button", { name: "Create team", exact: true });
+  await expect(create).toBeDisabled();
+  await page.getByLabel("Team name", { exact: true }).fill("Acceptance Robotics");
+  await page.getByLabel("FRC team number", { exact: true }).fill("9999");
+  await page.locator("#claim-legal-terms").check();
+  await page.locator("#claim-legal-privacy").check();
+  await page.locator("#claim-authorized").check();
+  await expect(create).toBeEnabled();
+  await page.getByLabel("FRC team number", { exact: true }).fill("9998");
+  await expect(page.locator("#claim-authorized")).not.toBeChecked();
+  await expect(create).toBeDisabled();
+  await page.locator("#claim-authorized").check();
+  await create.click();
+  await expect(page.getByRole("alert")).toContainText("Check Your teams before retrying");
+  await expect(page.getByLabel("Team name", { exact: true })).toHaveValue("Acceptance Robotics");
+  await expect(page.getByLabel("FRC team number", { exact: true })).toHaveValue("9998");
+});
 
 for (const width of [390, 768]) test(`opening menu preserves an already focused destination at ${width}px`, async ({ page, context }) => {
   await page.setViewportSize({ width, height: 900 });
@@ -62,7 +109,7 @@ for (const width of [390, 1440]) test(`cached form refresh cannot overwrite a se
     refreshing = true;
     if (delay) await delay;
     await route.fulfill({ status: unavailable ? 503 : 200, json: unavailable ? { error: "Forms unavailable." } : {
-      eventKey: "2026test", year: 2026, canManageSchemas: true,
+      userId, eventKey: "2026test", year: 2026, canManageSchemas: true,
       schemas: ["pit", "match"].map(type => ({ ...schema, id: type === "pit" ? schema.id : "6925a000-0000-4000-8000-000000000004", type, version: revision,
         definition: { title: `${type} version ${revision}`, fields: [{ key: "notes", label: `${type} observation`, type: "text" }] },
       })),
@@ -101,7 +148,80 @@ for (const width of [390, 1440]) test(`cached form refresh cannot overwrite a se
   await expect(type).toBeEnabled();
   await expect(builder).toContainText("Showing the last copy on this device");
   await type.selectOption("match");
-  await expect(title).toHaveValue("match version 2");
+  await expect(title).toHaveValue("Edited match form");
+});
+
+test("a lead can recover a draft, review a competing publication and explicitly keep their version", async ({ page, context }) => {
+  await isolateUi(page, context);
+  const newerId = "6925a000-0000-4000-8000-000000000004";
+  const publishedId = "6925a000-0000-4000-8000-000000000005";
+  let latest = schema;
+  const baselines: unknown[] = [];
+  await page.route("**/api/scouting/schemas**", async route => {
+    if (route.request().method() === "GET") return route.fulfill({ json: { userId, year: 2026, eventKey: "2026test", canManageSchemas: true, schemas: [latest] } });
+    const body = route.request().postDataJSON();
+    baselines.push(body.baseSchemaId);
+    if (baselines.length === 1) {
+      latest = { ...schema, id: newerId, version: 2, definition: { ...schema.definition, title: "Another lead's form" } };
+      return route.fulfill({ status: 409, json: { error: "Another lead published a newer form." } });
+    }
+    return route.fulfill({ status: 201, json: { id: publishedId, version: 3, definition: body.definition } });
+  });
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  const builder = page.locator(".sfb-page");
+  const title = builder.getByLabel("Form title", { exact: true });
+  await expect(title).toBeEnabled();
+  await title.fill("My revised form");
+  await expect(builder).toContainText("Draft saved on this device");
+  await page.reload();
+  await expect(title).toHaveValue("My revised form");
+  await builder.getByRole("button", { name: "Publish changes", exact: true }).click();
+  await expect(builder.getByRole("region", { name: "Form version conflict" })).toBeVisible();
+  await expect(builder.getByRole("button", { name: "Publish changes", exact: true })).toBeDisabled();
+  await builder.getByRole("button", { name: "Review latest form", exact: true }).click();
+  await expect(title).toHaveValue("Another lead's form");
+  await builder.locator("summary").filter({ hasText: "Saved drafts on this device" }).click();
+  await builder.getByRole("button", { name: /^My revised form ·/ }).click();
+  await expect(title).toHaveValue("My revised form");
+  await builder.getByRole("button", { name: "Keep my draft over this version", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Keep my draft", exact: true }).click();
+  await builder.getByRole("button", { name: "Publish changes", exact: true }).click();
+  await expect(builder.getByRole("status").filter({ hasText: "Scouts see this form" })).toBeVisible();
+  expect(baselines).toEqual([schema.id, newerId]);
+});
+
+test("blocked draft storage keeps unpublished answers open when switching form type", async ({ page, context }) => {
+  await isolateUi(page, context);
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  const builder = page.locator(".sfb-page");
+  const title = builder.getByLabel("Form title", { exact: true });
+  await expect(title).toBeEnabled();
+  await page.evaluate(() => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = function(key, value) {
+      if (key.startsWith("vantage:form-editor:")) throw new DOMException("Full", "QuotaExceededError");
+      original.call(this, key, value);
+    };
+  });
+  await title.fill("Do not lose these questions");
+  await expect(builder.getByRole("alert")).toContainText("could not be saved");
+  await builder.getByRole("combobox", { name: "Form type", exact: true }).selectOption("match");
+  await expect(title).toHaveValue("Do not lose these questions");
+  await expect(builder.getByRole("combobox", { name: "Form type", exact: true })).toHaveValue("pit");
+});
+
+test("manually reverting a form edit does not resurrect its older autosave", async ({ page, context }) => {
+  await isolateUi(page, context);
+  await page.goto(`/competition?tab=forms&orgId=${orgId}`);
+  const builder = page.locator(".sfb-page");
+  const title = builder.getByLabel("Form title", { exact: true });
+  await expect(title).toBeEnabled();
+  await title.fill("Temporary title");
+  await expect(builder).toContainText("Draft saved on this device");
+  await title.fill(schema.definition.title);
+  await expect.poll(() => page.evaluate(() => Object.keys(localStorage).filter(key => key.startsWith("vantage:form-editor:")).length)).toBe(0);
+  await page.reload();
+  await expect(title).toHaveValue(schema.definition.title);
 });
 
 for (const width of [390, 1440]) for (const theme of ["light", "dark"]) {

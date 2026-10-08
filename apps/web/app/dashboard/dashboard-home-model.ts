@@ -248,7 +248,7 @@ export function homeNowAction(input: {
 export function homeNowFromWidgets(input: {
   orgId: string;
   nextMatchData?: Record<string, unknown>;
-  widgets: Record<string, { type: string; data?: Record<string, unknown> }>;
+  widgets: Record<string, { type: string; status?: string; data?: Record<string, unknown> }>;
   loaded?: boolean;
   /** Fixed clock for tests; the real one otherwise. */
   now?: Date;
@@ -265,7 +265,7 @@ export function homeNowFromWidgets(input: {
       quiet: true,
     };
   }
-  const byType = (type: string) => Object.values(input.widgets).find((row) => row.type === type)?.data;
+  const byType = (type: string) => Object.values(input.widgets).find((row) => row.type === type && (!row.status || row.status === "live"))?.data;
   const next = input.nextMatchData ?? byType("next_match");
   const level = firstString(next?.compLevel);
   const number = Number(next?.matchNumber);

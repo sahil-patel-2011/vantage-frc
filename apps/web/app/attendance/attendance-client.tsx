@@ -33,7 +33,7 @@ import {
   type AttendanceListFilter,
 } from "../../lib/attendance/attendance-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./attendance.css";
 import { TeamRoster } from "./team-roster";
 import { teamProseLabel } from "../../components/app-shell-model";
@@ -125,7 +125,7 @@ function CreateEventForm({
   orgId: string;
   seasonYear: number;
   busy: boolean;
-  run: (body: ActionBody, key: string) => Promise<void>;
+  run: (body: ActionBody, key: string) => Promise<boolean>;
 }) {
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<AttendanceKind>("practice");
@@ -150,7 +150,7 @@ function CreateEventForm({
             seasonYear,
           },
           "create",
-        ).then(() => setTitle(""));
+        ).then(saved => { if (saved) setTitle(""); });
       }}
     >
       <h3>New attendance event</h3>
@@ -210,7 +210,7 @@ function MemberOneTap({
   orgId: string;
   role: AttendanceRole;
   hours: string;
-  run: (body: ActionBody, key: string) => Promise<void>;
+  run: (body: ActionBody, key: string) => Promise<boolean>;
 }) {
   const markedByMember = useMemo(() => {
     const map = new Map<string, string>();
@@ -290,7 +290,7 @@ function SessionDetail({
   busy: boolean;
   orgId: string;
   members: AttendanceMember[];
-  run: (body: ActionBody, key: string) => Promise<void>;
+  run: (body: ActionBody, key: string) => Promise<boolean>;
 }) {
   const [personName, setPersonName] = useState("");
   const [role, setRole] = useState<AttendanceRole>("student");
@@ -310,7 +310,8 @@ function SessionDetail({
         hours: hours === "" ? null : Number(hours),
       },
       `add:${event.id}`,
-    ).then(() => {
+    ).then(saved => {
+      if (!saved) return;
       setPersonName("");
       setHours("");
     });
@@ -500,7 +501,7 @@ function SessionDetail({
   );
 }
 
-export default function AttendanceClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function AttendanceClient({ embedded = false, showRoster = true }: { embedded?: boolean; showRoster?: boolean } = {}) {
   const Root = embedded ? "section" : "main";
   const [view, setView] = useState<AttendanceView | null>(null);
   const [error, setError] = useState("");
@@ -508,6 +509,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const mutationPending = useRef(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [seasonYear, setSeasonYear] = useState(defaultSeasonYear);
   // Until someone picks a season, the server chooses: the latest one the team has attendance
@@ -520,9 +522,11 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<AttendanceView | null>(null);
+  const loadGeneration = useRef(0);
   viewRef.current = view;
 
   const load = useCallback(async (year = seasonYear) => {
+    const generation = ++loadGeneration.current;
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
     const focusEventId = params.get("eventId");
@@ -534,6 +538,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<AttendanceView>("attendance", orgHint || "_", seasonHint);
+      if (generation !== loadGeneration.current) return;
       if (!viewRef.current && cached?.data && isAttendanceView(cached.data)) {
         setView(cached.data);
         setFromCache(true);
@@ -554,6 +559,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
     } catch {
       // IndexedDB missing or blocked; live fetch still runs.
     }
+    if (generation !== loadGeneration.current) return;
     setFetchFailed(false);
     try {
       const search = new URLSearchParams();
@@ -563,7 +569,17 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = (await response.json()) as AttendanceView | { error?: string };
+      const raw: unknown = await response.json().catch(() => ({}));
+      const data = (raw && typeof raw === "object" ? raw : {}) as AttendanceView | { error?: string };
+      if (generation !== loadGeneration.current) return;
+      if (response.status === 401 || response.status === 403) {
+        viewRef.current = null;
+        setView(null); setFromCache(false); setCachedAt(null);
+        setError("error" in data && typeof data.error === "string" ? data.error : "Your access to attendance has changed. Sign in or ask your team administrator.");
+        setErrorStatus(response.status); setFetchFailed(true);
+        void clearFeatureSnapshot("attendance", orgHint || "_", seasonHint).catch(() => undefined);
+        return;
+      }
       if (!response.ok || !isAttendanceView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
@@ -594,6 +610,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       }
       await persistAttendanceSnapshot(orgHint, seasonHint, data);
     } catch {
+      if (generation !== loadGeneration.current) return;
       if (hadCache || viewRef.current) {
         setFromCache(true);
         setError("Could not refresh Attendance. Showing the last copy on this device.");
@@ -608,10 +625,13 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
 
   useEffect(() => {
     void load();
+    return () => { loadGeneration.current += 1; };
   }, [load]);
 
   const run = useCallback(
     async (body: ActionBody, key: string) => {
+      if (mutationPending.current) return false;
+      mutationPending.current = true;
       setBusyKey(key);
       setError("");
       try {
@@ -621,10 +641,15 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           body: JSON.stringify(body),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = (await response.json()) as { error?: string; id?: string };
+        const data = (await response.json()) as { error?: string; id?: string; ok?: boolean };
         if (!response.ok) {
-          setError(data.error ?? "Action failed.");
-          return;
+          setError(typeof data.error === "string" ? data.error : "Action failed.");
+          return false;
+        }
+        const creates = body.action === "create_event" || body.action === "add_entry";
+        if (creates ? typeof data.id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.id) : data.ok !== true) {
+          setError("This change could not be confirmed. Your details are still here. Refresh attendance before retrying.");
+          return false;
         }
         if (body.action === "create_event" && data.id) {
           setSelectedId(data.id);
@@ -632,9 +657,12 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         }
         if (body.action === "delete_event" && body.id === selectedId) setSelectedId(null);
         await load();
+        return true;
       } catch {
-        setError("Network error — changes were not saved.");
+        setError("This change could not be confirmed. Your details are still here. Refresh attendance before retrying.");
+        return false;
       } finally {
+        mutationPending.current = false;
         setBusyKey(null);
       }
     },
@@ -787,7 +815,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       )}
       <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
       {/* The Team hub calls this tab People: it starts with who is on the team. */}
-      {embedded && orgId ? <TeamRoster orgId={orgId} /> : null}
+      {embedded && showRoster && orgId ? <TeamRoster orgId={orgId} /> : null}
       {!embedded ? (
         <>
           <TeamOpsNav orgId={orgId} active="attendance" />

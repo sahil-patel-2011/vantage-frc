@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent, RefObject } from "react";
-import { isLikelyEmail } from "../../lib/sign-in";
+import { isCodeComplete, isLikelyEmail } from "../../lib/sign-in";
 import {
   emailSubmitLabel,
   googleButtonLabel,
@@ -34,6 +34,7 @@ export function SignInIdentityStep({
   onPasswordSubmit,
   onPasswordChange,
   onCodeChange,
+  showTeamJoin = true,
 }: {
   googleAvailable: boolean;
   emailAvailable: boolean;
@@ -57,10 +58,11 @@ export function SignInIdentityStep({
   onPasswordSubmit: (event: FormEvent) => void;
   onPasswordChange: (password: string) => void;
   onCodeChange: (code: string) => void;
+  showTeamJoin?: boolean;
 }) {
   return (
     <>
-      <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p>
+      {showTeamJoin && passwordPanel === "closed" ? <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p> : null}
       {googleAvailable ? (
         <>
           <button className="signin-google" type="button" onClick={onGoogle} disabled={working}>
@@ -161,7 +163,11 @@ export function SignInIdentityStep({
               </span>
             </label>
           ) : null}
-          <button className="signin-submit" disabled={working}>
+          <button className="signin-submit" disabled={
+            working || !isLikelyEmail(email) || (passwordPanel === "password"
+              ? !password
+              : resetSent ? !isCodeComplete(code) || password.length < 12 : !emailAvailable)
+          }>
             {passwordSubmitLabel(passwordPanel, { resetSent, working })}
           </button>
           {passwordMessage ? (
@@ -176,6 +182,7 @@ export function SignInIdentityStep({
 }
 
 export function SignInPasswordFooter({
+  working,
   passwordSignInAvailable,
   emailAvailable,
   identityStep,
@@ -184,6 +191,7 @@ export function SignInPasswordFooter({
   onBackToCodes,
   onForgotPassword,
 }: {
+  working: boolean;
   passwordSignInAvailable: boolean;
   emailAvailable: boolean;
   identityStep: boolean;
@@ -196,18 +204,18 @@ export function SignInPasswordFooter({
   return (
     <div className="signin-footer-modes">
       {passwordPanel === "closed" ? (
-        <button type="button" className="signin-link" onClick={onUsePassword}>
+        <button type="button" className="signin-link" disabled={working} onClick={onUsePassword}>
           Use a password instead
         </button>
       ) : (
         <>
           {emailAvailable ? (
-            <button type="button" className="signin-link" onClick={onBackToCodes}>
+            <button type="button" className="signin-link" disabled={working} onClick={onBackToCodes}>
               Back to email codes
             </button>
           ) : null}
           {passwordPanel === "password" ? (
-            <button type="button" className="signin-link" onClick={onForgotPassword}>
+            <button type="button" className="signin-link" disabled={working} onClick={onForgotPassword}>
               Forgot password?
             </button>
           ) : null}

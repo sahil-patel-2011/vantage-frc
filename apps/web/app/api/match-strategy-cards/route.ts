@@ -1,11 +1,14 @@
 import { auth } from "@vantage/core";
+import type { PoolClient } from "@neondatabase/serverless";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { failDbWrite } from "../../../lib/db-error";
+import { IntelHttpError, withIntelRequest } from "../../../lib/intel-auth";
 import {
   computeMatchStrategyCardsView,
   deleteCard,
   upsertCard,
+  MatchCardConflictError,
   type MatchStrategyCardsView,
 } from "../../../lib/match-strategy-cards/compute-match-strategy-cards";
 import type { MatchStrategyRoleAssignment } from "../../../lib/match-strategy-cards/types";
@@ -38,24 +41,15 @@ export async function GET(request: Request) {
   const requestedOrg = url.searchParams.get("orgId");
 
   try {
-    const view = await withRls({ userId: session.user.id }, (client) =>
-      computeMatchStrategyCardsView(client, { userId: session.user.id, requestedOrg }),
-    );
-    return Response.json(view);
-  } catch {
-    return Response.json(
-      {
-        status: "setup_required",
-        message: "Could not load Match Strategy Cards. Choose your team and confirm database access.",
-        steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace", done: false },
-        ],
-        orgId: null,
-        eventKey: null,
-        canSync: false,
-      } satisfies MatchStrategyCardsView,
-      { status: 200 },
-    );
+    const work = (client: PoolClient) => computeMatchStrategyCardsView(client, { userId: session.user.id, requestedOrg });
+    const resolvedOrg = requestedOrg || await withRls({ userId: session.user.id }, async client => (
+      await client.query<{ orgId: string }>(`SELECT m.org_id AS "orgId" FROM memberships m JOIN organizations o ON o.id=m.org_id
+        WHERE m.user_id=$1 ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number LIMIT 1`, [session.user.id])
+    ).rows[0]?.orgId ?? null);
+    const view = resolvedOrg ? await withIntelRequest(resolvedOrg, client => computeMatchStrategyCardsView(client, { userId: session.user.id, requestedOrg: resolvedOrg })) : await withRls({ userId: session.user.id }, work);
+    return Response.json(view, { headers: { "cache-control": "private, no-store" } });
+  } catch (error) {
+    return Response.json({ error: error instanceof IntelHttpError ? error.message : "Could not load match plans. Try again." }, { status: error instanceof IntelHttpError ? error.status : 503, headers: { "cache-control": "private, no-store" } });
   }
 }
 
@@ -66,6 +60,7 @@ export async function POST(request: Request) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid body");
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -73,11 +68,16 @@ export async function POST(request: Request) {
   const orgId = trimmedOrNull(body.orgId, 64);
   const action = typeof body.action === "string" ? body.action : "";
   if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
+  if (Object.hasOwn(body, "baseRevision") && body.baseRevision !== null &&
+    (typeof body.baseRevision !== "string" || !Number.isFinite(Date.parse(body.baseRevision)))) {
+    return Response.json({ error: "Invalid saved-plan revision. Reload the plan before editing." }, { status: 400 });
+  }
+  const revision = Object.hasOwn(body, "baseRevision") ? { baseRevision: body.baseRevision as string | null } : {};
 
   const userId = session.user.id;
 
   try {
-    const view = await withRls({ userId, orgId }, async (client) => {
+    const view = await withIntelRequest(orgId, async (client) => {
       const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
         orgId,
         userId,
@@ -101,13 +101,14 @@ export async function POST(request: Request) {
             keyThreats: trimmedOrNull(body.keyThreats, 2000),
             driverNotes: trimmedOrNull(body.driverNotes, 4000),
             roleAssignments: roleAssignmentsFrom(body.roleAssignments),
+            ...revision,
           });
           break;
         }
         case "delete-card": {
           const matchKey = trimmedOrNull(body.matchKey, 64);
           if (!matchKey) throw new Error("matchKey is required");
-          await deleteCard(client, { orgId, matchKey });
+          await deleteCard(client, { orgId, matchKey, ...revision });
           break;
         }
         default:
@@ -119,6 +120,9 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (error instanceof IntelHttpError || error instanceof MatchCardConflictError) {
+      return Response.json({ error: error.message }, { status: error instanceof IntelHttpError ? error.status : 409 });
+    }
     // Rows here are keyed to an event/match that references events_ref, so an
     // event not yet ingested from TBA raised a 23503 whose raw constraint text
     // went straight to the user. failDbWrite names the fix, and keeps the

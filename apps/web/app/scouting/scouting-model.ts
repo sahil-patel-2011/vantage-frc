@@ -1,4 +1,4 @@
-import type { ScoutSchema, ScoutIdentity } from "@vantage/scouting";
+import type { ScoutSchema, ScoutIdentity, SyncEntry } from "@vantage/scouting";
 import { ACTION_HISTORY_KEY } from "@vantage/scouting";
 import type { FieldTrustSummary } from "@vantage/scouting/trust";
 import type { CsvColumn } from "../../lib/export/to-csv";
@@ -14,6 +14,13 @@ export function lastMatchNote(matches: Bootstrap["matches"], savedMatchKey: stri
 }
 
 export type OfficialFlag = {
+  clientId: string;
+  orgId: string;
+  eventKey: string;
+  type: "match" | "pit";
+  matchKey: string | null;
+  teamKey: string;
+  schemaId: string;
   fieldKey: string;
   status: string;
   scoutValue: unknown;
@@ -23,6 +30,18 @@ export type OfficialFlag = {
   soft?: boolean;
 };
 
+/** Uploads may include many robots/events. Only this report's checks belong beside its answers. */
+export function officialFlagsForReport(flags: readonly OfficialFlag[], report: {
+  clientId: string; orgId: string; eventKey: string | null | undefined; type: "match" | "pit";
+  matchKey: string; teamKey: string | null; schemaId: string | undefined;
+}): OfficialFlag[] {
+  const current = flags.filter(flag => flag.clientId === report.clientId && flag.orgId === report.orgId
+    && flag.eventKey === report.eventKey && flag.type === report.type && flag.teamKey === report.teamKey
+    && flag.schemaId === report.schemaId && flag.matchKey === (report.type === "match" ? report.matchKey : null));
+  // A drain may acknowledge successive corrections. Keep the latest check for each field/source.
+  return [...new Map(current.map(flag => [JSON.stringify([flag.fieldKey, flag.officialSource]), flag])).values()];
+}
+
 /** The report saved on this device before the team snapshot catches up. */
 export type SavedScoutReport = {
   matchKey: string;
@@ -30,6 +49,7 @@ export type SavedScoutReport = {
   clientId: string;
   payload: Record<string, unknown>;
   confidence: "high" | "normal" | "low";
+  schemaId?: string;
 };
 
 export type Bootstrap = {
@@ -71,6 +91,7 @@ export type Bootstrap = {
     payload?: Record<string, unknown> | null;
     /** Saving again with this id replaces the entry (the author may update their own). */
     clientId?: string | null;
+    schemaId?: string;
   }>;
   scoutIdentity?: ScoutIdentity;
   /**
@@ -90,6 +111,7 @@ export type MyEntry = {
   matchKey: string | null;
   teamKey: string;
   clientId: string | null;
+  schemaId?: string;
   payload: Record<string, unknown> | null;
   confidence: string;
   updatedAt: string;
@@ -97,24 +119,43 @@ export type MyEntry = {
 
 /** The scout's own reports, newest first: the full list when the bootstrap has it. */
 export function myReports(
-  data: Pick<Bootstrap, "myEntries" | "recentEntries" | "scoutIdentity"> | null | undefined,
+  data: (Pick<Bootstrap, "myEntries" | "recentEntries" | "scoutIdentity"> & { eventKey?: string | null }) | null | undefined,
+  queued: readonly SyncEntry[] = [],
 ): MyEntry[] {
   if (!data) return [];
-  if (data.myEntries) return data.myEntries;
   const me = data.scoutIdentity?.userId;
-  if (!me) return [];
-  return (data.recentEntries ?? [])
+  const saved: MyEntry[] = data.myEntries ?? (me ? (data.recentEntries ?? [])
     .filter((entry) => entry.scoutUserId === me)
-    .map((entry) => ({
+    .map((entry): MyEntry => ({
       id: entry.id,
       type: entry.type === "pit" ? "pit" : "match",
       matchKey: entry.matchKey,
       teamKey: entry.teamKey,
       clientId: entry.clientId ?? null,
+      schemaId: entry.schemaId,
       payload: entry.payload ?? null,
       confidence: entry.confidence,
       updatedAt: entry.updatedAt,
-    }));
+    })) : []);
+  if (!queued.length || !data.eventKey || !me) return saved;
+  const key = (entry: MyEntry) => JSON.stringify([entry.type, entry.matchKey, entry.teamKey]);
+  const time = (entry: MyEntry) => Date.parse(entry.updatedAt) || 0;
+  const byRobot = new Map<string, MyEntry>();
+  for (const entry of saved) {
+    const previous = byRobot.get(key(entry));
+    if (!previous || time(entry) > time(previous)) byRobot.set(key(entry), entry);
+  }
+  // A queued correction must survive reload and outrank the older server copy.
+  // Entries come from the current account's personal store, scoped to this team.
+  for (const entry of queued) {
+    if (entry.eventKey !== data.eventKey || (entry.type !== "match" && entry.type !== "pit")) continue;
+    const report: MyEntry = { id: entry.clientId, clientId: entry.clientId, type: entry.type,
+      matchKey: entry.type === "match" ? entry.matchKey ?? null : null, teamKey: entry.teamKey,
+      schemaId: entry.schemaId, payload: entry.payload, confidence: entry.confidence, updatedAt: entry.updatedAt };
+    const previous = byRobot.get(key(report));
+    if (!previous || time(report) >= time(previous)) byRobot.set(key(report), report);
+  }
+  return [...byRobot.values()].sort((a, b) => time(b) - time(a));
 }
 
 /** Every robot with a match report from anyone on the team (for the "Done" ticks). */

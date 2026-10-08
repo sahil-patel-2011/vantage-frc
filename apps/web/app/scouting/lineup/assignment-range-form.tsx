@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Button, Panel } from "../../../components/ui";
 import { describeMatchKey } from "../../../lib/webhooks/tba-messages";
 import { expandAssignmentRange, uniqueMatchKeys } from "../../../lib/scouting/assignment-range";
+import type { AssignmentReceipt } from "../../../lib/scouting/assignment-receipt";
 
 type ScoutOption = { userId: string; name: string; isMe: boolean };
 
@@ -24,7 +25,7 @@ export function AssignmentRangeForm({
     lastMatchKey: string;
     teamKey: string;
     userId: string;
-  }) => void;
+  }) => Promise<AssignmentReceipt | null>;
 }) {
   const keys = useMemo(() => uniqueMatchKeys(matchKeys), [matchKeys]);
   const [firstMatchKey, setFirst] = useState(keys[0] ?? "");
@@ -50,7 +51,8 @@ export function AssignmentRangeForm({
           morning.
         </p>
       </header>
-      <div className="lineup-range-grid">
+      <fieldset disabled={busy} className="lineup-range-grid">
+        <legend className="sr-only">Match range details</legend>
         <label>
           First match
           <select value={firstMatchKey} onChange={(event) => setFirst(event.target.value)}>
@@ -85,7 +87,7 @@ export function AssignmentRangeForm({
             ))}
           </select>
         </label>
-      </div>
+      </fieldset>
       <p className="app-muted">
         {preview.ok
           ? `${preview.slots.length} ${preview.slots.length === 1 ? "match" : "matches"} for this robot in this range`
@@ -94,9 +96,9 @@ export function AssignmentRangeForm({
       <Button
         variant="secondary"
         type="button"
-        disabled={busy || !preview.ok || !userId}
+        disabled={busy || !preview.ok || !scouts.some(scout => scout.userId === userId)}
         onClick={() =>
-          onAssign({
+          void onAssign({
             action: "assign-range",
             firstMatchKey,
             lastMatchKey,
@@ -105,8 +107,9 @@ export function AssignmentRangeForm({
           })
         }
       >
-        {busy ? "Assigning…" : "Assign this range"}
+        {busy ? "Please wait…" : "Assign this range"}
       </Button>
+      {!scouts.length ? <p className="app-muted">Add an eligible scout to your team before assigning matches.</p> : !scouts.some(scout => scout.userId === userId) ? <p role="status">This scout is no longer available. Choose a current team member.</p> : null}
     </Panel>
   );
 }

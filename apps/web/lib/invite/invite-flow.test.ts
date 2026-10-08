@@ -13,6 +13,9 @@ import {
 } from "./invite-flow";
 
 describe("invite Soft-UI flow helpers", () => {
+  it("never offers an invalid-expiry link as a ready invitation", () => {
+    expect(classifyInviteFlow({ token: "personal-token", loading: false, preview: { orgName: "Team 254", teamNumber: 254, email: "scout@example.com", role: "scout", status: "pending", expiresAt: "invalid" } })).toBe("invalid");
+  });
   it("tells people without an invite they are on the waitlist", () => {
     expect(inviteEmptyCopy("auth_required").description).toMatch(/waitlist/);
     const missing = inviteEmptyCopy("missing_token");

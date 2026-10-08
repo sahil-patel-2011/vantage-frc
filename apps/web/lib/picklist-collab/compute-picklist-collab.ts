@@ -63,6 +63,7 @@ export type PicklistCollabView =
   | {
       status: "live";
       orgId: string;
+      userId?: string;
       teamNumber: number | null;
       lists: PicklistCollabList[];
       activeList: PicklistCollabList | null;
@@ -156,6 +157,7 @@ function toCollabVote(vote: PickListEntry["votes"][number]): PicklistCollabVote 
   return {
     id: vote.id,
     voterId: vote.voterId,
+    voterName: vote.voterName,
     weight: vote.weight,
     rankSuggestion: vote.rankSuggestion,
     comment: vote.comment,
@@ -387,6 +389,7 @@ export async function computePicklistCollabView(
   return {
     status: "live",
     orgId: org.orgId,
+    userId: input.userId,
     teamNumber: org.teamNumber,
     lists,
     activeList,
@@ -406,9 +409,9 @@ export async function computePicklistCollabView(
 export async function createList(
   client: PoolClient,
   input: { orgId: string; userId: string; eventKey: string; name: string; seasonYear: number },
-): Promise<void> {
+): Promise<string> {
   try {
-    await ensurePickList(client, {
+    return await ensurePickList(client, {
       orgId: input.orgId,
       userId: input.userId,
       eventKey: input.eventKey,
@@ -540,8 +543,8 @@ export async function castVote(
     userId: string;
     entryId: string;
     weight: number;
-    rankSuggestion: number | null;
-    comment: string | null;
+    rankSuggestion?: number | null;
+    comment?: string | null;
     listId?: string | null;
   },
 ): Promise<void> {

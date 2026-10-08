@@ -35,14 +35,14 @@ describe("production schema deployment gate", () => {
   });
   it("checks the complete migration set in a read-only transaction and releases it", async () => {
     const db = database();
-    expect(await checkProductionSchema({ env: production, createPool: db.createPool })).toEqual({ checked: true, migrations: 4 });
+    expect(await checkProductionSchema({ env: production, createPool: db.createPool })).toEqual({ checked: true, migrations: REQUIRED_PRODUCTION_MIGRATIONS.length });
     expect(db.client.query.mock.calls).toEqual([["BEGIN READ ONLY"], ["SELECT id FROM public.schema_migrations WHERE id = ANY($1::text[])", [REQUIRED_PRODUCTION_MIGRATIONS]], ["ROLLBACK"]]);
     expect(db.client.release).toHaveBeenCalledOnce();
     expect(db.pool.end).toHaveBeenCalledOnce();
   });
   it("blocks deployment and names missing migrations without altering the database", async () => {
     const db = database(REQUIRED_PRODUCTION_MIGRATIONS.slice(0, 2));
-    await expect(checkProductionSchema({ env: production, createPool: db.createPool })).rejects.toThrow("0712_account_first_run_tour.sql, 0713_scouting_lead_notifications.sql");
+    await expect(checkProductionSchema({ env: production, createPool: db.createPool })).rejects.toThrow(REQUIRED_PRODUCTION_MIGRATIONS.slice(2).join(", "));
     expect(db.client.query).toHaveBeenLastCalledWith("ROLLBACK");
     expect(db.client.release).toHaveBeenCalledOnce();
     expect(db.pool.end).toHaveBeenCalledOnce();

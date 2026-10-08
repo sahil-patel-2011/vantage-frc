@@ -2,15 +2,16 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { Button, PageHeader, Panel } from "../../../components/ui";
+import { Button, PageHeader } from "../../../components/ui";
+import { TeamsClient } from "./teams-client";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Your teams" };
 
-export default async function TeamsSettings({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
+export default async function TeamsSettings({ searchParams }: { searchParams: Promise<{ orgId?: string; left?: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/signin?next=%2Faccount%2Fteams");
-  const { orgId } = await searchParams;
+  const { orgId, left } = await searchParams;
   const teams = await withRls({ userId: session.user.id }, async client => {
     const result = await client.query<{ id: string; name: string; number: number | null; role: string }>(
       `SELECT o.id, o.name, o.team_number AS number, m.role FROM memberships m
@@ -22,10 +23,7 @@ export default async function TeamsSettings({ searchParams }: { searchParams: Pr
     <PageHeader title="Your teams" description="Choose the team you’re working with. Your account stays the same." breadcrumbs="Settings / Teams">
       <Button as="a" variant="secondary" href={`/account${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`}>Back to settings</Button>
     </PageHeader>
-    <Panel><ul className="dash-checklist">{teams.map(team => <li key={team.id}><a href={`/dashboard?orgId=${team.id}`} style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 0", width: "100%" }}>
-      <span><strong>{team.number ? `Team ${team.number}` : team.name}</strong><small style={{ display: "block" }}>{team.name} · {team.role.charAt(0).toUpperCase()+team.role.slice(1)}</small></span><span>{team.id === orgId ? "Current" : "Open →"}</span>
-    </a></li>)}</ul>{!teams.length ? <p>No team yet. Create one or use an invitation.</p> : null}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 16 }}><Button as="a" variant="primary" href="/join-team">Join a team</Button><Button as="a" variant="secondary" href="/claim">Create a team</Button><a href="/invite">Use an invitation</a></div>
-    </Panel>
+    {left === "1" ? <p role="status">You’ve left the team. Your account is still active.</p> : null}
+    <TeamsClient teams={teams} userId={session.user.id} currentOrgId={orgId} />
   </main>;
 }

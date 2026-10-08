@@ -66,6 +66,11 @@ export function DashboardBoardSwitcher({
       ref={rootRef}
       onKeyDown={(event) => {
         if (!open) return;
+        if (event.key === "Tab") {
+          // Let focus leave normally; an abandoned menu must not remain over the board.
+          setOpen(false);
+          return;
+        }
         if (event.key === "Escape") {
           event.preventDefault();
           event.stopPropagation();
@@ -73,11 +78,12 @@ export function DashboardBoardSwitcher({
           triggerRef.current?.focus();
           return;
         }
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+        if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
         event.preventDefault();
         const items = Array.from(rootRef.current?.querySelectorAll<HTMLButtonElement>("[role^=menuitem]:not(:disabled)") ?? []);
         const at = items.indexOf(document.activeElement as HTMLButtonElement);
-        const next = event.key === "ArrowDown" ? (at + 1) % items.length : (at - 1 + items.length) % items.length;
+        const next = event.key === "Home" ? 0 : event.key === "End" ? items.length - 1
+          : event.key === "ArrowDown" ? (at + 1) % items.length : (at - 1 + items.length) % items.length;
         items[next]?.focus();
       }}
     >

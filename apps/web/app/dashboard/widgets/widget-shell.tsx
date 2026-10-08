@@ -149,7 +149,7 @@ export function WidgetShell({
   lead?: boolean;
 }) {
   const widgetsLoaded = useContext(WidgetsLoadedContext);
-  const status = payload?.status ?? "setup_required";
+  const status = payload?.status ?? "unavailable";
   const showLive = status === "live";
   // Not loaded yet is not "empty": the card waits quietly instead of claiming
   // there is nothing (or that AI is off) and changing its mind a second later.

@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
-vi.mock("../provisioning/start", () => ({ startTeamProvisioning: vi.fn(async () => undefined) }));
+vi.mock("../provisioning/start", () => ({ startTeamProvisioning: vi.fn(async () => false) }));
 vi.mock("../provisioning/defaults", () => ({ initializeTeamDefaults: vi.fn(async () => undefined) }));
 
 vi.mock("@vantage/core", () => ({
@@ -81,6 +81,18 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("POST /api/organizations/claim — authorization statement", () => {
+  it.each([{ name: "   " }, { name: { nested: "wrong" } }, { teamNumber: 0 }, { teamNumber: 1.5 }, { teamNumber: "9999" }, { slug: "Not a slug" }, { joinPin: "123" }])("rejects malformed team details before any write: %j", async patch => {
+    expect((await post({ ...valid, ...patch })).status).toBe(400);
+    expect(state.claims).toBe(0);
+    expect(state.queries).toHaveLength(0);
+  });
+  it("rejects cross-site team creation before any write", async () => {
+    const response = await POST(new Request("https://vantage.example/api/organizations/claim", {
+      method: "POST", headers: { "content-type": "application/json", origin: "https://other.example" }, body: JSON.stringify(valid),
+    }));
+    expect(response.status).toBe(403);
+    expect(state.claims).toBe(0);
+  });
   it("rejects a claim with no acknowledgement (400) and writes nothing", async () => {
     const body: Record<string, unknown> = { ...valid };
     delete body.authorizationAcknowledged;
@@ -139,6 +151,12 @@ describe("POST /api/organizations/claim — authorization statement", () => {
     const response = await post(valid);
     expect(response.status).toBe(201);
     expect(attestationInserts()[0]!.params[5]).toBeNull();
+  });
+
+  it("does not claim that disabled background provisioning started", async () => {
+    const response = await post(valid);
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ id: ORG, workspaceReady: true, provisioning: false });
   });
 
   it("creates a random encrypted join code when blank and preserves a chosen leading zero", async () => {

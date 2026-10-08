@@ -1,8 +1,8 @@
 "use client";
 import { useEffect } from "react";
 
-/** Another open scouting tab or the shell's background sync can change this
- * person's queue. Re-read local counts while visible and on returning focus. */
+/** Refresh when a committed queue write, another tab or returning focus changes
+ * this person's reports. Idle scouting should not scan storage or poll /api/me. */
 export function useScoutQueueRefresh(refresh: () => Promise<void>): void {
   useEffect(() => {
     const update = () => {
@@ -10,11 +10,14 @@ export function useScoutQueueRefresh(refresh: () => Promise<void>): void {
     };
     update();
     window.addEventListener("focus", update);
+    window.addEventListener("vantage-scout-storage-change", update);
+    const storageChanged = (event: StorageEvent) => { if (event.key === "vantage-scout-storage-change") update(); };
+    window.addEventListener("storage", storageChanged);
     document.addEventListener("visibilitychange", update);
-    const timer = window.setInterval(update, 5_000);
     return () => {
-      window.clearInterval(timer);
       window.removeEventListener("focus", update);
+      window.removeEventListener("vantage-scout-storage-change", update);
+      window.removeEventListener("storage", storageChanged);
       document.removeEventListener("visibilitychange", update);
     };
   }, [refresh]);

@@ -7,6 +7,10 @@ import "./scouting-sharing.css";
 
 type Settings = { enabled: boolean; canManage: boolean };
 export function ScoutingSharing({ orgId }: { orgId: string }) {
+  return <TeamScoutingSharing key={orgId} orgId={orgId} />;
+}
+
+function TeamScoutingSharing({ orgId }: { orgId: string }) {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -50,6 +54,7 @@ export function ScoutingSharing({ orgId }: { orgId: string }) {
       if (!response.ok) throw new Error();
       setSettings((await response.json()) as Settings);
     } catch {
+      setSettings(null);
       setError(
         "Could not confirm the change. Retry to check the server before trying again.",
       );
@@ -66,15 +71,15 @@ export function ScoutingSharing({ orgId }: { orgId: string }) {
             ? settings.enabled
               ? "Sharing is on for your team."
               : "Sharing is off for your team."
-            : "Checking your team’s sharing setting…"}
+            : error ? "Sharing status could not be confirmed." : "Checking your team’s sharing setting…"}
         </p>
         <details>
           <summary data-disclosure>What is shared?</summary>
           <p className="app-muted">
             Past and new match observations are available to other signed-in
             Vantage teams while sharing is on. Scout identities, free text,
-            private notes, and action histories stay with your team. Owners and
-            admins can change this setting.
+            private notes, and action histories stay with your team. Team owners,
+            admins, and members with scouting management access can change this setting.
           </p>
         </details>
       </div>

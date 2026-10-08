@@ -63,6 +63,8 @@ export {
   setJustification,
   setListStatus,
   setPickOrder,
+  saveRankedList,
+  PickListSaveError,
   upsertEntry,
   upsertEntryFromTier,
   type ImportedEntryEdit,

@@ -1,7 +1,9 @@
 "use client";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { VantageLogo } from "../../components/brand";
 import { Button, FormRow } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { safeAppPath } from "../../lib/security/safe-navigation";
 import "./join-team.css";
 
 export default function JoinTeamClient() {
@@ -10,9 +12,12 @@ export default function JoinTeamClient() {
     [email, setEmail] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const submitting = useRef(false);
+  const alive = useRef(true);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   useEffect(() => {
     const controller = new AbortController();
-    void fetch("/api/auth/get-session", { signal: controller.signal })
+    void fetch("/api/auth/get-session", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) })
       .then((response) => (response.ok ? response.json() : null))
       .then((session) => {
         if (session?.user?.email && !controller.signal.aborted)
@@ -23,6 +28,8 @@ export default function JoinTeamClient() {
   }, []);
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
     setBusy(true);
     setError("");
     try {
@@ -30,19 +37,22 @@ export default function JoinTeamClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ teamNumber: Number(team), pin, email }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      const data = await response.json();
-      if (!response.ok || !data.href) {
+      const data = await response.json().catch(() => null);
+      if (!alive.current) return;
+      if (!response.ok || typeof data?.href !== "string" || !data.href.startsWith("/invite?token=")) {
         setError(
-          data.error || "Could not join. Check the details and try again.",
+          typeof data?.error === "string" ? data.error : "Could not join. Check the details and try again.",
         );
         return;
       }
-      window.location.assign(data.href);
+      window.location.assign(safeAppPath(data.href, "/invite"));
     } catch {
-      setError("Could not connect. Your details are still here. Try again.");
+      if (alive.current) setError("Could not confirm your join link. Your details are still here. Try again to get a new link.");
     } finally {
-      setBusy(false);
+      submitting.current = false;
+      if (alive.current) setBusy(false);
     }
   }
   return (
@@ -57,6 +67,7 @@ export default function JoinTeamClient() {
           <FormRow label="FRC team number">
             <input
               required
+              disabled={busy}
               inputMode="numeric"
               autoComplete="off"
               pattern="[0-9]{1,5}"
@@ -71,6 +82,7 @@ export default function JoinTeamClient() {
           <FormRow label="Team join code">
             <input
               required
+              disabled={busy}
               inputMode="numeric"
               autoComplete="off"
               pattern="[0-9]{6}"
@@ -85,6 +97,7 @@ export default function JoinTeamClient() {
           <FormRow label="Your email">
             <input
               required
+              disabled={busy}
               type="email"
               autoComplete="email"
               value={email}

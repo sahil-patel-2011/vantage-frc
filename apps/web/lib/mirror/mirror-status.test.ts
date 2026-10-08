@@ -15,7 +15,7 @@ describe("summarizeMirror", () => {
   it("calls two copies with one hash identical", () => {
     const summary = summarizeMirror([copy({ copy: "excel" }), copy({ copy: "google" })], now);
     expect(summary.identical).toBe(true);
-    expect(summary.headline).toBe("Both copies are identical.");
+    expect(summary.headline).toBe("Both copies contain the same last synced data.");
     expect(summary.copies.map((entry) => entry.health)).toEqual(["in_sync", "in_sync"]);
   });
 
@@ -40,9 +40,13 @@ describe("summarizeMirror", () => {
     expect(summary.copies.map((entry) => entry.health)).toEqual(["resting", "attention"]);
   });
 
-  it("asks for the second copy when only one is connected", () => {
+  it("does not require an unused provider when one copy is connected", () => {
     const summary = summarizeMirror([copy({ copy: "excel" }), copy({ copy: "google", connected: false })], now);
     expect(summary.connected).toBe(1);
-    expect(summary.headline).toMatch(/Connect the other/);
+    expect(summary.headline).toBe("Microsoft Excel is connected.");
+  });
+  it("does not call a failed sync healthy because an older hash exists", () => {
+    const summary = summarizeMirror([copy({ copy: "google", lastError: "The provider timed out." })], now);
+    expect(summary.copies[0]?.health).toBe("attention");
   });
 });

@@ -9,7 +9,7 @@ import {
 import type { PickCandidate, PickTier } from "@vantage/prediction-strategy";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, ConfirmDialog } from "../../components/ui";
 import { useTierDrag } from "../../components/ui/use-tier-drag";
 import "../../components/ui/tier-drag.css";
 import { hubHref } from "../../lib/nav/hubs";
@@ -85,11 +85,20 @@ function isPickDeskView(value: unknown): value is PickDeskView {
   return typeof row.orgId === "string" && Array.isArray(row.candidates) && Array.isArray(row.pickLists);
 }
 
-const TIERS: Array<{ id: PickTier; label: string; hint: string }> = [
+type DeskTier = PickTier | "avoid";
+function deskTier(tier: string | null): DeskTier {
+  if (tier === "first" || tier === "first_pick") return "first";
+  if (tier === "second" || tier === "second_pick") return "second";
+  if (tier === "third") return "third";
+  if (tier === "avoid" || tier === "do_not_pick") return "avoid";
+  return "watch";
+}
+const TIERS: Array<{ id: DeskTier; label: string; hint: string }> = [
   { id: "first", label: "First picks", hint: "Alliance captains / first partners" },
   { id: "second", label: "Second picks", hint: "Partners who fill the gaps" },
   { id: "third", label: "Third picks", hint: "Backup, defense, climb" },
   { id: "watch", label: "Watch", hint: "Keep an eye on these" },
+  { id: "avoid", label: "Avoid", hint: "Keep the team's exclusions visible" },
 ];
 
 function teamLabel(entry: { teamKey: string; teamNumber?: number | null; nickname?: string | null }) {
@@ -294,10 +303,12 @@ export function PickListWorkbench({
   orgId,
   embedded,
   onDirtyChange,
+  onBusyChange,
 }: {
   orgId: string | null;
   embedded?: boolean;
   onDirtyChange?: (dirty: boolean) => void;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [desk, setDesk] = useState<PickDeskView | null>(null);
   const [loading, setLoading] = useState(true);
@@ -315,46 +326,64 @@ export function PickListWorkbench({
   const [filter, setFilter] = useState("");
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const seatingRef = useRef(false);
+  const loadGeneration = useRef(0);
+  const [pendingList, setPendingList] = useState<string | null>(null);
+  const [saveNeedsReview, setSaveNeedsReview] = useState(false);
+  const savedList = desk?.pickLists.find(list => list.id === activeListId);
+  const canEditList = Boolean(desk?.canEdit) && (!savedList?.status || savedList.status === "open");
+  const dirty = savedList ? draftName !== savedList.name || JSON.stringify(entries) !== JSON.stringify(savedList.entries) : entries.length > 0 || draftName !== "Alliance picks";
+  const draftRef = useRef({ activeListId, draftName, entries, dirty });
+  draftRef.current = { activeListId, draftName, entries, dirty };
   const deskRef = useRef<PickDeskView | null>(null);
   deskRef.current = desk;
 
   useEffect(() => {
     if (!desk) return;
-    const saved = desk.pickLists.find(list => list.id === activeListId);
-    onDirtyChange?.(saved ? draftName !== saved.name || JSON.stringify(entries) !== JSON.stringify(saved.entries) : entries.length > 0 || draftName !== "Alliance picks");
-  }, [desk, activeListId, draftName, entries, onDirtyChange]);
+    onDirtyChange?.(dirty);
+  }, [desk, dirty, onDirtyChange]);
+  useEffect(() => { onBusyChange?.(saving || seating); }, [saving, seating, onBusyChange]);
 
   useEffect(() => {
-    if (!embedded || !activeListId) return;
+    if (!embedded) return;
     const url = new URL(window.location.href);
-    url.searchParams.set("listId", activeListId);
+    if (activeListId) url.searchParams.set("listId", activeListId);
+    else if (desk) url.searchParams.delete("listId");
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-  }, [activeListId, embedded]);
+  }, [activeListId, embedded, desk]);
 
   const applyDesk = useCallback((view: PickDeskView) => {
+    if (draftRef.current.dirty && deskRef.current?.orgId === view.orgId) {
+      // A cache refresh must not replace an open ranking or advance its base revision.
+      setDesk({ ...view, pickLists: deskRef.current.pickLists });
+      return;
+    }
     setDesk(view);
     setSetupMessage("");
     setSetupOrgId(view.orgId);
     setSetupEventKey(view.eventKey);
-    setActiveListId((currentId) => {
-      const preferredId = currentId ?? new URLSearchParams(window.location.search).get("listId");
+      const preferredId = draftRef.current.activeListId ?? new URLSearchParams(window.location.search).get("listId");
       const preferred = view.pickLists.find((list) => list.id === preferredId) ?? view.pickLists[0];
       if (preferred) {
         setDraftName(preferred.name);
         setEntries(preferred.entries);
-        return preferred.id;
+        setActiveListId(preferred.id);
+        return;
       }
       setEntries([]);
-      return null;
-    });
+      setDraftName("Alliance picks");
+      setActiveListId(null);
   }, []);
 
   const load = useCallback(() => {
+    const generation = ++loadGeneration.current;
     void (async () => {
       const cacheOrg = orgId?.trim() || "_";
       let hadCache = Boolean(deskRef.current);
       try {
         const cached = await getFeatureSnapshot<PickDeskView>("pick-desk", cacheOrg);
+        if (generation !== loadGeneration.current) return;
         if (!deskRef.current && cached?.data && isPickDeskView(cached.data)) {
           applyDesk(cached.data);
           setFromCache(true);
@@ -365,6 +394,7 @@ export function PickListWorkbench({
       } catch {
         // IndexedDB missing or blocked; live fetch still runs.
       }
+      if (generation !== loadGeneration.current) return;
       setFetchFailed(false);
       const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
       try {
@@ -372,18 +402,20 @@ export function PickListWorkbench({
           cache: "no-store",
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
+        if (generation !== loadGeneration.current) return;
         if (response.status === 401 || response.status === 403) {
           setDesk(null);
+          deskRef.current = null;
+          setEntries([]); setDraftName("Alliance picks"); setActiveListId(null);
           setFromCache(false);
           setCachedAt(null);
           setSetupMessage("");
           setFetchFailed(true);
-          void clearFeatureSnapshot("pick-desk", cacheOrg);
-          if (orgId) void clearFeatureSnapshot("pick-desk", orgId);
+          void clearFeatureSnapshot("pick-desk", cacheOrg).catch(() => undefined);
           return;
         }
-        if (data.status === "setup_required") {
+        if (data?.status === "setup_required") {
           if (hadCache || deskRef.current) {
             setFromCache(true);
             setStatus("Could not refresh Pick desk. Showing the last copy on this device.");
@@ -418,6 +450,7 @@ export function PickListWorkbench({
           }
         }
       } catch {
+        if (generation !== loadGeneration.current) return;
         if (hadCache || deskRef.current) {
           setFromCache(true);
           setStatus("Could not refresh Pick desk. Showing the last copy on this device.");
@@ -427,13 +460,14 @@ export function PickListWorkbench({
         setSetupMessage("");
         setFetchFailed(true);
       } finally {
-        setLoading(false);
+        if (generation === loadGeneration.current) setLoading(false);
       }
     })();
   }, [applyDesk, orgId]);
 
   useEffect(() => {
     load();
+    return () => { loadGeneration.current += 1; };
   }, [load]);
 
   const shell = classifyPickDeskShell({
@@ -449,6 +483,7 @@ export function PickListWorkbench({
     orgId: desk?.orgId ?? setupOrgId ?? orgId,
     eventKey: desk?.eventKey ?? setupEventKey,
     candidateCount: desk?.candidates.length ?? 0,
+    listCount: desk?.pickLists.length ?? 0,
   });
 
   const byKey = useMemo(() => {
@@ -472,14 +507,14 @@ export function PickListWorkbench({
     });
   }, [desk, listed, filter]);
 
-  function entriesForTier(tier: PickTier) {
+  function entriesForTier(tier: DeskTier) {
     return entries
-      .filter((entry) => (entry.tier ?? "watch") === tier)
+      .filter((entry) => deskTier(entry.tier) === tier)
       .sort((a, b) => a.rank - b.rank);
   }
 
   function reindex(next: PickDeskEntry[]) {
-    const order = TIERS.flatMap((tier) => next.filter((entry) => (entry.tier ?? "watch") === tier.id));
+    const order = TIERS.flatMap((tier) => next.filter((entry) => deskTier(entry.tier) === tier.id));
     return order.map((entry, index) => ({ ...entry, rank: index + 1 }));
   }
 
@@ -500,7 +535,7 @@ export function PickListWorkbench({
     );
   }
 
-  function moveEntry(teamKey: string, tier: PickTier) {
+  function moveEntry(teamKey: string, tier: DeskTier) {
     setEntries((current) =>
       reindex(current.map((entry) => (entry.teamKey === teamKey ? { ...entry, tier } : entry))),
     );
@@ -511,13 +546,13 @@ export function PickListWorkbench({
   }
 
   /** Move one team to slot `index` of a column (counted among the teams that stay), then renumber. */
-  function placeEntry(current: PickDeskEntry[], teamKey: string, tier: PickTier, index: number): PickDeskEntry[] {
+  function placeEntry(current: PickDeskEntry[], teamKey: string, tier: DeskTier, index: number): PickDeskEntry[] {
     const moving = current.find((entry) => entry.teamKey === teamKey);
     if (!moving) return current;
     const columns = TIERS.map((item) => ({
       id: item.id,
       list: current
-        .filter((entry) => entry.teamKey !== teamKey && (entry.tier ?? "watch") === item.id)
+        .filter((entry) => entry.teamKey !== teamKey && deskTier(entry.tier) === item.id)
         .sort((a, b) => a.rank - b.rank),
     }));
     const target = columns.find((column) => column.id === tier);
@@ -528,27 +563,34 @@ export function PickListWorkbench({
 
   // Drag a team between the columns (or up and down one with the arrow keys). Only people who can
   // edit the list get handles.
-  const tierDrag = useTierDrag<PickTier>({
+  const tierDrag = useTierDrag<DeskTier>({
     groups: TIERS.map((item) => ({ tier: item.id, ids: entriesForTier(item.id).map((entry) => entry.teamKey) })),
-    enabled: Boolean(desk?.canEdit),
+    enabled: canEditList,
     tierLabel: (tier) => TIERS.find((item) => item.id === tier)?.label ?? tier,
     onMove: (teamKey, tier, index) => setEntries((current) => placeEntry(current, teamKey, tier, index)),
   });
 
   async function saveList() {
-    if (!desk) return;
-    if (!desk.canEdit) {
-      setStatus("Owner or admin role required to save pick lists.");
+    if (!desk || savingRef.current) return;
+    if (!canEditList) {
+      setStatus("Scouting lead or team administrator access is required to save rankings.");
       return;
     }
+    savingRef.current = true;
+    const submitted = { id: activeListId, name: draftName.trim() || "Alliance picks", entries };
+    // Invalidate a read started before this write; it cannot replace the acknowledged list.
+    loadGeneration.current += 1;
     setSaving(true);
     setStatus("Saving pick list…");
+    setSaveNeedsReview(false);
+    try {
     const response = await fetch("/api/intel/pick-lists", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         orgId: desk.orgId,
         id: activeListId ?? undefined,
+        baseRevision: savedList?.revision,
         eventKey: desk.eventKey,
         name: draftName.trim() || "Alliance picks",
         entries: entries.map((entry) => ({
@@ -562,10 +604,11 @@ export function PickListWorkbench({
     });
     const data = (await response.json()) as {
       id?: string;
+      revision?: number;
       error?: string;
       influence?: { attributed?: number; notified?: number };
     };
-    if (response.ok) {
+    if (response.ok && typeof data?.id === "string" && /^[0-9a-f-]{36}$/i.test(data.id) && Number.isSafeInteger(data.revision) && data.revision! > 0) {
       const attributed = data.influence?.attributed ?? 0;
       const notified = data.influence?.notified ?? 0;
       setStatus(
@@ -573,21 +616,37 @@ export function PickListWorkbench({
           ? `Pick list saved. Told ${notified} scout${notified === 1 ? "" : "s"} where ${attributed} entr${attributed === 1 ? "y" : "ies"} went.`
           : "Pick list saved. No scout entries to attribute yet.",
       );
-      if (data.id) setActiveListId(data.id);
-      load();
+      const saved: PickDeskList = { id: data.id, name: submitted.name, entries: submitted.entries, eventKey: desk.eventKey, updatedAt: null, revision: data.revision, status: "open" };
+      setDesk(current => current ? { ...current, pickLists: [saved, ...current.pickLists.filter(list => list.id !== saved.id)] } : current);
+      setActiveListId(saved.id);
+      // Edits made while the save was in flight remain different from this saved baseline.
+      if (draftRef.current.draftName === draftName) setDraftName(submitted.name);
+      setFromCache(false); setCachedAt(null);
+      void clearFeatureSnapshot("pick-desk", desk.orgId).catch(() => undefined);
+      void clearFeatureSnapshot("picklist-collab", desk.orgId, saved.id).catch(() => undefined);
     } else {
-      setStatus(data.error ?? "Save failed");
+      setSaveNeedsReview(true);
+      setStatus(typeof data?.error === "string" ? data.error : "Save could not be confirmed. Your edits are still here. Check the saved list before retrying.");
     }
-    setSaving(false);
+    } catch {
+      setSaveNeedsReview(true);
+      setStatus("Save could not be confirmed. Your edits are still here. Check the saved list before retrying.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   }
 
   async function seatTopScouts() {
+    if (seatingRef.current) return;
     if (!desk?.canEdit) {
       setStatus("Owner or admin role required to seat scouts.");
       return;
     }
+    seatingRef.current = true;
     setSeating(true);
     setStatus("Seating top accurate scouts…");
+    try {
     const response = await fetch("/api/scouting/trust", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -603,19 +662,30 @@ export function PickListWorkbench({
       error?: string;
       strategySeats?: unknown[];
     };
+    const confirmed = response.ok && Array.isArray(data?.strategySeats);
     setStatus(
-      response.ok
-        ? `Seated top accurate scouts into the pick-desk conversation (${data.strategySeats?.length ?? 0} seat${(data.strategySeats?.length ?? 0) === 1 ? "" : "s"}).`
-        : data.error ?? "Could not seat scouts",
+      confirmed
+        ? `Seated top accurate scouts into the pick-desk conversation (${data.strategySeats!.length} seat${data.strategySeats!.length === 1 ? "" : "s"}).`
+        : data?.error ?? "Could not confirm scout seating",
     );
-    setSeating(false);
-    if (response.ok) load();
+    if (confirmed) load();
+    } catch { setStatus("Scout seating could not be confirmed. Refresh the list before retrying."); }
+    finally { seatingRef.current = false; setSeating(false); }
   }
 
   function selectList(list: PickDeskList) {
     setActiveListId(list.id);
     setDraftName(list.name);
     setEntries(list.entries);
+    setStatus("");
+  }
+
+  function chooseList(id: string) {
+    if (!desk || savingRef.current) return;
+    const list = desk.pickLists.find(item => item.id === id);
+    if (list) selectList(list);
+    else { setActiveListId(null); setDraftName("Alliance picks"); setEntries([]); setStatus(""); }
+    setPendingList(null);
   }
 
   if (shell !== "ready") {
@@ -682,7 +752,7 @@ export function PickListWorkbench({
           {/* Only people who can save one see Save; a scout pressing it got "Owner or admin role
               required". */}
           {desk.canEdit ? (
-            <Button variant="primary" type="button" onClick={saveList} disabled={saving}>
+            <Button variant="primary" type="button" onClick={saveList} disabled={saving || (savedList?.status !== undefined && savedList.status !== "open")}>
               {saving ? "Saving…" : "Save pick list"}
             </Button>
           ) : null}
@@ -701,7 +771,7 @@ export function PickListWorkbench({
       <div className="strategy-pick-toolbar app-card">
         <label>
           List name
-          <input value={draftName} onChange={(event) => setDraftName(event.target.value)} />
+          <input value={draftName} disabled={!canEditList} maxLength={200} onChange={(event) => setDraftName(event.target.value)} />
         </label>
         <label>
           Filter pool
@@ -713,10 +783,9 @@ export function PickListWorkbench({
         </label>
         <label className="strategy-saved-list-select">
           Saved list
-          <select aria-label="Saved pick list" value={activeListId ?? ""} onChange={event => {
-            const list = desk.pickLists.find(item => item.id === event.target.value);
-            if (list) selectList(list);
-            else { setActiveListId(null); setDraftName("Alliance picks"); setEntries([]); setStatus(""); }
+          <select aria-label="Saved pick list" disabled={saving} value={activeListId ?? ""} onChange={event => {
+            if (dirty) setPendingList(event.target.value);
+            else chooseList(event.target.value);
           }}>
             <option value="">{desk.canEdit ? "New pick list" : "No list selected"}</option>
             {desk.pickLists.map(list => <option key={list.id} value={list.id}>{list.name}</option>)}
@@ -724,15 +793,19 @@ export function PickListWorkbench({
         </label>
         {!desk.canEdit ? (
           <p className="telemetry-status" role="status">
-            Mentors and captains set the pick list. You can look through it here.
+            Scouting leads and team administrators save rankings. You can review the list and contribute in Team discussion.
           </p>
         ) : null}
         {status ? (
-          <p className="telemetry-status success" role="status">
+          <p className="telemetry-status" role="status">
             {status}
           </p>
         ) : null}
+        {saveNeedsReview ? <Button as="a" variant="secondary" href={withOrgHref(`/competition?tab=picks&view=discussion${activeListId ? `&listId=${encodeURIComponent(activeListId)}` : ""}`, desk.orgId)} target="_blank" rel="noopener noreferrer">Check shared list in a new tab</Button> : null}
       </div>
+
+      {savedList?.status && savedList.status !== "open" ? <p role="status" className="app-muted">This list is {savedList.status}. Reopen it in Team discussion before editing.</p> : null}
+      <ConfirmDialog open={pendingList !== null} opts={{ title: "Discard unsaved ranking changes?", body: "Switching lists will discard the changes in this ranking. Keep editing to save them first.", confirmLabel: "Discard and switch", cancelLabel: "Keep editing" }} onResolve={ok => { if (ok && pendingList !== null) chooseList(pendingList); else setPendingList(null); }} />
 
       <div className="strategy-pick-columns" ref={tierDrag.rootRef}>
         <p className="sr-only" role="status" aria-live="polite">
@@ -761,7 +834,7 @@ export function PickListWorkbench({
             rows.push(
               <li key={entry.teamKey} data-entry-id={entry.teamKey} className={dragged ? "is-dragging" : undefined}>
                 <div className="strategy-pick-row-head">
-                  {desk.canEdit ? (
+                  {canEditList ? (
                     <button
                       type="button"
                       className="tier-drag-handle"
@@ -780,7 +853,7 @@ export function PickListWorkbench({
                     <ConsistencyChip candidate={candidate} />
                   </div>
                   <div className="strategy-pick-row-actions">
-                    {desk.canEdit ? (
+                    {canEditList ? (
                       <details className="tier-row-more">
                         <summary aria-label={`More for team ${entry.teamNumber ?? entry.teamKey}`}>More</summary>
                         <div className="tier-row-more-panel">
@@ -823,7 +896,7 @@ export function PickListWorkbench({
                 {!column.length ? (
                   <li className="strategy-pick-empty">
                     Add teams from the pool below
-                    {desk.canEdit ? ", or drag one here" : ""}.
+                    {canEditList ? ", or drag one here" : ""}.
                   </li>
                 ) : null}
               </ul>
@@ -861,7 +934,7 @@ export function PickListWorkbench({
                   )}
                 </div>
                 <div className="strategy-pick-row-actions">
-                  {desk.canEdit ? (
+                  {canEditList ? (
                     <button
                       type="button"
                       className="strategy-pool-add"

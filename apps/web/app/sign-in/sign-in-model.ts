@@ -46,7 +46,7 @@ export function sessionProbeFromPayload(
 
 export async function readOnboardingGate(): Promise<OnboardingGateSnapshot | null> {
   try {
-    const response = await fetch("/api/onboarding", { credentials: "include" });
+    const response = await fetch("/api/onboarding", { credentials: "include", signal: AbortSignal.timeout(10_000) });
     if (!response.ok) return null;
     return (await response.json()) as OnboardingGateSnapshot;
   } catch {
@@ -105,6 +105,7 @@ export function passwordSubmitLabel(
 ): string {
   switch (panel) {
     case "reset":
+      if (opts.working) return opts.resetSent ? "Updating password…" : "Sending reset code…";
       return opts.resetSent ? "Set new password" : "Send reset code";
     case "password":
       return opts.working ? "Signing in…" : "Sign in with password";

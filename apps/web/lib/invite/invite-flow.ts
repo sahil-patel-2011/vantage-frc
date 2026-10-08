@@ -154,7 +154,8 @@ export function classifyInviteFlow(input: {
     const status = normalizeInviteStatus(input.preview.status);
     if (status === "pending") {
       const expiresMs = Date.parse(input.preview.expiresAt);
-      if (Number.isFinite(expiresMs) && expiresMs <= Date.now()) return "expired";
+      if (!Number.isFinite(expiresMs)) return "invalid";
+      if (expiresMs <= Date.now()) return "expired";
       if (input.emailMismatch) return "email_mismatch";
       if (input.authRequired) return "auth_required";
       return "ready";

@@ -12,7 +12,7 @@ import {
 } from "../../../../lib/scouting/coverage";
 import { expandAssignmentRange } from "../../../../lib/scouting/assignment-range";
 import { loadWatchlistTeamKeys } from "../../../../lib/watchlist";
-import { isScoutForbidden, scoutForbiddenResponse } from "../../../../lib/scout-org-access";
+import { isScoutForbidden, resolveScoutOrg, scoutForbiddenResponse } from "../../../../lib/scout-org-access";
 import { eventKeyFromMatchKey } from "../../../../lib/webhooks/tba-messages";
 import {
   assignmentConflict,
@@ -20,7 +20,9 @@ import {
   withAssignment,
   type AssignmentConflictContext,
 } from "../../../../lib/scouting/assignment-conflicts";
-import { loadAssignmentConflictContext } from "../../../../lib/scouting/assignment-conflicts-load";
+import { loadAssignmentConflictContext, lockScoutAssignments } from "../../../../lib/scouting/assignment-conflicts-load";
+import type { AssignmentReceipt } from "../../../../lib/scouting/assignment-receipt";
+import { ScoutingHttpError, withScoutingRequest } from "../../../../lib/scouting-auth";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /** A refused assignment: the coordinator gets the reason, nothing is written. */
@@ -74,8 +76,8 @@ export async function GET(request: Request) {
     if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
     const url = new URL(request.url);
-    const requestedOrg = url.searchParams.get("orgId");
-    const view = await withRls({ userId: session.user.id }, async (client) => {
+    const requestedOrg = url.searchParams.get("orgId") || await withRls({ userId: session.user.id }, async client => (await resolveScoutOrg(client, session.user.id, null))?.orgId ?? null);
+    const work = async (client: PoolClient) => {
       const priorityTeamKeys = requestedOrg ? await loadWatchlistTeamKeys(client, requestedOrg) : [];
       return computeScoutingCoverageView(client, {
         userId: session.user.id,
@@ -86,9 +88,11 @@ export async function GET(request: Request) {
         qualsOnly: qualsOnlyOf(url.searchParams.get("qualsOnly")),
         priorityTeamKeys,
       });
-    });
+    };
+    const view = requestedOrg ? await withScoutingRequest(requestedOrg, work) : await withRls({ userId: session.user.id }, work);
     return noStore(view);
   } catch (error) {
+    if (error instanceof ScoutingHttpError) return noStore({ error: error.message }, error.status);
     if (isScoutForbidden(error)) return scoutForbiddenResponse();
     return Response.json({ error: publicErrorMessage(error, "Coverage request failed") }, { status: 400 });
   }
@@ -102,6 +106,7 @@ export async function POST(request: Request) {
     let body: Record<string, unknown>;
     try {
       body = (await request.json()) as Record<string, unknown>;
+      if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid body");
     } catch {
       return Response.json({ error: "Invalid JSON body" }, { status: 400 });
     }
@@ -114,42 +119,57 @@ export async function POST(request: Request) {
       return Response.json({ error: `Unknown action: ${action || "(missing)"}` }, { status: 400 });
     }
 
-    const view = await withRls({ userId: session.user.id, orgId }, async (client) => {
+    const view = await withScoutingRequest(orgId, async (client) => {
       if (!await canManageScouting(client, orgId)) {
         throw Object.assign(new Error("Organization access denied"), { status: 403 });
       }
+      await lockScoutAssignments(client, orgId);
 
       const priorityTeamKeys = await loadWatchlistTeamKeys(client, orgId);
       const matchKey = typeof body.matchKey === "string" ? body.matchKey : "";
       const teamKey = typeof body.teamKey === "string" ? body.teamKey : "";
-      const eventKey =
+      const inferredEvent = eventKeyFromMatchKey(matchKey || (typeof body.firstMatchKey === "string" ? body.firstMatchKey : ""));
+      let eventKey =
         (typeof body.eventKey === "string" && body.eventKey.trim()) ||
-        eventKeyFromMatchKey(matchKey) ||
+        inferredEvent ||
         "";
+      if (inferredEvent && eventKey !== inferredEvent) throw new Error("The match and event do not match.");
+      const receipt: AssignmentReceipt = { action, eventKey, assigned: 0, unchanged: 0, refused: [] };
 
       // Drive team and one-robot-per-match are checked for every write below.
       let conflicts: AssignmentConflictContext | null = eventKey
         ? await loadAssignmentConflictContext(client, { orgId, eventKey })
         : null;
       const refused: string[] = [];
+      const checkedMembers = new Set<string>();
+      const validateTarget = async (userId: string, targetMatch: string, targetTeam: string) => {
+        if (!conflicts?.matches.get(targetMatch)?.teamKeys.includes(targetTeam)) throw new Error("Choose a robot that plays in this scheduled match.");
+        if (checkedMembers.has(userId)) return;
+        const member = await client.query("SELECT 1 FROM memberships WHERE org_id=$1::uuid AND user_id=$2::uuid", [orgId, userId]);
+        if (!member.rowCount) throw new Error("Choose a current member of this team.");
+        checkedMembers.add(userId);
+      };
 
       if (action === "assign") {
         const assignee = typeof body.userId === "string" ? body.userId : session.user.id;
+        await validateTarget(assignee, matchKey, teamKey);
         const conflict = conflicts ? assignmentConflict(conflicts, { userId: assignee, matchKey, teamKey }) : null;
         if (conflict) {
           throw conflictError(describeAssignmentConflict(conflict, await memberName(client, orgId, assignee)));
         }
-        await assignCoverageSlot(client, {
+        const result = await assignCoverageSlot(client, {
           orgId,
           eventKey,
           matchKey,
           teamKey,
           userId: assignee,
         });
+        if (result.inserted) receipt.assigned += 1; else receipt.unchanged += 1;
       } else if (action === "assign-range") {
         const preview = await computeScoutingCoverageView(client, {
           userId: session.user.id,
           requestedOrg: orgId,
+          requestedEvent: eventKey || null,
           priorityTeamKeys,
           qualsOnly: qualsOnlyOf(body.qualsOnly),
         });
@@ -167,6 +187,7 @@ export async function POST(request: Request) {
         }
         const assignee = typeof body.userId === "string" ? body.userId : session.user.id;
         for (const slot of range.slots) {
+          await validateTarget(assignee, slot.matchKey, slot.teamKey);
           const conflict = conflicts
             ? assignmentConflict(conflicts, { userId: assignee, matchKey: slot.matchKey, teamKey: slot.teamKey })
             : null;
@@ -176,41 +197,47 @@ export async function POST(request: Request) {
             continue;
           }
           if (conflicts) conflicts = withAssignment(conflicts, { userId: assignee, matchKey: slot.matchKey, teamKey: slot.teamKey });
-          await assignCoverageSlot(client, {
+          const result = await assignCoverageSlot(client, {
             orgId,
             eventKey: eventKey || eventKeyFromMatchKey(slot.matchKey) || "",
             matchKey: slot.matchKey,
             teamKey: slot.teamKey,
             userId: assignee,
           });
+          if (result.inserted) receipt.assigned += 1; else receipt.unchanged += 1;
         }
       } else if (action === "swap") {
         const toUserId = String(body.toUserId ?? "");
+        await validateTarget(toUserId, matchKey, teamKey);
         const conflict = conflicts ? assignmentConflict(conflicts, { userId: toUserId, matchKey, teamKey }) : null;
         if (conflict) {
           throw conflictError(describeAssignmentConflict(conflict, await memberName(client, orgId, toUserId)));
         }
-        await swapCoverageSlot(client, {
+        const result = await swapCoverageSlot(client, {
           orgId,
           matchKey,
           teamKey,
           fromUserId: String(body.fromUserId ?? ""),
           toUserId,
         });
+        if (!result.moved) throw conflictError("This assignment has already changed. Refresh coverage before moving it again.");
+        receipt.assigned += 1;
       } else {
         const preview = await computeScoutingCoverageView(client, {
           userId: session.user.id,
           requestedOrg: orgId,
+          requestedEvent: eventKey || null,
           priorityTeamKeys,
           qualsOnly: qualsOnlyOf(body.qualsOnly),
           matchKey: typeof body.focusMatchKey === "string" ? body.focusMatchKey : undefined,
         });
         if (preview.status === "live") {
+          eventKey = preview.eventKey;
           const context =
             conflicts && preview.eventKey === eventKey
               ? conflicts
               : await loadAssignmentConflictContext(client, { orgId, eventKey: preview.eventKey });
-          await applyAutoAssignments(client, {
+          const result = await applyAutoAssignments(client, {
             orgId,
             eventKey: preview.eventKey,
             plan: planAutoAssignments({
@@ -221,22 +248,27 @@ export async function POST(request: Request) {
               isBlocked: (userId, slot) => assignmentConflict(context, { userId, ...slot }) != null,
             }),
           });
+          receipt.assigned = result.assigned;
         }
       }
 
       const next = await computeScoutingCoverageView(client, {
         userId: session.user.id,
         requestedOrg: orgId,
+        requestedEvent: eventKey || null,
         priorityTeamKeys,
         qualsOnly: qualsOnlyOf(body.qualsOnly),
         matchKey: typeof body.focusMatchKey === "string" ? body.focusMatchKey : undefined,
       });
       // Extra field; clients that do not read it render the view exactly as before.
-      return refused.length ? { ...next, refused } : next;
+      receipt.eventKey = eventKey;
+      receipt.refused = refused;
+      return { ...next, ...(refused.length ? { refused } : {}), mutation: receipt };
     });
 
     return noStore(view);
   } catch (error) {
+    if (error instanceof ScoutingHttpError) return noStore({ error: error.message }, error.status);
     if (isScoutForbidden(error)) return scoutForbiddenResponse();
     const status =
       error instanceof Error && "status" in error && (error.status === 403 || error.status === 409)

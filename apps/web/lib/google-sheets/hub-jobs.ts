@@ -4,9 +4,11 @@ import { provisioningPool } from "../provisioning/pool";
 import { readableHubWorkflow } from "./hub-workflow";
 import { isAppsScriptSecret } from "./apps-script-source";
 import { loadSheetsHubBridge } from "./sheets-hub";
+import { hostedBackgroundWorkEnabled } from "../hosted-background-work";
 
 /** Called only after a membership check, or by the authenticated operator cron. */
 export async function queueReadableHubSync(orgId: string): Promise<boolean> {
+  if (!hostedBackgroundWorkEnabled()) return false;
   if (!isAppsScriptSecret(process.env.VANTAGE_SHEETS_HUB_SECRET?.trim().toLowerCase() ?? "")) return false;
   const client = await provisioningPool().connect();
   const generation = randomUUID();
@@ -35,6 +37,7 @@ export async function queueReadableHubSync(orgId: string): Promise<boolean> {
 
 /** The cron also refreshes teams with no browser open. No unready team is selected. */
 export async function queueDueReadableHubSyncs(): Promise<{ examined: number; queued: number; failed: number }> {
+  if (!hostedBackgroundWorkEnabled()) return { examined: 0, queued: 0, failed: 0 };
   if (!isAppsScriptSecret(process.env.VANTAGE_SHEETS_HUB_SECRET?.trim().toLowerCase() ?? "")) return { examined: 0, queued: 0, failed: 0 };
   const client = await provisioningPool().connect();
   let orgIds: string[];

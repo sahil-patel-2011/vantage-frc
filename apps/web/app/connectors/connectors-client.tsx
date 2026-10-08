@@ -20,7 +20,7 @@ import CadDocumentPicker from "../cad/connections/cad-document-picker";
 import DriveMediaCard from "./drive-media-card";
 import SpreadsheetMirrorCard from "./spreadsheet-mirror-card";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./connectors.css";
 import { TeamSettingsNav } from "../../components/team-settings-nav";
 import { teamSettingsBreadcrumb } from "../../lib/nav/team-settings-nav";
@@ -78,15 +78,19 @@ export default function ConnectorsClient() {
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<ConnectorsView | null>(null);
+  const loadGenerationRef = useRef(0);
   viewRef.current = view;
 
   const load = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
     let hadCache = Boolean(viewRef.current);
     try {
       const cached = await getFeatureSnapshot<ConnectorsView>("connectors", orgHint || "_");
-      if (!viewRef.current && cached?.data && isConnectorsView(cached.data)) {
+      if (generation !== loadGenerationRef.current) return;
+      if (!viewRef.current && cached?.data && isConnectorsView(cached.data) && (!orgHint || cached.data.orgId === orgHint)) {
+        viewRef.current = cached.data;
         setView(cached.data);
         setFromCache(true);
         setCachedAt(cached.cachedAt);
@@ -98,19 +102,19 @@ export default function ConnectorsClient() {
     setFetchFailed(false);
     setErrorStatus(null);
     try {
-      const response = await fetch("/api/connectors", {
+      const response = await fetch(`/api/connectors${orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : ""}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data: unknown = await response.json().catch(() => null);
+      if (generation !== loadGenerationRef.current) return;
       if (response.status === 401 || response.status === 403) {
-        if (hadCache || viewRef.current) {
-          setFromCache(true);
-          setMessage("Could not refresh Connectors. Showing the last copy on this device.");
-          setFetchFailed(false);
-          return;
-        }
+        const previousOrg = viewRef.current?.orgId;
+        viewRef.current = null;
         setView(null);
+        for (const cacheOrg of new Set([orgHint || "_", previousOrg].filter((value): value is string => Boolean(value)))) {
+          void clearFeatureSnapshot("connectors", cacheOrg).catch(() => { /* The revoked view is already hidden. */ });
+        }
         setFromCache(false);
         setCachedAt(null);
         setFetchFailed(true);
@@ -122,7 +126,7 @@ export default function ConnectorsClient() {
         );
         return;
       }
-      if (!response.ok || !isConnectorsView(data)) {
+      if (!response.ok || !isConnectorsView(data) || (orgHint && data.orgId !== orgHint && !data.degraded)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
           setMessage("Could not refresh Connectors. Showing the last copy on this device.");
@@ -138,11 +142,13 @@ export default function ConnectorsClient() {
         );
         return;
       }
+      viewRef.current = data;
       setView(data);
       setFromCache(false);
       setCachedAt(null);
       await persistConnectorsSnapshot(orgHint, data);
     } catch {
+      if (generation !== loadGenerationRef.current) return;
       if (hadCache || viewRef.current) {
         setFromCache(true);
         setMessage("Could not refresh Connectors. Showing the last copy on this device.");
@@ -156,6 +162,7 @@ export default function ConnectorsClient() {
 
   useEffect(() => {
     void load();
+    return () => { loadGenerationRef.current++; };
   }, [load]);
 
   async function connect(connector: ConnectorStatusView, orgId: string | null) {
@@ -214,7 +221,8 @@ export default function ConnectorsClient() {
     }
   }
 
-  const chooseTeam = fetchFailed && (errorStatus === 401 || errorStatus === 403);
+  const signInRequired = fetchFailed && errorStatus === 401;
+  const chooseTeam = fetchFailed && errorStatus === 403;
 
   if (!view) {
     return (
@@ -228,16 +236,16 @@ export default function ConnectorsClient() {
         {fetchFailed ? (
           <EmptyState
             soft
-            badge={chooseTeam ? "Needs setup" : "Unavailable"}
+            badge={chooseTeam || signInRequired ? "Access required" : "Unavailable"}
             badgeTone="setup"
-            title={chooseTeam ? "Choose your team" : "Could not load connector status"}
+            title={signInRequired ? "Sign in to continue" : chooseTeam ? "Team access changed" : "Could not load connector status"}
             description={
-              chooseTeam
-                ? "Choose your team to see what this team has linked."
+              chooseTeam || signInRequired
+                ? message
                 : message || "A network or server issue prevented loading. Retry, or open Support if this keeps failing."
             }
           >
-            {chooseTeam ? (
+            {signInRequired ? <Button as="a" variant="primary" href="/signin?next=%2Fconnectors">Sign in</Button> : chooseTeam ? (
               <Button as="a" variant="primary" href="/workspace">
                 Choose your team
               </Button>

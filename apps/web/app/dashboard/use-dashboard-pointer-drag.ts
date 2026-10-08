@@ -46,6 +46,7 @@ type CanvasRect = { left: number; top: number; width: number; bottom: number; ri
  * Keyboard reordering lives in useDashboardBoardOps.
  */
 export function useDashboardPointerDrag(input: {
+  scopeKey: string;
   editing: boolean;
   saving: boolean;
   canvasNode: HTMLElement | null;
@@ -96,6 +97,7 @@ export function useDashboardPointerDrag(input: {
   const keyListenerRef = useRef<((event: KeyboardEvent) => void) | null>(null);
   const touchListenerRef = useRef<((event: TouchEvent) => void) | null>(null);
   const suppressClickRef = useRef(false);
+  const scopeRef = useRef(input.scopeKey);
 
   function clearLongPress() {
     if (longPressRef.current !== null) {
@@ -473,6 +475,15 @@ export function useDashboardPointerDrag(input: {
     },
     [],
   );
+
+  useEffect(() => {
+    if (scopeRef.current !== input.scopeKey) {
+      scopeRef.current = input.scopeKey;
+      // A previous team's drag must never restore its layout over the new team.
+      endDrag(false);
+      setGrabbedId(null);
+    }
+  }, [input.scopeKey]);
 
   useEffect(() => {
     if (!editing && dragRef.current) endDrag(true);

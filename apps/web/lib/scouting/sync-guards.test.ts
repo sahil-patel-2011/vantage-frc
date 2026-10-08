@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SyncEntry } from "@vantage/scouting";
 import {
   OTHER_ROBOT_REASON,
+  OTHER_SCOUT_REASON,
   isMissingReferenceError,
   isTransientDbError,
   resolveSyncTarget,
@@ -26,6 +27,7 @@ function fakeClient(state: { receipts: Array<{ clientId: string; entryType: "mat
   return {
     inserted,
     async query<T>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
+      if (sql.includes("pg_advisory_xact_lock")) return { rows: [] };
       if (sql.includes("FROM scout_sync_receipts")) {
         const found = state.receipts.find((receipt) => receipt.clientId === params[1]);
         return { rows: (found ? [found] : []) as T[] };
@@ -51,6 +53,9 @@ function fakeClient(state: { receipts: Array<{ clientId: string; entryType: "mat
           ) as T[],
         };
       }
+      if (sql.includes("scout_user_id = $4::uuid")) {
+        return { rows: state.rows.filter(row => row.eventKey === params[1] && row.teamKey === params[2] && row.scoutUserId === params[3]) as T[] };
+      }
       throw new Error(`unexpected query: ${sql}`);
     },
   };
@@ -74,6 +79,17 @@ function entry(partial: Partial<SyncEntry> = {}): SyncEntry {
 }
 
 describe("resolveSyncTarget", () => {
+  it("reuses a scout's pit report when another device gives the correction a new ID", async () => {
+    const client = fakeClient({ receipts: [], rows: [{ id: "pit-1", eventKey: "2026gacmp", matchKey: null, teamKey: "frc1678", scoutUserId: ME, clientId: "original-pit" }] });
+    const result = await resolveSyncTarget(client, { orgId: ORG, userId: ME, entry: entry({ type: "pit", matchKey: undefined }) });
+    expect(result).toMatchObject({ kind: "existing-report", entry: { type: "pit", clientId: "original-pit" } });
+    expect(client.inserted).toEqual([{ clientId: "original-pit", entryId: "pit-1" }]);
+  });
+
+  it("refuses a teammate's receipt even for the same robot", async () => {
+    const client = fakeClient({ receipts: [{ clientId: "new-id", entryType: "match", serverEntryId: "other-row" }], rows: [{ id: "other-row", eventKey: "2026gacmp", matchKey: "2026gacmp_qm33", teamKey: "frc1678", scoutUserId: OTHER, clientId: "new-id" }] });
+    expect(await resolveSyncTarget(client, { orgId: ORG, userId: ME, entry: entry() })).toEqual({ kind: "refuse", reason: OTHER_SCOUT_REASON });
+  });
   it("files a new id for a robot this scout already has as an edit of that report", async () => {
     const client = fakeClient({
       receipts: [{ clientId: "old-id", entryType: "match", serverEntryId: "row-1" }],

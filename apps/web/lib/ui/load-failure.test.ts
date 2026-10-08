@@ -148,7 +148,7 @@ describe("a 403 about how you signed in is not a 403 about who you are", () => {
       const copy = loadFailureCopy(classifyLoadFailure({ status: 403, message }), { message });
       expect(copy.description).not.toContain("team role");
       expect(copy.description).not.toContain("Security");
-      expect(copy.primary?.label).toBe("Sign in again");
+      expect(copy.primary?.label).toBe(message.includes("authenticator") || message.includes("Authenticator") ? "Open verification" : "Sign in again");
     }
   });
 
@@ -156,6 +156,19 @@ describe("a 403 about how you signed in is not a 403 about who you are", () => {
     const message = "This organization requires authenticator-app 2FA enrollment.";
     const copy = loadFailureCopy("reauth", { message });
     expect(copy.description).toBe(message);
+  });
+
+  it("keeps the team and return destination through authenticator setup and verification", () => {
+    const message = "Authenticator verification is required to enter this organization.";
+    const nextPath = "/competition?tab=scouting&orgId=team-1";
+    const copy = loadFailureCopy("reauth", { message, nextPath });
+    const link = new URL(copy.primary!.href, "https://vantage.example");
+    expect(link.pathname).toBe("/security");
+    expect(link.searchParams.get("orgId")).toBe("team-1");
+    expect(link.searchParams.get("stepup")).toBe("1");
+    expect(link.searchParams.get("returnTo")).toBe(nextPath);
+    const unsafe = loadFailureCopy("reauth", { message, nextPath: "/\\external.example" });
+    expect(new URL(unsafe.primary!.href, "https://vantage.example").searchParams.get("returnTo")).toBe("/dashboard");
   });
 
   it("still calls a real role refusal forbidden", () => {

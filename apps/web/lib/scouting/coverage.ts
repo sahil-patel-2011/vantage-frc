@@ -296,14 +296,15 @@ export async function computeScoutingCoverageView(
 
   const [assignments, entryScouts, scouts, schemaRoles, watchlistKeys, eventNameRow] = await Promise.all([
     matchKeys.length
-      ? client.query<LineupAssignmentCountRow>(
-          `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::int AS count
-             FROM scout_assignments
-            WHERE org_id = $1::uuid AND event_key = $2::text AND match_key = ANY($3::text[])
-            GROUP BY match_key, team_key`,
+      ? client.query<LineupAssignmentCountRow & { assignedScouts: Array<{ userId: string; name: string }> }>(
+          `SELECT a.match_key AS "matchKey", a.team_key AS "teamKey", count(*)::int AS count,
+                  jsonb_agg(jsonb_build_object('userId', a.user_id, 'name', COALESCE(NULLIF(u.name, ''), 'Team member')) ORDER BY a.user_id) AS "assignedScouts"
+             FROM scout_assignments a LEFT JOIN users u ON u.id = a.user_id
+            WHERE a.org_id = $1::uuid AND a.event_key = $2::text AND a.match_key = ANY($3::text[])
+            GROUP BY a.match_key, a.team_key`,
           [org.orgId, eventKey, matchKeys],
         )
-      : Promise.resolve({ rows: [] as LineupAssignmentCountRow[] }),
+      : Promise.resolve({ rows: [] as Array<LineupAssignmentCountRow & { assignedScouts: Array<{ userId: string; name: string }> }> }),
     matchKeys.length
       ? client.query<LineupEntryScoutRow>(
           `SELECT e.match_key AS "matchKey", e.team_key AS "teamKey",
@@ -326,6 +327,7 @@ export async function computeScoutingCoverageView(
     ),
   ]);
 
+  const assignedBySlot = new Map(assignments.rows.map(row => [`${row.matchKey}:${row.teamKey}`, row.assignedScouts]));
   const slots = orderCoverageByWatchlist(
     buildCoverageGapBoard(
       buildLineupCoverageSlots({
@@ -333,7 +335,7 @@ export async function computeScoutingCoverageView(
         assignments: assignments.rows,
         entryScouts: entryScouts.rows,
       }),
-    ),
+    ).map(slot => ({ ...slot, assignedScouts: assignedBySlot.get(`${slot.matchKey}:${slot.teamKey}`) ?? [] })),
     watchlistKeys,
   );
   const summary = summarizeCoverageGaps(slots);

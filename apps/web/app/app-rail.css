@@ -71,21 +71,33 @@
 .soft-workspace-link strong { font-size: 15px; font-weight: 650; }
 .soft-workspace-link small { font-size: 12px; font-weight: 400; color: var(--muted); line-height: 1.4; }
 .soft-menu-btn[hidden] { display: none !important; }
+.soft-navigation-scrim { animation: none; opacity: 0; visibility: hidden; transition: opacity 200ms ease, visibility 0s linear 200ms; }
+.soft-navigation-scrim.open { opacity: 1; visibility: visible; transition-delay: 0s; }
 /* The drawer is the destination menu. Pages keep their own task controls. */
-.main-menu-launch { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 16px; }
-.main-menu-app { display: grid; justify-items: start; gap: 6px; min-height: 104px; padding: 16px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); color: var(--ink); text-decoration: none; }
-.main-menu-app > svg { width: 23px; height: 23px; color: var(--accent); margin-bottom: 4px; }
-.main-menu-app > small { font-size: 12px; color: var(--muted); line-height: 1.4; }
-.main-menu-app[aria-current="page"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); }
-.main-menu-section { border-top: 1px solid var(--line); }
-.main-menu-section > summary { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 8px 12px; cursor: pointer; list-style: none; color: var(--ink); }
+.main-menu-launch { display: grid; gap: 6px; margin: 0 0 16px; }
+.main-menu-app { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 10px 12px; box-sizing: border-box; border: 1px solid transparent; border-radius: 14px; background: transparent; color: var(--ink); text-decoration: none; }
+.main-menu-symbol { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 13px; background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink); }
+.main-menu-symbol > svg { width: 28px; height: 28px; }
+.main-menu-app > span { display: grid; gap: 2px; min-width: 0; }
+.main-menu-app strong { font-size: 15px; font-weight: 600; }
+.main-menu-app small { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.main-menu-app[aria-current="page"] { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 15%, transparent); }
+.main-menu-app[aria-current="page"] .main-menu-symbol { background: var(--surface); color: var(--accent); }
+.main-menu-app:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.main-menu-heading { margin: 4px 12px 8px; color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: .01em; }
+.main-menu-section { border: 0; }
+.main-menu-section > summary { display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 8px 12px; box-sizing: border-box; border-radius: 14px; cursor: pointer; list-style: none; color: var(--ink); }
+.main-menu-section > summary:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
 .main-menu-section > summary::-webkit-details-marker { display: none; }
-.main-menu-section > summary > svg { width: 20px; height: 20px; color: var(--muted); flex: none; }
-.main-menu-section > summary > strong { flex: 1; font-size: 14px; font-weight: 600; }
+.main-menu-section > summary > svg:last-child { width: 18px; height: 18px; color: var(--muted); flex: none; transition: transform 160ms ease; }
+.main-menu-section > summary > strong { flex: 1; font-size: 15px; font-weight: 600; }
 .main-menu-section[open] > summary > svg:last-child { transform: rotate(90deg); }
-.main-menu-section > nav { display: grid; gap: 2px; padding: 0 8px 10px 44px; }
-.main-menu-section > nav > a { display: flex; align-items: center; min-height: 44px; padding: 8px 12px; color: var(--muted); border-radius: 12px; text-decoration: none; font-size: 14px; }
+.main-menu-section > nav { display: grid; gap: 2px; margin: 2px 0 10px 34px; padding: 0 0 0 12px; border-left: 1px solid var(--line-soft, var(--line)); }
+.main-menu-section > nav > a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 10px 12px; box-sizing: border-box; color: var(--ink); border-radius: 12px; text-decoration: none; font-size: 14px; }
+.main-menu-section > nav > a > svg { width: 26px; height: 26px; flex: none; color: var(--muted); }
+.main-menu-section > nav > a[aria-current="page"] > svg { color: var(--accent); }
 .main-menu-section > nav > a[aria-current="page"], .main-menu-section > nav > a:hover { color: var(--accent); background: var(--accent-soft); }
 .main-menu-section > summary:focus-visible, .main-menu-section a:focus-visible, .main-menu-app:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .soft-drawer .soft-profile-compact { margin: 0 0 8px; padding: 0; border: 0; box-shadow: none; background: transparent; }
 .soft-drawer .soft-profile-compact .soft-org-chip { min-height: 48px; border-radius: 14px; }
+@media (prefers-reduced-motion: reduce) { .main-menu-section > summary > svg:last-child, .soft-navigation-scrim { transition: none; } }

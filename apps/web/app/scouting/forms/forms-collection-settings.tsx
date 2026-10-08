@@ -10,6 +10,6 @@ export function CollectionSettings({ question, index, match, disabled, onChange 
         <option value="">Detect from question</option><option value="pre">Before the match</option><option value="auto">Autonomous</option><option value="teleop">Teleop</option><option value="endgame">Endgame</option><option value="review">Review</option>
       </select>
     </FormRow> : null}
-    {question.kind === "number" ? <label className="sfb-check"><input type="checkbox" disabled={disabled} checked={config.requireObservation === true} onChange={event => onChange({ ...config, requireObservation: event.target.checked || undefined })} />Keep untouched counts blank</label> : null}
+    {question.kind === "number" ? <p className="app-muted">Untouched counts stay blank. Scouts can record zero explicitly; required counts need an answer before saving.</p> : null}
   </>;
 }

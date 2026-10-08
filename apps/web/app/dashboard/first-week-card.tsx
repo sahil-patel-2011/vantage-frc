@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RoleOnboardingView, StartCheckView, StartTrackView } from "../../lib/role-onboarding/types";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { isMemberRole, pickFirstWeek } from "../../lib/role-onboarding/first-week-order";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 
 type NextCheck = { track: StartTrackView; check: StartCheckView };
 
@@ -34,45 +35,78 @@ export function nextFirstWeekChecks(view: RoleOnboardingView | null, limit = SHO
  * first-week card lists a student's steps — and has to know when they have
  * arrived, so neither says "nothing to do" first and changes its mind.
  */
-export function useFirstWeek(orgId: string) {
+export function useFirstWeek(orgId: string, userId: string, role: string | null) {
   const [view, setView] = useState<RoleOnboardingView | null>(null);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const scope = `${userId}:${orgId}:${role ?? "pending"}`;
+  const scopeRef = useRef("");
+  const mutationRef = useRef<AbortController | null>(null);
+  const retry = useCallback(() => setAttempt(value => value + 1), []);
 
   useEffect(() => {
-    if (!orgId) return;
+    scopeRef.current = scope;
+    mutationRef.current?.abort();
+    mutationRef.current = null;
+    setBusy(null);
+    setError("");
+    setView(null);
+    if (!orgId || !userId || !role) return;
     let cancelled = false;
-    void fetch(`/api/role-onboarding?orgId=${encodeURIComponent(orgId)}`)
-      .then((response) => (response.ok ? (response.json() as Promise<RoleOnboardingView>) : null))
-      .catch(() => null)
+    const controller = new AbortController();
+    void fetch(`/api/role-onboarding?orgId=${encodeURIComponent(orgId)}`, {
+      cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+    })
+      .then(async response => {
+        if (!response.ok) throw new Error("Couldn’t load getting-started steps.");
+        const next = await response.json() as RoleOnboardingView;
+        if (!next || (next.status !== "setup_required" && (next.status !== "live" || next.orgId !== orgId || !Array.isArray(next.tracks)))) throw new Error("Couldn’t load getting-started steps.");
+        return next;
+      })
+      .catch(() => { if (!cancelled) setError("Couldn’t load getting-started steps. Your other Home widgets are still available."); return null; })
       .then((next) => {
         if (cancelled) return;
         setView(next);
-        setLoadedFor(orgId);
+        setLoadedFor(scope);
       });
     return () => {
       cancelled = true;
+      controller.abort();
+      mutationRef.current?.abort();
+      scopeRef.current = "";
     };
-  }, [orgId]);
+  }, [orgId, userId, role, scope, attempt]);
 
   const post = useCallback(
     async (payload: Record<string, unknown>, key: string) => {
+      if (!orgId || !userId || !role || scopeRef.current !== scope || mutationRef.current) return;
+      const controller = new AbortController();
+      mutationRef.current = controller;
       setBusy(key);
+      setError("");
       try {
         const response = await fetch("/api/role-onboarding", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
         });
-        if (response.ok) setView((await response.json()) as RoleOnboardingView);
+        if (!response.ok) throw new Error("Couldn’t save this step.");
+        const next = await response.json() as RoleOnboardingView;
+        if (!next || (next.status !== "setup_required" && (next.status !== "live" || next.orgId !== orgId || !Array.isArray(next.tracks)))) throw new Error("Couldn’t confirm this step.");
+        if (scopeRef.current === scope && !controller.signal.aborted) { setView(next); setLoadedFor(scope); }
+      } catch {
+        if (scopeRef.current === scope && !controller.signal.aborted) setError("Couldn’t confirm this step. Refresh the steps to check whether it was saved.");
       } finally {
-        setBusy(null);
+        if (mutationRef.current === controller) { mutationRef.current = null; setBusy(null); }
       }
     },
-    [orgId],
+    [orgId, userId, role, scope],
   );
 
-  return { view, loaded: !orgId || loadedFor === orgId, busy, post };
+  return { view: loadedFor === scope ? view : null, loaded: !orgId || loadedFor === scope, busy, post, error: loadedFor === scope ? error : "", retry };
 }
 
 const SETUP_DONE_SHOWN_MS = 24 * 60 * 60 * 1000;
@@ -214,7 +248,7 @@ export function FirstWeekCard({
     <p className="dash-setup-done" role="status">
       <b aria-hidden="true">✓</b>
       <span>
-        <strong>Your team is set up.</strong> Everyone you invite now lands on a Home that works.
+        <strong>Your team is set up.</strong> Your team setup steps are complete.
       </span>
     </p>
   ) : null;
@@ -235,7 +269,8 @@ export function FirstWeekCard({
   const more = left - next.length;
 
   return (
-    <section className="dash-first-week" aria-label="Your first week">
+    <details className="dash-first-week" aria-label="Your first week">
+      <summary><strong>Getting started</strong><span>{left} {left === 1 ? "step" : "steps"} remaining</span></summary>
       {setupNote}
       <header>
         <strong>Your first week</strong>
@@ -252,7 +287,7 @@ export function FirstWeekCard({
                   type="checkbox"
                   aria-label={`Mark "${check.label}" done`}
                   checked={false}
-                  disabled={busy === key}
+                  disabled={Boolean(busy)}
                   onChange={() => void post({ action: "check", trackKey: track.key, checkKey: check.key }, key)}
                 />
               </label>
@@ -271,6 +306,6 @@ export function FirstWeekCard({
       <a className="dash-first-week-all" href={withOrgHref("/start", orgId)}>
         {more > 0 ? `See ${more} more ${more === 1 ? "step" : "steps"}` : "See every step"}
       </a>
-    </section>
+    </details>
   );
 }

@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState, type For
 import {
   DEFAULT_CODE_TTL_SECONDS,
   SIGN_IN_FAILED_MESSAGE,
-  WAITLIST_ONLY_MESSAGE,
   canResendCode,
   canSubmitCode,
   classifyOtpFailure,
@@ -63,6 +62,7 @@ import {
 } from "./sign-in-model";
 import { SignInRecovery } from "./sign-in-recovery";
 import { SignInSessionView } from "./sign-in-session";
+import { PasswordResetRequestError, requestPasswordResetCode } from "./password-reset-request";
 import "../product-styles";
 import "./sign-in-flow.css";
 import "../vantage-scan-auth.css";
@@ -99,6 +99,7 @@ export default function SignInClient({
   const [password, setPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [resetSent, setResetSent] = useState(false);
+  const passwordRequest = useRef(false);
 
   const codeRef = useRef<HTMLInputElement | null>(null);
   const emailRef = useRef<HTMLInputElement | null>(null);
@@ -136,6 +137,7 @@ export default function SignInClient({
           credentials: "include",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ email, type: "sign-in" }),
+          signal: AbortSignal.timeout(15_000),
         });
         const payload = (await response.json().catch(() => ({}))) as {
           message?: string;
@@ -189,6 +191,7 @@ export default function SignInClient({
           credentials: "include",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ action: "request" }),
+          signal: AbortSignal.timeout(15_000),
         });
         const payload = (await response.json().catch(() => ({}))) as {
           error?: string;
@@ -266,7 +269,7 @@ export default function SignInClient({
   }, [nextPath]);
 
   useEffect(() => {
-    void fetch("/api/auth/status")
+    void fetch("/api/auth/status", { signal: AbortSignal.timeout(10_000) })
       .then(async (response) => (response.ok ? ((await response.json()) as AuthStatus) : null))
       .then((value) => {
         if (value) setStatus(value);
@@ -277,7 +280,7 @@ export default function SignInClient({
   /** Read-only session probe. Nothing here mutates a session. */
   useEffect(() => {
     let active = true;
-    void fetch("/api/auth/email-2fa", { credentials: "include" })
+    void fetch("/api/auth/email-2fa", { credentials: "include", signal: AbortSignal.timeout(10_000) })
       .then(async (response) => {
         if (!active) return;
         const data = response.ok
@@ -311,7 +314,7 @@ export default function SignInClient({
   useEffect(() => {
     if (!inviteToken) return;
     let active = true;
-    void fetch(`/api/invites/preview?token=${encodeURIComponent(inviteToken)}`)
+    void fetch(`/api/invites/preview?token=${encodeURIComponent(inviteToken)}`, { signal: AbortSignal.timeout(10_000) })
       .then(async (response) => {
         const data = (await response.json().catch(() => ({}))) as { preview?: InvitePreview | null };
         if (active && data.preview) setInvitePreview(data.preview);
@@ -367,6 +370,7 @@ export default function SignInClient({
           body: JSON.stringify(
             isSecondFactor ? { action: "verify", code } : { email: flow.email, otp: code },
           ),
+          signal: AbortSignal.timeout(15_000),
         },
       );
       const payload = (await response.json().catch(() => ({}))) as {
@@ -444,19 +448,26 @@ export default function SignInClient({
           callbackURL: resolvedNext,
           errorCallbackURL: `/signin?next=${encodeURIComponent(resolvedNext)}`,
         }),
+        signal: AbortSignal.timeout(15_000),
       });
       const data = (await response.json().catch(() => ({}))) as {
         url?: string;
         message?: string;
         error?: string;
       };
-      if (data.url) {
+      if (response.status === 429 || response.status >= 500) {
+        setOauthMessage(response.status === 429
+          ? "Too many sign-in requests. Wait a little before trying again."
+          : "Google sign-in is temporarily unavailable. Try again, or use an email code.");
+        return;
+      }
+      if (response.ok && data.url) {
         writeRememberedAccount(browserStorage(), { method: "google" });
         window.location.assign(data.url);
         return;
       }
       setOauthMessage(
-        oauthErrorMessage(data.error ?? data.message ?? "signup_disabled") || WAITLIST_ONLY_MESSAGE,
+        oauthErrorMessage(data.error ?? data.message ?? "") || "Could not start Google sign-in. Try again, or use an email code.",
       );
     } catch {
       setOauthMessage("Couldn’t reach Google sign-in. Check your connection and try again.");
@@ -468,6 +479,8 @@ export default function SignInClient({
   async function passwordSignIn(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
+    if (busy !== "idle" || passwordRequest.current || !isLikelyEmail(email) || !password) return;
+    passwordRequest.current = true;
     setBusy("verifying");
     setPasswordMessage("");
     try {
@@ -476,14 +489,17 @@ export default function SignInClient({
         credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
+        signal: AbortSignal.timeout(15_000),
       });
       if (response.ok) {
         writeRememberedAccount(browserStorage(), { email, method: "email" });
         // Password alone never satisfies email 2FA, so ask the probe again.
-        const elevation = await fetch("/api/auth/email-2fa", { credentials: "include" });
-        const data = elevation.ok
-          ? ((await elevation.json()) as { requiresVerification?: boolean; emailHint?: string })
-          : null;
+        const elevation = await fetch("/api/auth/email-2fa", { credentials: "include", signal: AbortSignal.timeout(10_000) });
+        if (!elevation.ok) {
+          setPasswordMessage("Could not check your sign-in verification. Try again, or use an email code.");
+          return;
+        }
+        const data = (await elevation.json()) as { requiresVerification?: boolean; emailHint?: string };
         if (data?.requiresVerification) {
           setPasswordPanel("closed");
           setPassword("");
@@ -496,7 +512,11 @@ export default function SignInClient({
         return;
       }
       setPasswordMessage(
-        status.passwordSignInAvailable
+        response.status === 429
+          ? "Too many sign-in attempts. Wait a little before trying again."
+          : response.status >= 500
+          ? "Password sign-in is temporarily unavailable. Try again, or use an email code."
+          : status.passwordSignInAvailable
           ? // "Check your email" read as "look in your inbox"; say which thing did not match.
             "That email and password don’t match. Try again, or use an email code instead."
           : publicPasswordUnavailableCopy(status.passwordReason),
@@ -504,6 +524,7 @@ export default function SignInClient({
     } catch {
       setPasswordMessage("Couldn’t reach Vantage. Check your connection and try again.");
     } finally {
+      passwordRequest.current = false;
       setBusy("idle");
     }
   }
@@ -511,20 +532,18 @@ export default function SignInClient({
   async function requestPasswordReset(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
+    if (busy !== "idle" || passwordRequest.current || !isLikelyEmail(email)) return;
+    if (resetSent && (!isCodeComplete(flow.code) || password.length < 12)) return;
     if (!emailAvailable) {
       setPasswordMessage(publicEmailUnavailableCopy(status.emailOtpReason));
       return;
     }
+    passwordRequest.current = true;
     setBusy("sending");
     setPasswordMessage("");
     try {
       if (!resetSent) {
-        await fetch("/api/auth/email-otp/request-password-reset", {
-          method: "POST",
-          credentials: "include",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
+        await requestPasswordResetCode(email);
         setResetSent(true);
         setPassword("");
         setPasswordMessage(
@@ -537,6 +556,7 @@ export default function SignInClient({
         credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, otp: sanitizeCodeInput(flow.code), password }),
+        signal: AbortSignal.timeout(15_000),
       });
       if (response.ok) {
         setPasswordPanel("password");
@@ -546,10 +566,15 @@ export default function SignInClient({
         setPasswordMessage("Password updated. Existing sessions were revoked — sign in again.");
         return;
       }
-      setPasswordMessage("That reset code is invalid, expired, or out of attempts.");
-    } catch {
-      setPasswordMessage("Couldn’t reach Vantage. Check your connection and try again.");
+      setPasswordMessage(response.status === 429
+        ? "Too many reset attempts. Wait a little before trying again."
+        : response.status >= 500
+          ? "Could not update your password. Try again when the service is available."
+          : "That reset code is invalid, expired, or out of attempts.");
+    } catch (error) {
+      setPasswordMessage(error instanceof PasswordResetRequestError ? error.message : "Couldn’t reach Vantage. Check your connection and try again.");
     } finally {
+      passwordRequest.current = false;
       setBusy("idle");
     }
   }
@@ -603,7 +628,7 @@ export default function SignInClient({
           : passwordPanel === "password"
           ? "Use the email and password for your team account."
           : passwordPanel === "reset"
-            ? "We’ll email a link so you can choose a new password."
+            ? "We’ll email a reset code. Enter it here with your new password."
             : notInvited
               ? undefined
               : stepCopy.sub
@@ -620,6 +645,7 @@ export default function SignInClient({
       <div className="signin-step">
         {flow.step === "identity" ? (
           <SignInIdentityStep
+            showTeamJoin={!inviteToken}
             googleAvailable={googleAvailable}
             emailAvailable={emailAvailable}
             preferred={preferred}
@@ -636,7 +662,15 @@ export default function SignInClient({
             codeRef={codeRef}
             onGoogle={() => void google()}
             onSubmitIdentity={(event) => void submitIdentity(event)}
-            onEmailChange={(email) => dispatch({ type: "email_changed", email })}
+            onEmailChange={(email) => {
+              if (resetSent && normalizeSignInEmail(email) !== normalizeSignInEmail(flow.email)) {
+                setResetSent(false);
+                setPassword("");
+                setPasswordMessage("");
+                dispatch({ type: "code_changed", code: "" });
+              }
+              dispatch({ type: "email_changed", email });
+            }}
             onEmailBlur={(email) =>
               dispatch({ type: "email_changed", email: normalizeSignInEmail(email) })
             }
@@ -702,6 +736,7 @@ export default function SignInClient({
       <div className="signin-footer">
         {recoveryOpen ? null : (
         <SignInPasswordFooter
+          working={working}
           passwordSignInAvailable={status.passwordSignInAvailable}
           emailAvailable={emailAvailable}
           identityStep={flow.step === "identity"}
@@ -718,6 +753,8 @@ export default function SignInClient({
           }}
           onForgotPassword={() => {
             setPasswordMessage("");
+            setPassword("");
+            dispatch({ type: "code_changed", code: "" });
             setResetSent(false);
             setPasswordPanel("reset");
           }}
@@ -729,7 +766,7 @@ export default function SignInClient({
         {/* The not-on-a-team step leads with Join the waitlist, and the code step has its own
             "No code?" help with the same link; a second one under it was noise. */}
         {/* "Only invited emails get a code" is about codes; the password view has none. */}
-        {notInvited || flow.step === "code" ? null : <AccessFooter publicSignup={status.publicSignup} />}
+        {notInvited || flow.step === "code" || inviteToken || recoveryOpen || passwordPanel !== "closed" ? null : <AccessFooter publicSignup={status.publicSignup} />}
       </div>
     </SignInCard>
   );

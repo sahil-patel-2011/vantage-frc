@@ -19,7 +19,7 @@ const TodosClient = dynamic(() => import("../todos/todos-client"), { ssr: false,
 const MessagesClient = dynamic(() => import("../messages/messages-client"), { ssr: false, loading: HubPanelSkeleton });
 const PracticeClient = dynamic(() => import("../practice/practice-client"), { ssr: false, loading: HubPanelSkeleton });
 const KnowledgeClient = dynamic(() => import("./knowledge/knowledge-client"), { ssr: false, loading: HubPanelSkeleton });
-const AttendanceClient = dynamic(() => import("../attendance/attendance-client"), { ssr: false, loading: HubPanelSkeleton });
+const PeopleWorkspace = dynamic(() => import("./people-workspace"), { ssr: false, loading: HubPanelSkeleton });
 const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false, loading: HubPanelSkeleton });
 const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false, loading: HubPanelSkeleton });
 const LogisticsClient = dynamic(() => import("../logistics/logistics-client"), { ssr: false, loading: HubPanelSkeleton });
@@ -98,7 +98,7 @@ export default function TeamHub() {
         if (tab === "attendance") {
           return (
             <HubOrgGate orgId={orgId} label="People">
-              {() => <AttendanceClient embedded />}
+              {(id) => <PeopleWorkspace key={id} orgId={id} />}
             </HubOrgGate>
           );
         }

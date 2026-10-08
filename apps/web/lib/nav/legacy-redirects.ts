@@ -48,7 +48,7 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
   { source: "/todos", destination: "/team?tab=todos" },
   { source: "/messages", destination: "/team?tab=messages" },
   { source: "/practice", destination: "/team?tab=practice" },
-  { source: "/attendance", destination: "/team?tab=attendance" },
+  { source: "/attendance", destination: "/team?tab=attendance&view=attendance" },
   { source: "/team/calendar", destination: "/team?tab=calendar" },
   { source: "/team/knowledge", destination: "/team?tab=knowledge" },
   { source: "/orders", destination: "/business?tab=orders" },

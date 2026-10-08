@@ -42,8 +42,20 @@ export async function queueEntry(entry: SyncEntry): Promise<void> {
   const user = await requireScoutStorageUser(entry.orgId);
   const locked: SyncEntry = { ...entry, payload: lockScoutPayload(entry.payload).payload };
   await assertScoutStorageUser(user, entry.orgId);
-  await scoutTransaction(user, OUTBOX, "readwrite", async tx => {
-    await idbValue(tx.objectStore(OUTBOX).put(locked));
+  await scoutTransaction(user, [OUTBOX, ENTRY_QUARANTINE], "readwrite", async tx => {
+    const outbox = tx.objectStore(OUTBOX);
+    const previous = await idbValue<SyncEntry | undefined>(outbox.get(locked.clientId));
+    const rejected = await idbValue<QuarantinedEntry | undefined>(tx.objectStore(ENTRY_QUARANTINE).get(locked.clientId));
+    if ([previous, rejected?.entry].some(original => original && (original.orgId !== locked.orgId || original.type !== locked.type
+      || original.eventKey !== locked.eventKey || original.teamKey !== locked.teamKey
+      || (locked.type === "match" && original.matchKey !== locked.matchKey)))) {
+      throw new Error("This report ID already belongs to another robot or match. Its saved answers were kept; reopen the intended robot before trying again.");
+    }
+    if (previous && Date.parse(previous.updatedAt) > Date.parse(locked.updatedAt)) {
+      throw new Error("A newer correction is already queued. It was kept; reopen that report before saving again.");
+    }
+    await idbValue(outbox.put(locked));
+    if (rejected) await idbValue(tx.objectStore(ENTRY_QUARANTINE).delete(locked.clientId));
   });
 }
 
@@ -75,6 +87,9 @@ export async function getLastOrgId(): Promise<string | null> {
 
 export async function cacheEvent(orgId: string, data: unknown): Promise<void> {
   const user = await requireScoutStorageUser(orgId);
+  const owner = data && typeof data === "object" && "scoutIdentity" in data
+    ? (data as { scoutIdentity?: { userId?: unknown } }).scoutIdentity?.userId : undefined;
+  if (owner !== undefined && owner !== user) throw new Error("Your account changed. The previous account's scouting snapshot was not cached.");
   await checkCacheSpace(cacheJsonBytes(data));
   await scoutTransaction(user, [CACHE, META], "readwrite", async tx => {
     await Promise.all([
@@ -91,6 +106,13 @@ export async function getCachedEvent<T>(orgId: string): Promise<T | null> {
     idbValue<{ data: T } | undefined>(tx.objectStore(CACHE).get(orgId)));
   await assertScoutStorageUser(user, orgId);
   return row?.data ?? null;
+}
+
+/** Clear a denied team's read cache without touching anyone's pending reports. */
+export async function clearCachedEvent(orgId: string): Promise<void> {
+  const user = await scoutStorageUser(orgId);
+  if (!user) return;
+  await scoutTransaction(user, CACHE, "readwrite", tx => idbValue(tx.objectStore(CACHE).delete(orgId)));
 }
 
 async function entriesFor(user: string, orgId?: string): Promise<SyncEntry[]> {
@@ -241,6 +263,13 @@ export async function publishPendingShortCodeHandoff(
 }
 
 type SyncValidation = {
+  clientId: string;
+  orgId: string;
+  eventKey: string;
+  type: "match" | "pit";
+  matchKey: string | null;
+  teamKey: string;
+  schemaId: string;
   fieldKey: string;
   status: string;
   scoutValue: unknown;
@@ -351,11 +380,15 @@ export async function retryQuarantined(clientId: string): Promise<boolean> {
   });
 }
 
-export async function discardQuarantined(clientId: string): Promise<void> {
+export async function discardQuarantined(clientId: string, expectedAt?: string): Promise<boolean> {
   const user = await scoutStorageUser();
-  if (!user) return;
-  await scoutTransaction(user, ENTRY_QUARANTINE, "readwrite", async tx => {
-    await idbValue(tx.objectStore(ENTRY_QUARANTINE).delete(clientId));
+  if (!user) return false;
+  return scoutTransaction(user, ENTRY_QUARANTINE, "readwrite", async tx => {
+    const store = tx.objectStore(ENTRY_QUARANTINE);
+    const current = await idbValue<QuarantinedEntry | undefined>(store.get(clientId));
+    if (!current || (expectedAt && current.quarantinedAt !== expectedAt)) return false;
+    await idbValue(store.delete(clientId));
+    return true;
   });
 }
 
@@ -369,6 +402,7 @@ async function pushEntryBatch(user: string, orgId: string, batch: SyncEntry[]): 
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ orgId, entries: batch, resultsMode: "per-entry" }),
+    signal: AbortSignal.timeout(20_000),
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -409,9 +443,13 @@ async function drainOutboxNow(user: string, orgId: string): Promise<Omit<SyncOut
     const drain = await drainOutboxChunks(entries, batch => pushEntryBatch(user, orgId, batch));
     let changedDuringUpload = false;
     for (const { entry, acknowledgement } of drain.accepted) {
-      validations.push(...((acknowledgement.validations ?? []) as SyncValidation[]));
-      if (await removeIfUnchanged(user, entry)) count += 1;
-      else changedDuringUpload = true;
+      if (await removeIfUnchanged(user, entry)) {
+        count += 1;
+        const checks = Array.isArray(acknowledgement.validations) ? acknowledgement.validations : [];
+        validations.push(...checks.filter(check => check && typeof check.fieldKey === "string" && typeof check.status === "string")
+          .map(check => ({ ...check, clientId: entry.clientId, orgId, eventKey: entry.eventKey,
+            type: entry.type, matchKey: entry.matchKey ?? null, teamKey: entry.teamKey, schemaId: entry.schemaId })));
+      } else changedDuringUpload = true;
     }
     for (const { entry, reason } of [...drain.rejected, ...drain.isolated]) {
       if (await quarantinePersonalEntry(user, entry, reason)) quarantined += 1;

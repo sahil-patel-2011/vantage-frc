@@ -1,7 +1,7 @@
 "use client";
 
 import { scoutOptionLabel } from "../../lib/scouting/option-label";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import type { SchemaDefinition } from "@vantage/scouting";
 import {
   DEFAULT_DRIVETRAIN_OPTIONS,
@@ -89,6 +89,7 @@ function boundedNumber(field: SchemaDefinition["fields"][number], raw: number, w
 export function Field({
   field,
   value,
+  error,
   flags,
   historyHint,
   disagreementRate,
@@ -99,6 +100,7 @@ export function Field({
 }: {
   field: SchemaDefinition["fields"][number];
   value: unknown;
+  error?: string;
   flags: OfficialFlag[];
   historyHint: string | null;
   disagreementRate: number | null;
@@ -107,6 +109,7 @@ export function Field({
   onChange(value: unknown): void;
   onAttachRobotImage?: (file: File) => Promise<string | null>;
 }) {
+  const errorId = useId();
   const conflict = flags.find((flag) => flag.status === "conflict");
   const soft = flags.find((flag) => flag.soft);
   const liveHint = conflict?.detail ?? soft?.detail;
@@ -310,8 +313,8 @@ export function Field({
     }
     // Counted things get − / + buttons (isTapCounterField).
     if (isTapCounterField(field)) {
-      const count = typeof value === "number" && Number.isFinite(value) ? value : 0;
       const { min, max } = numberBounds(field);
+      const count = typeof value === "number" && Number.isFinite(value) ? value : Math.max(0, min);
       // A div, not FormRow's <label>: a tap on the field's name went to the − button.
       return (
         <ScoutChoiceRow label={label} hint={field.helpText}>
@@ -375,8 +378,10 @@ export function Field({
     );
   })();
   return (
-    <div id={anchorId} data-field-type={field.type} className={`scout-field-wrap${tone ? ` is-${tone}` : ""}`}>
+    <div id={anchorId} data-field-type={field.type} className={`scout-field-wrap${tone ? ` is-${tone}` : ""}${error ? " has-error" : ""}`}
+      role={error ? "group" : undefined} aria-label={error ? field.label : undefined} aria-invalid={error ? true : undefined} aria-describedby={error ? errorId : undefined}>
       {body}
+      {error ? <p id={errorId} className="scout-field-error">{error}</p> : null}
       {liveHint ? (
         <p className={`scout-field-flag ${tone ?? ""}`} role="status">
           {liveHint}

@@ -38,6 +38,12 @@ export function PitTeamField({
   const publishedTeam = useRef(teamKey);
   const normalized = normalizeTeamKey(draft);
   const problem = draft.trim() && !normalized ? "That is not a team number." : null;
+  const changed = normalized !== normalizeTeamKey(teamKey);
+  function chooseTeam() {
+    if (!normalized || !changed) return;
+    publishedTeam.current = normalized;
+    onTeamKey(normalized);
+  }
 
   useEffect(() => {
     // Keep invalid text while it is being corrected, but follow an external
@@ -57,13 +63,16 @@ export function PitTeamField({
           onChange={(event) => {
             const next = event.target.value;
             setDraft(next);
-            publishedTeam.current = normalizeTeamKey(next) ?? "";
-            onTeamKey(publishedTeam.current);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") { event.preventDefault(); chooseTeam(); }
           }}
           placeholder="Team #"
           aria-invalid={Boolean(problem)}
         />
       </label>
+      {changed ? <div className="scout-by-hand-actions"><Button type="button" size="sm" disabled={!normalized} onClick={chooseTeam}>Scout this team</Button></div> : null}
+      {changed && teamKey ? <p className="app-muted">Still scouting {teamKey.replace(/^frc/i, "")}. Choose the new team before recording its answers.</p> : null}
       {problem ? (
         <p className="scout-by-hand-problem" role="alert">
           {problem}

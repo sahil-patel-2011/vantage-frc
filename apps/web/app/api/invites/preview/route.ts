@@ -91,18 +91,22 @@ export async function GET(request: Request) {
     const sessionEmail = session.user.email?.trim().toLowerCase() ?? "";
     const invitedEmail = result.preview.email.trim().toLowerCase();
     const emailMismatch = Boolean(sessionEmail && invitedEmail !== sessionEmail);
+    const linkedAccounts = !emailMismatch && result.preview.status === "pending"
+      ? await auth.api.listUserAccounts({ headers: await headers() })
+      : null;
     return privateJson({
       preview: result.preview,
       signedIn: true,
       emailMismatch,
       legalRequired: result.legalRequired,
       profileRequired: result.profileRequired,
+      passwordRequired: linkedAccounts ? !linkedAccounts.some(account => account.providerId === "credential") : false,
       sessionEmail: session.user.email ?? null,
     });
   } catch (error) {
-    return Response.json(
+    return privateJson(
       { error: publicErrorMessage(error, "Could not load invite preview") },
-      { status: 400 },
+      { status: 503 },
     );
   }
 }

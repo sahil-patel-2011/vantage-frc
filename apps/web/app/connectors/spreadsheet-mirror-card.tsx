@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Badge, Button } from "../../components/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Badge, Button, ConfirmProvider, useConfirm } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { mirrorSyncMessage } from "../../lib/mirror/sync-message";
 import { relativeTime } from "../../components/ui/relative-time";
 import type { PublicPreview } from "../../lib/microsoft/run-import";
 import type { MirrorSummary } from "../../lib/mirror/mirror-status";
@@ -64,8 +66,8 @@ type ImportView = {
 const LABEL = { excel: "Microsoft Excel", google: "Google Sheets" } as const;
 
 const HEALTH_BADGE: Record<MirrorSummary["copies"][number]["health"], { tone: "good" | "info" | "setup" | "error" | "neutral"; label: string }> = {
-  in_sync: { tone: "good", label: "Up to date" },
-  behind: { tone: "info", label: "Catching up" },
+  in_sync: { tone: "good", label: "Last sync complete" },
+  behind: { tone: "info", label: "Older copy" },
   resting: { tone: "info", label: "Resting" },
   attention: { tone: "error", label: "Needs attention" },
   never_synced: { tone: "setup", label: "Not synced yet" },
@@ -90,6 +92,13 @@ function cellText(value: string | number | boolean | null): string {
 }
 
 export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
+  return <ConfirmProvider key={orgId}><SpreadsheetMirror orgId={orgId} /></ConfirmProvider>;
+}
+
+function SpreadsheetMirror({ orgId }: { orgId: string }) {
+  const confirm = useConfirm();
+  const busyRef = useRef(false);
+  const generationRef = useRef(0);
   const [status, setStatus] = useState<Status | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"sync" | "preview" | "apply" | "disconnect" | null>(null);
@@ -97,9 +106,12 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
   const [importView, setImportView] = useState<ImportView | null>(null);
 
   const load = useCallback(async () => {
+    const generation = ++generationRef.current;
     try {
-      const response = await fetch(`/api/integrations/mirror/status?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" });
+      const response = await fetch(`/api/integrations/mirror/status?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) });
       const data = (await response.json().catch(() => null)) as (Status & { error?: string }) | null;
+      if (generation !== generationRef.current) return;
+      if (response.status === 401 || response.status === 403) { setStatus(null); setImportView(null); }
       if (!response.ok || !data || !("summary" in data)) {
         setLoadError(data?.error ?? "Could not load the spreadsheet copies.");
         return;
@@ -107,6 +119,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
       setStatus(data);
       setLoadError(null);
     } catch {
+      if (generation !== generationRef.current) return;
       setLoadError("Could not load the spreadsheet copies. Check your connection and reload.");
     }
   }, [orgId]);
@@ -121,6 +134,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
       const reason = params.get("reason") ?? "";
       setMessage({ ok: false, text: CALLBACK_REASONS[reason] ?? "Connecting Google Sheets failed. Try again." });
     }
+    return () => { generationRef.current++; };
   }, [load]);
 
   async function post(url: string, body: unknown, method = "POST") {
@@ -128,36 +142,31 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
       method,
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
+      // The hosted endpoint has a 120-second limit; do not invite a duplicate
+      // write by declaring a still-running sync failed after a short read timeout.
+      signal: AbortSignal.timeout(125_000),
     });
-    const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    const raw: unknown = await response.json().catch(() => null);
+    const data = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+    if (response.status === 401 || response.status === 403) { setStatus(null); setImportView(null); setLoadError(typeof data.error === "string" ? data.error : "Your access to these connections changed. Reload to continue."); }
     return { ok: response.ok, data };
   }
 
   async function syncBoth() {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy("sync");
     setMessage(null);
     const { ok, data } = await post("/api/integrations/mirror/sync", { orgId }).catch(() => ({ ok: false, data: {} as Record<string, unknown> }));
-    const copies = (data.copies as Array<{ copy: "excel" | "google"; status: string; error: string | null }> | undefined) ?? [];
-    if (!ok) {
-      setMessage({ ok: false, text: typeof data.error === "string" ? data.error : "The sync failed. Try again." });
-    } else {
-      const done = copies.filter((copy) => copy.status === "succeeded").map((copy) => LABEL[copy.copy]);
-      const behind = copies.filter((copy) => copy.status !== "succeeded");
-      setMessage({
-        ok: behind.length === 0,
-        text:
-          behind.length === 0
-            ? `${done.join(" and ")} updated — ${done.length > 1 ? "both copies are identical" : "copy is up to date"}.`
-            : `${done.length ? `${done.join(" and ")} updated. ` : ""}${behind
-                .map((copy) => `${LABEL[copy.copy]}: ${copy.error ?? "did not update"}`)
-                .join(" ")}`,
-      });
-    }
+    setMessage(mirrorSyncMessage(ok, data));
+    busyRef.current = false;
     setBusy(null);
     void load();
   }
 
   async function previewImport() {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy("preview");
     setMessage(null);
     const { ok, data } = await post("/api/integrations/mirror/import", { orgId, action: "preview" }).catch(() => ({
@@ -174,12 +183,14 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
         notice: typeof data.notice === "string" ? data.notice : null,
       });
     }
+    busyRef.current = false;
     setBusy(null);
     void load();
   }
 
   async function applyImport() {
-    if (!importView) return;
+    if (!importView || busyRef.current) return;
+    busyRef.current = true;
     const changeIds = importView.preview.tables.flatMap((table) => table.changes.map((change) => change.id));
     setBusy("apply");
     const { ok, data } = await post("/api/integrations/mirror/import", { orgId, action: "apply", changeIds }).catch(() => ({
@@ -187,20 +198,26 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
       data: {} as Record<string, unknown>,
     }));
     const result = data.result as { status?: string; applied?: number } | undefined;
+    const applied = result?.applied;
     setMessage(
-      ok && result?.status === "applied"
-        ? { ok: true, text: `Applied ${result.applied ?? changeIds.length} change${(result.applied ?? changeIds.length) === 1 ? "" : "s"} from the spreadsheets. Sync both to make the copies identical again.` }
-        : { ok: false, text: typeof data.error === "string" ? data.error : "Nothing was applied. Preview again and retry." },
+      ok && result?.status === "applied" && typeof applied === "number" && Number.isInteger(applied) && applied >= 0 && applied <= changeIds.length
+        ? { ok: true, text: `Applied ${applied} of ${changeIds.length} selected changes. ${applied < changeIds.length ? "Some changes were skipped or conflicted; pull edits again to review what remains." : "Choose Sync now to update your spreadsheet copies."}` }
+        : { ok: false, text: typeof data.error === "string" ? data.error : "The import could not be confirmed. Pull edits again to check what remains before applying more changes." },
     );
     setImportView(null);
+    busyRef.current = false;
     setBusy(null);
     void load();
   }
 
   async function disconnectGoogle() {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    if (!(await confirm({ title: "Disconnect Google Sheets?", body: "This stops Vantage from reading or updating this connection. The existing spreadsheet stays in your Google Drive.", confirmLabel: "Disconnect", tone: "destructive" }))) { busyRef.current = false; return; }
     setBusy("disconnect");
-    const { ok } = await post("/api/integrations/google/disconnect", { orgId }, "DELETE").catch(() => ({ ok: false }));
-    setMessage(ok ? { ok: true, text: "Google Sheets disconnected. The spreadsheet stays in your Drive; you can delete its Apps Script deployment if you used one." } : { ok: false, text: "Could not disconnect. Try again." });
+    const { ok, data } = await post("/api/integrations/google/disconnect", { orgId }, "DELETE").catch(() => ({ ok: false, data: {} as Record<string, unknown> }));
+    setMessage(ok && data.ok === true ? { ok: true, text: "Google Sheets disconnected. The spreadsheet stays in your Drive; you can delete its Apps Script deployment if you used one." } : { ok: false, text: "Could not confirm disconnection. Check the connection status before trying again." });
+    busyRef.current = false;
     setBusy(null);
     void load();
   }
@@ -215,11 +232,6 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
         <div className="connector-identity">
           <h2 id="mirror-title">Google Sheets</h2>
           {/* Status once: while nothing is connected the copy below already says so. */}
-          {summary && anyConnected ? (
-            <Badge tone={summary.identical ? "good" : anyConnected ? "info" : "neutral"}>
-              {summary.identical ? (status && status.copies.length === 1 ? "Up to date" : "Identical") : anyConnected ? "Not synced" : "Off"}
-            </Badge>
-          ) : null}
         </div>
         <p className="connector-detail">A copy of your team&apos;s data in a spreadsheet you own.</p>
       </div>
@@ -233,7 +245,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
             <strong>PitScouting</strong>, <strong>PickList</strong> and <strong>SyncInfo</strong>. Your own tabs and
             formulas are left alone.
           </li>
-          <li>Updated every night on its own, and straight away when you press Sync now.</li>
+          <li>Choose <strong>Sync now</strong> to update your spreadsheet. Automatic background syncing is off.</li>
           <li>
             Changes you make in the sheet come back only when you press <strong>Pull edits</strong> and approve them —
             only the pick list and scouting tabs are read back.
@@ -246,6 +258,7 @@ export default function SpreadsheetMirrorCard({ orgId }: { orgId: string }) {
           {message.text}
         </p>
       ) : null}
+      {status && loadError ? <p className="connector-message" role="alert">{loadError}</p> : null}
 
       {!status ? (
         <p className="app-muted">{loadError ?? "Loading…"}</p>

@@ -11,8 +11,7 @@ import { headers } from "next/headers";
 import { toDataURL as qrDataUrl } from "qrcode";
 import { z } from "zod";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
-import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
-import { publicErrorMessage } from "../../../../lib/security/public-error";
+import { parseSecureJson, RequestSecurityError, securityErrorResponse } from "../../../../lib/security/request";
 
 const mutationLimiter = createRateLimiter({ limit: 12, windowMs: 5 * 60_000, namespace: "account-mfa" });
 const verificationCode = z.string().trim().min(6).max(32).regex(/^[0-9A-Za-z-]+$/);
@@ -35,7 +34,7 @@ function privateJson(value: unknown, init?: ResponseInit) {
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
-  if (!value) throw new Error("Authentication required");
+  if (!value) throw new RequestSecurityError(401, "Authentication required");
   return value;
 }
 
@@ -74,10 +73,7 @@ export async function GET() {
     }));
     return privateJson(result);
   } catch (error) {
-    return Response.json(
-      { error: publicErrorMessage(error, "Security settings unavailable") },
-      { status: 400 },
-    );
+    return securityErrorResponse(error, "Security settings unavailable");
   }
 }
 

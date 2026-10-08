@@ -27,6 +27,12 @@ describe("isPendingWorkspacePath", () => {
     expect(isPendingWorkspacePath("/admin")).toBe(false);
   });
 
+  it("lets an invitee set up credentials and accept before team membership exists", () => {
+    expect(isPendingWorkspacePath("/api/invites/password")).toBe(true);
+    expect(isPendingWorkspacePath("/api/invites/accept")).toBe(true);
+    expect(isPendingWorkspacePath("/api/invites-unrelated")).toBe(false);
+  });
+
   it("allows the account and manual APIs those pages call", () => {
     expect(isPendingWorkspacePath("/api/me")).toBe(true);
     expect(isPendingWorkspacePath("/api/account")).toBe(true);

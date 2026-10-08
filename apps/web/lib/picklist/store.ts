@@ -319,13 +319,69 @@ async function assertWritable(
   input: { orgId: string; pickListId: string },
 ): Promise<PickListStatus> {
   const result = await client.query<{ status: PickListStatus }>(
-    `SELECT status FROM pick_lists WHERE org_id = $1::uuid AND id = $2::uuid`,
+    `SELECT status FROM pick_lists WHERE org_id = $1::uuid AND id = $2::uuid FOR UPDATE`,
     [input.orgId, input.pickListId],
   );
   const status = result.rows[0]?.status;
   if (!status) throw new Error("Pick list not found");
   if (status !== "open") throw new Error(`This pick list is ${status} — reopen it to make changes.`);
   return status;
+}
+
+export class PickListSaveError extends Error {
+  constructor(readonly status: number, message: string) { super(message); }
+}
+
+/** Save a ranking without replacing the entry identities used by votes and the draft board. */
+export async function saveRankedList(client: PoolClient, input: {
+  orgId: string; userId: string; id?: string; eventKey: string; name: string; baseRevision?: number;
+  entries: Array<{ teamKey: string; rank: number; tier?: string; notes?: string }>;
+}): Promise<{ id: string; revision: number }> {
+  let id = input.id;
+  if (id) {
+    const existing = await client.query<{ status: string; eventKey: string; revision: string | number }>(
+      `SELECT status, event_key AS "eventKey", revision FROM pick_lists
+       WHERE org_id=$1::uuid AND id=$2::uuid FOR UPDATE`, [input.orgId, id],
+    );
+    const list = existing.rows[0];
+    if (!list) throw new PickListSaveError(404, "Pick list not found in this team.");
+    if (list.eventKey !== input.eventKey) throw new PickListSaveError(409, "This list belongs to a different event. Reopen it before saving.");
+    if (list.status !== "open") throw new PickListSaveError(409, `This pick list is ${list.status}. Reopen it before editing.`);
+    if (input.baseRevision !== undefined && Number(list.revision) !== input.baseRevision) {
+      throw new PickListSaveError(409, "A teammate changed this list. Your edits are still here; review the latest list before replacing it.");
+    }
+  } else {
+    const created = await client.query<{ id: string }>(
+      `INSERT INTO pick_lists (org_id,event_key,name,created_by,updated_by)
+       VALUES ($1::uuid,$2,$3,$4::uuid,$4::uuid) RETURNING id`,
+      [input.orgId, input.eventKey, input.name.trim(), input.userId],
+    );
+    id = created.rows[0]!.id;
+  }
+  // Only deliberate removals delete a row. Remaining teams retain votes,
+  // rationale, attribution and alliance placement across every ranking save.
+  await client.query(
+    `DELETE FROM pick_list_entries WHERE org_id=$1::uuid AND pick_list_id=$2::uuid
+     AND NOT (team_key = ANY($3::text[]))`,
+    [input.orgId, id, input.entries.map(entry => entry.teamKey)],
+  );
+  for (const entry of input.entries) {
+    await client.query(
+      `INSERT INTO pick_list_entries (org_id,pick_list_id,team_key,team_number,rank,tier,bucket,notes,added_by,updated_by)
+       VALUES ($1::uuid,$2::uuid,$3,$4,$5,$6,$7,$8,$9::uuid,$9::uuid)
+       ON CONFLICT (pick_list_id,team_key) DO UPDATE SET
+         rank=EXCLUDED.rank,tier=EXCLUDED.tier,bucket=EXCLUDED.bucket,notes=EXCLUDED.notes,
+         updated_by=EXCLUDED.updated_by,updated_at=now(),revision=pick_list_entries.revision+1`,
+      [input.orgId, id, entry.teamKey, Number(entry.teamKey.slice(3)), entry.rank, entry.tier ?? null,
+        bucketFromTier(entry.tier), entry.notes ?? null, input.userId],
+    );
+  }
+  const saved = await client.query<{ revision: string | number }>(
+    `UPDATE pick_lists SET name=$3,updated_by=$4::uuid,updated_at=now(),revision=revision+1
+     WHERE org_id=$1::uuid AND id=$2::uuid RETURNING revision`,
+    [input.orgId, id, input.name.trim(), input.userId],
+  );
+  return { id, revision: Number(saved.rows[0]!.revision) };
 }
 
 /**
@@ -698,8 +754,8 @@ export async function recordVote(
      VALUES ($1::uuid, $2::uuid, $3::uuid, $4::numeric, $5::int, $6::text)
      ON CONFLICT (entry_id, voter_id) DO UPDATE SET
        weight = EXCLUDED.weight,
-       rank_suggestion = EXCLUDED.rank_suggestion,
-       comment = EXCLUDED.comment,
+       rank_suggestion = CASE WHEN $7::boolean THEN EXCLUDED.rank_suggestion ELSE pick_list_entry_votes.rank_suggestion END,
+       comment = CASE WHEN $8::boolean THEN EXCLUDED.comment ELSE pick_list_entry_votes.comment END,
        updated_at = now()`,
     [
       input.orgId,
@@ -708,6 +764,8 @@ export async function recordVote(
       clampVoteWeight(input.weight),
       input.rankSuggestion ?? null,
       input.comment ?? null,
+      input.rankSuggestion !== undefined,
+      input.comment !== undefined,
     ],
   );
   await touchList(client, input);

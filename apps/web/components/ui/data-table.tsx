@@ -94,6 +94,7 @@ export function DataTable<Row>({
 }: DataTableProps<Row>) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [stacked, setStacked] = useState(false);
+  const emptyShell = rows.length === 0 && emptyState != null;
   const lastIndex = useRef<number | null>(null);
 
   // Uncontrolled selection fallback.
@@ -115,7 +116,9 @@ export function DataTable<Row>({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [stackBelow]);
+  // Loading, empty, table and card views mount different wrappers. Reattach the
+  // observer whenever one changes; observing a removed table left phones stuck.
+  }, [stackBelow, loading, stacked, emptyShell]);
 
   const toggleRow = (index: number, id: string, shift: boolean) => {
     const set = new Set(selected);
@@ -171,13 +174,14 @@ export function DataTable<Row>({
     return (
       <>
         {exportBar}
-        <div ref={ref} className={[styles.stack, className].filter(Boolean).join(" ")} aria-label={ariaLabel}>
+        <div ref={ref} role="list" className={[styles.stack, className].filter(Boolean).join(" ")} aria-label={ariaLabel}>
           {rows.map((row, index) => {
             const id = getRowId(row);
             const isSel = selected.includes(id);
             return (
               <div
                 key={id}
+                role="listitem"
                 className={[styles.stackRow, isSel ? styles.stackRowSelected : undefined].filter(Boolean).join(" ")}
               >
                 {selectable ? (
@@ -185,6 +189,7 @@ export function DataTable<Row>({
                     <span className={styles.stackKey}>Select</span>
                     <input
                       type="checkbox"
+                      aria-label={`Select row ${id}`}
                       checked={isSel}
                       onChange={(e) =>
                         toggleRow(index, id, (e.nativeEvent as MouseEvent).shiftKey ?? false)
@@ -211,7 +216,7 @@ export function DataTable<Row>({
   return (
     <>
       {exportBar}
-      <div ref={ref} className={[styles.tableScroll, className].filter(Boolean).join(" ")}>
+      <div ref={ref} role="region" tabIndex={0} aria-label={`${ariaLabel ?? "Data table"} · scroll to view columns`} className={[styles.tableScroll, className].filter(Boolean).join(" ")}>
         <table className={styles.table} aria-label={ariaLabel}>
           <thead>
             <tr>

@@ -1,7 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
 import { AUTO_COORDINATION_CUE, AUTO_FLEXIBILITY_CUE, DEPLOY_SAFETY_CUE, autoCoordinationCue, autoFlexibilityCue, deploySafetyCue, dutyPlanFromTemplate, matchHasTbaResult, matchLabel, selectNextTbaMatch, teamNumbersFromAllianceJson } from ".";
-import { computeMatchStrategyCardsView, upsertCard } from "./compute-match-strategy-cards";
+import { computeMatchStrategyCardsView, deleteCard, MatchCardConflictError, upsertCard } from "./compute-match-strategy-cards";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const ORG = "22222222-2222-4222-8222-222222222222";
@@ -214,6 +214,8 @@ describe("computeMatchStrategyCardsView", () => {
       expect(view.cards[0]?.matchKey).toBe("2026casj_qm12");
       expect(view.cards[0]?.isNextMatch).toBe(true);
       expect(view.cards[1]?.isNextMatch).toBe(false);
+      expect(view.cards[0]?.isUpcoming).toBe(true);
+      expect(view.cards[1]?.isUpcoming).toBe(false);
       const card = view.cards[0];
       expect(card.ownAllianceColor).toBe("red");
       expect(card.alliances.find((a) => a.color === "red")?.teamNumbers).toEqual([118, 254, 1114]);
@@ -232,7 +234,7 @@ describe("computeMatchStrategyCardsView", () => {
   });
 
   it("persists a card keyed to the TBA match_key", async () => {
-    const query = vi.fn(() => Promise.resolve({ rows: [], rowCount: 0 }));
+    const query = vi.fn((_sql: string, _params: unknown[]) => Promise.resolve({ rows: [], rowCount: 1 }));
     const client = { query } as unknown as PoolClient;
     await upsertCard(client, {
       orgId: ORG,
@@ -246,13 +248,28 @@ describe("computeMatchStrategyCardsView", () => {
       driverNotes: "stow hood for trench",
       roleAssignments: [],
     });
-    expect(query).toHaveBeenCalledTimes(1);
-    const [sql, params] = query.mock.calls[0] as [string, unknown[]];
+    expect(query).toHaveBeenCalledTimes(2);
+    const [sql, params] = query.mock.calls[1] as [string, unknown[]];
     expect(sql).toMatch(/INSERT INTO match_strategy_cards/);
     expect(sql).toMatch(/ON CONFLICT \(org_id, match_key\)/);
     expect(params[0]).toBe(ORG);
     expect(params[1]).toBe("2026casj_qm12");
     expect(params[2]).toBe("2026casj");
     expect(params[3]).toBe("Cycle mid");
+  });
+
+  it.each([false, null])("retains a teammate's changed or deleted plan instead of overwriting it (%s)", async matches => {
+    const query = vi.fn((sql: string) => Promise.resolve({ rows: sql.includes("AS matches") ? matches === null ? [] : [{ matches }] : [], rowCount: 0 }));
+    await expect(upsertCard({ query } as unknown as PoolClient, { orgId: ORG, userId: USER, matchKey: "2026casj_qm12", eventKey: "2026casj", gamePlan: "My old draft", autoAssignment: null, defenseFocus: null, keyThreats: null, driverNotes: null, roleAssignments: [], baseRevision: "2026-10-07T10:00:00Z" })).rejects.toBeInstanceOf(MatchCardConflictError);
+    expect(query.mock.calls.some(([sql]) => sql.includes("INSERT INTO"))).toBe(false);
+  });
+
+  it("refuses stale deletion but permits a confirmed duplicate deletion", async () => {
+    const query = vi.fn((sql: string) => Promise.resolve({ rows: sql.includes("AS matches") ? [{ matches: false }] : [], rowCount: 0 }));
+    const input = { orgId: ORG, matchKey: "2026casj_qm12", baseRevision: "2026-10-07T10:00:00Z" };
+    await expect(deleteCard({ query } as unknown as PoolClient, input)).rejects.toBeInstanceOf(MatchCardConflictError);
+    expect(query.mock.calls.some(([sql]) => sql.includes("DELETE FROM"))).toBe(false);
+    const empty = mockClient(() => ({ rows: [], rowCount: 0 }));
+    await expect(deleteCard(empty, input)).resolves.toBeUndefined();
   });
 });

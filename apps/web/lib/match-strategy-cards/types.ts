@@ -35,5 +35,7 @@ export type MatchStrategyCard = {
   hasCard: boolean;
   /** True when this card is our next unplayed TBA match at the active event. */
   isNextMatch: boolean;
+  /** From the same schedule/result rule used by Event day; absent in older offline copies. */
+  isUpcoming?: boolean;
   updatedAt: string | null;
 };

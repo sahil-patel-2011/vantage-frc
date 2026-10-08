@@ -1,8 +1,9 @@
 import { hubPrimaryTabs, hubWorkbenchId, type HubTabDef, type ProductHubDef } from "./hubs";
 const COMPETITION_SECTIONS = [
-  { id: "scouting", label: "Scout" }, { id: "teams", label: "Teams" },
+  { id: "scouting", label: "Scout" }, { id: "forms", label: "Forms" },
+  { id: "scout-coverage-live", label: "Assignments" }, { id: "teams", label: "Teams" },
   { id: "strategy", label: "Match plan" }, { id: "picks", label: "Pick list" },
-  { id: "command", label: "Event day" }, { id: "match-checklist", label: "Our robot" },
+  { id: "command", label: "Event day" },
 ];
 /**
  * "Robot" opens the robot: the blueprint, with its subsystems and its links to failures,
@@ -30,7 +31,7 @@ export function hubPageTitle(hub: ProductHubDef, tab: string): string {
 }
 /** Common follow-up actions instead of a second navigation catalog. */
 export const CONTEXT_ACTIONS: Record<string, readonly { id: string; label: string }[]> = {
-  "competition:command": [{ id: "schedule", label: "Full schedule" }, { id: "event-day-plan", label: "Plan travel and duties" }],
+  "competition:command": [{ id: "schedule", label: "Full schedule" }, { id: "match-checklist", label: "Our robot checklist" }, { id: "event-day-plan", label: "Plan travel and duties" }],
   "competition:scouting": [{ id: "forms", label: "Edit forms" }, { id: "scout-coverage-live", label: "Assign scouts" }, { id: "scout-training-mode", label: "Practice scouting" }],
   "competition:strategy": [{ id: "briefing", label: "Open match briefing" }, { id: "alliance-sim", label: "Try an alliance" }],
   "competition:picks": [{ id: "alliance-selection-desk", label: "Run alliance selection" }],

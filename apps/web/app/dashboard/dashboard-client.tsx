@@ -45,6 +45,9 @@ import "./dashboard-workspace.css";
 export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: string }) {
   const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();
   const home = useDashboardHomeState(initialOrgId);
+  const quietScope = `${home.userId}:${home.orgId}:${home.board?.id ?? "default"}`;
+  const [quietView, setQuietView] = useState({ scope: "", expanded: false });
+  const showQuietWidgets = quietView.scope === quietScope && quietView.expanded;
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(home.orgId || null);
 
   const { personalBoards, orgBoards, switcherBoards } = useMemo(
@@ -104,13 +107,13 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   // The member's onboarding steps. While the team's own setup is unfinished, its next
   // step is Home's hero and Home's only setup list.
-  const firstWeek = useFirstWeek(home.orgId);
+  const firstWeek = useFirstWeek(home.orgId, home.userId, home.role);
   const setupHero = useMemo(() => setupHeroFrom(firstWeek.view), [firstWeek.view]);
   const teamSetupCard = Boolean(setupHero);
   const sharedSetupPrompt = Boolean(home.orgId && home.widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));
   const homeOverview = false;
   /** Session and the team's real board are here; before that Home is one skeleton. */
-  const homeReady = home.meLoaded && (!home.orgId || home.boardLoaded);
+  const homeReady = home.meLoaded && home.scopeReady && (home.meFailed || !home.orgId || home.boardLoaded);
   /*
     Cards added during this edit. They stay on the board while you edit even
     if Home would hide them for being empty, so tapping a widget always puts
@@ -141,6 +144,10 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     [dashShell, home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview],
   );
   const hiddenOnHomeIds = useMemo(() => hiddenFor(home.layout), [hiddenFor, home.layout]);
+  const quietWidgetCount = useMemo(() => {
+    const available = homeViewLayout(home.layout, { editing: true, shell: dashShell });
+    return available.filter((item) => hiddenOnHomeIds.has(item.i)).length;
+  }, [home.layout, dashShell, hiddenOnHomeIds]);
   const paletteEntries = useMemo(
     () => dashboardPaletteRows(home.layout, home.role, { hidden: hiddenOnHomeIds, widgets: home.widgets }),
     [home.layout, home.role, hiddenOnHomeIds, home.widgets],
@@ -171,8 +178,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     (layout: DashboardWidgetLayout[], editing: boolean) =>
       editing
         ? editBoardLayout(layout, hiddenFor(layout), addedThisEdit, home.widgets)
-        : homeViewLayout(layout, { editing: false, shell: dashShell, widgets: home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview }),
-    [hiddenFor, addedThisEdit, dashShell, home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview],
+        : homeViewLayout(layout, { editing: false, shell: dashShell, widgets: home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview, showQuietWidgets }),
+    [hiddenFor, addedThisEdit, dashShell, home.widgets, teamSetupCard, sharedSetupPrompt, homeOverview, showQuietWidgets],
   );
   const viewLayout = useMemo(() => viewFor(home.layout, home.editing), [viewFor, home.layout, home.editing]);
   const settle = useCallback(
@@ -314,6 +321,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     onDragPointerCancel,
     paintProxy,
   } = useDashboardPointerDrag({
+    scopeKey: `${home.userId}:${home.orgId}`,
     editing: home.editing,
     saving: home.saving,
     canvasNode,
@@ -340,10 +348,10 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     enterEditRef.current = enterEditMode;
   });
   useEffect(() => {
-    if (!pendingCustomize || !homeReady) return;
+    if (!pendingCustomize || !homeReady || home.accessDenied || home.meFailed) return;
     setPendingCustomize(false);
     enterEditRef.current();
-  }, [pendingCustomize, homeReady, setPendingCustomize]);
+  }, [pendingCustomize, homeReady, home.accessDenied, home.meFailed, setPendingCustomize]);
 
   // The ghost is positioned imperatively (transform is never in the style prop),
   // so re-renders during a drag never yank it back to the last committed point.
@@ -357,7 +365,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       : null;
 
   return (
-    <DashboardActionsProvider role={home.role} orgId={home.orgId} refresh={(type) => home.loadSnapshot(home.orgId, [type])}>
+    <DashboardActionsProvider key={`${home.userId}:${home.orgId}`} role={home.role} orgId={home.orgId} refresh={(type) => home.loadSnapshot(home.orgId, [type])}>
     <WidgetsLoadedContext.Provider value={home.widgetsLoaded}>
     <DashboardHomeView
       setupHero={setupHero}
@@ -375,12 +383,20 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       viewLayout={viewLayout}
       displayLayout={displayLayout}
       widgets={home.widgets}
-      // Whether the widgets (and the onboarding steps) have arrived, so the "what to do
-      // now" card waits as a blank shape rather than saying there is nothing.
-      widgetsLoaded={home.widgetsLoaded && firstWeek.loaded}
+      // Getting-started steps are optional and cannot delay real widget data.
+      widgetsLoaded={home.widgetsLoaded}
+      showQuietWidgets={showQuietWidgets}
+      quietWidgetCount={quietWidgetCount}
+      onToggleQuietWidgets={() => setQuietView({ scope: quietScope, expanded: !showQuietWidgets })}
+      refreshing={home.refreshing}
+      onRefresh={home.meFailed ? home.retryMe : home.refreshHome}
+      dataError={home.meFailed ? "Couldn’t load your account and team. Try again." : home.dataError}
+      accessDenied={home.accessDenied || home.meFailed}
       paletteEntries={paletteEntries}
       hiddenOnHome={hiddenOnHomeIds}
       hasScoutingSchemas={hasScoutingSchemas}
+      hasActiveEvent={typeof home.context.eventKey === "string" && Boolean(home.context.eventKey.trim())}
+      canManageScouting={home.context.canManageScouting === true}
       homeStripItems={homeStripItems}
       homeAudience={homeAudience}
       nextMatchData={nextMatchData}

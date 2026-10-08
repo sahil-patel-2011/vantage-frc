@@ -65,6 +65,11 @@ export async function scoutTransaction<T>(
     try {
       const result = await work(transaction);
       await done;
+      if (mode === "readwrite" && typeof window !== "undefined") {
+        window.dispatchEvent?.(new Event("vantage-scout-storage-change"));
+        try { window.localStorage.setItem("vantage-scout-storage-change", crypto.randomUUID()); }
+        catch { /* Same-tab updates still work with restricted storage. */ }
+      }
       return result;
     } catch (error) {
       try { transaction.abort(); } catch { /* The transaction may already have ended. */ }

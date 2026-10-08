@@ -33,6 +33,11 @@ describe("withPersistedOrgSearch", () => {
 });
 
 describe("expandLegacyRedirects", () => {
+  it("opens old attendance links in Attendance inside People", () => {
+    const rows = expandLegacyRedirects().filter(row => row.source === "/attendance");
+    expect(rows[0]?.destination).toBe("/team?tab=attendance&view=attendance&orgId=:orgId");
+    expect(rows[1]?.destination).toBe("/team?tab=attendance&view=attendance");
+  });
   it("forwards orgId when the hub destination already has ?tab=", () => {
     const rows = expandLegacyRedirects([{ source: "/scouting", destination: "/competition?tab=scouting" }]);
     expect(rows[0]).toMatchObject({

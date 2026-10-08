@@ -35,17 +35,6 @@
   color:var(--muted);
   font:600 12px var(--font-source-sans),ui-sans-serif,system-ui,sans-serif;
 }
-.lineup-live-pill::before{
-  content:"";
-  width:8px;height:8px;border-radius:var(--radius-pill);
-  background:var(--positive);
-  box-shadow:0 0 0 4px color-mix(in srgb,var(--positive) 18%,transparent);
-  animation:lineup-pulse 1.6s ease-in-out infinite;
-}
-@keyframes lineup-pulse{
-  0%,100%{transform:scale(1);opacity:1}
-  50%{transform:scale(1.15);opacity:.7}
-}
 .lineup-controls{
   display:flex;flex-wrap:wrap;gap:14px;align-items:end;
   padding:14px 16px;
@@ -168,6 +157,17 @@
 
 .lineup-range{display:grid;gap:10px;margin:0 0 14px}
 .lineup-range-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:10px}
+.lineup-range-grid{min-width:0;margin:0;padding:0;border:0}
+.lineup-page button,.lineup-page .app-button,.lineup-related a{min-height:44px}
+.lineup-range-grid label,.lineup-assign label{display:grid;gap:8px;min-width:0}
+.lineup-range-grid :is(input,select),.lineup-assign select{min-height:48px;min-width:0;width:100%;font-size:16px}
+.lineup-assign{flex-wrap:wrap;gap:12px}
+.lineup-assign label{flex:1 1 12rem}
+.lineup-page :is(button,a,select,input):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.lineup-receipt{border:1px solid var(--line);border-radius:var(--radius-sm);padding:16px;background:var(--surface);line-height:1.5}
+.lineup-receipt p{margin:0}
+.lineup-receipt ul{margin-bottom:0}
+.lineup-kpis span,.lineup-kpis small,.lineup-board small{font-family:inherit;font-size:13px;font-weight:500;line-height:1.5;text-transform:none;letter-spacing:normal}
 
 @media print{
   .lineup-page .lineup-related,.lineup-page .lineup-header-meta .app-button,.lineup-page .lineup-next-actions,.lineup-page .lineup-assign{display:none!important}

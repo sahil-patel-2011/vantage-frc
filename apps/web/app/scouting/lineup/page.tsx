@@ -55,5 +55,5 @@ export default async function ScoutingLineupPage({
       </main>
     );
   }
-  return <LineupClient orgId={orgId} />;
+  return <LineupClient key={orgId} orgId={orgId} />;
 }

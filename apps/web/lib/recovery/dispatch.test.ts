@@ -15,6 +15,7 @@ const request = () => new Request("https://vantage.test/api/cron/recovery-journa
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("CRON_SECRET", "local-test-cron");
+  vi.stubEnv("NEXT_PUBLIC_VANTAGE_HOSTED_BACKGROUND_ENABLED", "1");
   vi.stubEnv("VANTAGE_SHEETS_HUB_SECRET", "a".repeat(64));
   fake.pending = true;
   fake.connect.mockResolvedValue({ query: fake.query, release: fake.release });
@@ -25,6 +26,14 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe("scheduled runtime work", () => {
+  it("does not acquire connections or dispatch workflows when hosted work is disabled", async () => {
+    vi.stubEnv("NEXT_PUBLIC_VANTAGE_HOSTED_BACKGROUND_ENABLED", "0");
+    expect(await dispatchRecoveryJournal()).toEqual({ accepted: false, reason: "disabled" });
+    expect(await queueReadableHubSync("org")).toBe(false);
+    expect(await queueDueReadableHubSyncs()).toEqual({ examined: 0, queued: 0, failed: 0 });
+    expect(fake.start).not.toHaveBeenCalled();
+    expect(fake.connect).not.toHaveBeenCalled();
+  });
   it.each(["", "not-a-valid-secret"])("does not start jobs or open a database without a valid operator secret: %s", async secret => {
     vi.stubEnv("VANTAGE_SHEETS_HUB_SECRET", secret);
     const result = await GET(request());

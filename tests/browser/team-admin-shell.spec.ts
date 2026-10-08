@@ -10,7 +10,7 @@ test.beforeEach(async ({ context }) => {
 
 test("Team admin still loads after the panel split", async ({ page }) => {
   await page.goto("/team/admin");
-  await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^(People|Team admin|Invites & access)$/ })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const islandTeam = page.getByTestId("soft-island").getByRole("link", { name: "Team", exact: true });
@@ -19,7 +19,7 @@ test("Team admin still loads after the panel split", async ({ page }) => {
     const orgId = href ? new URL(href, page.url()).searchParams.get("orgId") : null;
     if (orgId) {
       await page.goto(`/team/admin?orgId=${encodeURIComponent(orgId)}`);
-      await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: "People", exact: true })).toBeVisible();
     }
   }
 
@@ -33,7 +33,7 @@ test("Team admin still loads after the panel split", async ({ page }) => {
   }
 
   // Team admin is people and invites; GitHub lives on Connectors now.
-  await expect(page.getByRole("heading", { name: /^People/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^People/, level: 2 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "GitHub" })).toHaveCount(0);
   // Settings share the main menu; no second row repeats the navigation here.
   await expect(page.getByRole("navigation", { name: "Team settings" })).toHaveCount(0);
@@ -48,7 +48,7 @@ test("Team admin still loads after the panel split", async ({ page }) => {
   await page.goto(current.toString());
   await expect(page.getByRole("textbox", { name: "Email" })).toBeFocused({ timeout: 25_000 });
   // The access inbox only appears while someone is waiting to join.
-  await expect(page.getByRole("tab")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Invites & access", exact: true })).toHaveAttribute("aria-pressed", "true");
 
   if (process.env.ADMIN_SHOT === "1") {
     await page.screenshot({ path: "/opt/cursor/artifacts/team-admin-one-primary.png", fullPage: true });

@@ -10,6 +10,7 @@ export const metadata = {
  * from the settings menu, so it resolves the caller's own membership server-side
  * and shows deployment-level configuration even when there is no team at all.
  */
-export default function ConnectorsPage() {
-  return <ConnectorsClient />;
+export default async function ConnectorsPage({ searchParams }: { searchParams: Promise<{ orgId?: string }> }) {
+  const { orgId = "" } = await searchParams;
+  return <ConnectorsClient key={orgId} />;
 }

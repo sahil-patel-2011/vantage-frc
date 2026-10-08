@@ -66,6 +66,7 @@ export async function loadDashboardSnapshot(
       eventKey: string | null;
       eventName: string | null;
       fundingModel: string | null;
+      canManageScouting: boolean;
     }>(
       // funding_model is read through to_jsonb so Home survives a deployment
       // whose migrations have not been run yet. Selecting the column directly
@@ -74,7 +75,7 @@ export async function loadDashboardSnapshot(
       // student saw a raw Postgres error instead of their team. to_jsonb yields
       // NULL for a column that is not there and the real value once 0651 lands.
       `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName",
-              to_jsonb(o) ->> 'funding_model' AS "fundingModel"
+              to_jsonb(o) ->> 'funding_model' AS "fundingModel", can_manage_scouting(o.id) AS "canManageScouting"
        FROM organizations o
        LEFT JOIN org_active_context c ON c.org_id = o.id
        LEFT JOIN events_ref e ON e.event_key = c.active_event_key
@@ -115,7 +116,7 @@ export async function loadDashboardSnapshot(
   const [scoutingMeta, aiMeta] = await Promise.all([
     eventKey
       ? client.query<{ count: string }>(
-          `SELECT count(*)::text AS count FROM scout_schemas WHERE org_id = $1 AND year = (
+          `SELECT count(DISTINCT type)::text AS count FROM scout_schemas WHERE org_id = $1 AND year = (
              SELECT year FROM events_ref WHERE event_key = $2
            )`,
           [input.orgId, eventKey],
@@ -132,7 +133,7 @@ export async function loadDashboardSnapshot(
     ),
   ]);
 
-  const hasScoutingSchemas = Number(scoutingMeta.rows[0]?.count ?? 0) > 0;
+  const hasScoutingSchemas = Number(scoutingMeta.rows[0]?.count ?? 0) === 2;
   const hasAiProvider = Boolean(aiMeta.rows[0]?.hasKey);
 
   const teamRole = profileMeta.rows[0]?.teamRole ?? null;
@@ -149,6 +150,7 @@ export async function loadDashboardSnapshot(
     setupRequired: !eventKey || !teamKey,
     tbaConfigured,
     hasScoutingSchemas,
+    canManageScouting: row.canManageScouting === true,
     hasAiProvider,
     fundingModel: row.fundingModel,
   };

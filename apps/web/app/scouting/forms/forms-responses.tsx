@@ -12,6 +12,10 @@ import { signInHref } from "../../../lib/ui/load-failure";
 const teamNumber = (team: string) => team.replace(/^frc/, "");
 
 export function FormsResponses({ orgId, schemaId }: { orgId: string; schemaId?: string }) {
+  return <ScopedFormResponses key={`${orgId}:${schemaId ?? ""}`} orgId={orgId} schemaId={schemaId} />;
+}
+
+function ScopedFormResponses({ orgId, schemaId }: { orgId: string; schemaId?: string }) {
   const scope = `${orgId}:${schemaId ?? ""}`;
   const [snapshot, setSnapshot] = useState<{ scope: string; data: FormResponseData; loadedAt: string } | null>(null);
   const data = snapshot?.scope === scope ? snapshot.data : null;
@@ -44,10 +48,9 @@ export function FormsResponses({ orgId, schemaId }: { orgId: string; schemaId?: 
       } finally { loading = false; if (!lifecycle.signal.aborted) setRefreshing(false); }
     }
     setIssue(null); void load();
-    const timer = setInterval(() => { if (!document.hidden) void load(); }, 15_000);
     const resume = () => { if (!document.hidden) void load(); };
     document.addEventListener("visibilitychange", resume);
-    return () => { lifecycle.abort(); clearInterval(timer); document.removeEventListener("visibilitychange", resume); };
+    return () => { lifecycle.abort(); document.removeEventListener("visibilitychange", resume); };
   }, [orgId, schemaId, scope, attempt]);
   if (!schemaId) return <p>Publish this form to collect and review responses.</p>;
   if (!data) return <div className="sfb-response-loading"><p role={error ? "alert" : "status"}>{error || "Loading responses…"}</p>
@@ -63,11 +66,12 @@ export function FormsResponses({ orgId, schemaId }: { orgId: string; schemaId?: 
   const byScout = scouts ? responsesByScout(scouts, teamRows, Boolean(team.trim())) : [];
   const most = Math.max(...byScout.map(entry => entry.count), 1);
   return <section className="sfb-responses" aria-label="Form responses">
-    <header><div><h2>{rows.length} {rows.length === 1 ? "response" : "responses"}</h2><p>This team’s saved answers, including earlier form versions. Blank answers stay blank.</p></div>
+    <header><div><h2>{rows.length} {rows.length === 1 ? "response" : "responses"}</h2><p>This team’s saved answers, including earlier form versions. Blank answers stay blank.</p><p className="app-muted" role="status">{refreshing ? "Refreshing responses…" : `Updated ${relativeTime(snapshot!.loadedAt)}`}</p></div>
+      <div className="sfb-response-actions"><Button type="button" variant="secondary" disabled={refreshing} onClick={() => setAttempt(current => current + 1)}>{error ? "Retry responses" : "Refresh responses"}</Button>
       <Button type="button" variant="secondary" disabled={!rows.length} onClick={() => {
         const url = URL.createObjectURL(new Blob([responsesCsv(fields, rows)], { type: "text/csv;charset=utf-8" }));
         const link = document.createElement("a"); link.href=url; link.download="scouting-responses.csv"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }}>Export CSV</Button></header>
+      }}>Export CSV</Button></div></header>
     {rows.length ? <div className="sfb-response-stats" role="group" aria-label="Response overview">
       <StatTile label="Robots covered" value={overview.teams} />
       {scouts ? <StatTile label="Scouts reporting" value={reportingScouts} /> : <StatTile label="Filed by you" value={overview.mine} />}
@@ -78,8 +82,7 @@ export function FormsResponses({ orgId, schemaId }: { orgId: string; schemaId?: 
         <label>Team number<input inputMode="numeric" value={team} placeholder="All teams" onChange={event => setTeam(event.target.value.replace(/\D/g, ""))} /></label>
         {scouts && responseView !== "scouts" ? <label>Scout<select aria-label="Scout" value={scout} onChange={event => setScout(event.target.value)}><option value="">Everyone</option>{scouts.map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select></label> : null}
       </div></div>
-    {error ? <div className="sfb-response-loading"><p role="alert">{error} Showing responses last loaded {relativeTime(snapshot!.loadedAt)}.</p>
-      <Button type="button" variant="secondary" disabled={refreshing} onClick={() => setAttempt(current => current + 1)}>Retry responses</Button></div> : null}
+    {error ? <div className="sfb-response-loading"><p role="alert">{error} Showing responses last loaded {relativeTime(snapshot!.loadedAt)}.</p></div> : null}
     {data.hasMore ? <p>Showing the latest 500 responses.</p> : null}
     {responseView === "scouts" && scouts ? <div className="sfb-scouts">
       {!byScout.length ? <p>{team.trim() ? "Nobody has scouted that team with this form yet." : "No responses yet. Open scouting to record the first robot."}</p> :

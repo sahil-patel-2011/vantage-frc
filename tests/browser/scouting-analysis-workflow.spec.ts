@@ -43,3 +43,49 @@ test("one pick-list page creates, saves and reloads a new ordered list",async({p
  try {await page.reload();await saved.selectOption(body.id);await expect(page.getByLabel("List name",{exact:true})).toHaveValue(name);await expect(page.locator("[data-entry-id]")).toHaveCount(1);}
  finally {await db.query("DELETE FROM pick_lists WHERE org_id=$1 AND id=$2",[orgId,body.id]);await db.end();}
 });
+
+test("ranking saves retain discussion identities and reject stale or locked lists", async ({ context }) => {
+  expect(await signInAs(context, "owner")).toBe(true);
+  const api = context.request;
+  const deskResponse = await api.get(`/api/strategy/pick-desk?orgId=${orgId}`);
+  expect(deskResponse.ok()).toBe(true);
+  const desk = await deskResponse.json();
+  const teamKey = desk.candidates[0]?.teamKey;
+  expect(teamKey).toBeTruthy();
+  const body = { orgId, eventKey: desk.eventKey, name: `Identity acceptance ${Date.now()}`, entries: [{ teamKey, rank: 1, tier: "first", notes: "Keep discussion" }] };
+  const created = await api.post("/api/intel/pick-lists", { data: body });
+  expect(created.status()).toBe(201);
+  const saved = await created.json();
+  const admin = process.env.DATABASE_ADMIN_URL!;
+  expect(new URL(admin).hostname).toBe("127.0.0.1");
+  expect(new URL(admin).pathname).toMatch(/(?:^|[_/-])(?:test|ci)(?:[_/-]|$)/);
+  const db = new Pool({ connectionString: admin, ssl: false });
+  try {
+    const read = async () => {
+      const response = await api.get(`/api/picklist-collab?orgId=${orgId}&listId=${saved.id}`);
+      expect(response.ok()).toBe(true);
+      return response.json();
+    };
+    const before = await read();
+    const entryId = before.entries[0].id;
+    expect((await api.post("/api/picklist-collab", { data: { orgId, listId: saved.id, action: "cast-vote", entryId, weight: 2, rankSuggestion: 3, comment: "Strong auto fit" } })).ok()).toBe(true);
+    // Older clients that send a quick vote must not erase a saved reason or place.
+    expect((await api.post("/api/picklist-collab", { data: { orgId, listId: saved.id, action: "cast-vote", entryId, weight: 2 } })).ok()).toBe(true);
+    // A teammate's vote advanced the shared revision; the earlier editor cannot replace it.
+    expect((await api.post("/api/intel/pick-lists", { data: { ...body, id: saved.id, baseRevision: saved.revision } })).status()).toBe(409);
+    const latest = await (await api.get(`/api/strategy/pick-desk?orgId=${orgId}`)).json();
+    const revision = latest.pickLists.find((list: { id: string }) => list.id === saved.id).revision;
+    const updated = await api.post("/api/intel/pick-lists", { data: { ...body, id: saved.id, baseRevision: revision, entries: [{ ...body.entries[0], tier: "avoid" }] } });
+    expect(updated.status()).toBe(201);
+    const after = await read();
+    expect(after.entries[0]).toMatchObject({ id: entryId, tier: "avoid", note: "Keep discussion" });
+    expect(after.entries[0].votes).toHaveLength(1);
+    expect(after.entries[0].votes[0]).toMatchObject({ weight: 2, rankSuggestion: 3, comment: "Strong auto fit" });
+    expect((await api.post("/api/picklist-collab", { data: { orgId, listId: saved.id, action: "update-list-status", status: "locked" } })).ok()).toBe(true);
+    expect((await api.post("/api/intel/pick-lists", { data: { ...body, id: saved.id } })).status()).toBe(409);
+    expect((await read()).entries[0].id).toBe(entryId);
+  } finally {
+    await db.query("DELETE FROM pick_lists WHERE org_id=$1 AND id=$2", [orgId, saved.id]);
+    await db.end();
+  }
+});

@@ -57,6 +57,8 @@ import { DashboardHiddenRow } from "./dashboard-hidden-row";
 import { DashboardHomeHeader } from "./dashboard-home-header";
 import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
 import { DashboardWorkspaceActions } from "./dashboard-workspace-actions";
+import { homeBriefDuplicatesWidget } from "./dashboard-overview-model";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
 import "./dashboard-edit.css";
 import "./dashboard-home.css";
@@ -100,9 +102,18 @@ export function DashboardHomeView(props: {
   viewLayout: DashboardWidgetLayout[];
   displayLayout: DashboardWidgetLayout[];
   widgets: Record<string, WidgetPayload>;
-  /** Widget data and onboarding steps have arrived, so the hero can say what is next. */
+  /** Real widget data has arrived; optional getting-started steps do not delay it. */
   widgetsLoaded?: boolean;
+  showQuietWidgets: boolean;
+  quietWidgetCount: number;
+  onToggleQuietWidgets: () => void;
+  refreshing: boolean;
+  onRefresh: () => void;
+  dataError: string;
+  accessDenied: boolean;
   hasScoutingSchemas: boolean;
+  hasActiveEvent: boolean;
+  canManageScouting?: boolean;
   paletteEntries: PaletteRow[];
   hiddenOnHome: Map<string, HiddenOnHomeReason>;
   homeStripItems: HomeStripItem[];
@@ -117,6 +128,8 @@ export function DashboardHomeView(props: {
     view: RoleOnboardingView | null;
     busy: string | null;
     post: (payload: Record<string, unknown>, key: string) => Promise<void>;
+    error: string;
+    retry: () => void;
   };
   role: string | null;
   dataSourceHealth: DataSourceHealthView | null;
@@ -481,12 +494,28 @@ export function DashboardHomeView(props: {
   const closeLibrary = useCallback(() => setLibraryOpen(false), [setLibraryOpen]);
 
   if (!homeReady) return <DashboardHomeSkeleton greetingText={greetingText} />;
+  if (props.accessDenied) {
+    const failure = loadFailureCopy(classifyLoadFailure({ message: props.dataError }), {
+      message: props.dataError, nextPath: withOrgHref("/dashboard", orgId),
+    });
+    return (
+    <main className="dash-home scan-workbench scan-hub--dashboard">
+      <h1>{failure.title}</h1>
+      <p role="alert">{failure.description}</p>
+      <div className="dash-board-tools">
+        {failure.showRetry ? <button type="button" onClick={props.onRefresh} disabled={props.refreshing}>{props.refreshing ? "Checking access…" : "Try again"}</button> : null}
+        {failure.primary && failure.kind !== "forbidden" ? <a className="app-button" href={failure.primary.href}>{failure.primary.label}</a> : null}
+        <a className="app-button secondary" href="/account/teams">Choose team</a>
+      </div>
+    </main>
+    );
+  }
 
   // Cards Home is leaving out right now, listed under the board while editing.
   const hiddenRows = editing
     ? layout.filter((item) => hiddenOnHome.has(item.i) && !displayLayout.some((shown) => shown.i === item.i))
     : [];
-  const emptyLabels = orgId && !editing ? emptyHomeWidgets(layout, widgets) : [];
+  const emptyLabels = orgId && editing ? emptyHomeWidgets(layout, widgets) : [];
   const teamSetupCard = Boolean(setupHero);
   const sharedSetupPrompt = Boolean(orgId && widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));
   const showsOverview = false;
@@ -499,8 +528,8 @@ export function DashboardHomeView(props: {
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
   const inlineError = !editing && !previewing && messageKind === "error" && message;
-  const matchCardLeads = now.title === "Our next match" && displayLayout.some((item) => item.type === "next_match");
-  const showDailyBrief = Boolean(orgId && !matchCardLeads && (!now.quiet || (!sharedSetupPrompt && !teamSetupCard)));
+  const briefAlreadyShown = homeBriefDuplicatesWidget(now, displayLayout.map(item => item.type));
+  const showDailyBrief = Boolean(orgId && widgetsLoaded && !briefAlreadyShown && !now.quiet);
 
   return (
     <main
@@ -534,7 +563,7 @@ export function DashboardHomeView(props: {
         saving={saving}
         editing={editing}
         previewing={previewing}
-        detail={sharedSetupPrompt ? "" : homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
+        detail={orgId ? "" : homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
         eventName={eventName}
         nextMatchData={nextMatchData}
         showNextGlance={false}
@@ -549,7 +578,7 @@ export function DashboardHomeView(props: {
       {orgId ? (
         <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
           {showDailyBrief ? <DashboardNowCard now={now} setupHero={null} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
-          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} />
+          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={props.hasActiveEvent} hasForms={props.hasScoutingSchemas} canManageScouting={props.canManageScouting} primaryHref={showDailyBrief ? now.href : undefined} />
         </div>
       ) : null}
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice,
@@ -558,7 +587,11 @@ export function DashboardHomeView(props: {
           still on Your first week. */}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
+      {orgId && !sharedSetupPrompt && !teamSetupCard ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
+      {orgId && firstWeek.error ? <div className="dash-session-failed" role="alert">
+        <p>{firstWeek.error}</p>
+        <button type="button" className="app-button secondary" onClick={firstWeek.retry} disabled={Boolean(firstWeek.busy)}>Refresh steps</button>
+      </div> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {showRoleStrip ? (
@@ -604,6 +637,14 @@ export function DashboardHomeView(props: {
           {message}
         </p>
       ) : null}
+      {props.dataError ? (
+        <div className="dash-session-failed" role="alert">
+          <p>{props.dataError}</p>
+          <button type="button" className="app-button secondary" onClick={props.onRefresh} disabled={props.refreshing}>
+            {props.refreshing ? "Refreshing…" : "Try again"}
+          </button>
+        </div>
+      ) : null}
 
       {onRetrySession ? (
         <p className="dash-session-failed" role="alert">
@@ -614,20 +655,16 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {!showsOverview && (sharedSetupPrompt || (dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
+      {!editing && !showsOverview && (sharedSetupPrompt || (dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
       showStandaloneSetupBanner({ editing, displayLayout }))) ? (
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} compact={sharedSetupPrompt} />
       ) : null}
-
-      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !teamSetupCard && !showsOverview ? (
-        <p className="dash-ready-cue" role="status" {...dim}>
-          <span>{nextActions[0]?.detail ?? nextActions[0]?.label}</span>
-          {nextActions[0]?.href ? (
-            <Button as="a" variant="secondary" href={nextActions[0].href}>
-              {nextActions[0].label}
-            </Button>
-          ) : null}
-        </p>
+      {setupHero && !sharedSetupPrompt && !editing ? (
+        <section className="dash-setup-banner dash-context-prompt" aria-label="Team setup">
+          <span className="dash-context-icon" aria-hidden="true"><Icon name="bolt" /></span>
+          <div><h2>{setupHero.title}</h2><p>{setupHero.detail}</p></div>
+          <Button as="a" variant="secondary" href={withOrgHref(setupHero.href, orgId)}>{setupHero.cta}</Button>
+        </section>
       ) : null}
 
       <OfflineBanner feature="Home" fromCache={fromCache} cachedAt={cachedAt} />
@@ -646,10 +683,19 @@ export function DashboardHomeView(props: {
           data-testid="dash-widget-grid"
           data-dash-drag={editing ? "on" : "off"}
         >
-          {!editing && displayLayout.length > 0 ? (
+          {!editing ? (
             <header className="dash-board-heading">
-              <div><h2>Your overview</h2><p>The things that matter to your team, in one place.</p></div>
-              <span>{board?.scope === "org" ? "Team board" : "Personal board"}</span>
+              <h2>{board?.scope === "org" ? "Team overview" : "Your overview"}</h2>
+              <div className="dash-board-tools">
+                {props.quietWidgetCount > 0 ? (
+                  <button type="button" aria-expanded={props.showQuietWidgets} onClick={props.onToggleQuietWidgets}>
+                    {props.showQuietWidgets ? "Hide quiet widgets" : `Show quiet widgets (${props.quietWidgetCount})`}
+                  </button>
+                ) : null}
+                <button type="button" onClick={props.onRefresh} disabled={props.refreshing}>
+                  {props.refreshing ? "Refreshing…" : "Refresh"}
+                </button>
+              </div>
             </header>
           ) : null}
           {editing ? (
@@ -690,8 +736,8 @@ export function DashboardHomeView(props: {
             </button>
           ) : mounted && viewLayout.length === 0 && !editing && sharedSetupPrompt && layout.length > 0 ? null : mounted && viewLayout.length === 0 && !editing ? (
             <div className="dash-quiet-home" role="status">
-              <strong>No widgets on this board</strong>
-              <span>Tap Edit to add the cards you want to see.</span>
+              <strong>{boardIsEmpty ? "No widgets on this board" : props.quietWidgetCount ? "No updates to show" : "No widgets to show"}</strong>
+              <span>{boardIsEmpty || !props.quietWidgetCount ? "Choose Customize to add your widgets." : "Your saved widgets appear when they have data. Show quiet widgets to open them now."}</span>
             </div>
           ) : (
             <div
@@ -773,6 +819,7 @@ export function DashboardHomeView(props: {
                         onRemove={removeWidget}
                         onResize={setWidgetSize}
                         onResetSize={resetWidgetSize}
+                        onAlwaysShow={setAlwaysShown}
                       />
                     );
                   })

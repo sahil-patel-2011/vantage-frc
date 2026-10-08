@@ -43,6 +43,8 @@ export type PickDeskList = {
   name: string;
   eventKey: string;
   updatedAt: string | null;
+  revision?: number;
+  status?: string;
   entries: PickDeskEntry[];
 };
 
@@ -113,9 +115,11 @@ export async function loadPickDesk(
     eventKey: string | null;
     eventName: string | null;
     role: string;
+    canManageScouting: boolean;
   }>(
     `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber",
-            c.active_event_key AS "eventKey", e.name AS "eventName", m.role::text AS role
+            c.active_event_key AS "eventKey", e.name AS "eventName", m.role::text AS role,
+            has_org_capability(m.org_id, 'manage_scouting'::org_capability) AS "canManageScouting"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      LEFT JOIN org_active_context c ON c.org_id = o.id
@@ -388,9 +392,11 @@ export async function loadPickDesk(
       name: string;
       eventKey: string;
       updatedAt: string | null;
+      revision: number;
+      status: string;
       entries: PickDeskEntry[] | string;
     }>(
-      `SELECT l.id, l.name, l.event_key AS "eventKey", l.updated_at::text AS "updatedAt",
+      `SELECT l.id, l.name, l.event_key AS "eventKey", l.updated_at::text AS "updatedAt", l.revision::int AS revision, l.status,
               COALESCE(json_agg(json_build_object(
                 'teamKey', e.team_key,
                 'teamNumber', t.team_number,
@@ -433,7 +439,7 @@ export async function loadPickDesk(
     eventKey: row.eventKey,
     eventName: row.eventName,
     teamNumber: row.teamNumber,
-    canEdit: row.role === "owner" || row.role === "admin",
+    canEdit: row.role === "owner" || row.role === "admin" || row.canManageScouting === true,
     candidates,
     pickLists: lists.rows.map((list) => ({
       ...list,

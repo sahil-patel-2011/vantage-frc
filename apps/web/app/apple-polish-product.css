@@ -95,7 +95,8 @@ body.has-app-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([
 }
 body.has-app-shell input::placeholder, body.has-app-shell textarea::placeholder { color: var(--muted); opacity: 1; }
 body.has-app-shell .soft-island { border-color: var(--line-soft); background: var(--island); box-shadow: var(--shadow-pop); backdrop-filter: saturate(140%) blur(20px); }
-body.has-app-shell :is(.soft-drawer, .soft-account-pop, .soft-island-editor > section) { background: var(--surface); border-color: var(--line); }
+body.has-app-shell .soft-account-pop { background: var(--surface); border-color: var(--line); }
+body.has-app-shell .soft-island-editor > section { background: var(--surface); border-color: var(--line); }
 body.has-app-shell .app-badge { letter-spacing: .015em; }
 body.has-app-shell .hub-tool-strip[data-compact] .hub-tool-more { border-radius: 12px; box-shadow: none; }
 body.has-app-shell .soft-empty.scan-empty {

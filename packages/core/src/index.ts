@@ -280,6 +280,7 @@ export const auth: AuthInstance = new Proxy({} as AuthInstance, {
 });
 
 export * from "./email";
+export * from "./invite-policy";
 export * from "./email-notifications";
 export * from "./product-releases";
 export * from "./release-notes-compose";

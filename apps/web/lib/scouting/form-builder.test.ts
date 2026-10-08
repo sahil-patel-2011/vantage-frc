@@ -43,6 +43,19 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("form-builder", () => {
+  it("preserves conditional questions through editing and publishing and rejects broken dependencies", () => {
+    const original = { title: "Climbing", fields: [
+      { key: "attempted", label: "Attempted climb", type: "boolean" as const, widget: "yesno" as const },
+      { key: "seconds", label: "Climb seconds", type: "number" as const, widget: "number" as const, required: true, config: { visibleWhen: { fieldKey: "attempted", isTrue: true } } },
+    ] };
+    const draft = draftFromDefinition(original);
+    expect(previewFieldForQuestion(draft.questions[1]!).visibleWhen).toEqual({ fieldKey: "attempted", isTrue: true });
+    expect(definitionFromDraft(draft.title, draft.questions).fields[1]?.visibleWhen).toEqual({ fieldKey: "attempted", isTrue: true });
+    expect(resolveDraftPublishStatus({ published: { definition: original, version: 1 }, draftTitle: draft.title, draftQuestions: draft.questions }).kind).toBe("published");
+    expect(validateDraft(draft.title, [draft.questions[1]!]).errors).toContain("Question 1 depends on a missing question. Restore that question or remove its condition.");
+    draft.questions[1] = { ...draft.questions[1]!, visibleWhen: null };
+    expect(resolveDraftPublishStatus({ published: { definition: original, version: 1 }, draftTitle: draft.title, draftQuestions: draft.questions }).kind).toBe("draft_changes");
+  });
   it("keeps season collection phases and unknown-count rules through edits, preview and publish", () => {
     const starter = matchSchemaForYear(2026);
     const draft = draftFromDefinition(starter);

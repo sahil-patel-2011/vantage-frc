@@ -192,7 +192,7 @@ export function editBoardLayout(
   // Array order kept (positions from the pack): React moving the dragged card's node mid-drag
   // drops the pointer capture the drag runs on.
   // The same narrow-strip fill Home applies, so the editor shows the widths Home will show.
-  return layout.map(item => ({ ...item }));
+  return homeViewLayout(layout, { editing: true, shell: "loading" });
 }
 
 /**
@@ -352,10 +352,11 @@ export function popHistory(stack: readonly DashboardWidgetLayout[][]): {
   return { layout: stack[stack.length - 1] ?? null, stack: stack.slice(0, -1) };
 }
 
-export type HiddenOnHomeReason = "empty" | "setup_done" | "setup_top" | "setup_shared" | "integrated";
+export type HiddenOnHomeReason = "empty" | "needs_setup" | "setup_done" | "setup_top" | "setup_shared" | "integrated";
 
 export const HIDDEN_ON_HOME_COPY: Record<HiddenOnHomeReason, string> = {
   empty: "Hidden until there's something to show",
+  needs_setup: "Available in Show quiet widgets until it is connected",
   setup_done: "Hidden now that your team is set up",
   // The owner's setup steps are the card at the top of Home while setup is unfinished.
   setup_top: "Shown at the top while setup is unfinished",
@@ -366,6 +367,7 @@ export const HIDDEN_ON_HOME_COPY: Record<HiddenOnHomeReason, string> = {
 /** The library's word for a card on the board that Home is not showing right now. */
 export const HIDDEN_ON_HOME_SHORT: Record<HiddenOnHomeReason, string> = {
   empty: "Hidden (empty)",
+  needs_setup: "Needs setup",
   setup_done: "Hidden (set up)",
   setup_top: "Shown during setup",
   setup_shared: "Waiting for setup",
@@ -413,8 +415,10 @@ export function hiddenOnHome(
         ? "setup_shared"
         : setupCard && input.teamSetupCard
         ? "setup_top"
-        : status === "empty" || (item.type === "ask_ai" && status === "setup_required")
+        : status === "empty"
           ? "empty"
+          : status === "setup_required"
+          ? "needs_setup"
           : "setup_done",
     );
   }

@@ -12,28 +12,27 @@ import { publicErrorMessage } from "../../../../lib/security/public-error";
 import { startTeamProvisioning } from "../../../../lib/provisioning/start";
 import { initializeTeamDefaults } from "../../../../lib/provisioning/defaults";
 import { setTeamJoinCode } from "../../../../lib/team/join-code";
+import { z } from "zod";
+import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
+
+const claimRequest = z.object({
+  name: z.string().trim().min(1).max(160),
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  teamNumber: z.number().int().min(1).max(99999),
+  termsAccepted: z.boolean().optional(), privacyAccepted: z.boolean().optional(),
+  authorizationAcknowledged: z.unknown().optional(), attestationVersion: z.unknown().optional(),
+  joinPin: z.string().regex(/^\d{6}$/).optional(),
+});
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401, headers: { "Cache-Control": "private, no-store" } });
 
-  let body: {
-    name?: string;
-    slug?: string;
-    teamNumber?: number;
-    termsAccepted?: boolean;
-    privacyAccepted?: boolean;
-    authorizationAcknowledged?: unknown;
-    attestationVersion?: unknown;
-    joinPin?: string;
-  };
+  let body: z.infer<typeof claimRequest>;
   try {
-    body = (await request.json()) as typeof body;
-  } catch {
-    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-  if (!body || !body.name || !body.slug || !body.teamNumber) {
-    return Response.json({ error: "name, slug, and teamNumber are required" }, { status: 400 });
+    body = await parseSecureJson(request, claimRequest);
+  } catch (error) {
+    return securityErrorResponse(error, "Check your team name, number and join code.");
   }
 
   try {
@@ -84,8 +83,8 @@ export async function POST(request: Request) {
       await client.query("UPDATE team_provisioning_jobs SET completed_phases=ARRAY['team','tools']::text[],phase='workspace',updated_at=now() WHERE org_id=$1::uuid", [orgId]);
       return orgId;
     });
-    await startTeamProvisioning(id, session.user.id);
-    return Response.json({ id, workspaceReady: true, provisioning: true }, { status: 201 });
+    const provisioning = await startTeamProvisioning(id, session.user.id);
+    return Response.json({ id, workspaceReady: true, provisioning }, { status: 201 });
   } catch (error) {
     // Deploys do not run migrations. Until 0672 is applied the statement cannot
     // be stored, so the claim is refused (and rolled back) with a plain reason

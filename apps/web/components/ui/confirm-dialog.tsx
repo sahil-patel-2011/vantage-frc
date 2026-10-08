@@ -117,10 +117,17 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const resolver = useRef<((ok: boolean) => void) | null>(null);
 
   const confirm = useCallback<ConfirmFn>((opts) => {
+    // A replacement prompt or an unmounted page must settle its previous caller.
+    resolver.current?.(false);
     setState({ opts, open: true });
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve;
     });
+  }, []);
+
+  useEffect(() => () => {
+    resolver.current?.(false);
+    resolver.current = null;
   }, []);
 
   const onResolve = useCallback((ok: boolean) => {

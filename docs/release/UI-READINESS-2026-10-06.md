@@ -1,5 +1,7 @@
 # UI reliability and production readiness — October 6, 2026
 
+Historical implementation/test evidence follows. Current rules are in [hosting/data readiness](HOSTING-DATA-READINESS-2026-10-06.md), with the latest limited hosted pass in [October 7 walkthrough](WALKTHROUGH-2026-10-07.md). Laptop runtimes and repository Actions are prohibited/disabled. Earlier CI and automatic-deployment instructions do not authorize new runs.
+
 The release remains unverified. This increment repairs presentation and client reliability across the existing application. No local database was started, no production database connection was opened, and no production secret was changed.
 
 ## Behavior repaired
@@ -28,7 +30,7 @@ Final dependency-patched unit checks pass 1,528 files / 11,370 tests with 18 fil
 
 Representative controlled-response screenshots: [desktop light](evidence/2026-10-06-responses-1440-light.png) and [phone dark](evidence/2026-10-06-responses-390-dark.png).
 
-The remote PostgreSQL/RLS and complete browser jobs remain required for ready PRs and main. Draft PRs run quality and database-free UI checks; marking a PR ready triggers the remaining gates. On October 6 the user explicitly authorized isolated GitHub Actions test databases. Laptop databases remain prohibited.
+At the time of these historical checks, remote PostgreSQL/RLS and browser jobs were configured for ready PRs/main, with smaller draft checks. The subsequent October 6 cost restriction revoked that Actions authorization and disabled repository Actions. Marking a PR ready does not authorize a run. Current acceptance follows the hosting/data policy.
 
 ## Scouting collection and analysis increment
 
@@ -54,4 +56,4 @@ The trends, scouting lead, role-editor and first-run follow-up is recorded in [t
 
 ## Production schema deployment boundary
 
-Main deploys automatically, but this release requires migrations 0710 through 0713 before its tour and delegated scouting queries can run. The web build now checks those exact migration records in a read-only transaction when `VERCEL_ENV=production`; missing/unverifiable records fail the build before publishing. It never applies migrations or changes privileges. Non-Vercel and preview builds remain database-free, and laptop database URLs are refused. The isolated GitHub Actions PostgreSQL job exercises the same gate after migration replay. Seven mocked unit cases cover unavailable/missing schema, read-only cleanup, connection redaction and database-free builds. The production migration/configuration/provider work remains open; no production connection was opened during implementation.
+Automatic main deployments have since been disabled. This release still requires migrations 0710 through 0713 before its tour and delegated scouting queries can run. The production web build checks those exact migration records in a read-only transaction; missing/unverifiable records fail before publishing. It never applies migrations or changes privileges. Non-Vercel/preview builds remain database-free, and laptop database URLs are refused. The saved, disabled PostgreSQL acceptance job contains a schema-gate check after migration replay; it is not authorization to run it. Seven mocked regression cases cover unavailable/missing schema, cleanup, redaction and database-free builds. Migration/configuration/provider work remains open; no production connection was opened during implementation.

@@ -1,14 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { homeActivities, homeTasks, liveCount, scoutingHomeAction } from "./dashboard-overview-model";
+import { homeActivities, homeBriefDuplicatesWidget, homeTasks, liveCount, sameHomeDestination, scoutingHomeAction } from "./dashboard-overview-model";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 const live = (data: Record<string, unknown>): WidgetPayload => ({ type: "calendar_today", status: "live", updatedAt: "", data });
 
 describe("the real Home overview", () => {
+  it("omits a repeated task summary while keeping distinct assignments and incomplete boards actionable", () => {
+    const tasks = { href: "/todos", title: "Three open team tasks" };
+    expect(homeBriefDuplicatesWidget(tasks, ["team_todos", "calendar_today"])).toBe(true);
+    expect(homeBriefDuplicatesWidget(tasks, ["calendar_today"])).toBe(false);
+    expect(homeBriefDuplicatesWidget({ href: "/competition?tab=scouting", title: "Scout Qual 4" }, ["next_match"])).toBe(false);
+  });
+  it("does not repeat an assigned scouting action through a generic shortcut", () => {
+    expect(sameHomeDestination("/competition?tab=scouting&scoutTab=match&teamKey=frc254", "/scouting?orgId=one")).toBe(true);
+    expect(sameHomeDestination("/todos", "/team?tab=todos&orgId=one")).toBe(true);
+    expect(sameHomeDestination("/competition?tab=forms", "/competition?tab=scouting")).toBe(false);
+    expect(sameHomeDestination("/competition?tab=teams", "/competition?tab=scouting")).toBe(false);
+  });
   it("offers practice without an event, published event forms when ready, and form setup to leaders only", () => {
     const base = { orgId: "org-1", hasEvent: false, hasForms: false, role: "scout" };
     expect(scoutingHomeAction(base).href).toContain("mode=free");
     expect(scoutingHomeAction({ ...base, hasEvent: true, hasForms: true }).label).toBe("Start scouting");
     expect(scoutingHomeAction({ ...base, hasEvent: true, role: "owner" }).href).toContain("tab=forms");
+    expect(scoutingHomeAction({ ...base, hasEvent: true, canManageScouting: true }).href).toContain("tab=forms");
     expect(scoutingHomeAction({ ...base, hasEvent: true }).href).not.toContain("tab=forms");
     expect(scoutingHomeAction({ ...base, role: "viewer" }).href).toContain("tab=teams");
   });
@@ -18,6 +31,12 @@ describe("the real Home overview", () => {
     expect(action.label).toContain("254");
     expect(action.href).toContain("teamKey=frc254");
     expect(action.href).toContain("orgId=org-1");
+  });
+  it("does not send an old assignment into missing event forms", () => {
+    const base = { orgId: "org-1", role: "scout", hasEvent: true, hasForms: false,
+      duty: { matchKey: "2026test_qm4", teamKey: "frc254", matchLabel: "Qual 4", station: "Red 1" } };
+    expect(scoutingHomeAction(base).href).toContain("mode=free");
+    expect(scoutingHomeAction({ ...base, canManageScouting: true }).href).toContain("tab=forms");
   });
   it("does not turn missing, invalid, or stale counters into zero", () => {
     expect(liveCount(undefined, "reports")).toBeNull();

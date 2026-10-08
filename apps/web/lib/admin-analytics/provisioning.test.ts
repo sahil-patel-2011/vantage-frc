@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  OWNER_INVITE_HOURS,
   confirmationLines,
   ownerProvisionMode,
   provisionConflictMessage,
@@ -44,6 +45,9 @@ describe("validateProvisionInput", () => {
 });
 
 describe("ownerProvisionMode", () => {
+  it("limits initial and replacement owner links to one day", () => {
+    expect(OWNER_INVITE_HOURS).toBe(24);
+  });
   it("seeds a verified account and invites everyone else", () => {
     expect(ownerProvisionMode({ id: "u1", emailVerified: true })).toBe("seeded");
     expect(ownerProvisionMode({ id: "u1", emailVerified: false })).toBe("invited");

@@ -1,6 +1,6 @@
-import { auth } from "@vantage/core";
+import { assertOrgAuthentication, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { pickHomeBoard } from "../../../lib/dashboard/boards";
 import { HOME_ALWAYS_LOADED } from "../../../lib/dashboard/refresh";
 import {
@@ -17,26 +17,52 @@ import { loadDashboardSnapshot } from "../../../lib/dashboard/snapshot";
 import { homeAudienceFromTeamRole } from "../../../lib/home-workflows";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import { z } from "zod";
+import { parseSecureJson, RequestSecurityError } from "../../../lib/security/request";
 
 const MAX_BOARDS_PER_SCOPE = 12;
+const PRIVATE_HEADERS = { "cache-control": "private, no-store, max-age=0" };
+const mutationSchema = z.object({
+  orgId: z.string().uuid(),
+  id: z.string().uuid().nullable().optional(),
+  name: z.string().max(80).optional(),
+  scope: z.enum(["personal", "org"]).optional(),
+  layout: z.unknown().optional(),
+  activate: z.boolean().optional(),
+  action: z.enum(["reset", "save", "activate", "rename", "create", "duplicate"]).optional(),
+});
+
+class DashboardAccessError extends Error {
+  constructor(message: string, readonly status: 401 | 403) { super(message); }
+}
 
 async function requireSession() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) throw new Error("Authentication required");
+  if (!session) throw new DashboardAccessError("Authentication required", 401);
   return session;
 }
 
-async function membership(client: import("@neondatabase/serverless").PoolClient, orgId: string, userId: string) {
+async function membership(client: import("@neondatabase/serverless").PoolClient, orgId: string, session: Awaited<ReturnType<typeof requireSession>>) {
   const row = await client.query<{ role: string }>(
     `SELECT role FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`,
-    [orgId, userId],
+    [orgId, session.user.id],
   );
-  if (!row.rowCount) throw new Error("Organization membership required");
+  if (!row.rowCount) throw new DashboardAccessError("You are not a member of this team.", 403);
+  try {
+    await assertOrgAuthentication(client, {
+      userId: session.user.id, orgId, sessionId: session.session.id,
+      authMethod: String((session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown"),
+      rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
+    });
+  } catch (error) {
+    throw new DashboardAccessError(publicErrorMessage(error, "This team requires additional sign-in verification."), 403);
+  }
   return row.rows[0]!.role;
 }
 
-function fail(error: unknown, status = 400) {
-  return Response.json({ error: publicErrorMessage(error, "Dashboard request failed") }, { status });
+function fail(error: unknown) {
+  const status = error instanceof DashboardAccessError || error instanceof RequestSecurityError ? error.status : 400;
+  return Response.json({ error: publicErrorMessage(error, "Dashboard request failed") }, { status, headers: PRIVATE_HEADERS });
 }
 
 function requestedWidgetTypes(url: URL): DashboardWidgetType[] | undefined {
@@ -133,14 +159,15 @@ export async function GET(request: Request) {
     const orgId = url.searchParams.get("orgId");
     const mode = url.searchParams.get("mode") ?? "list";
     const boardId = url.searchParams.get("boardId");
-    if (!orgId) throw new Error("orgId is required");
+    if (!orgId || !z.string().uuid().safeParse(orgId).success) throw new RequestSecurityError(400, "Choose a valid team.");
+    // Check the team's sign-in method and MFA before reading widgets or starting
+    // any upstream event refresh. Membership alone does not satisfy its policy.
+    const role = await withRls({ userId: session.user.id, orgId }, client => membership(client, orgId, session));
     if (mode === "snapshot" || mode === "home") {
       await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
     }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const role = await membership(client, orgId, session.user.id);
-
       if (mode === "snapshot") {
         const fullContext = snapshotWantsFullContext(url);
         const snapshot = await loadDashboardSnapshot(client, {
@@ -223,30 +250,22 @@ export async function GET(request: Request) {
       };
     });
 
-    return Response.json(data);
+    return Response.json(data, { headers: PRIVATE_HEADERS });
   } catch (error) {
-    return fail(error, error instanceof Error && error.message.includes("Authentication") ? 401 : 400);
+    return fail(error);
   }
 }
 
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
-    const body = (await request.json()) as {
-      orgId?: string;
-      id?: string | null;
-      name?: string;
-      scope?: "personal" | "org";
-      layout?: unknown;
-      activate?: boolean;
-      action?: "reset" | "save" | "activate" | "rename" | "create" | "duplicate";
-    };
+    const body = await parseSecureJson(request, mutationSchema, { maxBytes: 262_144 });
     const orgId = String(body.orgId ?? "");
     if (!orgId) throw new Error("orgId is required");
     const action = body.action ?? "save";
 
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const role = await membership(client, orgId, session.user.id);
+      const role = await membership(client, orgId, session);
       const scope = body.scope === "org" ? "org" : "personal";
 
       if (action === "reset") {
@@ -524,20 +543,21 @@ export async function POST(request: Request) {
 
     return Response.json(result, {
       status: action === "rename" || action === "activate" ? 200 : 201,
+      headers: PRIVATE_HEADERS,
     });
   } catch (error) {
-    return fail(error, error instanceof Error && error.message.includes("Authentication") ? 401 : 400);
+    return fail(error);
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     const session = await requireSession();
-    const body = (await request.json()) as { orgId?: string; id?: string };
+    const body = await parseSecureJson(request, z.object({ orgId: z.string().uuid(), id: z.string().uuid() }));
     if (!body.orgId || !body.id) throw new Error("orgId and id are required");
 
     const result = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
-      const role = await membership(client, body.orgId!, session.user.id);
+      const role = await membership(client, body.orgId!, session);
       const existing = await client.query<{ id: string; scope: "personal" | "org"; isActive: boolean }>(
         `SELECT id, scope, is_active AS "isActive"
          FROM dashboards
@@ -591,7 +611,7 @@ export async function DELETE(request: Request) {
       return { ok: true, activatedId };
     });
 
-    return Response.json(result);
+    return Response.json(result, { headers: PRIVATE_HEADERS });
   } catch (error) {
     return fail(error);
   }

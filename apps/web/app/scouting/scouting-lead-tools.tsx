@@ -22,6 +22,8 @@ export function ScoutingLeadTools({
   orgId,
   data,
   schema,
+  formulaSaving = false,
+  actionBusy = false,
   trust,
   showFormula,
   formulaName,
@@ -35,6 +37,8 @@ export function ScoutingLeadTools({
   orgId: string;
   data: Bootstrap | null;
   schema: ScoutSchema | undefined;
+  formulaSaving?: boolean;
+  actionBusy?: boolean;
   trust: TrustSnapshot | null;
   showFormula: boolean;
   formulaName: string;
@@ -68,7 +72,7 @@ export function ScoutingLeadTools({
         onToggle={(event) => setOpen((event.currentTarget as HTMLDetailsElement).open)}
       >
         <summary data-disclosure>
-          <span>{data?.canManageSchemas ? "Saved entries and lead tools" : "My saved entries"}</span>
+          <span>{data?.canManageSchemas ? "Team reports and lead tools" : "Team reports"}</span>
           <small>{entries.length ? `${entries.length} recent` : "Nothing saved yet"}</small>
         </summary>
         <div className="scout-lead-tools-body">
@@ -132,13 +136,13 @@ export function ScoutingLeadTools({
             )}
           </Panel>
 
-          <Panel style={{ minHeight: "auto" }}>
+          {data?.canManageSchemas ? <Panel style={{ minHeight: "auto" }}>
             <button type="button" className="text-button" onClick={() => setShowFormula((current) => !current)}>
-              {showFormula ? "Hide coach formula" : "Coach value formula"}
+              {showFormula ? "Hide team value formula" : "Team value formula"}
             </button>
             {showFormula ? (
               <div className="scout-formula">
-                <p className="app-muted">Optional weighted score from numeric fields. Coach role required to save.</p>
+                <p className="app-muted">Weight the numeric fields on your match form to calculate a team value.</p>
                 <FormRow label="Formula name">
                   <input
                     aria-label="Formula name"
@@ -171,12 +175,12 @@ export function ScoutingLeadTools({
                       />
                     </FormRow>
                   ))}
-                <Button variant="secondary" type="button" onClick={() => void saveFormula()}>
-                  Save formula
+                <Button variant="secondary" type="button" disabled={actionBusy || formulaSaving} onClick={() => void saveFormula()}>
+                  {formulaSaving ? "Saving formula…" : "Save formula"}
                 </Button>
               </div>
             ) : null}
-          </Panel>
+          </Panel> : null}
         </div>
       </details>
     </aside>

@@ -22,7 +22,8 @@ export async function GET(request: Request) {
     const orgId = new URL(request.url).searchParams.get("orgId") ?? "";
     if (!UUID.test(orgId)) throw new TenantHttpError(400, "Choose a team first.");
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const me = await requireOrgMember(client, orgId, session.user.id);
+      await requireOrgMember(client, orgId, session.user.id);
+      const access = await client.query<{ allowed: boolean }>("SELECT has_org_capability($1::uuid,'manage_members') AS allowed", [orgId]);
       const rows = await client.query<{ userId: string; name: string | null; role: string; joinedAt: string }>(
         `SELECT m.user_id::text AS "userId",
                 COALESCE(NULLIF(btrim(p.display_name), ''), NULLIF(btrim(u.name), ''),
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
           LIMIT 500`,
         [orgId],
       );
-      return { canManage: me.admin, members: rows.rows };
+      return { canManage: access.rows[0]?.allowed === true, members: rows.rows };
     });
     const members: RosterMember[] = data.members.map((row) => ({
       userId: row.userId,

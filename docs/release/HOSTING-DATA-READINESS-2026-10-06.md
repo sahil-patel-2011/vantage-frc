@@ -22,7 +22,7 @@ No Vantage Next server, Vitest runner or Playwright CLI was present in the lapto
 
 ## Google Sheets as primary storage
 
-The desired destination is a private operator-owned Google Sheet until NAS storage is available. Its URL or authorization to create a new sheet, and deployable app access, are still required. The Codex connector's access alone does not authenticate the deployed website.
+The desired destination is a private operator-owned Google Sheet until NAS storage is available. October 7 update: the user authorized the already connected “VantageFRC - Team index” spreadsheet. Read-only hosted Connectors and Drive metadata inspection identified the existing Apps Script connection, 17 tabs and owner-only permission metadata. No new destination is needed for this investigation. The existing app bridge still depends on PostgreSQL connection/auth records; the Codex connector's access alone does not replace deployed app authentication. No sheet contents were changed or fresh sync executed.
 
 Current Sheets integration is an export/copy system, not primary persistence:
 

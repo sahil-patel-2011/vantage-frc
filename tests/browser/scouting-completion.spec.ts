@@ -26,7 +26,7 @@ for (const width of [320, 390, 1440]) {
       // Each correction story publishes its own custom form; it cannot inherit
       // whichever season/editor questions another story last selected.
       const setup=await (await context.request.get(`/api/scouting/schemas?orgId=${orgId}`)).json();
-      const published=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"match",definition:{title:marker,fields:[
+      const published=await context.request.post("/api/scouting/schemas",{data:{orgId,year:setup.year,type:"match",baseSchemaId:setup.schemas.find((entry:{type:string;id:string})=>entry.type==="match")?.id??null,definition:{title:marker,fields:[
         {key:"autoPoints",label:"Auto points",type:"number",config:{requireObservation:true,scoutPhase:"auto",min:0,integer:true}},
         {key:"notes",label:"Notes",type:"text",required:false},
       ]}}});

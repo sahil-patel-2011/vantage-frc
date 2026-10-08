@@ -6,12 +6,10 @@ import { formatInviteRowMeta, inviteDeliveryBanner } from "../../lib/team/team-i
 import type { Invite, InviteNotice } from "./team-admin-model";
 
 function expiryWords(expiresAt: string): string {
-  const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
-  if (!Number.isFinite(days)) return "";
-  if (days <= 0) return "expires today";
-  if (days === 1) return "expires tomorrow";
-  // The date, the way the owner invite from platform admin reads ("expires Oct 1").
-  return `expires ${new Date(expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  const date = new Date(expiresAt);
+  if (!Number.isFinite(date.getTime())) return "expiry unavailable";
+  if (date.getTime() <= Date.now()) return "expired";
+  return `expires ${date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
 }
 
 /**
@@ -70,7 +68,7 @@ export function TeamAdminInvitesPanel({
       <form className="team-invite-form" id="invite-form" onSubmit={onSend}>
         <h2 id="invite-title">Invite someone</h2>
         <p className="app-muted">
-          They join when they verify this email. You can also share your team’s join code above.
+          Send a personal link that lasts 24 hours. They verify their email, set up their account, and join this team.
         </p>
         <div className="team-invite-fields">
           <label>
