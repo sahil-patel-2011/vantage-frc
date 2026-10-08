@@ -105,3 +105,13 @@ Use an explicitly authorized, private remote environment with confirmed free all
 | Returning users | Walkthrough does not auto-return after its first completion; signed-in users do not see the cookie popup; confirmations retain focus and close with the documented subtle motion. |
 
 Release requires successful hosted build/type checks, executable regressions, migration/RLS acceptance, multiple complete user flows and actual candidate browser proof. These remain pending.
+
+## Match-plan editing checkpoint
+
+Match cards now copy and print the visible draft, label unsaved printouts, clear the editor only after confirmed deletion, and expose a deliberate reload of the latest saved plan. Save acknowledges matching team/event/match content; a stale successful response cannot advertise completion. Duplicate writes are blocked, waits are bounded, draft controls pause during requests, and invalid/denied reads do not masquerade as setup. Both explicit-team and legacy team-selection reads enforce the team's authentication policy.
+
+Optional base revisions protect current editors against concurrent updates, creates and deletions while retaining older request contracts. Writes serialize the logical team/match key, including missing rows; stale drafts receive 409 instead of recreating a deleted plan. No schema migration was added or executed. These SQL paths require hosted acceptance, including concurrent transactions and tenant isolation.
+
+The next-first schedule previously caused older matches to appear as upcoming. Each card now carries the same schedule/result classification used to choose the next match; older offline copies are labelled Other matches rather than guessed as played. Robot numbers link to canonical team analysis with team/event context. This links existing data without inventing another set of statistics.
+
+Editor controls have readable field sizes, visible focus, a single Save action near the desktop header/mobile footer, separate destructive actions, confirmed template replacement, a 20-role limit explanation and neutral theme-aware cues. Regression sources cover responsive editing, copying, stale acknowledgements, deletion, reload, revision conflicts and schedule classification. Source and diff review only: these checks have **not been executed**, and rendered layouts, clipboard/print behavior, keyboard focus and database concurrency remain unverified.

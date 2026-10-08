@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { alliancePartners, resolveOwnAllianceColor, selectNextTbaMatch, teamNumbersFromAllianceJson } from ".";
+import { alliancePartners, matchHasTbaResult, resolveOwnAllianceColor, selectNextTbaMatch, teamNumbersFromAllianceJson } from ".";
 import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import { scoutEventLabel } from "../scouting/scouting-related";
 import { strategyCanSync } from "../strategy/strategy-related";
@@ -227,6 +227,7 @@ export async function computeMatchStrategyCardsView(
       roleAssignments: mapRoleAssignments(existing?.roleAssignments),
       hasCard: Boolean(existing),
       isNextMatch: row.matchKey === nextMatchKey,
+      isUpcoming: typeof row.stillAhead === "boolean" ? row.stillAhead : !matchHasTbaResult(row),
       updatedAt: existing?.updatedAt ?? null,
     };
   });
@@ -265,6 +266,22 @@ export async function computeMatchStrategyCardsView(
 
 // ---- write helpers (run inside the caller's withRls transaction) ----
 
+export class MatchCardConflictError extends Error {
+  constructor() { super("This plan changed on another device. Your draft is still here. Copy it before reloading the saved plan."); }
+}
+
+async function guardCardRevision(client: PoolClient, input: { orgId: string; matchKey: string; baseRevision?: string | null }, deleting = false) {
+  // Lock the logical key, including when no row exists yet. A stale editor must
+  // not recreate a plan a teammate just deleted, or overwrite a concurrent insert.
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [`match-card:${input.orgId}:${input.matchKey}`]);
+  if (input.baseRevision === undefined) return;
+  const current = await client.query<{ matches: boolean }>(
+    "SELECT updated_at = $3::timestamptz AS matches FROM match_strategy_cards WHERE org_id = $1 AND match_key = $2 FOR UPDATE",
+    [input.orgId, input.matchKey, input.baseRevision],
+  );
+  if (current.rows.length ? !current.rows[0]?.matches : input.baseRevision !== null && !deleting) throw new MatchCardConflictError();
+}
+
 export async function upsertCard(
   client: PoolClient,
   input: {
@@ -278,9 +295,11 @@ export async function upsertCard(
     keyThreats: string | null;
     driverNotes: string | null;
     roleAssignments: MatchStrategyRoleAssignment[];
+    baseRevision?: string | null;
   },
 ): Promise<void> {
-  await client.query(
+  await guardCardRevision(client, input);
+  const result = await client.query(
     `INSERT INTO match_strategy_cards (
        org_id, match_key, event_key, game_plan, auto_assignment, defense_focus,
        key_threats, driver_notes, role_assignments, created_by, updated_by
@@ -293,7 +312,9 @@ export async function upsertCard(
        driver_notes = EXCLUDED.driver_notes,
        role_assignments = EXCLUDED.role_assignments,
        updated_by = EXCLUDED.updated_by,
-       updated_at = now()`,
+       updated_at = now()
+     WHERE NOT $11::boolean OR match_strategy_cards.updated_at = $12::timestamptz
+     RETURNING match_key`,
     [
       input.orgId,
       input.matchKey,
@@ -305,16 +326,27 @@ export async function upsertCard(
       input.driverNotes,
       JSON.stringify(input.roleAssignments),
       input.userId,
+      input.baseRevision !== undefined,
+      input.baseRevision ?? null,
     ],
   );
+  if (!result.rowCount) throw new MatchCardConflictError();
 }
 
 export async function deleteCard(
   client: PoolClient,
-  input: { orgId: string; matchKey: string },
+  input: { orgId: string; matchKey: string; baseRevision?: string | null },
 ): Promise<void> {
-  await client.query(`DELETE FROM match_strategy_cards WHERE org_id = $1 AND match_key = $2`, [
+  await guardCardRevision(client, input, true);
+  const result = await client.query(`DELETE FROM match_strategy_cards WHERE org_id = $1 AND match_key = $2
+    AND (NOT $3::boolean OR updated_at = $4::timestamptz) RETURNING match_key`, [
     input.orgId,
     input.matchKey,
+    input.baseRevision !== undefined,
+    input.baseRevision ?? null,
   ]);
+  if (!result.rowCount && input.baseRevision !== undefined) {
+    const existing = await client.query("SELECT 1 FROM match_strategy_cards WHERE org_id = $1 AND match_key = $2", [input.orgId, input.matchKey]);
+    if (existing.rowCount) throw new MatchCardConflictError();
+  }
 }
