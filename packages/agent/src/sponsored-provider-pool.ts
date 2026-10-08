@@ -1,4 +1,5 @@
 import type { ChatAdapter, ContextItem } from "./index";
+import { assertTextOnlyChatInput } from "./chat-image";
 import { HttpChatAdapter, ProviderRateLimitError } from "./http-chat-adapter";
 
 /**
@@ -258,6 +259,7 @@ export class SponsoredFailoverChatAdapter implements ChatAdapter {
     context: ContextItem[];
     promptCachingEnabled?: boolean;
   }) {
+    assertTextOnlyChatInput(input);
     // Same message + context for every failover attempt — never strip system/context.
     const attemptOrder = orderSponsoredProvidersWeightedRoundRobin(this.catalog);
     const errors: string[] = [];

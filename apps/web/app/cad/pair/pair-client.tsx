@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "../../../components/ui";
 import {
   CAD_PAIR_APPROVED,
@@ -12,31 +12,55 @@ import {
 
 export default function PairClient({
   initialCode,
+  initialPlatform = "fusion360",
   organizations,
 }: {
   initialCode: string;
+  initialPlatform?: "onshape" | "fusion360";
   organizations: Array<{ id: string; name: string; role: string }>;
 }) {
   const [code, setCode] = useState(initialCode);
   const [orgId, setOrgId] = useState(organizations[0]?.id ?? "");
-  const [platform, setPlatform] = useState<"onshape" | "fusion360">("fusion360");
+  const [platform, setPlatform] = useState(initialPlatform);
   const [message, setMessage] = useState("");
+  const [pending, setPending] = useState(false);
+  const [approved, setApproved] = useState(false);
+  const submitting = useRef(false);
 
   async function approve(event: React.FormEvent) {
     event.preventDefault();
-    const response = await fetch("/api/cad/pair/approve", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code, orgId, platform }),
-    });
-    const data: unknown = await response.json().catch(() => null);
-    const machineName =
-      data && typeof data === "object" && "machineName" in data && typeof data.machineName === "string"
-        ? data.machineName
+    if (submitting.current || approved) return;
+    submitting.current = true;
+    setPending(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/cad/pair/approve", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ code, orgId, platform }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      const machineName =
+        data && typeof data === "object" && "machineName" in data && typeof data.machineName === "string"
+          ? data.machineName
+          : "";
+      const error =
+        data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "";
+      const success = response.ok && data && typeof data === "object" && "success" in data && data.success === true;
+      if (success) setApproved(true);
+      const auditWarning = success && data && typeof data === "object" && "warning" in data && data.warning === "audit_unavailable"
+        ? " The device is approved, but its activity record could not be saved. No repeat approval is needed."
         : "";
-    const error =
-      data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "";
-    setMessage(response.ok ? (machineName ? `${machineName} is paired. Go back to the desktop app to continue.` : CAD_PAIR_APPROVED) : error);
+      setMessage(success
+        ? `${machineName ? `${machineName} is paired. Return to your CAD client to continue.` : CAD_PAIR_APPROVED}${auditWarning}`
+        : error || "Pairing could not be confirmed. Check the code and try again.");
+    } catch {
+      setMessage("Pairing was not confirmed. Check your connection and check pairing in your CAD client before submitting again; the approval may have completed.");
+    } finally {
+      submitting.current = false;
+      setPending(false);
+    }
   }
 
   return (
@@ -58,6 +82,7 @@ export default function PairClient({
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             pattern="[A-Z0-9-]{8,9}"
             required
+            disabled={pending || approved}
             autoComplete="one-time-code"
           />
         </label>
@@ -69,7 +94,7 @@ export default function PairClient({
         ) : (
           <label>
             Team
-            <select value={orgId} onChange={(e) => setOrgId(e.target.value)} required>
+            <select value={orgId} onChange={(e) => setOrgId(e.target.value)} required disabled={pending || approved}>
               {organizations.map((org) => (
                 <option value={org.id} key={org.id}>
                   {org.name} · {org.role}
@@ -79,7 +104,7 @@ export default function PairClient({
           </label>
         )}
 
-        <fieldset>
+        <fieldset disabled={pending || approved}>
           <legend>What you design in</legend>
           <label className="cad-choice" style={{ display: "grid", gridTemplateColumns: "20px 1fr" }}>
             <input
@@ -113,8 +138,8 @@ export default function PairClient({
               Choose your team
             </Button>
           ) : (
-            <Button variant="primary" type="submit" disabled={!orgId}>
-              Approve pairing
+            <Button variant="primary" type="submit" disabled={!orgId || pending || approved}>
+              {approved ? "Paired" : pending ? "Pairing…" : "Approve pairing"}
             </Button>
           )}
           {orgId ? (

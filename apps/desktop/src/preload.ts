@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { LinkState } from "./link";
 import type { UpdateStatus } from "./update-service";
+import type { CadDesktopStart, CadDesktopStatus, CadDesktopTool } from "./cad-contract";
 
 /**
  * Bridge for the local shell pages (gate.html). The browser-link IPC handlers
@@ -13,6 +14,18 @@ contextBridge.exposeInMainWorld("vantageDesktop", {
   platform: process.platform,
   /** Bundled file:// pages only: try the app again. Main refuses this from the website. */
   retry: (): Promise<void> => ipcRenderer.invoke("desktop-shell:retry"),
+  /** Explicit user-started browser CAD; main validates sender, session and team. */
+  cad: {
+    status: (): Promise<CadDesktopStatus> => ipcRenderer.invoke("desktop-cad:status"),
+    start: (input: CadDesktopStart): Promise<CadDesktopStatus> => ipcRenderer.invoke("desktop-cad:start", input),
+    stop: (): Promise<CadDesktopStatus> => ipcRenderer.invoke("desktop-cad:stop"),
+    tool: (input: CadDesktopTool): Promise<unknown> => ipcRenderer.invoke("desktop-cad:tool", input),
+    onState: (callback: (state: CadDesktopStatus) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, state: CadDesktopStatus) => callback(state);
+      ipcRenderer.on("desktop-cad:state", listener);
+      return () => ipcRenderer.removeListener("desktop-cad:state", listener);
+    },
+  },
   link: {
     /** Start (or restart) the browser sign-in flow. */
     start: (): Promise<void> => ipcRenderer.invoke("desktop-link:start"),

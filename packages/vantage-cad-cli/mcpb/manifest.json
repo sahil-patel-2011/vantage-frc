@@ -1,0 +1,22 @@
+{
+  "manifest_version": "0.3",
+  "name": "vantage-onshape-browser-pilot",
+  "display_name": "Vantage CAD — Team 6925 pilot",
+  "version": "0.1.0",
+  "description": "Build and inspect Onshape models through its visible browser interface with your approved Vantage device.",
+  "long_description": "Development pilot for WA Robotics Team 6925. The connector opens promptly without launching a browser. Ask your assistant to check status, pair this computer if needed, and show the Vantage approval links. You approve the device in Vantage, then explicitly open Onshape and sign in yourself. No passwords or device tokens are entered in chat. Visible browser controls perform CAD work, with current team access checked before each operation. No Onshape API transport is used. Screenshots and visible document content are sent to your selected AI client. Packaging and target-platform acceptance are still required before distribution.",
+  "author": { "name": "Vantage" },
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.mjs",
+    "mcp_config": { "command": "node", "args": ["${__dirname}/server/index.mjs"] }
+  },
+  "tools_generated": true,
+  "prompts_generated": true,
+  "privacy_policies": [
+    "https://vantagefrc.vercel.app/privacy",
+    "https://www.ptc.com/en/documents/policies/privacy"
+  ],
+  "compatibility": { "platforms": ["darwin", "win32"], "runtimes": { "node": ">=22" } },
+  "keywords": ["cad", "onshape", "robotics", "browser"]
+}

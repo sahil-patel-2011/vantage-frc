@@ -11,6 +11,7 @@ import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
 import { userTurnWithContext } from "./untrusted";
 import { currentSeasonYear, packForYear } from "@vantage/game-year";
 import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
+import { assertRemoteImageAdapter, isRemoteImageEndpoint, validateChatPngImages, type ChatPngImage } from "./chat-image";
 import {
   applyAnthropicCacheControl,
   computeCacheAwareCost,
@@ -97,8 +98,9 @@ async function fetchWithTimeout(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetchImpl(url, { ...init, signal: controller.signal });
+    return await fetchImpl(url, { ...init, signal: init.signal ? AbortSignal.any([init.signal, controller.signal]) : controller.signal });
   } catch (error) {
+    if (init.signal?.aborted) throw error;
     if (error instanceof Error && (error.name === "AbortError" || /aborted/i.test(error.message))) {
       // Clean, classified timeout (name ChatUpstreamTimeoutError, status 504) —
       // never a hang, never an opaque AbortError.
@@ -114,6 +116,7 @@ export class HttpChatAdapter implements ChatAdapter {
   readonly provider: string;
   readonly model: string;
   readonly supportsNativeTools = true;
+  readonly supportsImages: boolean;
   private readonly apiKey: string;
   readonly baseUrl: string;
   private readonly kind: HttpChatAdapterConfig["provider"];
@@ -133,6 +136,7 @@ export class HttpChatAdapter implements ChatAdapter {
     this.model = config.model;
     this.apiKey = config.apiKey;
     this.baseUrl = (config.baseUrl ?? defaultBase(config.provider)).replace(/\/$/, "");
+    this.supportsImages = Boolean(config.apiKey.trim()) && isRemoteImageEndpoint(config.provider, this.baseUrl);
     this.promptCachingEnabled = config.promptCachingEnabled;
     this.prices = config.prices;
     this.fetchImpl = config.fetchImpl ?? fetch;
@@ -178,13 +182,27 @@ export class HttpChatAdapter implements ChatAdapter {
     history?: ChatMessage[];
     tools?: ChatToolDefinition[];
     promptCachingEnabled?: boolean;
+    image?: ChatPngImage;
+    images?: ChatPngImage[];
+    maxCompletionTokens?: number;
+    signal?: AbortSignal;
   }) {
+    input.signal?.throwIfAborted();
+    if (input.maxCompletionTokens !== undefined && (!Number.isSafeInteger(input.maxCompletionTokens) || input.maxCompletionTokens < 1 || input.maxCompletionTokens > 4096)) {
+      throw new Error("Choose a completion limit between 1 and 4096 tokens.");
+    }
+    let images: ChatPngImage[] | undefined;
+    if (input.image !== undefined || input.images !== undefined) {
+      assertRemoteImageAdapter(this);
+      if (input.image !== undefined && input.images !== undefined) throw new Error("Use image or images, not both.");
+      images = validateChatPngImages(input.images ?? [input.image]).map((item) => item.image);
+    }
     const caching = input.promptCachingEnabled ?? this.promptCachingEnabled;
     const prepared = this.prepare(input.context, input.history ?? []);
     if (this.kind === "anthropic") {
-      return this.completeAnthropic(input.message, prepared.context, prepared.history, input.tools ?? [], caching);
+      return this.completeAnthropic(input.message, prepared.context, prepared.history, input.tools ?? [], caching, images, input.maxCompletionTokens, input.signal);
     }
-    return this.completeOpenAi(input.message, prepared.context, prepared.history, input.tools ?? [], caching);
+    return this.completeOpenAi(input.message, prepared.context, prepared.history, input.tools ?? [], caching, images, input.maxCompletionTokens, input.signal);
   }
 
   estimateCostUsd(promptTokens: number, completionTokens: number): number {
@@ -201,6 +219,9 @@ export class HttpChatAdapter implements ChatAdapter {
     history: ChatMessage[],
     tools: ChatToolDefinition[],
     caching: boolean,
+    images?: ChatPngImage[],
+    maxCompletionTokens?: number,
+    signal?: AbortSignal,
   ) {
     // Context is data from other people and the web: it goes in the user turn, wrapped as
     // <untrusted_source>, never in the system prompt (see ./untrusted.ts).
@@ -210,6 +231,8 @@ export class HttpChatAdapter implements ChatAdapter {
       `${this.baseUrl}/v1/messages`,
       {
         method: "POST",
+        signal,
+        ...(images ? { redirect: "error" as const } : {}),
         headers: {
           "content-type": "application/json",
           "x-api-key": this.apiKey,
@@ -217,9 +240,12 @@ export class HttpChatAdapter implements ChatAdapter {
         },
         body: JSON.stringify({
           model: this.model,
-          max_tokens: chatCompletionMaxTokens(this.capability),
+          max_tokens: maxCompletionTokens ?? chatCompletionMaxTokens(this.capability),
           system: systemBlocks,
-          messages: [...history, { role: "user", content: userTurnWithContext(message, context) }],
+          messages: [...history, { role: "user", content: images ? [
+            ...images.map((image) => ({ type: "image", source: { type: "base64", media_type: image.mimeType, data: image.dataBase64 } })),
+            { type: "text", text: userTurnWithContext(message, context) },
+          ] : userTurnWithContext(message, context) }],
           ...(tools.length
             ? {
                 tools: tools.map((tool) => ({
@@ -281,6 +307,9 @@ export class HttpChatAdapter implements ChatAdapter {
     history: ChatMessage[],
     tools: ChatToolDefinition[],
     caching: boolean,
+    images?: ChatPngImage[],
+    maxCompletionTokens?: number,
+    signal?: AbortSignal,
   ) {
     const preference = openAiPromptCachePreference(caching);
     const headers: Record<string, string> = {
@@ -296,13 +325,21 @@ export class HttpChatAdapter implements ChatAdapter {
       `${this.baseUrl}/chat/completions`,
       {
         method: "POST",
+        signal,
+        ...(images ? { redirect: "error" as const } : {}),
         headers,
         body: JSON.stringify({
           model: this.model,
+          ...(maxCompletionTokens === undefined ? {} : this.baseUrl === "https://api.openai.com/v1"
+            ? { max_completion_tokens: maxCompletionTokens }
+            : { max_tokens: maxCompletionTokens }),
           messages: [
             { role: "system", content: this.systemPrompt },
             ...history,
-            { role: "user", content: userTurnWithContext(message, context) },
+            { role: "user", content: images ? [
+              ...images.map((image) => ({ type: "image_url", image_url: { url: `data:${image.mimeType};base64,${image.dataBase64}`, detail: "high" } })),
+              { type: "text", text: userTurnWithContext(message, context) },
+            ] : userTurnWithContext(message, context) },
           ],
           ...(tools.length
             ? {

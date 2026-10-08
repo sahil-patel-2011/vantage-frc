@@ -1,8 +1,8 @@
 ---
 name: cad-onshape
 description: >-
-  Drive Vantage CAD → Onshape through a local Playwright browser session or hosted
-  OAuth/API keys. Use when running vantage-cad login, configuring ONSHAPE_OAUTH_*,
+  Drive the Team 6925 Onshape browser UI pilot or inspect legacy hosted
+  OAuth/API integrations. Use when mapping Onshape controls, building browser CAD,
   selecting document/workspace/element, running execute-onshape, exporting STEP/STL/GLTF
   into team artifacts with provenance, explaining feature trees for students, or using
   the jarvis-onshape-mcp plugin for interactive CAD builds. Load Jarvis Onshape MCP
@@ -13,13 +13,34 @@ description: >-
 
 ## Architecture
 
-- **Preferred local path:** `vantage-cad login` opens visible Playwright Chromium. The user signs in;
-  requests execute with `window.fetch` inside that Onshape page. No API key is required.
-- **Hosted path:** OAuth or server API keys through Vantage server workers.
-- Onshape says session-authenticated browser calls are not deducted from the annual API allowance.
-  Private OAuth/API-key calls are deducted; keep the Vantage call ledger visible.
+- **User-requested UI-only pilot:** `packages/vantage-cad-cli/src/onshape-ui/` and
+  `vantage-cad ui-mcp`. Use Playwright locators and visible canvas actions only.
+  No Onshape REST, session `window.fetch`, OAuth, API keys, hidden application state,
+  or silent fallback. Onshape's own UI still makes its normal network requests.
+- **Legacy paths below are API-backed**, including `vantage-cad login`, `mcp`,
+  and `onshape`. They do not satisfy a UI-only request. Do not infer quota exemptions.
+- The pilot requires current membership in the server-bound WA Robotics 6925
+  organization before each command. Team number entered by a user is insufficient.
+- Read `docs/cad/ONSHAPE-BROWSER-PILOT.md` for actual verification and release gaps.
+- Follow AGENTS.md: no laptop installs, browser launches from scripts, local tests,
+  builds, databases or background processes. Hosted browser inspection is permitted.
+  CLI examples describe future use, not authorization to run them on this laptop.
 - Never upload the local browser session to Vantage or silently fall back to a quota-consuming path.
 - Never claim certified engineering / stress analysis / competition-legal rulings.
+
+## UI-only workflow
+
+Observe → bind the exact document/workspace/tab → select a registered control →
+act once → observe the result. Rebind after switching tabs. Use one browser writer;
+planning and independent review can run in parallel. Stop on ambiguous targets,
+changed UI, rejected membership or missing dimensions. Enter explicit units.
+Mass/inertia need observed values, material, selected parts and reference frame.
+Screenshots establish context, not geometric scale. A UI postcondition does not
+certify geometry. Test in disposable documents; preserve the user's existing work.
+
+## Legacy API integration reference
+
+The remaining sections document older integrations, not the browser UI pilot.
 
 ## Admin setup (once)
 

@@ -36,6 +36,9 @@
       "update.html",
       "package.json"
     ],
+    "extraResources": [
+      { "from": "resources", "to": ".", "filter": ["onshape-ui/**/*"] }
+    ],
     "protocols": [
       {
         "name": "Vantage",
@@ -62,6 +65,7 @@
     },
     "mac": {
       "category": "public.app-category.education",
+      "x64ArchFiles": "Contents/Resources/onshape-ui/darwin-{arm64,x64}/**/*",
       "icon": "build/icon.png",
       "target": [
         {

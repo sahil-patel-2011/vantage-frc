@@ -33,28 +33,8 @@ import { describeGoogleError } from "./google-api";
 import { isLocalAcceptanceSignup } from "@vantage/core/public-signup";
 import { provisionWorkbooks } from "../provisioning/workbooks";
 import type { WorkspaceWorkbookName } from "../provisioning/model";
-
-export type SheetsHubConfig = { url: string; secret: string };
-
-/**
- * The hub's address and secret. VANTAGE_SHEETS_HUB_URL wins when set; otherwise the address the
- * script registered itself (platform_sheets_hub, migration 0688). The secret only ever comes
- * from the server env.
- */
-export function sheetsHubConfig(
-  env: NodeJS.ProcessEnv = process.env,
-  registeredUrl: string | null = null,
-): SheetsHubConfig | null {
-  const fromEnv = env.VANTAGE_SHEETS_HUB_URL?.trim() ?? "";
-  const url = isAppsScriptUrl(fromEnv) ? fromEnv : (registeredUrl?.trim() ?? "");
-  const secret = env.VANTAGE_SHEETS_HUB_SECRET?.trim().toLowerCase() ?? "";
-  if (!isAppsScriptUrl(url) || !isAppsScriptSecret(secret)) return null;
-  return { url, secret };
-}
-
-export function sheetsHubBridge(config: SheetsHubConfig | null = sheetsHubConfig()): AppsScriptBridge | null {
-  return config ? new AppsScriptBridge(config.url, config.secret) : null;
-}
+import { sheetsHubBridge, sheetsHubConfig } from "./hub-config";
+export { sheetsHubBridge, sheetsHubConfig, type SheetsHubConfig } from "./hub-config";
 
 /** The address the script registered, or null (not registered, or 0688 not applied yet). */
 export async function readRegisteredHubUrl(client: PoolClient): Promise<string | null> {
@@ -69,6 +49,10 @@ export async function readRegisteredHubUrl(client: PoolClient): Promise<string |
 /** The hub bridge from env or the registered address, read on the caller's withRls client. */
 export async function loadSheetsHubBridge(client: PoolClient): Promise<AppsScriptBridge | null> {
   if (!process.env.VANTAGE_SHEETS_HUB_SECRET) return null;
+  // A complete environment configuration never needs the legacy SQL registry.
+  // Callers still enforce session/team permissions; exports still use SQL data.
+  const configured = sheetsHubConfig();
+  if (configured) return sheetsHubBridge(configured);
   return sheetsHubBridge(sheetsHubConfig(process.env, await readRegisteredHubUrl(client)));
 }
 

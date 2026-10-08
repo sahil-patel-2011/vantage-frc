@@ -13,6 +13,7 @@
  * failures throw with the provider's rate-limit text verbatim when present.
  */
 import type { ChatAdapter, ContextItem } from "./index";
+import { assertTextOnlyChatInput } from "./chat-image";
 import { UNTRUSTED_CONTEXT_RULE, formatContextItemForPrompt } from "./untrusted";
 
 export type BridgeDegradedReason = "bridge-offline" | "bridge-timeout" | "bridge-rate-limited";
@@ -237,6 +238,7 @@ export class SubscriptionBridgeChatAdapter implements ChatAdapter {
   }
 
   async complete(input: { message: string; context: ContextItem[]; promptCachingEnabled?: boolean }) {
+    assertTextOnlyChatInput(input);
     this.lastDegraded = null;
     this.fallbackProvider = null;
     try {

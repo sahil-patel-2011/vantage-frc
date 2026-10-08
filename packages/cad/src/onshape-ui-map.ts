@@ -14,19 +14,14 @@
  * letting the agent answer "how do I loft two profiles" with the actual path
  * through the actual UI. It is a map of the room.
  *
- * It is NOT how the agent should build geometry. That goes through the REST
- * API, which is versioned, documented, and complete: `featurespecs` reports
- * every feature type the account can create — 97 on a standard education plan
- * at capture time — each with its full parameter schema. Compare that to the
- * 60-odd labels below and the gap is not an accident: plenty of API features
- * have no toolbar button at all, and a toolbar button is one presentation of a
- * feature rather than the feature itself.
+ * The new UI-only executor uses its own observed, stateful control atlas in
+ * packages/vantage-cad-cli/src/onshape-ui. This descriptive inventory must not
+ * choose an API transport or imply end-to-end support for an untested operation.
  *
  * ON STALENESS. Coordinates are viewport-dependent and Onshape ships UI
  * changes; treat `x` as "roughly here, left to right" rather than a click
  * target, and re-capture rather than trusting these pixels. Labels and grouping
- * age far better than positions. The live `featurespecs` call never goes stale
- * at all, which is the argument for preferring it wherever both would work.
+ * age better than positions, but still need live verification.
  */
 
 export type OnshapeToolbarEntry = {
@@ -208,12 +203,11 @@ export function findOnshapeTool(
 }
 
 /**
- * Said once, where the agent will read it: the map explains the UI, the API
- * builds the geometry.
+ * Legacy descriptive inventory, not a verified executor. The browser pilot has
+ * a separate observed control atlas and must never fall back to API transports.
  */
 export const ONSHAPE_UI_MAP_GUIDANCE =
-  "This map names Onshape's toolbar so you can tell someone where a tool is and which " +
-  "shortcut it uses. Do not drive the UI to build geometry — call the REST API, and ask " +
-  "onshape_feature_specs for the live list of every feature the account can create, each " +
-  "with its parameter schema. The API covers features that have no toolbar button, and it " +
-  "does not break when Onshape moves a button.";
+  "This legacy map names toolbar tools; it does not prove current availability or geometry. " +
+  "For the UI-only browser pilot use the observed onshape-ui atlas, fresh screenshots and " +
+  "registered Playwright controls. Never replace a requested UI action with Onshape REST, " +
+  "session fetch, OAuth or API keys. Verify the result after each operation.";

@@ -74,6 +74,7 @@ export function CadConnectionsRelated({ orgId }: { orgId: string | null }) {
       <a href={withOrgHref("/cad", orgId)}>CAD</a>
       <a href={withOrgHref("/cad-vault", orgId)}>CAD Vault</a>
       <a href={withOrgHref("/cad-learn", orgId)}>Learn CAD</a>
+      <a href={withOrgHref("/cad/browser-agent", orgId)}>Browser CAD pilot</a>
     </nav>
   );
 }

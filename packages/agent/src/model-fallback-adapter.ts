@@ -1,5 +1,6 @@
 import type { ChatAdapter } from "./index";
 import { ProviderRateLimitError, type HttpChatAdapter } from "./http-chat-adapter";
+import { assertRemoteImageAdapter } from "./chat-image";
 
 /**
  * Several ways to answer one turn — other models on the same key, then the same models on
@@ -16,6 +17,7 @@ export class ModelFallbackChatAdapter implements ChatAdapter {
   /** Updates after a fallback answers so metering and provenance name the model that did. */
   model: string;
   readonly supportsNativeTools = true;
+  get supportsImages(): boolean { return this.adapters.every((adapter) => adapter.supportsImages); }
   readonly baseUrl: string;
   private answeredBy: HttpChatAdapter;
 
@@ -38,8 +40,11 @@ export class ModelFallbackChatAdapter implements ChatAdapter {
   }
 
   async complete(input: Parameters<ChatAdapter["complete"]>[0]) {
+    input.signal?.throwIfAborted();
+    if (input.image !== undefined || input.images !== undefined) assertRemoteImageAdapter(this);
     let lastError: ProviderRateLimitError | undefined;
     for (const adapter of this.adapters) {
+      input.signal?.throwIfAborted();
       try {
         const result = await adapter.complete(input);
         this.answeredBy = adapter;

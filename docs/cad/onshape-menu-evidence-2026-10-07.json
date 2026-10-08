@@ -1,0 +1,301 @@
+{
+  "observedAt": "2026-10-07",
+  "build": "1.221.89963.13d10d36cb23",
+  "surface": "Part Studio",
+  "verification": "menu-observed-not-operation-tested",
+  "menus": [
+    {
+      "menu": "Plane",
+      "entries": [
+        {
+          "command": "cPlane",
+          "label": "Plane"
+        },
+        {
+          "command": "offsetSurface",
+          "label": "Offset surface"
+        },
+        {
+          "command": "boundarySurface",
+          "label": "Boundary surface"
+        },
+        {
+          "command": "fill",
+          "label": "Fill"
+        },
+        {
+          "command": "extendSurface",
+          "label": "Move boundary"
+        },
+        {
+          "command": "ruledSurface",
+          "label": "Ruled surface"
+        },
+        {
+          "command": "mutualTrim",
+          "label": "Mutual trim"
+        },
+        {
+          "command": "constrainedSurface",
+          "label": "Constrained surface"
+        },
+        {
+          "command": "helix",
+          "label": "Helix"
+        },
+        {
+          "command": "fitSpline",
+          "label": "3D fit spline"
+        },
+        {
+          "command": "projectCurves",
+          "label": "Projected curve"
+        },
+        {
+          "command": "bridgingCurve",
+          "label": "Bridging curve"
+        },
+        {
+          "command": "compositeCurve",
+          "label": "Composite curve"
+        },
+        {
+          "command": "intersectionCurve",
+          "label": "Intersection curve"
+        },
+        {
+          "command": "trimCurve",
+          "label": "Trim curve"
+        },
+        {
+          "command": "isocline",
+          "label": "Isocline"
+        },
+        {
+          "command": "offsetCurveOnFace",
+          "label": "Offset curve"
+        },
+        {
+          "command": "isoparametricCurve",
+          "label": "Isoparametric curve"
+        },
+        {
+          "command": "editCurve",
+          "label": "Edit curve"
+        },
+        {
+          "command": "routingCurve",
+          "label": "Routing curve"
+        },
+        {
+          "command": "mateConnector",
+          "label": "Mate connector (ctrl+m)"
+        },
+        {
+          "command": "importDerived",
+          "label": "Derived"
+        },
+        {
+          "command": "assignVariable",
+          "label": "Variable"
+        },
+        {
+          "command": "queryVariable",
+          "label": "Query variable"
+        },
+        {
+          "command": "compositePart",
+          "label": "Composite part"
+        },
+        {
+          "command": "tag",
+          "label": "Tag"
+        }
+      ]
+    },
+    {
+      "menu": "Extrude",
+      "entries": [
+        {
+          "command": "thicken",
+          "label": "Thicken"
+        },
+        {
+          "command": "enclose",
+          "label": "Enclose"
+        }
+      ]
+    },
+    {
+      "menu": "Linear pattern",
+      "entries": [
+        {
+          "command": "linearPattern",
+          "label": "Linear pattern"
+        },
+        {
+          "command": "circularPattern",
+          "label": "Circular pattern"
+        },
+        {
+          "command": "curvePattern",
+          "label": "Curve pattern"
+        }
+      ]
+    },
+    {
+      "menu": "Boolean / transform",
+      "entries": [
+        {
+          "command": "transform",
+          "label": "Transform"
+        },
+        {
+          "command": "wrap",
+          "label": "Wrap"
+        },
+        {
+          "command": "decal",
+          "label": "Decal"
+        }
+      ]
+    },
+    {
+      "menu": "Modify fillet",
+      "entries": [
+        {
+          "command": "modifyFillet",
+          "label": "Modify fillet"
+        },
+        {
+          "command": "deleteFace",
+          "label": "Delete face"
+        },
+        {
+          "command": "moveFace",
+          "label": "Move face"
+        },
+        {
+          "command": "replaceFace",
+          "label": "Replace face"
+        }
+      ]
+    },
+    {
+      "menu": "Frame",
+      "entries": [
+        {
+          "command": "frame",
+          "label": "Frame"
+        },
+        {
+          "command": "frameTrim",
+          "label": "Frame trim"
+        },
+        {
+          "command": "gusset",
+          "label": "Gusset"
+        },
+        {
+          "command": "endcap",
+          "label": "End cap"
+        },
+        {
+          "command": "cutlist",
+          "label": "Cut list"
+        }
+      ]
+    },
+    {
+      "menu": "Sheet metal",
+      "entries": [
+        {
+          "command": "sheetMetalStart",
+          "label": "Sheet metal model"
+        },
+        {
+          "command": "sheetMetalFlange",
+          "label": "Flange"
+        },
+        {
+          "command": "sheetMetalHem",
+          "label": "Hem"
+        },
+        {
+          "command": "sheetMetalTab",
+          "label": "Tab"
+        },
+        {
+          "command": "sheetMetalBend",
+          "label": "Bend"
+        },
+        {
+          "command": "sheetMetalJog",
+          "label": "Jog"
+        },
+        {
+          "command": "sheetMetalFormed",
+          "label": "Form"
+        },
+        {
+          "command": "sheetMetalLoft",
+          "label": "Sheet metal loft"
+        },
+        {
+          "command": "sheetMetalMakeJoint",
+          "label": "Make joint"
+        },
+        {
+          "command": "sheetMetalCorner",
+          "label": "Corner"
+        },
+        {
+          "command": "sheetMetalBendRelief",
+          "label": "Bend relief"
+        },
+        {
+          "command": "sheetMetalCornerBreak",
+          "label": "Corner break"
+        },
+        {
+          "command": "sheetMetalEnd",
+          "label": "Finish sheet metal model"
+        },
+        {
+          "command": "pcbStart",
+          "label": "Flex PCB model"
+        },
+        {
+          "command": "pcbEnd",
+          "label": "Finish flex PCB model"
+        }
+      ]
+    },
+    {
+      "menu": "Fillet",
+      "entries": [
+        {
+          "command": "fillet",
+          "label": "Fillet (shift+f)"
+        },
+        {
+          "command": "faceBlend",
+          "label": "Face blend"
+        }
+      ]
+    },
+    {
+      "menu": "Draft",
+      "entries": [
+        {
+          "command": "draft",
+          "label": "Draft"
+        },
+        {
+          "command": "bodyDraft",
+          "label": "Body draft"
+        }
+      ]
+    }
+  ]
+}

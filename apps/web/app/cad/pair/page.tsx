@@ -12,14 +12,16 @@ export const metadata = {
   description: "Approve a pairing code for Onshape or Fusion on a computer you control.",
 };
 
-export default async function PairPage({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
-  const code = (await searchParams).code ?? "";
+export default async function PairPage({ searchParams }: { searchParams: Promise<{ code?: string; platform?: string }> }) {
+  const params = await searchParams;
+  const code = params.code ?? "";
+  const platform = params.platform === "onshape" ? "onshape" : "fusion360";
   const session = await auth.api.getSession({ headers: await headers() });
   // Proxy already requires a session (or the local E2E fixture cookie). Do not
   // bounce a fixture walk to /signin — that cookie then redirects to /dashboard
   // and the student heading never appears. Empty teams still render Pair this computer.
   if (!session) {
-    return <PairClient initialCode={code} organizations={[]} />;
+    return <PairClient initialCode={code} initialPlatform={platform} organizations={[]} />;
   }
   const orgs = await withRls({ userId: session.user.id }, async (client) =>
     (
@@ -33,5 +35,5 @@ export default async function PairPage({ searchParams }: { searchParams: Promise
       )
     ).rows,
   );
-  return <PairClient initialCode={code} organizations={orgs} />;
+  return <PairClient initialCode={code} initialPlatform={platform} organizations={orgs} />;
 }

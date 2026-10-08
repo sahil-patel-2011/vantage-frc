@@ -1,3 +1,6 @@
+import { assertTextOnlyChatInput, type ChatPngImage } from "./chat-image";
+export * from "./chat-image";
+
 export type ModelConfig = {
   id: string;
   displayName: string;
@@ -142,6 +145,8 @@ export interface ChatAdapter {
   readonly provider: string;
   readonly model: string;
   readonly supportsNativeTools?: boolean;
+  /** Transport support, not a promise that the selected model accepts images. */
+  readonly supportsImages?: boolean;
   estimateCostUsd?(promptTokens: number, completionTokens: number): number;
   complete(input: {
     message: string;
@@ -149,6 +154,11 @@ export interface ChatAdapter {
     history?: ChatMessage[];
     tools?: ChatToolDefinition[];
     promptCachingEnabled?: boolean;
+    image?: ChatPngImage;
+    images?: ChatPngImage[];
+    /** Optional hard output cap for bounded agent planning turns (1–4096). */
+    maxCompletionTokens?: number;
+    signal?: AbortSignal;
   }): Promise<ChatCompletionResult>;
 }
 
@@ -177,6 +187,7 @@ export class LocalDeterministicChatAdapter implements ChatAdapter {
     history?: ChatMessage[];
     promptCachingEnabled?: boolean;
   }) {
+    assertTextOnlyChatInput(input);
     const { formatGroundedReply } = await import("./auto-tools");
     const { simulateLocalCacheUsage } = await import("./prompt-caching");
     const toolFacts = input.context.filter((item) => item.type === "module_fact");

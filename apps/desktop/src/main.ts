@@ -6,11 +6,13 @@ import {
   screen,
   session,
   shell,
+  utilityProcess,
   type IpcMainInvokeEvent,
   type Session,
   type WebContents,
 } from "electron";
 import { promises as fs } from "node:fs";
+import { createHash } from "node:crypto";
 import { hostname } from "node:os";
 import { join, resolve } from "node:path";
 import { runLinkFlow, type LinkState } from "./link";
@@ -34,6 +36,8 @@ import {
 } from "./window-state";
 import { NET_ERR, offlineReasonFromLoadError, shellWaitlistUrl } from "./shell-copy";
 import { UpdateService, type UpdateStatus } from "./update-service";
+import { CadDesktopController, inspectCadDesktopAssets } from "./cad-controller";
+import { cadSenderIsTrusted } from "./cad-contract";
 
 const PARTITION = "persist:vantage";
 const DEEP_LINK_SCHEME = "vantage-frc";
@@ -46,6 +50,8 @@ const updates = new UpdateService(startOrigin);
 let signedIn = false;
 /** Deep-link path waiting for sign-in (or for the window to exist). */
 let pendingDeepLinkPath: string | null = null;
+let cad: CadDesktopController | null = null;
+let cadOwner: WebContents | null = null;
 
 function asWindow(win: unknown): BrowserWindow | undefined {
   return win instanceof BrowserWindow ? win : undefined;
@@ -302,6 +308,84 @@ function installUpdateIpc() {
   });
 }
 
+/** Dedicated UI worker; the hosted renderer never chooses a process or receives cookies. */
+function installCadIpc() {
+  const resourceRoot = app.isPackaged
+    ? join(process.resourcesPath, "onshape-ui", `${process.platform}-${process.arch}`)
+    : join(app.getAppPath(), "resources", "onshape-ui", `${process.platform}-${process.arch}`);
+  const sessionIdentity = async () => {
+    const own = (await appSession().cookies.get({ url: startOrigin })).filter((cookie) =>
+      isSessionCookieName(cookie.name) && cookieMatchesHost(cookie.domain, appHost));
+    if (!own.length) return null;
+    return createHash("sha256").update(own.map((cookie) => `${cookie.name}:${cookie.value}`).sort().join("\n")).digest("hex");
+  };
+  cad = new CadDesktopController({
+    assets: () => inspectCadDesktopAssets(resourceRoot),
+    sessionIdentity,
+    authorize: async (orgId) => {
+      const url = new URL("/api/cad/browser-agent/access", startOrigin);
+      url.searchParams.set("orgId", orgId);
+      // Chromium's own Vantage session supplies its current cookies. They are
+      // never serialized to the worker or accepted from the renderer.
+      const response = await appSession().fetch(url.href, {
+        method: "GET", credentials: "include", redirect: "error", cache: "no-store",
+        signal: AbortSignal.timeout(10_000),
+      });
+      const access = await response.json() as { allowed?: boolean; status?: string; transport?: string };
+      if (!response.ok || access?.allowed !== true || access.status !== "eligible" || access.transport !== "onshape_browser_ui") {
+        throw new Error("Current Team 6925 access could not be verified. Complete Vantage sign-in and team verification, then try again.");
+      }
+    },
+    spawn: (assets) => {
+      const workerEnvironment: Record<string, string> = {};
+      // No inherited NODE_OPTIONS, provider keys, database URLs or browser overrides.
+      for (const key of ["PATH", "SystemRoot", "WINDIR", "TEMP", "TMP", "TMPDIR", "HOME", "USERPROFILE", "LOCALAPPDATA", "APPDATA", "LANG"]) {
+        if (process.env[key]) workerEnvironment[key] = process.env[key]!;
+      }
+      const child = utilityProcess.fork(assets.worker, [], {
+        cwd: assets.root, env: workerEnvironment, stdio: "ignore", serviceName: "Vantage Onshape UI",
+      });
+      return {
+        postMessage: (value) => child.postMessage(value),
+        kill: () => { try { child.kill(); } catch { /* Already exited. */ } },
+        onMessage: (listener) => { child.on("message", listener); },
+        onExit: (listener) => { child.once("exit", listener); },
+      };
+    },
+    changed: (state) => {
+      if (cadOwner && !cadOwner.isDestroyed() && cadSenderIsTrusted({ frameUrl: cadOwner.getURL(), mainFrame: true, appOrigin: startOrigin })) {
+        cadOwner.send("desktop-cad:state", state);
+      }
+    },
+  });
+  const assertSender = (event: IpcMainInvokeEvent) => {
+    if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame ||
+      !cadSenderIsTrusted({ frameUrl: event.senderFrame.url, mainFrame: true, appOrigin: startOrigin })) {
+      throw new Error("CAD is available only from the signed-in Vantage desktop app.");
+    }
+  };
+  ipcMain.handle("desktop-cad:status", (event) => { assertSender(event); return cad!.status(); });
+  ipcMain.handle("desktop-cad:start", (event, input: unknown) => {
+    assertSender(event);
+    if (cad!.running) throw new Error("Close the existing CAD browser before opening another.");
+    cadOwner = event.sender;
+    return cad!.start(input);
+  });
+  ipcMain.handle("desktop-cad:stop", (event) => {
+    assertSender(event);
+    if (cad!.running && cadOwner !== event.sender) throw new Error("Close CAD from the Vantage window that opened it.");
+    return cad!.stop();
+  });
+  ipcMain.handle("desktop-cad:tool", async (event, input: unknown) => {
+    assertSender(event);
+    if (cadOwner !== event.sender) throw new Error("Use the Vantage window that opened this CAD browser.");
+    const result = await cad!.tool(input);
+    assertSender(event);
+    if (cadOwner !== event.sender) throw new Error("This CAD browser changed owners. Observe it again in its current window.");
+    return result;
+  });
+}
+
 function broadcastUpdateStatus(status: UpdateStatus) {
   const window = mainWindow();
   if (!window || window.isDestroyed()) return;
@@ -396,6 +480,13 @@ async function createWindow() {
   window.setMenuBarVisibility(false);
   installShortcuts(window);
   trackWindowState(window);
+  const cadContents = window.webContents;
+  const stopCadAfterNavigation = () => {
+    if (cadOwner === cadContents && !cadSenderIsTrusted({ frameUrl: cadContents.getURL(), mainFrame: true, appOrigin: startOrigin })) void cad?.stop();
+  };
+  cadContents.on("did-navigate", stopCadAfterNavigation);
+  cadContents.on("did-navigate-in-page", stopCadAfterNavigation);
+  window.on("closed", () => { if (cadOwner === cadContents) { cadOwner = null; void cad?.stop(); } });
 
   window.webContents.session.setPermissionRequestHandler((_contents, permission, callback) => {
     callback(
@@ -590,6 +681,7 @@ if (!gotLock) {
     // Keep the gate in sync with sign-in / sign-out without polling.
     ses.cookies.on("changed", (_event, cookie) => {
       if (!isSessionCookieName(cookie.name) || !cookieMatchesHost(cookie.domain, appHost)) return;
+      void cad?.sessionChanged().catch(() => cad?.stop());
       void hasSessionCookie().then((present) => {
         const wasSignedIn = signedIn;
         signedIn = present;
@@ -607,6 +699,7 @@ if (!gotLock) {
     installShellIpc();
     installLinkIpc();
     installUpdateIpc();
+    installCadIpc();
     updates.watchSession(ses);
     void updates.start(broadcastUpdateStatus);
 
@@ -630,7 +723,13 @@ if (!gotLock) {
    * a match. The installer is detached, so it outlives this process and
    * relaunches Vantage itself.
    */
-  app.on("before-quit", () => {
+  let cadQuitReleased = false;
+  app.on("before-quit", (event) => {
+    if (cad?.running && !cadQuitReleased) {
+      event.preventDefault();
+      void cad.stop().finally(() => { cadQuitReleased = true; app.quit(); });
+      return;
+    }
     updates.stop();
     updates.installOnQuit();
   });

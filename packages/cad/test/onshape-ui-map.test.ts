@@ -70,10 +70,9 @@ describe("the Onshape toolbar map", () => {
     }
   });
 
-  it("points the agent at the API rather than at clicking", () => {
-    // The whole reason the map is safe to ship: it says what it is not for.
-    expect(ONSHAPE_UI_MAP_GUIDANCE).toMatch(/do not drive the ui/i);
-    expect(ONSHAPE_UI_MAP_GUIDANCE).toContain("onshape_feature_specs");
+  it("keeps the UI pilot from silently falling back to API transports", () => {
+    expect(ONSHAPE_UI_MAP_GUIDANCE).toMatch(/Never replace a requested UI action/);
+    expect(ONSHAPE_UI_MAP_GUIDANCE).toContain("registered Playwright controls");
   });
 
   it("records the selectors the capture actually used", () => {

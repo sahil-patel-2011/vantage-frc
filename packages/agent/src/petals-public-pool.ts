@@ -1,3 +1,4 @@
+import { assertTextOnlyChatInput } from "./chat-image";
 import type {
   ChatAdapter,
   ChatCompletionResult,
@@ -196,6 +197,7 @@ export class PetalsPublicPoolAdapter implements ChatAdapter {
     history?: ChatMessage[];
     promptCachingEnabled?: boolean;
   }): Promise<ChatCompletionResult> {
+    assertTextOnlyChatInput(input);
     const prompt = buildPetalsPrompt({
       capability: this.capability,
       message: input.message,
