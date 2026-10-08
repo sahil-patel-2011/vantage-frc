@@ -68,7 +68,9 @@ test("ranking saves retain discussion identities and reject stale or locked list
     };
     const before = await read();
     const entryId = before.entries[0].id;
-    expect((await api.post("/api/picklist-collab", { data: { orgId, listId: saved.id, action: "cast-vote", entryId, weight: 2, comment: "Strong auto fit" } })).ok()).toBe(true);
+    expect((await api.post("/api/picklist-collab", { data: { orgId, listId: saved.id, action: "cast-vote", entryId, weight: 2, rankSuggestion: 3, comment: "Strong auto fit" } })).ok()).toBe(true);
+    // Older clients that send a quick vote must not erase a saved reason or place.
+    expect((await api.post("/api/picklist-collab", { data: { orgId, listId: saved.id, action: "cast-vote", entryId, weight: 2 } })).ok()).toBe(true);
     // A teammate's vote advanced the shared revision; the earlier editor cannot replace it.
     expect((await api.post("/api/intel/pick-lists", { data: { ...body, id: saved.id, baseRevision: saved.revision } })).status()).toBe(409);
     const latest = await (await api.get(`/api/strategy/pick-desk?orgId=${orgId}`)).json();
@@ -78,7 +80,7 @@ test("ranking saves retain discussion identities and reject stale or locked list
     const after = await read();
     expect(after.entries[0]).toMatchObject({ id: entryId, tier: "avoid", note: "Keep discussion" });
     expect(after.entries[0].votes).toHaveLength(1);
-    expect(after.entries[0].votes[0]).toMatchObject({ weight: 2, comment: "Strong auto fit" });
+    expect(after.entries[0].votes[0]).toMatchObject({ weight: 2, rankSuggestion: 3, comment: "Strong auto fit" });
     expect((await api.post("/api/picklist-collab", { data: { orgId, listId: saved.id, action: "update-list-status", status: "locked" } })).ok()).toBe(true);
     expect((await api.post("/api/intel/pick-lists", { data: { ...body, id: saved.id } })).status()).toBe(409);
     expect((await read()).entries[0].id).toBe(entryId);

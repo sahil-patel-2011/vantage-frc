@@ -67,7 +67,15 @@ Remaining work is explicit: the all-page button/layout audit, 200% text/focus/ap
 - Slider preferences load defensively when storage is blocked and cannot overwrite another list's preferences during list changes. Reorder failures no longer report a successful switch to manual ordering.
 - Added unexecuted hosted UI regressions for unconfirmed saves, Avoid entries, unsaved-list switching and retained discussion input. Added a database-backed hosted acceptance source checking stable entry identity, retained vote/comment, shared tier projection, stale revisions and locked lists. No test, database, build or deployment was run. Full visual, concurrency and production acceptance remain pending under the same release gates.
 
-### Hosted pass sequence
+### Team discussion completion checkpoint
+
+- The pick-list discussion surface now exposes the comments that were already stored with votes. Each robot opens one focused dialog with the team note, named teammate feedback, vote weights and suggested places. The server includes the current member ID and voter display names as additive response fields; no email address is exposed by this change.
+- The current member edits their existing vote, saves an observation, explicitly clears optional details, or confirms withdrawal of only their own vote/comment. Quick-vote duplication is removed. Advanced weight/place controls are secondary; suggestions are labelled as feedback rather than automatic changes to the shared ranking. Unchanged and invalid saves explain their state through the existing values/validation.
+- Success requires the returned list to contain the requested member/entry/vote values, or to confirm that member's vote is absent after withdrawal. A stale 200 response does not claim success. Failed writes keep typed feedback. Older quick-vote requests that omit comment/place preserve saved values; explicit null still clears them.
+- Unsaved add/create/vote inputs warn before changing lists or switching ranking/discussion views. Closing the discussion guards unsaved feedback, releases/restores keyboard focus and retains the shared 150ms closing shell with reduced-motion support. Manual refresh preserves the open editor; if a teammate removed the robot, its last copy is labelled and unsaved feedback remains available to copy.
+- Added unexecuted regressions for phone/desktop discussion, save/withdraw ownership, named feedback, stale acknowledgement, removed-team refresh, focus restoration and legacy omitted-field preservation. Source inspection and whitespace checks were performed; no build, test runner or hosted candidate walkthrough was run. Acceptance and release gates remain open.
+
+### Required hosted passes
 
 1. Normal: create a team, deliver a 24-hour recipient invite, set the recipient password, join, assign a lead, publish match/pit forms, collect/correct reports, inspect trends and share a pick list.
 2. Failure: expired/wrong-recipient/replaced invites; forbidden roles; interrupted responses; offline/reconnect; duplicate saves; competing publication; team departure and stale offline data.

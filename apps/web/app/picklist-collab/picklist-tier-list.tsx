@@ -13,6 +13,7 @@ import {
 } from "../../lib/picklist-collab";
 import { orderPayload, reorderGroups, type TierGroup } from "../../lib/picklist-collab/reorder";
 import type { PicklistCollabTier } from "../../lib/picklist-collab/types";
+import { PicklistVoteDialog, type PicklistDraftChange } from "./picklist-vote-dialog";
 
 type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
@@ -25,6 +26,9 @@ export function PicklistTierList({
   rankingLocked = false,
   mutate,
   onReordered,
+  userId,
+  onDraftChange,
+  onRefresh,
 }: {
   groups: TierGroup[];
   /** team key ("frc254") to place in "Ranked by your sliders". */
@@ -35,10 +39,16 @@ export function PicklistTierList({
   mutate: Mutate;
   /** Called once a new order is sent, so the page can switch to "My order". */
   onReordered: () => void;
+  userId: string | null;
+  onDraftChange?: PicklistDraftChange;
+  onRefresh: () => void;
 }) {
   // The dropped order shows at once and stays until the saved copy arrives; without it the list
   // re-sorted by the old positions for a moment and jumped twice.
   const [pending, setPending] = useState<TierGroup[] | null>(null);
+  const [selectedDiscussion, setSelectedDiscussion] = useState<PicklistCollabEntryWithRating | null>(null);
+  const currentDiscussion = groups.flatMap(group => group.entries).find(entry => entry.id === selectedDiscussion?.id);
+  const discussion = currentDiscussion ?? selectedDiscussion;
   const shown = pending ?? groups;
   const { rootRef, drag, announcement, handleProps, slotIndex } = useTierDrag<PicklistCollabTier>({
     groups: shown.map((group) => ({ tier: group.tier, ids: group.entries.map((entry) => entry.id) })),
@@ -82,6 +92,7 @@ export function PicklistTierList({
               sliderCount={sliderCount}
               mutate={mutate}
               handleProps={handleProps(entry.id, tier)}
+              onDiscuss={() => setSelectedDiscussion(entry)}
             />,
           );
         }
@@ -95,6 +106,7 @@ export function PicklistTierList({
           </Panel>
         );
       })}
+      {discussion ? <PicklistVoteDialog key={discussion.id} entry={discussion} removed={!currentDiscussion} userId={userId} busy={busy} mutate={mutate} onClose={() => setSelectedDiscussion(null)} onDraftChange={onDraftChange} onRefresh={onRefresh} /> : null}
     </div>
   );
 }
@@ -108,6 +120,7 @@ function EntryRow({
   sliderCount,
   mutate,
   handleProps,
+  onDiscuss,
 }: {
   entry: PicklistCollabEntryWithRating;
   busy: boolean;
@@ -117,9 +130,8 @@ function EntryRow({
   sliderCount: number;
   mutate: Mutate;
   handleProps: ReturnType<ReturnType<typeof useTierDrag<PicklistCollabTier>>["handleProps"]>;
+  onDiscuss: () => void;
 }) {
-  const [weight, setWeight] = useState("1");
-  const [rank, setRank] = useState("");
   const [confirmRemove, setConfirmRemove] = useState(false);
   return (
     <li className={`picklist-collab-entry${dragged ? " is-dragging" : ""}`} data-entry-id={entry.id}>
@@ -154,9 +166,10 @@ function EntryRow({
           variant="secondary"
           size="sm"
           disabled={busy}
-          onClick={() => mutate({ action: "cast-vote", entryId: entry.id, weight: 1 })}
+          aria-label={`Discuss team ${entry.teamNumber}`}
+          onClick={onDiscuss}
         >
-          Vote
+          Discuss{entry.votes.length ? ` (${entry.votes.length})` : ""}
         </Button>
         <details className="tier-row-more">
           <summary aria-label={`More for team ${entry.teamNumber}`}>More</summary>
@@ -177,30 +190,7 @@ function EntryRow({
                 ))}
               </select>
             </label>
-            <label>
-              Vote weight
-              <input type="number" min={0.1} max={5} step={0.1} value={weight} onChange={(event) => setWeight(event.target.value)} />
-            </label>
-            <label>
-              Suggested place
-              <input type="number" min={1} placeholder="Optional" value={rank} onChange={(event) => setRank(event.target.value)} />
-            </label>
             <div className="tier-row-more-actions">
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={busy}
-                onClick={() =>
-                  mutate({
-                    action: "cast-vote",
-                    entryId: entry.id,
-                    weight: Number(weight) || 1,
-                    rankSuggestion: rank ? Number(rank) : undefined,
-                  })
-                }
-              >
-                Vote with these
-              </Button>
               <Button
                 variant="ghost"
                 size="sm"

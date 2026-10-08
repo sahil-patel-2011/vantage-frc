@@ -754,8 +754,8 @@ export async function recordVote(
      VALUES ($1::uuid, $2::uuid, $3::uuid, $4::numeric, $5::int, $6::text)
      ON CONFLICT (entry_id, voter_id) DO UPDATE SET
        weight = EXCLUDED.weight,
-       rank_suggestion = EXCLUDED.rank_suggestion,
-       comment = EXCLUDED.comment,
+       rank_suggestion = CASE WHEN $7::boolean THEN EXCLUDED.rank_suggestion ELSE pick_list_entry_votes.rank_suggestion END,
+       comment = CASE WHEN $8::boolean THEN EXCLUDED.comment ELSE pick_list_entry_votes.comment END,
        updated_at = now()`,
     [
       input.orgId,
@@ -764,6 +764,8 @@ export async function recordVote(
       clampVoteWeight(input.weight),
       input.rankSuggestion ?? null,
       input.comment ?? null,
+      input.rankSuggestion !== undefined,
+      input.comment !== undefined,
     ],
   );
   await touchList(client, input);

@@ -177,8 +177,8 @@ export async function POST(request: Request) {
             userId,
             entryId,
             weight,
-            rankSuggestion,
-            comment: trimmedOrNull(body.comment, 1000),
+            ...(Object.hasOwn(body, "rankSuggestion") ? { rankSuggestion } : {}),
+            ...(Object.hasOwn(body, "comment") ? { comment: trimmedOrNull(body.comment, 1000) } : {}),
           });
           break;
         }

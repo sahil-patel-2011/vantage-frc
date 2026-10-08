@@ -48,9 +48,9 @@ export function PickListWorkspace({ orgId, discussionDefault = false }: { orgId:
           {discussion ? "Rank teams" : "Team discussion"}
         </Button>
       </div>
-      {discussion ? <Discussion embedded onBusyChange={setBusy} /> : <Ranking orgId={orgId} embedded onDirtyChange={setDirty} onBusyChange={setBusy} />}
-      <Modal open={confirmSwitch} onClose={() => setConfirmSwitch(false)} title="Keep your ranking changes?">
-        <p>Save the pick list before switching to discussion, or discard the changes you haven’t saved.</p>
+      {discussion ? <Discussion embedded onBusyChange={setBusy} onDirtyChange={setDirty} /> : <Ranking orgId={orgId} embedded onDirtyChange={setDirty} onBusyChange={setBusy} />}
+      <Modal open={confirmSwitch} onClose={() => setConfirmSwitch(false)} title="Keep your unsaved changes?">
+        <p>Save your changes before switching views, or discard the work you haven’t saved.</p>
         <div className="app-actions"><Button type="button" variant="primary" onClick={() => setConfirmSwitch(false)}>Keep editing</Button><Button type="button" variant="secondary" onClick={switchView}>Discard and switch</Button></div>
       </Modal>
     </section>

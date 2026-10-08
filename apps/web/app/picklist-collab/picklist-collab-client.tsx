@@ -5,6 +5,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   Button,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   FormGrid,
@@ -26,6 +27,8 @@ import {
 import { PicklistWeightSliders, usePicklistFieldWeights } from "./picklist-weight-sliders";
 import { PicklistEventRanking } from "./picklist-event-ranking";
 import { PicklistTierList } from "./picklist-tier-list";
+import type { PicklistDraftChange } from "./picklist-vote-dialog";
+import { voteMutationConfirmed } from "../../lib/picklist-collab/mutation-confirmed";
 import type { TierGroup } from "../../lib/picklist-collab/reorder";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
 import {
@@ -187,7 +190,7 @@ function CollabShell({
   );
 }
 
-export default function PicklistCollabClient({ embedded = false, onBusyChange }: { embedded?: boolean; onBusyChange?: (busy: boolean) => void } = {}) {
+export default function PicklistCollabClient({ embedded = false, onBusyChange, onDirtyChange }: { embedded?: boolean; onBusyChange?: (busy: boolean) => void; onDirtyChange?: (dirty: boolean) => void } = {}) {
   const Root = embedded ? "section" : "main";
   const [view, setView] = useState<PicklistCollabView | null>(null);
   const [error, setError] = useState("");
@@ -196,8 +199,15 @@ export default function PicklistCollabClient({ embedded = false, onBusyChange }:
   const mutationPending = useRef(false);
   const loadGeneration = useRef(0);
   const [switchingList, setSwitchingList] = useState(false);
+  const [drafts, setDrafts] = useState<Record<string, boolean>>({});
+  const onDraftChange = useCallback<PicklistDraftChange>((key, dirty) => {
+    setDrafts(current => current[key] === dirty ? current : { ...current, [key]: dirty });
+  }, []);
+  const dirty = Object.values(drafts).some(Boolean);
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   useEffect(() => { onBusyChange?.(busy || switchingList); }, [busy, switchingList, onBusyChange]);
   const [listId, setListId] = useState<string | null>(null);
+  const [pendingList, setPendingList] = useState<string | null>(null);
   const activeListId = listId ?? (view?.status === "live" ? view.activeList?.id ?? null : null);
   const fieldWeights = usePicklistFieldWeights(activeListId);
   const [fromCache, setFromCache] = useState(false);
@@ -335,6 +345,16 @@ export default function PicklistCollabClient({ embedded = false, onBusyChange }:
           setError(data && "error" in data && typeof data.error === "string" ? data.error : "This change could not be confirmed. Your details are still here. Refresh before retrying.");
           return false;
         }
+        if ((payload.action !== "create-list" && data.activeList.id !== listId) ||
+          ((payload.action === "cast-vote" || payload.action === "remove-vote") && !voteMutationConfirmed({
+            action: payload.action, entryId: String(payload.entryId ?? ""), userId: viewRef.current?.status === "live" ? viewRef.current.userId ?? null : null,
+            weight: typeof payload.weight === "number" ? payload.weight : undefined,
+            rankSuggestion: typeof payload.rankSuggestion === "number" ? payload.rankSuggestion : null,
+            comment: typeof payload.comment === "string" ? payload.comment : null,
+          }, data.entries))) {
+          setError("The response did not confirm this change. Your details are still here. Check the shared list before retrying.");
+          return false;
+        }
         setView(data);
         if (data.status === "live" && data.activeList) setListId(data.activeList.id);
         setFromCache(false); setCachedAt(null);
@@ -394,6 +414,7 @@ export default function PicklistCollabClient({ embedded = false, onBusyChange }:
             </p>
           ) : null}
           <CreateListForm
+            onDraftChange={onDraftChange}
             busy={busy || switchingList}
             mutate={mutate}
             eventKey={setupView.eventKey}
@@ -434,7 +455,8 @@ export default function PicklistCollabClient({ embedded = false, onBusyChange }:
                 value={listId ?? view.activeList?.id ?? ""}
                 onChange={(event) => {
                   const next = event.target.value;
-                  load(next);
+                  if (dirty) setPendingList(next);
+                  else load(next);
                 }}
               >
                 {view.lists.map((list) => (
@@ -492,7 +514,7 @@ export default function PicklistCollabClient({ embedded = false, onBusyChange }:
             title={shellCopy.title}
             description={shellCopy.description}
           />
-          <CreateListForm busy={busy || switchingList} mutate={mutate} />
+          <CreateListForm busy={busy || switchingList} mutate={mutate} onDraftChange={onDraftChange} />
         </div>
       ) : view?.status === "live" ? (
         <div className="picklist-collab-layout">
@@ -513,9 +535,11 @@ export default function PicklistCollabClient({ embedded = false, onBusyChange }:
           />
           <details className="picklist-add-more">
             <summary data-disclosure>Add a team that isn&apos;t in the ranking</summary>
-            <AddEntryForm key={activeListId} busy={busy || switchingList || view.activeList?.status !== "open"} mutate={mutate} />
+            <AddEntryForm key={activeListId} busy={busy || switchingList || view.activeList?.status !== "open"} mutate={mutate} onDraftChange={onDraftChange} />
           </details>
           <EntriesByTier
+            onRefresh={() => load(listId)}
+            onDraftChange={onDraftChange}
             key={activeListId}
             view={view}
             busy={busy || switchingList}
@@ -523,9 +547,10 @@ export default function PicklistCollabClient({ embedded = false, onBusyChange }:
             weights={fieldWeights.weights}
             listKey={view.activeList?.id ?? "default"}
           />
-          <CreateListForm busy={busy || switchingList} mutate={mutate} collapsedLabel="Add another pick list" />
+          <CreateListForm key={activeListId} busy={busy || switchingList} mutate={mutate} collapsedLabel="Add another pick list" onDraftChange={onDraftChange} />
         </div>
       ) : null}
+      <ConfirmDialog open={pendingList !== null} opts={{ title: "Discard unsaved changes?", body: "Changing lists will discard your unfinished vote, team entry or list details. Saved team feedback remains.", confirmLabel: "Discard and switch", cancelLabel: "Keep editing" }} onResolve={ok => { const next = pendingList; setPendingList(null); if (ok && next) load(next); }} />
     </Root>
   );
 }
@@ -559,12 +584,16 @@ function EntriesByTier({
   mutate,
   weights,
   listKey,
+  onDraftChange,
+  onRefresh,
 }: {
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => Promise<boolean>;
   weights: MetricWeight[];
   listKey: string;
+  onDraftChange?: PicklistDraftChange;
+  onRefresh: () => void;
 }) {
   // "Sliders" re-sorts each tier as the sliders move; "My order" keeps what the team dragged.
   // Dragging switches to My order. Remembered per list on this device.
@@ -597,24 +626,13 @@ function EntriesByTier({
     (row) => row.score != null,
   );
   sliderRanked.forEach((row, index) => sliderRank.set(row.teamKey, index + 1));
-  if (view.summary.totalEntries === 0) {
-    return (
-      <EmptyState
-        soft
-        badge="No teams yet"
-        badgeTone="setup"
-        title="Add your first team to this pick list"
-        description="Once teams are added, anyone on the team can cast a weighted vote to build consensus."
-      />
-    );
-  }
   const groups: TierGroup[] = PICKLIST_COLLAB_TIERS.map((tier) => ({
     tier,
     entries: ranked.filter((entry) => entry.tier === tier),
   }));
   return (
     <>
-      <div className="picklist-order-switch" role="group" aria-label="How the list is ordered">
+      {view.summary.totalEntries === 0 ? <EmptyState soft badge="No teams yet" badgeTone="setup" title="Add your first team to this pick list" description="Once teams are added, anyone on the team can share observations and cast a vote." /> : <div className="picklist-order-switch" role="group" aria-label="How the list is ordered">
         <span className="app-muted">Order</span>
         <button type="button" aria-pressed={mode === "sliders"} onClick={() => chooseMode("sliders")}>
           By sliders
@@ -622,8 +640,11 @@ function EntriesByTier({
         <button type="button" aria-pressed={mode === "hand"} onClick={() => chooseMode("hand")}>
           My order
         </button>
-      </div>
+      </div>}
       <PicklistTierList
+        userId={view.userId ?? null}
+        onDraftChange={onDraftChange}
+        onRefresh={onRefresh}
         groups={groups}
         sliderRank={sliderRank}
         sliderCount={sliderRanked.length}
@@ -639,15 +660,20 @@ function EntriesByTier({
 function AddEntryForm({
   busy,
   mutate,
+  onDraftChange,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => Promise<boolean>;
+  onDraftChange?: PicklistDraftChange;
 }) {
   const empty = useMemo(
     () => ({ teamNumber: "", teamName: "", tier: "first_pick" as PicklistCollabTier, note: "" }),
     [],
   );
   const [form, setForm] = useState(empty);
+  const dirty = Boolean(form.teamNumber || form.teamName || form.note || form.tier !== empty.tier);
+  useEffect(() => { onDraftChange?.("add", dirty); }, [dirty, onDraftChange]);
+  useEffect(() => () => onDraftChange?.("add", false), [onDraftChange]);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
@@ -704,16 +730,21 @@ function CreateListForm({
   collapsedLabel,
   eventKey,
   eventName,
+  onDraftChange,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => Promise<boolean>;
   collapsedLabel?: string;
   eventKey?: string | null;
   eventName?: string | null;
+  onDraftChange?: PicklistDraftChange;
 }) {
   const lockedEvent = eventKey?.trim() ?? "";
   const empty = useMemo(() => ({ name: "", eventKey: lockedEvent }), [lockedEvent]);
   const [form, setForm] = useState(empty);
+  const dirty = Boolean(form.name || form.eventKey !== empty.eventKey);
+  useEffect(() => { onDraftChange?.("create", dirty); }, [dirty, onDraftChange]);
+  useEffect(() => () => onDraftChange?.("create", false), [onDraftChange]);
   const [open, setOpen] = useState(!collapsedLabel);
   const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
     setForm((prev) => ({ ...prev, [key]: event.target.value }));

@@ -81,7 +81,7 @@ for (const width of [1440, 390]) {
       await expect(page.getByLabel("List name", { exact: true })).toHaveValue(view.activeList.name);
       await page.getByLabel("List name", { exact: true }).fill("Unsaved ranking fixture");
       await page.getByRole("button", { name: "Team discussion", exact: true }).click();
-      await expect(page.getByRole("dialog", { name: "Keep your ranking changes?" })).toBeVisible();
+      await expect(page.getByRole("dialog", { name: "Keep your unsaved changes?" })).toBeVisible();
       await page.getByRole("button", { name: "Keep editing", exact: true }).click();
       await expect(page.getByLabel("List name", { exact: true })).toHaveValue("Unsaved ranking fixture");
       await page.getByRole("button", { name: "Team discussion", exact: true }).click();
@@ -90,8 +90,13 @@ for (const width of [1440, 390]) {
       const row = page.locator(".picklist-collab-entry").filter({ hasText: "#254" });
       await expect(row).toBeVisible();
       const vote = page.waitForResponse(response => response.url().includes("/api/picklist-collab") && response.request().method() === "POST");
-      await row.getByRole("button", { name: "Vote", exact: true }).click();
+      await row.getByRole("button", { name: "Discuss team 254", exact: true }).click();
+      const discussion = page.getByRole("dialog", { name: "Team 254 discussion", exact: true });
+      await discussion.getByRole("textbox", { name: "Reason or observation", exact: true }).fill("Strong alliance fit");
+      await discussion.getByRole("button", { name: "Save vote", exact: true }).click();
       expect((await vote).ok()).toBe(true);
+      await expect(discussion.getByText("Your vote and feedback are saved.", { exact: true })).toBeVisible();
+      await discussion.getByRole("button", { name: "Close", exact: true }).click();
       await expect(row).toContainText("1 vote");
       const stored = await (await context.request.get(`/api/picklist-collab?orgId=${orgId}&listId=${listId}`)).json();
       expect(stored.entries[0].votes).toHaveLength(1);

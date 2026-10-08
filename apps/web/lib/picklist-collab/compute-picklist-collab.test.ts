@@ -142,6 +142,8 @@ describe("computePicklistCollabView", () => {
     expect(view.summary.totalEntries).toBe(2);
     expect(view.summary.totalVotes).toBe(3);
     expect(view.summary.totalVoters).toBe(2);
+    expect(view.userId).toBe(USER);
+    expect(view.entries.flatMap(entry => entry.votes).find(vote => vote.voterId === USER_2)).toMatchObject({ voterName: "Sam", comment: "Strong defense" });
     expect(view.activeList?.id).toBe(LIST);
     expect(view.activeList?.eventKey).toBe("2026miket");
 
