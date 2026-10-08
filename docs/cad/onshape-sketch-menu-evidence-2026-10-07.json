@@ -1,0 +1,301 @@
+{
+  "observedAt": "2026-10-07",
+  "scope": "Hosted disposable sketch editor; menu mapping only, not operation verification",
+  "menus": [
+    {
+      "head": "LINESEGMENT",
+      "commands": [
+        {
+          "command": "LINESEGMENT",
+          "name": "Linel",
+          "title": "Line (l)"
+        },
+        {
+          "command": "MIDPOINTLINE",
+          "name": "Midpoint line",
+          "title": "Midpoint line"
+        }
+      ]
+    },
+    {
+      "head": "RECTANGLE_TWO_CORNERS",
+      "commands": [
+        {
+          "command": "RECTANGLE_TWO_CORNERS",
+          "name": "Corner rectangleg",
+          "title": "Corner rectangle (g)"
+        },
+        {
+          "command": "RECTANGLE_CENTER",
+          "name": "Center point rectangler",
+          "title": "Center point rectangle (r)"
+        },
+        {
+          "command": "RECTANGLE_ALIGNED",
+          "name": "Aligned rectangle",
+          "title": "Aligned rectangle"
+        }
+      ]
+    },
+    {
+      "head": "CIRCLE_CENTER_RADIUS",
+      "commands": [
+        {
+          "command": "CIRCLE_CENTER_RADIUS",
+          "name": "Center point circlec",
+          "title": "Center point circle (c)"
+        },
+        {
+          "command": "CIRCLE_PERIMETER",
+          "name": "3 point circle",
+          "title": "3 point circle"
+        },
+        {
+          "command": "ELLIPSE",
+          "name": "Ellipse",
+          "title": "Ellipse"
+        }
+      ]
+    },
+    {
+      "head": "ARC_START_END_RADIUS",
+      "commands": [
+        {
+          "command": "ARC_START_END_RADIUS",
+          "name": "3 point arca",
+          "title": "3 point arc (a)"
+        },
+        {
+          "command": "ARC_TANGENT",
+          "name": "Tangent arc",
+          "title": "Tangent arc"
+        },
+        {
+          "command": "CENTER_ARC",
+          "name": "Center point arc",
+          "title": "Center point arc"
+        },
+        {
+          "command": "ELLIPTICAL_ARC",
+          "name": "Elliptical arc",
+          "title": "Elliptical arc"
+        },
+        {
+          "command": "CONIC",
+          "name": "Conic",
+          "title": "Conic"
+        }
+      ]
+    },
+    {
+      "head": "INSCRIBED_POLYGON",
+      "commands": [
+        {
+          "command": "INSCRIBED_POLYGON",
+          "name": "Inscribed polygon",
+          "title": "Inscribed polygon"
+        },
+        {
+          "command": "CIRCUMSCRIBED_POLYGON",
+          "name": "Circumscribed polygon",
+          "title": "Circumscribed polygon"
+        }
+      ]
+    },
+    {
+      "head": "SPLINE",
+      "commands": [
+        {
+          "command": "SPLINE",
+          "name": "Spline",
+          "title": "Spline"
+        },
+        {
+          "command": "BEZIER",
+          "name": "Bezier",
+          "title": "Bezier"
+        },
+        {
+          "command": "ADD_SPLINE_POINT",
+          "name": "Spline control point",
+          "title": "Spline control point"
+        }
+      ]
+    },
+    {
+      "head": "USE",
+      "commands": [
+        {
+          "command": "USE",
+          "name": "Useu",
+          "title": "Use (Project/Convert) (u)"
+        },
+        {
+          "command": "INTERSECTION",
+          "name": "Intersection",
+          "title": "Intersection"
+        }
+      ]
+    },
+    {
+      "head": "FILLET",
+      "commands": [
+        {
+          "command": "FILLET",
+          "name": "Filletshiftf",
+          "title": "Sketch fillet (shift+f)"
+        },
+        {
+          "command": "CHAMFER",
+          "name": "Chamfer",
+          "title": "Sketch chamfer"
+        }
+      ]
+    },
+    {
+      "head": "TRIM",
+      "commands": [
+        {
+          "command": "TRIM",
+          "name": "Trimm",
+          "title": "Trim (m)"
+        },
+        {
+          "command": "EXTEND",
+          "name": "Extendx",
+          "title": "Extend (x)"
+        },
+        {
+          "command": "SPLIT",
+          "name": "Split",
+          "title": "Split"
+        }
+      ]
+    },
+    {
+      "head": "OFFSET",
+      "commands": [
+        {
+          "command": "OFFSET",
+          "name": "Offseto",
+          "title": "Offset (o)"
+        },
+        {
+          "command": "SLOT",
+          "name": "Slot",
+          "title": "Slot"
+        }
+      ]
+    },
+    {
+      "head": "SKETCHLPATTERN",
+      "commands": [
+        {
+          "command": "SKETCHLPATTERN",
+          "name": "Linear pattern",
+          "title": "Linear pattern"
+        },
+        {
+          "command": "SKETCHCPATTERN",
+          "name": "Circular pattern",
+          "title": "Circular pattern"
+        },
+        {
+          "command": "TRANSFORM",
+          "name": "Transform",
+          "title": "Transform"
+        }
+      ]
+    },
+    {
+      "head": "INSERT_DXFDWG",
+      "commands": [
+        {
+          "command": "INSERT_DXFDWG",
+          "name": "Insert DXF or DWG",
+          "title": "Insert DXF or DWG"
+        },
+        {
+          "command": "IMAGE_RECTANGLE_TWO_CORNERS",
+          "name": "Insert image",
+          "title": "Insert image"
+        }
+      ]
+    },
+    {
+      "head": "COINCIDENT",
+      "commands": [
+        {
+          "command": "COINCIDENT",
+          "name": "Coincidenti",
+          "title": "Coincident (i)"
+        },
+        {
+          "command": "CONCENTRIC",
+          "name": "Concentricshifto",
+          "title": "Concentric (shift+o)"
+        },
+        {
+          "command": "PARALLEL",
+          "name": "Parallelb",
+          "title": "Parallel (b)"
+        },
+        {
+          "command": "TANGENT",
+          "name": "Tangentt",
+          "title": "Tangent (t)"
+        },
+        {
+          "command": "HORIZONTAL",
+          "name": "Horizontalh",
+          "title": "Horizontal (h)"
+        },
+        {
+          "command": "VERTICAL",
+          "name": "Verticalv",
+          "title": "Vertical (v)"
+        },
+        {
+          "command": "PERPENDICULAR",
+          "name": "Perpendicularshiftl",
+          "title": "Perpendicular (shift+l)"
+        },
+        {
+          "command": "EQUAL",
+          "name": "Equale",
+          "title": "Equal (e)"
+        },
+        {
+          "command": "MIDPOINT",
+          "name": "Midpointshiftm",
+          "title": "Midpoint (shift+m)"
+        },
+        {
+          "command": "NORMAL",
+          "name": "Normalshiftk",
+          "title": "Normal (shift+k)"
+        },
+        {
+          "command": "PIERCE",
+          "name": "Pierceshiftg",
+          "title": "Pierce (shift+g)"
+        },
+        {
+          "command": "MIRROR",
+          "name": "Symmetricshiftq",
+          "title": "Symmetric (shift+q)"
+        },
+        {
+          "command": "FIX",
+          "name": "Fixshiftj",
+          "title": "Fix (shift+j)"
+        },
+        {
+          "command": "EQUAL_CURVATURE",
+          "name": "Curvatureshiftu",
+          "title": "Curvature (shift+u)"
+        }
+      ]
+    }
+  ]
+}

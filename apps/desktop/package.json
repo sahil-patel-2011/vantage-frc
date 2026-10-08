@@ -36,6 +36,9 @@
       "update.html",
       "package.json"
     ],
+    "extraResources": [
+      { "from": "resources", "to": ".", "filter": ["onshape-ui/**/*"] }
+    ],
     "protocols": [
       {
         "name": "Vantage",

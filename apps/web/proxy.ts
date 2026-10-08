@@ -303,6 +303,13 @@ export async function proxy(request: NextRequest) {
     process.env.E2E_AUTH_FIXTURE === "1" &&
     request.cookies.get("vantage-e2e-session")?.value === "authenticated";
 
+  // The local CAD connector has a paired-device bearer token, not a browser
+  // cookie. Only this exact POST authenticates itself in the route. GET and
+  // enrollment still pass the session, email-verification and team guards.
+  if (request.method === "POST" && pathname === "/api/cad/browser-agent/access") {
+    return NextResponse.next();
+  }
+
   if (isPublic(pathname) && pathname !== "/signin" && pathname !== "/sign-in") {
     return NextResponse.next();
   }

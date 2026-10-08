@@ -1,0 +1,19 @@
+.page { max-width: 880px; margin-inline: auto; }
+.preview { display: grid; justify-items: start; gap: 12px; margin-block: 8px 28px; }
+.preview p { max-width: 66ch; margin: 0; color: var(--muted); line-height: 1.6; }
+.badge { display: inline-flex; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 12px; font-weight: 650; }
+.card { display: grid; gap: 20px; padding: clamp(20px, 4vw, 36px); border: 1px solid var(--line); border-radius: 20px; background: var(--surface); }
+.card h2 { margin: 8px 0 0; font-size: clamp(22px, 3vw, 28px); letter-spacing: -.025em; }
+.card p { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+.card > div:empty { display: none; }
+.eyebrow { color: var(--muted); font-size: 13px; font-weight: 600; }
+.form { display: grid; gap: 12px; }
+.form label { margin-top: 8px; font-size: 14px; font-weight: 600; }
+.form :is(select, input) { width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+.form button { justify-self: start; margin-top: 8px; min-height: 44px; }
+.note { color: var(--muted); font-size: 14px; }
+.error { padding: 12px 14px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 4px; }
+.footer { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; }
+.footer a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); text-underline-offset: 4px; }
+.card :is(a, button, select, input):focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+@media (max-width: 540px) { .form button { justify-self: stretch; } }

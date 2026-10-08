@@ -44,3 +44,4 @@ scripts/migration-failures.log
 /core
 /apps/web/core
 /apps/desktop/core
+/apps/desktop/resources/onshape-ui/

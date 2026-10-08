@@ -447,7 +447,11 @@ async function update() {
 }
 
 async function main() {
-  if (command === "setup") await setup();
+  if (command === "ui-mcp") {
+    const { runOnshapeUiMcp } = await import("./onshape-ui/runtime");
+    await runOnshapeUiMcp(flagValue("--url"));
+  }
+  else if (command === "setup") await setup();
   else if (command === "login") await login();
   else if (command === "status") await status();
   else if (command === "diagnose" || command === "doctor") await diagnose();
@@ -499,12 +503,12 @@ async function main() {
     console.log("vantage-cad <login|setup|start|status|diagnose|doctor|update|logout|claude|mcp|agent|onshape|fusion>");
     console.log("  login [--timeout <s>] [--status] [--clear]");
     console.log("                         sign into Onshape in a browser window and save the session.");
-    console.log("                         Session calls are not deducted from your Onshape annual API allowance;");
-    console.log("                         API keys are. This is the `cadcursor login` step.");
+    console.log("                         Legacy API-backed transport; not the UI-only pilot.");
     console.log("  agent sync [--dir <repo>] [--dry-run]  pull team agent config (rules, subagents, MCP, skills)");
     console.log("  status [--json]        platform, binding, Onshape auth path, call ledger, and web sync state");
     console.log("  claude                 print Claude Code CAD setup + status");
     console.log("  mcp                    stdio MCP server for Claude Code");
+    console.log("  ui-mcp [--url <Onshape workspace URL>]  gated Playwright UI-only development pilot");
     console.log("  onshape docs|bind|sketch|extrude|create-part-studio|body-details|create-assembly|add-instance|mate|assembly");
     console.log("  fusion ping|sketch|extrude");
     console.log("  doctor|diagnose [--json]   run local CAD health checks");

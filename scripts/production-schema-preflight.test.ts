@@ -54,4 +54,9 @@ describe("production schema deployment gate", () => {
     await expect(checkProductionSchema({ env: production, createPool: db.createPool })).rejects.toThrow(/^Production schema readiness could not be verified\./);
     expect(db.pool.end).toHaveBeenCalledOnce();
   });
+  it("blocks browser pilot enrollment until its authorization migration is present", async () => {
+    const db = database(REQUIRED_PRODUCTION_MIGRATIONS.filter((id: string) => id !== "0716_onshape_browser_pilot_access.sql"));
+    await expect(checkProductionSchema({ env: production, createPool: db.createPool })).rejects.toThrow("0716_onshape_browser_pilot_access.sql");
+    expect(db.client.query).toHaveBeenLastCalledWith("ROLLBACK");
+  });
 });

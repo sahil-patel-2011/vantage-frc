@@ -8,6 +8,7 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0713_scouting_lead_notifications.sql",
   "0714_practice_scouting_corrections.sql",
   "0715_member_self_departure.sql",
+  "0716_onshape_browser_pilot_access.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */
