@@ -328,19 +328,13 @@ body.has-app-shell .dash-home .dash-hero-greeting {
   font-family: var(--font-sans); font-size: clamp(25px, 2.8vw, 34px); font-weight: 650;
   letter-spacing: -.045em; margin: 0 0 8px; line-height: 1.18; color: var(--ink);
 }
-.dash-home-controls { display: flex; align-items: center; gap: 0; flex-shrink: 0; padding: 3px; border: 1px solid var(--line-soft); border-radius: 16px; background: var(--surface); }
-.dash-home-controls .dash-board-chip-wrap { margin: 0; }
-.dash-home-controls .dash-board-chip { border-color: transparent; background: transparent; }
-.dash-home-controls .dash-home-actions { border-left: 1px solid var(--line-soft); padding-left: 3px; gap: 4px; }
-.dash-home-controls .dash-edit-button { gap: 6px; }
-.dash-home-controls .dash-edit-button svg { width: 15px; height: 15px; }
 body.has-app-shell .dash-home :is(.dash-board-chip, .dash-edit-button) {
   min-height: 44px; padding: 0 14px; border-radius: 12px;
   font-family: var(--font-sans); font-size: 13px; font-weight: 600; box-shadow: none;
 }
 body.has-app-shell .dash-home .dash-edit-button { background: transparent; border-color: transparent; color: var(--muted); }
 body.has-app-shell .dash-home .dash-edit-button:hover { background: var(--surface-2); color: var(--ink); }
-body.has-app-shell .dash-home .dash-hero-event { padding: 0; min-height: 36px; border: 0; background: transparent; font-size: 13px; }
+body.has-app-shell .dash-home .dash-hero-event { padding: 0; min-height: 44px; border: 0; background: transparent; font-size: 13px; }
 body.has-app-shell .dash-home > .dash-now {
   display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: clamp(20px, 2.2vw, 26px);
   border: 1px solid color-mix(in srgb, var(--accent) 12%, var(--line)); border-radius: 24px;
@@ -375,8 +369,6 @@ body.has-app-shell .dash-home .dash-widget .dash-widget-title { padding-bottom: 
 body.has-app-shell .dash-home .dash-widget .soft-empty-compact { padding: 10px 0 0; }
 @media (max-width: 760px) {
   body.has-app-shell .dash-home .dash-home-header { flex-direction: column; align-items: stretch; gap: 12px; padding-bottom: 18px; }
-  .dash-home-controls { align-self: flex-start; max-width: 100%; flex-wrap: wrap; }
-  .dash-home-controls .dash-board-chip { max-width: min(250px, calc(100vw - 140px)); }
   body.has-app-shell .dash-home .dash-now-main { flex-basis: auto; }
   body.has-app-shell .dash-home > .dash-now { align-items: flex-start; }
   body.has-app-shell .dash-home .dash-now .app-button { align-self: flex-start; }

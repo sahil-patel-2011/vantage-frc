@@ -32,11 +32,11 @@ const PATHS: Record<IconName, ReactNode> = {
       <path d="M6 10v10h12V10" />
     </>
   ),
-  swords: <path d="m14.5 17.5 3 3m-11-3 3 3M4 4l7 7M20 4l-7 7M8 16l-4 4m12-4 4 4" />,
+  swords: <><path d="M5 21V4c5-4 9 4 14 0v10c-5 4-9-4-14 0" /><path d="M10 3v10m5-8v10M5 8c5-4 9 4 14 0" /></>,
   scout: (
     <>
-      <path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4" />
-      <circle cx="12" cy="12" r="3" />
+      <path d="M3 14 6 5h3l1 9m4 0 1-9h3l3 9M10 10h4" />
+      <circle cx="6.5" cy="16" r="4.5" /><circle cx="17.5" cy="16" r="4.5" />
     </>
   ),
   stats: <path d="M5 19V10m7 9V5m7 14v-7" />,
@@ -96,7 +96,7 @@ const PATHS: Record<IconName, ReactNode> = {
   gear: (
     <>
       <circle cx="12" cy="12" r="3" />
-      <path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10L5.6 18.4" />
+      <path d="m10 3-.5 2-2 .9-1.9-.6-2 3.4 1.4 1.5v2.3l-1.4 1.6 2 3.4 2-.6 1.9 1 .5 2.1h4l.5-2.1 2-1 1.9.6 2-3.4-1.4-1.6v-2.3l1.4-1.5-2-3.4-2 .6-1.9-.9L14 3z" />
     </>
   ),
   grid: (
@@ -114,6 +114,10 @@ const PATHS: Record<IconName, ReactNode> = {
     </>
   ),
   back: <path d="M15 6 9 12l6 6" />,
+  form: <><rect x="4" y="3" width="16" height="18" rx="3" /><path d="M8 7h8M11 12h5M11 17h5" /><circle cx="8" cy="12" r=".7" fill="currentColor" /><circle cx="8" cy="17" r=".7" fill="currentColor" /></>,
+  assignment: <><circle cx="8" cy="7" r="3" /><path d="M2 20v-2a6 6 0 0 1 12 0v2M16 6h6m-6 5h6m-6 5 2 2 4-4" /></>,
+  rank: <><path d="M4 20v-7h5v7m0 0V5h6v15m0 0v-10h5v10M2 20h20" /></>,
+  book: <><path d="M12 5v15M3 4c4-1 6 0 9 2 3-2 5-3 9-2v15c-4-1-6 0-9 2-3-2-5-3-9-2z" /></>,
   sparkles: (
     <>
       <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" />

@@ -55,6 +55,7 @@ import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
 import { DashboardHiddenRow } from "./dashboard-hidden-row";
 import { DashboardHomeHeader } from "./dashboard-home-header";
+import { DashboardBoardSwitcher } from "./dashboard-board-bar";
 import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
 import { DashboardWorkspaceActions } from "./dashboard-workspace-actions";
 import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
@@ -102,6 +103,8 @@ export function DashboardHomeView(props: {
   widgets: Record<string, WidgetPayload>;
   /** Widget data and onboarding steps have arrived, so the hero can say what is next. */
   widgetsLoaded?: boolean;
+  refreshing: boolean;
+  onRefresh: () => void;
   hasScoutingSchemas: boolean;
   paletteEntries: PaletteRow[];
   hiddenOnHome: Map<string, HiddenOnHomeReason>;
@@ -316,6 +319,8 @@ export function DashboardHomeView(props: {
   const [sharedBoard, setSharedBoard] = useState<{ id: string; name: string; message: string } | null>(null);
   const [newBoardOpen, setNewBoardOpen] = useState(false);
   const gridWrapRef = useRef<HTMLElement | null>(null);
+  const customizeRef = useRef<HTMLButtonElement | null>(null);
+  const wasEditing = useRef(false);
   /** Where the board sat on screen just before edit mode, so it can stay there. */
   const anchorTopRef = useRef<number | null>(null);
 
@@ -347,8 +352,11 @@ export function DashboardHomeView(props: {
     });
     if (!editing) {
       setSelectedId(null);
+      if (wasEditing.current) customizeRef.current?.focus({ preventScroll: true });
+      wasEditing.current = false;
       return;
     }
+    wasEditing.current = true;
     const before = anchorTopRef.current;
     anchorTopRef.current = null;
     const after = boardTop();
@@ -526,30 +534,16 @@ export function DashboardHomeView(props: {
 
       <DashboardHomeHeader
         me={me}
-        meLoaded={meLoaded}
         orgId={orgId}
         greetingText={greetingText}
-        board={board}
-        switcherBoards={switcherBoards}
-        saving={saving}
         editing={editing}
-        previewing={previewing}
-        detail={sharedSetupPrompt ? "" : homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
+        detail={orgId ? "" : homeHeaderDetail({ meLoaded, orgId, tbaConfigured, setupRequired, eventName })}
         eventName={eventName}
-        nextMatchData={nextMatchData}
-        showNextGlance={false}
-        onSwitch={(id) => void switchBoard(id)}
-        onNewBoard={() => setNewBoardOpen(true)}
-        onManageBoards={() => {
-          setRenameId(null);
-          setBoardsOpen(true);
-        }}
-        onEdit={startEditing}
       />
       {orgId ? (
         <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
           {showDailyBrief ? <DashboardNowCard now={now} setupHero={null} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
-          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} />
+          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} primaryHref={showDailyBrief ? now.href : undefined} />
         </div>
       ) : null}
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice,
@@ -646,10 +640,27 @@ export function DashboardHomeView(props: {
           data-testid="dash-widget-grid"
           data-dash-drag={editing ? "on" : "off"}
         >
-          {!editing && displayLayout.length > 0 ? (
+          {!editing ? (
             <header className="dash-board-heading">
-              <div><h2>Your overview</h2><p>The things that matter to your team, in one place.</p></div>
-              <span>{board?.scope === "org" ? "Team board" : "Personal board"}</span>
+              <div className="dash-board-identity">
+                <h2>{board?.scope === "org" ? "Team overview" : "Your overview"}</h2>
+                {orgId && meLoaded ? <DashboardBoardSwitcher
+                  boards={switcherBoards} board={board} saving={saving} disabled={previewing}
+                  onSwitch={(id) => void switchBoard(id)} onNew={() => setNewBoardOpen(true)}
+                  onManage={() => { setRenameId(null); setBoardsOpen(true); }}
+                /> : null}
+              </div>
+              <div className="dash-board-tools">
+                <button type="button" onClick={props.onRefresh} disabled={props.refreshing}>
+                  {props.refreshing ? "Refreshing…" : "Refresh"}
+                </button>
+                {!previewing ? <button type="button" className="dash-board-customize"
+                  ref={customizeRef}
+                  data-testid="dash-customize" data-tour="customise"
+                  aria-label="Edit Home — rearrange, add, or remove widgets" onClick={startEditing}>
+                  <Icon name="gear" />Customize
+                </button> : null}
+              </div>
             </header>
           ) : null}
           {editing ? (

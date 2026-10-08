@@ -9,15 +9,22 @@ for (const width of [390, 1440]) {
     expect(await signInAs(context, "owner")).toBe(true);
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
-    const controls = page.getByRole("group", { name: "Home layout", exact: true });
+    const controls = page.getByTestId("dash-widget-grid").locator(".dash-board-heading");
     const board = controls.getByTestId("dash-board-chip");
     const edit = controls.getByTestId("dash-customize");
     await expect(board).toBeVisible({ timeout: 30_000 });
     await expect(edit).toBeVisible();
-    const positions = await controls.locator(":scope > .dash-board-chip-wrap > button, .dash-edit-button").evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().top));
-    expect(positions).toHaveLength(2);
-    expect(Math.abs(positions[0] - positions[1])).toBeLessThanOrEqual(2);
-    await board.click();
+    // Layout controls belong to the board; mobile may wrap them without clipping.
+    await expect(page.locator(".dash-home-header").getByRole("button")).toHaveCount(0);
+    for (const control of [board, edit]) {
+      const bounds = await control.boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.height).toBeGreaterThanOrEqual(44);
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+    }
+    await board.focus();
+    await page.keyboard.press("ArrowDown");
     await expect(page.getByTestId("dash-board-menu")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(board).toBeFocused();
@@ -25,6 +32,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByTestId("dash-edit-toolbar")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("dash-edit-toolbar")).toHaveCount(0);
+    await expect(edit).toBeFocused();
     const openCard = page.locator(".dash-widget-open").first();
     await expect(openCard).toBeVisible();
     const heading = openCard.locator("..");
@@ -67,7 +75,7 @@ test("workspace search keeps its results usable on narrow and landscape screens"
     await page.setViewportSize(viewport); await page.goto("/competition?tab=strategy");
     await expect(page.getByRole("tab",{name:"Match plan",exact:true})).toHaveAttribute("aria-selected","true");
     const opener=navigationOpener(page); await opener.click();
-    const panel=page.getByRole("complementary",{name:"Product navigation",exact:true});
+    const panel=page.getByRole("dialog",{name:"Product navigation",exact:true});
     const search=panel.getByRole("combobox",{name:"Search pages, tools, and your team's data",exact:true});
     const loaded=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/search" && new URL(response.url()).searchParams.get("q")==="scouting");
     await search.fill("scouting");

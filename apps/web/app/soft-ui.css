@@ -48,13 +48,13 @@ body.has-app-shell.dash-editing .soft-island{opacity:.35;pointer-events:none}
   border-color:var(--line);box-shadow:none;
 }
 .soft-burger{
-  display:grid;gap:5px;width:18px;justify-items:stretch;
+  display:grid;gap:5px;width:22px;justify-items:stretch;
 }
 .soft-burger i{
   display:block;height:2px;border-radius:2px;background:currentColor;
-  transition:transform .28s var(--ease-settle),opacity .2s ease,width .28s ease;
+  transition:transform .16s var(--ease-settle),opacity .16s ease,width .16s ease;
 }
-.soft-burger i:nth-child(2){width:14px}
+.soft-burger i:nth-child(2){width:22px}
 .soft-menu-btn.is-open .soft-burger i:nth-child(1){transform:translateY(7px) rotate(45deg)}
 .soft-menu-btn.is-open .soft-burger i:nth-child(2){opacity:0;width:0}
 .soft-menu-btn.is-open .soft-burger i:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
@@ -124,14 +124,14 @@ body.has-app-shell.dash-editing .soft-island{opacity:.35;pointer-events:none}
      search box sat between the avatar and the page. Hidden visibility takes the
      panel out of the sequence, delayed so the slide-out still animates. */
   visibility:hidden;
-  transition:transform .32s var(--ease-settle),visibility 0s linear .32s;
+  transition:transform .18s var(--ease-settle),visibility 0s linear .18s;
   box-shadow:none;will-change:transform;
   overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;
 }
 .soft-drawer.open{
   transform:translateX(0);box-shadow:24px 0 48px rgba(15,20,28,.14);
-  visibility:visible;transition:transform .32s var(--ease-settle),visibility 0s;
+  visibility:visible;transition:transform .18s var(--ease-settle),visibility 0s;
 }
 .soft-drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
 .soft-drawer-brand{display:flex;align-items:center;gap:10px}

@@ -45,6 +45,15 @@ import "./dashboard-workspace.css";
 export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: string }) {
   const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();
   const home = useDashboardHomeState(initialOrgId);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshRequest = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setRefreshing(false);
+    return () => {
+      refreshRequest.current?.abort();
+      refreshRequest.current = null;
+    };
+  }, [home.orgId]);
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(home.orgId || null);
 
   const { personalBoards, orgBoards, switcherBoards } = useMemo(
@@ -217,6 +226,30 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
     current: currentLayout,
   });
   const { setMessage, setMessageAction, setMessageKind, setAnnounce } = home;
+  async function refreshBoard() {
+    if (!home.orgId || home.editing || refreshRequest.current) return;
+    const request = new AbortController();
+    refreshRequest.current = request;
+    setRefreshing(true);
+    try {
+      await home.loadSnapshot(home.orgId, home.layout.map(item => item.type), { fullContext: true, signal: request.signal });
+      if (!request.signal.aborted) {
+        setMessage(current => current === "Could not refresh Home. Your last loaded data is still shown." ? "" : current);
+        setAnnounce("Dashboard data refreshed.");
+      }
+    } catch {
+      if (!request.signal.aborted) {
+        setMessageKind("error");
+        setMessageAction(null);
+        setMessage("Could not refresh Home. Your last loaded data is still shown.");
+      }
+    } finally {
+      if (refreshRequest.current === request) {
+        refreshRequest.current = null;
+        setRefreshing(false);
+      }
+    }
+  }
   const undo = useCallback(() => {
     if (!history.undo()) return;
     setMessageKind("success");
@@ -375,6 +408,8 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       viewLayout={viewLayout}
       displayLayout={displayLayout}
       widgets={home.widgets}
+      refreshing={refreshing}
+      onRefresh={() => void refreshBoard()}
       // Whether the widgets (and the onboarding steps) have arrived, so the "what to do
       // now" card waits as a blank shape rather than saying there is nothing.
       widgetsLoaded={home.widgetsLoaded && firstWeek.loaded}

@@ -76,7 +76,11 @@ export type ProductNavIcon =
   | "gear"
   | "grid"
   | "pin"
-  | "back";
+  | "back"
+  | "form"
+  | "assignment"
+  | "rank"
+  | "book";
 
 /**
  * Every pillar currently reads as the house blue — one palette was a deliberate

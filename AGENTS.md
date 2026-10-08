@@ -11,6 +11,11 @@ laptop database.
 
 # Hosting and compute policy
 
+On October 8 the user explicitly prohibited using Neon as a database or incurring
+database charges. Do not access its console, run queries/migrations against it,
+provision a replacement paid database, or delete existing data. The user will
+connect their NAS later; Google Sheets remains the requested interim destination.
+
 GitHub is for code storage/integration. Actions is disabled for the entire
 repository; both saved workflows are disabled and manual-only. Never enable or
 dispatch them without fresh authorization and a

@@ -99,7 +99,7 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     const drawer = page.getByRole("complementary", { name: "Product navigation" });
     for (const name of ["Home", "Scouting"]) await expect(drawer.getByRole("link", { name: new RegExp(`^${name} `) })).toBeVisible();
     for (const name of ["Competition tools", "Team", "Build", "Business", "AI"]) {
-      const section = drawer.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ hasText: new RegExp(`^${name}$`) }) });
+      const section = drawer.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ has: page.getByText(name, { exact: true }) }) });
       await section.locator("summary").click();
       await expect(section.getByRole("navigation", { name, exact: true }).getByRole("link").first()).toBeVisible();
       await section.locator("summary").click();
