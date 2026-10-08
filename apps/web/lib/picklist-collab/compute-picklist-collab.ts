@@ -406,9 +406,9 @@ export async function computePicklistCollabView(
 export async function createList(
   client: PoolClient,
   input: { orgId: string; userId: string; eventKey: string; name: string; seasonYear: number },
-): Promise<void> {
+): Promise<string> {
   try {
-    await ensurePickList(client, {
+    return await ensurePickList(client, {
       orgId: input.orgId,
       userId: input.userId,
       eventKey: input.eventKey,

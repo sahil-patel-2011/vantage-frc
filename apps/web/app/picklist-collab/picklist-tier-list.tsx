@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Button, Panel } from "../../components/ui";
+import { Button, Panel, ConfirmDialog } from "../../components/ui";
 import { useTierDrag } from "../../components/ui/use-tier-drag";
 import "../../components/ui/tier-drag.css";
 import {
@@ -14,7 +14,7 @@ import {
 import { orderPayload, reorderGroups, type TierGroup } from "../../lib/picklist-collab/reorder";
 import type { PicklistCollabTier } from "../../lib/picklist-collab/types";
 
-type Mutate = (payload: Record<string, unknown>) => void | Promise<void>;
+type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
 /** The team lists, one panel per tier. Drag a handle (finger, mouse) or use the arrow keys. */
 export function PicklistTierList({
@@ -22,6 +22,7 @@ export function PicklistTierList({
   sliderRank,
   sliderCount,
   busy,
+  rankingLocked = false,
   mutate,
   onReordered,
 }: {
@@ -30,6 +31,7 @@ export function PicklistTierList({
   sliderRank: Map<string, number>;
   sliderCount: number;
   busy: boolean;
+  rankingLocked?: boolean;
   mutate: Mutate;
   /** Called once a new order is sent, so the page can switch to "My order". */
   onReordered: () => void;
@@ -40,13 +42,14 @@ export function PicklistTierList({
   const shown = pending ?? groups;
   const { rootRef, drag, announcement, handleProps, slotIndex } = useTierDrag<PicklistCollabTier>({
     groups: shown.map((group) => ({ tier: group.tier, ids: group.entries.map((entry) => entry.id) })),
-    enabled: !busy && pending === null,
+    enabled: !busy && !rankingLocked && pending === null,
     tierLabel: picklistCollabTierLabel,
     onMove: (id, tier, index) => {
       const next = reorderGroups(shown, id, tier, index);
       setPending(next);
-      void Promise.resolve(mutate(orderPayload(next))).finally(() => {
-        onReordered();
+      void mutate(orderPayload(next)).then(saved => {
+        if (saved) onReordered();
+      }).finally(() => {
         setPending(null);
       });
     },
@@ -73,6 +76,7 @@ export function PicklistTierList({
               key={entry.id}
               entry={entry}
               busy={busy}
+              rankingLocked={rankingLocked}
               dragged={isDragged}
               sliderRank={sliderRank.get(`frc${entry.teamNumber}`) ?? null}
               sliderCount={sliderCount}
@@ -98,6 +102,7 @@ export function PicklistTierList({
 function EntryRow({
   entry,
   busy,
+  rankingLocked,
   dragged,
   sliderRank,
   sliderCount,
@@ -106,6 +111,7 @@ function EntryRow({
 }: {
   entry: PicklistCollabEntryWithRating;
   busy: boolean;
+  rankingLocked: boolean;
   dragged: boolean;
   sliderRank: number | null;
   sliderCount: number;
@@ -114,13 +120,14 @@ function EntryRow({
 }) {
   const [weight, setWeight] = useState("1");
   const [rank, setRank] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState(false);
   return (
     <li className={`picklist-collab-entry${dragged ? " is-dragging" : ""}`} data-entry-id={entry.id}>
       <button
         type="button"
         className="tier-drag-handle"
         aria-label={`Move team ${entry.teamNumber}: drag, or press the up and down arrow keys`}
-        aria-disabled={(busy && !dragged) || undefined}
+        aria-disabled={rankingLocked || (busy && !dragged) || undefined}
         {...handleProps}
       >
         <span aria-hidden="true">⋮⋮</span>
@@ -157,6 +164,7 @@ function EntryRow({
             <label>
               Tier
               <select
+                disabled={busy || rankingLocked}
                 value={entry.tier}
                 onChange={(event) =>
                   mutate({ action: "move-entry", entryId: entry.id, tier: event.target.value, position: 1 })
@@ -196,12 +204,8 @@ function EntryRow({
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Remove team #${entry.teamNumber} from this list?`)) {
-                    mutate({ action: "delete-entry", entryId: entry.id });
-                  }
-                }}
+                disabled={busy || rankingLocked}
+                onClick={() => setConfirmRemove(true)}
               >
                 Remove
               </Button>
@@ -209,6 +213,7 @@ function EntryRow({
           </div>
         </details>
       </div>
+      <ConfirmDialog open={confirmRemove} opts={{ title: `Remove team ${entry.teamNumber}?`, body: "This removes the team and its votes from this pick list. Scouting reports remain available.", confirmLabel: "Remove team" }} onResolve={ok => { setConfirmRemove(false); if (ok) void mutate({ action: "delete-entry", entryId: entry.id }); }} />
     </li>
   );
 }

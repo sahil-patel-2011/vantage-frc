@@ -1,7 +1,9 @@
 import { auth } from "@vantage/core";
+import type { PoolClient } from "@neondatabase/serverless";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { failDbWrite } from "../../../lib/db-error";
+import { IntelHttpError, withIntelRequest } from "../../../lib/intel-auth";
 import { PICKLIST_COLLAB_TIERS, clampWeight } from "../../../lib/picklist-collab";
 import {
   addEntry,
@@ -51,22 +53,11 @@ export async function GET(request: Request) {
   const listId = url.searchParams.get("listId");
 
   try {
-    const view = await withRls({ userId: session.user.id }, (client) =>
-      computePicklistCollabView(client, { userId: session.user.id, requestedOrg, listId }),
-    );
-    return Response.json(view);
-  } catch {
-    return Response.json(
-      {
-        status: "setup_required",
-        message: "Could not load the pick list. Choose your team and confirm database access.",
-        steps: [
-          { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
-        ],
-        orgId: null,
-      } satisfies PicklistCollabView,
-      { status: 200 },
-    );
+    const work = (client: PoolClient) => computePicklistCollabView(client, { userId: session.user.id, requestedOrg, listId });
+    const view = requestedOrg ? await withIntelRequest(requestedOrg, work) : await withRls({ userId: session.user.id }, work);
+    return Response.json(view, { headers: { "cache-control": "private, no-store" } });
+  } catch (error) {
+    return Response.json({ error: error instanceof IntelHttpError ? error.message : "Could not load the pick list. Try again." }, { status: error instanceof IntelHttpError ? error.status : 503, headers: { "cache-control": "private, no-store" } });
   }
 }
 
@@ -77,6 +68,7 @@ export async function POST(request: Request) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid body");
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -89,13 +81,14 @@ export async function POST(request: Request) {
   const listId = trimmedOrNull(body.listId, 64);
 
   try {
-    const view = await withRls({ userId, orgId }, async (client) => {
+    const view = await withIntelRequest(orgId, async (client) => {
       const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
         orgId,
         userId,
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      let resultListId = listId;
       switch (action) {
         case "create-list": {
           const name = trimmedOrNull(body.name, 200);
@@ -112,7 +105,7 @@ export async function POST(request: Request) {
             ).rows[0]?.eventKey ??
             null;
           if (!eventKey) throw new Error("Set the event you are at first, or type an event code.");
-          await createList(client, {
+          resultListId = await createList(client, {
             orgId,
             userId,
             eventKey,
@@ -199,11 +192,12 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computePicklistCollabView(client, { userId, requestedOrg: orgId, listId });
+      return computePicklistCollabView(client, { userId, requestedOrg: orgId, listId: resultListId });
     });
 
-    return Response.json(view);
+    return Response.json(view, { headers: { "cache-control": "private, no-store" } });
   } catch (error) {
+    if (error instanceof IntelHttpError) return Response.json({ error: error.message }, { status: error.status, headers: { "cache-control": "private, no-store" } });
     // Rows here are keyed to an event/match that references events_ref, so an
     // event not yet ingested from TBA raised a 23503 whose raw constraint text
     // went straight to the user. failDbWrite names the fix, and keeps the

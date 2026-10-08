@@ -57,7 +57,17 @@ Regression sources now include publication conflicts, account-scoped/per-editor 
 
 Remaining work is explicit: the all-page button/layout audit, 200% text/focus/appearance checks, all three hosted journey passes, 40-question/1,000-report performance measurement, migration and invitation delivery acceptance, and Sheets-primary persistence. This checkpoint does not complete those gates. No local runtime, database, workflow or deployment was started.
 
-### Hosted pass order and performance evidence
+### Shared pick-list follow-up
+
+- Ranking saves now use the shared pick-list store. Existing robot entries are updated in place, retaining their IDs, votes, rationale, attribution and alliance placement. Only explicitly removed teams are deleted. The obsolete delete-and-recreate writer was removed. Ranking writes keep legacy tiers and shared buckets aligned.
+- Existing-list saves lock the parent list, check team/event identity and open status, and reject a stale optional base revision with 409. New candidate clients send the revision; older request shapes remain accepted. Shared order mutations now take the same parent lock. This is source behavior awaiting hosted concurrency/RLS evidence, not proof that every concurrent workflow has passed.
+- The ranking UI retains edits after failed, timed-out or malformed acknowledgements, releases pending controls, blocks duplicate submits and preserves edits made during a confirmed save. Refreshes cannot silently replace an open draft or advance its base revision. List changes require discard confirmation. Team changes remount the whole workspace. Switching ranking/discussion is disabled while a request is pending.
+- Scouting leads can save rankings through the existing manage_scouting capability. Avoid and legacy tier values remain visible while reordering; a missing event pool does not hide an existing saved list. Locked rankings have an explanation and a reopen control in discussion. Team removal uses the shared confirmation dialog and names the effect on votes.
+- Discussion only clears add/create inputs after a confirmed result. Creating a list returns/selects that list rather than the previously active one. List selection waits for its response before changing identity; superseded reads are ignored. Explicit team reads and writes enforce membership/authentication policy. Service errors no longer masquerade as successful setup responses, and denied reads clear private cached content.
+- Slider preferences load defensively when storage is blocked and cannot overwrite another list's preferences during list changes. Reorder failures no longer report a successful switch to manual ordering.
+- Added unexecuted hosted UI regressions for unconfirmed saves, Avoid entries, unsaved-list switching and retained discussion input. Added a database-backed hosted acceptance source checking stable entry identity, retained vote/comment, shared tier projection, stale revisions and locked lists. No test, database, build or deployment was run. Full visual, concurrency and production acceptance remain pending under the same release gates.
+
+### Hosted pass sequence
 
 1. Normal: create a team, deliver a 24-hour recipient invite, set the recipient password, join, assign a lead, publish match/pit forms, collect/correct reports, inspect trends and share a pick list.
 2. Failure: expired/wrong-recipient/replaced invites; forbidden roles; interrupted responses; offline/reconnect; duplicate saves; competing publication; team departure and stale offline data.

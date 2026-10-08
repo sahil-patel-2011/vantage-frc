@@ -14,6 +14,7 @@ const Discussion = dynamic(() => import("../picklist-collab/picklist-collab-clie
 export function PickListWorkspace({ orgId, discussionDefault = false }: { orgId: string; discussionDefault?: boolean }) {
   const [discussion, setDiscussion] = useState(discussionDefault);
   const [dirty, setDirty] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [confirmSwitch, setConfirmSwitch] = useState(false);
   useEffect(() => {
     if (discussionDefault) {
@@ -43,11 +44,11 @@ export function PickListWorkspace({ orgId, discussionDefault = false }: { orgId:
   return (
     <section className="pick-list-workspace" aria-label="Pick list workspace" data-testid="pick-list-workspace">
       <div className="pick-list-view-action">
-        <Button variant="secondary" type="button" onClick={() => dirty ? setConfirmSwitch(true) : switchView()}>
+        <Button variant="secondary" type="button" disabled={busy} title={busy ? "Wait for the current request to finish." : undefined} onClick={() => dirty ? setConfirmSwitch(true) : switchView()}>
           {discussion ? "Rank teams" : "Team discussion"}
         </Button>
       </div>
-      {discussion ? <Discussion embedded /> : <Ranking orgId={orgId} embedded onDirtyChange={setDirty} />}
+      {discussion ? <Discussion embedded onBusyChange={setBusy} /> : <Ranking orgId={orgId} embedded onDirtyChange={setDirty} onBusyChange={setBusy} />}
       <Modal open={confirmSwitch} onClose={() => setConfirmSwitch(false)} title="Keep your ranking changes?">
         <p>Save the pick list before switching to discussion, or discard the changes you haven’t saved.</p>
         <div className="app-actions"><Button type="button" variant="primary" onClick={() => setConfirmSwitch(false)}>Keep editing</Button><Button type="button" variant="secondary" onClick={switchView}>Discard and switch</Button></div>

@@ -234,32 +234,4 @@ export class IntelResearchRepository {
     return result.rows;
   }
 
-  async savePickList(
-    orgId: string,
-    userId: string,
-    input: {
-      id?: string;
-      eventKey: string;
-      name: string;
-      entries: Array<{ teamKey: string; rank: number; tier?: string; notes?: string }>;
-    },
-  ) {
-    const list = await this.client.query<{ id: string }>(
-      `INSERT INTO pick_lists(id,org_id,event_key,name,created_by)
-       VALUES(COALESCE($1::uuid,gen_random_uuid()),$2,$3,$4,$5)
-       ON CONFLICT(id) DO UPDATE SET name=excluded.name,updated_at=now()
-       RETURNING id`,
-      [input.id ?? null, orgId, input.eventKey, input.name.trim(), userId],
-    );
-    const id = list.rows[0]!.id;
-    await this.client.query("DELETE FROM pick_list_entries WHERE pick_list_id=$1", [id]);
-    for (const entry of input.entries) {
-      await this.client.query(
-        `INSERT INTO pick_list_entries(pick_list_id,org_id,team_key,rank,tier,notes)
-         VALUES($1,$2,$3,$4,$5,$6)`,
-        [id, orgId, entry.teamKey, entry.rank, entry.tier ?? null, entry.notes ?? null],
-      );
-    }
-    return id;
-  }
 }

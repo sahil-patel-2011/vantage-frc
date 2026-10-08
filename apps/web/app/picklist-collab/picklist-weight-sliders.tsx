@@ -50,26 +50,29 @@ export function usePicklistFieldWeights(listId: string | null): {
   reset: () => void;
 } {
   const [weights, setWeights] = useState<MetricWeight[]>(() => defaultPicklistWeights());
-  const [hydrated, setHydrated] = useState(false);
+  const [hydratedList, setHydratedList] = useState<string | null>(null);
 
   useEffect(() => {
     if (!listId || typeof window === "undefined") {
-      setHydrated(false);
+      setHydratedList(null);
+      setWeights(defaultPicklistWeights());
       return;
     }
-    const stored = parseStoredWeights(window.localStorage.getItem(`${WEIGHTS_KEY}:${listId}`));
-    setWeights(stored ?? defaultPicklistWeights());
-    setHydrated(true);
+    try {
+      const stored = parseStoredWeights(window.localStorage.getItem(`${WEIGHTS_KEY}:${listId}`));
+      setWeights(stored ?? defaultPicklistWeights());
+    } catch { setWeights(defaultPicklistWeights()); }
+    setHydratedList(listId);
   }, [listId]);
 
   useEffect(() => {
-    if (!hydrated || !listId || typeof window === "undefined") return;
+    if (hydratedList !== listId || !listId || typeof window === "undefined") return;
     try {
       window.localStorage.setItem(`${WEIGHTS_KEY}:${listId}`, JSON.stringify(weights));
     } catch {
       // Best-effort — ranking still works for this session.
     }
-  }, [hydrated, listId, weights]);
+  }, [hydratedList, listId, weights]);
 
   return useMemo(
     () => ({

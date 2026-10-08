@@ -42,7 +42,7 @@ import type { PicklistCollabTier } from "../../lib/picklist-collab/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { PageOptions } from "../../components/ui/page-options";
 import "./picklist-collab.css";
 
@@ -55,8 +55,9 @@ function PicklistHeader({ embedded, title, description, breadcrumbs, children }:
 
 function isPicklistCollabView(value: unknown): value is PicklistCollabView {
   if (!value || typeof value !== "object") return false;
-  const status = (value as { status?: unknown }).status;
-  return status === "setup_required" || status === "live";
+  const row = value as Partial<LiveView> & { steps?: unknown; message?: unknown };
+  if ((value as { status?: unknown }).status === "setup_required") return Array.isArray(row.steps) && typeof row.message === "string";
+  return row.status === "live" && typeof row.orgId === "string" && Array.isArray(row.lists) && Array.isArray(row.entries) && Boolean(row.summary) && (row.activeList === null || typeof row.activeList?.id === "string");
 }
 
 async function persistPicklistCollabSnapshot(
@@ -186,12 +187,16 @@ function CollabShell({
   );
 }
 
-export default function PicklistCollabClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function PicklistCollabClient({ embedded = false, onBusyChange }: { embedded?: boolean; onBusyChange?: (busy: boolean) => void } = {}) {
   const Root = embedded ? "section" : "main";
   const [view, setView] = useState<PicklistCollabView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const mutationPending = useRef(false);
+  const loadGeneration = useRef(0);
+  const [switchingList, setSwitchingList] = useState(false);
+  useEffect(() => { onBusyChange?.(busy || switchingList); }, [busy, switchingList, onBusyChange]);
   const [listId, setListId] = useState<string | null>(null);
   const activeListId = listId ?? (view?.status === "live" ? view.activeList?.id ?? null : null);
   const fieldWeights = usePicklistFieldWeights(activeListId);
@@ -201,6 +206,8 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
   viewRef.current = view;
 
   const load = useCallback((listOverride?: string | null) => {
+    const generation = ++loadGeneration.current;
+    setSwitchingList(true);
     void (async () => {
       const params = new URLSearchParams(window.location.search);
       const urlOrg = params.get("orgId")?.trim() ?? "";
@@ -212,6 +219,7 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
           urlOrg || "_",
           targetList,
         );
+        if (generation !== loadGeneration.current) return;
         if (!viewRef.current && cached?.data && isPicklistCollabView(cached.data)) {
           setView(cached.data);
           if (cached.data.status === "live" && cached.data.activeList) {
@@ -224,6 +232,7 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
       } catch {
         // IndexedDB missing or blocked; live fetch still runs.
       }
+      if (generation !== loadGeneration.current) return;
       setFetchFailed(false);
       setError("");
       const query = new URLSearchParams();
@@ -237,7 +246,14 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
             signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
           },
         );
-        const data = (await response.json()) as PicklistCollabView | { error?: string };
+        const data = (await response.json().catch(() => ({}))) as PicklistCollabView | { error?: string };
+        if (generation !== loadGeneration.current) return;
+        if (response.status === 401 || response.status === 403) {
+          viewRef.current = null; setView(null); setListId(null); setFromCache(false); setCachedAt(null); setFetchFailed(true);
+          setError(data && "error" in data && typeof data.error === "string" ? data.error : "Your access to this pick list has changed.");
+          void clearFeatureSnapshot("picklist-collab", urlOrg || "_", targetList).catch(() => undefined);
+          return;
+        }
         if (!response.ok || !isPicklistCollabView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
@@ -254,6 +270,7 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
         setCachedAt(null);
         await persistPicklistCollabSnapshot(urlOrg, targetList, data);
       } catch {
+        if (generation !== loadGeneration.current) return;
         if (hadCache || viewRef.current) {
           setFromCache(true);
           setError("Could not refresh the pick list. Showing the last copy on this device.");
@@ -261,12 +278,13 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
         } else {
           setFetchFailed(true);
         }
-      }
+      } finally { if (generation === loadGeneration.current) setSwitchingList(false); }
     })();
   }, []);
 
   useEffect(() => {
     load();
+    return () => { loadGeneration.current += 1; };
   }, [load]);
 
   useEffect(() => {
@@ -300,7 +318,9 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
-      if (!orgId || busy) return;
+      if (!orgId || mutationPending.current || switchingList) return false;
+      mutationPending.current = true;
+      loadGeneration.current += 1;
       setBusy(true);
       setError("");
       try {
@@ -311,20 +331,24 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         });
         const data = (await response.json()) as PicklistCollabView | { error?: string };
-        if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
-          return;
+        if (!response.ok || !isPicklistCollabView(data) || data.status !== "live" || data.orgId !== orgId || !data.activeList) {
+          setError(data && "error" in data && typeof data.error === "string" ? data.error : "This change could not be confirmed. Your details are still here. Refresh before retrying.");
+          return false;
         }
         setView(data);
         if (data.status === "live" && data.activeList) setListId(data.activeList.id);
-        void persistPicklistCollabSnapshot(orgId, listId ?? "", data);
+        setFromCache(false); setCachedAt(null);
+        void persistPicklistCollabSnapshot(orgId, data.activeList.id, data);
+        return true;
       } catch {
-        setError("Network error — please try again.");
+        setError("This change could not be confirmed. Your details are still here. Refresh before retrying.");
+        return false;
       } finally {
+        mutationPending.current = false;
         setBusy(false);
       }
     },
-    [orgId, listId, busy],
+    [orgId, listId, switchingList],
   );
 
   if (shell === "loading") {
@@ -370,8 +394,8 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
             </p>
           ) : null}
           <CreateListForm
-            busy={busy}
-            mutate={(payload) => void mutate(payload)}
+            busy={busy || switchingList}
+            mutate={mutate}
             eventKey={setupView.eventKey}
             eventName={setupView.eventName}
           />
@@ -406,10 +430,10 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
             <label className="app-muted picklist-collab-select">
               List
               <select
+                disabled={busy || switchingList}
                 value={listId ?? view.activeList?.id ?? ""}
                 onChange={(event) => {
                   const next = event.target.value;
-                  setListId(next);
                   load(next);
                 }}
               >
@@ -468,11 +492,11 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
             title={shellCopy.title}
             description={shellCopy.description}
           />
-          <CreateListForm busy={busy} mutate={mutate} />
+          <CreateListForm busy={busy || switchingList} mutate={mutate} />
         </div>
       ) : view?.status === "live" ? (
         <div className="picklist-collab-layout">
-          <SummaryStatus view={view} />
+          <SummaryStatus view={view} busy={busy || switchingList} mutate={mutate} />
           <PicklistWeightSliders
             weights={fieldWeights.weights}
             fieldStats={view.fieldStats ?? {}}
@@ -484,28 +508,29 @@ export default function PicklistCollabClient({ embedded = false }: { embedded?: 
             weights={fieldWeights.weights}
             fieldStats={view.fieldStats ?? {}}
             onList={new Set(view.entries.map((entry) => entry.teamNumber))}
-            busy={busy}
+            busy={busy || switchingList || view.activeList?.status !== "open"}
             onAdd={(teamNumber) => mutate({ action: "add-entry", teamNumber, tier: "unranked" })}
           />
           <details className="picklist-add-more">
             <summary data-disclosure>Add a team that isn&apos;t in the ranking</summary>
-            <AddEntryForm busy={busy} mutate={mutate} />
+            <AddEntryForm key={activeListId} busy={busy || switchingList || view.activeList?.status !== "open"} mutate={mutate} />
           </details>
           <EntriesByTier
+            key={activeListId}
             view={view}
-            busy={busy}
+            busy={busy || switchingList}
             mutate={mutate}
             weights={fieldWeights.weights}
             listKey={view.activeList?.id ?? "default"}
           />
-          <CreateListForm busy={busy} mutate={mutate} collapsedLabel="Add another pick list" />
+          <CreateListForm busy={busy || switchingList} mutate={mutate} collapsedLabel="Add another pick list" />
         </div>
       ) : null}
     </Root>
   );
 }
 
-function SummaryStatus({ view }: { view: LiveView }) {
+function SummaryStatus({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: (payload: Record<string, unknown>) => Promise<boolean> }) {
   return (
     <Panel className="picklist-collab-panel">
       <div className="picklist-collab-status-row">
@@ -521,7 +546,9 @@ function SummaryStatus({ view }: { view: LiveView }) {
         >
           {view.activeList?.status ?? "—"}
         </Badge>
+        {view.activeList ? <Button disabled={busy} variant="secondary" onClick={() => void mutate({ action: "update-list-status", status: view.activeList?.status === "open" ? "locked" : "open" })}>{view.activeList.status === "open" ? "Lock ranking" : "Reopen ranking"}</Button> : null}
       </div>
+      {view.activeList?.status !== "open" ? <p className="app-muted">Reopen this ranking to add, move or remove teams. Existing votes stay attached to their teams.</p> : null}
     </Panel>
   );
 }
@@ -535,7 +562,7 @@ function EntriesByTier({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: (payload: Record<string, unknown>) => Promise<boolean>;
   weights: MetricWeight[];
   listKey: string;
 }) {
@@ -545,7 +572,7 @@ function EntriesByTier({
   const [mode, setMode] = useState<PicklistOrderMode>("sliders");
   useEffect(() => {
     try {
-      if (window.localStorage.getItem(orderStorageKey) === "hand") setMode("hand");
+      setMode(window.localStorage.getItem(orderStorageKey) === "hand" ? "hand" : "sliders");
     } catch {
       /* storage blocked: the list still sorts by sliders */
     }
@@ -601,6 +628,7 @@ function EntriesByTier({
         sliderRank={sliderRank}
         sliderCount={sliderRanked.length}
         busy={busy}
+        rankingLocked={view.activeList?.status !== "open"}
         mutate={mutate}
         onReordered={() => chooseMode("hand")}
       />
@@ -613,7 +641,7 @@ function AddEntryForm({
   mutate,
 }: {
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: (payload: Record<string, unknown>) => Promise<boolean>;
 }) {
   const empty = useMemo(
     () => ({ teamNumber: "", teamName: "", tier: "first_pick" as PicklistCollabTier, note: "" }),
@@ -631,14 +659,13 @@ function AddEntryForm({
       onSubmit={(event) => {
         event.preventDefault();
         if (!form.teamNumber) return;
-        mutate({
+        void mutate({
           action: "add-entry",
           teamNumber: Number(form.teamNumber),
           teamName: form.teamName || undefined,
           tier: form.tier,
           note: form.note || undefined,
-        });
-        setForm(empty);
+        }).then(saved => { if (saved) setForm(current => current === form ? empty : current); });
       }}
     >
       <h2 style={{ margin: 0 }}>Add team</h2>
@@ -679,7 +706,7 @@ function CreateListForm({
   eventName,
 }: {
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: (payload: Record<string, unknown>) => Promise<boolean>;
   collapsedLabel?: string;
   eventKey?: string | null;
   eventName?: string | null;
@@ -708,9 +735,11 @@ function CreateListForm({
         event.preventDefault();
         if (!form.name.trim()) return;
         // A blank event means the event the team is at — the server fills it in.
-        mutate({ action: "create-list", name: form.name, eventKey: lockedEvent || form.eventKey.trim() || null });
-        setForm(empty);
-        setOpen(!collapsedLabel);
+        void mutate({ action: "create-list", name: form.name, eventKey: lockedEvent || form.eventKey.trim() || null }).then(saved => {
+          if (!saved) return;
+          setForm(current => current === form ? empty : current);
+          setOpen(!collapsedLabel);
+        });
       }}
     >
       <h2 style={{ margin: 0 }}>Create pick list</h2>

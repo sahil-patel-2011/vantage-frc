@@ -59,7 +59,7 @@ export default function CompetitionHub() {
             </HubOrgGate>
           );
         }
-        if (tab === "picks" || tab === "picklist-collab") return <HubOrgGate orgId={orgId} label="Pick list">{id => <PickListWorkspace orgId={id} discussionDefault={tab === "picklist-collab"} />}</HubOrgGate>;
+        if (tab === "picks" || tab === "picklist-collab") return <HubOrgGate orgId={orgId} label="Pick list">{id => <PickListWorkspace key={id} orgId={id} discussionDefault={tab === "picklist-collab"} />}</HubOrgGate>;
         if (tab === "pick-clock") {
           return (
             <HubOrgGate orgId={orgId} label="Pick clock">
