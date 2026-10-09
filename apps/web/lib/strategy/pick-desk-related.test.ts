@@ -78,6 +78,9 @@ describe("classifyPickDeskShell", () => {
     expect(
       classifyPickDeskShell({ orgId: "o", eventKey: "e", status: "live", candidateCount: 12 }),
     ).toBe("ready");
+    expect(
+      classifyPickDeskShell({ orgId: "o", eventKey: "e", status: "live", candidateCount: 0, listCount: 1 }),
+    ).toBe("ready");
   });
 });
 

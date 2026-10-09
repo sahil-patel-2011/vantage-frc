@@ -116,7 +116,7 @@
 /* Pick desk rows: a drag handle, the team, and one More menu instead of six small buttons. */
 .strategy-pick-row-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px;align-items:center}
 .strategy-pick-column .strategy-pick-row-head:not(:has(.tier-drag-handle)){grid-template-columns:minmax(0,1fr) auto}
-.strategy-pick-column .tier-drag-handle{width:36px;height:44px}
+.strategy-pick-column .tier-drag-handle{width:44px;height:44px}
 .strategy-pick-column li.is-dragging{opacity:.45;border-color:var(--accent)}
 .strategy-pick-column li.tier-drop-slot{display:block;padding:0;border:0;min-height:0;height:3px;margin:-2px 0;background:var(--accent)}
 .strategy-pick-column ul{-webkit-user-select:none;user-select:none;min-height:56px}
@@ -124,3 +124,13 @@
 .strategy-pick-pool li{grid-template-columns:minmax(0,1fr) auto;align-items:center}
 .strategy-pick-column .tier-row-more-panel{right:auto;left:-8px;width:min(230px,calc(100vw - 32px))}
 .strategy-pick-column li strong{overflow-wrap:anywhere}
+.strategy-pick-column .tier-row-more-panel button:disabled,.strategy-pool-add:disabled{opacity:.5;cursor:default}
+.strategy-pick-column .tier-row-more-panel button:focus-visible,.strategy-pool-add:focus-visible,.tier-row-more>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.strategy-pick-column .tier-row-more-panel button.is-destructive{color:var(--tone-red,var(--ink));margin-top:8px}
+.pick-desk-status{margin:0;padding:12px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);overflow-wrap:anywhere}
+.pick-desk-status-error{border-color:var(--tone-red,var(--line))}
+@media(max-width:600px){
+  .pick-desk-heading .strategy-pick-actions{width:100%;justify-content:flex-start}
+  .strategy-pick-pool li{grid-template-columns:minmax(0,1fr)}
+  .strategy-pick-pool .strategy-pick-row-actions{justify-content:flex-start}
+}

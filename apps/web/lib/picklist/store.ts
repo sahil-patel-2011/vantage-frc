@@ -319,13 +319,76 @@ async function assertWritable(
   input: { orgId: string; pickListId: string },
 ): Promise<PickListStatus> {
   const result = await client.query<{ status: PickListStatus }>(
-    `SELECT status FROM pick_lists WHERE org_id = $1::uuid AND id = $2::uuid`,
+    `SELECT status FROM pick_lists WHERE org_id = $1::uuid AND id = $2::uuid FOR UPDATE`,
     [input.orgId, input.pickListId],
   );
   const status = result.rows[0]?.status;
   if (!status) throw new Error("Pick list not found");
   if (status !== "open") throw new Error(`This pick list is ${status} — reopen it to make changes.`);
   return status;
+}
+
+/** Every shared-list writer locks the parent before its entries to avoid lost snapshots and inverted lock order. */
+async function lockPickList(client: PoolClient, input: { orgId: string; pickListId: string }): Promise<void> {
+  const result = await client.query("SELECT id FROM pick_lists WHERE org_id=$1::uuid AND id=$2::uuid FOR UPDATE", [input.orgId, input.pickListId]);
+  if (!result.rowCount) throw new Error("Pick list not found");
+}
+
+export class PickListSaveConflict extends Error {
+  readonly status = 409;
+}
+
+/** Save the ranking document without replacing retained entry identities, votes, rationale or draft slots. */
+export async function saveRankedPickList(client: PoolClient, input: {
+  orgId: string; userId: string; id: string; eventKey: string; name: string; expectedRevision: number | null;
+  entries: Array<{ teamKey: string; rank: number; tier?: string; notes?: string | null }>;
+}): Promise<string> {
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`pick-list:${input.orgId}:${input.id}`]);
+  const current = await client.query<{ eventKey: string; status: PickListStatus; revision: number | string }>(
+    `SELECT event_key AS "eventKey", status, revision FROM pick_lists WHERE org_id=$1::uuid AND id=$2::uuid FOR UPDATE`,
+    [input.orgId, input.id],
+  );
+  const list = current.rows[0];
+  if (list && (list.eventKey !== input.eventKey || Number(list.revision) !== input.expectedRevision)) {
+    throw new PickListSaveConflict("This pick list changed. Your ranking is retained; review the latest list before saving.");
+  }
+  if (list && list.status !== "open") throw new PickListSaveConflict(`This pick list is ${list.status}. Reopen it before changing its ranking.`);
+  if (!list && input.expectedRevision !== null) throw new PickListSaveConflict("This pick list is unavailable. Your ranking is retained; reload the saved lists.");
+  if (!list) {
+    await client.query(
+      `INSERT INTO pick_lists(id,org_id,event_key,name,created_by,updated_by,source,season_year)
+       VALUES($1::uuid,$2::uuid,$3,$4,$5::uuid,$5::uuid,'strategy',$6::int)`,
+      [input.id, input.orgId, input.eventKey, input.name, input.userId, /^\d{4}/.test(input.eventKey) ? Number(input.eventKey.slice(0, 4)) : null],
+    );
+  }
+  const wanted = input.entries.map(entry => entry.teamKey);
+  const removedDrafted = await client.query<{ teamKey: string }>(
+    `SELECT team_key AS "teamKey" FROM pick_list_entries
+     WHERE org_id=$1::uuid AND pick_list_id=$2::uuid AND NOT(team_key=ANY($3::text[])) AND drafted_alliance_seed IS NOT NULL`,
+    [input.orgId, input.id, wanted],
+  );
+  if (removedDrafted.rows.length) throw new PickListSaveConflict("A removed team is still on the alliance draft board. Clear its board slot before removing it from the pick list.");
+  // Only explicit removals are deleted. Retained entries keep all linked discussion and board data.
+  await client.query(
+    "DELETE FROM pick_list_entries WHERE org_id=$1::uuid AND pick_list_id=$2::uuid AND NOT(team_key=ANY($3::text[]))",
+    [input.orgId, input.id, wanted],
+  );
+  const rows = input.entries.map(entry => ({ ...entry, tier: entry.tier ?? "watch", bucket: bucketFromTier(entry.tier), notes: entry.notes ?? null }));
+  if (rows.length) await client.query(
+    `INSERT INTO pick_list_entries(pick_list_id,org_id,team_key,team_number,rank,bucket,tier,notes,added_by,updated_by)
+     SELECT $1::uuid,$2::uuid,v."teamKey",substring(v."teamKey" from '^frc([0-9]+)$')::int,v.rank,v.bucket,v.tier,v.notes,$3::uuid,$3::uuid
+     FROM jsonb_to_recordset($4::jsonb) AS v("teamKey" text,rank int,bucket text,tier text,notes text)
+     ON CONFLICT(pick_list_id,team_key) DO UPDATE SET
+       rank=EXCLUDED.rank,bucket=EXCLUDED.bucket,tier=EXCLUDED.tier,
+       notes=CASE WHEN pick_list_entries.team_key=ANY($5::text[]) THEN EXCLUDED.notes ELSE pick_list_entries.notes END,
+       updated_by=EXCLUDED.updated_by,updated_at=now(),revision=pick_list_entries.revision+1`,
+    [input.id, input.orgId, input.userId, JSON.stringify(rows), input.entries.filter(entry => entry.notes !== undefined).map(entry => entry.teamKey)],
+  );
+  await client.query(
+    "UPDATE pick_lists SET name=$3,updated_by=$4::uuid,updated_at=now(),revision=revision+1 WHERE org_id=$1::uuid AND id=$2::uuid",
+    [input.orgId, input.id, input.name, input.userId],
+  );
+  return input.id;
 }
 
 /**
@@ -368,6 +431,7 @@ export async function setListStatus(
   client: PoolClient,
   input: { orgId: string; userId: string | null; pickListId: string; status: PickListStatus },
 ): Promise<void> {
+  await lockPickList(client, input);
   await client.query(
     `UPDATE pick_lists
      SET status = $3::text,
@@ -383,6 +447,7 @@ export async function setBoardScratch(
   client: PoolClient,
   input: { orgId: string; userId: string; pickListId: string; boardState: Record<string, unknown> },
 ): Promise<void> {
+  await lockPickList(client, input);
   await client.query(
     `UPDATE pick_lists
      SET board_state = $3::jsonb, updated_at = now(), updated_by = $4::uuid, revision = revision + 1
@@ -458,6 +523,7 @@ export async function setEntryNotes(
   client: PoolClient,
   input: { orgId: string; userId: string; pickListId: string; entryId: string; notes: string | null },
 ): Promise<void> {
+  await lockPickList(client, input);
   await client.query(
     `UPDATE pick_list_entries
      SET notes = $4::text, updated_by = $5::uuid, updated_at = now(), revision = revision + 1
@@ -686,6 +752,7 @@ export async function recordVote(
     comment?: string | null;
   },
 ): Promise<void> {
+  await lockPickList(client, input);
   const owned = await client.query(
     `SELECT 1 FROM pick_list_entries
      WHERE org_id = $1::uuid AND pick_list_id = $2::uuid AND id = $3::uuid`,
@@ -717,10 +784,12 @@ export async function removeVote(
   client: PoolClient,
   input: { orgId: string; userId: string; pickListId: string; entryId: string },
 ): Promise<void> {
+  await lockPickList(client, input);
   await client.query(
-    `DELETE FROM pick_list_entry_votes
-     WHERE org_id = $1::uuid AND entry_id = $2::uuid AND voter_id = $3::uuid`,
-    [input.orgId, input.entryId, input.userId],
+    `DELETE FROM pick_list_entry_votes v USING pick_list_entries e
+     WHERE v.org_id=$1::uuid AND v.entry_id=$2::uuid AND v.voter_id=$3::uuid
+       AND e.id=v.entry_id AND e.org_id=$1::uuid AND e.pick_list_id=$4::uuid`,
+    [input.orgId, input.entryId, input.userId, input.pickListId],
   );
   await touchList(client, input);
 }
@@ -742,6 +811,7 @@ export async function setJustification(
     contradictionReason: string | null;
   },
 ): Promise<void> {
+  await lockPickList(client, input);
   await client.query(
     `UPDATE pick_list_entries
      SET justification = $4::text,
@@ -785,6 +855,7 @@ export async function setBoardSlot(
 ): Promise<void> {
   if (!ALLIANCE_SEEDS.includes(input.allianceSeed)) throw new Error("allianceSeed must be 1-8");
   if (!DRAFT_PICK_SLOTS.includes(input.pickSlot)) throw new Error("Unknown pick slot");
+  await assertWritable(client, input);
 
   // Free the slot first so the partial unique index can accept the new occupant.
   await client.query(

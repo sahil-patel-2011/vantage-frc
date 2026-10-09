@@ -130,11 +130,12 @@ export function classifyPickDeskShell(input: {
   orgId?: string | null;
   eventKey?: string | null;
   candidateCount?: number;
+  listCount?: number;
 }): PickDeskShellKind {
   if (input.loading) return "loading";
   if (input.fetchFailed) return "error";
   if (input.status === "setup_required" || !input.orgId || !input.eventKey) return "setup";
-  if (isPickDeskPoolEmpty({ candidateCount: input.candidateCount ?? 0 })) return "empty";
+  if (isPickDeskPoolEmpty({ candidateCount: input.candidateCount ?? 0 }) && !input.listCount) return "empty";
   return "ready";
 }
 
