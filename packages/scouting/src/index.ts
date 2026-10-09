@@ -3,6 +3,9 @@ import { lockScoutPayload } from "./identity";
 import { ACTION_HISTORY_KEY, validateActionHistory } from "./action-history";
 import { MATCH_CAPTURE_KEY, validateMatchCapture } from "./match-capture";
 import { visibleFields, withInferredPhaseRules, type VisibleWhen } from "./visibility";
+import { evaluateObservedFormula } from "./formula";
+export { evaluateObservedFormula, isFormulaExpression, isFormulaDraftExpression, isUnseenFormulaAnswer, formulaFields, type FormulaExpression } from "./formula";
+import type { FormulaExpression } from "./formula";
 export * from "./match-capture";
 export { ACTION_HISTORY_KEY, actionHistory, recordScoutAction, undoableScoutAction, undoScoutAction, validateActionHistory, type ScoutActionHistory, type ScoutAction, type ScoutActionChange } from "./action-history";
 import {
@@ -661,14 +664,6 @@ export type SyncEntry = {
   videoAtSeconds?: number;
 };
 
-export type FormulaExpression =
-  | { op: "field"; field: string }
-  | { op: "constant"; value: number }
-  | {
-      op: "add" | "subtract" | "multiply" | "divide" | "min" | "max";
-      args: FormulaExpression[];
-    };
-
 const STUDIO_FIELD_TYPES: ReadonlySet<string> = new Set([
   "counter",
   "multi_counter",
@@ -990,6 +985,7 @@ export function evaluateFormula(
   payload: Record<string, unknown>,
 ): number {
   if (expression.op === "constant") return expression.value;
+  if (expression.op === "lookup") return evaluateObservedFormula(expression, payload) ?? 0;
   if (expression.op === "field") {
     const value = payload[expression.field];
     return typeof value === "number" && Number.isFinite(value) ? value : 0;

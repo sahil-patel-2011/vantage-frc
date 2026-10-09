@@ -197,19 +197,20 @@ body.has-app-shell :is(.app-card,.soft-panel,.module-page) tbody tr:hover td { b
   .app-sidebar-brand > button svg { width: 22px; height: 22px; }
   .app-sidebar-team { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; min-width: 0; padding: 12px 10px; border: 1px solid var(--line-soft); border-radius: 14px; background: color-mix(in srgb,var(--surface) 75%,transparent); color: var(--ink); text-decoration: none; box-shadow: var(--product-reflection); }
   .app-sidebar-team > i { display: grid; place-items: center; width: 32px; height: 32px; flex: none; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
-  .app-sidebar-team > i svg { width: 17px; height: 17px; }
+  .app-sidebar-team > i svg { width: 22px; height: 22px; }
   .app-sidebar-team > span { display: grid; gap: 3px; min-width: 0; flex: 1; }
-  .app-sidebar-team strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 550; }
+  .app-sidebar-team strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 550; }
   .app-sidebar-team small { color: var(--muted); font-size: 10px; }
   .app-sidebar-team > svg { width: 11px; height: 11px; color: var(--muted); flex: none; }
   .app-sidebar nav { display: grid; gap: 3px; }
   .app-sidebar-label { margin: 0 12px 8px; font-size: 10px; font-weight: 550; color: var(--muted); letter-spacing: .01em; }
-  .app-sidebar nav a { display: flex; align-items: center; gap: 12px; min-height: 42px; padding: 0 12px; border: 1px solid transparent; border-radius: 11px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 450; }
-  .app-sidebar nav a > svg { width: 22px; height: 22px; flex: none; }
+  .app-sidebar nav a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; box-sizing: border-box; border: 1px solid transparent; border-radius: 11px; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 450; transition: background-color 160ms ease, color 160ms ease; }
+  .app-sidebar nav a > svg { width: 24px; height: 24px; flex: none; }
+  .app-sidebar nav a > span { min-width: 0; overflow-wrap: anywhere; }
   .app-sidebar nav a:hover { color: var(--ink); background: var(--line-soft); }
   .app-sidebar .app-sidebar-main a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 550; }
   .app-sidebar .app-sidebar-section { margin-top: 28px; }
-  .app-sidebar .app-sidebar-section a { min-height: 44px; font-size: 13px; }
+  .app-sidebar .app-sidebar-section a { min-height: 48px; font-size: 14px; }
   .app-sidebar .app-sidebar-section a[aria-current="page"] { color: var(--ink); background: color-mix(in srgb,var(--surface) 70%,transparent); border-color: var(--line-soft); font-weight: 550; box-shadow: 0 1px 2px #00000003; }
   .app-sidebar .app-sidebar-footer { margin-top: auto; padding-top: 28px; }
   .app-sidebar a:focus-visible,.app-sidebar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -220,6 +221,8 @@ body.has-app-shell :is(.app-card,.soft-panel,.module-page) tbody tr:hover td { b
   .app-sidebar[data-collapsed="true"] nav a { justify-content: center; padding: 0; min-height: 44px; }
   body.has-app-shell .soft-menu-btn { display: none; }
 }
+@media (prefers-reduced-motion: reduce) { .app-sidebar nav a { transition: none; } }
+html[data-motion="reduced"] .app-sidebar nav a { transition: none; }
 @media (max-width: 1099px) { .app-topbar-search { display: none; } }
 @media (max-width: 640px) {
   body.has-app-shell .soft-topbar { height: 60px; padding-inline: 12px; }

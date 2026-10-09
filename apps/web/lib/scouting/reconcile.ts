@@ -19,6 +19,7 @@
  */
 
 import type { ScoutFieldRoleMap } from "@vantage/prediction-strategy";
+import { formulaFields } from "@vantage/scouting";
 import { DIRECT_TOTAL_KEYS, matchRowTotal, onePerMatch, scoutedRowsFromEntries, type OrgValueFormula } from "./scouted-ratings";
 
 /** Alliance-total gap at or above this fraction gets a review flag. */
@@ -209,11 +210,6 @@ export function robotEstimateFromPayload(
     ? DIRECT_TOTAL_KEYS.filter(key => typeof payload[key] === "number" && Number.isFinite(payload[key]))
     : [...new Set(formulas.flatMap(formula => formulaFields(formula.expression)))];
   return { points, basis: converted.source === "recorded" ? "total" : "formula", fields };
-}
-
-function formulaFields(expression: OrgValueFormula["expression"]): string[] {
-  if (expression.op === "field") return [expression.field];
-  return "args" in expression && Array.isArray(expression.args) ? expression.args.flatMap(formulaFields) : [];
 }
 
 const teamLabel = (teamKey: string) => teamKey.replace(/^frc/i, "") || teamKey;

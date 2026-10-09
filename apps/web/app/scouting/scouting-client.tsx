@@ -61,7 +61,6 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { persistScoutingSnapshot } from "../../lib/scouting/snapshot";
 import { cacheLiveScouting } from "../../lib/scouting/live-cache";
-import { weightedFormula } from "../../lib/scouting/weighted-formula";
 import { useScoutTask } from "./use-scout-task";
 import { focusInvalidScoutField } from "./scouting-form-focus";
 import { ConfirmProvider, useConfirm } from "../../components/ui";
@@ -150,9 +149,6 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
   const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({});
   const [officialFlags, setOfficialFlags] = useState<OfficialFlag[]>([]);
-  const [formulaName, setFormulaName] = useState("");
-  const [formulaWeights, setFormulaWeights] = useState<Record<string, number>>({});
-  const [showFormula, setShowFormula] = useState(false);
   const [trust, setTrust] = useState<TrustSnapshot | null>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [draftDirty, setDraftDirty] = useState(false);
@@ -831,24 +827,6 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
     if (response.ok) setConflicts(((await response.json()) as { disagreements: [] }).disagreements);
   }
 
-  async function saveFormula() {
-    const expression = weightedFormula(formulaWeights);
-    if (!formulaName.trim() || !expression) {
-      setMessage("Name the formula and set at least one field weight");
-      return;
-    }
-    const response = await fetch("/api/scouting/formulas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        orgId,
-        name: formulaName,
-        expression,
-      }),
-    });
-    setMessage(response.ok ? "Coach value formula saved" : "Coach role is required to save formulas");
-  }
-
   async function createStarterForms() {
     setMessage("");
     const response = await fetch("/api/scouting/schemas", {
@@ -1019,9 +997,6 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
       saving={saving}
       syncNote={syncNote}
       saveReceipt={saveReceipt}
-      showFormula={showFormula}
-      formulaName={formulaName}
-      formulaWeights={formulaWeights}
       trust={trust}
       cheatOpen={cheatOpen}
       shortcuts={shortcuts}
@@ -1042,9 +1017,6 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
       editMyReport={editMyReport}
       autoPickEnabled={settled && !holdAutoPick}
       userEdited={userEdited}
-      setShowFormula={setShowFormula}
-      setFormulaName={setFormulaName}
-      setFormulaWeights={setFormulaWeights}
       onTabChange={onTabChange}
       sync={sync}
       retryQuarantineItem={retryQuarantineItem}
@@ -1061,7 +1033,6 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
         setSaveReceipt(null); setMessage("");
       }}
       submit={submit}
-      saveFormula={saveFormula}
       setMessage={setMessage}
     />
   );

@@ -2,7 +2,7 @@ import { auth, getOnboardingGate, isEmail2faEnforced, sessionHasEmail2fa } from 
 import { withRls } from "@vantage/db";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
-import { safeAppPath } from "./lib/security/safe-navigation";
+import { onboardingReturnPath } from "./lib/onboarding/entry-journey";
 import { isPausedMediaRoute, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "./lib/media-availability";
 import { productRedirect, requestOrigin } from "./lib/products/products";
 import { isPendingWorkspacePath } from "./lib/onboarding/pending-paths";
@@ -15,6 +15,7 @@ const PUBLIC_PAGES = new Set([
   "/",
   "/invite",
   "/join-team",
+  "/access-unavailable",
   "/features",
   "/features/cad",
   "/features/strategy",
@@ -236,7 +237,17 @@ function onboardingRedirect(request: NextRequest) {
 
 function postOnboardingRedirect(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next");
-  return NextResponse.redirect(new URL(safeAppPath(next), request.url));
+  return NextResponse.redirect(new URL(onboardingReturnPath(next, "/dashboard"), request.url));
+}
+
+/** A failed lookup is not proof of sign-out or unfinished onboarding. */
+function accessUnavailable(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api/") || !["GET", "HEAD"].includes(request.method)) {
+    return NextResponse.json({ error: "Your account access could not be checked. Try again shortly.", code: "access_check_unavailable" }, { status: 503, headers: { "cache-control": "private, no-store", "retry-after": "10" } });
+  }
+  const destination = new URL("/access-unavailable", request.url);
+  destination.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
+  return NextResponse.redirect(destination, { status: 307, headers: { "cache-control": "private, no-store" } });
 }
 
 function approvalPendingRedirect(request: NextRequest) {
@@ -314,7 +325,7 @@ export async function proxy(request: NextRequest) {
       session = await auth.api.getSession({ headers: request.headers });
       authenticated = Boolean(session);
     } catch {
-      authenticated = false;
+      return accessUnavailable(request);
     }
   }
 
@@ -345,13 +356,14 @@ export async function proxy(request: NextRequest) {
     if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Complete email verification to continue", code: "email_verification_required" }, { status: 403 });
     const verify = new URL("/signin", request.url);
     verify.searchParams.set("verify", "1");
-    verify.searchParams.set("next", pathname.startsWith("/") ? pathname : "/dashboard");
+    verify.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(verify);
   }
 
   const onboardingGate = await withRls({ userId: session.user.id }, (client) =>
     getOnboardingGate(client, session.user.id),
-  ).catch(() => ({ onboardingComplete: false, workspaceApproved: false, accessStatus: "none" as const }));
+  ).catch(() => null);
+  if (!onboardingGate) return accessUnavailable(request);
 
   if (!onboardingGate.onboardingComplete) {
     if (

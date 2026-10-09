@@ -253,7 +253,10 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   }
 
   if (view.status !== "ready") {
-    if (view.observations?.length) return <ObservedRobots robots={view.observations} eventKey={effectiveEventKey} />;
+    if (view.observations?.length) return <>
+      {view.status === "needs_formula" ? <section className="stp-event-overview"><p className="app-muted">{view.message}</p><Button as="a" variant="secondary" href={`/competition?tab=forms&formulas=1&orgId=${encodeURIComponent(orgId)}`}>Review scoring formulas</Button></section> : null}
+      <ObservedRobots robots={view.observations} eventKey={effectiveEventKey} />
+    </>;
     const needsEvent = view.status === "empty" && view.eventKey === null;
     return (
       <EmptyState
@@ -264,7 +267,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
         description={view.message}
       >
         {view.status === "needs_formula" ? (
-          <Button as="a" variant="primary" href={`/scouting/forms?orgId=${encodeURIComponent(orgId)}`}>
+          <Button as="a" variant="primary" href={`/competition?tab=forms&formulas=1&orgId=${encodeURIComponent(orgId)}`}>
             Open scouting formulas
           </Button>
         ) : <Button as="a" variant="primary" href={`/competition?tab=${needsEvent ? "command" : "scouting"}&orgId=${encodeURIComponent(orgId)}`}>

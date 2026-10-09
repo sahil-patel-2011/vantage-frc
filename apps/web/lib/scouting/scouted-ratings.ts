@@ -1,4 +1,4 @@
-import { evaluateFormula, type FormulaExpression } from "@vantage/scouting";
+import { evaluateObservedFormula, type FormulaExpression } from "@vantage/scouting";
 import {
   ratingsFromScouting,
   combineScoutedMatchRows,
@@ -8,6 +8,7 @@ import {
 } from "@vantage/prediction-strategy";
 import { matchOrderKey } from "./next-assignment";
 import { climbSucceeded } from "./climb-outcome";
+import { SCORING_ROLE_NAMES } from "./formula-editor";
 
 /**
  * The bridge from "what our scouts wrote down" to "what the predictor can use".
@@ -27,13 +28,13 @@ import { climbSucceeded } from "./climb-outcome";
 
 /** Formula names this looks for, in order, when grouping points by phase. */
 const PHASE_FORMULA_NAMES = {
-  auto: ["auto", "auto points", "autonomous", "auto_points"],
-  teleop: ["teleop", "teleop points", "tele-op", "teleop_points"],
-  endgame: ["endgame", "endgame points", "end game", "climb", "endgame_points"],
+  auto: SCORING_ROLE_NAMES.Auto,
+  teleop: SCORING_ROLE_NAMES.Teleop,
+  endgame: SCORING_ROLE_NAMES.Endgame,
 } as const;
 
 /** A single formula covering the whole match, used when no phase split exists. */
-const TOTAL_FORMULA_NAMES = ["total", "total points", "points", "match points", "value"];
+const TOTAL_FORMULA_NAMES = SCORING_ROLE_NAMES["Total points"];
 
 export type OrgValueFormula = { name: string; expression: FormulaExpression };
 
@@ -124,17 +125,7 @@ function climbed(payload: Record<string, unknown>): boolean | null {
 
 /** Ranking never turns a missing answer, malformed formula or division by zero into points. */
 export function observedFormulaValue(expression: FormulaExpression | null, payload: Record<string, unknown>): number | null {
-  if (!expression || typeof expression !== "object") return null;
-  if (expression.op === "constant") return Number.isFinite(expression.value) ? expression.value : null;
-  if (expression.op === "field") {
-    const value = payload[expression.field];
-    return typeof value === "number" && Number.isFinite(value) ? value : null;
-  }
-  if (!["add", "subtract", "multiply", "divide", "min", "max"].includes(expression.op) || !Array.isArray(expression.args) || !expression.args.length) return null;
-  const values = expression.args.map(arg => observedFormulaValue(arg, payload));
-  if (values.some(value => value == null) || (expression.op === "divide" && values.slice(1).some(value => value === 0))) return null;
-  const value = evaluateFormula(expression, payload);
-  return Number.isFinite(value) ? value : null;
+  return expression ? evaluateObservedFormula(expression, payload) : null;
 }
 
 export function scoutedRowsFromEntries(

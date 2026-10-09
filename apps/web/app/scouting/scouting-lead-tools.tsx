@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, type Dispatch, type SetStateAction } from "react";
-import type { ScoutSchema } from "@vantage/scouting";
+import { useState } from "react";
 import { hubHref } from "../../lib/nav/hubs";
-import { Button, FormRow, Panel } from "../../components/ui";
+import { Panel } from "../../components/ui";
 import { shouldShowScoutingRecentEntries } from "../../lib/scouting/scouting-related";
 import type { Bootstrap, TrustSnapshot } from "./scouting-model";
 import { ScoutReportViewer } from "./scout-report-viewer";
@@ -21,28 +20,12 @@ import { ScoutReportViewer } from "./scout-report-viewer";
 export function ScoutingLeadTools({
   orgId,
   data,
-  schema,
   trust,
-  showFormula,
-  formulaName,
-  formulaWeights,
-  setShowFormula,
-  setFormulaName,
-  setFormulaWeights,
-  saveFormula,
   sync,
 }: {
   orgId: string;
   data: Bootstrap | null;
-  schema: ScoutSchema | undefined;
   trust: TrustSnapshot | null;
-  showFormula: boolean;
-  formulaName: string;
-  formulaWeights: Record<string, number>;
-  setShowFormula: Dispatch<SetStateAction<boolean>>;
-  setFormulaName: (name: string) => void;
-  setFormulaWeights: Dispatch<SetStateAction<Record<string, number>>>;
-  saveFormula: () => Promise<void> | void;
   sync: () => Promise<void> | void;
 }) {
   // Match collection is the primary task at every width. Reports, export and
@@ -75,6 +58,7 @@ export function ScoutingLeadTools({
           <p><a href={`/scout?orgId=${encodeURIComponent(orgId)}`}>Prepare this device for scouting →</a></p>
           {data?.canManageSchemas ? <nav className="scout-setup-actions" aria-label="Scouting setup">
             <a href={hubHref("/competition", "forms", orgId)}>Edit forms</a>
+            <a href={`${hubHref("/competition", "forms", orgId)}&formulas=1`}>Scoring formulas</a>
             <a href={hubHref("/competition", "scout-coverage-live", orgId)}>Assign scouts</a>
             <a href={hubHref("/competition", "scout-training-mode", orgId)}>Practice scouting</a>
           </nav> : null}
@@ -132,51 +116,6 @@ export function ScoutingLeadTools({
             )}
           </Panel>
 
-          <Panel style={{ minHeight: "auto" }}>
-            <button type="button" className="text-button" onClick={() => setShowFormula((current) => !current)}>
-              {showFormula ? "Hide coach formula" : "Coach value formula"}
-            </button>
-            {showFormula ? (
-              <div className="scout-formula">
-                <p className="app-muted">Optional weighted score from numeric fields. Coach role required to save.</p>
-                <FormRow label="Formula name">
-                  <input
-                    aria-label="Formula name"
-                    placeholder="e.g. Pick value"
-                    value={formulaName}
-                    onChange={(event) => setFormulaName(event.target.value)}
-                  />
-                </FormRow>
-                {schema?.definition.fields
-                  .filter(
-                    (field) =>
-                      // Counters, ratings, and sliders store plain numbers too —
-                      // a tap-tallied cycle count is exactly what a pick formula wants.
-                      field.type === "number" ||
-                      field.type === "counter" ||
-                      field.type === "rating" ||
-                      field.type === "slider",
-                  )
-                  .map((field) => (
-                    <FormRow key={field.key} label={`${field.label} weight`}>
-                      <input
-                        type="number"
-                        value={formulaWeights[field.key] ?? 0}
-                        onChange={(event) =>
-                          setFormulaWeights((current) => ({
-                            ...current,
-                            [field.key]: event.target.valueAsNumber,
-                          }))
-                        }
-                      />
-                    </FormRow>
-                  ))}
-                <Button variant="secondary" type="button" onClick={() => void saveFormula()}>
-                  Save formula
-                </Button>
-              </div>
-            ) : null}
-          </Panel>
         </div>
       </details>
     </aside>

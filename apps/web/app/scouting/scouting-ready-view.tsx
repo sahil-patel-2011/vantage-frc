@@ -124,9 +124,6 @@ export type ScoutingReadyViewProps = {
   autoPickEnabled?: boolean;
   /** Only answers the scout typed make a draft; a loaded report or carried answers do not. */
   userEdited?: boolean;
-  showFormula: boolean;
-  formulaName: string;
-  formulaWeights: Record<string, number>;
   trust: { fieldTrust: FieldTrustSummary[]; leaderboard: Array<{
     userId: string;
     name: string;
@@ -146,9 +143,6 @@ export type ScoutingReadyViewProps = {
   setSource: (value: "manual" | "voice") => void;
   setSelectedWinners: Dispatch<SetStateAction<Record<string, string>>>;
   setSaveReceipt: (receipt: SaveReceipt | null) => void;
-  setShowFormula: Dispatch<SetStateAction<boolean>>;
-  setFormulaName: (name: string) => void;
-  setFormulaWeights: Dispatch<SetStateAction<Record<string, number>>>;
   onTabChange: (id: string) => void;
   onUndo?: () => void;
   sync: () => Promise<void> | void;
@@ -161,7 +155,6 @@ export type ScoutingReadyViewProps = {
   attachMedia: (file: File, options?: { fieldKey?: string; tags?: string[] }) => Promise<string | null>;
   cancelReport: () => void;
   submit: () => Promise<void> | void;
-  saveFormula: () => Promise<void> | void;
   setMessage: (message: string) => void;
 };
 
@@ -204,9 +197,6 @@ export function ScoutingReadyView({
   editMyReport,
   autoPickEnabled = true,
   userEdited = true,
-  showFormula,
-  formulaName,
-  formulaWeights,
   trust,
   cheatOpen,
   shortcuts,
@@ -218,9 +208,6 @@ export function ScoutingReadyView({
   setSource,
   setSelectedWinners,
   setSaveReceipt,
-  setShowFormula,
-  setFormulaName,
-  setFormulaWeights,
   onTabChange,
   onUndo,
   sync,
@@ -233,7 +220,6 @@ export function ScoutingReadyView({
   attachMedia,
   cancelReport,
   submit,
-  saveFormula,
   setMessage,
 }: ScoutingReadyViewProps) {
   const context =
@@ -886,15 +872,7 @@ return (
         <ScoutingLeadTools
           orgId={orgId}
           data={data}
-          schema={schema}
           trust={trust}
-          showFormula={showFormula}
-          formulaName={formulaName}
-          formulaWeights={formulaWeights}
-          setShowFormula={setShowFormula}
-          setFormulaName={setFormulaName}
-          setFormulaWeights={setFormulaWeights}
-          saveFormula={saveFormula}
           sync={sync}
         />
       </div>

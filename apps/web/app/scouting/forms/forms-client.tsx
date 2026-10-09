@@ -1,6 +1,8 @@
 "use client";
 
 import { FormsResponses } from "./forms-responses";
+import { ScoringFormulas } from "./scoring-formulas";
+import { useSearchParams } from "next/navigation";
 import { scoutingGameLabel, latestScoutingYear } from "../../../lib/scouting/free-scout";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
@@ -67,6 +69,10 @@ export default function FormsClient({ orgId, embedded = false }: { orgId: string
 
 function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) {
   const confirm = useConfirm();
+  const searchParams = useSearchParams();
+  const [formulaOpen, setFormulaOpen] = useState(false);
+  const requestedFormulas = searchParams.get("formulas") === "1";
+  useEffect(() => { if (requestedFormulas) setFormulaOpen(true); }, [requestedFormulas]);
   const Root = embedded ? "section" : "main";
   const [payload, setPayload] = useState<SchemasPayload | null>(null);
   const [loadedOrg, setLoadedOrg] = useState(orgId);
@@ -603,6 +609,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
       <div className="sfb-document-actions" role="group" aria-label="Form publication">
         <div className="sfb-action-status" role="status"><strong>{publishStatus.label}</strong><span>{publishStatus.detail}</span></div>
         <ActionMenu overflowOnly label="Form options" actions={[
+          { id: "scoring", label: "Scoring formulas", onClick: () => setFormulaOpen(true) },
           ...(payload.canManageSchemas && publishStatus.kind !== "published" ? [{ id: "scout", label: "Open scouting", href: scoutingHref }] : []),
           { id: "assign", label: payload.canManageSchemas ? "Assign scouts" : "View assignments", href: hubHref("/competition", "scout-coverage-live", orgId) },
           ...(currentSchema && publishStatus.kind === "draft_changes" && payload.canManageSchemas ? [{ id: "discard", label: "Undo my changes", disabled: busy, onClick: () => void discardChanges() }] : []),
@@ -610,6 +617,11 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
         {payload.canManageSchemas && publishStatus.kind !== "published" ? <Button variant="primary" type="button" disabled={busy || Boolean(publishBlocked)} title={publishBlocked ?? publishStatus.detail} aria-describedby={publishBlocked ? "sfb-publish-reason" : undefined} onClick={() => void publish()}>{publishLabel}</Button>
           : <Button as="a" variant={publicationConfirmed ? "primary" : "secondary"} href={scoutingHref}>Open scouting</Button>}
       </div>
+
+      <ScoringFormulas key={`${orgId}:${payload.userId ?? "unknown"}`} open={formulaOpen} orgId={orgId} userId={payload.userId} schema={payload.schemas.find(schema => schema.type === "match")} canManage={payload.canManageSchemas} onClose={() => {
+        setFormulaOpen(false);
+        if (requestedFormulas) { const url = new URL(window.location.href); url.searchParams.delete("formulas"); window.history.replaceState(window.history.state, "", url); }
+      }} />
 
       <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
 

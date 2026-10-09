@@ -51,6 +51,16 @@ function eventEntries(): ScoutEntryRow[] {
 }
 
 describe("scoutedRowsFromEntries", () => {
+  it("scores mapped climb observations through the real analysis bridge without inventing unseen points", () => {
+    const result = scoutedRowsFromEntries([
+      entry({ teamKey: "frc6925", matchKey: "qm1", payload: { climb: "L1" } }),
+      entry({ teamKey: "frc6925", matchKey: "qm2", payload: { climb: "none" } }),
+      entry({ teamKey: "frc6925", matchKey: "qm3", payload: { climb: "could_not_see" } }),
+    ], [{ name: "Total points", expression: { op: "lookup", field: "climb", values: { L1: 10, none: 0 } } }]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.rows.map(row => row.total)).toEqual([10, 0, null]);
+  });
   it("asks for a formula instead of guessing what a game action is worth", () => {
     const result = scoutedRowsFromEntries(eventEntries(), []);
 

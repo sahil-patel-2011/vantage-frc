@@ -11,6 +11,7 @@ import type {
 export type AccessStatus = "approved" | "invited" | "pending" | "declined" | "withdrawn" | "none";
 
 export type OnboardingState = {
+  userId?: string;
   complete: boolean;
   firstName: string | null;
   lastName: string | null;

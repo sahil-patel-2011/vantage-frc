@@ -140,7 +140,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
         </Shell>
       );
     case "team_todos":
-      return <DashboardHomeTasks orgId={orgId} role={actions?.role ?? null} payload={payload} />;
+      return <DashboardHomeTasks key={orgId} orgId={orgId} role={actions?.role ?? null} payload={payload} />;
     case "onboarding_checklist": {
       const steps =
         (data.steps as Array<{

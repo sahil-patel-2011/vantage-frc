@@ -1,7 +1,10 @@
 "use client";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { VantageLogo } from "../../components/brand";
 import { Button, FormRow } from "../../components/ui";
+import { teamJoinInvitePath } from "../../lib/onboarding/entry-journey";
+import { apiErrorMessage } from "../../lib/ui/load-failure";
+import { signOutAndRedirect } from "../../lib/sign-out";
 import "./join-team.css";
 
 export default function JoinTeamClient() {
@@ -10,38 +13,48 @@ export default function JoinTeamClient() {
     [email, setEmail] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  const submitting = useRef(false);
+  const errorRef = useRef<HTMLParagraphElement | null>(null);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    void fetch("/api/auth/get-session", { signal: controller.signal })
+    void fetch("/api/auth/get-session", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]) })
       .then((response) => (response.ok ? response.json() : null))
       .then((session) => {
-        if (session?.user?.email && !controller.signal.aborted)
-          setEmail((current) => current || session.user.email);
+        if (typeof session?.user?.email === "string" && !controller.signal.aborted) {
+          setEmail(session.user.email);
+          setSessionEmail(session.user.email);
+        }
       })
       .catch(() => {});
     return () => controller.abort();
   }, []);
+  useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (submitting.current || !/^[0-9]{1,5}$/.test(team) || Number(team) < 1 || pin.length !== 6 || !email.trim()) return;
+    submitting.current = true;
     setBusy(true);
     setError("");
     try {
       const response = await fetch("/api/teams/join", {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teamNumber: Number(team), pin, email }),
+        body: JSON.stringify({ teamNumber: Number(team), pin, email: sessionEmail ?? email.trim() }),
       });
-      const data = await response.json();
-      if (!response.ok || !data.href) {
-        setError(
-          data.error || "Could not join. Check the details and try again.",
-        );
+      if (!response.ok) {
+        setError((await apiErrorMessage(response)) ?? "Could not join. Check the details and try again.");
         return;
       }
-      window.location.assign(data.href);
+      const data = await response.json() as { href?: unknown };
+      const href = teamJoinInvitePath(data.href);
+      if (!href) throw new Error("Invitation handoff was not confirmed");
+      window.location.assign(href);
     } catch {
       setError("Could not connect. Your details are still here. Try again.");
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -61,6 +74,7 @@ export default function JoinTeamClient() {
               autoComplete="off"
               pattern="[0-9]{1,5}"
               maxLength={5}
+              disabled={busy}
               value={team}
               onChange={(event) =>
                 setTeam(event.target.value.replace(/\D/g, "").slice(0, 5))
@@ -75,6 +89,7 @@ export default function JoinTeamClient() {
               autoComplete="off"
               pattern="[0-9]{6}"
               maxLength={6}
+              disabled={busy}
               value={pin}
               onChange={(event) =>
                 setPin(event.target.value.replace(/\D/g, "").slice(0, 6))
@@ -87,19 +102,28 @@ export default function JoinTeamClient() {
               required
               type="email"
               autoComplete="email"
+              readOnly={Boolean(sessionEmail)}
+              disabled={busy}
+              aria-describedby={sessionEmail ? "join-team-identity" : undefined}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
           </FormRow>
+          {sessionEmail ? <p className="join-team-identity" id="join-team-identity">Joining as {sessionEmail}. <button type="button" disabled={busy} onClick={async () => {
+            if (submitting.current) return;
+            submitting.current = true; setBusy(true);
+            try { await signOutAndRedirect("/join-team"); }
+            finally { submitting.current = false; setBusy(false); }
+          }}>Use another account</button></p> : null}
           {error ? (
-            <p role="alert" className="join-team-error">
+            <p ref={errorRef} tabIndex={-1} role="alert" className="join-team-error">
               {error}
             </p>
           ) : null}
           <Button
             type="submit"
             variant="primary"
-            disabled={busy || pin.length !== 6 || !team || !email}
+            disabled={busy || pin.length !== 6 || !team || Number(team) < 1 || !email.trim()}
           >
             {busy ? "Checking code…" : "Continue"}
           </Button>
