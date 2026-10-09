@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RoleOnboardingView, StartCheckView, StartTrackView } from "../../lib/role-onboarding/types";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { isMemberRole, pickFirstWeek } from "../../lib/role-onboarding/first-week-order";
@@ -34,45 +34,80 @@ export function nextFirstWeekChecks(view: RoleOnboardingView | null, limit = SHO
  * first-week card lists a student's steps — and has to know when they have
  * arrived, so neither says "nothing to do" first and changes its mind.
  */
-export function useFirstWeek(orgId: string) {
+export function useFirstWeek(orgId: string, userId: string) {
+  const scope = `${userId}:${orgId}`;
   const [view, setView] = useState<RoleOnboardingView | null>(null);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [reload, setReload] = useState(0);
+  const generation = useRef(0);
+  const mutation = useRef<AbortController | null>(null);
+  const retry = useCallback(() => setReload(value => value + 1), []);
 
   useEffect(() => {
-    if (!orgId) return;
+    const requestGeneration = ++generation.current;
+    mutation.current?.abort(); mutation.current = null;
+    setBusy(null); setError(""); setLoadedFor(null);
+    if (!orgId || !userId) return;
+    const controller = new AbortController();
     let cancelled = false;
-    void fetch(`/api/role-onboarding?orgId=${encodeURIComponent(orgId)}`)
-      .then((response) => (response.ok ? (response.json() as Promise<RoleOnboardingView>) : null))
-      .catch(() => null)
+    void fetch(`/api/role-onboarding?orgId=${encodeURIComponent(orgId)}`, {
+      cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
+    })
+      .then(async response => {
+        if (!response.ok) throw new Error("Checklist could not load. Try again shortly.");
+        const next = await response.json() as RoleOnboardingView;
+        if (next.status !== "live" || next.orgId !== orgId || !Array.isArray(next.tracks)) throw new Error("Checklist is unavailable. Try again shortly.");
+        return next;
+      })
+      .catch(() => {
+        if (!cancelled && generation.current === requestGeneration) setError("Checklist could not load. Try again shortly.");
+        return null;
+      })
       .then((next) => {
-        if (cancelled) return;
+        if (cancelled || generation.current !== requestGeneration) return;
         setView(next);
-        setLoadedFor(orgId);
+        setLoadedFor(scope);
       });
     return () => {
       cancelled = true;
+      controller.abort();
+      mutation.current?.abort();
+      generation.current++;
     };
-  }, [orgId]);
+  }, [orgId, userId, scope, reload]);
 
   const post = useCallback(
     async (payload: Record<string, unknown>, key: string) => {
-      setBusy(key);
+      if (!orgId || !userId || mutation.current || loadedFor !== scope) return;
+      const controller = new AbortController();
+      const requestGeneration = generation.current;
+      mutation.current = controller;
+      setBusy(key); setError("");
       try {
         const response = await fetch("/api/role-onboarding", {
           method: "POST",
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
         });
-        if (response.ok) setView((await response.json()) as RoleOnboardingView);
+        const next = await response.json() as RoleOnboardingView;
+        if (generation.current !== requestGeneration) return;
+        if (!response.ok || next.status !== "live" || next.orgId !== orgId || !Array.isArray(next.tracks)) throw new Error("Checklist update was not confirmed.");
+        setView(next);
+      } catch {
+        if (generation.current === requestGeneration) setError("Could not confirm the checklist update. Reload it to check before retrying.");
       } finally {
-        setBusy(null);
+        if (mutation.current === controller) mutation.current = null;
+        if (generation.current === requestGeneration) setBusy(null);
       }
     },
-    [orgId],
+    [orgId, userId, loadedFor, scope],
   );
 
-  return { view, loaded: !orgId || loadedFor === orgId, busy, post };
+  return { view: loadedFor === scope ? view : null, loaded: !orgId || !userId || loadedFor === scope,
+    busy: loadedFor === scope ? busy : null, error: loadedFor === scope ? error : "", retry, post };
 }
 
 const SETUP_DONE_SHOWN_MS = 24 * 60 * 60 * 1000;
@@ -84,7 +119,7 @@ const SETUP_DONE_SHOWN_MS = 24 * 60 * 60 * 1000;
 function useJustSetUp(orgId: string, view: RoleOnboardingView | null): boolean {
   const setup = view?.status === "live" ? view.tracks.find((track) => track.key === "team_setup") : undefined;
   const state = !setup ? null : setup.doneCount >= setup.totalCount ? "done" : "open";
-  const [shown, setShown] = useState(false);
+  const [notice, setNotice] = useState({ orgId: "", shown: false });
   useEffect(() => {
     if (!state || !orgId) return;
     const key = `vantage.team-setup:${orgId}`;
@@ -103,10 +138,10 @@ function useJustSetUp(orgId: string, view: RoleOnboardingView | null): boolean {
     } catch {
       // No storage: no note, nothing else changes.
     }
-    const frame = window.requestAnimationFrame(() => setShown(show));
+    const frame = window.requestAnimationFrame(() => setNotice({ orgId, shown: show }));
     return () => window.cancelAnimationFrame(frame);
   }, [orgId, state]);
-  return shown;
+  return state === "done" && notice.orgId === orgId && notice.shown;
 }
 
 export type SetupHero = {
@@ -199,13 +234,21 @@ export function FirstWeekCard({
   view,
   busy,
   post,
+  error,
+  retry,
 }: {
   orgId: string;
   view: RoleOnboardingView | null;
   busy: string | null;
   post: (payload: Record<string, unknown>, key: string) => Promise<void>;
+  error?: string;
+  retry?: () => void;
 }) {
   const justSetUp = useJustSetUp(orgId, view);
+  if (error) return <section className="dash-first-week" aria-label="Checklist needs attention">
+    <p role="alert">{error}</p>
+    {retry ? <button type="button" className="dash-first-week-all" onClick={retry}>Reload checklist</button> : null}
+  </section>;
   if (!view || view.status !== "live" || view.totalCount === 0) return null;
   if (setupHeroFrom(view)) return null;
   const left = view.totalCount - view.doneCount;
@@ -214,7 +257,7 @@ export function FirstWeekCard({
     <p className="dash-setup-done" role="status">
       <b aria-hidden="true">✓</b>
       <span>
-        <strong>Your team is set up.</strong> Everyone you invite now lands on a Home that works.
+        <strong>Team setup checklist complete.</strong> Your team’s setup steps are recorded.
       </span>
     </p>
   ) : null;
@@ -252,7 +295,7 @@ export function FirstWeekCard({
                   type="checkbox"
                   aria-label={`Mark "${check.label}" done`}
                   checked={false}
-                  disabled={busy === key}
+                  disabled={busy !== null}
                   onChange={() => void post({ action: "check", trackKey: track.key, checkKey: check.key }, key)}
                 />
               </label>

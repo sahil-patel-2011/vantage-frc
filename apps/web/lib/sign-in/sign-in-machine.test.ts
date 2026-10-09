@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canResendCode,
   canSubmitCode,
+  canRetrySubmittedCode,
   classifyOtpFailure,
   codeSecondsRemaining,
   initialSignInState,
@@ -19,6 +20,29 @@ import {
 } from "./sign-in-machine";
 
 const NOW = 1_700_000_000_000;
+
+describe("explicit verification recovery", () => {
+  it("returns completed members to their task instead of another entry screen", () => {
+    for (const nextPath of ["/signin", "/sign-in?next=%2Fsignin", "/onboarding", "/onboarding?next=%2Fdashboard", "/access-unavailable", "https://external.example"]) {
+      expect(postAuthDestination({ nextPath, gate: { complete: true, accessStatus: "approved" } })).toBe("/dashboard");
+    }
+    expect(postAuthDestination({ nextPath: "/onboarding", gate: { complete: false, accessStatus: "none" } })).toBe("/onboarding?next=%2Fdashboard");
+  });
+  const typed = () => run(initialSignInState(), { type: "code_sent", now: NOW, email: "scout@team.org" }, { type: "code_changed", code: "402917" });
+  it("lets a network failure retry its retained digits without requiring a new email", () => {
+    const failed = run(typed(), { type: "code_failed", now: NOW, failure: classifyOtpFailure({ channel: "email-otp", networkError: true }) });
+    expect(failed.code).toBe("402917");
+    expect(canRetrySubmittedCode(failed, NOW + 1000)).toBe(true);
+    expect(canRetrySubmittedCode(typed(), NOW)).toBe(false);
+  });
+  it("keeps the server cooldown when digits change and permits explicit retry only afterwards", () => {
+    const limited = run(typed(), { type: "code_failed", now: NOW, failure: classifyOtpFailure({ channel: "email-otp", status: 429, retryAfterSeconds: 60 }) }, { type: "code_changed", code: "402918" });
+    expect(canSubmitCode(limited, NOW + 59_000)).toBe(false);
+    expect(canRetrySubmittedCode(limited, NOW + 59_000)).toBe(false);
+    expect(canRetrySubmittedCode(limited, NOW + 60_000)).toBe(true);
+    expect(limited.failure?.kind).toBe("rate_limited");
+  });
+});
 
 function run(state: SignInFlowState, ...events: SignInFlowEvent[]): SignInFlowState {
   return events.reduce(signInFlowReducer, state);
@@ -72,6 +96,7 @@ describe("sign-in flow transitions", () => {
       emailHint: "s***@team254.org",
     });
     expect(second.channel).toBe("email-2fa");
+    expect(second.step).toBe("code");
     expect(second.email).toBe("");
     expect(second.emailHint).toBe("s***@team254.org");
 
@@ -79,6 +104,14 @@ describe("sign-in flow transitions", () => {
     expect(sent.notice).toMatch(/finish signing in/i);
     // Editing is meaningless once the address comes from the session.
     expect(run(sent, { type: "edit_email" })).toEqual(sent);
+  });
+  it("keeps a failed second-factor delivery on its recovery step", () => {
+    const failed = run(initialSignInState(), { type: "second_factor_required", emailHint: "s***@team254.org" },
+      { type: "send_failed", now: NOW, failure: classifyOtpFailure({ channel: "email-2fa", networkError: true }) });
+    expect(failed.step).toBe("code");
+    expect(failed.channel).toBe("email-2fa");
+    expect(canResendCode(failed, NOW)).toBe(true);
+    expect(canSubmitCode(failed, NOW)).toBe(false);
   });
 });
 

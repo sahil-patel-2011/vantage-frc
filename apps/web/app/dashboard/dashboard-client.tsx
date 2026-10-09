@@ -116,7 +116,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   // The member's onboarding steps. While the team's own setup is unfinished, its next
   // step is Home's hero and Home's only setup list.
-  const firstWeek = useFirstWeek(home.orgId);
+  const firstWeek = useFirstWeek(home.orgId, home.userId);
   const setupHero = useMemo(() => setupHeroFrom(firstWeek.view), [firstWeek.view]);
   const teamSetupCard = Boolean(setupHero);
   const sharedSetupPrompt = Boolean(home.orgId && home.widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));

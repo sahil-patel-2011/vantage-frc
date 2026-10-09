@@ -36,7 +36,7 @@ export function sessionProbeFromPayload(
   response: { ok: boolean; status: number },
   data: Email2faProbePayload | null,
 ): SessionProbe {
-  if (response.status === 401 || !response.ok || !data?.authenticated) {
+  if (response.status === 401 || !response.ok || data?.authenticated !== true || typeof data.requiresVerification !== "boolean") {
     return { state: "none" };
   }
   return data.requiresVerification
@@ -46,9 +46,13 @@ export function sessionProbeFromPayload(
 
 export async function readOnboardingGate(): Promise<OnboardingGateSnapshot | null> {
   try {
-    const response = await fetch("/api/onboarding", { credentials: "include" });
+    const response = await fetch("/api/onboarding", { credentials: "include", cache: "no-store", signal: AbortSignal.timeout(8_000) });
     if (!response.ok) return null;
-    return (await response.json()) as OnboardingGateSnapshot;
+    const data: unknown = await response.json();
+    if (!data || typeof data !== "object") return null;
+    const gate = data as { complete?: unknown; accessStatus?: unknown };
+    if (typeof gate.complete !== "boolean" || !["approved", "invited", "pending", "declined", "withdrawn", "none"].includes(String(gate.accessStatus))) return null;
+    return { complete: gate.complete, accessStatus: String(gate.accessStatus) };
   } catch {
     return null;
   }
@@ -67,7 +71,7 @@ export function emailSubmitLabel(busy: SignInBusy): string {
 }
 
 export function verifySubmitLabel(busy: SignInBusy): string {
-  return busy === "verifying" ? "Verifying…" : "Verify and continue";
+  return busy === "verifying" ? "Verifying…" : busy === "leaving" ? "Continuing…" : "Verify and continue";
 }
 
 export function resendLabel(opts: { ready: boolean; busy: SignInBusy; seconds: number }): string {
@@ -105,6 +109,7 @@ export function passwordSubmitLabel(
 ): string {
   switch (panel) {
     case "reset":
+      if (opts.working) return opts.resetSent ? "Updating password…" : "Requesting code…";
       return opts.resetSent ? "Set new password" : "Send reset code";
     case "password":
       return opts.working ? "Signing in…" : "Sign in with password";

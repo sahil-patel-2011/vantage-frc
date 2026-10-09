@@ -46,6 +46,7 @@ export {
 export {
   canResendCode,
   canSubmitCode,
+  canRetrySubmittedCode,
   classifyOtpFailure,
   codeSecondsRemaining,
   initialSignInState,

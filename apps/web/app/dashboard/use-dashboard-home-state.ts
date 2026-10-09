@@ -150,7 +150,8 @@ export function useDashboardHomeState(initialOrgId = "") {
     setFromCache(false);
     setCachedAt(null);
     setUpdatedAt(new Date().toISOString());
-    try { await putFeatureSnapshot("dashboard", orgId, next); } catch { /* The server write already succeeded. */ }
+    // Optional device storage must not hold the save button after the server acknowledged it.
+    void putFeatureSnapshot("dashboard", orgId, next).catch(() => undefined);
   }, [applyHomeCache, orgId, userId]);
 
   const loadSnapshot = useCallback(async (
@@ -240,7 +241,7 @@ export function useDashboardHomeState(initialOrgId = "") {
       if (response.status === 401 || response.status === 403) {
         const reason = await apiErrorMessage(response);
         if (current()) revokeHome(id, response.status, reason);
-        return;
+        return false;
       }
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
@@ -252,7 +253,7 @@ export function useDashboardHomeState(initialOrgId = "") {
             : (typeof err.error === "string" ? err.error : "Could not load Home."),
         );
         setBoardLoaded(true);
-        return;
+        return false;
       }
       const data = await response.json();
       if (!current()) return;
@@ -267,6 +268,7 @@ export function useDashboardHomeState(initialOrgId = "") {
       setMessage("");
       if (data.active?.id) writeStoredBoardId(id, userId, data.active.id);
       void putFeatureSnapshot("dashboard", id, next).catch(() => undefined);
+      return true;
     } catch {
       if (!current()) return;
       if (lastCacheRef.current) {
@@ -278,6 +280,7 @@ export function useDashboardHomeState(initialOrgId = "") {
         setMessage("Could not load Home.");
       }
       setBoardLoaded(true);
+      return false;
     } finally {
       if (homeRequest.current === controller) homeRequest.current = null;
     }

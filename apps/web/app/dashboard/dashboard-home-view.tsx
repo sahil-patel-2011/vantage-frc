@@ -125,6 +125,8 @@ export function DashboardHomeView(props: {
   firstWeek: {
     view: RoleOnboardingView | null;
     busy: string | null;
+    error?: string;
+    retry?: () => void;
     post: (payload: Record<string, unknown>, key: string) => Promise<void>;
   };
   role: string | null;
@@ -566,7 +568,7 @@ export function DashboardHomeView(props: {
           still on Your first week. */}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
+      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} error={firstWeek.error} retry={firstWeek.retry} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {showRoleStrip ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent, RefObject } from "react";
-import { isLikelyEmail } from "../../lib/sign-in";
+import { formatCooldown, isLikelyEmail } from "../../lib/sign-in";
 import {
   emailSubmitLabel,
   googleButtonLabel,
@@ -20,6 +20,7 @@ export function SignInIdentityStep({
   emailRef,
   busy,
   working,
+  emailCooldown = 0,
   passwordPanel,
   resetSent,
   password,
@@ -43,6 +44,7 @@ export function SignInIdentityStep({
   emailRef: RefObject<HTMLInputElement | null>;
   busy: SignInBusy;
   working: boolean;
+  emailCooldown?: number;
   passwordPanel: PasswordPanel;
   resetSent: boolean;
   password: string;
@@ -69,7 +71,7 @@ export function SignInIdentityStep({
             {preferred === "google" ? <em className="signin-last-used">Last used</em> : null}
           </button>
           <div className="signin-or" role="separator">
-            <span>or</span>
+            <span>{passwordPanel === "password" ? "or use your password" : passwordPanel === "reset" ? "or reset your password" : "or use an email code"}</span>
           </div>
         </>
       ) : null}
@@ -110,8 +112,8 @@ export function SignInIdentityStep({
               </small>
             ) : null}
           </label>
-          <button className="signin-submit" disabled={!emailAvailable || working || !isLikelyEmail(email)}>
-            {emailSubmitLabel(busy)}
+          <button className="signin-submit" disabled={!emailAvailable || working || !isLikelyEmail(email) || emailCooldown > 0}>
+            {emailCooldown > 0 ? `Try again in ${formatCooldown(emailCooldown)}` : emailSubmitLabel(busy)}
           </button>
         </form>
       ) : (
@@ -161,9 +163,10 @@ export function SignInIdentityStep({
               </span>
             </label>
           ) : null}
-          <button className="signin-submit" disabled={working}>
+          <button className="signin-submit" disabled={working || !isLikelyEmail(email) || (passwordPanel === "reset" && resetSent && (!/^\d{6}$/.test(code) || password.length < 12))}>
             {passwordSubmitLabel(passwordPanel, { resetSent, working })}
           </button>
+          {passwordPanel === "reset" && resetSent ? <p className="signin-email-hint">Enter the six-digit reset code and a password with at least 12 characters.</p> : null}
           {passwordMessage ? (
             <p className="signin-status" role="status">
               {passwordMessage}
@@ -176,6 +179,7 @@ export function SignInIdentityStep({
 }
 
 export function SignInPasswordFooter({
+  working = false,
   passwordSignInAvailable,
   emailAvailable,
   identityStep,
@@ -184,6 +188,7 @@ export function SignInPasswordFooter({
   onBackToCodes,
   onForgotPassword,
 }: {
+  working?: boolean;
   passwordSignInAvailable: boolean;
   emailAvailable: boolean;
   identityStep: boolean;
@@ -196,18 +201,18 @@ export function SignInPasswordFooter({
   return (
     <div className="signin-footer-modes">
       {passwordPanel === "closed" ? (
-        <button type="button" className="signin-link" onClick={onUsePassword}>
+        <button type="button" className="signin-link" disabled={working} onClick={onUsePassword}>
           Use a password instead
         </button>
       ) : (
         <>
           {emailAvailable ? (
-            <button type="button" className="signin-link" onClick={onBackToCodes}>
+            <button type="button" className="signin-link" disabled={working} onClick={onBackToCodes}>
               Back to email codes
             </button>
           ) : null}
           {passwordPanel === "password" ? (
-            <button type="button" className="signin-link" onClick={onForgotPassword}>
+            <button type="button" className="signin-link" disabled={working} onClick={onForgotPassword}>
               Forgot password?
             </button>
           ) : null}

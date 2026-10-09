@@ -83,7 +83,7 @@ export function SignInCodeStep({
       />
       {failureKind === "rate_limited" && retryAfterSeconds != null ? (
         // Counts down live: "Wait 58 seconds" still said 58 a minute later.
-        <RateLimitNote key={failureMessage ?? ""} seconds={retryAfterSeconds} />
+        <RateLimitNote seconds={retryAfterSeconds} />
       ) : failureMessage ? (
         <p className="signin-code-error" role="alert">
           {failureMessage}
@@ -122,15 +122,15 @@ export function SignInCodeStep({
 
       {/* The code sends itself once six digits are in, so a grey "Verify" waiting beside the
           boxes looked broken. It shows when there is a full code it hasn't tried. */}
-      {submitReady || busy !== "idle" ? (
+      {submitReady || busy === "verifying" || busy === "leaving" ? (
         <button className="signin-submit" disabled={!submitReady || working}>
-          {verifySubmitLabel(busy)}
+          {busy === "idle" && ["network", "unknown", "unavailable", "rate_limited"].includes(failureKind ?? "") ? "Retry verification" : verifySubmitLabel(busy)}
         </button>
       ) : null}
 
       {showResend || channel === "email-2fa" ? (
         <div className="signin-footer-modes">
-          {showResend ? (
+          {showResend && failureKind !== "too_many_attempts" && failureKind !== "expired" ? (
             <button
               type="button"
               className="signin-link"
@@ -227,16 +227,11 @@ export function SignInNotInvited({
 
 /** "Too many tries from this network. Try again in 0:47", counting down to "Try again now". */
 function RateLimitNote({ seconds }: { seconds: number }) {
-  const [left, setLeft] = useState(Math.max(0, Math.round(seconds)));
-  useEffect(() => {
-    if (left <= 0) return;
-    const timer = window.setTimeout(() => setLeft((value) => value - 1), 1000);
-    return () => window.clearTimeout(timer);
-  }, [left]);
+  const left = Math.max(0, Math.ceil(seconds));
   return (
     <p className="signin-code-wait" role="status" aria-live="polite">
       {left > 0
-        ? `Too many tries from this network just now. Try again in 0:${String(left).padStart(2, "0")}.`
+        ? `Too many tries from this network just now. Try again in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}.`
         : "Try again now."}
     </p>
   );
