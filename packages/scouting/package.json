@@ -12,7 +12,8 @@
     "./org-isolation": "./src/org-isolation.ts",
     "./trust": "./src/trust.ts",
     "./resolution": "./src/resolution.ts",
-    "./permissions": "./src/permissions.ts"
+    "./permissions": "./src/permissions.ts",
+    "./visibility": "./src/visibility.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

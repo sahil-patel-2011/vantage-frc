@@ -1,3 +1,6 @@
+import type { ScoutSchema } from "@vantage/scouting";
+import { schemaPublicationRequest } from "./schema-publication";
+
 /**
  * Device-local scout entry drafts — never invents DEMO rows; cleared after a real queue/save.
  */
@@ -8,6 +11,12 @@ export type ScoutDraftSnapshot = {
   matchKey: string;
   teamKey: string;
   savedAt: string;
+  /** Corrections and interrupted saves must resume the same report, not create a duplicate. */
+  clientId?: string;
+  schemaId?: string;
+  /** Keep published questions with the personal draft for offline recovery. */
+  schema?: ScoutSchema;
+  source?: "manual" | "voice";
 };
 
 export function scoutDraftStorageKey(input: {
@@ -33,8 +42,22 @@ export function readScoutDraft(key: string | null): ScoutDraftSnapshot | null {
     const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ScoutDraftSnapshot;
-    if (!parsed || typeof parsed !== "object" || typeof parsed.savedAt !== "string") return null;
-    if (!parsed.payload || typeof parsed.payload !== "object") return null;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    if (typeof parsed.savedAt !== "string" || !Number.isFinite(Date.parse(parsed.savedAt))) return null;
+    if (!parsed.payload || typeof parsed.payload !== "object" || Array.isArray(parsed.payload)) return null;
+    if (!["high", "normal", "low"].includes(parsed.confidence)) return null;
+    if (typeof parsed.matchKey !== "string" || typeof parsed.teamKey !== "string" || !parsed.teamKey.trim()) return null;
+    if (parsed.clientId !== undefined && (typeof parsed.clientId !== "string" || !parsed.clientId.trim())) return null;
+    if (parsed.schemaId !== undefined && (typeof parsed.schemaId !== "string" || !parsed.schemaId.trim())) return null;
+    if (parsed.source !== undefined && parsed.source !== "manual" && parsed.source !== "voice") return null;
+    if (parsed.schema !== undefined) {
+      const form = parsed.schema;
+      const valid = form && typeof form === "object" && form.id === parsed.schemaId
+        && Number.isInteger(form.version) && form.version > 0
+        && schemaPublicationRequest.safeParse({ orgId: form.orgId, year: form.year, type: form.type, definition: form.definition }).success;
+      // Keep answers and the pinned ID even when an older snapshot is unreadable.
+      if (!valid) delete parsed.schema;
+    }
     return parsed;
   } catch {
     return null;
@@ -52,13 +75,15 @@ export function writeScoutDraft(key: string | null, draft: Omit<ScoutDraftSnapsh
   }
 }
 
-export function clearScoutDraft(key: string | null): void {
-  if (!key || typeof window === "undefined") return;
+export function clearScoutDraft(key: string | null): boolean {
+  if (!key) return true;
+  if (typeof window === "undefined") return false;
   try {
     window.localStorage.removeItem(key);
     window.localStorage.removeItem(`${key}:clock`);
+    return window.localStorage.getItem(key) === null && window.localStorage.getItem(`${key}:clock`) === null;
   } catch {
-    /* ignore */
+    return false;
   }
 }
 

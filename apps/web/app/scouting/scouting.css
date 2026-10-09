@@ -2,6 +2,8 @@
 .scout-budget-banner{margin:0 0 12px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid color-mix(in srgb,var(--warning) 40%,var(--line));background:color-mix(in srgb,var(--warning) 12%,var(--surface));color:var(--warning);font:600 13px var(--font-source-sans),ui-sans-serif}
 .scout-budget-banner.over_budget{border-color:color-mix(in srgb,var(--critical) 45%,var(--line));background:color-mix(in srgb,var(--critical) 12%,var(--surface));color:var(--critical)}
 .scout-field-trust{margin:4px 0 0;font:600 11px/1.35 var(--font-source-sans),ui-sans-serif;color:var(--muted)}
+.scout-field-wrap.has-error { border-radius: 12px; outline: 2px solid var(--accent); outline-offset: 4px; }
+.scout-field-error { margin: 8px 0 0; font-weight: 600; color: var(--ink); }
 .scout-field-trust.warn{color:var(--critical)}.scout-field-trust.ok{color:var(--positive)}
 .scout-field-wrap.is-history-warn{padding:8px 10px;margin:0 -4px;border-radius:var(--radius-sm);background:color-mix(in srgb,var(--warning) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--warning) 28%,var(--line))}
 .scout-mc-row{display:grid;gap:8px}

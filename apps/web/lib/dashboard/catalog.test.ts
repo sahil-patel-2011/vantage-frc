@@ -20,6 +20,7 @@ import {
   scaleLayoutToCols,
   validateDashboardLayout,
   widgetRegistryMeta,
+  type DashboardWidgetLayout,
 } from "./catalog";
 
 describe("dashboard catalog persistence helpers", () => {
@@ -168,7 +169,7 @@ describe("dashboard tenant and role isolation rules", () => {
 });
 
 describe("home view layout", () => {
-  it("keeps user-selected empty cards and completed setup cards after saving", () => {
+  it("keeps empty and completed setup cards available when explicitly expanded", () => {
     const viewed = homeViewLayout(
       [
         ...DEFAULT_DASHBOARD_LAYOUT,
@@ -177,6 +178,7 @@ describe("home view layout", () => {
       {
         editing: false,
         shell: "ready",
+        showQuietWidgets: true,
         widgets: {
           next_match: { status: "empty" },
           competition_snapshot: { status: "setup_required" },
@@ -197,7 +199,7 @@ describe("home view layout", () => {
   it("keeps saved heights through empty, loading and live data refreshes", () => {
     const hero = DEFAULT_DASHBOARD_LAYOUT.find((item) => item.type === "next_match")!;
     const view = (status?: string) =>
-      homeViewLayout([hero], { editing: false, shell: "ready", widgets: status ? { [hero.i]: { status } } : {} })[0]!.h;
+      homeViewLayout([hero], { editing: false, shell: "ready", showQuietWidgets: true, widgets: status ? { [hero.i]: { status } } : {} })[0]!.h;
     expect(view("empty")).toBe(hero.h);
     expect(view("setup_required")).toBe(hero.h);
     expect(view("live")).toBe(hero.h);
@@ -219,6 +221,34 @@ describe("home view layout", () => {
     expect(resized.w).toBeLessThan(12);
     const withNarrowGap = homeViewLayout([{ ...resized, w: 10 }], { editing: false, shell: "ready" });
     expect(withNarrowGap[0]?.w).toBe(10);
+  });
+
+  it("hides known quiet states, preserves failures and unknown states, and never edits the saved board", () => {
+    const board = DEFAULT_DASHBOARD_LAYOUT.map(item => ({ ...item }));
+    const saved = board.map(item => ({ ...item }));
+    const viewed = homeViewLayout(board, {
+      editing: false, shell: "ready",
+      widgets: {
+        next_match: { status: "empty" },
+        competition_snapshot: { status: "setup_required" },
+        robot_readiness: { status: "unavailable" },
+        alerts: { status: "live" },
+        scouting_coverage: { status: "empty" },
+      },
+    });
+    expect(viewed.map(item => item.type)).toEqual(["robot_readiness", "alerts", "recent_result"]);
+    expect(board).toEqual(saved);
+    const pinned = { ...board[0]!, config: { alwaysShow: true } };
+    expect(homeViewLayout([pinned], { editing: false, shell: "ready", widgets: { next_match: { status: "empty" } } })).toEqual([pinned]);
+  });
+
+  it("replaces repeated setup prompts while keeping setup failures visible", () => {
+    const rows: DashboardWidgetLayout[] = [
+      { i: "setup", type: "onboarding_checklist", x: 0, y: 0, w: 12, h: 3 },
+      { i: "match", type: "next_match", x: 0, y: 3, w: 12, h: 3 },
+    ];
+    expect(homeViewLayout(rows, { editing: false, shell: "setup", sharedSetupPrompt: true, widgets: { setup: { status: "live" }, match: { status: "setup_required" } } })).toEqual([]);
+    expect(homeViewLayout(rows, { editing: false, shell: "setup", sharedSetupPrompt: true, widgets: { setup: { status: "unavailable" }, match: { status: "unavailable" } } })).toEqual(rows);
   });
 
   it("leaves the saved board untouched in edit mode", () => {
@@ -250,20 +280,14 @@ describe("widget registry", () => {
     const student = defaultDashboardLayoutForAudience("student");
     const mentor = defaultDashboardLayoutForAudience("mentor");
     expect(student.map((item) => item.type)).toEqual([
-      "next_match",
       "team_todos",
-      "scouting_coverage",
       "calendar_today",
-      "recent_result",
-      "competition_snapshot",
+      "scouting_coverage",
     ]);
     expect(mentor.map((item) => item.type)).toEqual([
-      "next_match",
       "team_todos",
-      "scouting_coverage",
       "calendar_today",
-      "recent_result",
-      "competition_snapshot",
+      "scouting_coverage",
     ]);
     expect(validateDashboardLayout(student, "scout").ok).toBe(true);
     expect(validateDashboardLayout(mentor, "admin").ok).toBe(true);
@@ -277,7 +301,7 @@ describe("widget registry", () => {
     expect(student.map((item) => item.type)).toContain("scouting_coverage");
     expect(student.map((item) => item.type)).toContain("team_todos");
     expect(mentor.map((item) => item.type)).toContain("calendar_today");
-    expect(mentor.map((item) => item.type)).toContain("competition_snapshot");
+    expect(mentor.map((item) => item.type)).toContain("scouting_coverage");
     const kept = defaultDashboardLayoutForAudience("student");
     expect(layoutOrAudienceDefault(kept, "mentor")).toBe(kept);
     expect(layoutOrAudienceDefault(null, null).map((item) => item.type)).toEqual(

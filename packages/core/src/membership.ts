@@ -9,6 +9,7 @@ import { createInviteToken, type OrgRole } from "./index";
 import { assertOrgCapability } from "./capabilities";
 import { emitPreferredNotification } from "./in-app-notifications";
 import { assertAccountAgeConfirmed } from "./eligibility";
+import { organizationInviteExpiresAt } from "./invite-policy";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
@@ -169,9 +170,7 @@ export async function createOrganizationInvite(
   );
   if (existing.rowCount) throw new Error("This email is already a member");
   const { token, tokenHash } = createInviteToken();
-  const expiresAt = new Date(
-    Date.now() + Math.min(Math.max(input.expiresInHours ?? 168, 1), 168) * 3_600_000,
-  );
+  const expiresAt = organizationInviteExpiresAt(input.expiresInHours);
 
   const pending = await client.query<{ id: string }>(
     `SELECT id FROM invites
@@ -240,12 +239,16 @@ export async function resendOrganizationInvite(
     organization: string;
     expiresAt: Date;
   }>(
-    `UPDATE invites i SET token_hash=$1,expires_at=now()+interval '168 hours',
+    `UPDATE invites i SET token_hash=$1,expires_at=now()+interval '24 hours',
        last_sent_at=now()
      FROM organizations o WHERE i.id=$2 AND i.org_id=$3 AND i.org_id=o.id
        AND i.status='pending' AND has_org_capability(i.org_id,'manage_members'::org_capability)
+       AND (i.role NOT IN ('owner','admin') OR EXISTS (
+         SELECT 1 FROM memberships m WHERE m.org_id=i.org_id AND m.user_id=$4::uuid
+           AND (m.role='owner' OR (i.role='admin' AND m.role='admin'))
+       ))
      RETURNING i.id,i.email,i.role,o.name AS organization,i.expires_at AS "expiresAt"`,
-    [tokenHash, inviteId, orgId],
+    [tokenHash, inviteId, orgId, actorUserId],
   );
   const invite = result.rows[0];
   if (!invite) throw new Error("Pending invite not found");

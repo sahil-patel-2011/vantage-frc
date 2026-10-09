@@ -38,7 +38,8 @@ import { DashboardGridItem } from "./dashboard-grid-item";
 import { LiveCountdown } from "./widgets";
 import { WIDGET_PICKER_ICON, greeting } from "./dashboard-canvas";
 import type { HomeStripItem } from "../../lib/home-workflows";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type {
   BoardMeta,
   BoardState,
@@ -101,10 +102,15 @@ export function DashboardHomeView(props: {
   viewLayout: DashboardWidgetLayout[];
   displayLayout: DashboardWidgetLayout[];
   widgets: Record<string, WidgetPayload>;
+  accessStatus: number | null;
+  onReloadAccess: () => void;
   /** Widget data and onboarding steps have arrived, so the hero can say what is next. */
   widgetsLoaded?: boolean;
   refreshing: boolean;
   onRefresh: () => void;
+  showQuietWidgets: boolean;
+  quietWidgetCount: number;
+  onToggleQuietWidgets: () => void;
   hasScoutingSchemas: boolean;
   paletteEntries: PaletteRow[];
   hiddenOnHome: Map<string, HiddenOnHomeReason>;
@@ -489,6 +495,14 @@ export function DashboardHomeView(props: {
   const closeLibrary = useCallback(() => setLibraryOpen(false), [setLibraryOpen]);
 
   if (!homeReady) return <DashboardHomeSkeleton greetingText={greetingText} />;
+  if (props.accessStatus) {
+    const copy = loadFailureCopy(classifyLoadFailure({ status: props.accessStatus, message }), { message, nextPath: withOrgHref("/dashboard", orgId) });
+    return <main className="dash-home"><EmptyState headingLevel={1} title={copy.title} description={copy.description} badge={copy.badge}>
+      {copy.kind === "auth" || copy.kind === "reauth" ? <Button as="a" variant="primary" href={copy.primary!.href}>Sign in again</Button> : null}
+      {copy.kind === "forbidden" ? <Button type="button" variant="primary" onClick={props.onReloadAccess}>Reload access</Button> : null}
+      <Button as="a" variant="secondary" href="/account/teams">Choose another team</Button>
+    </EmptyState></main>;
+  }
 
   // Cards Home is leaving out right now, listed under the board while editing.
   const hiddenRows = editing
@@ -648,6 +662,8 @@ export function DashboardHomeView(props: {
                   boards={switcherBoards} board={board} saving={saving} disabled={previewing}
                   onSwitch={(id) => void switchBoard(id)} onNew={() => setNewBoardOpen(true)}
                   onManage={() => { setRenameId(null); setBoardsOpen(true); }}
+                  showQuietWidgets={props.showQuietWidgets} quietWidgetCount={props.quietWidgetCount}
+                  onToggleQuietWidgets={props.onToggleQuietWidgets}
                 /> : null}
               </div>
               <div className="dash-board-tools">

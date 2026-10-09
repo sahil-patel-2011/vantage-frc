@@ -28,6 +28,7 @@ export type SavedScoutReport = {
   matchKey: string;
   teamKey: string;
   clientId: string;
+  schemaId?: string;
   payload: Record<string, unknown>;
   confidence: "high" | "normal" | "low";
 };
@@ -71,6 +72,7 @@ export type Bootstrap = {
     payload?: Record<string, unknown> | null;
     /** Saving again with this id replaces the entry (the author may update their own). */
     clientId?: string | null;
+    schemaId?: string;
   }>;
   scoutIdentity?: ScoutIdentity;
   /**
@@ -90,6 +92,7 @@ export type MyEntry = {
   matchKey: string | null;
   teamKey: string;
   clientId: string | null;
+  schemaId?: string;
   payload: Record<string, unknown> | null;
   confidence: string;
   updatedAt: string;
@@ -111,6 +114,7 @@ export function myReports(
       matchKey: entry.matchKey,
       teamKey: entry.teamKey,
       clientId: entry.clientId ?? null,
+      schemaId: entry.schemaId,
       payload: entry.payload ?? null,
       confidence: entry.confidence,
       updatedAt: entry.updatedAt,

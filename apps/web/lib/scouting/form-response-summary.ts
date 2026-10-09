@@ -1,4 +1,4 @@
-import { isLayoutOnlyField, type FieldDefinition } from "@vantage/scouting";
+import { isEmptyScoutAnswer, isLayoutOnlyField, type FieldDefinition } from "@vantage/scouting";
 
 /** `scoutId` / `scout` are only sent to team leads; `mine` marks the reader's own rows. */
 export type FormResponseRow = {
@@ -11,14 +11,14 @@ export type ScoutTotal = { id: string; name: string; total: number; teams: numbe
 export function responseValue(value: unknown): string {
   if (value === undefined || value === null || value === "") return "—";
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (Array.isArray(value)) return value.map(responseValue).join(", ");
+  if (Array.isArray(value)) return value.length ? value.map(responseValue).join(", ") : "—";
   return typeof value === "object" ? JSON.stringify(value) : String(value);
 }
 /** Missing answers stay missing. Counts describe observed answers, not robots. */
 export function responseSummary(field: FieldDefinition, rows: FormResponseRow[]) {
   const values = rows.slice().reverse().flatMap(row => {
     const value = row.payload[field.key];
-    return value === undefined || value === null || value === "" ? [] : [value];
+    return isEmptyScoutAnswer(field, value) ? [] : [value];
   });
   const numeric = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
   const counts = new Map<string, number>();

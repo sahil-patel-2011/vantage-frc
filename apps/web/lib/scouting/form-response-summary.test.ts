@@ -21,6 +21,12 @@ describe("published forms and observed responses", () => {
     const csv = responsesCsv([{ key: "notes", label: "Notes", type: "text" }], [{ ...rows[0]!, payload: { notes: '=HYPERLINK("x")' } }]);
     expect(csv).toContain('"\'=HYPERLINK(""x"")"');
   });
+  it("counts blank selections and untouched count groups as missing while keeping explicit false", () => {
+    const values = [[], ["Scored"], undefined].map((value, index) => ({ ...rows[0]!, id: String(index), payload: { actions: value } }));
+    expect(responseSummary({ key: "actions", label: "Actions", type: "multi_select" }, values)).toMatchObject({ n: 1 });
+    expect(responseSummary({ key: "counts", label: "Counts", type: "multi_counter" }, [{ ...rows[0]!, payload: { counts: {} } }])).toMatchObject({ n: 0 });
+    expect(responseSummary({ key: "attempted", label: "Attempted", type: "boolean" }, [{ ...rows[0]!, payload: { attempted: false } }])).toMatchObject({ n: 1, counts: [["No", 1]] });
+  });
   it("counts each scout's work in full and lists what they filed", () => {
     const filed = (id: string, team: string, scoutId: string, observedAt: string): FormResponseRow =>
       ({ id, team, label: "Pit", event: null, payload: {}, observedAt, scoutId, scout: scoutId === "a" ? "Ada" : "Ben", mine: scoutId === "a" });

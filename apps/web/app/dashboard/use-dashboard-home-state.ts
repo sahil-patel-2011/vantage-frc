@@ -5,7 +5,7 @@ import {
   readStoredBoardId,
   writeStoredBoardId,
 } from "../../lib/dashboard/boards";
-import { dashboardPollDelay, mergeDashboardContext, mergeDashboardWidgets, snapshotPollWidgetTypes } from "../../lib/dashboard/refresh";
+import { mergeDashboardContext, mergeDashboardWidgets, snapshotPollWidgetTypes } from "../../lib/dashboard/refresh";
 import {
   defaultDashboardLayoutForAudience,
   type DashboardWidgetLayout,
@@ -20,9 +20,10 @@ import {
   productSessionUnreachable,
 } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { CONTEXT_REFRESH_MS } from "./dashboard-canvas";
 import type { BoardMeta, BoardState, Me } from "./dashboard-board-types";
+import { apiErrorMessage } from "../../lib/ui/load-failure";
 import {
   dashboardCacheFromHomePayload,
   dashboardCacheAfterSave,
@@ -58,6 +59,8 @@ export function useDashboardHomeState(initialOrgId = "") {
   const [saving, setSaving] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
+  const [accessStatus, setAccessStatus] = useState<number | null>(null);
+  const [loadedScope, setLoadedScope] = useState("");
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [meLoaded, setMeLoaded] = useState(false);
   // The account call failed or timed out: unknown, not "no team". Home used to answer a slow
@@ -100,6 +103,25 @@ export function useDashboardHomeState(initialOrgId = "") {
   const contextRef = useRef(context);
   const snapshotSequence = useRef(0);
   const appliedSequence = useRef<Record<string, number>>({});
+  const homeSequence = useRef(0);
+  const homeRequest = useRef<AbortController | null>(null);
+  const activeScope = useRef("");
+  activeScope.current = `${userId}:${orgId}`;
+  const denied = useRef(false);
+
+  const revokeHome = useCallback((id: string, status: number, reason?: string | null) => {
+    denied.current = true;
+    lastCacheRef.current = null;
+    widgetsRef.current = {}; contextRef.current = {};
+    setWidgets({}); setContext({}); setLayout([]); setBoard(null); setBoards([]);
+    setRole(null); setCanShareOrg(false); setEditing(false); setPreviewing(false); setLibraryOpen(false);
+    setFromCache(false); setCachedAt(null); setUpdatedAt(null);
+    setBoardLoaded(true); setWidgetsLoaded(true);
+    setMessageKind("error"); setMessageAction(null);
+    setAccessStatus(status);
+    setMessage(reason || "Your session or team access changed. Sign in again or choose a team you can access.");
+    void clearFeatureSnapshot("dashboard", id).catch(() => undefined);
+  }, []);
 
   const applyHomeCache = useCallback((cache: DashboardOfflineCache) => {
     const next = normalizeDashboardCache(cache);
@@ -112,6 +134,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     setBoard(next.board);
     setScope(next.scope);
     setLayout(next.layout);
+    layoutRef.current = next.layout;
     setWidgets(next.widgets);
     setContext(next.context);
     setBoardLoaded(true);
@@ -119,6 +142,7 @@ export function useDashboardHomeState(initialOrgId = "") {
   }, []);
 
   const acceptSavedBoard = useCallback(async (saved: BoardState) => {
+    if (activeScope.current !== `${userId}:${orgId}` || denied.current) return;
     const previous = lastCacheRef.current;
     if (!previous) throw new Error("Home must finish loading before it can be saved.");
     const next = dashboardCacheAfterSave(previous, saved);
@@ -127,13 +151,16 @@ export function useDashboardHomeState(initialOrgId = "") {
     setCachedAt(null);
     setUpdatedAt(new Date().toISOString());
     try { await putFeatureSnapshot("dashboard", orgId, next); } catch { /* The server write already succeeded. */ }
-  }, [applyHomeCache, orgId]);
+  }, [applyHomeCache, orgId, userId]);
 
   const loadSnapshot = useCallback(async (
     id: string,
     types?: DashboardWidgetType[],
     opts?: { fullContext?: boolean; signal?: AbortSignal },
   ) => {
+    const requestScope = activeScope.current;
+    if (!id || denied.current || requestScope !== `${userId}:${id}`) return;
+    const boardSequence = homeSequence.current;
     const requested = types ?? snapshotPollWidgetTypes(layoutRef.current, { shell: shellRef.current });
     const sequence = ++snapshotSequence.current;
     const qs = new URLSearchParams({ orgId: id, mode: "snapshot" });
@@ -142,9 +169,19 @@ export function useDashboardHomeState(initialOrgId = "") {
     const timeout = AbortSignal.timeout(FEATURE_API_TIMEOUT_MS);
     const signal = opts?.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;
     const response = await fetch(`/api/dashboards?${qs.toString()}`, { signal, cache: "no-store" });
+    if (signal.aborted || activeScope.current !== requestScope || homeSequence.current !== boardSequence) return;
+    if (response.status === 401 || response.status === 403) {
+      const reason = await apiErrorMessage(response);
+      if (activeScope.current !== requestScope || homeSequence.current !== boardSequence || signal.aborted) return;
+      revokeHome(id, response.status, reason); throw Object.assign(new Error("Dashboard access changed."), { status: response.status });
+    }
     if (!response.ok) throw new Error("Could not refresh dashboard data.");
     const data = await response.json();
-    if (signal.aborted || loadedOrgRef.current !== id) return;
+    if (signal.aborted || activeScope.current !== requestScope || homeSequence.current !== boardSequence || denied.current) return;
+    if (typeof data.role === "string" && lastCacheRef.current && data.role !== lastCacheRef.current.role) {
+      revokeHome(id, 403, "Your team role changed. Reopen Home to load the tools available to your new role.");
+      throw Object.assign(new Error("Dashboard permissions changed."), { status: 403 });
+    }
     // A slow background poll cannot undo a newer refresh after a task was saved.
     const incoming: Record<string, WidgetPayload> = {};
     for (const [key, value] of Object.entries(data.widgets ?? {})) {
@@ -166,32 +203,48 @@ export function useDashboardHomeState(initialOrgId = "") {
     if (prev) {
       const nextCache: DashboardOfflineCache = { ...prev, widgets: nextWidgets, context: nextContext };
       lastCacheRef.current = nextCache;
-      void putFeatureSnapshot("dashboard", id, nextCache);
+      void putFeatureSnapshot("dashboard", id, nextCache).catch(() => undefined);
     }
-  }, []);
+  }, [userId, revokeHome]);
 
   const loadHome = useCallback(async (id: string, preferredBoardId?: string | null) => {
+    const requestScope = `${userId}:${id}`;
+    if (!userId || activeScope.current !== requestScope) return;
+    const sequence = ++homeSequence.current;
+    homeRequest.current?.abort();
+    const controller = new AbortController();
+    homeRequest.current = controller;
+    const current = () => !controller.signal.aborted && activeScope.current === requestScope && homeSequence.current === sequence;
     const stored = preferredBoardId === undefined ? readStoredBoardId(id, userId) : preferredBoardId;
-    try {
-      const cached = await getFeatureSnapshot<DashboardOfflineCache>("dashboard", id);
-      if (cached?.data && isDashboardOfflineCache(cached.data)) {
+    let liveAccepted = false;
+    const cacheSequence = snapshotSequence.current;
+    // Optional device storage must never delay the live board request.
+    void getFeatureSnapshot<DashboardOfflineCache>("dashboard", id).then(cached => {
+      if (!current() || liveAccepted || Object.values(appliedSequence.current).some(value => value > cacheSequence)) return;
+      if (!denied.current && !lastCacheRef.current && cached?.userId === userId && cached.data && isDashboardOfflineCache(cached.data) && (preferredBoardId === undefined || cached.data.board?.id === preferredBoardId)) {
         applyHomeCache(cached.data);
         setFromCache(true);
         setCachedAt(cached.cachedAt);
         setUpdatedAt(cached.cachedAt);
       }
-    } catch {
-      // IndexedDB missing or blocked; live fetch still runs.
-    }
+    }).catch(() => undefined);
+    if (!current()) return;
     const qs = new URLSearchParams({ orgId: id, mode: "home" });
     if (stored) qs.set("boardId", stored);
     try {
       const response = await fetch(`/api/dashboards?${qs.toString()}`, {
         cache: "no-store",
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
+      if (!current()) return;
+      if (response.status === 401 || response.status === 403) {
+        const reason = await apiErrorMessage(response);
+        if (current()) revokeHome(id, response.status, reason);
+        return;
+      }
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
+        if (!current()) return;
         setMessageKind("error");
         setMessage(
           lastCacheRef.current
@@ -202,19 +255,20 @@ export function useDashboardHomeState(initialOrgId = "") {
         return;
       }
       const data = await response.json();
+      if (!current()) return;
       const next = dashboardCacheFromHomePayload(data);
+      liveAccepted = true;
+      denied.current = false;
+      setAccessStatus(null);
       applyHomeCache(next);
       setFromCache(false);
       setCachedAt(null);
       setUpdatedAt(new Date().toISOString());
       setMessage("");
       if (data.active?.id) writeStoredBoardId(id, userId, data.active.id);
-      try {
-        await putFeatureSnapshot("dashboard", id, next);
-      } catch {
-        // Live Home already painted; IndexedDB is best-effort.
-      }
+      void putFeatureSnapshot("dashboard", id, next).catch(() => undefined);
     } catch {
+      if (!current()) return;
       if (lastCacheRef.current) {
         setFromCache(true);
         setMessageKind("error");
@@ -224,16 +278,21 @@ export function useDashboardHomeState(initialOrgId = "") {
         setMessage("Could not load Home.");
       }
       setBoardLoaded(true);
+    } finally {
+      if (homeRequest.current === controller) homeRequest.current = null;
     }
-  }, [applyHomeCache, userId]);
+  }, [applyHomeCache, userId, revokeHome]);
 
   useEffect(() => {
+    let active = true;
     const fromUrl = readOrgIdFromSearch(window.location.search) ?? initialOrgId;
     void fetchProductSession(fromUrl || null)
       .then((data) => {
+        if (!active) return;
         if (!data) {
           // "Not signed in" is an answer; only an unreachable session is "couldn't load".
           setMeFailed(productSessionUnreachable());
+          if (!productSessionUnreachable()) setMe({});
           return;
         }
         setMeFailed(false);
@@ -254,48 +313,50 @@ export function useDashboardHomeState(initialOrgId = "") {
         }
         if (nextOrg && !readOrgIdFromSearch(window.location.search)) persistOrgIdInUrl(nextOrg);
       })
-      .catch(() => setMeFailed(true))
-      .finally(() => setMeLoaded(true));
+      .catch(() => { if (active) setMeFailed(true); })
+      .finally(() => { if (active) setMeLoaded(true); });
+    return () => { active = false; };
   }, [initialOrgId, meAttempt]);
 
+  const loadedScopeRef = useRef<string | null>(null);
   useEffect(() => {
-    // Not "no team" until the session says so: before it arrives the org is simply unknown,
-    // and painting the built-in board then is what flashed "My Home" at every signed-in member.
-    if (orgId || !meLoaded || meFailed) return;
-    const fallback = defaultDashboardLayoutForAudience(homeAudienceFromTeamRole(me.teamRole));
-    setLayout(fallback);
-    setBoard({
-      id: null,
-      name: "Default home",
-      scope: "personal",
-      layout: fallback,
-      isDefault: true,
-    });
-    setBoardLoaded(true);
-    setWidgetsLoaded(true);
-  }, [orgId, meLoaded, meFailed, me.teamRole]);
-
-  const loadedOrgRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!orgId) return;
-    let cancelled = false;
-    let timer: number | null = null;
-    let inFlight: AbortController | null = null;
-    let lastFull = Date.now();
-    // A different team: its board and data are not here yet.
-    if (loadedOrgRef.current !== null && loadedOrgRef.current !== orgId) {
-      setBoardLoaded(false);
-      setWidgetsLoaded(false);
+    const nextScope = `${userId}:${orgId}`;
+    setLoadedScope(nextScope);
+    if (loadedScopeRef.current !== nextScope) {
+      setBoardLoaded(false); setWidgetsLoaded(false);
+      lastCacheRef.current = null; widgetsRef.current = {}; contextRef.current = {};
+      appliedSequence.current = {};
+      setWidgets({}); setContext({}); setBoard(null); setBoards([]);
+      setEditing(false); setPreviewing(false); setLibraryOpen(false);
+      setCanShareOrg(false); setBoardsOpen(false);
+      setFromCache(false); setCachedAt(null); setUpdatedAt(null);
+      setAccessStatus(null); denied.current = false;
     }
-    loadedOrgRef.current = orgId;
+    loadedScopeRef.current = nextScope;
+    // Apply the no-team board after clearing the previous account's state.
+    if (!orgId && meLoaded && !meFailed) {
+      const fallback = defaultDashboardLayoutForAudience(homeAudienceFromTeamRole(me.teamRole));
+      setLayout(fallback); layoutRef.current = fallback;
+      setBoard({ id: null, name: "Default home", scope: "personal", layout: fallback, isDefault: true });
+      setBoardLoaded(true); setWidgetsLoaded(true);
+      return;
+    }
+    if (!orgId || !userId || !meLoaded || meFailed) return;
+    let cancelled = false;
+    let inFlight: AbortController | null = null;
+    let lastFull = 0;
+    let lastRefresh = 0;
+    denied.current = false;
+    setAccessStatus(null);
 
     const poll = async () => {
-      if (cancelled || document.visibilityState === "hidden" || inFlight) return;
+      if (cancelled || denied.current || document.visibilityState === "hidden" || inFlight || homeRequest.current) return;
       const controller = new AbortController();
       inFlight = controller;
       const fullContext = Date.now() - lastFull >= CONTEXT_REFRESH_MS;
       try {
         await loadSnapshot(orgId, undefined, { fullContext, signal: controller.signal });
+        lastRefresh = Date.now();
         if (fullContext) lastFull = Date.now();
       } catch (error) {
         if (
@@ -312,13 +373,6 @@ export function useDashboardHomeState(initialOrgId = "") {
       }
     };
 
-    const schedule = () => {
-      timer = window.setTimeout(() => {
-        void poll().finally(() => {
-          if (!cancelled) schedule();
-        });
-      }, dashboardPollDelay(document.visibilityState === "hidden"));
-    };
     /*
       Load the widget data now, not in thirty seconds.
 
@@ -341,10 +395,9 @@ export function useDashboardHomeState(initialOrgId = "") {
     void loadHome(orgId).finally(() => {
       if (!cancelled) void poll();
     });
-    schedule();
 
     const onVisibility = () => {
-      if (document.visibilityState === "visible") void poll();
+      if (document.visibilityState === "visible" && Date.now() - lastRefresh >= 60_000) void poll();
     };
     const onResume = () => {
       lastFull = 0;
@@ -354,20 +407,19 @@ export function useDashboardHomeState(initialOrgId = "") {
       void poll();
     };
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("focus", onResume);
     window.addEventListener("online", onResume);
     window.addEventListener("vantage:dashboard-refresh", onResume);
 
     return () => {
       cancelled = true;
-      if (timer !== null) window.clearTimeout(timer);
       inFlight?.abort();
+      homeRequest.current?.abort(); homeRequest.current = null;
+      homeSequence.current++;
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("focus", onResume);
       window.removeEventListener("online", onResume);
       window.removeEventListener("vantage:dashboard-refresh", onResume);
     };
-  }, [orgId, loadHome, loadSnapshot]);
+  }, [orgId, userId, meLoaded, meFailed, me.teamRole, loadHome, loadSnapshot]);
 
   useEffect(() => {
     document.body.classList.toggle("dash-editing", editing || previewing);
@@ -421,6 +473,8 @@ export function useDashboardHomeState(initialOrgId = "") {
     updatedAt,
     fromCache,
     cachedAt,
+    accessStatus,
+    scopeReady: loadedScope === `${userId}:${orgId}`,
     meLoaded,
     meFailed,
     retryMe,

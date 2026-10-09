@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { SyncEntry } from "@vantage/scouting";
+import type { ScoutSchema, SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior, recordScoutAction, undoScoutAction, validatePayload } from "@vantage/scouting";
 import { answersToSave } from "../../lib/scouting/entry-answers";
 import { FreeScoutView } from "./free-scout-view";
@@ -17,7 +17,6 @@ import { useOnline } from "../../lib/offline/use-online";
 import { useScoutQueueRefresh } from "../../lib/scouting/use-queue-refresh";
 import {
   clearScoutDraft,
-  payloadHasDraftContent,
   readScoutDraft,
   readActiveScoutDraft,
   rememberActiveScoutDraft,
@@ -65,9 +64,15 @@ import { cacheLiveScouting } from "../../lib/scouting/live-cache";
 import { weightedFormula } from "../../lib/scouting/weighted-formula";
 import { useScoutTask } from "./use-scout-task";
 import { focusInvalidScoutField } from "./scouting-form-focus";
+import { ConfirmProvider, useConfirm } from "../../components/ui";
 import "./scouting-qr.css";
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
+  return <ConfirmProvider key={orgId}><ScopedScoutingClient orgId={orgId} embedded={embedded} /></ConfirmProvider>;
+}
+
+function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: boolean }) {
+  const confirm = useConfirm();
   const searchParams = useSearchParams();
   const [data, setData] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,11 +80,15 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
   const [payload, setPayload] = useState<Record<string, unknown>>({});
+  const [validationIssues, setValidationIssues] = useState<string[]>([]);
+  const [pinnedForm, setPinnedForm] = useState<{ key: string; id: string; schema?: ScoutSchema; error?: string; status?: number } | null>(null);
+  const [formRecoveryAttempt, setFormRecoveryAttempt] = useState(0);
   const [loadedDraftKey, setLoadedDraftKey] = useState<string | null>(null);
   // Autosave only after an edit; restored and carried answers are not new drafts.
   const [userEdited, setUserEdited] = useState(false);
   const editPayload = useCallback((next: Record<string, unknown> | ((current: Record<string, unknown>) => Record<string, unknown>)) => {
     setUserEdited(true);
+    setValidationIssues([]);
     const identity = { id: crypto.randomUUID(), at: new Date().toISOString() };
     setPayload((current) => recordScoutAction(current, typeof next === "function" ? next(current) : next, identity));
   }, []);
@@ -99,6 +108,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   // A saved report to open in the form ("Fix it", or Edit on one of your reports).
   const pendingLoadRef = useRef<{
     key: string;
+    schemaId?: string;
+    schema?: ScoutSchema;
     payload: Record<string, unknown>;
     confidence: "high" | "normal" | "low";
     message?: string;
@@ -125,6 +136,11 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   // same client id replaces it: the server lets the author update their own entry.
   const [lastSaved, setLastSaved] = useState<{
     clientId: string;
+    schemaId: string;
+    schema: ScoutSchema;
+    type: "match" | "pit";
+    eventKey: string;
+    userId?: string;
     matchKey: string;
     teamKey: string;
     payload: Record<string, unknown>;
@@ -143,6 +159,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
 
   const type = tab === "pit" ? "pit" : "match";
+  // Saved confirmations, local coverage and score checks belong to one event/account.
+  useLayoutEffect(() => {
+    setLastSaved(null); setSavedHere([]); setSaveReceipt(null); setOfficialFlags([]);
+  }, [data?.eventKey, data?.scoutIdentity?.userId]);
   // Preserve a linked pit team or report; ordinary task changes start fresh.
   const previousType = useRef(type);
   useEffect(() => {
@@ -405,21 +425,40 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     [data],
   );
 
-  const schema = useMemo(
+  const draftKey = useMemo(() => scoutDraftStorageKey({
+    userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: type, matchKey, teamKey,
+  }), [orgId, data?.eventKey, data?.scoutIdentity?.userId, type, matchKey, teamKey]);
+  const latestSchema = useMemo(
     () => data?.schemas.find((candidate) => candidate.type === type),
     [data, type],
   );
+  const schema = pinnedForm?.key === draftKey
+    ? pinnedForm.schema ?? data?.schemas.find(candidate => candidate.id === pinnedForm.id && candidate.type === type)
+    : latestSchema;
+  useEffect(() => {
+    if (!draftKey || pinnedForm?.key !== draftKey || schema) return;
+    const controller = new AbortController();
+    const { key, id } = pinnedForm;
+    void fetch(`/api/scouting/schemas?${new URLSearchParams({ orgId, schemaId: id })}`, {
+      cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+    }).then(async response => {
+      if (!response.ok) throw Object.assign(new Error((await apiErrorMessage(response)) ?? "The original form could not be loaded."), { status: response.status });
+      const body = await response.json() as { schemas?: ScoutSchema[] };
+      const original = body.schemas?.find(candidate => candidate.id === id && candidate.orgId === orgId && candidate.type === type);
+      if (!original) throw new Error("The original form is unavailable. Your answers are still saved on this device.");
+      if (!controller.signal.aborted) setPinnedForm(current => current?.key === key && current.id === id ? { key, id, schema: original } : current);
+    }).catch(error => {
+      if (!controller.signal.aborted) setPinnedForm(current => current?.key === key && current.id === id
+        ? { key, id, error: error instanceof Error ? error.message : "Could not load the original form.", status: error?.status } : current);
+    });
+    return () => controller.abort();
+  }, [draftKey, pinnedForm?.key, pinnedForm?.id, schema, orgId, type, formRecoveryAttempt]);
 
-  const formFields = useMemo(
-    () =>
-      visibleFields(
-        withInferredPhaseRules(
-          schema?.definition.fields.filter((field) => !isScoutIdentityField(field)) ?? [],
-        ),
-        payload,
-      ),
-    [schema, payload],
-  );
+  const configuredFields = useMemo(() => withInferredPhaseRules(
+    schema?.definition.fields.filter(field => !isScoutIdentityField(field)) ?? [],
+  ), [schema]);
+  const formFields = useMemo(() => visibleFields(configuredFields, payload), [configuredFields, payload]);
+  useEffect(() => { setValidationIssues([]); }, [schema?.id, type, matchKey, teamKey]);
 
   const schemaBudget = useMemo(
     () => (schema ? lintSchemaBudget(schema.definition) : null),
@@ -431,19 +470,6 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     for (const row of trust?.fieldTrust ?? []) map.set(row.fieldKey, row);
     return map;
   }, [trust]);
-
-  const draftKey = useMemo(
-    () =>
-      scoutDraftStorageKey({
-        userId: data?.scoutIdentity?.userId,
-        orgId,
-        eventKey: data?.eventKey ?? "",
-        entryType: type,
-        matchKey,
-        teamKey,
-      }),
-    [orgId, data?.eventKey, data?.scoutIdentity?.userId, type, matchKey, teamKey],
-  );
 
   // A new robot: its draft if there is one, a report asked for by "Fix it" or Edit, or a fresh
   // form with the answers the form keeps from the last robot (formResetBehavior). Those used to
@@ -458,6 +484,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       current.startsWith("You already scouted") || current.startsWith("Editing your report") ? "" : current,
     );
     if (!draftKey) {
+      setPinnedForm(null);
       setDraftSavedAt(null);
       setDraftDirty(false);
       return;
@@ -467,6 +494,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     const pending = pendingLoadRef.current;
     if (pending && pending.key === draftKey) {
       pendingLoadRef.current = null;
+      const original = pending.schema?.orgId === orgId && pending.schema.type === type ? pending.schema : undefined;
+      setPinnedForm(pending.schemaId ? { key: draftKey, id: pending.schemaId, schema: original } : latestSchema ? { key: draftKey, id: latestSchema.id, schema: latestSchema } : null);
       setPayload(pending.payload);
       setConfidence(pending.confidence);
       if (pending.message) setMessage(pending.message);
@@ -475,19 +504,28 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       return;
     }
     const existing = readScoutDraft(draftKey);
+    const original = existing?.schema?.orgId === orgId && existing.schema.type === type ? existing.schema : undefined;
+    setPinnedForm(existing?.schemaId ? { key: draftKey, id: existing.schemaId, schema: original } : latestSchema ? { key: draftKey, id: latestSchema.id, schema: latestSchema } : null);
     if (existing) {
+      if (existing.clientId) { editingRef.current = { clientId: existing.clientId, key: draftKey }; setEntryClientId(existing.clientId); }
+      if (existing.source) setSource(existing.source);
       setPayload(existing.payload);
       setConfidence(existing.confidence);
       setDraftSavedAt(existing.savedAt);
       setDraftDirty(false);
       return;
     }
+    editingRef.current = null;
+    setEntryClientId(stableClientId());
     setPayload(carry ?? {});
     setConfidence("normal");
     setSource("manual");
     setDraftSavedAt(null);
     setDraftDirty(false);
   }, [draftKey]);
+  useEffect(() => {
+    if (draftKey && loadedDraftKey === draftKey && latestSchema && pinnedForm?.key !== draftKey) setPinnedForm({ key: draftKey, id: latestSchema.id, schema: latestSchema });
+  }, [draftKey, loadedDraftKey, latestSchema, pinnedForm?.key]);
 
   // Picking a robot you already scouted in this match loads your report instead of a blank form;
   // tapping a "Done" robot used to start over, and saving made a second report. Your reports are
@@ -510,11 +548,12 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       ? null
       : [...savedHere].reverse().find((entry) => entry.matchKey === matchKey && entry.teamKey === storedTeam) ?? null;
     const found = report?.clientId
-      ? { clientId: report.clientId, payload: report.payload ?? {}, confidence: report.confidence }
+      ? { clientId: report.clientId, schemaId: report.schemaId, payload: report.payload ?? {}, confidence: report.confidence }
       : local;
     if (!found || readScoutDraft(draftKey)) return;
     editingRef.current = { clientId: found.clientId, key: draftKey };
     setEntryClientId(found.clientId);
+    if (found.schemaId) setPinnedForm({ key: draftKey, id: found.schemaId, schema: data?.schemas.find(candidate => candidate.id === found.schemaId) });
     setPayload(found.payload);
     if (found.confidence === "high" || found.confidence === "normal" || found.confidence === "low") setConfidence(found.confidence);
     setMessage(
@@ -525,7 +564,9 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   useEffect(() => {
     // A commit that changed the robot still contains the previous form's state.
     // It must never write those answers under the newly selected robot's key.
-    if (!draftKey || loadedDraftKey !== draftKey || !userEdited || !payloadHasDraftContent(payload)) return;
+    // Clearing the last observation is also an edit. Persist it so an older
+    // answer cannot return on reload, even when the payload is now empty.
+    if (!draftKey || loadedDraftKey !== draftKey || !userEdited) return;
     setDraftDirty(true);
     {
       const savedAt = writeScoutDraft(draftKey, {
@@ -533,6 +574,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         confidence,
         matchKey,
         teamKey,
+        clientId: entryClientId,
+        schemaId: schema?.id ?? (pinnedForm?.key === draftKey ? pinnedForm.id : undefined),
+        schema,
+        source,
       });
       if (savedAt && data?.scoutIdentity?.userId && data.eventKey) {
         rememberActiveScoutDraft({ userId: data.scoutIdentity.userId, orgId, eventKey: data.eventKey },
@@ -543,7 +588,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
         setDraftDirty(false);
       }
     }
-  }, [draftKey, loadedDraftKey, userEdited, payload, confidence, matchKey, teamKey, data?.scoutIdentity?.userId, data?.eventKey, orgId, type]);
+  }, [draftKey, loadedDraftKey, userEdited, payload, confidence, matchKey, teamKey, entryClientId, schema, pinnedForm, source, data?.scoutIdentity?.userId, data?.eventKey, orgId, type]);
 
   async function submit() {
     if (saveInFlight.current) return;
@@ -560,6 +605,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     // The same checks the team's server runs, before anything is queued: an entry it would refuse
     // used to be saved here, then set aside with "Entry rejected" once it reached the team.
     const problems = validatePayload(schema.definition, answers);
+    setValidationIssues(problems);
     if (problems.length) {
       setMessage(`Not saved yet. ${problems.slice(0, 3).join(". ")}.`);
       focusInvalidScoutField(schema.definition.fields, problems);
@@ -588,14 +634,14 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       setSaving(false);
       return;
     }
-    setLastSaved({ clientId: entryClientId, matchKey, teamKey, payload: answers, confidence });
+    setLastSaved({ clientId: entryClientId, schemaId: schema.id, schema, type, eventKey: data.eventKey, userId: data.scoutIdentity?.userId, matchKey, teamKey, payload: answers, confidence });
     if (type === "match") {
       setSavedHere((current) => [
         ...current.filter((row) => !(row.matchKey === matchKey && row.teamKey === storedTeam)),
-        { matchKey, teamKey: storedTeam, clientId: entryClientId, payload: answers, confidence },
+        { matchKey, teamKey: storedTeam, clientId: entryClientId, schemaId: schema.id, payload: answers, confidence },
       ]);
     }
-    clearScoutDraft(draftKey);
+    const draftCleared = clearScoutDraft(draftKey);
     // Apply the form's carry/reset rules when the next robot opens.
     const kept = applyFormResetBehavior(schema.definition, payload);
     carryOverRef.current = kept;
@@ -647,6 +693,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     setEntryClientId(stableClientId());
     setDraftSavedAt(null);
     setDraftDirty(false);
+    if (!draftCleared) note = [note, "Saved on this device, but the old draft could not be removed."].filter(Boolean).join(" ");
     setSaveReceipt({
       teamKey: storedTeam,
       matchKey: type === "match" ? matchKey : undefined,
@@ -676,6 +723,8 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
   /** Open a saved report in the form; saving replaces it. */
   function openSavedReport(report: {
     clientId: string;
+    schemaId?: string;
+    schema?: ScoutSchema;
     type: "match" | "pit";
     matchKey: string | null;
     teamKey: string;
@@ -692,8 +741,18 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       teamKey: report.teamKey,
     });
     if (!key) return;
+    if (key === draftKey && editingRef.current?.clientId === report.clientId && userEdited) {
+      setMessage("Your current corrections are already open. Save them when ready; the saved report has not replaced your draft.");
+      return;
+    }
+    const existing = readScoutDraft(key);
+    if (existing) {
+      report = { ...report, clientId: existing.clientId ?? report.clientId, schemaId: existing.schemaId ?? report.schemaId,
+        schema: existing.schema ?? report.schema, payload: existing.payload, confidence: existing.confidence,
+        message: "Your unfinished draft was restored. Review and save when ready." };
+    }
     editingRef.current = { clientId: report.clientId, key };
-    pendingLoadRef.current = { key, payload: report.payload, confidence: report.confidence, message: report.message };
+    pendingLoadRef.current = { key, schemaId: report.schemaId, schema: report.schema, payload: report.payload, confidence: report.confidence, message: report.message };
     if (report.type !== type) {
       keepTeamOnSwitchRef.current = true;
       setTab(report.type);
@@ -703,6 +762,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
     // The same robot already on screen: its load effect will not run again, so load it here.
     if (key === draftKey) {
       pendingLoadRef.current = null;
+      if (report.schemaId) setPinnedForm({ key, id: report.schemaId, schema: report.schema });
       setPayload(report.payload);
       setUserEdited(false);
       setMessage(report.message);
@@ -714,11 +774,13 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
 
   /** "Fix it" on the Saved note: the same robot and match, the answers as saved. */
   function fixLastSave() {
-    if (!lastSaved) return;
+    if (!lastSaved || lastSaved.eventKey !== data?.eventKey || lastSaved.userId !== data?.scoutIdentity?.userId || lastSaved.schema.orgId !== orgId) return;
     openSavedReport({
       clientId: lastSaved.clientId,
-      type,
-      matchKey: type === "match" ? lastSaved.matchKey : null,
+      schemaId: lastSaved.schemaId,
+      schema: lastSaved.schema,
+      type: lastSaved.type,
+      matchKey: lastSaved.type === "match" ? lastSaved.matchKey : null,
       teamKey: normalizeTeamKey(lastSaved.teamKey) ?? lastSaved.teamKey,
       payload: lastSaved.payload,
       confidence: lastSaved.confidence,
@@ -733,6 +795,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       report.confidence === "high" || report.confidence === "low" ? report.confidence : "normal";
     openSavedReport({
       clientId: report.clientId,
+      schemaId: report.schemaId,
       type: report.type,
       matchKey: report.matchKey,
       teamKey: report.teamKey,
@@ -894,6 +957,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
 
   const freeUserId = searchParams.get("mode") === "free" ? data?.scoutIdentity?.userId : undefined;
   if (freeUserId) return <FreeScoutView key={`${orgId}:${freeUserId}`} orgId={orgId} userId={freeUserId} />;
+  if (draftKey && pinnedForm?.key === draftKey && !schema && data?.eventKey) {
+    return <ScoutingShell orgId={orgId} embedded={embedded} shell={pinnedForm.error ? "error" : "loading"}
+      error={pinnedForm.error} errorStatus={pinnedForm.status} onRetry={() => { setPinnedForm(current => current ? { ...current, error: undefined, status: undefined } : null); setFormRecoveryAttempt(current => current + 1); }} />;
+  }
 
   if (shell === "loading" || shell === "error" || shell === "setup") {
     return (
@@ -932,6 +999,7 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       data={data}
       schema={schema}
       formFields={formFields}
+      validationIssues={validationIssues}
       schemaBudget={schemaBudget}
       matchOptions={matchOptions}
       matchKey={matchKey}
@@ -986,9 +1054,10 @@ export default function ScoutingClient({ orgId, embedded = false }: { orgId: str
       loadConflicts={loadConflicts}
       reviewConflict={reviewConflict}
       attachMedia={attachMedia}
-      cancelReport={() => {
-        if (userEdited && Object.keys(payload).length && !window.confirm("Discard this report? Saved reports will stay.")) return;
-        clearScoutDraft(draftKey); setUserEdited(false); setPayload({}); setTeamKey(""); setHoldAutoPick(true);
+      cancelReport={async () => {
+        if (userEdited && Object.keys(payload).length && !(await confirm({ title: "Discard this report?", body: `This clears the open draft for team ${teamNumberOf(teamKey)}. Saved reports stay available.`, confirmLabel: "Discard draft", tone: "destructive" }))) return;
+        if (!clearScoutDraft(draftKey)) { setMessage("Could not discard the saved draft. Your answers are still here."); return; }
+        setUserEdited(false); setPayload({}); setTeamKey(""); setHoldAutoPick(true);
         setSaveReceipt(null); setMessage("");
       }}
       submit={submit}
