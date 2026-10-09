@@ -51,7 +51,7 @@ export function ScoutingTeamDetail({
   const number = profile.teamKey.replace(/^frc/i, "");
   const consistency = profile.consistency?.consistency ?? "unknown";
   const stats: Array<{ label: string; value: string }> = [
-    { label: "Matches watched", value: String(profile.matches) },
+    { label: "Matches with scored totals", value: String(profile.matches) },
     { label: "Consistency", value: CONSISTENCY_LABEL[consistency] },
   ];
   if (profile.consistency?.floor != null && profile.consistency.ceiling != null) {
@@ -61,7 +61,12 @@ export function ScoutingTeamDetail({
     });
   }
   if (profile.climbRate != null) {
-    stats.push({ label: "Climbs", value: `${Math.round(profile.climbRate * 100)}% of matches` });
+    stats.push({ label: "Successful climbs", value: profile.climbSamples
+      ? `${profile.climbSamples.successful}/${profile.climbSamples.observed} known outcomes · ${Math.round(profile.climbRate * 100)}%`
+      : `${Math.round(profile.climbRate * 100)}% of known outcomes` });
+  }
+  if (profile.climbSamples?.missing) {
+    stats.push({ label: "Unseen or unresolved climb outcomes", value: `${profile.climbSamples.missing} of ${profile.matches} scored matches` });
   }
   if (profile.defenseRate > 0) {
     stats.push({ label: "Plays defense", value: `${Math.round(profile.defenseRate * 100)}% of matches` });

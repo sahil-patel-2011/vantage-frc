@@ -279,7 +279,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
       {cachedAt ? <p className="scout-cached-analysis" role="status">Saved analysis for {view.eventKey} · {new Date(cachedAt).toLocaleString()}. Reconnect for new reports.</p> : null}
       <header className="stp-head">
         <div>
-          <h2>{view.profiles.length} robots watched</h2>
+          <h2>{view.observations?.length ?? view.profiles.length} robots watched</h2>
           <p>
             {view.basis === "phase"
               ? "Points by phase, from your own formulas."
@@ -317,7 +317,16 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
       />
       </details>
 
-      {view.observations?.some(robot => !view.profiles.some(profile => profile.teamKey === robot.teamKey)) ? <details className="intel-shared-scouting"><summary data-disclosure>Robots without a scored total</summary><ObservedRobots robots={view.observations.filter(robot => !view.profiles.some(profile => profile.teamKey === robot.teamKey))} eventKey={eventKey} /></details> : null}
+      {view.observations?.length ? <details className="stp-event-overview"><summary data-disclosure>Event trends</summary>
+        <ScoutingEventTrends key={`${orgId}:${view.eventKey}`} robots={view.observations} eventKey={view.eventKey}
+          teamDetailKeys={view.profiles.map(profile => profile.teamKey)} onOpenTeam={(teamKey, button) => {
+            setQuery("");
+            selectRobot(teamKey, button);
+            requestAnimationFrame(() => shellRef.current?.scrollIntoView({ block: "start", behavior: "instant" }));
+          }} />
+      </details> : null}
+
+      {view.observations?.some(robot => !view.profiles.some(profile => profile.teamKey === robot.teamKey)) ? <details className="intel-shared-scouting"><summary data-disclosure>Robots without a scored total</summary><ObservedRobots robots={view.observations.filter(robot => !view.profiles.some(profile => profile.teamKey === robot.teamKey))} eventKey={view.eventKey} showTrends={false} /></details> : null}
 
       {sort === "fit" ? <details className="intel-shared-scouting"><summary data-disclosure>Adjust what makes a good pick</summary><PickWeightSliders weights={weights} onChange={update} onReset={reset} changed={changed} /></details> : null}
 
@@ -408,15 +417,19 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
  * read as ninety-fifth percentile. Only the actual top of the field gets a
  * "Top" label; everyone else is described against the field directly.
  */
-function ObservedRobots({ robots, eventKey }: { robots: ObservedRobot[]; eventKey: string | null }) {
+function ObservedRobots({ robots, eventKey, showTrends = true }: { robots: ObservedRobot[]; eventKey: string | null; showTrends?: boolean }) {
   const [teamKey, setTeamKey] = useState(robots[0]?.teamKey ?? "");
+  const reportRef = useRef<HTMLDivElement>(null);
   const robot = robots.find(item => item.teamKey === teamKey) ?? robots[0];
   return <section className="stp-observations" aria-label="Recorded robot capabilities">
     <header><h2>{robots.length} robots watched</h2><p className="app-muted">Explore the answers your scouts recorded. A scoring formula is only needed to convert actions into points and rank picks.</p></header>
-    <ScoutingEventTrends key={eventKey ?? "all"} robots={robots} eventKey={eventKey} />
+    {showTrends ? <ScoutingEventTrends key={eventKey ?? "all"} robots={robots} eventKey={eventKey} teamDetailKeys={robots.map(robot => robot.teamKey)} onOpenTeam={teamKey => {
+      setTeamKey(teamKey);
+      requestAnimationFrame(() => { reportRef.current?.focus({ preventScroll: true }); reportRef.current?.scrollIntoView({ block: "start", behavior: "instant" }); });
+    }} /> : null}
     <ObservedRobotComparison robots={robots} eventKey={eventKey} />
     <label>Robot<select aria-label="Robot" value={robot?.teamKey ?? ""} onChange={event => setTeamKey(event.target.value)} style={{ minHeight: 48 }}>{[...robots].sort((a,b) => teamNumber(a.teamKey)-teamNumber(b.teamKey)).map(item => <option key={item.teamKey} value={item.teamKey}>Team {teamNumberLabel(item.teamKey)}</option>)}</select></label>
-    {robot ? <ScoutObservationExplorer key={robot.teamKey + eventKey} rows={robot.reports} activeEventKey={eventKey} /> : null}
+    {robot ? <div ref={reportRef} tabIndex={-1} aria-label={`Team ${teamNumberLabel(robot.teamKey)} observations`}><ScoutObservationExplorer key={robot.teamKey + eventKey} rows={robot.reports} activeEventKey={eventKey} /></div> : null}
   </section>;
 }
 

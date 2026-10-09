@@ -128,6 +128,19 @@ describe("ratingsFromScouting", () => {
     ]);
 
     expect(ratings[0]!.climbRate).toBe(0.5);
+    expect(ratings[0]!.climbSamples).toEqual({ successful: 1, observed: 2, missing: 1 });
+  });
+
+  it("leaves tied climb reports unknown and uses the recorded majority otherwise", () => {
+    const ratings = ratingsFromScouting([
+      row({ teamKey: "frc5", matchKey: "qm1", teleop: 10, climbed: true }),
+      row({ teamKey: "frc5", matchKey: "qm1", teleop: 10, climbed: false }),
+      row({ teamKey: "frc5", matchKey: "qm2", teleop: 10, climbed: true }),
+      row({ teamKey: "frc5", matchKey: "qm2", teleop: 10, climbed: false }),
+      row({ teamKey: "frc5", matchKey: "qm2", teleop: 10, climbed: false }),
+    ]);
+    expect(ratings[0]!.climbRate).toBe(0);
+    expect(ratings[0]!.climbSamples).toEqual({ successful: 0, observed: 1, missing: 1 });
   });
 
   it("returns no climb rate at all when nobody ever recorded one", () => {

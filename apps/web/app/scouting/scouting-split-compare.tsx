@@ -66,7 +66,7 @@ export function ScoutingSplitCompare({
 
   const metrics: MetricRow[] = [
     { label: "Avg / match", left: left.meanTotal, right: right.meanTotal, higherIsBetter: true },
-    { label: "Matches", left: left.matches, right: right.matches, higherIsBetter: true },
+    { label: "Scored matches", left: left.matches, right: right.matches, higherIsBetter: true },
     { label: "Auto", left: phasePointValue(left, "auto"), right: phasePointValue(right, "auto"), higherIsBetter: true },
     { label: "Teleop", left: phasePointValue(left, "teleop"), right: phasePointValue(right, "teleop"), higherIsBetter: true },
     { label: "Endgame", left: phasePointValue(left, "endgame"), right: phasePointValue(right, "endgame"), higherIsBetter: true },
@@ -150,6 +150,7 @@ export function ScoutingSplitCompare({
       {/* Metric table — every number lined up left↔right with winner highlight */}
       <div className="ssv-metrics-section">
         <h4 className="ssv-section-title">Full breakdown</h4>
+        <p>Climb rates use known outcomes, excluding missing and tied reports. {left.climbSamples ? `${teamNumberLabel(left.teamKey)}: ${left.climbSamples.observed} known, ${left.climbSamples.missing} unknown.` : ""} {right.climbSamples ? `${teamNumberLabel(right.teamKey)}: ${right.climbSamples.observed} known, ${right.climbSamples.missing} unknown.` : ""}</p>
         <table className="ssv-metrics">
           <thead>
             <tr>

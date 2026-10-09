@@ -7,6 +7,7 @@ import {
   type ScoutedTeamRating,
 } from "@vantage/prediction-strategy";
 import { matchOrderKey } from "./next-assignment";
+import { climbSucceeded } from "./climb-outcome";
 
 /**
  * The bridge from "what our scouts wrote down" to "what the predictor can use".
@@ -115,15 +116,8 @@ const CLIMB_KEYS = ["tower_level", "climb", "climb_level", "endgame_climb", "end
 function climbed(payload: Record<string, unknown>): boolean | null {
   for (const key of CLIMB_KEYS) {
     const value = payload[key];
-    if (value == null || value === "") continue;
-    if (typeof value === "boolean") return value;
-    if (typeof value === "number") return value > 0;
-    if (typeof value === "string") {
-      const text = value.trim().toLowerCase();
-      // Parking is an endgame result, not a climb.
-      if (["none", "no", "false", "0", "park", "parked", "fell", "failed"].includes(text)) return false;
-      return true;
-    }
+    const known = climbSucceeded(value);
+    if (known !== null) return known;
   }
   return null;
 }
@@ -263,8 +257,9 @@ export function compareMatchOrder(a: string, b: string): number {
  * Every screen that shows "our scouting" for a robot starts here, so two
  * scouts on one robot count once and the same way everywhere: each phase is
  * the average of what they recorded; the robot counts as disabled when at
- * least half of them said so; observed points remain recorded; defense or a climb counts
- * when anyone saw it. Rows come back sorted by match (Qual 2 before Qual 10),
+ * least half of them said so; observed points remain recorded; defense counts
+ * when anyone saw it. Climbs use a majority of known outcomes; ties stay unknown.
+ * Rows come back sorted by match (Qual 2 before Qual 10),
  * which is what a trend or a sparkline needs; sorting by the key's text put
  * Qual 10-19 before Qual 2.
  */

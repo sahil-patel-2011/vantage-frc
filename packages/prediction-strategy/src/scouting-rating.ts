@@ -70,8 +70,10 @@ export type ScoutedTeamRating = {
   recentFormDelta?: number | null;
   /** Mean total pulled toward the field, by how thin the evidence is. */
   shrunkTotal: number;
-  /** Share of scouted matches where the robot climbed, or null if never recorded. */
+  /** Share of known climb outcomes that succeeded, or null if never recorded. */
   climbRate: number | null;
+  /** Known outcomes and gaps within the matches used for this rating. */
+  climbSamples?: { observed: number; missing: number; successful: number };
   /** Share of scouted matches where the robot was disabled. */
   disabledRate: number;
   /** Share of scouted matches where the robot was playing defense. */
@@ -189,6 +191,7 @@ export function combineScoutedMatchRows(rows: readonly ScoutedMatchRow[]): Scout
     if (list.length === 1) return { ...first };
     const totals = list.map(scoutedMatchTotal).filter(finite);
     const climbs = list.map(row => row.climbed).filter(value => typeof value === "boolean");
+    const successfulClimbs = climbs.filter(Boolean).length;
     return {
       teamKey: first.teamKey, matchKey: first.matchKey,
       total: observedMean(totals),
@@ -197,7 +200,7 @@ export function combineScoutedMatchRows(rows: readonly ScoutedMatchRow[]): Scout
       endgame: observedMean(list.map(row => row.endgame)),
       disabled: list.filter(row => row.disabled).length * 2 >= list.length,
       defense: list.some(row => row.defense),
-      ...(climbs.length ? { climbed: climbs.some(Boolean) } : {}),
+      ...(climbs.length && successfulClimbs * 2 !== climbs.length ? { climbed: successfulClimbs * 2 > climbs.length } : {}),
       reportCount: list.reduce((sum, row) => sum + (row.reportCount ?? 1), 0),
       totalRange: totals.length ? [Math.min(...totals), Math.max(...totals)] : null,
     };
@@ -312,6 +315,7 @@ export function ratingsFromScouting(rows: readonly ScoutedMatchRow[]): ScoutedTe
       recentFormDelta: recentScoutedFormDelta(deduped.get(teamKey) ?? []),
       shrunkTotal: shrunk.get(teamKey)?.shrunk ?? mean(stat.totals),
       climbRate: stat.climbRecorded > 0 ? stat.climbs / stat.climbRecorded : null,
+      climbSamples: { observed: stat.climbRecorded, missing: matches - stat.climbRecorded, successful: stat.climbs },
       disabledRate: matches > 0 ? stat.disabled / matches : 0,
       defenseRate: matches > 0 ? stat.defense / matches : 0,
       matchSd: matchSdFromDistribution(summariseDistribution(stat.totals)),

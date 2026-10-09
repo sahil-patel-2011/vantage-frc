@@ -135,6 +135,18 @@ describe("scoutedRowsFromEntries", () => {
     expect(result.ratings[0]!.climbRate).toBeNull();
   });
 
+  it("excludes unseen and unrecognized outcomes from climb success rates", () => {
+    const result = scoutedRowsFromEntries([
+      entry({ teamKey: "frc1", matchKey: "qm1", payload: { tower_level: "L3", teleop_fuel: 1 } }),
+      entry({ teamKey: "frc1", matchKey: "qm2", payload: { tower_level: "could_not_see", teleop_fuel: 1 } }),
+      entry({ teamKey: "frc1", matchKey: "qm3", payload: { tower_level: "custom unknown", teleop_fuel: 1 } }),
+      entry({ teamKey: "frc1", matchKey: "qm4", payload: { tower_level: "attempted_failed", teleop_fuel: 1 } }),
+    ], [TELEOP]);
+    if (!result.ok) throw new Error("expected ratings");
+    expect(result.ratings[0]!.climbRate).toBe(0.5);
+    expect(result.ratings[0]!.climbSamples).toEqual({ successful: 1, observed: 2, missing: 2 });
+  });
+
   it("rates a whole event's worth of entries", () => {
     const result = scoutedRowsFromEntries(eventEntries(), [AUTO, TELEOP]);
 
