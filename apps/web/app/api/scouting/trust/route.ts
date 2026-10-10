@@ -11,7 +11,7 @@ import {
   summarizeFieldTrust,
 } from "@vantage/scouting/trust";
 import { headers } from "next/headers";
-import { isComparableScoutField } from "@vantage/reference";
+import { officialComparisonForField } from "@vantage/scouting/official-fields";
 import { z } from "zod";
 import { classifyDbError } from "../../../../lib/db-error";
 import { parseSecureJson, RequestSecurityError } from "../../../../lib/security/request";
@@ -57,13 +57,13 @@ async function load(orgId: string, userId: string, eventKeyOverride?: string | n
     );
     const eventKey = eventKeyOverride || context.rows[0]?.eventKey || null;
     const [schemas, validations, policies, health, leaderboard, influence, seats] = await Promise.all([
-      client.query<{ id: string; year: number; type: "match" | "pit"; version: number; definition: { title: string; fields: Array<{ key: string; label: string; type: string }> }; clonedFrom: string | null }>(
+      client.query<{ id: string; year: number; type: "match" | "pit"; version: number; definition: SchemaDefinition; clonedFrom: string | null }>(
         `SELECT id,year,type,version,schema AS definition,cloned_from_schema_id AS "clonedFrom"
          FROM scout_schemas WHERE org_id=$1 ORDER BY year DESC,type,version DESC`, [orgId]),
       eventKey ? client.query<{ fieldKey: string; status: "match" | "conflict" | "unavailable" | "not_comparable" }>(
         `SELECT v.field_key AS "fieldKey",v.status
          FROM scout_entry_validations v JOIN match_scout_entries e ON e.id=v.entry_id
-         WHERE v.org_id=$1 AND e.org_id=v.org_id AND e.event_key=$2 AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v2] %' OR v.detail LIKE 'Video re-scout: [robot-check-v2] %')
+         WHERE v.org_id=$1 AND e.org_id=v.org_id AND e.event_key=$2 AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v3] %' OR v.detail LIKE 'Video re-scout: [robot-check-v3] %')
            AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)`, [orgId, eventKey]) : Promise.resolve({ rows: [] }),
       client.query<{ schemaId: string; fieldKey: string; preferredSource: string; officialKey: string | null; teamIndexed: boolean; enabled: boolean; updatedAt: string }>(
         `SELECT schema_id AS "schemaId",field_key AS "fieldKey",preferred_source AS "preferredSource",
@@ -80,7 +80,7 @@ async function load(orgId: string, userId: string, eventKeyOverride?: string | n
                 count(v.id) FILTER (WHERE v.status='match')::int AS matches,
                 count(v.id) FILTER (WHERE v.status='conflict')::int AS conflicts
          FROM match_scout_entries e JOIN users u ON u.id=e.scout_user_id
-         LEFT JOIN scout_entry_validations v ON v.entry_id=e.id AND v.org_id=e.org_id AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v2] %' OR v.detail LIKE 'Video re-scout: [robot-check-v2] %')
+         LEFT JOIN scout_entry_validations v ON v.entry_id=e.id AND v.org_id=e.org_id AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v3] %' OR v.detail LIKE 'Video re-scout: [robot-check-v3] %')
            AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)
          WHERE e.org_id=$1 AND e.event_key=$2
          GROUP BY e.scout_user_id,u.name ORDER BY matches DESC,entries DESC`, [orgId, eventKey]) : Promise.resolve({ rows: [] }),
@@ -139,7 +139,11 @@ async function load(orgId: string, userId: string, eventKeyOverride?: string | n
       eventKey,
       generatedAt: new Date().toISOString(),
       canManage: await canManageScouting(client, orgId),
-      schemaBudgets: latestSchemas.map((schema) => ({ schemaId: schema.id, year: schema.year, type: schema.type, title: schema.definition.title, version: schema.version, clonedFrom: schema.clonedFrom, fields: schema.definition.fields.map(field => ({ ...field, comparable: schema.type === "match" && isComparableScoutField(field.key) })), ...lintSchemaBudget(schema.definition as SchemaDefinition) })),
+      schemaBudgets: latestSchemas.map((schema) => ({ schemaId: schema.id, year: schema.year, type: schema.type, title: schema.definition.title, version: schema.version, clonedFrom: schema.clonedFrom, fields: schema.definition.fields.map(field => {
+        const comparison = officialComparisonForField(field);
+        return { ...field, comparable: schema.type === "match" && comparison.kind !== null,
+          comparisonMessage: schema.type === "match" ? comparison.message : "Pit answers are scout observations, not official match checks." };
+      }), ...lintSchemaBudget(schema.definition) })),
       fieldTrust: summarizeFieldTrust(validations.rows),
       policies: policies.rows,
       sourceHealth: health.rows,
@@ -183,8 +187,9 @@ export async function POST(request: Request) {
         const { schemaId, fieldKey, preferredSource: preferred } = values.data;
         await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`scout-policy:${orgId.toLowerCase()}:${schemaId}`]);
         const schema = await client.query<{ definition: SchemaDefinition; type: "match" | "pit" }>('SELECT schema AS definition,type FROM scout_schemas WHERE org_id=$1::uuid AND id=$2::uuid', [orgId, schemaId]);
-        if (!schema.rows[0]?.definition.fields.some(field => field.key === fieldKey)) throw new RequestSecurityError(404, "This question is no longer available in this team's form.");
-        if (values.data.enabled && (schema.rows[0]?.type !== "match" || !isComparableScoutField(fieldKey))) throw new RequestSecurityError(422, "This question has no robot-level official comparison. Keep it as a scout observation.");
+        const question = schema.rows[0]?.definition.fields.find(field => field.key === fieldKey);
+        if (!question) throw new RequestSecurityError(404, "This question is no longer available in this team's form.");
+        if (values.data.enabled && (schema.rows[0]?.type !== "match" || !officialComparisonForField(question).kind)) throw new RequestSecurityError(422, "This question has no robot-level official comparison. Keep it as a scout observation.");
         const current = await client.query<{ updatedAt: string }>('SELECT updated_at::text AS "updatedAt" FROM scout_field_policies WHERE org_id=$1::uuid AND schema_id=$2::uuid AND field_key=$3', [orgId, schemaId, fieldKey]);
         if ((current.rows[0]?.updatedAt ?? null) !== values.data.expectedUpdatedAt) throw new RequestSecurityError(409, "Another lead changed this rule. Refresh before saving it again.");
         const saved = await client.query<{ schemaId: string; fieldKey: string; enabled: boolean }>(

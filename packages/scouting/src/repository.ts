@@ -581,6 +581,7 @@ export class ScoutingRepository {
     const validations = crossValidateScoutPayload({
       payload: input.payload,
       fieldKeys: schema.definition.fields.map((field) => field.key),
+      fieldDefinitions: schema.definition.fields,
       teamKey: input.teamKey,
       redAlliance: official.redAlliance,
       blueAlliance: official.blueAlliance,

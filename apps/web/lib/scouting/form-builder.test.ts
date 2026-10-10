@@ -43,6 +43,18 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("form-builder", () => {
+  it("preserves explicit official meaning through renames, previews and recovered published forms", () => {
+    const question = newDraftQuestion({ key: "q_opaque", label: "Outcome", kind: "mc", optionsText: "none, deep, shallow", officialComparison: "climb" });
+    const renamed = { ...question, label: "Finish" };
+    const definition = definitionFromDraft("Match", [renamed]);
+    expect(definition.fields[0]).toMatchObject({ key: "q_opaque", config: { officialComparison: "climb" } });
+    expect(previewFieldForQuestion(renamed).config).toMatchObject({ officialComparison: "climb" });
+    expect(draftFromDefinition(definition).questions[0]?.officialComparison).toBe("climb");
+    expect(draftFromDefinition({ ...definition, fields: [{ ...definition.fields[0]!, config: { role: "none" } }] }).questions[0]?.officialComparison).toBe("none");
+    expect(validateDraft("Match", [retypeQuestion(question, "counter")]).ok).toBe(false);
+    expect(validateDraft("Match", [{ ...retypeQuestion(question, "counter"), officialComparison: "none" }]).ok).toBe(true);
+    expect(definitionFromDraft("Match", [{ ...question, officialComparison: "auto" }]).fields[0]?.config?.officialComparison).toBeUndefined();
+  });
   it("keeps season collection phases and unknown-count rules through edits, preview and publish", () => {
     const starter = matchSchemaForYear(2026);
     const draft = draftFromDefinition(starter);

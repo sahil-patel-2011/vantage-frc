@@ -28,7 +28,7 @@ export async function loadEntryValidations(
             v.official_source AS "officialSource", v.detail
      FROM scout_entry_validations v JOIN match_scout_entries e ON e.id=v.entry_id AND e.org_id=v.org_id
      WHERE v.org_id = $1 AND v.entry_id = ANY($2::uuid[])
-       AND (v.official_source <> 'tba' OR v.status NOT IN ('match','conflict') OR (v.detail LIKE '[robot-check-v2] %' OR v.detail LIKE 'Video re-scout: [robot-check-v2] %'))
+       AND (v.official_source <> 'tba' OR v.status NOT IN ('match','conflict') OR (v.detail LIKE '[robot-check-v3] %' OR v.detail LIKE 'Video re-scout: [robot-check-v3] %'))
        AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)
      ORDER BY v.checked_at DESC`,
     [orgId, entryIds],
@@ -52,7 +52,7 @@ export async function loadEventValidationConflicts(
      FROM scout_entry_validations v
      JOIN match_scout_entries e ON e.id = v.entry_id AND e.org_id = v.org_id
      WHERE v.org_id = $1 AND e.event_key = $2 AND e.team_key = ANY($3::text[])
-       AND v.status = 'conflict' AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v2] %' OR v.detail LIKE 'Video re-scout: [robot-check-v2] %')
+       AND v.status = 'conflict' AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v3] %' OR v.detail LIKE 'Video re-scout: [robot-check-v3] %')
        AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)`,
     [orgId, eventKey, teamKeys],
   );

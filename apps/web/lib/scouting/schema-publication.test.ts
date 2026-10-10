@@ -6,6 +6,17 @@ const request = { orgId: "22222222-2222-4222-8222-222222222222", year: 2026, typ
   definition: { title: "Our form", fields: [{ key: "cycles", label: "Cycles", type: "counter", config: { phase: "teleop" } }] } };
 
 describe("scouting schema publication boundary", () => {
+  it("validates explicit official comparison at the match publication boundary", () => {
+    for (const officialComparison of ["unknown", "climb", "mobility"]) {
+      const definition = { ...request.definition, fields: [{ ...request.definition.fields[0]!, config: { officialComparison } }] };
+      expect(schemaPublicationRequest.safeParse({ ...request, definition }).success).toBe(false);
+    }
+    const definition = { ...request.definition, fields: [{ ...request.definition.fields[0]!, config: { officialComparison: "foul" } }] };
+    expect(schemaPublicationRequest.parse({ ...request, definition })).toMatchObject({ definition });
+    // Dormant match metadata does not trap pit authors; pit reports are never officially checked.
+    expect(schemaPublicationRequest.safeParse({ ...request, type: "pit", definition: { ...definition,
+      fields: [{ ...definition.fields[0]!, config: { officialComparison: "climb" } }] } }).success).toBe(true);
+  });
   it.each([matchSchemaForYear(2026), pitSchemaForYear(2026)])("accepts the actual season starter and preserves its metadata", definition => {
     const parsed = schemaPublicationRequest.parse({ ...request, definition });
     expect("definition" in parsed ? parsed.definition : undefined).toEqual(definition);

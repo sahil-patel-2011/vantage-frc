@@ -13,6 +13,11 @@ const draft: FormEditorDraft = {
   questions: [newDraftQuestion({ id: "question", label: "", kind: "short" })],
 };
 describe("unpublished scouting form recovery", () => {
+  it("retains explicit official outcome selection in an unfinished private draft", () => {
+    const selected = { ...draft, questions: [newDraftQuestion({ key: "q_original", officialComparison: "mobility" })] };
+    const store = storage(); saveFormEditorDraft(store, selected);
+    expect(listFormEditorDrafts(store, selected)[0]?.questions[0]).toMatchObject({ key: "q_original", officialComparison: "mobility" });
+  });
   it("keeps incomplete questions and exact stable keys through reload", () => {
     const store = storage(); saveFormEditorDraft(store, draft);
     expect(listFormEditorDrafts(store, draft)[0]).toMatchObject(draft);

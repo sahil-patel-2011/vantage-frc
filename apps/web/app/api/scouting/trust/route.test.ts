@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
+import type { FieldDefinition } from "@vantage/scouting";
 
-const fake = vi.hoisted(() => ({ session: vi.fn(), query: vi.fn(), policy: vi.fn(), lead: vi.fn(), updatedAt: null as string | null, saved: null as null | { schemaId: string; fieldKey: string; enabled: boolean } }));
+const fake = vi.hoisted(() => ({ session: vi.fn(), query: vi.fn(), policy: vi.fn(), lead: vi.fn(), fields: null as FieldDefinition[] | null, updatedAt: null as string | null, saved: null as null | { schemaId: string; fieldKey: string; enabled: boolean } }));
 vi.mock("@vantage/core", () => ({ auth: { api: { getSession: fake.session } }, assertOrgAuthentication: fake.policy, emitPreferredNotification: vi.fn() }));
 vi.mock("@vantage/db", () => ({ withRls: async (_scope: unknown, work: (client: unknown) => Promise<unknown>) => work({ query: fake.query }) }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers(), cookies: async () => ({ get: () => undefined }) }));
@@ -17,10 +18,10 @@ function post(body: unknown, origin = "https://vantage.example") {
 }
 const inserted = () => fake.query.mock.calls.some(([sql]) => String(sql).includes("INSERT INTO scout_field_policies"));
 beforeEach(() => {
-  vi.resetAllMocks(); fake.updatedAt = baseline; fake.saved = null;
+  vi.resetAllMocks(); fake.updatedAt = baseline; fake.saved = null; fake.fields = null;
   fake.session.mockResolvedValue({ user: { id: userId }, session: { id: "session" } });
   fake.query.mockImplementation(async (sql: string, params: unknown[] = []) => {
-    if (sql.includes("SELECT schema AS definition")) return { rows: [{ type: "match", definition: { title: "Match", fields: [{ key: "climb", label: "Climb", type: "select" }] } }], rowCount: 1 };
+    if (sql.includes("SELECT schema AS definition")) return { rows: [{ type: "match", definition: { title: "Match", fields: fake.fields ?? [{ key: "climb", label: "Climb", type: "select" }] } }], rowCount: 1 };
     if (sql.includes("SELECT updated_at::text")) return { rows: fake.updatedAt ? [{ updatedAt: fake.updatedAt }] : [], rowCount: fake.updatedAt ? 1 : 0 };
     if (sql.includes("INSERT INTO scout_field_policies")) {
       fake.saved = { schemaId: String(params[1]), fieldKey: String(params[2]), enabled: Boolean(params[6]) };
@@ -32,6 +33,15 @@ beforeEach(() => {
   });
 });
 describe("scouting quality permissions and confirmed rule writes", () => {
+  it("enables custom original-schema outcomes and refuses incompatible or opted-out questions", async () => {
+    fake.fields = [{ key: "q_custom", label: "Finish", type: "select", config: { officialComparison: "climb" } }];
+    expect((await POST(post({ ...payload, fieldKey: "q_custom", enabled: true }))).status).toBe(200);
+    fake.fields = [{ ...fake.fields[0]!, type: "counter" }];
+    expect((await POST(post({ ...payload, fieldKey: "q_custom", enabled: true }))).status).toBe(422);
+    fake.fields = [{ ...fake.fields[0]!, type: "select", config: { officialComparison: "none" } }];
+    expect((await POST(post({ ...payload, fieldKey: "q_custom", enabled: true }))).status).toBe(422);
+    expect(fake.query.mock.calls.filter(([sql]) => String(sql).includes("INSERT INTO scout_field_policies"))).toHaveLength(1);
+  });
   it("blocks cross-site writes before reading team data", async () => {
     expect((await POST(post(payload, "https://other.example"))).status).toBe(403);
     expect(fake.query).not.toHaveBeenCalled();

@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./match-cross-validation": "./src/match-cross-validation.ts",
     "./worker": "./src/worker.ts",
     "./admin-store": "./src/admin-store.ts",
     "./production-worker": "./src/production-worker.ts",

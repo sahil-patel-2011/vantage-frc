@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { officialComparisonConfigError } from "@vantage/scouting/official-fields";
 import { cyclicVisibilityKeys, isVisibleWhen, type VisibleWhen } from "@vantage/scouting/visibility";
 
 const fieldTypes = ["number", "boolean", "text", "select", "dropdown", "multiple_choice", "short_answer", "long_text",
@@ -57,5 +58,11 @@ export const schemaPublicationRequest = z.union([
     orgId: z.string().uuid(), year: z.number().int().min(1992).max(2100), type: z.enum(["match", "pit"]),
     definition, acknowledgeBudget: z.boolean().optional(),
     baseSchemaId: z.string().uuid().nullable().optional(),
-  }).strict(),
+  }).strict().superRefine((value, context) => {
+    if (value.type !== "match") return;
+    for (const [index, field] of value.definition.fields.entries()) {
+      const error = officialComparisonConfigError(field);
+      if (error) context.addIssue({ code: "custom", path: ["definition", "fields", index, "config", "officialComparison"], message: error });
+    }
+  }),
 ]);

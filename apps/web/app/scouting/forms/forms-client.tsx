@@ -45,6 +45,7 @@ import { FormsTabletPreview } from "./forms-tablet-preview";
 import { StudioSettingsEditor } from "./forms-settings-editor";
 import { CollectionSettings } from "./forms-collection-settings";
 import { FormsVisibilityEditor } from "./forms-visibility-editor";
+import { FormsOfficialComparison } from "./forms-official-comparison";
 import { formEditorPrefix, listFormEditorDrafts, removeFormEditorDraft, saveFormEditorDraft, type FormEditorDraft, type FormEditorScope } from "../../../lib/scouting/form-editor-draft";
 
 function isSchemasPayload(value: unknown): value is SchemasPayload {
@@ -981,6 +982,9 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
                               ))}
                             </select>
                           </FormRow>
+                          {type === "match" ? <FormsOfficialComparison question={question} field={previewDefinition.fields[index]!} index={index}
+                            disabled={!payload.canManageSchemas || busy}
+                            onChange={officialComparison => updateQuestion(question.id, { officialComparison })} /> : null}
                         <FormRow
                           label="After a save"
                           hint={

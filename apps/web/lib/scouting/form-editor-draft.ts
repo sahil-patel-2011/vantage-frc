@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OFFICIAL_COMPARISON_MODES } from "@vantage/scouting/official-fields";
 import { isVisibleWhen, type VisibleWhen } from "@vantage/scouting/visibility";
 import { ANSWER_KIND_OPTIONS, STRATEGY_ROLE_OPTIONS, type DraftQuestion } from "./form-builder";
 
@@ -18,6 +19,7 @@ const question = z.object({
   }),
   chart: z.enum(["auto", "bar", "trend", "none"]).optional(), helpText: text.optional(),
   collectionConfig: z.record(z.string(), z.unknown()).optional(),
+  officialComparison: z.enum(OFFICIAL_COMPARISON_MODES).optional(),
   visibleWhen: z.custom<VisibleWhen>(isVisibleWhen).nullable().optional(),
 });
 const record = z.object({

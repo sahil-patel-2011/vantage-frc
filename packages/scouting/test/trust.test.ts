@@ -110,6 +110,8 @@ describe("scouting trust", () => {
     expect(valuesAgree("deep", "ShallowCage", "climb")).toBe(false);
     expect(valuesAgree("high", "Parked", "climb")).toBe(false);
     expect(valuesAgree("none", "Parked", "climb")).toBe(false);
+    expect(valuesAgree("yes", "DeepCage", "climb")).toBe(true);
+    expect(valuesAgree("no", "DeepCage", "climb")).toBe(false);
     expect(valuesAgree(true, "DeepCage", "climb")).toBe(true);
     expect(valuesAgree(false, null, "climb")).toBe(false);
     const checks = crossValidateScoutPayload({ payload: { climb: "failed", climb_attempted: true, endgamePoints: 12 },
@@ -120,8 +122,9 @@ describe("scouting trust", () => {
 
   it("recognizes versioned robot evidence without exposing its tag in student copy", () => {
     expect(isCurrentRobotCheck("Conflicts with TBA score_breakdown.foulCount")).toBe(false);
-    expect(isCurrentRobotCheck("[robot-check-v2] Matches TBA score_breakdown.endGameRobot1")).toBe(true);
-    expect(robotCheckDescription("Video re-scout: [robot-check-v2] Matches TBA score_breakdown.endGameRobot1"))
+    expect(isCurrentRobotCheck("[robot-check-v2] Matches TBA score_breakdown.endGameRobot1")).toBe(false);
+    expect(isCurrentRobotCheck("[robot-check-v3] Matches TBA score_breakdown.endGameRobot1")).toBe(true);
+    expect(robotCheckDescription("Video re-scout: [robot-check-v3] Matches TBA score_breakdown.endGameRobot1"))
       .toBe("Video re-scout: Matches TBA score_breakdown.endGameRobot1");
   });
 
@@ -162,6 +165,48 @@ describe("scouting trust", () => {
       scoreBreakdown: null,
     });
     expect(flags[0]).toMatchObject({ status: "unavailable", officialSource: "tba" });
+  });
+
+  it("checks custom outcomes against the original schema, not a newer role or label", () => {
+    const input = { payload: { q_1: "deep", q_2: true, q_3: 2 }, fieldKeys: ["q_1", "q_2", "q_3"], teamKey: "frc2",
+      redAlliance: { teamKeys: ["frc1", "frc2", "frc3"] }, blueAlliance: { teamKeys: [] },
+      scoreBreakdown: { red: { endGameRobot2: "DeepCage", autoLineRobot2: "Yes", foulCount: 9, foulCountRobot2: 2 } } };
+    const fields = [
+      { key: "q_1", label: "Finish", type: "select" as const, config: { role: "endgame" } },
+      { key: "q_2", label: "Left zone", type: "boolean" as const, config: { officialComparison: "mobility" } },
+      { key: "q_3", label: "Fouls", type: "counter" as const, config: { officialComparison: "foul" } },
+    ];
+    expect(crossValidateScoutPayload({ ...input, fieldDefinitions: fields })).toEqual([
+      expect.objectContaining({ fieldKey: "q_1", status: "match", officialKey: "endGameRobot2" }),
+      expect.objectContaining({ fieldKey: "q_2", status: "match", officialKey: "autoLineRobot2" }),
+      expect.objectContaining({ fieldKey: "q_3", status: "match", officialKey: "foulCountRobot2" }),
+    ]);
+    expect(crossValidateScoutPayload({ ...input, fieldDefinitions: fields.map(field => ({ ...field, config: { officialComparison: "none" } })) })).toEqual([]);
+    expect(crossValidateScoutPayload({ ...input, fieldDefinitions: [] })).toEqual([]);
+    expect(crossValidateScoutPayload({ ...input, fieldDefinitions: fields,
+      policies: [{ fieldKey: "q_1", officialKey: "endGameRobot1" }] }).find(check => check.fieldKey === "q_1")?.status).toBe("unavailable");
+  });
+
+  it("retains arbitrary custom outcome labels without counting an unsupported disagreement", () => {
+    const input = { payload: { q_custom: "full" }, fieldKeys: ["q_custom"], fieldDefinitions: [
+      { key: "q_custom", label: "Finish", type: "select" as const, config: { officialComparison: "climb" } },
+    ], teamKey: "frc1", redAlliance: { teamKeys: ["frc1"] }, blueAlliance: { teamKeys: [] },
+    scoreBreakdown: { red: { endGameRobot1: "DeepCage" } } };
+    expect(crossValidateScoutPayload(input)).toEqual([expect.objectContaining({ fieldKey: "q_custom", status: "not_comparable" })]);
+    expect(crossValidateScoutPayload({ ...input, payload: { q_custom: "shallow" } })).toEqual([expect.objectContaining({ status: "conflict" })]);
+  });
+
+  it("excludes hidden answers using the same persisted conditions and phase rules as collection", () => {
+    const input = { payload: { enabled: false, q_1: "deep", gamePhase: "auto", q_2: "deep" }, fieldKeys: ["q_1", "q_2"], teamKey: "frc1",
+      redAlliance: { teamKeys: ["frc1"] }, blueAlliance: { teamKeys: [] }, scoreBreakdown: { red: { endGameRobot1: "DeepCage" } } };
+    const fieldDefinitions = [
+      { key: "enabled", label: "Observed", type: "boolean" as const },
+      { key: "gamePhase", label: "Phase", type: "select" as const },
+      { key: "q_1", label: "Outcome", type: "select" as const, visibleWhen: { fieldKey: "enabled", isTrue: true as const }, config: { role: "endgame" } },
+      { key: "q_2", label: "Outcome", type: "select" as const, config: { role: "endgame", scoutPhase: "endgame" } },
+    ];
+    expect(crossValidateScoutPayload({ ...input, fieldDefinitions })).toEqual([]);
+    expect(crossValidateScoutPayload({ ...input, payload: { ...input.payload, enabled: true, gamePhase: "endgame" }, fieldDefinitions })).toHaveLength(2);
   });
 
   it("labels coverage and recent EPA drift", () => {

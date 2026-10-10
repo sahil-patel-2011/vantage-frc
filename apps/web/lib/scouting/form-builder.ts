@@ -1,4 +1,5 @@
 import { lintPitClaimedScoring, lintSchemaBudget } from "@vantage/scouting/trust";
+import { isOfficialComparisonMode, officialComparisonConfigError, type OfficialComparisonMode } from "@vantage/scouting/official-fields";
 import {
   assertSchemaIdentityLock,
   isScoutIdentityField,
@@ -197,6 +198,8 @@ export type DraftQuestion = {
   helpText?: string;
   /** Collection rules survive opening, editing and republishing a season starter. */
   collectionConfig?: Record<string, unknown>;
+  /** Separate robot outcomes from attempts, capabilities and point totals. */
+  officialComparison?: OfficialComparisonMode;
 };
 
 export const COUNTER_STEPS_TEXT = DEFAULT_COUNTER_STEPS.join(", ");
@@ -242,6 +245,7 @@ export function newDraftQuestion(partial?: Partial<DraftQuestion>): DraftQuestio
     chart: partial?.chart ?? "auto",
     helpText: partial?.helpText ?? "",
     ...(partial?.collectionConfig ? { collectionConfig: { ...partial.collectionConfig } } : {}),
+    ...(partial?.officialComparison !== undefined ? { officialComparison: partial.officialComparison } : {}),
     role: partial?.role ?? "none",
     reset: partial?.reset ?? "reset",
     settings: { ...defaultSettingsForKind(kind), ...(partial?.settings ?? {}) },
@@ -488,6 +492,8 @@ export function draftFromDefinition(definition: SchemaDefinition): {
         settings: settingsFromField(field),
         chart: ["bar", "trend", "none"].includes(String(field.config?.chart)) ? field.config?.chart as DraftQuestion["chart"] : "auto",
         collectionConfig: Object.fromEntries(Object.entries(field.config ?? {}).filter(([key]) => ["scoutPhase", "requireObservation", "integer", "min"].includes(key))),
+        // Invalid imported metadata stays opted out until the author chooses a rule.
+        ...(field.config?.officialComparison !== undefined ? { officialComparison: isOfficialComparisonMode(field.config.officialComparison) ? field.config.officialComparison : "none" } : field.config?.role === "none" ? { officialComparison: "none" } : {}),
         visibleWhen: readVisibleWhen(field),
       }),
     ),
@@ -583,6 +589,8 @@ function collectionConfigForQuestion(question: DraftQuestion, type: FieldType): 
 export function previewFieldForQuestion(question: DraftQuestion): FieldDefinition {
   const type = kindToFieldType(question.kind);
   const config = { ...collectionConfigForQuestion(question, type), ...studioConfigForQuestion(question, type) };
+  if (question.role !== "none") config.role = question.role;
+  if (question.officialComparison && question.officialComparison !== "auto") config.officialComparison = question.officialComparison;
   const field: FieldDefinition = {
     key: question.key?.trim() || question.id,
     label: question.label.trim() || "Untitled",
@@ -720,6 +728,7 @@ export function definitionFromDraft(
     // "none" means auto-detect by key name — persist only explicit mappings so
     // untouched conventional fields keep reaching strategy via inference.
     if (question.role !== "none") config.role = question.role;
+    if (question.officialComparison && question.officialComparison !== "auto") config.officialComparison = question.officialComparison;
     // "reset" is the default everywhere; only persist a deliberate choice.
     if (question.reset !== "reset" && type !== "section_header") {
       config.resetBehavior = question.reset;
@@ -1403,6 +1412,10 @@ export function validateDraft(
   const fieldKeys = new Set(definition.fields.map(field => field.key));
   const cyclic = new Set(cyclicVisibilityKeys(definition.fields));
   for (const [index, field] of definition.fields.entries()) {
+    if (entryType === "match") {
+      const comparisonError = officialComparisonConfigError(field);
+      if (comparisonError) errors.push(`Question ${index + 1}: ${comparisonError}`);
+    }
     if (cyclic.has(field.key)) errors.push(`Question ${index + 1} has a circular answer condition. Choose a question that does not depend on it.`);
     const rule = readVisibleWhen(field);
     if (rule == null) continue;

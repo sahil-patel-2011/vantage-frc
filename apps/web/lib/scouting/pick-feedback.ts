@@ -126,7 +126,7 @@ export async function seatTopAccurateScouts(
             count(v.id) FILTER (WHERE v.status = 'match')::int AS matches
      FROM match_scout_entries e
      JOIN memberships member ON member.org_id=e.org_id AND member.user_id=e.scout_user_id
-     LEFT JOIN scout_entry_validations v ON v.entry_id=e.id AND v.org_id=e.org_id AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v2] %' OR v.detail LIKE 'Video re-scout: [robot-check-v2] %')
+     LEFT JOIN scout_entry_validations v ON v.entry_id=e.id AND v.org_id=e.org_id AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v3] %' OR v.detail LIKE 'Video re-scout: [robot-check-v3] %')
        AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)
      WHERE e.org_id = $1::uuid AND e.event_key = $2
      GROUP BY e.scout_user_id`,

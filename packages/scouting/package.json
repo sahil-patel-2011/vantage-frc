@@ -11,6 +11,7 @@
     "./identity": "./src/identity.ts",
     "./org-isolation": "./src/org-isolation.ts",
     "./trust": "./src/trust.ts",
+    "./official-fields": "./src/official-fields.ts",
     "./resolution": "./src/resolution.ts",
     "./permissions": "./src/permissions.ts",
     "./visibility": "./src/visibility.ts"

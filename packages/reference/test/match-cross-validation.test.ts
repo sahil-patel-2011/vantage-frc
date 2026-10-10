@@ -80,6 +80,19 @@ describe("match cross-validation", () => {
     expect(officialValueFromTbaFacts({ fieldKey: "climb", facts: extractTbaTeamMatchFacts(snapshot, "frc2")!, scoreBreakdown: snapshot.scoreBreakdown })).toBeNull();
   });
 
+  it("resolves declared custom meanings only within the observed robot seat", () => {
+    const scoreBreakdown = { red: { ...match.scoreBreakdown.red, foulCountRobot2: 0, foulCountRobot1: 9 } };
+    const facts = extractTbaTeamMatchFacts({ ...match, scoreBreakdown }, "frc2")!;
+    expect(officialValueFromTbaFacts({ fieldKey: "q_custom", kind: "climb", facts, scoreBreakdown }))
+      .toEqual({ value: "DeepCage", officialKey: "endGameRobot2", kind: "climb" });
+    expect(officialValueFromTbaFacts({ fieldKey: "q_custom", kind: "foul", facts, scoreBreakdown }))
+      .toEqual({ value: 0, officialKey: "foulCountRobot2", kind: "foul" });
+    expect(officialValueFromTbaFacts({ fieldKey: "q_custom", kind: "foul", facts, scoreBreakdown,
+      policy: { fieldKey: "q_custom", officialKey: "foulCountRobot1" } })).toBeNull();
+    expect(officialValueFromTbaFacts({ fieldKey: "q_custom", kind: "foul", facts, scoreBreakdown,
+      policy: { fieldKey: "q_custom", officialKey: "foulCount" } })).toBeNull();
+  });
+
   it("emits soft Statbotics notes only from real EPA values", () => {
     expect(softStatboticsClimbSignal({ scoutClimb: "none", epaEndgame: null })).toBeNull();
     expect(softStatboticsClimbSignal({ scoutClimb: "none", epaEndgame: 9 })?.softNote).toMatch(/EPA endgame/);
