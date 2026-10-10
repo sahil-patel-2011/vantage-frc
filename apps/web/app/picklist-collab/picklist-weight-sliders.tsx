@@ -5,12 +5,14 @@ import {
   PICKLIST_METRICS,
   defaultPicklistWeights,
   isFormMetricId,
+  formFieldLowerIsBetter,
   picklistMetricLabel,
   type FieldStats,
   type MetricWeight,
   type PicklistMetricId,
 } from "@vantage/prediction-strategy";
 import { Button } from "../../components/ui";
+import type { FormMetricDefinitions } from "../../lib/picklist-collab/form-metrics";
 
 const WEIGHTS_KEY = "vantage.picklist-field-weights.v1";
 const METRIC_IDS = new Set(PICKLIST_METRICS.map((metric) => metric.id));
@@ -92,11 +94,13 @@ export function usePicklistFieldWeights(listId: string | null): {
 export function PicklistWeightSliders({
   weights,
   fieldStats,
+  formDefinitions,
   onWeight,
   onReset,
 }: {
   weights: MetricWeight[];
   fieldStats: FieldStats;
+  formDefinitions?: FormMetricDefinitions;
   onWeight: (id: PicklistMetricId, weight: number) => void;
   onReset: () => void;
 }) {
@@ -109,7 +113,7 @@ export function PicklistWeightSliders({
   const formReady = (Object.keys(fieldStats) as PicklistMetricId[])
     .filter((id) => isFormMetricId(id) && (fieldStats[id]?.n ?? 0) >= 2)
     .sort()
-    .map((id) => ({ id, label: picklistMetricLabel(id), source: "form" as const }));
+    .map((id) => ({ id, label: isFormMetricId(id) ? formDefinitions?.[id]?.label ?? picklistMetricLabel(id) : picklistMetricLabel(id), source: "form" as const }));
   // "Total points" from the public ratings and "Total points" from the team's
   // own form are different numbers; when both appear, say whose each one is.
   const labelCount = new Map<string, number>();
@@ -150,6 +154,8 @@ export function PicklistWeightSliders({
                     {metric.source === "event"
                       ? `public rating · ${field.n} teams`
                       : `our scouting · ${field.n} teams`}
+                    {isFormMetricId(metric.id) && formDefinitions?.[metric.id]?.unit ? ` · ${formDefinitions[metric.id]!.unit}` : ""}
+                    {isFormMetricId(metric.id) && formFieldLowerIsBetter(metric.id.slice(5)) ? " · lower is better" : ""}
                   </small>
                 </span>
                 <input

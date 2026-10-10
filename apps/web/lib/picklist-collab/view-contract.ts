@@ -19,6 +19,11 @@ export function isCollabView(value: unknown, orgId?: string | null, listId?: str
     && [view.summary.totalEntries, view.summary.totalVotes, view.summary.totalVoters].every(count => Number.isSafeInteger(count) && count >= 0)
     && (view.canManage === undefined || typeof view.canManage === "boolean")
     && (view.currentUserId === undefined || typeof view.currentUserId === "string")
+    && (view.incompatibleFormMetrics === undefined || (Array.isArray(view.incompatibleFormMetrics) && view.incompatibleFormMetrics.every(key => typeof key === "string")))
+    && (view.formMetricSamples === undefined || (record(view.formMetricSamples) && Object.values(view.formMetricSamples).every(samples => record(samples)
+      && Object.values(samples).every(count => count === undefined || (Number.isSafeInteger(count) && Number(count) > 0)))))
+    && (view.formMetricDefinitions === undefined || (record(view.formMetricDefinitions) && Object.values(view.formMetricDefinitions).every(definition => record(definition)
+      && typeof definition.label === "string" && nullableText(definition.unit))))
     && (view.fieldStats === undefined || (record(view.fieldStats) && Object.values(view.fieldStats).every(stat => record(stat)
       && typeof stat.mean === "number" && Number.isFinite(stat.mean) && typeof stat.std === "number" && Number.isFinite(stat.std) && stat.std >= 0
       && Number.isSafeInteger(stat.n) && Number(stat.n) > 0)))

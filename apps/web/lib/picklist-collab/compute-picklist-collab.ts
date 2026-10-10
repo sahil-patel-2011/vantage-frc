@@ -34,7 +34,8 @@ import { canManageScouting } from "@vantage/scouting/permissions";
 import { hubHref } from "../nav/hubs";
 import { scoutEventLabel } from "../scouting/scouting-related";
 import { loadTeamProfiles } from "../scouting/team-profiles";
-import { formMetricRows, mergeFormMetrics } from "./form-metrics";
+import { formMetricAnalysis, mergeFormMetrics, type FormMetricDefinitions, type FormMetricSamples, type ScoutPayloadRow } from "./form-metrics";
+import { observableMatchSql } from "../scouting/scouted-counts";
 import { classifyEpaRole, fieldEpaBenchmarks, sortEntriesForDisplay, summarizePicklistCollab } from ".";
 import type {
   PicklistCollabEntry,
@@ -79,6 +80,9 @@ export type PicklistCollabView =
        * live as sliders move, the way Lovat's dynamic pick list does.
        */
       eventTeams?: TeamMetricRow[];
+      formMetricSamples?: FormMetricSamples;
+      formMetricDefinitions?: FormMetricDefinitions;
+      incompatibleFormMetrics?: string[];
       computedAt: string;
       canManage?: boolean;
       currentUserId?: string;
@@ -377,22 +381,24 @@ export async function computePicklistCollabView(
     ),
   );
   // Every number the team's own form collects becomes a slider too.
-  const eventTeams = mergeFormMetrics(
-    scoutedRows,
-    await withSavepoint(
+  const formAnalysis = await withSavepoint(
       client,
       async () => {
-        const entries = await client.query<{ teamKey: string; payload: Record<string, unknown> }>(
-          `SELECT team_key AS "teamKey", payload
-             FROM match_scout_entries
-            WHERE org_id = $1::uuid AND event_key = $2::text`,
+        const entries = await client.query<ScoutPayloadRow>(
+          `SELECT e.team_key AS "teamKey", e.match_key AS "matchKey", e.payload, e.confidence, s.schema->'fields' AS fields
+             FROM match_scout_entries e
+             JOIN matches_ref m ON m.match_key=e.match_key
+             JOIN scout_schemas s ON s.id=e.schema_id AND s.org_id=e.org_id
+            WHERE e.org_id = $1::uuid AND e.event_key = $2::text
+              AND e.confidence <> 'low' AND ${observableMatchSql("m")}
+            ORDER BY e.updated_at DESC, e.id`,
           [org.orgId, snapshot.list.eventKey],
         );
-        return formMetricRows(entries.rows);
+        return formMetricAnalysis(entries.rows.filter(entry => Array.isArray(entry.fields)));
       },
-      [] as TeamMetricRow[],
-    ),
+      { rows: [] as TeamMetricRow[], samples: {} as FormMetricSamples, definitions: {} as FormMetricDefinitions, incompatibleKeys: [] as string[] },
   );
+  const eventTeams = mergeFormMetrics(scoutedRows, formAnalysis.rows);
 
   return {
     status: "live",
@@ -405,6 +411,9 @@ export async function computePicklistCollabView(
     fieldStats: fieldStatsFromRows(eventTeams),
     // The field averages count us; the list we pick from does not (we ranked ourselves first).
     eventTeams: eventTeams.filter((row) => row.teamKey !== (org.teamNumber ? `frc${org.teamNumber}` : null)),
+    formMetricSamples: formAnalysis.samples,
+    formMetricDefinitions: formAnalysis.definitions,
+    incompatibleFormMetrics: formAnalysis.incompatibleKeys,
     computedAt: new Date().toISOString(),
     canManage,
     currentUserId: input.userId,

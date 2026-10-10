@@ -17,6 +17,8 @@ describe("discussion acknowledgement", () => {
     expect(isCollabView({ ...after, entries: [{ ...entry, votes: [null] }] })).toBe(false);
     expect(isCollabView({ ...after, fieldStats: { autoPoints: { mean: 10, std: -1, n: 2 } } })).toBe(false);
     expect(isCollabView({ ...after, eventTeams: [{ teamKey: "frc6925", values: null }] })).toBe(false);
+    expect(isCollabView({ ...after, formMetricSamples: { frc6925: { "form:cycles": -1 } } })).toBe(false);
+    expect(isCollabView({ ...after, formMetricDefinitions: { "form:cycles": null } })).toBe(false);
     expect(isCollabView({ status: "setup_required", orgId: "org", message: "Choose a list", steps: [null] })).toBe(false);
   });
   it("requires the signed-in member's exact vote, not somebody else's", () => {

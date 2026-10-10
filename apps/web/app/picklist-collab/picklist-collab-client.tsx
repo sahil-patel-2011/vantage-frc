@@ -386,9 +386,12 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
           <SummaryStatus key={view.activeList?.id} view={view} busy={busy} mutate={mutate} error={error} />
           <details className="picklist-comparison">
             <summary>Compare event metrics<span>Adjust weights and find teams to discuss</span></summary>
+            <p className="app-muted">Form averages use normal/high-confidence observations of matches that could have been watched. Multiple scouts on one robot-match count once; missing answers stay missing.</p>
+            {view.incompatibleFormMetrics?.length ? <p className="picklist-feedback" role="status">Excluded questions with different types or units across saved forms: {view.incompatibleFormMetrics.join(", ")}. Review their original reports before comparing them.</p> : null}
           <PicklistWeightSliders
             weights={fieldWeights.weights}
             fieldStats={view.fieldStats ?? {}}
+            formDefinitions={view.formMetricDefinitions}
             onWeight={fieldWeights.setWeight}
             onReset={fieldWeights.reset}
           />
@@ -396,6 +399,8 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
             eventTeams={view.eventTeams ?? []}
             weights={fieldWeights.weights}
             fieldStats={view.fieldStats ?? {}}
+            formSamples={view.formMetricSamples}
+            formDefinitions={view.formMetricDefinitions}
             onList={new Set(view.entries.map((entry) => entry.teamNumber))}
             busy={busy}
             onAdd={(teamNumber) => mutate({ action: "add-entry", teamNumber, tier: "unranked" })}

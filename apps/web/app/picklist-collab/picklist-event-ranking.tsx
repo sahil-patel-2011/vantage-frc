@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 import {
   picklistMetricLabel,
+  isFormMetricId,
   rankByWeightedZScores,
   type FieldStats,
   type MetricWeight,
   type TeamMetricRow,
 } from "@vantage/prediction-strategy";
 import { Button, Panel } from "../../components/ui";
+import type { FormMetricDefinitions, FormMetricSamples } from "../../lib/picklist-collab/form-metrics";
 
 const SHOWN = 12;
 
@@ -27,6 +29,8 @@ export function PicklistEventRanking({
   eventTeams,
   weights,
   fieldStats,
+  formSamples,
+  formDefinitions,
   onList,
   busy,
   onAdd,
@@ -35,6 +39,8 @@ export function PicklistEventRanking({
   eventTeams: TeamMetricRow[];
   weights: MetricWeight[];
   fieldStats: FieldStats;
+  formSamples?: FormMetricSamples;
+  formDefinitions?: FormMetricDefinitions;
   onList: Set<number>;
   busy: boolean;
   onAdd: (teamNumber: number) => void;
@@ -68,7 +74,15 @@ export function PicklistEventRanking({
             .filter((term) => term.term > 0)
             .sort((a, b) => b.term - a.term)
             .slice(0, 2)
-            .map((term) => picklistMetricLabel(term.id).toLowerCase());
+            .map((term) => (isFormMetricId(term.id) ? formDefinitions?.[term.id]?.label ?? picklistMetricLabel(term.id) : picklistMetricLabel(term.id)).toLowerCase());
+          const samples = row.breakdown.flatMap(term => {
+            if (!isFormMetricId(term.id)) return [];
+            const count = formSamples?.[row.teamKey]?.[term.id];
+            return typeof count === "number" && Number.isSafeInteger(count) && count > 0 ? [count] : [];
+          });
+          const smallest = samples.length ? Math.min(...samples) : null;
+          const largest = samples.length ? Math.max(...samples) : null;
+          const sampleCopy = smallest === null ? "" : ` · form samples: ${smallest === largest ? smallest : `${smallest}–${largest}`} observed match${largest === 1 ? "" : "es"} each`;
           const width = `${Math.max(4, (((row.score ?? bottom) - bottom) / span) * 100)}%`;
           const listed = onList.has(teamNumber);
           return (
@@ -78,7 +92,7 @@ export function PicklistEventRanking({
               <span className="picklist-event-bar" aria-hidden="true">
                 <i style={{ width }} />
               </span>
-              <small className="app-muted picklist-event-why" title={`${row.breakdown.length} of ${activeMetrics} weighted metrics observed${why.length ? ` · strong: ${why.join(", ")}` : ""}`}>{row.breakdown.length}/{activeMetrics} metrics{why.length ? ` · strong: ${why.join(", ")}` : ""}</small>
+              <small className="app-muted picklist-event-why" title={`${row.breakdown.length} of ${activeMetrics} weighted metrics observed${sampleCopy}${why.length ? ` · strong: ${why.join(", ")}` : ""}`}>{row.breakdown.length}/{activeMetrics} metrics{sampleCopy}{why.length ? ` · strong: ${why.join(", ")}` : ""}</small>
               {listed ? (
                 <span className="app-badge">On list</span>
               ) : canAdd ? (
