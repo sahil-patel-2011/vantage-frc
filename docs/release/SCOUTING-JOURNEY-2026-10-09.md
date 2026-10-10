@@ -94,7 +94,7 @@ Alliance review now returns the whole played qualification event, with progressi
 
 Unrun regression source covers legacy-query preservation, alias search/access, stale rule baselines, cross-site/permission denial, exact save acknowledgements, invalid dates/counts, repeat-seat notifications, evaluator distinctions and marker handling, legacy verdict rejection, reconciliation scope/malformed responses and events over forty matches. Existing calibration contracts now require current evidence and disabled-rule exclusion. No test runner, build, typecheck, database, workflow, migration or deployment was executed. `git diff --check` is the only mechanical check performed for this batch.
 
-Further source work remains: report-level quality drill-down and original-schema labels; a safe historical recheck flow; remaining legacy quality actions/APIs and preserved rotation history; broader specialist-tool recovery, permissions and UI review. Production acceptance below remains mandatory.
+Further source work remains: report-level quality drill-down; a safe historical recheck flow; remaining legacy quality actions/APIs and preserved rotation history; broader specialist-tool recovery, permissions and UI review. Production acceptance below remains mandatory.
 
 ### Original-question official comparison
 
@@ -107,6 +107,14 @@ The report evaluator receives the saved original question definitions, uses the 
 The evaluator marker advances to v3 because v2 did not enforce original question types, meanings and visibility. Earlier hard checks remain stored but do not count toward quality, meeting seats, calibration, contradiction stripping or AI evidence. Changed corrections and new reports produce current evidence; unchanged replays still require the pending deliberate historical recheck flow. No production data has been rewritten.
 
 Additional **unexecuted** regression sources cover custom keys/roles, explicit opt-out, unsupported types/modes, renamed and retyped questions, private draft recovery, publication validation, exact original-form rule authorization, indexed robot versus alliance values, hidden/phase-gated answers, arbitrary outcome labels and obsolete evidence exclusion. Source review included React prop/state/accessibility and package entry-point inspection; the new browser-facing resolver imports a pure reference subpath. No test runner, typecheck, build, database, workflow or deployment ran. Mechanical verification is limited to `git diff --check`.
+
+### Quality summaries by original form
+
+The quality response now adds version-scoped question summaries while preserving the existing aggregate fields. It carries the original schema ID from each report and resolves labels, form title, year and version only from that team's original saved definition. Identical keys in different versions no longer share one visible question score or borrow the newest label. Missing/unsupported/pit questions cannot create original-form evidence. The existing tenant/event filters, evidence version and disabled-rule checks stay in place; no extra query, poll or database schema is added.
+
+Collection confidence hints now require the exact active schema ID, including recovered corrections. Aggregate-only legacy responses produce no optional hint rather than guessing across form versions. Quality's legacy display uses the stable key with an explicit unavailable-original-form explanation. Current question rows show sample counts and the original form/version; stacked metadata, a narrow-screen layout and progressive twenty-row expansion keep long event histories readable. There is no new primary action or duplicate destination. This is source-level UI review, not hosted visual proof.
+
+Additional **unrun** regression sources cover two forms reusing a key for different meanings, original labels, unavailable/noncomparable denominators, missing/unsupported/pit forms, active-schema hint isolation, legacy contract compatibility and private API responses. React hooks, scope remounts, labels, button targets and derived state were inspected. Mechanical checks are limited to `git diff --check`; no local or remote runtime verification ran. Report-level evidence drill-down and historical rechecking remain unfinished.
 
 ## Still required before production acceptance
 

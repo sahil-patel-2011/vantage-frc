@@ -9,6 +9,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import ScoutingReconciliationPanel from "./scouting-reconciliation-panel";
 import { qualityEvidenceSchema } from "../../lib/scouting/quality-evidence";
+import { QualityQuestionChecks } from "./quality-question-checks";
 
 const count = z.number().int().nonnegative();
 const trustView = qualityEvidenceSchema.extend({
@@ -127,6 +128,8 @@ export default function ScoutingTrustPanel({ orgId, eventKey, initialSection = "
   const degraded = view.sourceHealth.filter(source => source.status !== "healthy");
   const checks = view.fieldTrust.reduce((sum, row) => sum + row.checks, 0);
   const conflicts = view.fieldTrust.reduce((sum, row) => sum + row.conflicts, 0);
+  const questionChecks = view.fieldTrustBySchema ?? view.fieldTrust.map(row => ({ ...row, schemaId: null,
+    label: row.fieldKey, formTitle: null, year: null, version: null }));
   return <div className="scout-trust">
     <div className="scout-quality-toolbar"><div><strong>{scoutEventLabel({ eventKey: view.eventKey }) ?? "Selected event"}</strong><p className="app-muted">Robot-level official checks; alliance point totals do not grade an individual scout.</p></div>{active !== "alliance" ? <Button type="button" variant="secondary" disabled={busy || refreshing} onClick={() => void load()}>{refreshing ? "Refreshing…" : "Refresh"}</Button> : null}</div>
     {message ? <p className="form-message" role="status">{message}</p> : null}
@@ -140,7 +143,7 @@ export default function ScoutingTrustPanel({ orgId, eventKey, initialSection = "
     <div id="scout-quality-content" role="tabpanel" aria-labelledby={`scout-quality-content-tab-${active}`} tabIndex={0}>
     {active === "checks" ? <>
       <section className="scout-trust-kpis"><article><span>Official field checks</span><strong>{checks}</strong><small>Observed, comparable fields only</small></article><article><span>Checks needing review</span><strong>{conflicts}</strong><small>{checks ? `${percent(conflicts / checks)} of checks` : "No checks yet"}</small></article><article><span>Scouts with checks</span><strong>{view.leaderboard.filter(row => row.checks > 0).length}</strong><small>of {view.leaderboard.length} scouts with reports</small></article></section>
-      <Panel><h2>Checks by question</h2><p className="app-muted">Only checks from the current evaluator count. Earlier checks, missing official values and unsupported comparisons are excluded. A correction that changes an older report checks it again. A conflict calls for reviewing the observation.</p><div className="field-trust-list">{view.fieldTrust.map(field => <article key={field.fieldKey}><div><strong>{view.schemaBudgets.flatMap(schema => schema.fields).find(item => item.key === field.fieldKey)?.label ?? field.fieldKey}</strong><span>{field.matches} agree · {field.conflicts} conflict · {field.checks} checks</span></div><b>{percent(field.confidenceScore)}<small>agreement</small></b></article>)}</div>{!view.fieldTrust.length ? <p className="app-muted">No robot-level official checks are available yet. Missing values remain unknown.</p> : null}</Panel>
+      <Panel><h2>Checks by question</h2><p className="app-muted">Only checks from the current evaluator count. Earlier checks, missing official values and unsupported comparisons are excluded. A correction that changes an older report checks it again. Each question keeps its original form and version. A conflict calls for reviewing the observation.</p><QualityQuestionChecks key={`${orgId}:${view.eventKey}`} questions={questionChecks} /></Panel>
     </> : null}
     {active === "scouts" ? <>
       <Panel><h2>Scout consistency</h2><p className="app-muted">Agreement among comparable official fields, with sample sizes beside each scout. Unchecked reports do not lower agreement.</p><ol className="accuracy-list">{view.leaderboard.map(scout => <li key={scout.userId}><b>{scout.name}</b><span>{scout.entries} reports · {scout.checks} field checks · {scout.conflicts} conflicts</span><strong>{percent(scout.accuracy)}</strong></li>)}</ol>{!view.leaderboard.length ? <p className="app-muted">No reports for this event yet.</p> : null}</Panel>

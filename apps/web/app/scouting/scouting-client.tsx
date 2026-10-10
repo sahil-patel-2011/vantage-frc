@@ -3,7 +3,7 @@
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { scoutingQualityHref, type QualityQuery } from "../../lib/scouting/quality-navigation";
-import { qualityEvidenceSchema } from "../../lib/scouting/quality-evidence";
+import { qualityEvidenceSchema, qualityFieldsForSchema } from "../../lib/scouting/quality-evidence";
 import type { ScoutSchema, SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior, recordScoutAction, undoScoutAction, validatePayload } from "@vantage/scouting";
 import { answersToSave } from "../../lib/scouting/entry-answers";
@@ -203,7 +203,7 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
       if (!response.ok) return;
       const body = qualityEvidenceSchema.safeParse(raw);
       if (!body.success || body.data.orgId !== orgId || body.data.eventKey !== eventKey) return;
-      setTrust({ orgId, eventKey, snapshot: { fieldTrust: body.data.fieldTrust, leaderboard: body.data.leaderboard } });
+      setTrust({ orgId, eventKey, snapshot: { fieldTrust: body.data.fieldTrust, fieldTrustBySchema: body.data.fieldTrustBySchema, leaderboard: body.data.leaderboard } });
     } catch {
       /* Optional hints stay absent when their current scope cannot be confirmed. */
     }
@@ -486,9 +486,9 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
 
   const trustByField = useMemo(() => {
     const map = new Map<string, FieldTrustSummary>();
-    for (const row of trust?.fieldTrust ?? []) map.set(row.fieldKey, row);
+    for (const row of qualityFieldsForSchema(trust ?? {}, schema?.id ?? null)) map.set(row.fieldKey, row);
     return map;
-  }, [trust]);
+  }, [trust, schema?.id]);
 
   // A new robot: its draft if there is one, a report asked for by "Fix it" or Edit, or a fresh
   // form with the answers the form keeps from the last robot (formResetBehavior). Those used to

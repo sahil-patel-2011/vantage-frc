@@ -12,6 +12,7 @@ import {
 } from "@vantage/scouting/trust";
 import { headers } from "next/headers";
 import { officialComparisonForField } from "@vantage/scouting/official-fields";
+import { summarizeOriginalQuestionTrust } from "../../../../lib/scouting/quality-question-summary";
 import { z } from "zod";
 import { classifyDbError } from "../../../../lib/db-error";
 import { parseSecureJson, RequestSecurityError } from "../../../../lib/security/request";
@@ -60,8 +61,8 @@ async function load(orgId: string, userId: string, eventKeyOverride?: string | n
       client.query<{ id: string; year: number; type: "match" | "pit"; version: number; definition: SchemaDefinition; clonedFrom: string | null }>(
         `SELECT id,year,type,version,schema AS definition,cloned_from_schema_id AS "clonedFrom"
          FROM scout_schemas WHERE org_id=$1 ORDER BY year DESC,type,version DESC`, [orgId]),
-      eventKey ? client.query<{ fieldKey: string; status: "match" | "conflict" | "unavailable" | "not_comparable" }>(
-        `SELECT v.field_key AS "fieldKey",v.status
+      eventKey ? client.query<{ schemaId: string; fieldKey: string; status: "match" | "conflict" | "unavailable" | "not_comparable" }>(
+        `SELECT e.schema_id AS "schemaId",v.field_key AS "fieldKey",v.status
          FROM scout_entry_validations v JOIN match_scout_entries e ON e.id=v.entry_id
          WHERE v.org_id=$1 AND e.org_id=v.org_id AND e.event_key=$2 AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v3] %' OR v.detail LIKE 'Video re-scout: [robot-check-v3] %')
            AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)`, [orgId, eventKey]) : Promise.resolve({ rows: [] }),
@@ -145,6 +146,7 @@ async function load(orgId: string, userId: string, eventKeyOverride?: string | n
           comparisonMessage: schema.type === "match" ? comparison.message : "Pit answers are scout observations, not official match checks." };
       }), ...lintSchemaBudget(schema.definition) })),
       fieldTrust: summarizeFieldTrust(validations.rows),
+      fieldTrustBySchema: summarizeOriginalQuestionTrust(validations.rows, schemas.rows),
       policies: policies.rows,
       sourceHealth: health.rows,
       coverage,

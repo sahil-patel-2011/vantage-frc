@@ -1,6 +1,7 @@
 import type { ScoutSchema, ScoutIdentity } from "@vantage/scouting";
 import { ACTION_HISTORY_KEY } from "@vantage/scouting";
 import type { FieldTrustSummary } from "@vantage/scouting/trust";
+import type { QualityQuestionEvidence } from "../../lib/scouting/quality-evidence";
 import type { CsvColumn } from "../../lib/export/to-csv";
 import { matchOpenForScouting, type ScheduleMatch } from "../../lib/scouting/next-match";
 
@@ -205,6 +206,7 @@ export type ConflictCandidate = {
 
 export type TrustSnapshot = {
   fieldTrust: FieldTrustSummary[];
+  fieldTrustBySchema?: QualityQuestionEvidence[];
   leaderboard: Array<{
     userId: string;
     name: string;

@@ -33,6 +33,22 @@ beforeEach(() => {
   });
 });
 describe("scouting quality permissions and confirmed rule writes", () => {
+  it("returns evidence labelled by its original form while keeping aggregate API fields", async () => {
+    fake.query.mockImplementation(async (sql: string) => {
+      if (sql.includes("FROM memberships")) return { rows: [{ eventKey, role: "admin" }], rowCount: 1 };
+      if (sql.includes("FROM scout_schemas WHERE")) return { rows: [
+        { id: userId, year: 2026, type: "match", version: 2, definition: { title: "Match", fields: [{ key: "q_saved", label: "New mobility", type: "boolean", config: { officialComparison: "mobility" } }] } },
+        { id: schemaId, year: 2026, type: "match", version: 1, definition: { title: "Original match", fields: [{ key: "q_saved", label: "Original climb", type: "select", config: { officialComparison: "climb" } }] } },
+      ], rowCount: 2 };
+      if (sql.includes('SELECT e.schema_id AS "schemaId",v.field_key')) return { rows: [{ schemaId, fieldKey: "q_saved", status: "match" }], rowCount: 1 };
+      return { rows: [], rowCount: 0 };
+    });
+    const response = await GET(new Request(`https://vantage.example/api/scouting/trust?orgId=${orgId}&eventKey=${eventKey}`));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ fieldTrust: [{ fieldKey: "q_saved", checks: 1 }],
+      fieldTrustBySchema: [{ schemaId, label: "Original climb", formTitle: "Original match", version: 1, checks: 1 }] });
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
   it("enables custom original-schema outcomes and refuses incompatible or opted-out questions", async () => {
     fake.fields = [{ key: "q_custom", label: "Finish", type: "select", config: { officialComparison: "climb" } }];
     expect((await POST(post({ ...payload, fieldKey: "q_custom", enabled: true }))).status).toBe(200);
