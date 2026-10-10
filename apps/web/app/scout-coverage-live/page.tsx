@@ -9,7 +9,7 @@ export default async function ScoutCoverageLivePage({ searchParams }: {
 }) {
   const params = await searchParams;
   if (params.view === "review" && params.orgId) {
-    return <ScoutCoverageLiveClient key={`${params.orgId}:${params.eventKey ?? "active"}`} orgId={params.orgId}
+    return <ScoutCoverageLiveClient key={`${params.orgId}:${params.eventKey ?? "active"}`} orgId={params.orgId} eventKey={params.eventKey}
       assignmentHref={assignmentWorkspaceHref({ orgId: params.orgId, eventKey: params.eventKey, matchKey: params.matchKey, qualsOnly: params.qualsOnly !== "0" && params.qualsOnly !== "false" })} />;
   }
   return <AssignmentPage searchParams={Promise.resolve(params)} />;

@@ -1,6 +1,7 @@
 export * from "./types";
 
 import type { Alliance, CoverageCell, CoverageStatus, CoverageSummary } from "./types";
+import { compareParsedMatches, parseMatchKey } from "../scouting/assignment-range";
 
 /**
  * One entry per robot per match counts as covered: at 2 the board read "0% covered" while every
@@ -118,20 +119,25 @@ export function summarizeCoverage(cells: CoverageCell[]): CoverageSummary {
  */
 export function rankCoverageGaps(cells: CoverageCell[], limit = 15): CoverageCell[] {
   const severity: Record<CoverageStatus, number> = { zero: 0, thin: 1, covered: 2 };
+  const chronological = (a: CoverageCell, b: CoverageCell) => {
+    const left = parseMatchKey(a.matchKey);
+    const right = parseMatchKey(b.matchKey);
+    return left && right ? compareParsedMatches(left, right) : a.matchNumber - b.matchNumber;
+  };
   const knowsTime = cells.some((cell) => cell.played != null);
   if (!knowsTime) {
     return cells
       .filter((c) => c.status !== "covered")
       .slice()
-      .sort((a, b) => severity[a.status] - severity[b.status] || a.matchNumber - b.matchNumber)
+      .sort((a, b) => severity[a.status] - severity[b.status] || chronological(a, b))
       .slice(0, limit);
   }
   const upcoming = cells
-    .filter((c) => !c.played && c.entryCount === 0 && (c.assignmentCount ?? 0) === 0)
-    .sort((a, b) => a.matchNumber - b.matchNumber);
+    .filter((c) => c.played === false && c.entryCount === 0 && (c.assignmentCount ?? 0) === 0)
+    .sort(chronological);
   const played = cells
     .filter((c) => c.played && c.status !== "covered")
-    .sort((a, b) => severity[a.status] - severity[b.status] || b.matchNumber - a.matchNumber);
+    .sort((a, b) => severity[a.status] - severity[b.status] || chronological(b, a));
   return [...upcoming, ...played].slice(0, limit);
 }
 

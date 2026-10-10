@@ -1,8 +1,7 @@
 import { canManageScouting } from "@vantage/scouting/permissions";
-import { assertOrgAuthentication, auth } from "@vantage/core";
+import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import type { PoolClient } from "@neondatabase/serverless";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { applyAutoAssignments, assignCoverageSlot, computeScoutingCoverageView, planAutoAssignments, swapCoverageSlot } from "../../../../lib/scouting/coverage";
 import { expandAssignmentRange, parseMatchKey } from "../../../../lib/scouting/assignment-range";
@@ -14,6 +13,7 @@ import { assignmentConflict, describeAssignmentConflict, withAssignment } from "
 import { loadAssignmentConflictContext } from "../../../../lib/scouting/assignment-conflicts-load";
 import { parseSecureJson, RequestSecurityError } from "../../../../lib/security/request";
 import { classifyDbError } from "../../../../lib/db-error";
+import { assertCoverageSession as sessionPolicy } from "../../../../lib/scouting/coverage-access";
 
 function noStore(body: unknown, status = 200) {
   return Response.json(body, { status, headers: { "cache-control": "private, no-store" } });
@@ -24,15 +24,6 @@ function failure(error: unknown) {
   const friendly = classifyDbError(error);
   if (friendly) return noStore({ error: friendly.message }, friendly.status);
   return noStore({ error: "Assignments are temporarily unavailable. Refresh to check the saved result before retrying." }, 503);
-}
-async function sessionPolicy(client: PoolClient, session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>, orgId: string) {
-  const member = await client.query("SELECT 1 FROM memberships WHERE org_id=$1::uuid AND user_id=$2::uuid", [orgId, session.user.id]);
-  if (!member.rowCount) throw new RequestSecurityError(403, "Team access changed. Choose a team you belong to.");
-  try {
-    await assertOrgAuthentication(client, { userId: session.user.id, orgId, sessionId: session.session.id,
-      authMethod: String((session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown"),
-      rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value });
-  } catch { throw new RequestSecurityError(403, "Re-authenticate to meet your team's current sign-in requirements."); }
 }
 
 export async function GET(request: Request) {

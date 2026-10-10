@@ -1,11 +1,14 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { DEFAULT_THIN_THRESHOLD, matchLabel, rankCoverageGaps, summarizePlayedCoverage } from ".";
 import type { CoverageCell, CoverageNudge, CoverageSummary } from "./types";
+import { REVIEWED_FLAG_HISTORY_LIMIT } from "./types";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { computeScoutingCoverageView, type CoverageScopeSummary } from "../scouting/coverage";
 import { loadMissedAssignments, type MissedAssignmentRow } from "../scouting/assignment-accountability-load";
 import { scoutEventLabel } from "../scouting/scouting-related";
+import { assertScoutingLead } from "@vantage/scouting/permissions";
+import { RequestSecurityError } from "../security/request";
 
 export type ScoutCoverageLiveSetupStep = {
   id: string;
@@ -29,6 +32,7 @@ export type ScoutCoverageLiveView =
       eventKey: string;
       eventName: string | null;
       thinThreshold: number;
+      canManage: boolean;
       cells: CoverageCell[];
       /** Played matches only: robots scouted vs robots that played. */
       summary: CoverageSummary;
@@ -136,11 +140,14 @@ export async function computeScoutCoverageLiveView(
               n.message, n.sent_by AS "sentBy", n.sent_at::text AS "sentAt",
               n.acknowledged_at::text AS "acknowledgedAt"
        FROM scout_coverage_live_nudges n
-       JOIN matches_ref m ON m.match_key = n.match_key
+       JOIN matches_ref m ON m.match_key = n.match_key AND m.event_key = n.event_key
        LEFT JOIN teams_ref t ON t.team_key = n.team_key
        WHERE n.org_id = $1 AND n.event_key = $2
-       ORDER BY n.sent_at DESC
-       LIMIT 50`,
+         AND (n.acknowledged_at IS NULL OR n.id IN (
+           SELECT id FROM scout_coverage_live_nudges WHERE org_id=$1 AND event_key=$2 AND acknowledged_at IS NOT NULL
+           ORDER BY sent_at DESC,id DESC LIMIT ${REVIEWED_FLAG_HISTORY_LIMIT}
+         ))
+       ORDER BY (n.acknowledged_at IS NOT NULL),n.sent_at DESC,n.id DESC`,
       [coverage.orgId, coverage.eventKey],
     ),
     loadMissedAssignments(client, { orgId: coverage.orgId, eventKey: coverage.eventKey }),
@@ -171,7 +178,7 @@ export async function computeScoutCoverageLiveView(
           : "covered",
   }));
   const summary = summarizePlayedCoverage(cells);
-  const gaps = rankCoverageGaps(cells, 15);
+  const gaps = rankCoverageGaps(cells, cells.length);
   const nudges = nudgesResult.rows.map(mapNudge);
 
   return {
@@ -181,6 +188,7 @@ export async function computeScoutCoverageLiveView(
     eventKey: coverage.eventKey,
     eventName: coverage.eventName,
     thinThreshold,
+    canManage: coverage.canAssign,
     cells,
     summary,
     scope: coverage.scope,
@@ -195,8 +203,12 @@ export async function computeScoutCoverageLiveView(
 
 export async function setThinThreshold(
   client: PoolClient,
-  input: { orgId: string; userId: string; thinThreshold: number },
+  input: { orgId: string; userId: string; thinThreshold: number; expectedThreshold: number },
 ): Promise<void> {
+  await assertScoutingLead(client, input.orgId);
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`coverage-settings:${input.orgId.toLowerCase()}`]);
+  const current = await client.query<{ thinThreshold: number }>('SELECT thin_threshold AS "thinThreshold" FROM scout_coverage_live_settings WHERE org_id=$1::uuid', [input.orgId]);
+  if ((current.rows[0]?.thinThreshold ?? DEFAULT_THIN_THRESHOLD) !== input.expectedThreshold) throw new RequestSecurityError(409, "Another lead changed the report target. Your input is retained. Refresh before saving it again.");
   await client.query(
     `INSERT INTO scout_coverage_live_settings (org_id, thin_threshold, updated_by)
      VALUES ($1, $2, $3)
@@ -211,22 +223,35 @@ export async function setThinThreshold(
 export async function sendCoverageNudge(
   client: PoolClient,
   input: { orgId: string; userId: string; eventKey: string; matchKey: string; teamKey: string; message: string },
-): Promise<void> {
-  await client.query(
+): Promise<{ id: string; created: boolean }> {
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`coverage-flags:${input.orgId.toLowerCase()}:${input.eventKey}`]);
+  const pending = await client.query<{ id: string }>(
+    `SELECT id FROM scout_coverage_live_nudges WHERE org_id=$1::uuid AND event_key=$2 AND match_key=$3 AND team_key=$4 AND acknowledged_at IS NULL ORDER BY sent_at DESC LIMIT 1`,
+    [input.orgId, input.eventKey, input.matchKey, input.teamKey],
+  );
+  if (pending.rows[0]) return { id: pending.rows[0].id, created: false };
+  const saved = await client.query<{ id: string }>(
     `INSERT INTO scout_coverage_live_nudges (org_id, event_key, match_key, team_key, message, sent_by)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
     [input.orgId, input.eventKey, input.matchKey, input.teamKey, input.message, input.userId],
   );
+  if (!saved.rows[0]) throw new Error("Coverage flag could not be confirmed");
+  return { id: saved.rows[0].id, created: true };
 }
 
 export async function acknowledgeCoverageNudge(
   client: PoolClient,
-  input: { orgId: string; userId: string; nudgeId: string },
-): Promise<void> {
-  await client.query(
+  input: { orgId: string; userId: string; eventKey: string; nudgeId: string },
+): Promise<{ acknowledgedAt: string }> {
+  await assertScoutingLead(client, input.orgId);
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`coverage-flags:${input.orgId.toLowerCase()}:${input.eventKey}`]);
+  const saved = await client.query<{ acknowledgedAt: string }>(
     `UPDATE scout_coverage_live_nudges
-     SET acknowledged_by = $1, acknowledged_at = now()
-     WHERE id = $2 AND org_id = $3`,
-    [input.userId, input.nudgeId, input.orgId],
+     SET acknowledged_by = COALESCE(acknowledged_by,$1::uuid), acknowledged_at = COALESCE(acknowledged_at,now())
+     WHERE id = $2::uuid AND org_id = $3::uuid AND event_key=$4
+     RETURNING acknowledged_at::text AS "acknowledgedAt"`,
+    [input.userId, input.nudgeId, input.orgId, input.eventKey],
   );
+  if (!saved.rows[0]) throw new RequestSecurityError(404, "This flag is no longer available in the selected event.");
+  return saved.rows[0];
 }

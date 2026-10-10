@@ -3,6 +3,8 @@
 // and the nudges sent to the scout coordinator to close those gaps mid-event.
 
 export type CoverageStatus = "zero" | "thin" | "covered";
+export const REVIEWED_FLAG_HISTORY_LIMIT = 50;
+export const MAX_REPORT_TARGET = 20;
 
 export type Alliance = "red" | "blue";
 

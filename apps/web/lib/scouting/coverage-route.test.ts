@@ -224,7 +224,7 @@ describe("POST /api/scouting/coverage", () => {
   });
 
   it("applies team authentication before assignment reads and writes", async () => {
-    state.policy.mockRejectedValue(new Error("Second factor required"));
+    state.policy.mockRejectedValue(Object.assign(new Error("Authenticator verification is required to enter this organization."), { code: "mfa_step_up_required" }));
     const denied = await GET(getRequest());
     expect(denied.status).toBe(403);
     expect(classifyLoadFailure({ status: denied.status, message: (await denied.json()).error })).toBe("reauth");

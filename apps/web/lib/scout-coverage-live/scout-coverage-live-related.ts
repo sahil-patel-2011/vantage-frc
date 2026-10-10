@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Scout Coverage Live (never DEMO coverage %). */
 export const SCOUT_COVERAGE_LIVE_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
-  { id: "lineup", label: "Lineup", kind: "path" as const, path: "/scouting/lineup" },
+  { id: "lineup", label: "Assignments", kind: "path" as const, path: "/scout-coverage-live" },
   { id: "crossval", label: "Cross-Validation", kind: "path" as const, path: "/scout-crossval" },
   { id: "accuracy", label: "Accuracy", kind: "path" as const, path: "/scout-accuracy" },
   { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
@@ -18,10 +18,9 @@ export type ScoutCoverageLiveRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Scouting · Lineup · Cross-Validation. */
+/** Assignments already has its own workspace tab; avoid a second identical link. */
 export const SCOUT_COVERAGE_LIVE_RELATED_INCLUDE: ScoutCoverageLiveRelatedId[] = [
   "scouting",
-  "lineup",
   "crossval",
 ];
 
@@ -88,9 +87,9 @@ export function scoutCoverageLiveSetupSteps(orgId?: string | null): ScoutCoverag
     },
     {
       id: "lineup",
-      label: "Open Lineup",
+      label: "Open Assignments",
       detail: "Balance scout assignments so zero/thin cells can clear mid-event.",
-      href: withOrgHref("/scouting/lineup", orgId),
+      href: withOrgHref("/scout-coverage-live", orgId),
     },
     {
       id: "crossval",
@@ -169,7 +168,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         badge: "Unavailable",
         title: "Could not load scout coverage",
         description:
-          "A network or server issue blocked the live grid. Retry, or open Scouting / Lineup / Cross-Validation while it reloads.",
+          "A network or server issue blocked the live grid. Retry, or open Scouting / Assignments / Cross-Validation while it reloads.",
       };
     case "setup":
       return {
@@ -185,7 +184,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
         badge: "No schedule yet",
         title: "Waiting on a real match schedule",
         description:
-          "The grid stays blank until the active event has synced alliances. Cross-check Event Day, Scouting, and Lineup.",
+          "The grid stays blank until the active event has synced alliances. Cross-check Event Day, Scouting, and Assignments.",
       };
     default:
       return {
@@ -199,7 +198,7 @@ export function scoutCoverageLiveShellCopy(kind: ScoutCoverageLiveShellKind): Sc
 
 /**
  * Soft-UI next actions for Scout Coverage Live empty/setup shells.
- * Points at Scouting / Lineup / Cross-Validation — never invents DEMO gaps.
+ * Points at Scouting / Assignments / Cross-Validation — never invents DEMO gaps.
  */
 export function scoutCoverageLiveNextActions(input: {
   orgId?: string | null;
@@ -229,9 +228,9 @@ export function scoutCoverageLiveNextActions(input: {
         },
         {
           id: "lineup",
-          label: "Open Lineup",
+          label: "Open Assignments",
           detail: "Assignments stay honest until real scouts are seated.",
-          href: withOrgHref("/scouting/lineup", null),
+          href: withOrgHref("/scout-coverage-live", null),
         },
         {
           id: "crossval",
@@ -257,9 +256,9 @@ export function scoutCoverageLiveNextActions(input: {
       },
       {
         id: "lineup",
-        label: "Open Lineup",
+        label: "Open Assignments",
         detail: "Balance shifts so every robot has a real scout assignment.",
-        href: withOrgHref("/scouting/lineup", orgId),
+        href: withOrgHref("/scout-coverage-live", orgId),
       },
       {
         id: "crossval",
@@ -287,9 +286,9 @@ export function scoutCoverageLiveNextActions(input: {
       },
       {
         id: "lineup",
-        label: "Open Lineup",
-        detail: "Lineup coverage stays available while the grid reloads.",
-        href: withOrgHref("/scouting/lineup", orgId),
+        label: "Open Assignments",
+        detail: "Assignment coverage stays available while the grid reloads.",
+        href: withOrgHref("/scout-coverage-live", orgId),
       },
       {
         id: "crossval",
@@ -317,9 +316,9 @@ export function scoutCoverageLiveNextActions(input: {
       },
       {
         id: "lineup",
-        label: "Open Lineup",
+        label: "Open Assignments",
         detail: "Seat scouts so coverage can clear as soon as matches sync.",
-        href: withOrgHref("/scouting/lineup", orgId),
+        href: withOrgHref("/scout-coverage-live", orgId),
       },
       {
         id: "crossval",
@@ -356,9 +355,9 @@ export function scoutCoverageLiveNextActions(input: {
     },
     {
       id: "lineup",
-      label: "Open Lineup",
+      label: "Open Assignments",
       detail: "Rebalance assignments against the live gap list.",
-      href: withOrgHref("/scouting/lineup", orgId),
+      href: withOrgHref("/scout-coverage-live", orgId),
     },
     {
       id: "crossval",

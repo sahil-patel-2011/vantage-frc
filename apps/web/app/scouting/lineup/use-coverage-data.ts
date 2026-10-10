@@ -59,7 +59,7 @@ export function useCoverageData(orgId: string, eventKey: string | undefined, qua
     if (focusMatch) params.set("matchKey", focusMatch);
     try {
       const response = await fetch(`/api/scouting/coverage?${params}`, { cache: "no-store", signal: AbortSignal.any([abort.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
-      const data: unknown = await response.json();
+      const data: unknown = await response.json().catch(() => null);
       if (!valid()) return;
       if (!response.ok) {
         const message = data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "Could not refresh assignments.";
@@ -106,7 +106,7 @@ export function useCoverageData(orgId: string, eventKey: string | undefined, qua
     try {
       const response = await fetch("/api/scouting/coverage", { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...body, orgId, eventKey: before.eventKey, qualsOnly, ...(focusMatch ? { focusMatchKey: focusMatch } : {}) }), signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) });
-      const data: unknown = await response.json();
+      const data: unknown = await response.json().catch(() => null);
       if (!mounted.current || id !== generation.current) return;
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
