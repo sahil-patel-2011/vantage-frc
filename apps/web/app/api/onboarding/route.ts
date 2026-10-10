@@ -81,7 +81,7 @@ export async function GET() {
     const state = await withRls({ userId: current.user.id }, (client) =>
       getOnboardingState(client, current.user.id),
     );
-    return privateJson(state);
+    return privateJson({ ...state, userId: current.user.id });
   } catch (error) {
     return Response.json(
       { error: publicErrorMessage(error, "Could not load onboarding state.") },
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     const state = await withRls({ userId: current.user.id }, (client) =>
       completeOnboarding(client, current.user.id, body),
     );
-    return privateJson({ ok: true, ...state });
+    return privateJson({ ok: true, ...state, userId: current.user.id });
   } catch (error) {
     return securityErrorResponse(error, "Could not complete onboarding.");
   }
@@ -116,7 +116,7 @@ export async function PATCH(request: Request) {
     const state = await withRls({ userId: current.user.id }, (client) =>
       saveOnboardingProgress(client, current.user.id, body),
     );
-    return privateJson({ ok: true, ...state });
+    return privateJson({ ok: true, ...state, userId: current.user.id });
   } catch (error) {
     return securityErrorResponse(error, "Could not save onboarding progress.");
   }

@@ -147,10 +147,10 @@ export function lineupScoutNowHref(
 }
 
 /**
- * Live-board poll interval. Tablet-friendly: at least 15s so pit tablets on
- * battery do not hammer the network, and polling pauses while the tab is hidden.
+ * Optional live-board interval. Manual refresh is the default; leads can opt
+ * into minute updates, paused while the tab is hidden.
  */
-export const LINEUP_POLL_MS = 15_000;
+export const LINEUP_POLL_MS = 60_000;
 
 /** Poll only while the tab is visible — battery-safe for pit tablets. */
 export function shouldPollLineup(visibilityState: string | null | undefined): boolean {
@@ -172,6 +172,7 @@ export type LineupAssignmentCountRow = {
   matchKey: string;
   teamKey: string;
   count: number;
+  assignedScouts?: Array<{ userId: string; name: string; role: string }>;
 };
 
 /** One row per signed-in scout's match entry — never typed scout names. */

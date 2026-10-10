@@ -377,12 +377,14 @@ export function createVantageToolRegistry(
                   officialSource: string;
                   detail: string;
                 }>(
-                  `SELECT entry_id AS "entryId", field_key AS "fieldKey", status,
-                          scout_value AS "scoutValue", official_value AS "officialValue",
-                          official_source AS "officialSource", detail
-                   FROM scout_entry_validations
-                   WHERE org_id=$1 AND entry_id = ANY($2::uuid[])
-                   ORDER BY checked_at DESC`,
+                  `SELECT v.entry_id AS "entryId", v.field_key AS "fieldKey", v.status,
+                          v.scout_value AS "scoutValue", v.official_value AS "officialValue",
+                          v.official_source AS "officialSource", v.detail
+                   FROM scout_entry_validations v JOIN match_scout_entries e ON e.id=v.entry_id AND e.org_id=v.org_id
+                   WHERE v.org_id=$1 AND v.entry_id = ANY($2::uuid[])
+                     AND (v.official_source <> 'tba' OR v.status NOT IN ('match','conflict') OR (v.detail LIKE '[robot-check-v3] %' OR v.detail LIKE 'Video re-scout: [robot-check-v3] %'))
+                     AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)
+                   ORDER BY v.checked_at DESC`,
                   [orgId, matchIds],
                 )
               ).rows
@@ -563,9 +565,10 @@ export function createVantageToolRegistry(
                             v.official_value AS "officialValue", v.official_source AS "officialSource",
                             v.detail
                      FROM scout_entry_validations v
-                     JOIN match_scout_entries e ON e.id = v.entry_id
+                     JOIN match_scout_entries e ON e.id = v.entry_id AND e.org_id = v.org_id
                      WHERE v.org_id=$1 AND e.event_key=$2 AND e.team_key = ANY($3::text[])
-                       AND v.status='conflict'
+                       AND v.status='conflict' AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v3] %' OR v.detail LIKE 'Video re-scout: [robot-check-v3] %')
+                       AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)
                      ORDER BY v.checked_at DESC
                      LIMIT 40`,
                     [orgId, match.rows[0].eventKey, teamKeys],

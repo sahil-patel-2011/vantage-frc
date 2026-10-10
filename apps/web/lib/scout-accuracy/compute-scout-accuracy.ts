@@ -3,6 +3,7 @@ import { aggregateScoutStats, computeEntryAccuracy, summarizeScoutAccuracy } fro
 import type { ScoutAccuracyEntry, ScoutAccuracyScoutStat, ScoutAccuracySnapshotMeta, ScoutAccuracySummary } from "./types";
 import { resolveScoutOrg } from "../scout-org-access";
 import { scoutAccuracySetupSteps, type ScoutAccuracySetupStep } from "./scout-accuracy-related";
+import { RequestSecurityError } from "../security/request";
 
 export type { ScoutAccuracySetupStep };
 
@@ -39,7 +40,7 @@ async function resolveOrg(
   return resolveScoutOrg(client, userId, requestedOrg);
 }
 
-type AllianceJson = { team_keys?: string[] } | string[] | null;
+type AllianceJson = { team_keys?: string[]; teamKeys?: string[] } | string[] | null;
 
 type EntryRow = {
   entryId: string;
@@ -107,14 +108,14 @@ export async function computeScoutAccuracyView(
     };
   }
 
-  const [entryResult, promotionResult, snapshotResult] = await Promise.all([
+  const [entryResult, promotionResult] = await Promise.all([
     client.query<EntryRow>(
       `SELECT mse.id AS "entryId", mse.event_key AS "eventKey", mse.match_key AS "matchKey",
               mse.team_key AS "teamKey", t.team_number AS "teamNumber", mse.scout_user_id AS "scoutUserId",
               u.name AS "scoutName", mse.payload AS "payload",
               m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance", m.score_breakdown AS "scoreBreakdown"
        FROM match_scout_entries mse
-       JOIN matches_ref m ON m.match_key = mse.match_key
+       JOIN matches_ref m ON m.match_key = mse.match_key AND m.event_key = mse.event_key
        JOIN teams_ref t ON t.team_key = mse.team_key
        LEFT JOIN users u ON u.id = mse.scout_user_id
        WHERE mse.org_id = $1 AND mse.event_key = $2
@@ -127,23 +128,7 @@ export async function computeScoutAccuracyView(
        WHERE org_id = $1 AND event_key = $2 AND promoted = true`,
       [org.orgId, eventKey],
     ),
-    client.query<{
-      id: string;
-      eventKey: string;
-      seasonYear: number;
-      entriesScored: number;
-      scoutsScored: number;
-      avgAccuracyScore: number;
-      computedAt: string;
-    }>(
-      `SELECT id, event_key AS "eventKey", season_year AS "seasonYear", entries_scored AS "entriesScored",
-              scouts_scored AS "scoutsScored", avg_accuracy_score AS "avgAccuracyScore", computed_at::text AS "computedAt"
-       FROM scout_accuracy_snapshots
-       WHERE org_id = $1 AND event_key = $2
-       ORDER BY computed_at DESC
-       LIMIT 1`,
-      [org.orgId, eventKey],
-    ),
+
   ]);
 
   const entries = entryResult.rows.map((row) =>
@@ -165,18 +150,9 @@ export async function computeScoutAccuracyView(
   const promotedIds = new Set(promotionResult.rows.map((r) => r.scoutUserId));
   const stats = aggregateScoutStats(entries, promotedIds);
   const summary = summarizeScoutAccuracy(entries, stats);
-  const snapshotRow = snapshotResult.rows[0];
-  const lastSnapshot: ScoutAccuracySnapshotMeta | null = snapshotRow
-    ? {
-        id: snapshotRow.id,
-        eventKey: snapshotRow.eventKey,
-        seasonYear: snapshotRow.seasonYear,
-        entriesScored: Number(snapshotRow.entriesScored) || 0,
-        scoutsScored: Number(snapshotRow.scoutsScored) || 0,
-        avgAccuracyScore: Number(snapshotRow.avgAccuracyScore) || 0,
-        computedAt: snapshotRow.computedAt,
-      }
-    : null;
+  // Legacy snapshots cannot prove robot-level accuracy. Preserve their rows;
+  // the canonical Quality workspace uses attributed official field checks.
+  const lastSnapshot: ScoutAccuracySnapshotMeta | null = null;
 
   return {
     status: "live",
@@ -202,6 +178,7 @@ export async function recordScoutAccuracySnapshot(
 ): Promise<ScoutAccuracyView> {
   const view = await computeScoutAccuracyView(client, { userId: input.userId, requestedOrg: input.orgId, eventKey: input.eventKey });
   if (view.status !== "live") return view;
+  if (view.status === "live" && view.summary.verifiableEntries === 0) throw new RequestSecurityError(409, "Individual robot points cannot verify scout accuracy. Use Scouting Quality for official field checks.");
 
   await client.query(
     `INSERT INTO scout_accuracy_snapshots (

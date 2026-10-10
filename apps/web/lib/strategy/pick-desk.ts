@@ -11,6 +11,7 @@ import {
 } from "@vantage/prediction-strategy";
 import { observationsForStrategyTrust } from "@vantage/scouting/trust";
 import { withSavepoint } from "@vantage/db";
+import { canManageScouting } from "@vantage/scouting/permissions";
 import { loadTeamProfiles } from "../scouting/team-profiles";
 import { loadScoutedMatchCounts } from "../scouting/scouted-counts";
 import type { SchemaDefinition } from "@vantage/scouting";
@@ -35,6 +36,7 @@ export type PickDeskEntry = {
   nickname: string | null;
   rank: number;
   tier: PickTier | string | null;
+  bucket?: import("../picklist/types").PickBucket;
   notes: string | null;
 };
 
@@ -43,6 +45,8 @@ export type PickDeskList = {
   name: string;
   eventKey: string;
   updatedAt: string | null;
+  revision?: number;
+  status?: import("../picklist/types").PickListStatus;
   entries: PickDeskEntry[];
 };
 
@@ -232,8 +236,7 @@ export async function loadPickDesk(
         `SELECT id, team_key AS "teamKey", match_key AS "matchKey", payload, confidence
          FROM match_scout_entries
          WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
-         ORDER BY updated_at DESC
-         LIMIT 800`,
+         ORDER BY updated_at DESC`,
         [row.orgId, row.eventKey, teamKeys],
       )
     : {
@@ -388,15 +391,18 @@ export async function loadPickDesk(
       name: string;
       eventKey: string;
       updatedAt: string | null;
+      revision: number | string;
+      status: import("../picklist/types").PickListStatus;
       entries: PickDeskEntry[] | string;
     }>(
-      `SELECT l.id, l.name, l.event_key AS "eventKey", l.updated_at::text AS "updatedAt",
+      `SELECT l.id, l.name, l.event_key AS "eventKey", l.updated_at::text AS "updatedAt", l.revision, l.status,
               COALESCE(json_agg(json_build_object(
                 'teamKey', e.team_key,
                 'teamNumber', t.team_number,
                 'nickname', t.nickname,
                 'rank', e.rank,
                 'tier', e.tier,
+                'bucket', e.bucket,
                 'notes', e.notes
               ) ORDER BY e.rank) FILTER (WHERE e.id IS NOT NULL), '[]') AS entries
        FROM pick_lists l
@@ -433,10 +439,11 @@ export async function loadPickDesk(
     eventKey: row.eventKey,
     eventName: row.eventName,
     teamNumber: row.teamNumber,
-    canEdit: row.role === "owner" || row.role === "admin",
+    canEdit: await canManageScouting(client, row.orgId),
     candidates,
     pickLists: lists.rows.map((list) => ({
       ...list,
+      revision: Number(list.revision),
       entries: typeof list.entries === "string" ? JSON.parse(list.entries) : list.entries,
     })),
     sources: pickModeSources(modeInfo.mode, baseSources),

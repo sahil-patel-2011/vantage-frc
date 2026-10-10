@@ -34,7 +34,7 @@ function makeClient(state: {
         const existing = state.receipts.get(clientId);
         return {
           rows: existing
-            ? [{ serverEntryId: existing.serverEntryId, payloadHash: existing.payloadHash }]
+            ? [{ serverEntryId: existing.serverEntryId, payloadHash: existing.payloadHash, entryType: "match" }]
             : [],
           rowCount: existing ? 1 : 0,
         };
@@ -59,6 +59,13 @@ function makeClient(state: {
         const current = state.receipts.get(clientId);
         if (current) state.receipts.set(clientId, { ...current, payloadHash: String(params[0]) });
         return { rows: [], rowCount: 1 };
+      }
+      if (sql.includes("FROM match_scout_entries") && sql.includes("FOR UPDATE")) {
+        const original = state.inserts.find(paramsOfEntry => paramsOfEntry[0] === params[0] && paramsOfEntry[1] === params[1]);
+        return {
+          rows: original ? [{ userId: original[5], eventKey: original[2], teamKey: original[4], matchKey: original[3], schemaId: original[6] }] : [],
+          rowCount: original ? 1 : 0,
+        };
       }
       if (sql.includes("FROM match_scout_entries") && sql.includes("SELECT id, payload")) {
         return { rows: [], rowCount: 0 };
@@ -151,5 +158,23 @@ describe("scouting sync upsert", () => {
     expect(second.duplicate).toBe(false);
     expect(second.entryId).toBe(first.entryId);
     expect(state.updates).toHaveLength(1);
+  });
+
+  it("refuses another account's replay without acknowledging or replacing it", async () => {
+    const state = { receipts: new Map<string, { serverEntryId: string; payloadHash: string }>(), inserts: [] as unknown[][], updates: [] as unknown[][] };
+    const repository = new ScoutingRepository(makeClient(state));
+    await repository.syncEntry("org-1", "user-1", entry);
+    await expect(repository.syncEntry("org-1", "user-2", entry)).rejects.toThrow("Only the report's author");
+    expect(state.updates).toHaveLength(0);
+  });
+
+  it.each([
+    { eventKey: "2026other" }, { teamKey: "frc6925" }, { matchKey: "2026test_qm2" }, { type: "pit" as const }, { schemaId: "new-form" },
+  ])("refuses reusing the report ID for another collection target: %j", async patch => {
+    const state = { receipts: new Map<string, { serverEntryId: string; payloadHash: string }>(), inserts: [] as unknown[][], updates: [] as unknown[][] };
+    const repository = new ScoutingRepository(makeClient(state));
+    await repository.syncEntry("org-1", "user-1", entry);
+    await expect(repository.syncEntry("org-1", "user-1", { ...entry, ...patch })).rejects.toThrow("report ID belongs");
+    expect(state.updates).toHaveLength(0);
   });
 });

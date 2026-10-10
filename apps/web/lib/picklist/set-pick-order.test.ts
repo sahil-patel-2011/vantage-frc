@@ -11,6 +11,7 @@ type Row = { id: string; rank: number; bucket: string };
 function clientWith(rows: Row[], status = "open") {
   const updates: unknown[][] = [];
   const query = vi.fn((sql: string, params: unknown[] = []) => {
+    if (/has_org_capability/.test(sql)) return Promise.resolve({ rows: [{ allowed: true }], rowCount: 1 });
     if (/SELECT status FROM pick_lists/.test(sql)) return Promise.resolve({ rows: [{ status }], rowCount: 1 });
     if (/SELECT id, rank, bucket FROM pick_list_entries/.test(sql)) return Promise.resolve({ rows, rowCount: rows.length });
     if (/UPDATE pick_list_entries/.test(sql)) updates.push(params);

@@ -35,12 +35,13 @@ export const CROSSVAL_FIELD_KEYS: CrossvalFieldKey[] = [
 const AGREEMENT_TOLERANCE_PCT = 0.1;
 const AGREEMENT_TOLERANCE_ABS = 4;
 
-type AllianceValue = { team_keys?: string[] } | string[] | null | undefined;
+type AllianceValue = { team_keys?: string[]; teamKeys?: string[] } | string[] | null | undefined;
 
 export function teamKeysFromAlliance(value: AllianceValue): string[] {
   if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-  if (value && Array.isArray(value.team_keys)) {
-    return value.team_keys.filter((v): v is string => typeof v === "string");
+  const keys = value?.teamKeys ?? value?.team_keys;
+  if (Array.isArray(keys)) {
+    return keys.filter((v): v is string => typeof v === "string");
   }
   return [];
 }
@@ -120,11 +121,18 @@ export function computeFieldChecks(input: {
   payload: Record<string, unknown> | null | undefined;
   scoreBreakdown: Record<string, unknown> | null | undefined;
   allianceColor: CrossvalAlliance | null;
+  /** The caller must establish that the observation covers the whole alliance. */
+  comparisonScope?: "robot" | "alliance";
 }): CrossvalFieldCheck[] {
   return CROSSVAL_FIELD_KEYS.map((fieldKey) => {
     const scoutValue = numberFromPayload(input.payload, CROSSVAL_FIELD_ALIASES[fieldKey]);
     const officialValue = numberFromBreakdown(input.scoreBreakdown, input.allianceColor, fieldKey);
-    return compareField(fieldKey, scoutValue, officialValue);
+    const checked = compareField(fieldKey, scoutValue, officialValue);
+    // Official point totals describe an alliance, not this individual robot.
+    // Retain both observations as context without declaring agreement or error.
+    return input.comparisonScope === "alliance" ? checked : {
+      ...checked, status: "unverifiable" as const, deltaAbs: null, deltaPct: null,
+    };
   });
 }
 

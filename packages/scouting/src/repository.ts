@@ -12,7 +12,7 @@ import {
   type SyncEntry,
 } from "./index";
 import { bindScoutIdentity, lockScoutPayload, stripScoutIdentityFields } from "./identity"; // CD4_IDENTITY_LOCK
-import { crossValidateScoutPayload, type FieldValidation } from "./trust";
+import { crossValidateScoutPayload, isCurrentRobotCheck, robotCheckDescription, ROBOT_CHECK_DETAIL_PREFIX, type FieldValidation } from "./trust";
 
 type StoredEntry = {
   id: string;
@@ -28,13 +28,20 @@ export type SyncAcknowledgement = {
   validations: FieldValidation[];
 };
 
+/** Call inside the caller's transaction before creating any schema version. */
+export async function lockScoutingSchemaVersion(client: PoolClient, orgId: string, year: number, type: EntryType) {
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
+    `scout-schema:${orgId.toLowerCase()}:${year}:${type}`,
+  ]);
+}
+
 export class ScoutingRepository {
   constructor(private readonly client: PoolClient) {}
 
-  async bootstrap(orgId: string, userId: string) {
+  async bootstrap(orgId: string, userId: string, selectedEvent?: { eventKey: string; eventName: string | null }) {
     const canManageSchemas = await canManageScouting(this.client, orgId);
 
-    const context = await this.client.query<{
+    const context = selectedEvent ? { rows: [] } : await this.client.query<{
       activeEventKey: string | null;
       eventName: string | null;
     }>(
@@ -44,8 +51,8 @@ export class ScoutingRepository {
        WHERE c.org_id = $1`,
       [orgId],
     );
-    const eventKey = context.rows[0]?.activeEventKey ?? null;
-    const eventName = context.rows[0]?.eventName ?? null;
+    const eventKey = selectedEvent ? selectedEvent.eventKey : context.rows[0]?.activeEventKey ?? null;
+    const eventName = selectedEvent ? selectedEvent.eventName : context.rows[0]?.eventName ?? null;
     const profile = await this.client.query<{
       name: string | null;
       email: string | null;
@@ -108,12 +115,12 @@ export class ScoutingRepository {
       this.client.query(
         `SELECT e.id,'match' AS type,e.match_key AS "matchKey",e.team_key AS "teamKey",
           e.confidence,e.source,e.updated_at AS "updatedAt",
-          e.scout_user_id AS "scoutUserId",u.name AS "scoutName",e.payload,e.client_id AS "clientId"
+          e.scout_user_id AS "scoutUserId",u.name AS "scoutName",e.payload,e.client_id AS "clientId",e.schema_id AS "schemaId"
          FROM match_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          UNION ALL
          SELECT e.id,'pit' AS type,NULL,e.team_key,e.confidence,e.source,
-          e.updated_at,e.scout_user_id,u.name,e.payload,e.client_id
+          e.updated_at,e.scout_user_id,u.name,e.payload,e.client_id,e.schema_id
          FROM pit_scout_entries e JOIN users u ON u.id=e.scout_user_id
          WHERE e.org_id=$1 AND e.event_key=$2
          ORDER BY "updatedAt" DESC LIMIT 30`,
@@ -149,6 +156,7 @@ export class ScoutingRepository {
       { type: "match" as EntryType, definition: matchSchemaForYear(year) },
       { type: "pit" as EntryType, definition: pitSchemaForYear(year) },
     ]) {
+      await lockScoutingSchemaVersion(this.client, orgId, year, entry.type);
       const existing = await this.client.query(
         `SELECT 1 FROM scout_schemas WHERE org_id = $1 AND year = $2 AND type = $3 LIMIT 1`,
         [orgId, year, entry.type],
@@ -185,13 +193,31 @@ export class ScoutingRepository {
     const receipt = await this.client.query<{
       serverEntryId: string;
       payloadHash: string;
+      entryType: SyncEntry["type"];
     }>(
-      `SELECT server_entry_id AS "serverEntryId", payload_hash AS "payloadHash"
+      `SELECT server_entry_id AS "serverEntryId", payload_hash AS "payloadHash", entry_type AS "entryType"
        FROM scout_sync_receipts WHERE org_id = $1 AND client_id = $2`,
       [orgId, locked.clientId],
     );
     const existing = receipt.rows[0];
     if (existing) {
+      if (existing.entryType !== locked.type) throw new Error("This report ID belongs to another scouting type. Keep the original report and start a new one.");
+      const targetTable = existing.entryType === "match" ? "match_scout_entries" : "pit_scout_entries";
+      const target = await this.client.query<{ userId: string; eventKey: string; teamKey: string; matchKey: string | null; schemaId: string }>(
+        `SELECT scout_user_id AS "userId", event_key AS "eventKey", team_key AS "teamKey", schema_id AS "schemaId",
+          ${existing.entryType === "match" ? "match_key" : "NULL::text"} AS "matchKey"
+         FROM ${targetTable} WHERE id = $1 AND org_id = $2 FOR UPDATE`,
+        [existing.serverEntryId, orgId],
+      );
+      const original = target.rows[0];
+      if (!original || original.userId !== userId) throw new Error("Only the report's author can replace it.");
+      if (original.eventKey !== locked.eventKey || original.teamKey !== locked.teamKey
+        || (locked.type === "match" && original.matchKey !== locked.matchKey)) {
+        throw new Error("This report ID belongs to another robot or match. Keep the original report and start a new one.");
+      }
+      if (original.schemaId !== locked.schemaId) {
+        throw new Error("This report ID belongs to its original form. Reopen the report to correct it using those questions.");
+      }
       if (existing.payloadHash === hash) {
         return {
           clientId: locked.clientId,
@@ -499,12 +525,13 @@ export class ScoutingRepository {
     );
     return rows.rows.map((row) => ({
       fieldKey: row.fieldKey,
-      status: row.status,
+      status: row.officialSource === "tba" && (row.status === "match" || row.status === "conflict") && !isCurrentRobotCheck(row.detail) ? "not_comparable" : row.status,
       scoutValue: row.scoutValue,
       officialValue: row.officialValue,
       officialSource: row.officialSource,
       officialKey: null,
-      detail: row.detail,
+      detail: row.officialSource === "tba" && (row.status === "match" || row.status === "conflict") && !isCurrentRobotCheck(row.detail)
+        ? "Earlier official check needs review with the current evaluator. Reopen and correct the report to check it again." : robotCheckDescription(row.detail),
       soft: row.officialSource === "statbotics",
     }));
   }
@@ -554,6 +581,7 @@ export class ScoutingRepository {
     const validations = crossValidateScoutPayload({
       payload: input.payload,
       fieldKeys: schema.definition.fields.map((field) => field.key),
+      fieldDefinitions: schema.definition.fields,
       teamKey: input.teamKey,
       redAlliance: official.redAlliance,
       blueAlliance: official.blueAlliance,
@@ -567,14 +595,18 @@ export class ScoutingRepository {
       epaEndgame: epa.rows[0]?.epaEndgame ?? null,
     });
     for (const validation of validations) {
+      // Version stored evidence without requiring a schema change or exposing
+      // implementation tags in the scout-facing result.
+      const checkedDetail = validation.officialSource === "tba" && (validation.status === "match" || validation.status === "conflict")
+        ? `${ROBOT_CHECK_DETAIL_PREFIX} ${validation.detail}` : validation.detail;
       const detail =
-        input.source === "video" && validation.detail
-          ? validation.detail.startsWith("Video re-scout: ")
-            ? validation.detail
-            : `Video re-scout: ${validation.detail}`
+        input.source === "video" && checkedDetail
+          ? checkedDetail.startsWith("Video re-scout: ")
+            ? checkedDetail
+            : `Video re-scout: ${checkedDetail}`
           : input.source === "video"
             ? "Video re-scout: compared against official match data."
-            : validation.detail;
+          : checkedDetail;
       await this.client.query(
         `INSERT INTO scout_entry_validations
           (org_id,entry_id,field_key,scout_value,official_value,official_source,status,detail)

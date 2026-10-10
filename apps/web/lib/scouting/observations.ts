@@ -24,7 +24,7 @@ export function observationFields(payload: Record<string, unknown>, selectionOpt
 }
 
 /** Reduce robot/match reports before averaging; pit entries remain separate observations. */
-export function combineObservations(rows: readonly ObservationRow[]): { rows: ObservationRow[]; conflicts: ObservationConflict[] } {
+export function combineObservations(rows: readonly ObservationRow[], options?: { normalizeBooleanWords?: boolean }): { rows: ObservationRow[]; conflicts: ObservationConflict[] } {
   // A recorded selection list (including []) observes every known option. A missing
   // list observes none. Discover the options before flattening so selection rates
   // include explicit negatives without manufacturing answers for absent reports.
@@ -57,7 +57,7 @@ export function combineObservations(rows: readonly ObservationRow[]): { rows: Ob
     for (const field of keys) {
       const values = group.map((row) => row.payload[field]).filter((value) => value != null && value !== "");
       if (!values.length) continue;
-      const normalized = values.map((value) => typeof value === "string" && /^(yes|true|y|no|false|n)$/i.test(value.trim())
+      const normalized = values.map((value) => options?.normalizeBooleanWords !== false && typeof value === "string" && /^(yes|true|y|no|false|n)$/i.test(value.trim())
         ? /^(yes|true|y)$/i.test(value.trim()) : value);
       const unique = new Set(normalized.map((value) => JSON.stringify(value)));
       if (unique.size > 1 && first.matchKey) conflicts.push({ matchKey: first.matchKey, field, values });

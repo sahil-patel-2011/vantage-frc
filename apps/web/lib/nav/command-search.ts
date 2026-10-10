@@ -54,7 +54,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:scout-p2p-relay": ["offline", "mesh", "peer to peer", "sync", "no wifi", "qr", "relay"],
   "competition:scout-training-mode": ["training", "practice scouting", "onboard scouts", "teach"],
   "competition:scout-accuracy": ["accuracy", "quality", "reliability", "scout performance"],
-  "competition:scout-crossval": ["cross check", "validate", "agreement", "double scout"],
+  "competition:scout-crossval": ["cross check", "validate", "agreement", "double scout", "accuracy", "quality", "reliability", "scout performance", "scout consistency", "alliance review", "scouting impact"],
   "competition:scout-disagreements": ["disagreements", "conflicts", "mismatch", "discrepancy"],
   "competition:scout-data-impact": ["data impact", "value", "which fields matter"],
   "competition:scout-field-budget": ["field budget", "field value", "how many fields", "form length"],
@@ -481,7 +481,7 @@ export function commandCatalog(): CommandEntry[] {
       "/visit-invites": "/team?tab=visit-invites",
     };
     const candidate = teamAlias[entry.href] ?? entry.href;
-    entry = { ...entry, href: canonicalHref.get(candidate) ?? candidate, alternativeHrefs: [candidate] };
+    entry = { ...entry, href: canonicalHref.get(candidate) ?? candidate, alternativeHrefs: [...new Set([candidate, ...(entry.alternativeHrefs ?? [])])] };
     const existing = byHref.get(entry.href);
     if (existing) {
       // Two names for one place is the confusion we are removing. Keep the
@@ -509,6 +509,7 @@ export function commandCatalog(): CommandEntry[] {
         kind: "destination",
         keywords: [...(KEYWORDS[`${hub.id}:${tab.id}`] ?? [])],
         featured: tab.featured || !tab.group,
+        ...(hub.id === "competition" && tab.id === "scout-crossval" ? { alternativeHrefs: [hubHref(hub.href, "scout-accuracy")] } : {}),
       });
     }
   }

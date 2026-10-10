@@ -8,6 +8,7 @@ import {
   WAITLIST_ONLY_MESSAGE,
   canResendCode,
   canSubmitCode,
+  canRetrySubmittedCode,
   classifyOtpFailure,
   clearRememberedAccount,
   codeSecondsRemaining,
@@ -42,6 +43,7 @@ import {
 import { inviteJoiningHeadline, type InvitePreview } from "../../lib/invite";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import { requestPasswordResetCode } from "../../lib/sign-in/password-reset";
 import {
   AccessFooter,
   InviteBanner,
@@ -99,6 +101,8 @@ export default function SignInClient({
   const [password, setPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [resetSent, setResetSent] = useState(false);
+  const authRequestRef = useRef(false);
+  const leavingRef = useRef(false);
 
   const codeRef = useRef<HTMLInputElement | null>(null);
   const emailRef = useRef<HTMLInputElement | null>(null);
@@ -129,10 +133,13 @@ export default function SignInClient({
 
   const sendFirstFactorCode = useCallback(
     async (email: string, options?: { resent?: boolean }) => {
+      if (authRequestRef.current) return false;
+      authRequestRef.current = true;
       setBusy(options?.resent ? "resending" : "sending");
       try {
         const response = await fetch("/api/auth/email-otp/send-verification-otp", {
           method: "POST",
+          signal: AbortSignal.timeout(15_000),
           credentials: "include",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ email, type: "sign-in" }),
@@ -158,6 +165,7 @@ export default function SignInClient({
         writeRememberedAccount(browserStorage(), { email, method: "email" });
         setRemembered({ email, method: "email" });
         lastSubmittedCode.current = "";
+        setTriedCode("");
         dispatch({
           type: "code_sent",
           now: Date.now(),
@@ -174,6 +182,7 @@ export default function SignInClient({
         });
         return false;
       } finally {
+        authRequestRef.current = false;
         setBusy("idle");
       }
     },
@@ -182,10 +191,13 @@ export default function SignInClient({
 
   const sendSecondFactorCode = useCallback(
     async (options?: { resent?: boolean; emailHint?: string | null }) => {
+      if (authRequestRef.current) return false;
+      authRequestRef.current = true;
       setBusy(options?.resent ? "resending" : "sending");
       try {
         const response = await fetch("/api/auth/email-2fa", {
           method: "POST",
+          signal: AbortSignal.timeout(15_000),
           credentials: "include",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ action: "request" }),
@@ -208,6 +220,7 @@ export default function SignInClient({
           return false;
         }
         lastSubmittedCode.current = "";
+        setTriedCode("");
         dispatch({
           type: "code_sent",
           now: Date.now(),
@@ -224,6 +237,7 @@ export default function SignInClient({
         });
         return false;
       } finally {
+        authRequestRef.current = false;
         setBusy("idle");
       }
     },
@@ -232,6 +246,8 @@ export default function SignInClient({
 
   const leave = useCallback(
     async (fallback?: string) => {
+      if (leavingRef.current) return;
+      leavingRef.current = true;
       setBusy("leaving");
       const gate = await readOnboardingGate();
       const destination = postAuthDestination({
@@ -266,7 +282,7 @@ export default function SignInClient({
   }, [nextPath]);
 
   useEffect(() => {
-    void fetch("/api/auth/status")
+    void fetch("/api/auth/status", { cache: "no-store", signal: AbortSignal.timeout(8_000) })
       .then(async (response) => (response.ok ? ((await response.json()) as AuthStatus) : null))
       .then((value) => {
         if (value) setStatus(value);
@@ -277,7 +293,7 @@ export default function SignInClient({
   /** Read-only session probe. Nothing here mutates a session. */
   useEffect(() => {
     let active = true;
-    void fetch("/api/auth/email-2fa", { credentials: "include" })
+    void fetch("/api/auth/email-2fa", { credentials: "include", cache: "no-store", signal: AbortSignal.timeout(8_000) })
       .then(async (response) => {
         if (!active) return;
         const data = response.ok
@@ -301,17 +317,18 @@ export default function SignInClient({
   /** A session that still owes a second factor goes straight to the code step. */
   useEffect(() => {
     if (probe.state !== "needs_verification") return;
+    if (busy !== "idle" || flow.step !== "identity" || authRequestRef.current || leavingRef.current) return;
     if (requestedInitialCode.current) return;
     requestedInitialCode.current = true;
     dispatch({ type: "second_factor_required", emailHint: probe.emailHint || null });
     void sendSecondFactorCode({ emailHint: probe.emailHint });
-  }, [probe, sendSecondFactorCode]);
+  }, [probe, busy, flow.step, sendSecondFactorCode]);
 
   /** Invite context, kept visible for the whole flow. */
   useEffect(() => {
     if (!inviteToken) return;
     let active = true;
-    void fetch(`/api/invites/preview?token=${encodeURIComponent(inviteToken)}`)
+    void fetch(`/api/invites/preview?token=${encodeURIComponent(inviteToken)}`, { cache: "no-store", signal: AbortSignal.timeout(8_000) })
       .then(async (response) => {
         const data = (await response.json().catch(() => ({}))) as { preview?: InvitePreview | null };
         if (active && data.preview) setInvitePreview(data.preview);
@@ -347,12 +364,13 @@ export default function SignInClient({
   }, [invitePreview, flow.email, remembered.email]);
 
   useEffect(() => {
-    if (flow.step === "code") codeRef.current?.focus();
-  }, [flow.step]);
+    if (flow.step === "code" || (passwordPanel === "reset" && resetSent)) codeRef.current?.focus();
+  }, [flow.step, passwordPanel, resetSent]);
 
   const verifyCode = useCallback(async () => {
     const code = sanitizeCodeInput(flow.code);
-    if (!isCodeComplete(code)) return;
+    if (!canSubmitCode(flow, Date.now()) || authRequestRef.current || leavingRef.current) return;
+    authRequestRef.current = true;
     lastSubmittedCode.current = code;
     setTriedCode(code);
     setBusy("verifying");
@@ -362,6 +380,7 @@ export default function SignInClient({
         isSecondFactor ? "/api/auth/email-2fa" : "/api/auth/sign-in/email-otp",
         {
           method: "POST",
+          signal: AbortSignal.timeout(15_000),
           credentials: "include",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(
@@ -402,14 +421,16 @@ export default function SignInClient({
         failure: classifyOtpFailure({ channel: flow.channel, networkError: true }),
       });
     } finally {
-      setBusy("idle");
+      authRequestRef.current = false;
+      if (!leavingRef.current) setBusy("idle");
     }
-  }, [flow.channel, flow.code, flow.email, leave]);
+  }, [flow, leave]);
 
   /** Auto-submit the moment the sixth digit lands — never twice for one code. */
   useEffect(() => {
     if (busy !== "idle") return;
     if (!canSubmitCode(flow, Date.now())) return;
+    if (flow.failure?.kind === "rate_limited") return;
     if (flow.code === lastSubmittedCode.current) return;
     void verifyCode();
   }, [busy, flow, verifyCode]);
@@ -417,7 +438,7 @@ export default function SignInClient({
   async function submitIdentity(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
-    if (!isLikelyEmail(email) || !emailAvailable || busy !== "idle") return;
+    if (!isLikelyEmail(email) || !emailAvailable || busy !== "idle" || (flow.failure?.kind === "rate_limited" && resendSeconds > 0)) return;
     await sendFirstFactorCode(email);
   }
 
@@ -431,12 +452,14 @@ export default function SignInClient({
   }
 
   async function google() {
-    if (!googleAvailable || busy !== "idle") return;
+    if (!googleAvailable || busy !== "idle" || authRequestRef.current || leavingRef.current) return;
+    authRequestRef.current = true;
     setBusy("google");
     setOauthMessage("");
     try {
       const response = await fetch("/api/auth/sign-in/social", {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -450,7 +473,7 @@ export default function SignInClient({
         message?: string;
         error?: string;
       };
-      if (data.url) {
+      if (response.ok && data.url) {
         writeRememberedAccount(browserStorage(), { method: "google" });
         window.location.assign(data.url);
         return;
@@ -461,6 +484,7 @@ export default function SignInClient({
     } catch {
       setOauthMessage("Couldn’t reach Google sign-in. Check your connection and try again.");
     } finally {
+      authRequestRef.current = false;
       setBusy("idle");
     }
   }
@@ -468,11 +492,14 @@ export default function SignInClient({
   async function passwordSignIn(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
+    if (authRequestRef.current || leavingRef.current || busy !== "idle" || !isLikelyEmail(email) || !password || !status.passwordSignInAvailable) return;
+    authRequestRef.current = true;
     setBusy("verifying");
     setPasswordMessage("");
     try {
       const response = await fetch("/api/auth/sign-in/email", {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -480,15 +507,18 @@ export default function SignInClient({
       if (response.ok) {
         writeRememberedAccount(browserStorage(), { email, method: "email" });
         // Password alone never satisfies email 2FA, so ask the probe again.
-        const elevation = await fetch("/api/auth/email-2fa", { credentials: "include" });
+        const elevation = await fetch("/api/auth/email-2fa", { credentials: "include", cache: "no-store", signal: AbortSignal.timeout(8_000) });
+        if (!elevation.ok) throw new Error("Verification could not be checked");
         const data = elevation.ok
-          ? ((await elevation.json()) as { requiresVerification?: boolean; emailHint?: string })
+          ? ((await elevation.json()) as { authenticated?: boolean; requiresVerification?: boolean; emailHint?: string })
           : null;
+        if (data?.authenticated !== true || typeof data.requiresVerification !== "boolean") throw new Error("Verification could not be confirmed");
         if (data?.requiresVerification) {
           setPasswordPanel("closed");
           setPassword("");
           requestedInitialCode.current = true;
           dispatch({ type: "second_factor_required", emailHint: data.emailHint ?? null });
+          authRequestRef.current = false;
           await sendSecondFactorCode({ emailHint: data.emailHint ?? null });
           return;
         }
@@ -496,7 +526,9 @@ export default function SignInClient({
         return;
       }
       setPasswordMessage(
-        status.passwordSignInAvailable
+        response.status === 429 ? "Too many sign-in attempts. Wait a few minutes before trying again."
+          : response.status >= 500 ? "Sign-in is temporarily unavailable. Your details are still here. Try again shortly."
+          : status.passwordSignInAvailable
           ? // "Check your email" read as "look in your inbox"; say which thing did not match.
             "That email and password don’t match. Try again, or use an email code instead."
           : publicPasswordUnavailableCopy(status.passwordReason),
@@ -504,27 +536,26 @@ export default function SignInClient({
     } catch {
       setPasswordMessage("Couldn’t reach Vantage. Check your connection and try again.");
     } finally {
-      setBusy("idle");
+      authRequestRef.current = false;
+      if (!leavingRef.current) setBusy("idle");
     }
   }
 
   async function requestPasswordReset(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
+    if (authRequestRef.current || leavingRef.current || busy !== "idle" || !isLikelyEmail(email)) return;
     if (!emailAvailable) {
       setPasswordMessage(publicEmailUnavailableCopy(status.emailOtpReason));
       return;
     }
+    if (resetSent && (!isCodeComplete(sanitizeCodeInput(flow.code)) || password.length < 12)) return;
+    authRequestRef.current = true;
     setBusy("sending");
     setPasswordMessage("");
     try {
       if (!resetSent) {
-        await fetch("/api/auth/email-otp/request-password-reset", {
-          method: "POST",
-          credentials: "include",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ email }),
-        });
+        await requestPasswordResetCode(email);
         setResetSent(true);
         setPassword("");
         setPasswordMessage(
@@ -534,6 +565,7 @@ export default function SignInClient({
       }
       const response = await fetch("/api/auth/email-otp/reset-password", {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ email, otp: sanitizeCodeInput(flow.code), password }),
@@ -546,19 +578,32 @@ export default function SignInClient({
         setPasswordMessage("Password updated. Existing sessions were revoked — sign in again.");
         return;
       }
-      setPasswordMessage("That reset code is invalid, expired, or out of attempts.");
-    } catch {
-      setPasswordMessage("Couldn’t reach Vantage. Check your connection and try again.");
+      setPasswordMessage(response.status === 429 ? "Too many reset attempts. Wait a few minutes before trying again."
+        : response.status >= 500 ? "Password reset is temporarily unavailable. Your code is still here; try again shortly."
+        : "That reset code is invalid, expired, or out of attempts.");
+    } catch (error) {
+      setPasswordMessage(error instanceof Error && error.name === "Error" ? error.message : "Couldn’t confirm the reset request. Check your connection and try again.");
     } finally {
+      authRequestRef.current = false;
       setBusy("idle");
     }
   }
 
   function forgetAccount() {
+    if (authRequestRef.current || leavingRef.current) return;
     clearRememberedAccount(browserStorage());
     setRemembered({ email: null, method: null });
     dispatch({ type: "email_changed", email: "" });
     emailRef.current?.focus();
+  }
+
+  function changeEmail(email: string) {
+    if (authRequestRef.current || leavingRef.current) return;
+    if (normalizeSignInEmail(email) !== normalizeSignInEmail(flow.email)) {
+      setResetSent(false); setPassword(""); setPasswordMessage("");
+      dispatch({ type: "code_changed", code: "" });
+    }
+    dispatch({ type: "email_changed", email });
   }
 
   const preferred = useMemo(
@@ -603,9 +648,11 @@ export default function SignInClient({
           : passwordPanel === "password"
           ? "Use the email and password for your team account."
           : passwordPanel === "reset"
-            ? "We’ll email a link so you can choose a new password."
+            ? "Request an email code, then choose a new password."
             : notInvited
               ? undefined
+              : flow.channel === "email-2fa" && !flow.codeExpiresAt
+                ? "Request an email code to finish signing in with this account."
               : stepCopy.sub
       }
     >
@@ -629,6 +676,7 @@ export default function SignInClient({
             busy={busy}
             working={working}
             passwordPanel={passwordPanel}
+            emailCooldown={flow.failure?.kind === "rate_limited" ? resendSeconds : 0}
             resetSent={resetSent}
             password={password}
             passwordMessage={passwordMessage}
@@ -636,7 +684,7 @@ export default function SignInClient({
             codeRef={codeRef}
             onGoogle={() => void google()}
             onSubmitIdentity={(event) => void submitIdentity(event)}
-            onEmailChange={(email) => dispatch({ type: "email_changed", email })}
+            onEmailChange={changeEmail}
             onEmailBlur={(email) =>
               dispatch({ type: "email_changed", email: normalizeSignInEmail(email) })
             }
@@ -665,14 +713,14 @@ export default function SignInClient({
             invalid={Boolean(flow.failure) && flow.failure?.kind !== "rate_limited"}
             failureMessage={flow.failure?.message ?? null}
             failureKind={flow.failure?.kind ?? null}
-            retryAfterSeconds={flow.failure?.retryAfterSeconds ?? null}
+            retryAfterSeconds={flow.failure?.kind === "rate_limited" ? Math.max(0, Math.ceil(((flow.verifyAvailableAt ?? flow.resendAvailableAt ?? clock) - clock) / 1000)) : null}
             expired={expired}
             showClock={showCodeClock(flow.failure?.kind)}
             showResend={showCodeResend(flow.failure?.kind)}
             codeSeconds={codeSeconds}
             resendReady={resendReady}
             resendSeconds={resendSeconds}
-            submitReady={submitReady && flow.code !== triedCode}
+            submitReady={submitReady && (flow.code !== triedCode || canRetrySubmittedCode(flow, clock))}
             busy={busy}
             working={working}
             resolvedNext={resolvedNext}
@@ -702,12 +750,14 @@ export default function SignInClient({
       <div className="signin-footer">
         {recoveryOpen ? null : (
         <SignInPasswordFooter
+          working={working}
           passwordSignInAvailable={status.passwordSignInAvailable}
           emailAvailable={emailAvailable}
           identityStep={flow.step === "identity"}
           passwordPanel={passwordPanel}
           onUsePassword={() => {
             setPasswordMessage("");
+            setResetSent(false); dispatch({ type: "code_changed", code: "" });
             setPasswordPanel("password");
           }}
           onBackToCodes={() => {
@@ -715,10 +765,12 @@ export default function SignInClient({
             setResetSent(false);
             setPassword("");
             setPasswordMessage("");
+            dispatch({ type: "code_changed", code: "" });
           }}
           onForgotPassword={() => {
             setPasswordMessage("");
             setResetSent(false);
+            setPassword(""); dispatch({ type: "code_changed", code: "" });
             setPasswordPanel("reset");
           }}
         />

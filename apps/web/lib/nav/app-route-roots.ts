@@ -9,6 +9,7 @@ export const GENERATED_APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([".well-kn
 
 export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   ...GENERATED_APP_ROUTE_ROOTS,
+  "access-unavailable",
   "account",
   "admin",
   "ai",

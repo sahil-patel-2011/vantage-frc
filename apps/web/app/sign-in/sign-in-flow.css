@@ -430,10 +430,8 @@
 /* A wrong or expired code says so right under the boxes. */
 .signin-code-error{margin:8px 0 0;color:var(--danger);font-size:14px;font-weight:600;text-align:center}
 
-/* Phone: every link here is a thumb-sized target, not an 18px line of text. */
-@media (max-width: 720px) {
-  .signin-link, .signin-footer a, .signin-invite-help-cta { min-height: 44px; display: inline-flex; align-items: center; }
-}
+/* Secondary actions keep the same minimum target on desktop and touch screens. */
+.signin-link, .signin-footer a, .signin-invite-help-cta { min-height: 44px; display: inline-flex; align-items: center; }
 
 .signin-email-hint { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; }
 

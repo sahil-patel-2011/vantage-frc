@@ -11,12 +11,10 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
   groups: ProductNavGroup[]; pathname: string; pathSearch: string; orgId: string; orgLabel: string;
   collapsed: boolean; onCollapse: () => void; allowed: (href: string) => boolean;
 }) {
-  const sections = mainMenuSections(groups, allowed);
+  const sections = mainMenuSections(groups, allowed, true);
   const search = mainMenuSearch(pathname, pathSearch, allowed);
   const activeSection = sections.find(section => pathname === `/${section.id}`);
-  const activeItems = activeSection?.id === "competition" && allowed("/competition?tab=scouting")
-    ? [{ href: "/competition?tab=scouting", label: "Scout" }, ...activeSection.items]
-    : activeSection?.items ?? [];
+  const activeItems = activeSection?.items ?? [];
   return <aside className="app-sidebar" aria-label="Workspace sidebar" data-collapsed={collapsed}>
     <div className="app-sidebar-brand">
       <a href={withOrgHref("/dashboard", orgId)} aria-label="Vantage home"><img src="/vantage-mark.svg" width="30" height="30" alt="" /><span>Vantage</span></a>
@@ -33,7 +31,7 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
     {activeSection ? <nav className="app-sidebar-section" aria-label={`${activeSection.label} sections`}>
       <p className="app-sidebar-label">In this workspace</p>
       {activeItems.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)}
-        aria-current={islandTabIsActive(pathname, search, item.href) ? "page" : undefined}>{item.label}</a>)}
+        aria-current={islandTabIsActive(pathname, search, item.href) ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav> : <nav className="app-sidebar-section" aria-label="Daily tools">
       <p className="app-sidebar-label">Your day</p>
       {[{ href: "/my-day", label: "My day", icon: "calendar" as const }, { href: "/todos", label: "Team tasks", icon: "clipboard" as const }, { href: "/hours-self-view", label: "My hours", icon: "activity" as const }]

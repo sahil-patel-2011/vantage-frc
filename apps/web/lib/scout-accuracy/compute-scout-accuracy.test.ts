@@ -10,7 +10,7 @@ const SCOUT_A = "22222222-2222-4222-8222-222222222222";
 const SCOUT_B = "33333333-3333-4333-8333-333333333333";
 
 /** Returns queued rows in call order — mirrors the sequential query order inside
- * computeScoutAccuracyView (resolveOrg, events, [entries, promotions, snapshot]). */
+ * computeScoutAccuracyView (resolveOrg, events, [entries, promotions]). */
 function queueClient(responses: Array<{ rows: unknown[] }>): PoolClient {
   let index = 0;
   return {
@@ -47,13 +47,13 @@ describe("computeScoutAccuracyView", () => {
     }
   });
 
-  it("scores scouts against cached official results and ranks the leaderboard", async () => {
+  it("does not treat robot-point estimates as verified alliance observations", async () => {
     const client = queueClient([
       { rows: [{ orgId: ORG, teamNumber: 118 }] }, // resolveOrg
       { rows: [{ eventKey: "2026test" }] }, // events
       {
         rows: [
-          // Scout A: accurate estimate (55 vs official 56)
+          // One robot happens to be close to the alliance total; that proves no individual accuracy.
           {
             entryId: "entry-a1",
             eventKey: "2026test",
@@ -67,7 +67,7 @@ describe("computeScoutAccuracyView", () => {
             blueAlliance: ["frc1678"],
             scoreBreakdown: { red: { totalPoints: 56 }, blue: {} },
           },
-          // Scout B: wildly inaccurate estimate (12 vs official 56)
+          // Another robot contributes fewer points; that does not make its scout inaccurate.
           {
             entryId: "entry-b1",
             eventKey: "2026test",
@@ -98,7 +98,6 @@ describe("computeScoutAccuracyView", () => {
         ],
       }, // entries
       { rows: [] }, // promotions
-      { rows: [] }, // snapshot
     ]);
     const view = await computeScoutAccuracyView(client, { userId: USER, requestedOrg: ORG, eventKey: "2026test" });
     expect(view.status).toBe("live");
@@ -106,14 +105,15 @@ describe("computeScoutAccuracyView", () => {
     expect(view.entries).toHaveLength(3);
     expect(view.stats).toHaveLength(2);
     expect(view.summary.totalEntries).toBe(3);
-    expect(view.summary.verifiableEntries).toBe(2);
+    expect(view.summary.verifiableEntries).toBe(0);
 
     const [top, second] = view.stats;
     expect(top.scoutUserId).toBe(SCOUT_A);
     expect(top.rank).toBe(1);
     expect(top.entriesScored).toBe(2);
-    expect(top.verifiableEntries).toBe(1);
-    expect(top.accuracyScore).toBeGreaterThan(second.accuracyScore);
+    expect(top.verifiableEntries).toBe(0);
+    expect(top.tier).toBe("unverified");
+    expect(second.tier).toBe("unverified");
     expect(second.scoutUserId).toBe(SCOUT_B);
     expect(second.rank).toBe(2);
     expect(top.promoted).toBe(false);
@@ -122,6 +122,13 @@ describe("computeScoutAccuracyView", () => {
 });
 
 describe("scout-accuracy pure helpers", () => {
+  it("does not verify a robot even when its points coincide with the alliance total", () => {
+    const entry = computeEntryAccuracy({ matchScoutEntryId: "entry", eventKey: "2026test", matchKey: "2026test_qm1",
+      teamKey: "frc118", teamNumber: 118, scoutUserId: SCOUT_A, scoutName: "Ada", payload: { totalPoints: 50 },
+      scoreBreakdown: { red: { totalPoints: 50 } }, redAlliance: { teamKeys: ["frc118"] }, blueAlliance: { teamKeys: [] } });
+    expect(entry).toMatchObject({ verifiable: false, accurate: false, absErrorPct: null });
+    expect(aggregateScoutStats([entry])[0]?.suggestedPromote).toBe(false);
+  });
   it("resolves alliance color from either array or team_keys alliance shapes", () => {
     expect(resolveAllianceColor("frc118", ["frc118", "frc254"], ["frc1678"])).toBe("red");
     expect(resolveAllianceColor("frc1678", { team_keys: ["frc118"] }, { team_keys: ["frc1678"] })).toBe("blue");
@@ -140,7 +147,7 @@ describe("scout-accuracy pure helpers", () => {
       payload: { totalPoints: 40 },
       scoreBreakdown: null,
       redAlliance: ["frc118"],
-      blueAlliance: [],
+      blueAlliance: [], comparisonScope: "alliance",
     });
     expect(entry.verifiable).toBe(false);
     expect(entry.accurate).toBe(false);
@@ -158,7 +165,7 @@ describe("scout-accuracy pure helpers", () => {
       payload: { totalPoints: 55 },
       scoreBreakdown: { red: { totalPoints: 56 } },
       redAlliance: ["frc118"],
-      blueAlliance: [],
+      blueAlliance: [], comparisonScope: "alliance",
     });
     expect(close.accurate).toBe(true);
 
@@ -173,7 +180,7 @@ describe("scout-accuracy pure helpers", () => {
       payload: { totalPoints: 10 },
       scoreBreakdown: { red: { totalPoints: 56 } },
       redAlliance: ["frc118"],
-      blueAlliance: [],
+      blueAlliance: [], comparisonScope: "alliance",
     });
     expect(far.accurate).toBe(false);
   });

@@ -32,8 +32,9 @@ describe("sign-in-model", () => {
       ),
     ).toEqual({ state: "needs_verification", emailHint: "a***@team.org" });
     expect(
-      sessionProbeFromPayload({ ok: true, status: 200 }, { authenticated: true }),
+      sessionProbeFromPayload({ ok: true, status: 200 }, { authenticated: true, requiresVerification: false }),
     ).toEqual({ state: "active", emailHint: "" });
+    expect(sessionProbeFromPayload({ ok: true, status: 200 }, { authenticated: true })).toEqual({ state: "none" });
   });
 
   it("reads a pending invite token from storage and ignores blanks", () => {
@@ -64,6 +65,8 @@ describe("sign-in-model", () => {
     expect(emailSubmitLabel("idle")).toBe("Email me a sign-in code");
     expect(passwordSubmitLabel("reset", { resetSent: false, working: false })).toBe("Send reset code");
     expect(passwordSubmitLabel("reset", { resetSent: true, working: false })).toBe("Set new password");
+    expect(passwordSubmitLabel("reset", { resetSent: false, working: true })).toBe("Requesting code…");
+    expect(passwordSubmitLabel("reset", { resetSent: true, working: true })).toBe("Updating password…");
     expect(passwordSubmitLabel("password", { resetSent: false, working: true })).toBe("Signing in…");
     expect(resendLabel({ ready: false, busy: "idle", seconds: 12 })).toMatch(/Resend in/);
     expect(codeExpiryCopy(true, 0)).toMatch(/no longer valid/i);

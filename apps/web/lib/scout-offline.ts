@@ -369,6 +369,7 @@ async function pushEntryBatch(user: string, orgId: string, batch: SyncEntry[]): 
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ orgId, entries: batch, resultsMode: "per-entry" }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
@@ -417,7 +418,10 @@ async function drainOutboxNow(user: string, orgId: string): Promise<Omit<SyncOut
       if (await quarantinePersonalEntry(user, entry, reason)) quarantined += 1;
       else changedDuringUpload = true;
     }
-    if (!changedDuringUpload) break;
+    // A different robot may have been saved while this batch was in flight.
+    // Re-read after progress, not just after a correction to the same ID.
+    // Keep the three-pass limit; unacknowledged rows remain queued for retry.
+    if (!changedDuringUpload && !drain.accepted.length && !drain.rejected.length && !drain.isolated.length) break;
   }
   return { count, validations, quarantined };
 }

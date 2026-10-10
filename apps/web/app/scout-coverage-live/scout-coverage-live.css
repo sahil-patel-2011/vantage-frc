@@ -1,105 +1,83 @@
-/* Soft-UI Scout Coverage Live — .scout-coverage-live-* + shared Soft-UI tokens. Never DEMO coverage. */
-.scout-coverage-live-page{
-  max-width:1120px;
-  margin:0 auto;
-  padding:clamp(18px,3vw,32px) 16px 40px;
-  display:grid;
-  gap:18px;
+.scout-coverage-live-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(18px, 3vw, 32px) 16px 40px;
+  display: grid;
+  gap: 20px;
 }
-.scout-coverage-live-header-meta{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  align-items:center;
-  justify-content:flex-end;
+.scout-coverage-live-page > *,
+.scout-coverage-live-list li > div { min-width: 0; }
+.scout-coverage-live-header-meta,
+.scout-coverage-live-related { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.scout-coverage-live-header-meta { justify-content: flex-end; }
+.scout-coverage-live-page :is(button, .app-button, input, summary),
+.scout-coverage-live-related a { min-height: 44px; }
+.scout-coverage-live-related a { display: inline-flex; align-items: center; }
+.scout-coverage-live-page :is(button, a, input, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
-.scout-coverage-live-related{display:flex;flex-wrap:wrap;gap:8px}
-.scout-coverage-live-next-actions{margin:0}
-.scout-coverage-live-footer-links{margin:0}
-.scout-coverage-live-event{
-  display:flex;flex-wrap:wrap;gap:14px;align-items:end;
-  padding:14px 16px;
-  border:1px solid var(--line);
-  border-radius:var(--radius,16px);
-  background:var(--surface);
-  box-shadow:var(--shadow,0 10px 28px rgba(19,32,51,.07));
+.scout-coverage-live-event {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
 }
-.scout-coverage-live-event label{
-  display:grid;gap:6px;
-  font:600 12px var(--font-source-sans),ui-sans-serif;
-  color:var(--muted);
+.scout-coverage-live-event > p { margin: 0; }
+.scout-review-target { margin-left: auto; }
+.scout-review-target summary,
+#missed-assignments details > summary {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  gap: 8px;
 }
-.scout-coverage-live-event input{
-  min-height:40px;min-width:100px;padding:0 12px;
-  border:1px solid var(--line);
-  border-radius:var(--radius-sm);background:#fff;color:var(--ink);
+.scout-review-target summary::before,
+#missed-assignments details > summary::before { content: "+"; font-size: 20px; }
+.scout-review-target[open] summary::before,
+#missed-assignments details[open] > summary::before { content: "−"; }
+.scout-review-target form { display: grid; gap: 12px; padding-top: 8px; max-width: 320px; }
+.scout-coverage-live-event label { display: grid; gap: 6px; color: var(--muted); }
+.scout-coverage-live-event input {
+  width: 100%;
+  min-width: 100px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface-2, var(--surface));
+  color: var(--ink);
+  font: inherit;
 }
-.scout-coverage-live-kpis{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:10px;
+.scout-review-notice { margin: 0; padding: 12px 16px; border-radius: var(--radius-sm, 12px); background: var(--surface-2, var(--surface)); color: var(--ink); }
+.scout-coverage-live-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 12px; }
+.scout-coverage-live-kpis article { display: grid; gap: 8px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
+.scout-coverage-live-kpis span,
+.scout-coverage-live-kpis small { color: var(--muted); font-size: 13px; line-height: 1.5; letter-spacing: normal; text-transform: none; }
+.scout-coverage-live-kpis strong { font-size: clamp(24px, 3.6vw, 32px); letter-spacing: -.03em; color: var(--ink); }
+.scout-coverage-live-panel { padding: 20px; border: 1px solid var(--line); border-radius: var(--radius, 16px); background: var(--surface); }
+.scout-coverage-live-panel header { margin-bottom: 16px; }
+.scout-coverage-live-panel h2 { margin: 0 0 4px; font-size: var(--title-2); letter-spacing: var(--tracking-tight); color: var(--ink); }
+.scout-coverage-live-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.scout-coverage-live-list li { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 14px; border-radius: var(--radius-sm, 12px); border: 1px solid var(--line); background: var(--surface-2, var(--surface)); }
+.scout-coverage-live-list strong { font-size: 15px; color: var(--ink); }
+.scout-coverage-live-list small { display: block; color: var(--muted); font-size: 13px; line-height: 1.5; margin-top: 4px; overflow-wrap: anywhere; }
+.scout-coverage-live-list .app-button { flex-shrink: 0; }
+.scout-coverage-live-row-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.scout-review-list-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
+.scout-review-list-footer p { margin: 0; }
+#missed-assignments p > a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 900px) {
+  .scout-coverage-live-header-meta { justify-content: flex-start; }
 }
-.scout-coverage-live-kpis article{
-  display:grid;gap:4px;
-  padding:16px;
-  border:1px solid var(--line);
-  border-radius:var(--radius-sm,12px);
-  background:var(--surface);
-  box-shadow:var(--shadow,0 10px 28px rgba(19,32,51,.07));
-}
-.scout-coverage-live-kpis span,.scout-coverage-live-kpis small{
-  color:var(--muted);
-  font:700 10px/1.2 var(--font-ibm-mono),ui-monospace,monospace;
-  letter-spacing:.06em;text-transform:uppercase;
-}
-.scout-coverage-live-kpis strong{
-  font-size:clamp(24px,3.6vw,32px);
-  letter-spacing:-.03em;color:var(--ink);
-}
-.scout-coverage-live-panel{
-  padding:16px 18px;
-  border:1px solid var(--line);
-  border-radius:var(--radius,16px);
-  background:var(--surface);
-  box-shadow:var(--shadow,0 10px 28px rgba(19,32,51,.07));
-}
-.scout-coverage-live-panel header{margin-bottom:12px}
-.scout-coverage-live-panel h2{
-  margin:0 0 4px;font-size:var(--title-2);letter-spacing:var(--tracking-tight);color:var(--ink);
-}
-.scout-coverage-live-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-.scout-coverage-live-list li{
-  display:flex;justify-content:space-between;gap:12px;align-items:flex-start;
-  padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--line);
-  background:#f8fafc;
-}
-.scout-coverage-live-list strong{font-size:15px;color:var(--ink)}
-.scout-coverage-live-list small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
-.scout-coverage-live-row-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-@media (max-width:900px){
-  .scout-coverage-live-header-meta{justify-content:flex-start}
-  .scout-coverage-live-next-actions li{flex-direction:column;align-items:stretch}
-  .scout-coverage-live-kpis{grid-template-columns:1fr 1fr}
-}
-@media (max-width:520px){
-  .scout-coverage-live-kpis{grid-template-columns:1fr}
-  .scout-coverage-live-list li{flex-direction:column}
-}
-
-/* Phones: links and buttons a lead taps are at least 44px tall; tiles stack two across. */
-@media (max-width: 700px) {
-  .scout-coverage-live-related a,
-  .scout-coverage-live-page .app-button,
-  .scout-coverage-live-page .app-button.sm,
-  .scout-coverage-live-page button,
-  .scout-coverage-live-event input {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-  }
-  .scout-coverage-live-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-#missed-assignments details > summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600}
-@media (max-width: 700px) {
-  #missed-assignments p > a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 600px) {
+  .scout-coverage-live-kpis { grid-template-columns: 1fr; }
+  .scout-coverage-live-list li { flex-direction: column; align-items: stretch; }
+  .scout-coverage-live-panel { padding: 16px; }
+  .scout-review-target { width: 100%; margin-left: 0; }
+  .scout-review-target form { max-width: none; }
 }

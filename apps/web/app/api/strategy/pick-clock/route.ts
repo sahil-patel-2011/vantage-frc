@@ -8,6 +8,7 @@
 
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { assertScoutingLead } from "@vantage/scouting/permissions";
 import { headers } from "next/headers";
 import { recommendNextPick, type PickClockListHint } from "../../../../lib/strategy/pick-clock";
 import { loadPickDesk } from "../../../../lib/strategy/pick-desk";
@@ -178,6 +179,7 @@ export async function POST(request: Request) {
         [orgId, userId],
       );
       if (!member.rowCount) throw new Error("forbidden");
+      await assertScoutingLead(client, orgId);
 
       const eventResult = await client.query<{ eventKey: string | null }>(
         `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1::uuid`,
@@ -225,6 +227,9 @@ export async function POST(request: Request) {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
+    if (error && typeof error === "object" && "status" in error && error.status === 403) {
+      return Response.json({ error: "Scouting lead access required." }, { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    }
     const message = publicErrorMessage(error, "Pick clock request failed");
     if (message === "forbidden") {
       return Response.json({ error: "Organization access denied" }, { status: 403 });

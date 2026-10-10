@@ -1,4 +1,5 @@
 import { lintPitClaimedScoring, lintSchemaBudget } from "@vantage/scouting/trust";
+import { isOfficialComparisonMode, officialComparisonConfigError, type OfficialComparisonMode } from "@vantage/scouting/official-fields";
 import {
   assertSchemaIdentityLock,
   isScoutIdentityField,
@@ -37,6 +38,7 @@ import {
 } from "@vantage/prediction-strategy";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { cyclicVisibilityKeys, isVisibleWhen, readVisibleWhen, type VisibleWhen } from "@vantage/scouting/visibility";
 
 export { SCOUT_IDENTITY_LOCK_COPY };
 export type AnswerKind = FieldWidget;
@@ -176,6 +178,7 @@ export type DraftFieldSettings = {
 
 export type DraftQuestion = {
   id: string;
+  visibleWhen?: VisibleWhen | null;
   /**
    * Stable published key. Once a field has shipped in a schema version, renaming
    * its label must NEVER change this — payloads stored under it stay reachable.
@@ -195,6 +198,8 @@ export type DraftQuestion = {
   helpText?: string;
   /** Collection rules survive opening, editing and republishing a season starter. */
   collectionConfig?: Record<string, unknown>;
+  /** Separate robot outcomes from attempts, capabilities and point totals. */
+  officialComparison?: OfficialComparisonMode;
 };
 
 export const COUNTER_STEPS_TEXT = DEFAULT_COUNTER_STEPS.join(", ");
@@ -240,6 +245,7 @@ export function newDraftQuestion(partial?: Partial<DraftQuestion>): DraftQuestio
     chart: partial?.chart ?? "auto",
     helpText: partial?.helpText ?? "",
     ...(partial?.collectionConfig ? { collectionConfig: { ...partial.collectionConfig } } : {}),
+    ...(partial?.officialComparison !== undefined ? { officialComparison: partial.officialComparison } : {}),
     role: partial?.role ?? "none",
     reset: partial?.reset ?? "reset",
     settings: { ...defaultSettingsForKind(kind), ...(partial?.settings ?? {}) },
@@ -486,6 +492,9 @@ export function draftFromDefinition(definition: SchemaDefinition): {
         settings: settingsFromField(field),
         chart: ["bar", "trend", "none"].includes(String(field.config?.chart)) ? field.config?.chart as DraftQuestion["chart"] : "auto",
         collectionConfig: Object.fromEntries(Object.entries(field.config ?? {}).filter(([key]) => ["scoutPhase", "requireObservation", "integer", "min"].includes(key))),
+        // Invalid imported metadata stays opted out until the author chooses a rule.
+        ...(field.config?.officialComparison !== undefined ? { officialComparison: isOfficialComparisonMode(field.config.officialComparison) ? field.config.officialComparison : "none" } : field.config?.role === "none" ? { officialComparison: "none" } : {}),
+        visibleWhen: readVisibleWhen(field),
       }),
     ),
   };
@@ -580,12 +589,15 @@ function collectionConfigForQuestion(question: DraftQuestion, type: FieldType): 
 export function previewFieldForQuestion(question: DraftQuestion): FieldDefinition {
   const type = kindToFieldType(question.kind);
   const config = { ...collectionConfigForQuestion(question, type), ...studioConfigForQuestion(question, type) };
+  if (question.role !== "none") config.role = question.role;
+  if (question.officialComparison && question.officialComparison !== "auto") config.officialComparison = question.officialComparison;
   const field: FieldDefinition = {
     key: question.key?.trim() || question.id,
     label: question.label.trim() || "Untitled",
     type,
     required: type !== "section_header" && question.required ? true : undefined,
     widget: question.kind,
+    ...(question.visibleWhen != null ? { visibleWhen: question.visibleWhen } : {}),
   };
   if (Object.keys(config).length) field.config = config;
   if (
@@ -709,12 +721,14 @@ export function definitionFromDraft(
       // A section header is a heading; "required" on it would block saves forever.
       required: (type !== "section_header" && question.required) || undefined,
       widget: question.kind,
+      ...(question.visibleWhen != null ? { visibleWhen: question.visibleWhen } : {}),
     };
     const config: Record<string, unknown> = {};
     Object.assign(config, collectionConfigForQuestion(question, type));
     // "none" means auto-detect by key name — persist only explicit mappings so
     // untouched conventional fields keep reaching strategy via inference.
     if (question.role !== "none") config.role = question.role;
+    if (question.officialComparison && question.officialComparison !== "auto") config.officialComparison = question.officialComparison;
     // "reset" is the default everywhere; only persist a deliberate choice.
     if (question.reset !== "reset" && type !== "section_header") {
       config.resetBehavior = question.reset;
@@ -809,6 +823,7 @@ export type DraftPublishStatus = {
 function stableConfigFingerprint(field: FieldDefinition): string {
   const config = { ...(field.config as Record<string, unknown> | undefined) };
   delete config.role;
+  delete config.visibleWhen;
   const keys = Object.keys(config).sort();
   if (!keys.length) return "";
   return JSON.stringify(keys.map((key) => [key, config[key]]));
@@ -820,11 +835,12 @@ function stableDefinitionFingerprint(definition: SchemaDefinition): string {
     fields: definition.fields.map((field) => ({
       key: field.key,
       label: field.label,
-      type: field.type,
+      type: kindToFieldType(fieldToAnswerKind(field)),
       required: Boolean(field.required),
       options: field.options ?? [],
-      widget: field.widget ?? null,
+      widget: fieldToAnswerKind(field),
       helpText: field.helpText ?? null,
+      visibleWhen: readVisibleWhen(field),
       config: stableConfigFingerprint(field),
       // Effective role (explicit config.role, else key inference) so publishing
       // roles onto a legacy schema does not flag a phantom draft change.
@@ -1393,6 +1409,23 @@ export function validateDraft(
     errors.push(...studioQuestionErrors(question, n));
   }
   const definition = definitionFromDraft(title, questions);
+  const fieldKeys = new Set(definition.fields.map(field => field.key));
+  const cyclic = new Set(cyclicVisibilityKeys(definition.fields));
+  for (const [index, field] of definition.fields.entries()) {
+    if (entryType === "match") {
+      const comparisonError = officialComparisonConfigError(field);
+      if (comparisonError) errors.push(`Question ${index + 1}: ${comparisonError}`);
+    }
+    if (cyclic.has(field.key)) errors.push(`Question ${index + 1} has a circular answer condition. Choose a question that does not depend on it.`);
+    const rule = readVisibleWhen(field);
+    if (rule == null) continue;
+    if (!isVisibleWhen(rule)) {
+      errors.push(`Question ${index + 1} has an invalid answer condition.`);
+      continue;
+    }
+    const clauses = "allOf" in rule ? rule.allOf : "anyOf" in rule ? rule.anyOf : [rule];
+    if (clauses.some(clause => clause.fieldKey === field.key || !fieldKeys.has(clause.fieldKey))) errors.push(`Question ${index + 1} depends on a missing question. Restore that question or remove its condition.`);
+  }
   const identityError = assertSchemaIdentityLock(definition);
   if (identityError) errors.push(identityError);
   // Section headers are layout, not questions — they must not eat the accuracy

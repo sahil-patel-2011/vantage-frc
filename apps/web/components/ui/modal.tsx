@@ -13,7 +13,14 @@ export function useDialog(initial = false) {
 }
 
 const FOCUSABLE =
-  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  'a[href],button:not(:disabled),textarea:not(:disabled),input:not(:disabled),select:not(:disabled),summary,[tabindex]:not([tabindex="-1"])';
+
+function dialogControls(node: HTMLElement | null): HTMLElement[] {
+  return Array.from(node?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter(el =>
+    el.tabIndex >= 0 && !el.matches(":disabled") && !el.closest("[inert]")
+    && getComputedStyle(el).visibility !== "hidden" && el.getClientRects().length > 0,
+  );
+}
 
 type ModalProps = {
   open: boolean;
@@ -74,10 +81,9 @@ export function Modal({
     // body, else the first control at all, else the dialog itself. Never steal focus that is
     // already inside it.
     if (!node?.contains(document.activeElement)) {
-      const wanted =
-        node?.querySelector<HTMLElement>("[autofocus], [data-autofocus]") ??
-        Array.from(node?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).find((el) => el.getAttribute("aria-label") !== "Close dialog") ??
-        node?.querySelector<HTMLElement>(FOCUSABLE);
+      const controls = dialogControls(node);
+      const wanted = controls.find(el => el.matches("[autofocus], [data-autofocus]"))
+        ?? controls.find(el => el.getAttribute("aria-label") !== "Close dialog") ?? controls[0];
       (wanted ?? node)?.focus();
     }
 
@@ -91,9 +97,7 @@ export function Modal({
         return;
       }
       if (e.key !== "Tab" || !node) return;
-      const items = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (el) => el.offsetParent !== null || el === document.activeElement,
-      );
+      const items = dialogControls(node);
       if (items.length === 0) {
         e.preventDefault();
         node.focus();

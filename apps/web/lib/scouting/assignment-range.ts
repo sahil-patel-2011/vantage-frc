@@ -24,8 +24,8 @@ const COMP_ORDER: Record<CompLevel, number> = {
   unknown: 5,
 };
 
-const QUAL = /^([0-9]{4}[a-z0-9]+)_qm(\d+)$/i;
-const BRACKET = /^([0-9]{4}[a-z0-9]+)_(ef|qf|sf|f)(\d+)m(\d+)$/i;
+const QUAL = /^([0-9]{4}[a-z0-9_-]+)_qm(\d+)$/i;
+const BRACKET = /^([0-9]{4}[a-z0-9_-]+)_(ef|qf|sf|f)(\d+)m(\d+)$/i;
 
 export function parseMatchKey(matchKey: string | null | undefined): ParsedMatchKey | null {
   if (!matchKey || typeof matchKey !== "string") return null;
@@ -34,7 +34,7 @@ export function parseMatchKey(matchKey: string | null | undefined): ParsedMatchK
   const qual = QUAL.exec(raw);
   if (qual) {
     const matchNumber = Number(qual[2]);
-    if (!Number.isInteger(matchNumber) || matchNumber < 1) return null;
+    if (!Number.isSafeInteger(matchNumber) || matchNumber < 1 || matchNumber > 999) return null;
     return {
       raw,
       eventKey: (qual[1] ?? "").toLowerCase(),
@@ -49,7 +49,7 @@ export function parseMatchKey(matchKey: string | null | undefined): ParsedMatchK
     const level = (bracket[2] ?? "").toLowerCase() as CompLevel;
     const setNumber = Number(bracket[3]);
     const matchNumber = Number(bracket[4]);
-    if (!Number.isInteger(setNumber) || !Number.isInteger(matchNumber)) return null;
+    if (!Number.isSafeInteger(setNumber) || !Number.isSafeInteger(matchNumber) || setNumber < 1 || matchNumber < 1 || setNumber > 999 || matchNumber > 999) return null;
     return {
       raw,
       eventKey: (bracket[1] ?? "").toLowerCase(),
@@ -96,16 +96,14 @@ export type AssignmentRangeResult =
   | { ok: true; slots: AssignmentRangeSlot[]; skipped: string[] }
   | { ok: false; error: string; slots: AssignmentRangeSlot[]; skipped: string[] };
 
-function normalizeTeamKey(teamKey: string): string | null {
-  const trimmed = teamKey.trim();
-  if (!trimmed) return null;
-  if (/^frc\d+[a-z]?$/i.test(trimmed)) return `frc${trimmed.slice(3)}`;
-  if (/^\d+[a-z]?$/i.test(trimmed)) return `frc${trimmed}`;
-  return null;
+export function normalizeAssignmentTeamKey(teamKey: string): string | null {
+  const match = /^(?:frc)?(\d{1,6})([a-z]?)$/i.exec(teamKey.trim());
+  if (!match || Number(match[1]) < 1) return null;
+  return `frc${Number(match[1])}${(match[2] ?? "").toLowerCase()}`;
 }
 
 export function expandAssignmentRange(input: AssignmentRangeInput): AssignmentRangeResult {
-  const teamKey = normalizeTeamKey(input.teamKey);
+  const teamKey = normalizeAssignmentTeamKey(input.teamKey);
   if (!teamKey) return { ok: false, error: "Choose which robot this scout is covering.", slots: [], skipped: [] };
 
   const first = parseMatchKey(input.firstMatchKey);
@@ -115,6 +113,9 @@ export function expandAssignmentRange(input: AssignmentRangeInput): AssignmentRa
   }
   if (first.eventKey !== last.eventKey) {
     return { ok: false, error: "First and last match must be at the same event.", slots: [], skipped: [] };
+  }
+  if (!input.matchKeys.includes(first.raw) || !input.matchKeys.includes(last.raw)) {
+    return { ok: false, error: "Pick a first and last match from the current event schedule.", slots: [], skipped: [] };
   }
   if (compareParsedMatches(first, last) > 0) {
     return { ok: false, error: "Last match is before the first match.", slots: [], skipped: [] };
@@ -187,9 +188,9 @@ export function compactAssignments(
   for (const row of rows) {
     const parsed = parseMatchKey(row.matchKey);
     if (!parsed) continue;
-    const key = `${row.userId}::${row.teamKey}`;
+    const key = `${row.userId}::${row.teamKey}::${parsed.eventKey}`;
     const list = groups.get(key) ?? [];
-    list.push(parsed);
+    if (!list.some(match => match.raw === parsed.raw)) list.push(parsed);
     groups.set(key, list);
   }
 

@@ -1,12 +1,13 @@
 import {
   classifyComparableField,
   extractTbaTeamMatchFacts,
-  isComparableScoutField,
   officialValueFromTbaFacts,
   softStatboticsClimbSignal,
   type OfficialFieldPolicy as ReferenceOfficialFieldPolicy,
 } from "@vantage/reference";
-import type { SchemaDefinition } from "./index";
+import type { FieldDefinition, SchemaDefinition } from "./index";
+import { officialComparisonForField } from "./official-fields";
+import { visibleFields, withInferredPhaseRules } from "./visibility";
 
 export type SchemaBudget = {
   fieldCount: number;
@@ -33,10 +34,10 @@ export function lintSchemaBudget(
     hardWarningAt,
     status,
     message: status === "healthy"
-      ? `${fieldCount} fields — within the accuracy budget (~${recommendedMaximum}).`
+      ? `${fieldCount} questions — within the suggested length (${recommendedMaximum}).`
       : status === "caution"
-        ? `${fieldCount} fields — CD studies show more columns often mean worse accuracy; aim for ≤${recommendedMaximum}.`
-        : `${fieldCount} fields — over the ~${hardWarningAt} hard warning; remove or defer at least ${fieldCount - hardWarningAt} before relying on this form.`,
+        ? `${fieldCount} questions — consider shortening the form toward ${recommendedMaximum}; verify scouts can finish it during a match.`
+        : `${fieldCount} questions — above the suggested ${hardWarningAt}-question warning. Review which observations scouts can reliably finish during a match.`,
   };
 }
 
@@ -145,12 +146,42 @@ export type OfficialFieldPolicy = ReferenceOfficialFieldPolicy & {
 
 const compact = (value: unknown) => String(value ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
 
-export function valuesAgree(scoutValue: unknown, officialValue: unknown): boolean {
+export const ROBOT_CHECK_DETAIL_PREFIX = "[robot-check-v3]";
+export function isCurrentRobotCheck(detail: string | undefined): boolean {
+  return Boolean(detail?.startsWith(`${ROBOT_CHECK_DETAIL_PREFIX} `) || detail?.startsWith(`Video re-scout: ${ROBOT_CHECK_DETAIL_PREFIX} `));
+}
+export function robotCheckDescription(detail: string): string {
+  return isCurrentRobotCheck(detail) ? detail.replace(`${ROBOT_CHECK_DETAIL_PREFIX} `, "") : detail;
+}
+
+const CLIMB_SUCCESSES = ["deep", "deepcage", "shallow", "shallowcage", "high", "mid", "low", "traversal", "stage", "stageleft", "stageright", "centerstage"];
+const CLIMB_BINARY_POSITIVE = ["true", "yes", "1", "on"];
+const BINARY_POSITIVE = ["true", "yes", "1", "on", "taxi", "mobility", "left"];
+const BINARY_NEGATIVE = ["false", "no", "0", "off", "none"];
+function knownRobotOutcome(value: unknown, kind: "climb" | "mobility" | "foul" | "other"): boolean {
+  if (kind === "foul") return (typeof value === "number" || typeof value === "string" && value.trim() !== "") && Number.isFinite(Number(value)) && Number(value) >= 0;
+  if (typeof value === "boolean") return true;
+  const normalized = compact(value);
+  return (kind === "climb" ? CLIMB_BINARY_POSITIVE : BINARY_POSITIVE).includes(normalized) || BINARY_NEGATIVE.includes(normalized) ||
+    kind === "climb" && (CLIMB_SUCCESSES.includes(normalized) || ["park", "parked"].includes(normalized));
+}
+
+export function valuesAgree(scoutValue: unknown, officialValue: unknown, kind?: "climb" | "mobility" | "foul" | "other"): boolean {
+  if (scoutValue == null || officialValue == null || scoutValue === "" || officialValue === "") return false;
+  if ((kind === "climb" || kind === "mobility") && typeof scoutValue === "string") {
+    const answer = compact(scoutValue);
+    if ((kind === "mobility" ? BINARY_POSITIVE : CLIMB_BINARY_POSITIVE).includes(answer)) return valuesAgree(true, officialValue, kind);
+    if (["false", "no", "0", "off"].includes(answer)) return valuesAgree(false, officialValue, kind);
+  }
   if (typeof scoutValue === "number" && typeof officialValue === "number") {
     return Math.abs(scoutValue - officialValue) < 0.001;
   }
   if (typeof scoutValue === "boolean") {
     const official = compact(officialValue);
+    if (kind === "climb") {
+      if (CLIMB_SUCCESSES.includes(official)) return scoutValue;
+      if (["none", "park", "parked"].includes(official)) return !scoutValue;
+    }
     if (scoutValue) {
       return (
         ["true", "yes", "1", "on", "taxi", "mobility", "left"].includes(official) ||
@@ -165,15 +196,10 @@ export function valuesAgree(scoutValue: unknown, officialValue: unknown): boolea
   const scout = compact(scoutValue);
   const official = compact(officialValue);
   if (scout === official) return true;
-  if (scout === "none" && ["notattempted", "none", "no", "park", "parked"].includes(official)) return true;
-  if (["high", "traversal", "deep", "deepcage", "shallowcage", "full"].includes(scout)
-    && ["high", "traversal", "deep", "deepcage", "shallowcage", "parked", "full", "stage"].some((token) => official.includes(token))) {
-    return true;
-  }
-  if (["partial", "low", "park", "parked"].includes(scout) && ["park", "parked", "low", "shallow", "shallowcage"].some((token) => official.includes(token))) {
-    return true;
-  }
-  if (Number.isFinite(Number(scoutValue)) && Number.isFinite(Number(officialValue))) {
+  const synonyms = [["deep", "deepcage"], ["shallow", "shallowcage"], ["park", "parked"]];
+  if (synonyms.some(group => group.includes(scout) && group.includes(official))) return true;
+  if (["string", "number"].includes(typeof scoutValue) && ["string", "number"].includes(typeof officialValue)
+    && scout.trim() && official.trim() && Number.isFinite(Number(scoutValue)) && Number.isFinite(Number(officialValue))) {
     return Math.abs(Number(scoutValue) - Number(officialValue)) < 0.001;
   }
   return false;
@@ -222,6 +248,7 @@ export type FieldValidation = {
 export function crossValidateScoutPayload(input: {
   payload: Record<string, unknown>;
   fieldKeys: string[];
+  fieldDefinitions?: readonly FieldDefinition[];
   teamKey: string;
   redAlliance: { teamKeys?: string[] };
   blueAlliance: { teamKeys?: string[] };
@@ -230,6 +257,8 @@ export function crossValidateScoutPayload(input: {
   epaEndgame?: number | null;
 }): FieldValidation[] {
   const policyByField = new Map((input.policies ?? []).map((policy) => [policy.fieldKey, policy]));
+  const original = input.fieldDefinitions ? new Map(input.fieldDefinitions.map(field => [field.key, field])) : null;
+  const visible = input.fieldDefinitions ? new Set(visibleFields(withInferredPhaseRules(input.fieldDefinitions), input.payload).map(field => field.key)) : null;
   const results: FieldValidation[] = [];
   const facts = extractTbaTeamMatchFacts(
     {
@@ -243,7 +272,9 @@ export function crossValidateScoutPayload(input: {
 
   for (const fieldKey of input.fieldKeys) {
     if (!Object.prototype.hasOwnProperty.call(input.payload, fieldKey)) continue;
-    if (!isComparableScoutField(fieldKey)) continue;
+    const field = original?.get(fieldKey);
+    const kind = original ? field ? officialComparisonForField(field).kind : null : classifyComparableField(fieldKey);
+    if (!kind || kind === "other" || (visible && !visible.has(fieldKey))) continue;
     const policy = policyByField.get(fieldKey);
     if (policy?.enabled === false) continue;
     const scoutValue = input.payload[fieldKey];
@@ -276,6 +307,7 @@ export function crossValidateScoutPayload(input: {
 
     const reference = officialValueFromTbaFacts({
       fieldKey,
+      kind,
       policy,
       facts,
       scoreBreakdown: input.scoreBreakdown,
@@ -289,12 +321,24 @@ export function crossValidateScoutPayload(input: {
         officialValue: null,
         officialSource: "tba",
         officialKey: null,
-        detail: `No TBA ${classifyComparableField(fieldKey)} key present in score breakdown yet.`,
+        detail: `No robot-level TBA ${kind} value is available in this score breakdown.`,
       });
       continue;
     }
 
-    const status = valuesAgree(scoutValue, reference.value) ? "match" : "conflict";
+    if (scoutValue == null || (typeof scoutValue === "string" && !scoutValue.trim()) ||
+      (reference.kind === "climb" && ["failed", "notattempted", "attemptedfailed", "unseen", "notseen"].includes(compact(scoutValue)))) {
+      results.push({ fieldKey, status: "not_comparable", scoutValue, officialValue: reference.value,
+        officialSource: "tba", officialKey: reference.officialKey, detail: "Official outcomes cannot verify a missing observation or whether a climb was attempted." });
+      continue;
+    }
+    const agrees = valuesAgree(scoutValue, reference.value, reference.kind);
+    if (!agrees && (!knownRobotOutcome(scoutValue, reference.kind) || !knownRobotOutcome(reference.value, reference.kind))) {
+      results.push({ fieldKey, status: "not_comparable", scoutValue, officialValue: reference.value,
+        officialSource: "tba", officialKey: reference.officialKey, detail: "These answer labels do not establish comparable robot outcomes. Keep the observation for team review." });
+      continue;
+    }
+    const status = agrees ? "match" : "conflict";
     results.push({
       fieldKey,
       status,
@@ -308,7 +352,7 @@ export function crossValidateScoutPayload(input: {
           : `Conflicts with TBA score_breakdown.${reference.officialKey}`,
     });
 
-    if (classifyComparableField(fieldKey) === "climb") {
+    if (kind === "climb") {
       const soft = softStatboticsClimbSignal({
         scoutClimb: scoutValue,
         epaEndgame: input.epaEndgame,
@@ -564,7 +608,7 @@ export function rankScoutsForStrategySeats(input: {
   seatCount?: number;
   minChecks?: number;
 }): Array<{ userId: string; accuracy: number; reason: string }> {
-  const seatCount = Math.max(1, Math.min(8, Math.trunc(input.seatCount ?? 3)));
+  const seatCount = Math.max(1, Math.min(10, Math.trunc(input.seatCount ?? 3)));
   const minChecks = Math.max(1, Math.trunc(input.minChecks ?? 1));
   return rankScoutsByAccuracy(
     input.scouts
@@ -583,7 +627,7 @@ export function rankScoutsForStrategySeats(input: {
     .map((scout) => ({
       userId: scout.userId,
       accuracy: scout.accuracy,
-      reason: `Top accuracy ${Math.round(scout.accuracy * 100)}% (${scout.matches}/${scout.checks} vs TBA)`,
+      reason: `Official agreement ${Math.round(scout.accuracy * 100)}% (${scout.matches}/${scout.checks} checks)`,
     }));
 }
 

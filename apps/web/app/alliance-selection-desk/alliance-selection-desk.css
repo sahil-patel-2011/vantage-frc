@@ -9,7 +9,7 @@
 .alliance-desk-setup-steps{list-style:none;padding:0;margin:0;display:grid;gap:10px}
 .alliance-desk-setup-steps li{display:flex;justify-content:space-between;gap:12px;align-items:center}
 .alliance-desk-tip{margin:0}
-.alliance-desk-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.alliance-desk-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr))}
 .alliance-desk-alliance-head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .alliance-desk-slot{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:8px}
 .alliance-desk-slot-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -21,6 +21,9 @@
 .alliance-desk-slot-editor > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; }
 .alliance-desk-slot-editor[open] { display: grid; gap: 12px; padding-bottom: 8px; }
 .alliance-desk-slot-head > strong { width: 100%; font-size: 15px; }
+.alliance-desk-page :is(button,input,select,textarea){min-height:44px}
+.alliance-desk-page :is(button,input,select,textarea,summary):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.alliance-desk-slot-head,.alliance-desk-evidence{overflow-wrap:anywhere}
 @media(max-width:900px){
   .alliance-desk-header-actions{justify-content:flex-start}
   .alliance-desk-next-actions li,.alliance-desk-setup-steps li{flex-direction:column;align-items:stretch}

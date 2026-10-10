@@ -101,7 +101,7 @@ function StudioShell({
 export function CounterField({ field, value, onChange, label }: FieldProps & { label: string }) {
   const config = useMemo(() => counterConfig(field), [field]);
   const { canUndo, undoValue, remember, clear } = useOneLevelUndo(value);
-  const touched = typeof value === "number";
+  const touched = typeof value === "number" && Number.isFinite(value);
   const current = touched ? value : null;
 
   function step(delta: number) {
@@ -139,6 +139,7 @@ export function CounterField({ field, value, onChange, label }: FieldProps & { l
             type="button"
             className={`scout-tap plus${amount === config.steps[0] ? " primary" : ""}`}
             aria-label={`Add ${amount} to ${label}`}
+            disabled={config.max !== null && current !== null && current >= config.max}
             onClick={() => step(amount)}
           >
             +{amount}
@@ -178,7 +179,10 @@ export function MultiCounterField({ field, value, onChange, label }: FieldProps 
   const config = useMemo(() => multiCounterConfig(field), [field]);
   const { canUndo, undoValue, remember, clear } = useOneLevelUndo(value);
   const counts = multiCounterValueOf(value, config);
-  const touched = value !== undefined && value !== null;
+  const bag = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const observed = (key: string) => typeof bag[key] === "number" && Number.isInteger(bag[key]);
+  const recordedCount = config.counters.filter(counter => observed(counter.key)).length;
+  const touched = recordedCount > 0;
 
   function step(counterKey: string, delta: number) {
     remember();
@@ -198,7 +202,7 @@ export function MultiCounterField({ field, value, onChange, label }: FieldProps 
       label={label}
       hint={field.helpText ?? (config.max != null ? `Max ${config.max} each` : undefined)}
       headline={
-        <output className="scout-studio-readout" aria-live="polite">
+        <output className="scout-studio-readout" aria-live="polite" aria-label="Recorded total">
           <span key={touched ? multiCounterTotal(value, config) : "—"} className="scout-readout-value">
             {touched ? multiCounterTotal(value, config) : "—"}
           </span>
@@ -210,13 +214,14 @@ export function MultiCounterField({ field, value, onChange, label }: FieldProps 
           <li key={counter.key}>
             <div className="scout-multi-counter-label">
               <strong>{counter.label}</strong>
-              <output aria-live="polite">{counts[counter.key] ?? 0}</output>
+              <output aria-live="polite" aria-label={`${counter.label} count`}>{observed(counter.key) ? counts[counter.key] : "—"}</output>
             </div>
             <div className="scout-counter-pad compact">
               <button
                 type="button"
                 className="scout-tap minus"
                 aria-label={`Subtract 1 from ${counter.label}`}
+                disabled={!observed(counter.key) || counts[counter.key]! <= config.min}
                 onClick={() => step(counter.key, -1)}
               >
                 −1
@@ -227,15 +232,27 @@ export function MultiCounterField({ field, value, onChange, label }: FieldProps 
                   type="button"
                   className={`scout-tap plus${amount === config.steps[0] ? " primary" : ""}`}
                   aria-label={`Add ${amount} to ${counter.label}`}
+                  disabled={config.max !== null && counts[counter.key]! >= config.max}
                   onClick={() => step(counter.key, amount)}
                 >
                   +{amount}
                 </button>
               ))}
             </div>
+            <div className="scout-counter-state">
+              <small>{observed(counter.key) ? "Recorded" : "Not recorded"}</small>
+              <button type="button" aria-label={`${counter.label}: ${observed(counter.key) ? "clear answer" : `record ${config.min}`}`} onClick={() => {
+                remember();
+                const next = value && typeof value === "object" && !Array.isArray(value) ? { ...value } as Record<string, unknown> : {};
+                if (observed(counter.key)) delete next[counter.key];
+                else next[counter.key] = config.min;
+                onChange(Object.keys(next).length ? next : undefined);
+              }}>{observed(counter.key) ? "Clear" : `Record ${config.min}`}</button>
+            </div>
           </li>
         ))}
       </ul>
+      <small className="app-muted">{recordedCount}/{config.counters.length} counts recorded. The total includes recorded counts only.</small>
       <div className="scout-studio-actions">
         <button
           type="button"
@@ -251,13 +268,13 @@ export function MultiCounterField({ field, value, onChange, label }: FieldProps 
         <button
           type="button"
           className="text-button"
-          disabled={!touched}
+          disabled={value == null}
           onClick={() => {
             remember();
             onChange(undefined);
           }}
         >
-          Clear
+          Clear all counts
         </button>
       </div>
     </StudioShell>

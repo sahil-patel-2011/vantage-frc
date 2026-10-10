@@ -3,7 +3,7 @@
    card under it — so every widget looked like it had a detached empty header. */
 .dash-card-action-bar { position: absolute; top: 8px; right: 8px; z-index: 4; display: flex; justify-content: flex-end; align-items: center; gap: 8px; min-height: 32px; padding: 0; background: transparent; }
 .dash-card-action-bar > span:not(:empty) { padding: 4px 8px; border-radius: 999px; background: var(--surface); box-shadow: 0 1px 2px #0001; }
-.dash-grid-item:not(.is-editing) .dash-widget > header { padding-right: 40px; }
+.dash-grid-item:not(.is-editing):has(.dash-card-action-bar) .dash-widget > header { padding-right: 60px; }
 @media (hover: hover) {
   .dash-card-action-bar { opacity: 0; transition: opacity var(--dur-tint) var(--ease-out); }
   .dash-grid-item:hover .dash-card-action-bar,
@@ -13,7 +13,7 @@
 }
 .dash-card-action-bar > span { font-size: 11px; color: var(--muted); }
 .dash-card-actions { position: relative; }
-.dash-card-actions > summary { cursor: pointer; list-style: none; min-width: 36px; min-height: 32px; display: grid; place-items: center; border-radius: 10px; color: var(--ink); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(8px); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
+.dash-card-actions > summary { cursor: pointer; list-style: none; min-width: 44px; min-height: 44px; display: grid; place-items: center; border-radius: 10px; color: var(--ink); background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(8px); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); }
 .dash-card-actions > summary:hover { background: var(--surface); }
 .dash-card-actions > summary::-webkit-details-marker { display: none; }
 .dash-card-actions[open] > summary { background: var(--accent-soft); }
@@ -34,6 +34,15 @@
 /* "See every step" was the only raw browser link on Home; match "Open My Day". */
 .dash-home .dash-first-week-all { color: var(--accent); font-weight: 600; text-decoration: none; }
 .dash-home .dash-first-week-all:hover { text-decoration: underline; text-underline-offset: 3px; }
+.dash-home button.dash-first-week-all { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); cursor: pointer; text-align: left; }
+.dash-home .dash-first-week-all:focus-visible,
+.dash-card-actions > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-transparency: reduce) {
+  .dash-card-actions > summary { background: var(--surface); backdrop-filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dash-card-action-bar { transition: none; }
+}
 /* One day after the last setup step: a plain "set up" note above the first-week list. */
 .dash-setup-done{display:flex;gap:10px;align-items:flex-start;margin:0;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--positive) 10%,var(--surface));color:var(--ink);font-size:14px;line-height:1.4}
 .dash-setup-done b{display:grid;place-items:center;flex:0 0 22px;height:22px;border-radius:999px;background:var(--positive);color:var(--surface);font-size:13px}

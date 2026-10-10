@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Button, Modal } from "../../components/ui";
 import { HubPanelSkeleton } from "../../components/product-hub";
@@ -12,23 +12,40 @@ const Discussion = dynamic(() => import("../picklist-collab/picklist-collab-clie
 
 /** One saved list, with ranking and team discussion in the same workspace. */
 export function PickListWorkspace({ orgId, discussionDefault = false }: { orgId: string; discussionDefault?: boolean }) {
+  return <TeamPickListWorkspace key={orgId} orgId={orgId} discussionDefault={discussionDefault} />;
+}
+
+function TeamPickListWorkspace({ orgId, discussionDefault }: { orgId: string; discussionDefault: boolean }) {
   const [discussion, setDiscussion] = useState(discussionDefault);
   const [dirty, setDirty] = useState(false);
-  const [confirmSwitch, setConfirmSwitch] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [pendingView, setPendingView] = useState<boolean | null>(null);
+  const initialDiscussionDefault = useRef(discussionDefault);
   useEffect(() => {
-    if (discussionDefault) {
+    if (initialDiscussionDefault.current) {
       const url = new URL(window.location.href);
       url.searchParams.set("tab", "picks");
       url.searchParams.set("view", "discussion");
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
       window.dispatchEvent(new Event(URL_CHANGE_EVENT));
     }
-    setDiscussion(discussionDefault || new URLSearchParams(window.location.search).get("view") === "discussion");
-  }, [discussionDefault]);
-  useFollowUrl(() => setDiscussion(new URLSearchParams(window.location.search).get("view") === "discussion"));
+    setDiscussion(initialDiscussionDefault.current || new URLSearchParams(window.location.search).get("view") === "discussion");
+  }, []);
+  useFollowUrl(() => {
+    const next = new URLSearchParams(window.location.search).get("view") === "discussion";
+    if (next === discussion) return;
+    if (dirty || busy) {
+      const url = new URL(window.location.href);
+      if (discussion) url.searchParams.set("view", "discussion"); else url.searchParams.delete("view");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+      if (!busy) setPendingView(next);
+      return;
+    }
+    setDiscussion(next);
+  });
 
-  const switchView = () => {
-    const next = !discussion;
+  const switchView = (next: boolean) => {
+    if (busy) return;
     const url = new URL(window.location.href);
     url.searchParams.set("tab", "picks");
     if (next) url.searchParams.set("view", "discussion");
@@ -36,21 +53,21 @@ export function PickListWorkspace({ orgId, discussionDefault = false }: { orgId:
     window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     setDiscussion(next);
     setDirty(false);
-    setConfirmSwitch(false);
+    setPendingView(null);
     window.dispatchEvent(new Event(URL_CHANGE_EVENT));
   };
 
   return (
     <section className="pick-list-workspace" aria-label="Pick list workspace" data-testid="pick-list-workspace">
       <div className="pick-list-view-action">
-        <Button variant="secondary" type="button" onClick={() => dirty ? setConfirmSwitch(true) : switchView()}>
+        <Button variant="secondary" type="button" disabled={busy} onClick={() => dirty ? setPendingView(!discussion) : switchView(!discussion)}>
           {discussion ? "Rank teams" : "Team discussion"}
         </Button>
       </div>
-      {discussion ? <Discussion embedded /> : <Ranking orgId={orgId} embedded onDirtyChange={setDirty} />}
-      <Modal open={confirmSwitch} onClose={() => setConfirmSwitch(false)} title="Keep your ranking changes?">
-        <p>Save the pick list before switching to discussion, or discard the changes you haven’t saved.</p>
-        <div className="app-actions"><Button type="button" variant="primary" onClick={() => setConfirmSwitch(false)}>Keep editing</Button><Button type="button" variant="secondary" onClick={switchView}>Discard and switch</Button></div>
+      {discussion ? <Discussion key={orgId} orgId={orgId} embedded onBusyChange={setBusy} onDirtyChange={setDirty} /> : <Ranking key={orgId} orgId={orgId} embedded onDirtyChange={setDirty} onBusyChange={setBusy} />}
+      <Modal open={pendingView !== null} onClose={() => setPendingView(null)} title="Keep your unsaved changes?">
+        <p>Save your ranking or discussion inputs before switching views, or discard the changes you haven’t saved.</p>
+        <div className="app-actions"><Button type="button" variant="primary" onClick={() => setPendingView(null)}>Keep editing</Button><Button type="button" variant="secondary" disabled={busy} onClick={() => { if (pendingView !== null) switchView(pendingView); }}>Discard and switch</Button></div>
       </Modal>
     </section>
   );

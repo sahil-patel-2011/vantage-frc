@@ -6,7 +6,7 @@ const DIR = __dirname;
 
 describe("Collaborative pick list last snapshot stays on the phone", () => {
   it("reads and writes the picklist-collab IndexedDB feature cache", () => {
-    const src = readFileSync(join(DIR, "picklist-collab-client.tsx"), "utf8");
+    const src = readFileSync(join(DIR, "picklist-collab-client.tsx"), "utf8") + readFileSync(join(DIR, "use-collab-data.ts"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"picklist-collab"/);

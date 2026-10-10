@@ -18,6 +18,7 @@ import {
   isCodeComplete,
 } from "./otp-code";
 import { WAITLIST_ONLY_MESSAGE } from "./sign-in-flow";
+import { onboardingReturnPath } from "../onboarding/entry-journey";
 
 export type SignInStep = "identity" | "code" | "done";
 
@@ -60,6 +61,7 @@ export type SignInFlowState = {
   notice: string | null;
   codeExpiresAt: number | null;
   resendAvailableAt: number | null;
+  verifyAvailableAt?: number | null;
   failedAttempts: number;
   destination: string | null;
 };
@@ -98,6 +100,7 @@ export function initialSignInState(input?: {
     notice: null,
     codeExpiresAt: null,
     resendAvailableAt: null,
+    verifyAvailableAt: null,
     failedAttempts: 0,
     destination: null,
   };
@@ -124,12 +127,17 @@ export function signInFlowReducer(
     case "second_factor_required":
       return {
         ...state,
+        step: "code",
         channel: "email-2fa",
         // The address is session-derived from here on; only the mask is ours.
         email: "",
         emailHint: event.emailHint,
         code: "",
         failure: null,
+        notice: null,
+        codeExpiresAt: null,
+        resendAvailableAt: null,
+        verifyAvailableAt: null,
         failedAttempts: 0,
       };
 
@@ -192,7 +200,7 @@ export function signInFlowReducer(
         code,
         // Editing after a wrong code clears the error; an expired or locked
         // code stays flagged because retyping cannot rescue it.
-        failure: state.failure && !state.failure.needsNewCode ? null : state.failure,
+        failure: state.failure && !state.failure.needsNewCode && state.failure.kind !== "rate_limited" ? null : state.failure,
       };
     }
 
@@ -204,6 +212,7 @@ export function signInFlowReducer(
         notice: null,
         code: event.failure.keepDigits ? state.code : "",
         codeExpiresAt: event.failure.needsNewCode ? event.now : state.codeExpiresAt,
+        verifyAvailableAt: event.failure.kind === "rate_limited" ? cooldownDeadline(event.now, event.failure.retryAfterSeconds) : state.verifyAvailableAt,
         resendAvailableAt:
           event.failure.retryAfterSeconds != null
             ? cooldownDeadline(event.now, event.failure.retryAfterSeconds)
@@ -247,7 +256,13 @@ export function canResendCode(state: SignInFlowState, now: number): boolean {
 
 export function canSubmitCode(state: SignInFlowState, now: number): boolean {
   if (state.failure?.kind === "not_authorized") return false;
+  if (state.verifyAvailableAt != null && state.verifyAvailableAt > now) return false;
   return state.step === "code" && isCodeComplete(state.code) && !isCodeExpired(state, now);
+}
+
+/** Retained digits can be retried explicitly after a temporary failure, never on a timer. */
+export function canRetrySubmittedCode(state: SignInFlowState, now: number): boolean {
+  return Boolean(state.failure && ["network", "unknown", "unavailable", "rate_limited"].includes(state.failure.kind) && canSubmitCode(state, now));
 }
 
 /**
@@ -474,7 +489,7 @@ export function postAuthDestination(input: {
   const inviteToken = input.inviteToken?.trim() || inviteTokenFromNext(input.nextPath);
   if (inviteToken) return inviteReturnPath(inviteToken);
 
-  const next = input.nextPath || "/dashboard";
+  const next = onboardingReturnPath(input.nextPath, "/dashboard");
   if (!input.gate) return next;
   if (input.gate.complete && input.gate.accessStatus === "approved") return next;
   return `/onboarding?next=${encodeURIComponent(next)}`;

@@ -1,5 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { assertScoutingLead } from "@vantage/scouting/permissions";
 import { headers } from "next/headers";
 import {
   attachDeskEvidence,
@@ -29,14 +30,6 @@ function trimmedOrNull(value: unknown, max = 2000): string | null {
   return trimmed ? trimmed.slice(0, max) : null;
 }
 
-const SETUP_FALLBACK: AllianceSelectionDeskView = {
-  status: "setup_required",
-  message: "Could not load Alliance Selection Desk. Choose your team and set an active event.",
-  steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
-  orgId: null,
-  eventKey: null,
-};
-
 export async function GET(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
@@ -53,9 +46,11 @@ export async function GET(request: Request) {
         sessionId,
       }),
     );
-    return Response.json(view);
+    if (requestedOrg && view.orgId !== requestedOrg) return Response.json({ error: "Team access changed. Choose a team you belong to." }, { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    if (sessionId && (view.status !== "live" || view.session.id !== sessionId)) return Response.json({ error: "This board session is no longer available." }, { status: 404, headers: { "Cache-Control": "private, no-store" } });
+    return Response.json(view, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
-    return Response.json(SETUP_FALLBACK, { status: 200 });
+    return Response.json({ error: "Alliance selection is temporarily unavailable. Refresh to try again." }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
   }
 }
 
@@ -84,6 +79,7 @@ export async function POST(request: Request) {
         userId,
       ]);
       if (!member.rowCount) throw new Error("forbidden");
+      if (action !== "export-drive-team") await assertScoutingLead(client, orgId);
 
       switch (action) {
         case "create-session": {
@@ -171,11 +167,20 @@ export async function POST(request: Request) {
         requestedOrg: orgId,
         sessionId: activeSession,
       });
+      if (view.status !== "live" || view.orgId !== orgId || (activeSession && view.session.id !== activeSession)) {
+        throw Object.assign(new Error("Could not confirm the saved board. Refresh before retrying."), { status: 503 });
+      }
       return { view };
     });
 
-    return Response.json(result);
+    return Response.json(result, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    if (error && typeof error === "object" && "status" in error && error.status === 403) {
+      return Response.json({ error: "Scouting lead access required." }, { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    }
+    if (error && typeof error === "object" && "status" in error && error.status === 503) {
+      return Response.json({ error: "Could not confirm the saved board. Refresh before retrying." }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
+    }
     const message = publicErrorMessage(error, "Request failed");
     if (message === "forbidden") return Response.json({ error: "Forbidden" }, { status: 403 });
     return Response.json({ error: message }, { status: 400 });

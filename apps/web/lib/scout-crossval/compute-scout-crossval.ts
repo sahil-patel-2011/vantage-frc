@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeFieldChecks, overallStatusFromFields, resolveAllianceColor, summarizeCrossval } from ".";
-import type { CrossvalEntry, CrossvalFieldCheck, CrossvalFieldKey, CrossvalSummary } from "./types";
+import type { CrossvalEntry, CrossvalFieldCheck, CrossvalSummary } from "./types";
 import { resolveScoutOrg } from "../scout-org-access";
 
 export type ScoutCrossvalSetupStep = {
@@ -37,7 +37,7 @@ async function resolveOrg(
   return resolveScoutOrg(client, userId, requestedOrg);
 }
 
-type AllianceJson = { team_keys?: string[] } | string[] | null;
+type AllianceJson = { team_keys?: string[]; teamKeys?: string[] } | string[] | null;
 
 type EntryRow = {
   entryId: string;
@@ -59,27 +59,9 @@ type EntryRow = {
   runComputedAt: string | null;
 };
 
-type FieldRow = {
-  runId: string;
-  fieldKey: CrossvalFieldKey;
-  fieldLabel: string;
-  scoutValue: number | null;
-  officialValue: number | null;
-  status: "agree" | "conflict" | "unverifiable";
-  deltaAbs: number | null;
-  deltaPct: number | null;
-};
-
 function toEntry(row: EntryRow, fields: CrossvalFieldCheck[]): CrossvalEntry {
-  const allianceColor = row.runAllianceColor ?? resolveAllianceColor(row.teamKey, row.redAlliance, row.blueAlliance);
-  const derived = row.runId
-    ? {
-        overallStatus: row.runOverallStatus ?? "unverifiable",
-        agreeCount: row.runAgreeCount ?? 0,
-        conflictCount: row.runConflictCount ?? 0,
-        unverifiableCount: row.runUnverifiableCount ?? 0,
-      }
-    : overallStatusFromFields(fields);
+  const allianceColor = resolveAllianceColor(row.teamKey, row.redAlliance, row.blueAlliance);
+  const derived = overallStatusFromFields(fields);
   return {
     id: row.runId ?? row.entryId,
     matchScoutEntryId: row.entryId,
@@ -94,7 +76,7 @@ function toEntry(row: EntryRow, fields: CrossvalFieldCheck[]): CrossvalEntry {
     conflictCount: derived.conflictCount,
     unverifiableCount: derived.unverifiableCount,
     fields,
-    computedAt: row.runComputedAt ?? new Date().toISOString(),
+    computedAt: new Date().toISOString(),
   };
 }
 
@@ -154,7 +136,7 @@ export async function computeScoutCrossvalView(
             r.agree_count AS "runAgreeCount", r.conflict_count AS "runConflictCount",
             r.unverifiable_count AS "runUnverifiableCount", r.computed_at::text AS "runComputedAt"
      FROM match_scout_entries mse
-     JOIN matches_ref m ON m.match_key = mse.match_key
+     JOIN matches_ref m ON m.match_key = mse.match_key AND m.event_key = mse.event_key
      JOIN teams_ref t ON t.team_key = mse.team_key
      LEFT JOIN scout_crossval_runs r ON r.match_scout_entry_id = mse.id AND r.org_id = mse.org_id
      WHERE mse.org_id = $1 AND mse.event_key = $2
@@ -163,36 +145,9 @@ export async function computeScoutCrossvalView(
     [org.orgId, eventKey],
   );
 
-  const runIds = entryResult.rows.map((r) => r.runId).filter((id): id is string => id != null);
-  const fieldsByRun = new Map<string, CrossvalFieldCheck[]>();
-  if (runIds.length > 0) {
-    const fieldResult = await client.query<FieldRow>(
-      `SELECT run_id AS "runId", field_key AS "fieldKey", field_label AS "fieldLabel",
-              scout_value AS "scoutValue", official_value AS "officialValue", status,
-              delta_abs AS "deltaAbs", delta_pct AS "deltaPct"
-       FROM scout_crossval_fields
-       WHERE org_id = $1 AND run_id = ANY($2::uuid[])`,
-      [org.orgId, runIds],
-    );
-    for (const field of fieldResult.rows) {
-      const list = fieldsByRun.get(field.runId) ?? [];
-      list.push({
-        fieldKey: field.fieldKey,
-        fieldLabel: field.fieldLabel,
-        scoutValue: field.scoutValue,
-        officialValue: field.officialValue,
-        status: field.status,
-        deltaAbs: field.deltaAbs,
-        deltaPct: field.deltaPct,
-      });
-      fieldsByRun.set(field.runId, list);
-    }
-  }
-
+  // Old runs compared one robot with its alliance. Keep their identities on
+  // disk, but do not treat those saved judgments as robot-level evidence.
   const entries = entryResult.rows.map((row) => {
-    if (row.runId) {
-      return toEntry(row, fieldsByRun.get(row.runId) ?? []);
-    }
     const allianceColor = resolveAllianceColor(row.teamKey, row.redAlliance, row.blueAlliance);
     const fields = computeFieldChecks({
       payload: row.payload,
@@ -244,7 +199,7 @@ export async function runCrossvalForEntry(
             mse.payload AS "payload", m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
             m.score_breakdown AS "scoreBreakdown"
      FROM match_scout_entries mse
-     JOIN matches_ref m ON m.match_key = mse.match_key
+     JOIN matches_ref m ON m.match_key = mse.match_key AND m.event_key = mse.event_key
      JOIN teams_ref t ON t.team_key = mse.team_key
      WHERE mse.org_id = $1 AND mse.id = $2`,
     [input.orgId, input.matchScoutEntryId],

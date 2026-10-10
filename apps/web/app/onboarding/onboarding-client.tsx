@@ -29,7 +29,7 @@ import {
   isFundingModel,
 } from "../../lib/funding-profile";
 import { legalConsentMessage } from "../../lib/legal";
-import { safeAppPath } from "../../lib/security/safe-navigation";
+import { confirmedOnboardingState, onboardingAnswersKey, onboardingReturnPath } from "../../lib/onboarding/entry-journey";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { OnboardingLoadShell } from "./onboarding-chrome";
 import { LandingPanel } from "./onboarding-landing";
@@ -66,6 +66,9 @@ export default function OnboardingClient() {
   const [message, setMessage] = useState("");
   const [errorField, setErrorField] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const mutationRef = useRef(false);
+  const loadRef = useRef<AbortController | null>(null);
+  const answersScope = useRef<{ userId: string | null; orgId: string | null }>({ userId: null, orgId: null });
   const [legalError, setLegalError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -74,7 +77,7 @@ export default function OnboardingClient() {
   const patch = useCallback((next: Partial<OnboardingDraft>) => {
     setDraft((current) => {
       const merged = { ...current, ...next };
-      saveLocalAnswers(merged);
+      saveLocalAnswers(merged, answersScope.current);
       return merged;
     });
   }, []);
@@ -88,8 +91,8 @@ export default function OnboardingClient() {
     setRestoredFrom((current) => (current === undefined ? data.savedAt ?? null : current));
     // Answers the server only takes with a later step (crew with step two, affiliation with
     // Finish), kept on this device so "Welcome back" is true in a new tab (see answersStore).
-    answersTeam = data.workspaceOrgId ?? null;
-    const local = readLocalAnswers();
+    answersScope.current = { userId: data.userId ?? null, orgId: data.workspaceOrgId ?? null };
+    const local = readLocalAnswers(answersScope.current);
     setDraft((current) => ({
       ...current,
       firstName: data.firstName ?? current.firstName,
@@ -145,10 +148,8 @@ export default function OnboardingClient() {
 
   const approvedDestination = useCallback(
     (data: OnboardingState) => {
-      const nextParam = searchParams.get("next");
-      if (nextParam) return safeAppPath(nextParam, "/dashboard");
-      if (data.workspaceOrgId) return `/dashboard?orgId=${encodeURIComponent(data.workspaceOrgId)}`;
-      return data.platformAdmin ? "/admin" : "/workspace";
+      const fallback = data.workspaceOrgId ? `/dashboard?orgId=${encodeURIComponent(data.workspaceOrgId)}` : data.platformAdmin ? "/admin" : "/workspace";
+      return onboardingReturnPath(searchParams.get("next"), fallback);
     },
     [searchParams],
   );
@@ -178,10 +179,14 @@ export default function OnboardingClient() {
   );
 
   const loadSession = useCallback(() => {
+    loadRef.current?.abort();
+    const controller = new AbortController();
+    loadRef.current = controller;
     setLoadStatus("loading");
     setLoadError(null);
-    void fetch("/api/onboarding", { cache: "no-store" })
+    void fetch("/api/onboarding", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) })
       .then(async (response) => {
+        if (controller.signal.aborted) return null;
         if (response.status === 401) {
           setLoadStatus("setup_required");
           setLoadError("Sign in to finish setting up your profile.");
@@ -195,10 +200,12 @@ export default function OnboardingClient() {
           setState(null);
           return null;
         }
-        return (await response.json()) as OnboardingState;
+        const data: unknown = await response.json();
+        if (!confirmedOnboardingState(data)) throw new Error("Invalid onboarding confirmation");
+        return data as OnboardingState;
       })
       .then((data) => {
-        if (!data) return;
+        if (!data || controller.signal.aborted) return;
         hydrate(data);
         setLoadStatus("ready");
         if (data.complete) routeCompleteState(data, false);
@@ -206,6 +213,7 @@ export default function OnboardingClient() {
         else setStep("profile");
       })
       .catch(() => {
+        if (controller.signal.aborted) return;
         setLoadStatus("error");
         setLoadError("Could not load onboarding. Check your connection and try again.");
         setState(null);
@@ -214,6 +222,7 @@ export default function OnboardingClient() {
 
   useEffect(() => {
     loadSession();
+    return () => loadRef.current?.abort();
   }, []);
 
   const locked = state?.lockedTeamNumber != null;
@@ -286,6 +295,7 @@ export default function OnboardingClient() {
 
   /** Runs the shared gate, then persists the draft for that step. */
   async function advance() {
+    if (mutationRef.current) return;
     const result = onboardingAdvance({ step, draft, error: null, errorField: null }, context);
     if (result.error) {
       setMessage(result.error);
@@ -307,6 +317,7 @@ export default function OnboardingClient() {
       return;
     }
     const completedStep = step as "profile" | "team";
+    mutationRef.current = true;
     setBusy(true);
     setMessage("");
     // `step: "profile"` is strict: the four profile fields plus the role picked on the same
@@ -333,6 +344,7 @@ export default function OnboardingClient() {
     try {
       const response = await fetch("/api/onboarding", {
         method: "PATCH",
+        signal: AbortSignal.timeout(15_000),
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
@@ -341,19 +353,23 @@ export default function OnboardingClient() {
         setMessage(data.error ?? "Could not save your progress.");
         return;
       }
+      if (!confirmedOnboardingState(data)) throw new Error("Progress could not be confirmed");
       // Keep the draft: it is what the person is looking at. Re-hydrating here copied the
       // server's older values back over fields this step does not save (a role picked on
       // step one rides along with step two), so "Coach" silently became "Student" again.
       setState(data);
-      setStep(result.step);
+      if (data.complete) routeCompleteState(data, false); else setStep(result.step);
     } catch {
       setMessage("Could not save your progress. Check your connection and try again.");
     } finally {
+      mutationRef.current = false;
       setBusy(false);
     }
   }
 
   async function finish() {
+    if (mutationRef.current) return;
+    mutationRef.current = true;
     setBusy(true);
     setMessage("");
     try {
@@ -370,6 +386,7 @@ export default function OnboardingClient() {
       // Payload is byte-for-byte the contract `POST /api/onboarding` already validates.
       const response = await fetch("/api/onboarding", {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           firstName: draft.firstName.trim(),
@@ -408,19 +425,25 @@ export default function OnboardingClient() {
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      clearLocalAnswers();
+      if (!confirmedOnboardingState(data) || data.complete !== true) throw new Error("Profile completion could not be confirmed");
+      clearLocalAnswers(answersScope.current);
       hydrate(data);
       routeCompleteState(data, true);
+    } catch {
+      setMessage("Could not confirm that your profile was completed. Your answers are still here. Check your connection and try again.");
     } finally {
+      mutationRef.current = false;
       setBusy(false);
     }
   }
 
   async function refreshApproval() {
+    if (mutationRef.current) return;
+    mutationRef.current = true;
     setChecking(true);
     setMessage("");
     try {
-      const response = await fetch("/api/onboarding", { cache: "no-store" });
+      const response = await fetch("/api/onboarding", { cache: "no-store", signal: AbortSignal.timeout(15_000) });
       if (response.status === 401) {
         setMessage("Your session ended. Sign in again to continue.");
         return;
@@ -430,9 +453,11 @@ export default function OnboardingClient() {
         setMessage(data.error ?? "Could not check approval status.");
         return;
       }
+      if (!confirmedOnboardingState(data)) throw new Error("Approval could not be confirmed");
       hydrate(data);
       if (data.accessStatus === "approved") {
-        setMessage("Approved. Your team access email is on its way — use its sign-in link to enter the team.");
+        if (data.complete) routeCompleteState(data, false);
+        else setStep(data.currentStep === "team" || data.currentStep === "preferences" ? data.currentStep : "profile");
       } else if (data.accessStatus === "invited") {
         setMessage("Your team invited you. Tap Join to finish.");
       } else if (data.accessStatus === "declined") {
@@ -443,13 +468,17 @@ export default function OnboardingClient() {
     } catch {
       setMessage("Could not check approval status. Try again in a moment.");
     } finally {
+      mutationRef.current = false;
       setChecking(false);
     }
   }
 
   async function signOut() {
+    if (mutationRef.current) return;
+    mutationRef.current = true;
     setBusy(true);
-    await signOutAndRedirect("/signin");
+    try { await signOutAndRedirect("/signin"); }
+    finally { mutationRef.current = false; setBusy(false); }
   }
 
   if (loadStatus !== "ready" || !state) {
@@ -618,14 +647,11 @@ export default function OnboardingClient() {
 }
 
 /*
-  Answers the server takes only with a later step, kept on this device. With a team (an owner or
-  an invited member) they go in localStorage under that team, so opening onboarding in a new tab
-  gets them back; without one, only for this browser session, so a shared computer does not hand
-  them to the next person.
+  Answers not yet accepted by the server stay private to this account and team.
+  Legacy team-only drafts are not read because their author cannot be verified.
 */
-let answersTeam: string | null = null;
-const answersKey = () => `vantage.onboarding.answers${answersTeam ? `:${answersTeam}` : ""}`;
-const answersStore = (): Storage => (answersTeam ? window.localStorage : window.sessionStorage);
+type AnswersScope = { userId: string | null; orgId: string | null };
+const answersStore = (scope: AnswersScope): Storage => (scope.orgId ? window.localStorage : window.sessionStorage);
 type LocalAnswers = {
   teamRole?: unknown;
   crewRole?: unknown;
@@ -636,9 +662,12 @@ type LocalAnswers = {
   orgStateProv?: unknown;
 };
 
-function readLocalAnswers(): LocalAnswers {
+function readLocalAnswers(scope: AnswersScope): LocalAnswers {
   try {
-    const raw = answersStore().getItem(answersKey());
+    const key = onboardingAnswersKey(scope.userId, scope.orgId);
+    if (!key) return {};
+    const raw = answersStore(scope).getItem(key);
+    if (raw && raw.length > 10_000) return {};
     const parsed = raw ? (JSON.parse(raw) as unknown) : null;
     return parsed && typeof parsed === "object" ? (parsed as LocalAnswers) : {};
   } catch {
@@ -646,10 +675,12 @@ function readLocalAnswers(): LocalAnswers {
   }
 }
 
-function saveLocalAnswers(draft: OnboardingDraft) {
+function saveLocalAnswers(draft: OnboardingDraft, scope: AnswersScope) {
   try {
-    answersStore().setItem(
-      answersKey(),
+    const key = onboardingAnswersKey(scope.userId, scope.orgId);
+    if (!key) return;
+    answersStore(scope).setItem(
+      key,
       JSON.stringify({
         teamRole: draft.teamRole,
         crewRole: draft.crewRole,
@@ -667,9 +698,10 @@ function saveLocalAnswers(draft: OnboardingDraft) {
   }
 }
 
-function clearLocalAnswers() {
+function clearLocalAnswers(scope: AnswersScope) {
   try {
-    answersStore().removeItem(answersKey());
+    const key = onboardingAnswersKey(scope.userId, scope.orgId);
+    if (key) answersStore(scope).removeItem(key);
   } catch {
     // Nothing to clear.
   }

@@ -14,15 +14,15 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("scoutCoverageLiveRelatedLinks", () => {
-  it("builds Scouting / Lineup / Cross-Validation via hubHref / withOrgHref", () => {
+  it("offers related tools without duplicating the Assignments workspace tab", () => {
     const links = scoutCoverageLiveRelatedLinks("org-1", {
       include: [...SCOUT_COVERAGE_LIVE_RELATED_INCLUDE],
     });
-    expect(links.map((l) => l.id)).toEqual(["scouting", "lineup", "crossval"]);
+    expect(links.map((l) => l.id)).toEqual(["scouting", "crossval"]);
     expect(links.find((l) => l.id === "scouting")?.href).toBe(
       "/competition?tab=scouting&orgId=org-1",
     );
-    expect(links.find((l) => l.id === "lineup")?.href).toBe("/scouting/lineup?orgId=org-1");
+    expect(links.some((l) => l.id === "lineup")).toBe(false);
     expect(links.find((l) => l.id === "crossval")?.href).toBe("/scout-crossval?orgId=org-1");
   });
 
@@ -40,7 +40,7 @@ describe("scoutCoverageLiveSetupSteps", () => {
     expect(steps.find((s) => s.id === "scouting")?.href).toBe(
       "/competition?tab=scouting&orgId=org-1",
     );
-    expect(steps.find((s) => s.id === "lineup")?.href).toBe("/scouting/lineup?orgId=org-1");
+    expect(steps.find((s) => s.id === "lineup")?.href).toBe("/scout-coverage-live?orgId=org-1");
     expect(steps.every((s) => !/\bDEMO\b/.test(s.label))).toBe(true);
     expect(steps.every((s) => !/demo/i.test(s.href))).toBe(true);
   });

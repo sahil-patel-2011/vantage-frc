@@ -101,8 +101,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "scout-field-budget", label: "Field value", legacyHref: "/scout-field-budget" },
         { id: "data-quality-scorecard", label: "Data quality", legacyHref: "/data-quality-scorecard" },
         // Meta analysis of scouting — routes and Cmd+K stay; the strip does not.
-        { id: "scout-accuracy", label: "Accuracy", legacyHref: "/scout-accuracy", inStrip: false },
-        { id: "scout-crossval", label: "Cross-check", legacyHref: "/scout-crossval", inStrip: false },
+        { id: "scout-accuracy", label: "Scout consistency", legacyHref: "/scout-accuracy", inStrip: false, inSearch: false },
+        { id: "scout-crossval", label: "Quality", legacyHref: "/scouting/quality", inStrip: false },
         { id: "scout-disagreements", label: "Disagreements", legacyHref: "/scout-disagreements", inStrip: false },
         { id: "scout-data-impact", label: "Data impact", legacyHref: "/scout-data-impact", inStrip: false },
         { id: "scout-assisted-count", label: "Assisted count", legacyHref: "/scout-assisted-count", inStrip: false },

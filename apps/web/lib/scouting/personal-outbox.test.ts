@@ -116,6 +116,23 @@ describe("personal scouting on shared devices", () => {
     expect((await listPendingEntries()).map(row => row.clientId)).toEqual(["other-team"]);
   });
 
+  it("uploads a next robot queued while the previous upload is in flight", async () => {
+    await queueEntry(entry("first-robot"));
+    let queuedNext = false;
+    const send = vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      if (!queuedNext) {
+        queuedNext = true;
+        await queueEntry({ ...entry("next-robot"), teamKey: "frc2" });
+      }
+      return { ok: true, json: async () => ({ acknowledgements: body.entries.map((row: SyncEntry) => ({ clientId: row.clientId })) }) };
+    });
+    vi.stubGlobal("fetch", send);
+    expect((await syncOutbox(ORG, { maxAttempts: 1 })).count).toBe(2);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(await listPendingEntries()).toEqual([]);
+  });
+
   it("preserves queued data when identity switches during an upload", async () => {
     await queueEntry(entry());
     vi.stubGlobal("fetch", vi.fn(async () => {

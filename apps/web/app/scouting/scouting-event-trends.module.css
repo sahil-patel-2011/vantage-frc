@@ -5,6 +5,12 @@
 .controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
 .controls label { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
 .controls select { min-height: 44px; width: 100%; max-width: 380px; font: inherit; padding: .6rem; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+.confidence { min-height: 44px; cursor: pointer; }
+.scope { font-size: .8rem; }
+.robotLink, .more { min-width: 44px; min-height: 44px; padding: .5rem .7rem; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--surface); font: inherit; cursor: pointer; }
+.robotLink { border: 0; background: transparent; color: var(--accent); font-weight: 600; }
+.more { margin-top: .75rem; }
+.controls select:focus-visible, .controls input:focus-visible, .robotLink:focus-visible, .more:focus-visible, .scroll:focus-visible, .trends summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px,1fr)); gap: .6rem; margin: 1.2rem 0; }
 .stats div { display: grid; gap: .3rem; padding: .8rem; border: 1px solid var(--line); border-radius: 12px; }
 .stats strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }

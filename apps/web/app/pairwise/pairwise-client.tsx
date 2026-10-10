@@ -151,6 +151,7 @@ export default function PairwiseClient() {
   async function remove(comparisonId: string) {
     if (!live || busy) return;
     setBusy(true);
+    setError("");
     try {
       const response = await fetch("/api/pairwise", {
         method: "POST",
@@ -159,17 +160,22 @@ export default function PairwiseClient() {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as PairwiseResponse;
+      if (!response.ok || !isPairwiseView(data) || data.status !== "live" || data.orgId !== live.orgId || data.recent.some(row => row.id === comparisonId)) {
+        throw new Error(data.error ?? "Removal was not confirmed. Refresh the saved comparisons before retrying.");
+      }
       if (data && isPairwiseView(data)) {
         setView(data);
         void persistPairwiseSnapshot(live.orgId, data);
       }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Removal was not confirmed. Refresh before retrying.");
     } finally {
       setBusy(false);
     }
   }
 
   async function promote() {
-    if (!live || busy || !live.ranks.length) return;
+    if (!live || busy || !live.ranks.length || !live.canManage) return;
     setBusy(true);
     setError("");
     setPromoteMessage("");
@@ -185,12 +191,12 @@ export default function PairwiseClient() {
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data = (await response.json()) as PairwiseResponse;
-      if (!response.ok || !isPairwiseView(data)) {
+      if (!response.ok || !isPairwiseView(data) || data.status !== "live" || data.orgId !== live.orgId || !data.promotion) {
         throw new Error(data.error ? data.error : "Could not save pairwise order to the pick list");
       }
       setView(data);
       void persistPairwiseSnapshot(live.orgId, data);
-      setPromoteMessage(data.promotion?.message ?? "Saved pairwise order to the pick list.");
+      setPromoteMessage(data.promotion.message);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not save pairwise order to the pick list");
     } finally {
@@ -391,9 +397,9 @@ function LivePairwise({
           <p className="app-muted">{view.ranks.length ? `${view.ranks.length} robots` : "Empty until someone compares two teams."}</p>
         </header>
         <div className="pairwise-promote">
-          <Button variant="primary" type="button" disabled={busy || !view.ranks.length || !view.eventKey} onClick={onPromote}>
+          {view.canManage ? <Button variant="primary" type="button" disabled={busy || !view.ranks.length || !view.eventKey} onClick={onPromote}>
             Save order to pick list
-          </Button>
+          </Button> : <p className="app-muted">Your scouting lead can save this comparison order to the team’s pick list.</p>}
           {!view.ranks.length ? (
             <p className="app-muted">Nothing to promote until a scout records a real A-beats-B tap.</p>
           ) : !view.eventKey ? (
@@ -453,9 +459,9 @@ function LivePairwise({
                 {row.loggedByName}
                 {row.notes ? ` · ${row.notes}` : ""}
               </span>
-              <button type="button" className="danger" disabled={busy} onClick={() => onRemove(row.id)}>
+              {row.isOwn === true || view.canManage ? <button type="button" className="danger" disabled={busy} onClick={() => onRemove(row.id)}>
                 Undo
-              </button>
+              </button> : null}
             </li>
           ))}
           {!view.recent.length ? <li>No taps yet this season.</li> : null}

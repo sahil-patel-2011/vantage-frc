@@ -23,6 +23,7 @@ export function mainMenuSearch(pathname: string, search: string, allowed: (href:
 }
 
 const DESTINATION_ICONS: Record<string, ProductNavIcon> = {
+  scouting: "scout",
   forms: "form", "scout-coverage-live": "assignment",
   teams: "stats", strategy: "target", picks: "rank", command: "calendar",
   "match-checklist": "clipboard", "pit-tv": "display", calendar: "calendar",
@@ -33,7 +34,7 @@ const DESTINATION_ICONS: Record<string, ProductNavIcon> = {
 };
 
 /** Shared menu destinations keep the same team and tab permission checks as pages. */
-export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (href: string) => boolean) {
+export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (href: string) => boolean, includeScout = false) {
   const definitions: { id: ProductHubDef["id"]; label: string; icon: ProductNavIcon }[] = [
     { id: "competition", label: "Competition tools", icon: "swords" },
     { id: "team", label: "Team", icon: "users" },
@@ -46,7 +47,7 @@ export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (h
     const hub = hubById(definition.id);
     if (hub.id !== "ai" && !available.has(hub.href)) return [];
     const items = hubNavigationSections(hub, hub.tabs)
-      .filter(section => !(hub.id === "competition" && section.id === "scouting"))
+      .filter(section => includeScout || !(hub.id === "competition" && section.id === "scouting"))
       .map(section => ({ href: `${hub.href}?tab=${section.id}`, label: section.label, icon: DESTINATION_ICONS[section.id] ?? definition.icon }));
     if (hub.id === "competition") {
       items.push({ href: "/competition?tab=pit-tv", label: "Pit display", icon: "display" });

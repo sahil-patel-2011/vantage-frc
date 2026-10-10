@@ -1,42 +1,56 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
   Badge,
   type BadgeTone,
   EmptyState,
-  ErrorState,
   FormRow,
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
-import type { CoverageStatus } from "../../lib/scout-coverage-live/types";
+  StatTile,
+  Button,
+} from "../../components/ui";
+import { MAX_REPORT_TARGET, REVIEWED_FLAG_HISTORY_LIMIT, type CoverageStatus } from "../../lib/scout-coverage-live/types";
+import type { ReviewCommand } from "../../lib/scout-coverage-live/request";
+import { useReviewData } from "./use-review-data";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { ScoutCoverageLiveView } from "../../lib/scout-coverage-live/compute-scout-coverage-live";
 import {
   SCOUT_COVERAGE_LIVE_RELATED_INCLUDE,
   classifyScoutCoverageLiveShell,
   formatScoutCoverageLiveMetric,
   formatScoutCoverageLiveRate,
-  scoutCoverageLiveNextActions,
   scoutCoverageLiveRelatedLinks,
   scoutCoverageLiveSetupSteps,
   scoutCoverageLiveShellCopy,
   shouldShowScoutCoverageLiveSummaryTiles,
-  type ScoutCoverageLiveNextAction,
   type ScoutCoverageLiveShellKind,
 } from "../../lib/scout-coverage-live/scout-coverage-live-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
-import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { summarizeMissed } from "../../lib/scouting/assignment-accountability";
 import "./scout-coverage-live.css";
+import "../scouting/lineup/lineup.css";
+import { assignmentWorkspaceHref } from "../../lib/scouting/assignment-navigation";
+
+function CoverageWorkspaceViews({ orgId, assignmentHref, eventKey }: { orgId?: string | null; assignmentHref?: string; eventKey?: string }) {
+  const base = assignmentHref ?? assignmentWorkspaceHref({ orgId: orgId ?? undefined });
+  const [path, query] = base.split("?");
+  const params = new URLSearchParams(query);
+  if (eventKey) params.set("eventKey", eventKey);
+  const href = params.size ? `${path}?${params}` : base;
+  return <nav className="lineup-workspace-views" aria-label="Assignment workspace views">
+    <a href={href}>Assignments</a>
+    <a aria-current="page" href={`${href}${href.includes("?") ? "&" : "?"}view=review`}>Coverage review</a>
+  </nav>;
+}
 
 const statusToneMap: Record<CoverageStatus, BadgeTone> = {
-  zero: "demo",
+  zero: "danger",
   thin: "setup",
   covered: "good",
 };
@@ -54,27 +68,6 @@ function statusLabel(status: CoverageStatus, played?: boolean): string {
 
 type LiveView = Extract<ScoutCoverageLiveView, { status: "live" }>;
 
-function isScoutCoverageLiveView(value: unknown): value is ScoutCoverageLiveView {
-  if (!value || typeof value !== "object") return false;
-  const status = (value as { status?: unknown }).status;
-  return status === "setup_required" || status === "live";
-}
-
-async function persistScoutCoverageLiveSnapshot(
-  orgHint: string,
-  data: ScoutCoverageLiveView,
-): Promise<void> {
-  const cacheOrg =
-    "orgId" in data && typeof data.orgId === "string" && data.orgId.trim() ? data.orgId : orgHint;
-  if (!cacheOrg) return;
-  try {
-    await putFeatureSnapshot("scout-coverage-live", cacheOrg, data);
-    if (!orgHint) await putFeatureSnapshot("scout-coverage-live", "_", data);
-  } catch {
-    // Live Scout Coverage Live already painted; IndexedDB is best-effort.
-  }
-}
-
 function ScoutCoverageLiveRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = scoutCoverageLiveRelatedLinks(orgId, {
     include: [...SCOUT_COVERAGE_LIVE_RELATED_INCLUDE],
@@ -89,36 +82,13 @@ function ScoutCoverageLiveRelatedStrip({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function ScoutCoverageLiveNextActionsPanel({ actions }: { actions: ScoutCoverageLiveNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions scout-coverage-live-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
 function ScoutCoverageLiveShell({
   description,
   orgId,
   shell,
   error,
   onRetry,
+  errorStatus,
   emptyTitle,
   emptyDescription,
   action,
@@ -129,27 +99,28 @@ function ScoutCoverageLiveShell({
   shell: ScoutCoverageLiveShellKind;
   error?: string;
   onRetry?: () => void;
+  errorStatus?: number | null;
   emptyTitle?: string;
   emptyDescription?: string;
   action?: { href: string; label: string } | null;
   children?: ReactNode;
 }) {
-  const actions = scoutCoverageLiveNextActions({ orgId, shell });
   const copy = scoutCoverageLiveShellCopy(shell);
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const setup = shell === "setup" ? scoutCoverageLiveSetupSteps(orgId)[0] : null;
   const commandHref = hubHref("/competition", "command", orgId);
 
+  const failure = shell === "error" ? loadFailureCopy(classifyLoadFailure({ status: errorStatus, message: error, online: typeof navigator === "undefined" ? true : navigator.onLine }), { message: error, nextPath: typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}` }) : null;
   return (
     <main className="module-page scout-coverage-live-page soft-gate">
       <PageHeader
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Coverage Live"}
+            {" / Coverage review"}
           </>
         }
-        title="Scout Coverage Live"
+        title="Coverage review"
         description={description}
       >
         <ScoutCoverageLiveRelatedStrip orgId={orgId} />
@@ -160,7 +131,10 @@ function ScoutCoverageLiveShell({
           <SoftBlockSkeleton lines={4} />
         </div>
       ) : shell === "error" ? (
-        <ErrorState message={error ?? copy.description} onRetry={onRetry} />
+        <EmptyState badge={failure?.badge} title={failure?.title ?? copy.title} description={failure?.description ?? error ?? copy.description}>
+          {failure?.primary ? <Button as="a" variant="primary" href={failure.primary.href}>{failure.primary.label}</Button> : null}
+          {failure?.showRetry && onRetry ? <Button variant="secondary" type="button" onClick={onRetry}>Refresh</Button> : null}
+        </EmptyState>
       ) : (
         <EmptyState
           soft
@@ -189,123 +163,22 @@ function ScoutCoverageLiveShell({
           ) : null}
         </EmptyState>
       )}
-      {shell === "ready" ? <ScoutCoverageLiveNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
 
-export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId?: string }) {
-  const [view, setView] = useState<ScoutCoverageLiveView | null>(null);
-  const [error, setError] = useState("");
-  const [fetchFailed, setFetchFailed] = useState(false);
-  const [busy, setBusy] = useState(false);
+export default function ScoutCoverageLiveClient({ orgId, eventKey, assignmentHref }: { orgId: string; eventKey?: string; assignmentHref?: string }) {
+  const { view, error, notice, fetchFailed, failureStatus, busy, refreshing, fromCache, cachedAt, load, mutate } = useReviewData(orgId, eventKey);
   const [thresholdInput, setThresholdInput] = useState("");
-  const [fromCache, setFromCache] = useState(false);
-  const [cachedAt, setCachedAt] = useState<string | null>(null);
-  const viewRef = useRef<ScoutCoverageLiveView | null>(null);
-  viewRef.current = view;
-
-  const orgId = (view && "orgId" in view ? view.orgId : null) ?? initialOrgId ?? null;
-
-  const load = useCallback(() => {
-    void (async () => {
-      const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-      const urlOrg = (initialOrgId ?? params.get("orgId"))?.trim() ?? "";
-      const urlEvent = params.get("eventKey");
-      let hadCache = Boolean(viewRef.current);
-      try {
-        const cached = await getFeatureSnapshot<ScoutCoverageLiveView>(
-          "scout-coverage-live",
-          urlOrg || "_",
-        );
-        if (!viewRef.current && cached?.data && isScoutCoverageLiveView(cached.data)) {
-          setView(cached.data);
-          if (cached.data.status === "live") setThresholdInput(String(cached.data.thinThreshold));
-          setFromCache(true);
-          setCachedAt(cached.cachedAt);
-          hadCache = true;
-        }
-      } catch {
-        // IndexedDB missing or blocked; live fetch still runs.
-      }
-      setFetchFailed(false);
-      setError("");
-      const query = new URLSearchParams();
-      if (urlOrg) query.set("orgId", urlOrg);
-      if (urlEvent) query.set("eventKey", urlEvent);
-      try {
-        const response = await fetch(
-          `/api/scout-coverage-live${query.toString() ? `?${query.toString()}` : ""}`,
-          {
-            cache: "no-store",
-            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-          },
-        );
-        const data = (await response.json()) as ScoutCoverageLiveView | { error?: string };
-        if (!response.ok || !isScoutCoverageLiveView(data)) {
-          if (hadCache || viewRef.current) {
-            setFromCache(true);
-            setError("Could not refresh Scout Coverage Live. Showing the last copy on this device.");
-            setFetchFailed(false);
-          } else {
-            setFetchFailed(true);
-            setError("error" in data && data.error ? data.error : "Could not load scout coverage.");
-          }
-          return;
-        }
-        setView(data);
-        if (data.status === "live") setThresholdInput(String(data.thinThreshold));
-        setFromCache(false);
-        setCachedAt(null);
-        await persistScoutCoverageLiveSnapshot(urlOrg, data);
-      } catch {
-        if (hadCache || viewRef.current) {
-          setFromCache(true);
-          setError("Could not refresh Scout Coverage Live. Showing the last copy on this device.");
-          setFetchFailed(false);
-        } else {
-          setFetchFailed(true);
-          setError("Network error — please try again.");
-        }
-      }
-    })();
-  }, [initialOrgId]);
-
+  const editedTarget = useRef(false);
   useEffect(() => {
-    load();
-  }, [load]);
+    if (view?.status === "live" && !editedTarget.current) setThresholdInput(String(view.thinThreshold));
+  }, [view]);
+  const controlsDisabled = busy || refreshing || fromCache;
+  const target = Number(thresholdInput);
+  const targetValid = Number.isInteger(target) && target >= 1 && target <= MAX_REPORT_TARGET;
 
-  const mutate = useCallback(
-    async (payload: Record<string, unknown>) => {
-      if (!orgId || busy) return;
-      setBusy(true);
-      setError("");
-      try {
-        const eventKey = view && view.status === "live" ? view.eventKey : undefined;
-        const response = await fetch("/api/scout-coverage-live", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, eventKey, ...payload }),
-          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-        });
-        const data = (await response.json()) as ScoutCoverageLiveView | { error?: string };
-        if (!response.ok || !isScoutCoverageLiveView(data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
-          return;
-        }
-        setView(data);
-        if (data.status === "live") setThresholdInput(String(data.thinThreshold));
-        void persistScoutCoverageLiveSnapshot(orgId, data);
-      } catch {
-        setError("Network error — please try again.");
-      } finally {
-        setBusy(false);
-      }
-    },
-    [orgId, view, busy],
-  );
-
-  const totalCells = view?.status === "live" ? view.summary.totalCells : 0;
+  const totalCells = view?.status === "live" ? view.cells.length : 0;
 
   const shell = classifyScoutCoverageLiveShell({
     loading: view == null && !fetchFailed,
@@ -318,13 +191,13 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
   const competitionHref = hubHref("/competition", "scouting", orgId);
   const showTiles =
     view?.status === "live" &&
-    shouldShowScoutCoverageLiveSummaryTiles({ totalCells: view.summary.totalCells });
+    shouldShowScoutCoverageLiveSummaryTiles({ totalCells: view.cells.length });
   const loaded = view?.status === "live";
 
   if (shell === "loading") {
     return (
       <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -335,9 +208,10 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         orgId={orgId}
         shell="error"
         error={error || shellCopy.description}
-        onRetry={() => load()}
+        errorStatus={failureStatus}
+        onRetry={() => void load()}
       >
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -353,14 +227,14 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
   if (shell === "empty" || view?.status !== "live") {
     return (
       <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -371,59 +245,60 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Coverage Live"}
+            {" / Coverage review"}
           </>
         }
-        title="Scout Coverage Live"
-        description="Which robots were never scouted in played matches, which upcoming robots have no scout yet, and a quick nudge to the scout coordinator."
+        title="Coverage review"
+        description="Which robots were never scouted in played matches, which upcoming robots have no scout yet, and shared flags for a scouting lead to review."
       >
         <div className="scout-coverage-live-header-meta">
           <ScoutCoverageLiveRelatedStrip orgId={orgId} />
+          <Button variant="secondary" type="button" disabled={busy || refreshing} onClick={() => void load()}>{refreshing ? "Refreshing…" : "Refresh"}</Button>
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+      <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} eventKey={view.eventKey} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
 
+      {fromCache ? <p className="app-muted">This copy is read-only. Refresh before changing flags or the report target.</p> : null}
+      {notice ? <p className="scout-review-notice" role="status">{notice}</p> : null}
       {error ? (
         <p className="form-message" role="status">
           {error}
         </p>
       ) : null}
 
-      <section className="scout-coverage-live-event" aria-label="Event and thin threshold">
+      <section className="scout-coverage-live-event" aria-label="Event and report target">
         <div>
           <span className="app-muted">Event</span>
           <strong style={{ display: "block" }}>
             {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "Your event"}
           </strong>
         </div>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            const value = Number(thresholdInput);
-            if (Number.isFinite(value) && value > 0) {
-              void mutate({ action: "set-threshold", thinThreshold: Math.round(value) });
-            }
-          }}
-        >
-          <FormRow label="Reports wanted per robot" hint="2 means every robot should be scouted twice">
-            <input
-              type="number"
-              min={1}
-              value={thresholdInput}
-              onChange={(event) => setThresholdInput(event.target.value)}
-            />
-          </FormRow>
-          <Button variant="secondary" type="submit" disabled={busy}>
-            Save
-          </Button>
-        </form>
+        <p className="app-muted">Saved report target: {view.thinThreshold} per robot per match</p>
+        {view.canManage ? (
+          <details className="scout-review-target">
+            <summary>Report target</summary>
+            <form onSubmit={event => {
+              event.preventDefault();
+              if (!targetValid || controlsDisabled || target === view.thinThreshold) return;
+              void mutate({ action: "set-threshold", thinThreshold: target, expectedThreshold: view.thinThreshold }).then(saved => {
+                if (saved) { editedTarget.current = false; setThresholdInput(String(target)); }
+              });
+            }}>
+              <FormRow label="Reports wanted per robot" hint="One report covers a robot. Extra reports can check consistency.">
+                <input type="number" min={1} max={MAX_REPORT_TARGET} step={1} aria-invalid={!targetValid} disabled={controlsDisabled} value={thresholdInput} onChange={event => { editedTarget.current = true; setThresholdInput(event.target.value); }} />
+              </FormRow>
+              {!targetValid ? <p className="app-muted">Choose a whole number from 1 to {MAX_REPORT_TARGET}.</p> : null}
+              <Button variant="secondary" type="submit" disabled={controlsDisabled || !targetValid || target === view.thinThreshold}>{busy ? "Saving…" : "Save report target"}</Button>
+            </form>
+          </details>
+        ) : null}
       </section>
 
       {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
-      <CoverageGaps view={view} busy={busy} mutate={mutate} loaded={loaded} />
-      <MissedAssignments view={view} orgId={orgId} />
-      <NudgeLog view={view} busy={busy} mutate={mutate} />
+      <CoverageGaps key={`gaps:${view.orgId}:${view.eventKey}`} view={view} busy={controlsDisabled} mutate={mutate} loaded={loaded} />
+      <MissedAssignments key={`missed:${view.orgId}:${view.eventKey}`} view={view} orgId={orgId} />
+      <NudgeLog key={`flags:${view.orgId}:${view.eventKey}`} view={view} busy={controlsDisabled} mutate={mutate} />
     </main>
   );
 }
@@ -436,7 +311,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
   return (
     <section className="scout-coverage-live-kpis" aria-label="Coverage summary">
       <StatTile
-        label="Played matches: scouted"
+        label="Played robots: report target met"
         value={formatScoutCoverageLiveRate(summary.coveragePct, loaded, { hasSchedule })}
         unit={`${formatScoutCoverageLiveMetric(summary.coveredCount, loaded)} of ${formatScoutCoverageLiveMetric(summary.totalCells, loaded)} robots`}
       />
@@ -447,7 +322,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       />
       {view.thinThreshold > 1 ? (
         <StatTile
-          label={`Played matches: under ${view.thinThreshold} reports`}
+          label={`Reported: below ${view.thinThreshold}-report target`}
           value={formatScoutCoverageLiveMetric(summary.thinCount, loaded)}
           unit={summary.thinCount === 1 ? "robot" : "robots"}
         />
@@ -471,9 +346,10 @@ function CoverageGaps({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: (payload: ReviewCommand) => Promise<boolean>;
   loaded: boolean;
 }) {
+  const [visible, setVisible] = useState(15);
   return (
     <Panel className="scout-coverage-live-panel" id="coverage-gaps">
       <header>
@@ -485,11 +361,11 @@ function CoverageGaps({
       </header>
       {view.gaps.length === 0 ? (
         <p className="app-muted">
-          Nothing to cover right now. Every upcoming robot has a scout, and every played robot was scouted.
+          No gaps in this review. Upcoming robots are assigned and played robots meet the saved report target.
         </p>
       ) : (
         <ul className="scout-coverage-live-list">
-          {view.gaps.map((cell) => (
+          {view.gaps.slice(0, visible).map((cell) => (
             <li key={`${cell.matchKey}::${cell.teamKey}`}>
               <div>
                 <div className="scout-coverage-live-row-meta">
@@ -507,27 +383,23 @@ function CoverageGaps({
                     : `${formatScoutCoverageLiveMetric(cell.entryCount, loaded)} ${cell.entryCount === 1 ? "report" : "reports"}`}
                 </small>
               </div>
-              {/* Every gap's button said only "Nudge coordinator", so fifteen
-                  of them were indistinguishable to anyone not reading the row
-                  above — which, moving through a page by control, is everyone
-                  using a screen reader. The message each one sends already
-                  names the match and the team; now the button does too. */}
               <Button
                 variant="secondary"
                 type="button"
-                aria-label={`Nudge the coordinator about ${cell.matchLabel}, Team ${cell.teamNumber}`}
-                disabled={busy}
+                aria-label={`Flag for the coordinator: ${cell.matchLabel}, Team ${cell.teamNumber}`}
+                disabled={busy || view.nudges.some(nudge => !nudge.acknowledged && nudge.matchKey === cell.matchKey && nudge.teamKey === cell.teamKey)}
                 onClick={() => void mutate({ action: "send-nudge", matchKey: cell.matchKey, teamKey: cell.teamKey, message:
                       cell.played === false
                         ? `${cell.matchLabel}: Team ${cell.teamNumber} has no scout yet. Please assign one.`
-                        : `${cell.matchLabel}: Team ${cell.teamNumber} was never scouted. Can someone scout it from the video?`, }) }
+                        : cell.entryCount === 0 ? `${cell.matchLabel}: Team ${cell.teamNumber} has no report. Can someone scout it from the video?` : `${cell.matchLabel}: Team ${cell.teamNumber} has ${cell.entryCount} of ${view.thinThreshold} wanted reports. Please review whether another observation is available.`, }) }
               >
-                Nudge coordinator
+                {view.nudges.some(nudge => !nudge.acknowledged && nudge.matchKey === cell.matchKey && nudge.teamKey === cell.teamKey) ? "Flag pending" : "Flag for review"}
               </Button>
             </li>
           ))}
         </ul>
       )}
+      <ReviewListFooter visible={visible} total={view.gaps.length} label="robots to cover" onMore={() => setVisible(count => count + 15)} />
     </Panel>
   );
 }
@@ -538,14 +410,17 @@ function CoverageGaps({
  * to pull the video.
  */
 function MissedAssignments({ view, orgId }: { view: LiveView; orgId: string | null | undefined }) {
+  const [lostVisible, setLostVisible] = useState(30);
+  const [coveredVisible, setCoveredVisible] = useState(30);
   const missed = view.missed;
   if (!missed) return null;
   const summary = summarizeMissed(missed);
   // Robots nobody scouted come first: those are the gaps. A missed shift where
   // someone else scouted the robot is a talk with the scout, not lost data.
   const newestFirst = [...missed].reverse();
-  const lost = newestFirst.filter((row) => !row.robotScouted).slice(0, 30);
-  const covered = newestFirst.filter((row) => row.robotScouted).slice(0, 30);
+  const lost = newestFirst.filter((row) => !row.robotScouted);
+  const covered = newestFirst.filter((row) => row.robotScouted);
+  const unscoutedRobots = new Set(lost.map(row => `${row.matchKey}::${row.teamKey}`)).size;
   const renderRow = (row: (typeof missed)[number]) => (
     <li key={`${row.matchKey}::${row.teamKey}::${row.userId}`}>
       <div>
@@ -578,7 +453,7 @@ function MissedAssignments({ view, orgId }: { view: LiveView; orgId: string | nu
       ) : (
         <>
           <p className="app-muted">
-            {summary.total} missed · {summary.uncovered} {summary.uncovered === 1 ? "robot" : "robots"} nobody scouted
+            {summary.total} missed assignments · {unscoutedRobots} {unscoutedRobots === 1 ? "robot" : "robots"} nobody scouted
             {summary.byScout.length
               ? ` · most: ${summary.byScout
                   .slice(0, 3)
@@ -586,13 +461,15 @@ function MissedAssignments({ view, orgId }: { view: LiveView; orgId: string | nu
                   .join(", ")}`
               : ""}
           </p>
-          {lost.length ? <ul className="scout-coverage-live-list">{lost.map(renderRow)}</ul> : null}
+          {lost.length ? <ul className="scout-coverage-live-list">{lost.slice(0, lostVisible).map(renderRow)}</ul> : null}
+          <ReviewListFooter visible={lostVisible} total={lost.length} label="missed assignments without a report" onMore={() => setLostVisible(count => count + 30)} />
           {covered.length ? (
             <details>
               <summary data-disclosure>
                 {covered.length} more where someone else scouted the robot
               </summary>
-              <ul className="scout-coverage-live-list">{covered.map(renderRow)}</ul>
+              <ul className="scout-coverage-live-list">{covered.slice(0, coveredVisible).map(renderRow)}</ul>
+              <ReviewListFooter visible={coveredVisible} total={covered.length} label="missed assignments covered by another scout" onMore={() => setCoveredVisible(count => count + 30)} />
             </details>
           ) : null}
           <p className="app-muted">
@@ -611,19 +488,20 @@ function NudgeLog({
 }: {
   view: LiveView;
   busy: boolean;
-  mutate: (payload: Record<string, unknown>) => void;
+  mutate: (payload: ReviewCommand) => Promise<boolean>;
 }) {
+  const [visible, setVisible] = useState(30);
   return (
     <Panel className="scout-coverage-live-panel" id="nudge-log">
       <header>
-        <h2>Coordinator nudge log</h2>
-        <p className="app-muted">Real nudges only — acknowledge once a scout is seated.</p>
+        <h2>Shared coverage flags</h2>
+        <p className="app-muted">All outstanding flags and the latest {REVIEWED_FLAG_HISTORY_LIMIT} reviewed flags, visible to your team. A scouting lead marks each flag reviewed here.</p>
       </header>
       {view.nudges.length === 0 ? (
-        <p className="app-muted">No coverage nudges sent yet. Send one from the gaps above.</p>
+        <p className="app-muted">No flags yet. Flag a gap above when it needs a scouting lead’s attention.</p>
       ) : (
         <ul className="scout-coverage-live-list">
-          {view.nudges.map((nudge) => (
+          {view.nudges.slice(0, visible).map((nudge) => (
             <li key={nudge.id}>
               <div>
                 <strong>
@@ -631,19 +509,28 @@ function NudgeLog({
                 </strong>
                 <small>{nudge.message}</small>
                 <small>
-                  Sent {new Date(nudge.sentAt).toLocaleString()}
-                  {nudge.acknowledged ? " · Acknowledged" : ""}
+                  Flagged {new Date(nudge.sentAt).toLocaleString()}
+                  {nudge.acknowledged ? " · Reviewed" : ""}
                 </small>
               </div>
-              {!nudge.acknowledged ? (
-                <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "acknowledge-nudge", nudgeId: nudge.id })}>
-                  Acknowledge
+              {view.canManage && !nudge.acknowledged ? (
+                <Button variant="secondary" type="button" disabled={busy} aria-label={`Mark reviewed: ${nudge.matchLabel}, Team ${nudge.teamNumber}`} onClick={() => void mutate({ action: "acknowledge-nudge", nudgeId: nudge.id })}>
+                  Mark reviewed
                 </Button>
               ) : null}
             </li>
           ))}
         </ul>
       )}
+      <ReviewListFooter visible={visible} total={view.nudges.length} label="coverage flags" onMore={() => setVisible(count => count + 30)} />
     </Panel>
   );
+}
+
+function ReviewListFooter({ visible, total, label, onMore }: { visible: number; total: number; label: string; onMore: () => void }) {
+  if (total === 0) return null;
+  return <div className="scout-review-list-footer">
+    <p className="app-muted" role="status">Showing {Math.min(visible, total)} of {total} {label}</p>
+    {visible < total ? <Button type="button" variant="secondary" aria-label={`Show more ${label}`} onClick={onMore}>Show more</Button> : null}
+  </div>;
 }

@@ -12,9 +12,9 @@ const LIST = "33333333-3333-4333-8333-333333333333";
 const ENTRY_1 = "44444444-4444-4444-8444-444444444444";
 const ENTRY_2 = "55555555-5555-4555-8555-555555555555";
 
-function makeClient(handler: (sql: string, params: unknown[]) => { rows: unknown[]; rowCount?: number }): PoolClient {
+function makeClient(handler: (sql: string, params: unknown[]) => { rows: unknown[]; rowCount?: number }, canManage = true): PoolClient {
   return {
-    query: vi.fn(async (sql: string, params: unknown[] = []) => handler(sql, params)),
+    query: vi.fn(async (sql: string, params: unknown[] = []) => sql.includes("has_org_capability") ? { rows: [{ allowed: canManage }], rowCount: 1 } : handler(sql, params)),
   } as unknown as PoolClient;
 }
 
@@ -144,6 +144,9 @@ describe("computePicklistCollabView", () => {
     expect(view.summary.totalVoters).toBe(2);
     expect(view.activeList?.id).toBe(LIST);
     expect(view.activeList?.eventKey).toBe("2026miket");
+    expect(view.activeList?.revision).toBe(4);
+    expect(view.canManage).toBe(true);
+    expect(view.currentUserId).toBe(USER);
 
     // Team 254 has a heavier combined vote weight (3.0) than 1114 (1.0), so it sorts first
     // within the "first_pick" tier despite entering with a later rank.

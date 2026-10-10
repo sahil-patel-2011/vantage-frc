@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fieldStatsFromRows, picklistMetricLabel, rankByWeightedZScores } from "@vantage/prediction-strategy";
-import { formMetricRows, mergeFormMetrics } from "./form-metrics";
+import { formMetricAnalysis, formMetricRows, mergeFormMetrics } from "./form-metrics";
 
 const entries = [
   { teamKey: "frc1", payload: { teleopCycles: 12, fouls: 0, notes: "fast", matchNumber: 3 } },
@@ -23,6 +23,56 @@ describe("form metrics", () => {
     expect(rows.find((row) => row.teamKey === "frc3")?.values["form:fouls"]).toBe(-4);
     expect(picklistMetricLabel("form:fouls")).toBe("Fewer fouls");
     expect(picklistMetricLabel("form:teleopCycles")).toBe("Teleop cycles");
+  });
+  it("weights observed matches equally even when one match has several scouts", () => {
+    const rows = formMetricRows([
+      { teamKey: "frc1", matchKey: "2026test_qm1", payload: { cycles: 10, fouls: 0 } },
+      { teamKey: "frc1", matchKey: "2026test_qm1", payload: { cycles: 14 } },
+      { teamKey: "frc1", matchKey: "2026test_qm1", payload: { cycles: 12 } },
+      { teamKey: "frc1", matchKey: "2026test_qm2", payload: { cycles: 4, fouls: 2 } },
+      { teamKey: "frc1", matchKey: "2026test_qm3", payload: {} },
+      { teamKey: "frc1", matchKey: "2026test_qm4", confidence: "low", payload: { cycles: 100 } },
+    ]);
+    expect(rows[0]?.values["form:cycles"]).toBe(8);
+    expect(rows[0]?.values["form:fouls"]).toBe(-1);
+  });
+  it("uses original question visibility and expands observed subcounts without filling missing ones", () => {
+    const fields = [
+      { key: "attempted", label: "Attempted?", type: "boolean" as const },
+      { key: "cycles", label: "Cycles", type: "counter" as const, config: { visibleWhen: { fieldKey: "attempted", isTrue: true } } },
+      { key: "scores", label: "Scoring", type: "multi_counter" as const, config: { counters: [{ key: "high", label: "High" }, { key: "low", label: "Low" }] } },
+    ];
+    const rows = formMetricRows([
+      { teamKey: "frc1", matchKey: "2026test_qm1", fields, payload: { attempted: false, cycles: 20, scores: { high: 0 }, spoof: 99 } },
+      { teamKey: "frc1", matchKey: "2026test_qm2", fields, payload: { attempted: true, cycles: 4, scores: { high: 6, low: 3 } } },
+    ]);
+    expect(rows[0]?.values["form:cycles"]).toBe(4);
+    expect(rows[0]?.values["form:scores.high"]).toBe(3);
+    expect(rows[0]?.values["form:scores.low"]).toBe(3);
+    expect(rows[0]?.values).not.toHaveProperty("form:spoof");
+  });
+  it("carries original labels and observed-match samples for each metric", () => {
+    const fields = [{ key: "duration", label: "Cycle duration", type: "number" as const, config: { unit: "seconds" } }];
+    const analysis = formMetricAnalysis([
+      { teamKey: "frc1", matchKey: "2026test_qm1", fields, payload: { duration: 10 } },
+      { teamKey: "frc1", matchKey: "2026test_qm1", fields, payload: { duration: 14 } },
+      { teamKey: "frc1", matchKey: "2026test_qm2", fields, payload: { duration: 4 } },
+      { teamKey: "frc1", matchKey: "2026test_qm3", fields, payload: {} },
+    ]);
+    expect(analysis.rows[0]?.values["form:duration"]).toBe(8);
+    expect(analysis.samples.frc1?.["form:duration"]).toBe(2);
+    expect(analysis.definitions["form:duration"]).toEqual({ label: "Cycle duration", unit: "seconds" });
+  });
+  it("excludes incompatible saved units and type changes instead of mixing their averages", () => {
+    const analysis = formMetricAnalysis([
+      { teamKey: "frc1", matchKey: "2026test_qm1", fields: [{ key: "duration", label: "Duration", type: "number", config: { unit: "seconds" } }], payload: { duration: 20 } },
+      { teamKey: "frc1", matchKey: "2026test_qm2", fields: [{ key: "duration", label: "Duration", type: "number", config: { unit: "minutes" } }], payload: { duration: 1 } },
+      { teamKey: "frc2", matchKey: "2026test_qm1", fields: [{ key: "quality", label: "Quality", type: "rating" }], payload: { quality: 5 } },
+      { teamKey: "frc2", matchKey: "2026test_qm2", fields: [{ key: "quality", label: "Quality", type: "boolean" }], payload: { quality: true } },
+    ]);
+    expect(analysis.incompatibleKeys).toEqual(["duration", "quality"]);
+    expect(analysis.rows).toEqual([]);
+    expect(analysis.samples).toEqual({});
   });
 
   it("gets field stats and ranks on a form field like any built-in metric", () => {

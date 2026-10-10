@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ScoutForbiddenError } from "../scout-org-access";
 import type { ScoutingCoverageView } from "./coverage";
+import { classifyLoadFailure } from "../ui/load-failure";
 
 /**
  * Route contract for /api/scouting/coverage. Auth and withRls are stubbed; compute and
@@ -65,7 +66,11 @@ function emptyLive(overrides: Partial<Extract<ScoutingCoverageView, { status: "l
 }
 
 const state = vi.hoisted(() => ({
-  session: null as { user: { id: string } } | null,
+  session: null as { user: { id: string }; session: { id: string } } | null,
+  policy: vi.fn(),
+  conflicts: vi.fn(),
+  query: vi.fn(),
+  absentUser: "",
   member: true,
   role: "admin" as string,
   lead: false,
@@ -78,26 +83,17 @@ const state = vi.hoisted(() => ({
   loadWatchlist: vi.fn(),
 }));
 
-vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers(), cookies: async () => ({ get: () => undefined }) }));
 
 vi.mock("@vantage/core", () => ({
   auth: { api: { getSession: async () => state.session } },
+  assertOrgAuthentication: (...args: unknown[]) => state.policy(...args),
 }));
 
 vi.mock("@vantage/db", () => ({
-  withRls: async (_context: unknown, work: (client: unknown) => Promise<unknown>) =>
-    work({
-      query: async (sql: string) => {
-        if (sql.includes("has_org_capability")) return {rows:[{allowed:state.member && (["owner","admin"].includes(state.role) || state.lead)}],rowCount:1};
-        if (sql.includes("FROM memberships")) {
-          return state.member
-            ? { rows: [{ role: state.role }], rowCount: 1 }
-            : { rows: [], rowCount: 0 };
-        }
-        return { rows: [], rowCount: 0 };
-      },
-    }),
+  withRls: async (_context: unknown, work: (client: unknown) => Promise<unknown>) => work({ query: state.query }),
 }));
+vi.mock("./assignment-conflicts-load", () => ({ loadAssignmentConflictContext: (...args: unknown[]) => state.conflicts(...args) }));
 
 vi.mock("../watchlist", async () => {
   const actual = await vi.importActual<typeof import("../watchlist")>("../watchlist");
@@ -133,12 +129,24 @@ function postRequest(body: Record<string, unknown>) {
 }
 
 beforeEach(() => {
-  state.session = { user: { id: USER } };
+  state.session = { user: { id: USER }, session: { id: "session" } };
+  state.absentUser = "";
+  state.policy.mockReset();
+  state.policy.mockResolvedValue(undefined);
+  state.query.mockReset();
+  state.query.mockImplementation(async (sql: string, params: unknown[] = []) => {
+    if (sql.includes("has_org_capability")) return { rows: [{ allowed: state.member && (["owner", "admin"].includes(state.role) || state.lead) }], rowCount: 1 };
+    if (sql.includes("FROM memberships")) return state.member && params[1] !== state.absentUser ? { rows: [{ role: state.role }], rowCount: 1 } : { rows: [], rowCount: 0 };
+    if (sql.includes("FROM org_active_context")) return { rows: [{ eventKey: EVENT }], rowCount: 1 };
+    return { rows: [], rowCount: 0 };
+  });
+  state.conflicts.mockReset();
+  state.conflicts.mockResolvedValue({ ourTeamKey: null, standingDriveTeam: new Set(), driveDuties: [], matches: new Map(), assignments: [] });
   state.member = true;
   state.role = "admin";
   state.lead = false;
   state.priorityTeamKeys = [];
-  state.view = emptyLive();
+  state.view = emptyLive({ slots: ["frc254", "frc118", "frc1323"].map(teamKey => ({ matchKey: `${EVENT}_qm1`, teamKey, teamNumber: Number(teamKey.slice(3)), matchNumber: 1, compLevel: "qm", status: "unscouted", entryCount: 0, assignmentCount: 0 })) });
   state.compute.mockReset();
   state.assign.mockReset();
   state.swap.mockReset();
@@ -197,6 +205,72 @@ describe("GET /api/scouting/coverage", () => {
 });
 
 describe("POST /api/scouting/coverage", () => {
+  it("blocks cross-site mutations before reading or saving assignments", async () => {
+    const request = new Request("http://localhost/api/scouting/coverage", { method: "POST", headers: { "content-type": "application/json", origin: "https://other.example" }, body: JSON.stringify({ orgId: ORG, action: "auto-assign" }) });
+    expect((await POST(request)).status).toBe(403);
+    expect(state.query).not.toHaveBeenCalled();
+  });
+  it("allows delegated leads to manage assignments", async () => {
+    state.role = "student";
+    state.lead = true;
+    expect((await POST(postRequest({ orgId: ORG, action: "assign", matchKey: `${EVENT}_qm1`, teamKey: "frc254", userId: SCOUT }))).status).toBe(200);
+  });
+  it("serializes assignment publishers before reading conflicts", async () => {
+    expect((await POST(postRequest({ orgId: ORG, action: "assign", matchKey: `${EVENT}_qm1`, teamKey: "254", userId: SCOUT }))).status).toBe(200);
+    const index = state.query.mock.calls.findIndex(([sql]) => String(sql).includes("pg_advisory_xact_lock"));
+    expect(index).toBeGreaterThanOrEqual(0);
+    expect(state.query.mock.calls[index]?.[1]).toEqual([`scout-assignments:${ORG}:${EVENT}`]);
+    expect(state.query.mock.invocationCallOrder[index]).toBeLessThan(state.conflicts.mock.invocationCallOrder[0]!);
+  });
+
+  it("applies team authentication before assignment reads and writes", async () => {
+    state.policy.mockRejectedValue(Object.assign(new Error("Authenticator verification is required to enter this organization."), { code: "mfa_step_up_required" }));
+    const denied = await GET(getRequest());
+    expect(denied.status).toBe(403);
+    expect(classifyLoadFailure({ status: denied.status, message: (await denied.json()).error })).toBe("reauth");
+    expect((await POST(postRequest({ orgId: ORG, action: "auto-assign" }))).status).toBe(403);
+    expect(state.compute).not.toHaveBeenCalled();
+    expect(state.assign).not.toHaveBeenCalled();
+  });
+
+  it("refuses foreign-event robots and departed members", async () => {
+    const payload = { orgId: ORG, action: "assign", matchKey: `${EVENT}_qm1`, teamKey: "frc254", userId: SCOUT };
+    expect((await POST(postRequest({ ...payload, eventKey: "2026other" }))).status).toBe(400);
+    expect((await POST(postRequest({ ...payload, teamKey: "frc999" }))).status).toBe(400);
+    state.absentUser = SCOUT;
+    expect((await POST(postRequest(payload))).status).toBe(409);
+    expect(state.assign).not.toHaveBeenCalled();
+  });
+
+  it("derives a range event from its first match and reports partial refusals", async () => {
+    state.view = emptyLive({ slots: [1, 2].map(matchNumber => ({ matchKey: `${EVENT}_qm${matchNumber}`, teamKey: "frc254", teamNumber: 254, compLevel: "qm", matchNumber, assignmentCount: 0, entryCount: 0, status: "unscouted" })) });
+    state.conflicts.mockResolvedValue({ ourTeamKey: null, standingDriveTeam: new Set(), driveDuties: [], matches: new Map(), assignments: [{ userId: SCOUT, matchKey: `${EVENT}_qm1`, teamKey: "frc118" }] });
+    const response = await POST(postRequest({ orgId: ORG, action: "assign-range", firstMatchKey: `${EVENT}_qm1`, lastMatchKey: `${EVENT}_qm2`, teamKey: "254", userId: SCOUT }));
+    expect(response.status).toBe(200);
+    expect(state.conflicts).toHaveBeenCalledWith(expect.anything(), { orgId: ORG, eventKey: EVENT });
+    expect(state.compute.mock.calls[0]?.[1]).toMatchObject({ requestedEvent: EVENT });
+    expect(state.assign).toHaveBeenCalledTimes(1);
+    expect(state.assign.mock.calls[0]?.[1]).toMatchObject({ matchKey: `${EVENT}_qm2`, eventKey: EVENT });
+    expect((await response.json()).assignmentResult).toMatchObject({ assigned: 1, unchanged: 0, refused: [expect.stringMatching(/one scout, one robot/)] });
+  });
+
+  it("does not pretend a stale reassignment moved a scout", async () => {
+    state.swap.mockResolvedValue({ moved: false });
+    expect((await POST(postRequest({ orgId: ORG, action: "swap", matchKey: `${EVENT}_qm1`, teamKey: "frc254", fromUserId: USER, toUserId: SCOUT }))).status).toBe(409);
+  });
+
+  it("confirms an idempotent retry without counting a new assignment", async () => {
+    state.assign.mockResolvedValue({ inserted: false });
+    const response = await POST(postRequest({ orgId: ORG, action: "assign", matchKey: `${EVENT}_qm1`, teamKey: "frc254", userId: SCOUT }));
+    expect((await response.json()).assignmentResult).toMatchObject({ assigned: 0, unchanged: 1 });
+  });
+
+  it("returns a private outage response instead of an empty successful board", async () => {
+    state.compute.mockRejectedValue(new Error("Database offline"));
+    const response = await GET(getRequest());
+    expect(response.status).toBe(503);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
   it("returns 401 when there is no session", async () => {
     state.session = null;
     const response = await POST(postRequest({ orgId: ORG, action: "assign" }));
@@ -207,13 +281,13 @@ describe("POST /api/scouting/coverage", () => {
   it("returns 400 when orgId is missing", async () => {
     const response = await POST(postRequest({ action: "assign" }));
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ error: "orgId is required" });
+    expect(await response.json()).toEqual({ error: "Request fields are invalid." });
   });
 
   it("rejects an unknown action", async () => {
     const response = await POST(postRequest({ orgId: ORG, action: "invent-coverage" }));
     expect(response.status).toBe(400);
-    expect((await response.json()).error).toMatch(/unknown action/i);
+    expect((await response.json()).error).toMatch(/invalid/i);
     expect(state.assign).not.toHaveBeenCalled();
   });
 
@@ -258,7 +332,8 @@ describe("POST /api/scouting/coverage", () => {
     });
     const body = (await response.json()) as { status: string; slots: unknown[] };
     expect(body.status).toBe("live");
-    expect(body.slots).toEqual([]);
+    expect(body.slots).toEqual((state.view as ScoutingCoverageView & { slots: unknown[] }).slots);
+    expect((body as unknown as { assignmentResult: unknown }).assignmentResult).toMatchObject({ action: "assign", assigned: 1, unchanged: 0, refused: [] });
   });
 
   it("auto-assigns watchlisted gaps before later schedule slots", async () => {
@@ -266,7 +341,7 @@ describe("POST /api/scouting/coverage", () => {
     state.view = emptyLive({
       slots: [
         {
-          matchKey: "m2",
+          matchKey: `${EVENT}_qm2`,
           teamKey: "frc2",
           status: "unscouted",
           assignmentCount: 0,
@@ -274,7 +349,7 @@ describe("POST /api/scouting/coverage", () => {
           compLevel: "qm",
         },
         {
-          matchKey: "m1",
+          matchKey: `${EVENT}_qm1`,
           teamKey: "frc1",
           status: "unscouted",
           assignmentCount: 0,

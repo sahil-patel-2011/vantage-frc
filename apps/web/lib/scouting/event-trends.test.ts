@@ -31,4 +31,51 @@ describe("observed event trends", () => {
     const metric=eventTrendMetrics(robots,"2026test",false)[0]!;expect(metric.incompatible).toBe(true);
     expect(buildEventTrend(robots,"2026test",metric,false).answered).toBe(0);
   });
+
+  it("separates explicit non-attempts, failures and unknown attempt status", () => {
+    const expanded = { ...field, options: [...field.options, "not_attempted", "attempted_failed", "fell"] };
+    const robots: ObservedRobot[] = [{ teamKey: "frc1", reports: ["not_attempted", "attempted_failed", "none", "L3", "could_not_see"].map((value, index) => ({ ...report(index + 1, value), fields: [expanded] })) }];
+    const trend = buildEventTrend(robots, "2026test", eventTrendMetrics(robots, "2026test", false)[0]!, false);
+    expect(trend.climbOutcomes).toEqual({ not_attempted: 1, failed: 1, no_success: 1, successful: 1, unseen: 1 });
+    expect(trend.teamClimbs[0]).toMatchObject({ observed: 4, total: 5 });
+    expect(trend.neverClimbed).toEqual([]);
+  });
+
+  it("preserves yes/no choice values when reducing multiple reports", () => {
+    const choice = { key: "climb", label: "Climb result", type: "select" as const, options: ["yes", "no"] };
+    const robots: ObservedRobot[] = [{ teamKey: "frc1", reports: ["yes", "yes", "no"].map(value => ({ ...report(1, undefined), fields: [choice], payload: { climb: value } })) }];
+    const trend = buildEventTrend(robots, "2026test", eventTrendMetrics(robots, "2026test", false)[0]!, false);
+    expect(trend.outcomes).toEqual([["yes", 1]]);
+    expect(trend.climbOutcomes.successful).toBe(1);
+  });
+
+  it("keeps success known when reports disagree only on successful height", () => {
+    const robots: ObservedRobot[] = [{ teamKey: "frc1", reports: [report(1, "L2"), report(1, "L3")] }];
+    const trend = buildEventTrend(robots, "2026test", eventTrendMetrics(robots, "2026test", false)[0]!, false);
+    expect(trend).toMatchObject({ total: 1, answered: 1, missing: 0, disagreements: 1 });
+    expect(trend.climbOutcomes.successful).toBe(1);
+    expect(trend.rows[0]!.payload.tower_level).toBeUndefined();
+  });
+
+  it("separates matches where the question was not on the form", () => {
+    const robots: ObservedRobot[] = [{ teamKey: "frc1", reports: [report(1, "none"), { ...report(2, undefined), fields: [] }] }];
+    const trend = buildEventTrend(robots, "2026test", eventTrendMetrics(robots, "2026test", false)[0]!, false);
+    expect(trend).toMatchObject({ total: 2, answered: 1, missing: 1, unasked: 1 });
+  });
+
+  it.each([{ key: "can_climb", label: "Climb capable", type: "boolean" as const }, { key: "climb_attempted", label: "Climb attempted", type: "boolean" as const }])("does not interpret capability or attempt question %j as a successful outcome", capability => {
+    const robots: ObservedRobot[] = [{ teamKey: "frc1", reports: [{ ...report(1, undefined), fields: [capability], payload: { [capability.key]: true } }] }];
+    expect(buildEventTrend(robots, "2026test", eventTrendMetrics(robots, "2026test", false)[0]!, false).noClimb).toBe(false);
+  });
+  it("recognizes an explicit climb attempt result without inferring success from an attempt flag", () => {
+    const outcome = { key: "climb_attempt_result", label: "Climb attempt outcome", type: "select" as const, options: ["attempted_failed", "not_attempted", "L3"] };
+    const robots: ObservedRobot[] = [{ teamKey: "frc1", reports: [{ ...report(1, undefined), fields: [outcome], payload: { climb_attempt_result: "attempted_failed" } }] }];
+    const trend = buildEventTrend(robots, "2026test", eventTrendMetrics(robots, "2026test", false)[0]!, false);
+    expect(trend.noClimb).toBe(true);
+    expect(trend.climbOutcomes.failed).toBe(1);
+  });
+
+  it("does not offer pit-only fields as match outcome metrics", () => {
+    expect(eventTrendMetrics([{ teamKey: "frc1", reports: [{ ...report(1, "L3"), matchKey: null }] }], "2026test", false)).toEqual([]);
+  });
 });

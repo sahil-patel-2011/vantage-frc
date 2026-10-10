@@ -39,8 +39,8 @@ export function DashboardActionsProvider({ orgId, role, refresh, children }: {
         title={action === "task" ? "Create team task" : "Log scouting report"}
         description="Work here without leaving your dashboard."
         className="dash-action-dialog">
-        {action === "task" ? <QuickTaskForm orgId={orgId} onSaved={() => refresh("team_todos")} /> : null}
-        {action === "scouting" ? <ScoutingClient orgId={orgId} embedded /> : null}
+        {action === "task" ? <QuickTaskForm key={orgId} orgId={orgId} onSaved={() => refresh("team_todos")} /> : null}
+        {action === "scouting" ? <ScoutingClient key={orgId} orgId={orgId} embedded /> : null}
       </Modal>
     </ActionsContext.Provider>
   );
@@ -110,16 +110,19 @@ function QuickTaskForm({ orgId, onSaved }: { orgId: string; onSaved: () => Promi
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const savingRef = useRef(false);
   return (
     <form className="dash-quick-task" onSubmit={async (event) => {
       event.preventDefault();
-      if (busy || !title.trim() || !orgId) return;
+      if (savingRef.current || !title.trim() || !orgId) return;
+      savingRef.current = true;
       setBusy(true);
       setMessage("");
       setError("");
       try {
         const response = await fetch("/api/todos", {
           method: "POST", headers: { "content-type": "application/json" },
+          signal: AbortSignal.timeout(15_000),
           body: JSON.stringify({ orgId, action: "create-todo", title: title.trim(), notes: notes.trim(), dueOn: dueOn || null }),
         });
         const data = await response.json();
@@ -128,13 +131,15 @@ function QuickTaskForm({ orgId, onSaved }: { orgId: string; onSaved: () => Promi
         setMessage("Team task created.");
         try { await onSaved(); } catch { setMessage("Team task created. Refresh the card to see it."); }
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Could not create the task. Please try again.");
-      } finally { setBusy(false); }
+        const uncertain = cause instanceof Error && ["TimeoutError", "AbortError", "TypeError", "SyntaxError"].includes(cause.name);
+        setError(uncertain ? "Could not confirm the save. Open All tasks to check before retrying; your details are still here." : cause instanceof Error ? cause.message : "Could not confirm the save. Open All tasks to check before retrying.");
+      } finally { savingRef.current = false; setBusy(false); }
     }}>
-      <FormRow label="Task title"><input aria-label="Task title" required maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} /></FormRow>
-      <FormRow label="Due date"><input aria-label="Due date" type="date" value={dueOn} onChange={(e) => setDueOn(e.target.value)} /></FormRow>
-      <FormRow label="Notes"><textarea aria-label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} /></FormRow>
+      <FormRow label="Task title"><input aria-label="Task title" required disabled={busy} maxLength={200} value={title} onChange={(e) => setTitle(e.target.value)} /></FormRow>
+      <FormRow label="Due date"><input aria-label="Due date" type="date" disabled={busy} value={dueOn} onChange={(e) => setDueOn(e.target.value)} /></FormRow>
+      <FormRow label="Notes"><textarea aria-label="Notes" disabled={busy} value={notes} onChange={(e) => setNotes(e.target.value)} /></FormRow>
       {error ? <p role="alert">{error}</p> : null}
+      {error ? <a href={`/todos?orgId=${encodeURIComponent(orgId)}`}>All tasks</a> : null}
       {message ? <p role="status">{message}</p> : null}
       <Button type="submit" variant="primary" disabled={busy || !orgId || !title.trim()}>{busy ? "Creating…" : "Create task"}</Button>
     </form>

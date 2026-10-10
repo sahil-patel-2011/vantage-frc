@@ -51,6 +51,16 @@ function eventEntries(): ScoutEntryRow[] {
 }
 
 describe("scoutedRowsFromEntries", () => {
+  it("scores mapped climb observations through the real analysis bridge without inventing unseen points", () => {
+    const result = scoutedRowsFromEntries([
+      entry({ teamKey: "frc6925", matchKey: "qm1", payload: { climb: "L1" } }),
+      entry({ teamKey: "frc6925", matchKey: "qm2", payload: { climb: "none" } }),
+      entry({ teamKey: "frc6925", matchKey: "qm3", payload: { climb: "could_not_see" } }),
+    ], [{ name: "Total points", expression: { op: "lookup", field: "climb", values: { L1: 10, none: 0 } } }]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.rows.map(row => row.total)).toEqual([10, 0, null]);
+  });
   it("asks for a formula instead of guessing what a game action is worth", () => {
     const result = scoutedRowsFromEntries(eventEntries(), []);
 
@@ -133,6 +143,18 @@ describe("scoutedRowsFromEntries", () => {
 
     if (!result.ok) throw new Error("expected ratings");
     expect(result.ratings[0]!.climbRate).toBeNull();
+  });
+
+  it("excludes unseen and unrecognized outcomes from climb success rates", () => {
+    const result = scoutedRowsFromEntries([
+      entry({ teamKey: "frc1", matchKey: "qm1", payload: { tower_level: "L3", teleop_fuel: 1 } }),
+      entry({ teamKey: "frc1", matchKey: "qm2", payload: { tower_level: "could_not_see", teleop_fuel: 1 } }),
+      entry({ teamKey: "frc1", matchKey: "qm3", payload: { tower_level: "custom unknown", teleop_fuel: 1 } }),
+      entry({ teamKey: "frc1", matchKey: "qm4", payload: { tower_level: "attempted_failed", teleop_fuel: 1 } }),
+    ], [TELEOP]);
+    if (!result.ok) throw new Error("expected ratings");
+    expect(result.ratings[0]!.climbRate).toBe(0.5);
+    expect(result.ratings[0]!.climbSamples).toEqual({ successful: 1, observed: 2, missing: 2 });
   });
 
   it("rates a whole event's worth of entries", () => {

@@ -1,5 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { assertScoutingLead } from "@vantage/scouting/permissions";
 import { headers } from "next/headers";
 import { loadAllianceChemistry } from "../../../lib/chemistry/load-chemistry";
 import {
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
   try {
     await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
+      await assertScoutingLead(client, orgId);
       const view = await loadAllianceChemistry(client, {
         orgId,
         userId: session.user.id,
@@ -108,6 +110,9 @@ export async function POST(request: Request) {
     });
     return Response.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
+    if (error && typeof error === "object" && "status" in error && error.status === 403) {
+      return Response.json({ error: "Scouting lead access required." }, { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    }
     return Response.json(
       { error: publicErrorMessage(error, "Could not save to the pick list") },
       { status: 400 },

@@ -46,6 +46,7 @@ const SCOUTING_PATH_PREFIXES = [
   "/sign-in",
   "/invite",
   "/onboarding",
+  "/access-unavailable",
   "/terms",
   "/privacy",
   "/media-paused",

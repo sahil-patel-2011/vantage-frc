@@ -87,7 +87,7 @@ function InviteIdentity({ preview }: { preview: InvitePreview }) {
         </div>
         <div>
           <span>EXPIRES</span>
-          <strong>{new Date(preview.expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</strong>
+          <strong><time dateTime={preview.expiresAt}>{new Date(preview.expiresAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}</time></strong>
         </div>
       </div>
     </div>
@@ -104,6 +104,7 @@ export default function InviteClient() {
   const [recovering, setRecovering] = useState(!urlToken);
   const token = urlToken || recoveredToken || "";
   const acceptRef = useRef<HTMLButtonElement | null>(null);
+  const acceptingRef = useRef(false);
   const [preview, setPreview] = useState<InvitePreview | null | undefined>(undefined);
   const [legalRequired, setLegalRequired] = useState(true);
   const [profileRequired, setProfileRequired] = useState(false);
@@ -117,6 +118,7 @@ export default function InviteClient() {
   const [emailMismatch, setEmailMismatch] = useState(false);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [previewAttempt, setPreviewAttempt] = useState(0);
 
   useEffect(() => {
     if (urlToken) {
@@ -158,12 +160,13 @@ export default function InviteClient() {
       return;
     }
     let active = true;
+    const controller = new AbortController();
     setPreview(undefined);
     setLoadError(null);
     setAuthRequired(false);
     setEmailMismatch(false);
     setSessionEmail(null);
-    void fetch(`/api/invites/preview?token=${encodeURIComponent(token)}`)
+    void fetch(`/api/invites/preview?token=${encodeURIComponent(token)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) })
       .then(async (response) => {
         const data = (await response.json()) as PreviewResponse;
         if (!active) return;
@@ -203,8 +206,9 @@ export default function InviteClient() {
       });
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [token, recovering]);
+  }, [token, recovering, previewAttempt]);
 
   const loading =
     recovering ||
@@ -244,6 +248,7 @@ export default function InviteClient() {
   }, [kind]);
 
   async function accept() {
+    if (acceptingRef.current || kind !== "ready" || !canAccept) return;
     if (legalRequired && !(termsAccepted && privacyAccepted)) {
       const consentMessage =
         legalConsentMessage({ terms: termsAccepted, privacy: privacyAccepted }) ??
@@ -266,11 +271,13 @@ export default function InviteClient() {
       setMessage("No invite is open. Open the full link from your email.");
       return;
     }
+    acceptingRef.current = true;
     setBusy(true);
     setMessage("");
     try {
       const response = await fetch("/api/invites/accept", {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           token: inviteToken,
@@ -283,10 +290,12 @@ export default function InviteClient() {
         if (failure.kind === "auth_required") setAuthRequired(true);
         if (failure.kind === "email_mismatch") setEmailMismatch(true);
         if (failure.kind === "profile_required") setProfileRequired(true);
+        if (failure.kind === "error" && response.status === 400) setPreviewAttempt(current => current + 1);
         setMessageTone("error");
         setMessage(failure.message);
         return;
       }
+      if (typeof data.orgId !== "string" || !data.orgId) throw new Error("Team membership could not be confirmed.");
       try {
         sessionStorage.removeItem(PENDING_INVITE_KEY);
       } catch {
@@ -298,7 +307,11 @@ export default function InviteClient() {
       window.location.assign(
         data.orgId ? `/dashboard?orgId=${encodeURIComponent(data.orgId)}` : "/dashboard",
       );
+    } catch {
+      setMessageTone("error");
+      setMessage("Could not confirm that you joined. Check your teams or retry this invitation when connected.");
     } finally {
+      acceptingRef.current = false;
       setBusy(false);
     }
   }

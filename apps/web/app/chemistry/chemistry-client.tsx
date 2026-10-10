@@ -316,7 +316,7 @@ export default function ChemistryClient({
    */
   const saveToPickList = useCallback(
     async (teamKeys: string[], bucket: "first_pick" | "second_pick" | "unranked") => {
-      if (!orgId || !teamKeys.length) return;
+      if (!orgId || !teamKeys.length || saving || view?.canManagePickList !== true) return;
       const busyKey = teamKeys.join(",");
       setSaving(busyKey);
       setSaveMessage("");
@@ -345,16 +345,20 @@ export default function ChemistryClient({
           setSaveMessage(data.error ?? "Could not save to the pick list.");
           return;
         }
+        if (!isChemistryView(data) || data.orgId !== orgId || !data.promotion || typeof data.promotion.message !== "string") {
+          setSaveMessage("Save was not confirmed. Open the saved pick list to check before retrying.");
+          return;
+        }
         setView(data);
-        setSaveMessage(data.promotion?.message ?? "Saved to the pick list.");
+        setSaveMessage(data.promotion.message);
         setSavedPickListId(data.promotion?.pickListId ?? "");
       } catch {
-        setSaveMessage("Network error — nothing was saved to the pick list.");
+        setSaveMessage("Could not confirm the save. Open the saved pick list to check before retrying.");
       } finally {
         setSaving("");
       }
     },
-    [draft, orgId],
+    [draft, orgId, saving, view?.canManagePickList],
   );
 
   function scoreTone(score: number | null) {
@@ -553,11 +557,11 @@ export default function ChemistryClient({
               Draft board read.
             </p>
             <div className="edc-header-actions">
-              <Button variant="primary" type="button" disabled={Boolean(saving) || !view?.teamKeys.length} onClick={() => void saveToPickList(view?.teamKeys ?? [], "first_pick")}>
+              {view?.canManagePickList === true ? <Button variant="primary" type="button" disabled={Boolean(saving) || !view?.teamKeys.length} onClick={() => void saveToPickList(view?.teamKeys ?? [], "first_pick")}>
                 {saving === (view?.teamKeys ?? []).join(",")
                   ? "Promoting…"
                   : "Promote partner fit"}
-              </Button>
+              </Button> : <p className="edc-muted">Your scouting lead can add these teams to the pick list.</p>}
               <Button as="a" variant="secondary" href={pickDeskHref}>
                 Open Pick desk
               </Button>
@@ -714,14 +718,14 @@ export default function ChemistryClient({
                 >
                   Add
                 </button>
-                <button
+                {view?.canManagePickList === true ? <button
                   type="button"
                   className="edc-link"
                   disabled={Boolean(saving)}
                   onClick={() => void saveToPickList([s.teamKey], "second_pick")}
                 >
                   {saving === s.teamKey ? "Promoting…" : "Promote to pick list"}
-                </button>
+                </button> : null}
               </li>
             ))}
           </ul>

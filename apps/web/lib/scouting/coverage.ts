@@ -297,10 +297,12 @@ export async function computeScoutingCoverageView(
   const [assignments, entryScouts, scouts, schemaRoles, watchlistKeys, eventNameRow] = await Promise.all([
     matchKeys.length
       ? client.query<LineupAssignmentCountRow>(
-          `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::int AS count
-             FROM scout_assignments
-            WHERE org_id = $1::uuid AND event_key = $2::text AND match_key = ANY($3::text[])
-            GROUP BY match_key, team_key`,
+          `SELECT a.match_key AS "matchKey", a.team_key AS "teamKey", count(*)::int AS count,
+                  jsonb_agg(jsonb_build_object('userId',a.user_id,'name',COALESCE(NULLIF(u.name,''),'Team scout'),'role',a.role)
+                    ORDER BY a.role,a.user_id) AS "assignedScouts"
+             FROM scout_assignments a JOIN users u ON u.id=a.user_id
+            WHERE a.org_id = $1::uuid AND a.event_key = $2::text AND a.match_key = ANY($3::text[])
+            GROUP BY a.match_key, a.team_key`,
           [org.orgId, eventKey, matchKeys],
         )
       : Promise.resolve({ rows: [] as LineupAssignmentCountRow[] }),
@@ -326,6 +328,8 @@ export async function computeScoutingCoverageView(
     ),
   ]);
 
+  const assignedScouts = new Map(assignments.rows.map(row => [`${row.matchKey}|${row.teamKey}`, row.assignedScouts ?? []]));
+  const matchOrder = new Map(matchKeys.map((key, index) => [key, index]));
   const slots = orderCoverageByWatchlist(
     buildCoverageGapBoard(
       buildLineupCoverageSlots({
@@ -335,7 +339,8 @@ export async function computeScoutingCoverageView(
       }),
     ),
     watchlistKeys,
-  );
+  ).sort((a, b) => (matchOrder.get(a.matchKey) ?? 0) - (matchOrder.get(b.matchKey) ?? 0))
+    .map(slot => ({ ...slot, assignedScouts: assignedScouts.get(`${slot.matchKey}|${slot.teamKey}`) ?? [] }));
   const summary = summarizeCoverageGaps(slots);
   const playedMatchKeys = matches.rows.filter((row) => row.played === true).map((row) => row.matchKey);
   const scope = summarizeCoverageScope(slots, new Set(playedMatchKeys));
@@ -343,7 +348,7 @@ export async function computeScoutingCoverageView(
   // first gap put it on Qual 1 at an event 30 matches in, where every gap is
   // already history.
   const nextUpcoming = matches.rows.find((row) => row.played !== true)?.matchKey ?? null;
-  const focusKey = input.matchKey || nextUpcoming || defaultLineupFocusMatchKey(slots);
+  const focusKey = input.matchKey && matchKeys.includes(input.matchKey) ? input.matchKey : nextUpcoming || defaultLineupFocusMatchKey(slots);
 
   const live = focusLiveCoverage(slots, {
     matchKey: focusKey,

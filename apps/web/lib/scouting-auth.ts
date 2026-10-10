@@ -18,7 +18,17 @@ export async function withScoutingRequest<T>(
     if (isWrongOrgDenied(membership.rowCount ?? 0)) {
       throw new ScoutingHttpError(403, "Organization access denied");
     }
-    try{await assertOrgAuthentication(client,{userId:session.user.id,orgId,sessionId:session.session.id,authMethod:String((session.session as typeof session.session&{authMethod?:string}).authMethod??"unknown"),rememberedDeviceToken:(await cookies()).get("vantage_mfa_device")?.value});}catch(error){throw new ScoutingHttpError(403,error instanceof Error?error.message:"Organization authentication policy denied access");}
+    try {
+      await assertOrgAuthentication(client, { userId: session.user.id, orgId, sessionId: session.session.id,
+        authMethod: String((session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown"),
+        rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value });
+    } catch (error) {
+      const code = error && typeof error === "object" && "code" in error ? error.code : null;
+      if (code === "sign_in_method_not_allowed" || code === "mfa_enrollment_required" || code === "mfa_step_up_required") {
+        throw new ScoutingHttpError(403, error instanceof Error ? error.message : "Organization authentication policy denied access");
+      }
+      throw error;
+    }
     return work(client);
   });
 }

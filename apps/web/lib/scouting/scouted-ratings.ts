@@ -1,4 +1,4 @@
-import { evaluateFormula, type FormulaExpression } from "@vantage/scouting";
+import { evaluateObservedFormula, type FormulaExpression } from "@vantage/scouting";
 import {
   ratingsFromScouting,
   combineScoutedMatchRows,
@@ -7,6 +7,8 @@ import {
   type ScoutedTeamRating,
 } from "@vantage/prediction-strategy";
 import { matchOrderKey } from "./next-assignment";
+import { climbSucceeded } from "./climb-outcome";
+import { SCORING_ROLE_NAMES } from "./formula-editor";
 
 /**
  * The bridge from "what our scouts wrote down" to "what the predictor can use".
@@ -26,13 +28,13 @@ import { matchOrderKey } from "./next-assignment";
 
 /** Formula names this looks for, in order, when grouping points by phase. */
 const PHASE_FORMULA_NAMES = {
-  auto: ["auto", "auto points", "autonomous", "auto_points"],
-  teleop: ["teleop", "teleop points", "tele-op", "teleop_points"],
-  endgame: ["endgame", "endgame points", "end game", "climb", "endgame_points"],
+  auto: SCORING_ROLE_NAMES.Auto,
+  teleop: SCORING_ROLE_NAMES.Teleop,
+  endgame: SCORING_ROLE_NAMES.Endgame,
 } as const;
 
 /** A single formula covering the whole match, used when no phase split exists. */
-const TOTAL_FORMULA_NAMES = ["total", "total points", "points", "match points", "value"];
+const TOTAL_FORMULA_NAMES = SCORING_ROLE_NAMES["Total points"];
 
 export type OrgValueFormula = { name: string; expression: FormulaExpression };
 
@@ -115,32 +117,15 @@ const CLIMB_KEYS = ["tower_level", "climb", "climb_level", "endgame_climb", "end
 function climbed(payload: Record<string, unknown>): boolean | null {
   for (const key of CLIMB_KEYS) {
     const value = payload[key];
-    if (value == null || value === "") continue;
-    if (typeof value === "boolean") return value;
-    if (typeof value === "number") return value > 0;
-    if (typeof value === "string") {
-      const text = value.trim().toLowerCase();
-      // Parking is an endgame result, not a climb.
-      if (["none", "no", "false", "0", "park", "parked", "fell", "failed"].includes(text)) return false;
-      return true;
-    }
+    const known = climbSucceeded(value);
+    if (known !== null) return known;
   }
   return null;
 }
 
 /** Ranking never turns a missing answer, malformed formula or division by zero into points. */
 export function observedFormulaValue(expression: FormulaExpression | null, payload: Record<string, unknown>): number | null {
-  if (!expression || typeof expression !== "object") return null;
-  if (expression.op === "constant") return Number.isFinite(expression.value) ? expression.value : null;
-  if (expression.op === "field") {
-    const value = payload[expression.field];
-    return typeof value === "number" && Number.isFinite(value) ? value : null;
-  }
-  if (!["add", "subtract", "multiply", "divide", "min", "max"].includes(expression.op) || !Array.isArray(expression.args) || !expression.args.length) return null;
-  const values = expression.args.map(arg => observedFormulaValue(arg, payload));
-  if (values.some(value => value == null) || (expression.op === "divide" && values.slice(1).some(value => value === 0))) return null;
-  const value = evaluateFormula(expression, payload);
-  return Number.isFinite(value) ? value : null;
+  return expression ? evaluateObservedFormula(expression, payload) : null;
 }
 
 export function scoutedRowsFromEntries(
@@ -263,8 +248,9 @@ export function compareMatchOrder(a: string, b: string): number {
  * Every screen that shows "our scouting" for a robot starts here, so two
  * scouts on one robot count once and the same way everywhere: each phase is
  * the average of what they recorded; the robot counts as disabled when at
- * least half of them said so; observed points remain recorded; defense or a climb counts
- * when anyone saw it. Rows come back sorted by match (Qual 2 before Qual 10),
+ * least half of them said so; observed points remain recorded; defense counts
+ * when anyone saw it. Climbs use a majority of known outcomes; ties stay unknown.
+ * Rows come back sorted by match (Qual 2 before Qual 10),
  * which is what a trend or a sparkline needs; sorting by the key's text put
  * Qual 10-19 before Qual 2.
  */

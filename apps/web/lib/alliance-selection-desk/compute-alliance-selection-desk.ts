@@ -5,6 +5,7 @@
 // justifier's rationale rides along on the same row.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { canManageScouting } from "@vantage/scouting/permissions";
 import { boardState, ensurePickList, setBoardSlot, type BoardSlot } from "../picklist";
 import { hubHref } from "../nav/hubs";
 import {
@@ -36,6 +37,7 @@ export type AllianceSelectionDeskView =
     }
   | {
       status: "empty";
+      canEdit?: boolean;
       message: string;
       steps: DeskSetupStep[];
       orgId: string;
@@ -258,6 +260,7 @@ export async function computeAllianceSelectionDeskView(
   if (sessions.length === 0) {
     return {
       status: "empty",
+      canEdit: await canManageScouting(client, org.orgId),
       message: "No selection desk sessions yet. Create one for this event to start the live pick board.",
       steps: setupSteps(org.orgId, org.eventKey),
       orgId: org.orgId,
@@ -284,6 +287,7 @@ export async function computeAllianceSelectionDeskView(
   if (!session) {
     return {
       status: "empty",
+      canEdit: await canManageScouting(client, org.orgId),
       message: "Session not found.",
       steps: setupSteps(org.orgId, org.eventKey),
       orgId: org.orgId,
@@ -436,7 +440,7 @@ export async function computeAllianceSelectionDeskView(
   }
 
   const alliances = groupSlotsByAlliance(slots);
-  const canEdit = Boolean(org.role);
+  const canEdit = await canManageScouting(client, org.orgId);
 
   return {
     status: "live",
@@ -510,15 +514,16 @@ export async function updateDeskSession(
     status?: DeskSessionStatus | null;
   },
 ): Promise<void> {
-  await client.query(
+  const updated = await client.query(
     `UPDATE alliance_selection_desk_sessions
      SET name = COALESCE($3, name),
          notes = COALESCE($4, notes),
          status = COALESCE($5, status),
          updated_at = now()
-     WHERE org_id = $1 AND id = $2::uuid`,
+     WHERE org_id = $1 AND id = $2::uuid RETURNING id`,
     [input.orgId, input.sessionId, input.name ?? null, input.notes ?? null, input.status ?? null],
   );
+  if (!updated.rowCount) throw new Error("Session not found");
 }
 
 export async function setDeskSlotTeam(
@@ -539,7 +544,7 @@ export async function setDeskSlotTeam(
     linkedPickListId: string | null;
   }>(
     `SELECT status, event_key AS "eventKey", name, linked_pick_list_id AS "linkedPickListId"
-     FROM alliance_selection_desk_sessions WHERE org_id = $1 AND id = $2::uuid`,
+     FROM alliance_selection_desk_sessions WHERE org_id = $1 AND id = $2::uuid FOR UPDATE`,
     [input.orgId, input.sessionId],
   );
   const session = sessionRow.rows[0];
@@ -603,6 +608,14 @@ export async function attachDeskEvidence(
     note?: string | null;
   },
 ): Promise<void> {
+  const target = await client.query<{ status: DeskSessionStatus }>(
+    `SELECT s.status FROM alliance_selection_desk_sessions s
+     JOIN alliance_selection_desk_slots slot ON slot.session_id=s.id AND slot.org_id=s.org_id
+     WHERE s.org_id=$1::uuid AND s.id=$2::uuid AND slot.id=$3::uuid FOR UPDATE OF s`,
+    [input.orgId, input.sessionId, input.slotId],
+  );
+  if (!target.rows[0]) throw new Error("Slot not found in this session");
+  if (target.rows[0].status === "locked") throw new Error("Session is locked; reopen it before changing evidence.");
   if (input.sourceKind === "match_scout") {
     if (!input.matchScoutEntryId) throw new Error("matchScoutEntryId required");
     const ok = await client.query(
@@ -644,6 +657,14 @@ export async function removeDeskEvidence(
   client: PoolClient,
   input: { orgId: string; evidenceId: string },
 ): Promise<void> {
+  const target = await client.query<{ status: DeskSessionStatus }>(
+    `SELECT s.status FROM alliance_selection_desk_sessions s
+     JOIN alliance_selection_desk_evidence e ON e.session_id=s.id AND e.org_id=s.org_id
+     WHERE s.org_id=$1::uuid AND e.id=$2::uuid FOR UPDATE OF s`,
+    [input.orgId, input.evidenceId],
+  );
+  if (!target.rows[0]) throw new Error("Evidence not found");
+  if (target.rows[0].status === "locked") throw new Error("Session is locked; reopen it before changing evidence.");
   await client.query(
     `DELETE FROM alliance_selection_desk_evidence WHERE org_id = $1 AND id = $2::uuid`,
     [input.orgId, input.evidenceId],
@@ -659,7 +680,7 @@ export async function createDeskExport(
     requestedOrg: input.orgId,
     sessionId: input.sessionId,
   });
-  if (view.status !== "live") throw new Error("Session not ready to export");
+  if (view.status !== "live" || view.session.id !== input.sessionId) throw new Error("Session not ready to export");
 
   const snapshot: DeskExportSnapshot = {
     sessionId: view.session.id,

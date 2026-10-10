@@ -82,7 +82,8 @@ describe("computeScoutCoverageLiveView", () => {
 
   it("returns a live view with a coverage grid computed from schedule + scout entry counts", async () => {
     const client = makeClient((sql) => {
-      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 1234 }] };
+      if (sql.includes("FROM memberships")) return { rows: [{ orgId: ORG, teamNumber: 1234, role: "scout" }] };
+      if (sql.includes("has_org_capability")) return { rows: [{ allowed: true }] };
       if (sql.includes("FROM org_active_context")) return { rows: [{ eventKey: EVENT }] };
       if (sql.includes("FROM matches_ref")) {
         return {
@@ -130,6 +131,7 @@ describe("computeScoutCoverageLiveView", () => {
     if (view.status !== "live") throw new Error("expected live view");
     expect(view.eventKey).toBe(EVENT);
     expect(view.eventName).toBe("Houston");
+    expect(view.canManage).toBe(true);
     expect(view.cells).toHaveLength(4);
     expect(view.summary.zeroCount).toBe(3);
     expect(view.summary.coveredCount).toBe(1);
@@ -234,5 +236,23 @@ describe("coverage gaps know which matches are played", () => {
     ]);
     expect(summary.totalCells).toBe(2);
     expect(summary.coveragePct).toBe(0.5);
+  });
+
+  it("keeps qualifying, playoff sets and finals in match order rather than local match number", () => {
+    const matches = [
+      cell(1, 1, { matchKey: `${EVENT}_sf2m1`, played: false }),
+      cell(90, 2, { matchKey: `${EVENT}_qm90`, played: false }),
+      cell(1, 3, { matchKey: `${EVENT}_f1m1`, played: true }),
+      cell(1, 4, { matchKey: `${EVENT}_sf1m1`, played: false }),
+      cell(90, 5, { matchKey: `${EVENT}_qm90`, played: true }),
+      cell(1, 6, { matchKey: `${EVENT}_sf2m1`, played: true }),
+    ];
+    expect(rankCoverageGaps(matches).map(row => row.teamNumber)).toEqual([2, 4, 1, 3, 6, 5]);
+  });
+
+  it("can expose every actionable gap without counting unknown timing as upcoming", () => {
+    const cells = Array.from({ length: 90 }, (_, index) => cell(index + 1, index + 1, { played: true }));
+    cells.push(cell(91, 91, {}));
+    expect(rankCoverageGaps(cells, cells.length)).toHaveLength(90);
   });
 });

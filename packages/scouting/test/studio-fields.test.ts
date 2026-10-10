@@ -176,7 +176,7 @@ describe("multi counter field", () => {
     const config = multiCounterConfig(multiCounterField);
     expect(config.counters.map((counter) => counter.key)).toEqual(["high", "low"]);
     const first = applyMultiCounterStep({}, "high", 5, config);
-    expect(first).toEqual({ high: 5, low: 0 });
+    expect(first).toEqual({ high: 5 });
     const second = applyMultiCounterStep(first, "low", 1, config);
     expect(second).toEqual({ high: 5, low: 1 });
     // Unknown keys are ignored rather than silently created.

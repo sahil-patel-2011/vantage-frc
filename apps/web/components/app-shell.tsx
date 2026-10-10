@@ -536,7 +536,7 @@ export default function AppShell() {
   // The invite landing and the 404 keep the product's styles but not its chrome: the person
   // there usually has no account yet, or took a wrong turn, and a team switcher reading
   // "No team selected" plus a tab bar of sign-in walls only looked broken.
-  const bare = pathname === "/invite" || pathname === "/join-team" || !isKnownAppPath(pathname);
+  const bare = pathname === "/invite" || pathname === "/join-team" || pathname === "/access-unavailable" || !isKnownAppPath(pathname);
   useEffect(() => {
     document.body.classList.toggle("shell-bare", bare);
     return () => document.body.classList.remove("shell-bare");

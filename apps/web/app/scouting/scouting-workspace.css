@@ -43,8 +43,8 @@
 .scout-page .match-timer-clock { font-size: 28px; font-weight: 600; letter-spacing: -.03em; }
 .scout-page .scout-phase-controls { display: flex; gap: 6px; min-width: 0; padding-top: 10px; }
 .scout-page .scout-phase-tabs { width: 100%; min-width: 0; flex: 1 1 100%; padding: 3px; border-radius: 10px; }
-.scout-page .scout-phase-tabs > button { min-height: 38px; padding: 0 10px; font-size: 12px; font-weight: 500; border-radius: 7px; }
-.scout-page .scout-phase-controls > button { min-height: 36px; padding: 0 4px; font-size: 12px; }
+.scout-page .scout-phase-tabs > button { min-height: 44px; padding: 0 12px; font-size: 12px; font-weight: 500; border-radius: 7px; }
+.scout-page .scout-phase-controls > button { min-height: 44px; min-width: 44px; padding: 0 8px; font-size: 12px; }
 .scout-page .scout-stage-heading { margin: 18px 0 14px; }
 .scout-page .scout-stage-heading h3 { font-size: 17px; font-weight: 550; }
 .scout-page .scout-stage-heading p { font-size: 12px; }
@@ -60,7 +60,7 @@
 .scout-answer-fields .tap-counter input { background: transparent; border: 0; box-shadow: none; font-size: 27px; font-weight: 550; min-width: 0; padding: 0; }
 .scout-counter-state { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .scout-counter-state small { color: var(--muted); font-size: 11px; }
-.scout-counter-state button { min-height: 36px; padding: 0 4px; border: 0; border-radius: 6px; background: transparent; color: var(--accent); font: 500 11px var(--font-sans); cursor: pointer; }
+.scout-counter-state button { min-height: 44px; min-width: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--accent); font: 500 12px var(--font-sans); cursor: pointer; }
 .scout-page .scout-report-actions { gap: 8px; padding-top: 18px; margin-top: 12px; border-top: 1px solid var(--line-soft,var(--line)); }
 .scout-page .scout-report-actions > .scout-save-button { flex: 1; min-height: 48px; border-radius: 12px; }
 .scout-page .scout-saved { margin: 0 0 20px; border-radius: 15px; }
@@ -91,7 +91,8 @@
   .scout-page .scout-phase-tabs > button { min-height: 44px; }
   .scout-page .scout-field-wrap { scroll-margin-top: 260px; }
   .scout-awaiting-robot { min-height: 0; padding: 22px; }
-  .scout-page .scout-report-actions { flex-wrap: wrap; }
+  .scout-page .scout-report-actions { position: sticky; bottom: max(8px, env(safe-area-inset-bottom)); z-index: 9; flex-wrap: wrap; padding: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-card); }
+  .scout-page .scout-report-actions > * { min-height: 48px; min-width: 0; white-space: normal; }
 }
 @media print {
   .scout-recording-layout { grid-template-columns: 1fr; }

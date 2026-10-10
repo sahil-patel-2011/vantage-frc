@@ -88,16 +88,9 @@ export type WidgetCatalogEntry = {
   helpArticle?: string;
 };
 
-/** Widgets that stay on Home even with no live row — they are the empty-state CTA. */
-// Ask AI is not in it any more: with no AI key it filled a third of a row to say "AI is off"
-// on every visit. It comes back when AI works, or when someone pins it with Always show.
-export const HOME_ALWAYS_VISIBLE: ReadonlySet<DashboardWidgetType> = new Set([
-  "next_match",
-]);
-
-/** A card with nothing to show right now: empty, or Ask AI while the team has no AI. */
-function isQuietCard(type: DashboardWidgetType, status: string | undefined): boolean {
-  return status === "empty" || (type === "ask_ai" && status === "setup_required");
+/** Quiet feed or unconnected tool; failures are always useful to show. */
+function isQuietCard(status: string | undefined): boolean {
+  return status === "empty" || status === "setup_required";
 }
 
 export function widgetRegistryMeta(entry: WidgetCatalogEntry): {
@@ -307,12 +300,13 @@ export function usesSharedSetupPrompt(type: DashboardWidgetType, status: string 
 }
 
 /**
- * View-mode Home keeps every user-placed widget, including honest empty
- * states with a destination CTA. Every card respects the user's saved size.
+ * Home shows useful data and failures first. Quiet cards stay on the saved
+ * board, accessible through Show quiet widgets or Customize. Unknown/loading
+ * states remain visible; a failed request must never look like an empty team.
  */
 export function homeViewLayout(
   layout: DashboardWidgetLayout[],
-  _input: {
+  input: {
     editing: boolean;
     shell: "loading" | "no_org" | "setup" | "tba" | "ready";
     widgets?: Record<string, { status?: string } | undefined>;
@@ -320,13 +314,19 @@ export function homeViewLayout(
     teamSetupCard?: boolean;
     sharedSetupPrompt?: boolean;
     homeOverview?: boolean;
+    showQuietWidgets?: boolean;
   },
 ): DashboardWidgetLayout[] {
   layout = layout.filter((item) => MEDIA_ENABLED || item.type !== "pit_youtube");
-  // The board is the source of truth in Edit, Preview and Home. Data refreshes
-  // update card contents, never their presence, placement or chosen size.
-  return layout.map((item) => ({ ...item }));
-
+  return layout.filter((item) => {
+    if (input.editing || input.showQuietWidgets || isAlwaysShown(item)) return true;
+    const status = (input.widgets?.[item.i] ?? input.widgets?.[item.type])?.status;
+    if (!status || (status !== "live" && status !== "empty" && status !== "setup_required")) return true;
+    if (input.teamSetupCard && SETUP_ONLY_WIDGETS.has(item.type)) return false;
+    if (input.sharedSetupPrompt && usesSharedSetupPrompt(item.type, status)) return false;
+    if (input.shell === "ready" && SETUP_ONLY_WIDGETS.has(item.type)) return false;
+    return status !== "empty" && status !== "setup_required";
+  }).map((item) => ({ ...item }));
 }
 
 /**
@@ -380,7 +380,7 @@ export function sizeForHome(
   });
 }
 
-/** Labels of the pinned cards hidden because they are empty right now, for one summary line. */
+/** Labels of unpinned quiet cards, used only when customizing the board. */
 export function emptyHomeWidgets(
   layout: DashboardWidgetLayout[],
   widgets: Record<string, { status?: string } | undefined> | undefined,
@@ -389,9 +389,8 @@ export function emptyHomeWidgets(
   return layout
     .filter(
       (item) =>
-        !HOME_ALWAYS_VISIBLE.has(item.type) &&
         !isAlwaysShown(item) &&
-        isQuietCard(item.type, (rows[item.i] ?? rows[item.type])?.status),
+        isQuietCard((rows[item.i] ?? rows[item.type])?.status),
     )
     .map((item) => catalogEntry(item.type)?.label ?? item.type);
 }
@@ -842,15 +841,12 @@ export function defaultDashboardLayoutForFocus(focus: string | null | undefined)
   return FOCUS_DASHBOARD_LAYOUTS[key].map((item) => ({ ...item }));
 }
 
-// My day and Hours share the second row half and half: they are the cards a new team always
-// has, and beside a card that is hiding while empty they left a third of the row blank.
+// Three useful starting points. Match-day extras belong in Customize; the
+// daily brief already highlights the next match when the team has one.
 const STUDENT_HOME_LAYOUT: DashboardWidgetLayout[] = [
-  { i: "w-next_match", type: "next_match", x: 0, y: 0, w: 12, h: 3, minW: 3, minH: 2 },
-  { i: "w-team_todos", type: "team_todos", x: 0, y: 3, w: 6, h: 5, minW: 3, minH: 2 },
-  { i: "w-scouting_coverage", type: "scouting_coverage", x: 6, y: 3, w: 6, h: 3, minW: 3, minH: 2 },
-  { i: "w-calendar_today", type: "calendar_today", x: 6, y: 6, w: 6, h: 2, minW: 3, minH: 2 },
-  { i: "w-recent_result", type: "recent_result", x: 0, y: 8, w: 6, h: 3, minW: 3, minH: 2 },
-  { i: "w-competition_snapshot", type: "competition_snapshot", x: 6, y: 8, w: 6, h: 3, minW: 3, minH: 2 },
+  { i: "w-team_todos", type: "team_todos", x: 0, y: 0, w: 6, h: 5, minW: 3, minH: 2 },
+  { i: "w-calendar_today", type: "calendar_today", x: 6, y: 0, w: 6, h: 2, minW: 3, minH: 2 },
+  { i: "w-scouting_coverage", type: "scouting_coverage", x: 6, y: 2, w: 6, h: 3, minW: 3, minH: 2 },
 ];
 const MENTOR_HOME_LAYOUT = STUDENT_HOME_LAYOUT;
 

@@ -38,7 +38,8 @@ import { DashboardGridItem } from "./dashboard-grid-item";
 import { LiveCountdown } from "./widgets";
 import { WIDGET_PICKER_ICON, greeting } from "./dashboard-canvas";
 import type { HomeStripItem } from "../../lib/home-workflows";
-import { Button } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type {
   BoardMeta,
   BoardState,
@@ -101,10 +102,15 @@ export function DashboardHomeView(props: {
   viewLayout: DashboardWidgetLayout[];
   displayLayout: DashboardWidgetLayout[];
   widgets: Record<string, WidgetPayload>;
+  accessStatus: number | null;
+  onReloadAccess: () => void;
   /** Widget data and onboarding steps have arrived, so the hero can say what is next. */
   widgetsLoaded?: boolean;
   refreshing: boolean;
   onRefresh: () => void;
+  showQuietWidgets: boolean;
+  quietWidgetCount: number;
+  onToggleQuietWidgets: () => void;
   hasScoutingSchemas: boolean;
   paletteEntries: PaletteRow[];
   hiddenOnHome: Map<string, HiddenOnHomeReason>;
@@ -119,6 +125,8 @@ export function DashboardHomeView(props: {
   firstWeek: {
     view: RoleOnboardingView | null;
     busy: string | null;
+    error?: string;
+    retry?: () => void;
     post: (payload: Record<string, unknown>, key: string) => Promise<void>;
   };
   role: string | null;
@@ -489,6 +497,14 @@ export function DashboardHomeView(props: {
   const closeLibrary = useCallback(() => setLibraryOpen(false), [setLibraryOpen]);
 
   if (!homeReady) return <DashboardHomeSkeleton greetingText={greetingText} />;
+  if (props.accessStatus) {
+    const copy = loadFailureCopy(classifyLoadFailure({ status: props.accessStatus, message }), { message, nextPath: withOrgHref("/dashboard", orgId) });
+    return <main className="dash-home"><EmptyState headingLevel={1} title={copy.title} description={copy.description} badge={copy.badge}>
+      {copy.kind === "auth" || copy.kind === "reauth" ? <Button as="a" variant="primary" href={copy.primary!.href}>Sign in again</Button> : null}
+      {copy.kind === "forbidden" ? <Button type="button" variant="primary" onClick={props.onReloadAccess}>Reload access</Button> : null}
+      <Button as="a" variant="secondary" href="/account/teams">Choose another team</Button>
+    </EmptyState></main>;
+  }
 
   // Cards Home is leaving out right now, listed under the board while editing.
   const hiddenRows = editing
@@ -543,7 +559,7 @@ export function DashboardHomeView(props: {
       {orgId ? (
         <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
           {showDailyBrief ? <DashboardNowCard now={now} setupHero={null} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
-          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} primaryHref={showDailyBrief ? now.href : undefined} />
+          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} primaryHref={showDailyBrief ? now.href : undefined} hasTaskCard={displayLayout.some(item => item.type === "team_todos")} />
         </div>
       ) : null}
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice,
@@ -552,7 +568,7 @@ export function DashboardHomeView(props: {
           still on Your first week. */}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} /> : null}
+      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} error={firstWeek.error} retry={firstWeek.retry} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {showRoleStrip ? (
@@ -648,6 +664,8 @@ export function DashboardHomeView(props: {
                   boards={switcherBoards} board={board} saving={saving} disabled={previewing}
                   onSwitch={(id) => void switchBoard(id)} onNew={() => setNewBoardOpen(true)}
                   onManage={() => { setRenameId(null); setBoardsOpen(true); }}
+                  showQuietWidgets={props.showQuietWidgets} quietWidgetCount={props.quietWidgetCount}
+                  onToggleQuietWidgets={props.onToggleQuietWidgets}
                 /> : null}
               </div>
               <div className="dash-board-tools">

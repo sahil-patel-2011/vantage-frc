@@ -2,6 +2,10 @@ import { currentSeasonYear, defaultMatchSchema, defaultPitSchema, type GameField
 import { lockScoutPayload } from "./identity";
 import { ACTION_HISTORY_KEY, validateActionHistory } from "./action-history";
 import { MATCH_CAPTURE_KEY, validateMatchCapture } from "./match-capture";
+import { visibleFields, withInferredPhaseRules, type VisibleWhen } from "./visibility";
+import { evaluateObservedFormula } from "./formula";
+export { evaluateObservedFormula, isFormulaExpression, isFormulaDraftExpression, isUnseenFormulaAnswer, formulaFields, type FormulaExpression } from "./formula";
+import type { FormulaExpression } from "./formula";
 export * from "./match-capture";
 export { ACTION_HISTORY_KEY, actionHistory, recordScoutAction, undoableScoutAction, undoScoutAction, validateActionHistory, type ScoutActionHistory, type ScoutAction, type ScoutActionChange } from "./action-history";
 import {
@@ -107,6 +111,8 @@ export type FieldDefinition = {
   disagreementThreshold?: number;
   helpText?: string;
   config?: Record<string, unknown>;
+  /** Conditional answer rule, shared by entry rendering and server validation. */
+  visibleWhen?: VisibleWhen | null;
   /** Soft-UI form builder presentation; ignored by payload validation. */
   widget?: FieldWidget;
 };
@@ -212,7 +218,7 @@ export function applyCounterStep(
   delta: number,
   config: CounterConfig,
 ): number {
-  return clampCounterValue(counterValueOf(current) + Math.round(delta), config);
+  return clampCounterValue((wholeNumber(current) ?? Math.max(0, config.min)) + Math.round(delta), config);
 }
 
 /* -------------------------- multi counter -------------------------------- */
@@ -278,9 +284,14 @@ export function applyMultiCounterStep(
   delta: number,
   config: MultiCounterConfig,
 ): Record<string, number> {
-  const next = multiCounterValueOf(current, config);
-  if (!(counterKey in next)) return next;
-  next[counterKey] = clampCounterValue((next[counterKey] ?? 0) + Math.round(delta), config);
+  const bag = isPlainObject(current) ? current : {};
+  const next: Record<string, number> = {};
+  for (const counter of config.counters) {
+    const observed = wholeNumber(bag[counter.key]);
+    if (observed !== null) next[counter.key] = observed;
+  }
+  if (!config.counters.some(counter => counter.key === counterKey)) return next;
+  next[counterKey] = clampCounterValue((next[counterKey] ?? Math.max(0, config.min)) + Math.round(delta), config);
   return next;
 }
 
@@ -653,14 +664,6 @@ export type SyncEntry = {
   videoAtSeconds?: number;
 };
 
-export type FormulaExpression =
-  | { op: "field"; field: string }
-  | { op: "constant"; value: number }
-  | {
-      op: "add" | "subtract" | "multiply" | "divide" | "min" | "max";
-      args: FormulaExpression[];
-    };
-
 const STUDIO_FIELD_TYPES: ReadonlySet<string> = new Set([
   "counter",
   "multi_counter",
@@ -876,6 +879,13 @@ function numberRangeError(field: FieldDefinition, value: number): string | null 
   return null;
 }
 
+/** Shared by validation and progress: explicit zero/false are recorded answers. */
+export function isEmptyScoutAnswer(field: FieldDefinition, value: unknown): boolean {
+  return value === undefined || value === null || (typeof value === "string" && value.trim().length === 0) ||
+    (Array.isArray(value) && value.length === 0) ||
+    (field.type === "multi_counter" && isPlainObject(value) && Object.keys(value).length === 0);
+}
+
 export function validatePayload(
   schema: SchemaDefinition,
   payload: Record<string, unknown>,
@@ -888,7 +898,9 @@ export function validatePayload(
     if (key === ACTION_HISTORY_KEY || key === MATCH_CAPTURE_KEY) continue;
     if (!allowed.has(key)) errors.push(`Unknown field: ${key}`);
   }
-  for (const field of schema.fields) {
+  const fields = withInferredPhaseRules(schema.fields);
+  const visibleKeys = new Set(visibleFields(fields, payload).map(field => field.key));
+  for (const field of fields) {
     const value = payload[field.key];
     // Section headers group Auto | Teleop | Endgame — they carry no answer, and
     // "required" is meaningless on them, so they never gate a save.
@@ -898,12 +910,11 @@ export function validatePayload(
       }
       continue;
     }
-    const empty =
-      value === undefined ||
-      value === null ||
-      value === "" ||
-      (Array.isArray(value) && value.length === 0) ||
-      (field.type === "multi_counter" && isPlainObject(value) && Object.keys(value).length === 0);
+    const empty = isEmptyScoutAnswer(field, value);
+    if (!visibleKeys.has(field.key)) {
+      if (!empty) errors.push(`${field.label} is hidden by this form's answer rules`);
+      continue;
+    }
     if (field.required && empty) {
       errors.push(`${field.label} is required`);
       continue;
@@ -974,6 +985,7 @@ export function evaluateFormula(
   payload: Record<string, unknown>,
 ): number {
   if (expression.op === "constant") return expression.value;
+  if (expression.op === "lookup") return evaluateObservedFormula(expression, payload) ?? 0;
   if (expression.op === "field") {
     const value = payload[expression.field];
     return typeof value === "number" && Number.isFinite(value) ? value : 0;

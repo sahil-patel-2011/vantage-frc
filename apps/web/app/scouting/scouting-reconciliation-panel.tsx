@@ -1,33 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, Panel, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { matchLabelFromKey } from "../../lib/matches/no-next-match";
 import type {
   DistributeByShareResult,
   ReconcileAlliance,
-  ReconcileSummary,
-  ReconciledMatch,
 } from "../../lib/scouting/reconcile";
 import "./scouting-reconcile.css";
 
-type ReconcileMatchView = ReconciledMatch & {
-  distribution: { red: DistributeByShareResult; blue: DistributeByShareResult };
-};
-
-type ReconcileView =
-  | { status: "setup_required"; eventKey: string | null; generatedAt: string; message: string }
-  | {
-      status: "live";
-      eventKey: string;
-      generatedAt: string;
-      reviewDeltaPct: number;
-      summary: ReconcileSummary;
-      scoutedEntries: number;
-      truncated: boolean;
-      matches: ReconcileMatchView[];
-    };
+import { scopedReconcileView, type ReconcileView } from "../../lib/scouting/reconcile-view";
+import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
+import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 
 const teamLabel = (teamKey: string) => teamKey.replace(/^frc/i, "") || teamKey;
 const pct = (value: number | null) =>
@@ -91,7 +76,7 @@ function AllianceBlock({
                   : `scouted ${points(robot.estimate)}${
                       robot.scoutCount > 1 ? ` · mean of ${robot.scoutCount}` : ""
                     }`}
-                {share ? ` · share of the official score ${points(share.points)}` : ""}
+                {share ? ` · estimated share of the official score ${points(share.points)}` : ""}
               </span>
               {robot.range && robot.range[0] !== robot.range[1] ? <span>Reports range {points(robot.range[0])}–{points(robot.range[1])} points; review disagreement.</span> : null}
               {robot.entryIds.length ? (
@@ -125,29 +110,44 @@ export default function ScoutingReconciliationPanel({
   orgId: string;
   eventKey: string | null;
 }) {
-  const [view, setView] = useState<ReconcileView | null>(null);
+  const [storedView, setView] = useState<ReconcileView | null>(null);
+  const view = storedView && storedView.orgId === orgId && (!eventKey || storedView.eventKey === eventKey) ? storedView : null;
   const [error, setError] = useState("");
+  const [status, setStatus] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
   const [onlyFlagged, setOnlyFlagged] = useState(true);
+  const [limit, setLimit] = useState(20);
+  const generation = useRef(0);
+  const controller = useRef<AbortController | null>(null);
 
   const load = useCallback(async () => {
+    controller.current?.abort();
+    const abort = new AbortController(); controller.current = abort;
+    const id = ++generation.current;
+    setLoading(true); setError(""); setStatus(null);
     const params = new URLSearchParams({ orgId });
     if (eventKey) params.set("eventKey", eventKey);
     try {
-      const response = await fetch(`/api/scouting/reconcile?${params.toString()}`);
-      const data = (await response.json()) as ReconcileView & { error?: string };
-      if (!response.ok || !("status" in data)) {
-        setError(data.error ?? "Could not load reconciliation.");
-        return;
+      const response = await fetch(`/api/scouting/reconcile?${params}`, { cache: "no-store",
+        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+      const data: unknown = await response.json().catch(() => null);
+      if (id !== generation.current) return;
+      if (!response.ok) {
+        setStatus(response.status);
+        if (response.status === 401 || response.status === 403) setView(null);
+        throw new Error(data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "Alliance review could not load. Refresh to try again.");
       }
-      setView(data);
-      setError("");
-    } catch {
-      setError("Network error — reconciliation could not load.");
-    }
+      const next = scopedReconcileView(data, orgId, eventKey);
+      if (!next) throw new Error("Alliance review did not match this team and event. Refresh to try again.");
+      setView(next); setLimit(20);
+    } catch (failure) {
+      if (id === generation.current) setError(failure instanceof Error ? failure.message : "Alliance review could not load. Refresh to try again.");
+    } finally { if (id === generation.current) setLoading(false); }
   }, [eventKey, orgId]);
 
   useEffect(() => {
-    void load();
+    setView(null); setOnlyFlagged(true); setLimit(20); void load();
+    return () => { ++generation.current; controller.current?.abort(); };
   }, [load]);
 
   const visible = useMemo(() => {
@@ -157,18 +157,14 @@ export default function ScoutingReconciliationPanel({
       : view.matches;
   }, [onlyFlagged, view]);
 
-  if (error && !view) {
-    return (
-      <Panel>
-        <span className="eyebrow">RECONCILIATION</span>
-        <h2>Scouted vs official</h2>
-        <p className="app-muted">{error}</p>
-        <Button variant="secondary" type="button" onClick={() => void load()}>
-          Retry
-        </Button>
-      </Panel>
-    );
-  }
+  const failure = loadFailureCopy(classifyLoadFailure({ status, message: error,
+    online: typeof navigator === "undefined" ? true : navigator.onLine }), {
+      message: error, nextPath: typeof window === "undefined" ? null : `${window.location.pathname}${window.location.search}`,
+    });
+  if (error && !view) return <Panel><EmptyState title={failure.title} description={failure.description} badge={failure.badge}>
+    {failure.primary ? <Button as="a" variant="primary" href={failure.primary.href}>{failure.primary.label}</Button> : null}
+    {failure.showRetry ? <Button variant="secondary" type="button" disabled={loading} onClick={() => void load()}>{loading ? "Refreshing…" : "Refresh"}</Button> : null}
+  </EmptyState></Panel>;
 
   if (!view) {
     return (
@@ -186,9 +182,10 @@ export default function ScoutingReconciliationPanel({
         <span className="eyebrow">RECONCILIATION</span>
         <h2>Scouted vs official</h2>
         <EmptyState title="Nothing to reconcile yet" description={view.message}>
-          <Button as="a" variant="primary" href={withOrgHref("/scouting", orgId)}>
-            Open Scouting
+          <Button as="a" variant="primary" href={withOrgHref(view.eventKey ? `/scouting?eventKey=${encodeURIComponent(view.eventKey)}` : "/competition?tab=command", orgId)}>
+            {view.eventKey ? "Open Scouting" : "Choose event"}
           </Button>
+          <Button variant="secondary" type="button" disabled={loading} onClick={() => void load()}>{loading ? "Refreshing…" : "Refresh"}</Button>
         </EmptyState>
       </Panel>
     );
@@ -201,8 +198,9 @@ export default function ScoutingReconciliationPanel({
 
   return (
     <Panel>
-      <span className="eyebrow">RECONCILIATION</span>
-      <h2>Scouted vs official</h2>
+      <h2>Alliance review</h2>
+      <p className="app-muted">{view.summary.matches} played qualification matches · {view.scoutedEntries} reports. Robot shares are estimates from scouting proportions, not official robot measurements.</p>
+      {error ? <p className="form-message" role="status">{error} Previously loaded observations remain visible.</p> : null}
       <div className="recon">
         {finalScoresOnly ? (
           <p className="app-muted">
@@ -247,22 +245,22 @@ export default function ScoutingReconciliationPanel({
         ) : null}
 
         <div className="recon-actions">
-          <Button variant="secondary" type="button" onClick={() => setOnlyFlagged((value) => !value)} disabled={!view.summary.flaggedMatches}>
+          <Button variant="secondary" type="button" onClick={() => { setOnlyFlagged(value => !value); setLimit(20); }} disabled={!view.summary.flaggedMatches}>
             {onlyFlagged && view.summary.flaggedMatches
               ? `Show all ${view.matches.length}`
               : `Only ${view.summary.flaggedMatches} flagged`}
           </Button>
-          <Button variant="secondary" type="button" onClick={() => void load()}>
-            Refresh
+          <Button variant="secondary" type="button" disabled={loading} onClick={() => void load()}>
+            {loading ? "Refreshing…" : "Refresh"}
           </Button>
         </div>
 
         <div className="recon-list">
-          {visible.map((match) => (
+          {visible.slice(0, limit).map((match) => (
             <article className="recon-match" key={match.matchKey}>
               <header>
                 <h3>{matchLabelFromKey(match.matchKey)}</h3>
-                <span className={`recon-chip ${match.needsReview ? "review" : "ok"}`}>
+                <span className={`recon-chip ${match.needsReview ? "review" : match.flag === "ok" ? "ok" : ""}`}>
                   {match.needsReview
                     ? `review · ${pct(match.worstDeltaPct)}`
                     : match.worstDeltaPct != null
@@ -286,13 +284,14 @@ export default function ScoutingReconciliationPanel({
           ))}
         </div>
 
+        {visible.length > limit ? <Button variant="secondary" type="button" onClick={() => setLimit(value => value + 20)}>Show {Math.min(20, visible.length - limit)} more matches</Button> : null}
+        <p className="app-muted" role="status">Showing {Math.min(limit, visible.length)} of {visible.length} {onlyFlagged && view.summary.flaggedMatches ? "flagged " : ""}matches.</p>
         {view.truncated ? (
           <p className="app-muted">
             Showing the {view.matches.length} matches with the largest gaps out of{" "}
             {view.summary.matches} played quals.
           </p>
         ) : null}
-        {error ? <p className="app-muted">{error}</p> : null}
       </div>
     </Panel>
   );

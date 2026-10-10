@@ -23,7 +23,7 @@ import {
   type ScoutingShellKind,
 } from "../../lib/scouting/scouting-related";
 import { ScoutingRelatedStrip } from "./scouting-chrome";
-import { Field } from "./scouting-field";
+import { ScoutingAnswerField } from "./scouting-answer-field";
 import { ScoutChoice } from "./scout-choice";
 import { ScoutingLeadTools } from "./scouting-lead-tools";
 import {
@@ -64,6 +64,7 @@ const CONFIDENCE_OPTIONS = [
   { value: "normal", label: "OK" },
   { value: "low", label: "Guessing" },
 ];
+const NO_FLAGS: OfficialFlag[] = [];
 
 /** Smooth unless the phone asks for less motion. */
 function smoothOrInstant(): ScrollBehavior {
@@ -93,6 +94,7 @@ export type ScoutingReadyViewProps = {
   data: Bootstrap | null;
   schema: ScoutSchema | undefined;
   formFields: ScoutSchema["definition"]["fields"];
+  validationIssues?: string[];
   schemaBudget: SchemaBudget | null;
   matchOptions: MatchOption[];
   matchKey: string;
@@ -122,9 +124,6 @@ export type ScoutingReadyViewProps = {
   autoPickEnabled?: boolean;
   /** Only answers the scout typed make a draft; a loaded report or carried answers do not. */
   userEdited?: boolean;
-  showFormula: boolean;
-  formulaName: string;
-  formulaWeights: Record<string, number>;
   trust: { fieldTrust: FieldTrustSummary[]; leaderboard: Array<{
     userId: string;
     name: string;
@@ -144,22 +143,19 @@ export type ScoutingReadyViewProps = {
   setSource: (value: "manual" | "voice") => void;
   setSelectedWinners: Dispatch<SetStateAction<Record<string, string>>>;
   setSaveReceipt: (receipt: SaveReceipt | null) => void;
-  setShowFormula: Dispatch<SetStateAction<boolean>>;
-  setFormulaName: (name: string) => void;
-  setFormulaWeights: Dispatch<SetStateAction<Record<string, number>>>;
   onTabChange: (id: string) => void;
   onUndo?: () => void;
   sync: () => Promise<void> | void;
   retryQuarantineItem: (clientId: string) => Promise<void> | void;
   discardQuarantineItem: (clientId: string) => Promise<void> | void;
   createStarterForms: () => Promise<void> | void;
+  creatingStarterForms?: boolean;
   refreshCounts: () => Promise<void> | void;
   loadConflicts: () => Promise<void> | void;
   reviewConflict: (id: string, status: "resolved" | "dismissed") => Promise<void> | void;
   attachMedia: (file: File, options?: { fieldKey?: string; tags?: string[] }) => Promise<string | null>;
   cancelReport: () => void;
   submit: () => Promise<void> | void;
-  saveFormula: () => Promise<void> | void;
   setMessage: (message: string) => void;
 };
 
@@ -188,6 +184,7 @@ export function ScoutingReadyView({
   entryClientId,
   draftSavedAt,
   draftDirty,
+  validationIssues = [],
   flagsByField,
   trustByField,
   liveConflicts,
@@ -201,9 +198,6 @@ export function ScoutingReadyView({
   editMyReport,
   autoPickEnabled = true,
   userEdited = true,
-  showFormula,
-  formulaName,
-  formulaWeights,
   trust,
   cheatOpen,
   shortcuts,
@@ -215,22 +209,19 @@ export function ScoutingReadyView({
   setSource,
   setSelectedWinners,
   setSaveReceipt,
-  setShowFormula,
-  setFormulaName,
-  setFormulaWeights,
   onTabChange,
   onUndo,
   sync,
   retryQuarantineItem,
   discardQuarantineItem,
   createStarterForms,
+  creatingStarterForms = false,
   refreshCounts,
   loadConflicts,
   reviewConflict,
   attachMedia,
   cancelReport,
   submit,
-  saveFormula,
   setMessage,
 }: ScoutingReadyViewProps) {
   const context =
@@ -250,7 +241,8 @@ export function ScoutingReadyView({
   }, [mine, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const [confirmRunning, setConfirmRunning] = useState(false);
-  const [stage, setStage] = useState<ScoutFormStage>("all");
+  const [stage, setStage] = useState<ScoutFormStage>("pre");
+  useEffect(() => { setStage("pre"); setConfirmRunning(false); }, [type, matchKey, teamKey]);
   const collecting = type === "match" && Boolean(context) && stage !== "all" && stage !== "review";
   const activeFields = type === "match" && context ? fieldsForMatchStage(formFields, stage) : formFields;
   const undo = undoableScoutAction(payload);
@@ -406,14 +398,15 @@ return (
           }
         >
           {data?.canManageSchemas ? (
-            <Button variant="primary" type="button" onClick={() => void createStarterForms()}>
-              Create starter forms
+            <Button variant="primary" type="button" disabled={creatingStarterForms || !online} onClick={() => void createStarterForms()}>
+              {creatingStarterForms ? "Creating…" : "Create starter forms"}
             </Button>
           ) : (
             <Button as="a" variant="primary" href={hubHref("/team", "messages", orgId)}>
               Message your team
             </Button>
           )}
+          {data?.canManageSchemas && !online ? <p className="app-muted">Connect to create starter forms.</p> : null}
         </EmptyState>
       </>
     ) : null}
@@ -423,6 +416,7 @@ return (
       onChange={onTabChange}
       orgId={orgId}
       embedded={embedded}
+      eventKey={data?.eventKey ?? null}
       lead={Boolean(data?.canManageSchemas)}
     />
     {tab === "teams" || tab === "trust" ? <ScoutingSharing key={orgId} orgId={orgId} /> : null}
@@ -702,7 +696,10 @@ return (
                 {formFields.length ? (
                   <MatchTimer fields={formFields} stage={stage} onStageChange={setStage} showControls={false}
                     resetDisabled={Boolean(matchCapture(payload))}
-                    onPhaseChange={phase => setStage(phase === "done" ? "review" : phase === "pre" ? "all" : phase === "transition" ? "auto" : phase)}
+                    onPhaseChange={phase => {
+                      if (phase === "pre") return;
+                      setStage(current => current === "review" ? current : phase === "done" ? "review" : phase === "transition" ? "auto" : phase);
+                    }}
                     resetKey={`${matchKey}|${teamKey}`}
                     seasonYear={data?.eventKey ? Number(data.eventKey.slice(0,4)) : schema?.year ?? null}
                     storageKey={scoutDraftStorageKey({ userId: data?.scoutIdentity?.userId, orgId, eventKey: data?.eventKey ?? "", entryType: "match", matchKey, teamKey })}
@@ -746,21 +743,18 @@ return (
 
           <div className="scout-answer-fields">
           {(teamKey && (type === "pit" || matchKey) ? activeFields : []).filter((field) => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image")).map((field) => (
-            <Field
+            <ScoutingAnswerField
               key={`${type}:${matchKey}:${teamKey}:${field.key}`}
               anchorId={`scout-field-${encodeURIComponent(field.key)}`}
               field={field}
               value={payload[field.key]}
-              flags={flagsByField.get(field.key) ?? []}
+              error={validationIssues.find(issue => issue.startsWith(`${field.label} `))}
+              flags={flagsByField.get(field.key) ?? NO_FLAGS}
               historyHint={fieldConfidenceHint(trustByField.get(field.key))}
               disagreementRate={trustByField.get(field.key)?.disagreementRate ?? null}
               orgId={orgId}
-              onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
-              onAttachRobotImage={
-                field.type === "robot_image" || field.widget === "robot_image"
-                  ? (file) => attachMedia(file, { fieldKey: field.key, tags: ["robot"] })
-                  : undefined
-              }
+              setPayload={setPayload}
+              attachMedia={field.type === "robot_image" || field.widget === "robot_image" ? attachMedia : undefined}
             />
           ))}
           </div>
@@ -829,9 +823,13 @@ return (
             variant="primary"
             type="button"
             className="scout-save-button"
-            hidden={collecting}
             disabled={!canSave || saving}
             onClick={() => {
+              if (type === "match" && context && stage !== "review") {
+                setStage("review");
+                setConfirmRunning(false);
+                return;
+              }
               // Saving at "AUTO 0:02" was allowed without a word; a nudge, not a block. The nudge
               // was a browser confirm, whose Cancel looked like Save doing nothing on a phone: now
               // the button asks, and a second tap saves.
@@ -843,7 +841,7 @@ return (
               void submit();
             }}
           >
-            {saving ? "Saving on this device…" : confirmRunning && canSave
+            {saving ? "Saving on this device…" : canSave && type === "match" && context && stage !== "review" ? "Review answers" : confirmRunning && canSave
               ? "Tap again to save"
               : !canSave
               ? type === "match"
@@ -878,15 +876,7 @@ return (
         <ScoutingLeadTools
           orgId={orgId}
           data={data}
-          schema={schema}
           trust={trust}
-          showFormula={showFormula}
-          formulaName={formulaName}
-          formulaWeights={formulaWeights}
-          setShowFormula={setShowFormula}
-          setFormulaName={setFormulaName}
-          setFormulaWeights={setFormulaWeights}
-          saveFormula={saveFormula}
           sync={sync}
         />
       </div>

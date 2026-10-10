@@ -1,6 +1,7 @@
 import { hubPrimaryTabs, hubWorkbenchId, type HubTabDef, type ProductHubDef } from "./hubs";
 const COMPETITION_SECTIONS = [
-  { id: "scouting", label: "Scout" }, { id: "teams", label: "Teams" },
+  { id: "scouting", label: "Scout" }, { id: "forms", label: "Forms" },
+  { id: "scout-coverage-live", label: "Assignments" }, { id: "teams", label: "Teams" },
   { id: "strategy", label: "Match plan" }, { id: "picks", label: "Pick list" },
   { id: "command", label: "Event day" }, { id: "match-checklist", label: "Our robot" },
 ];

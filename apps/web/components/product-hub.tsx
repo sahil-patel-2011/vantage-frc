@@ -26,6 +26,7 @@ import { settingsRoleTier } from "../lib/nav/settings-nav";
 import { useClientAccessProfile } from "../lib/nav/use-client-access";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import { useFollowUrl } from "../lib/nav/use-follow-url";
+import { hubLegacyContextHref } from "../lib/nav/hub-legacy-context";
 
 type ProductHubShellProps = {
   hubId: ProductHubDef["id"];
@@ -81,11 +82,17 @@ export function HubLegacyRedirect({
 }) {
   const hub = hubById(hubId);
   const def = hub.tabs.find((entry) => entry.id === tab);
-  const href = def?.legacyHref ? withOrgHref(def.legacyHref, orgId) : null;
-
-  useEffect(() => {
-    if (href) window.location.replace(href);
-  }, [href]);
+  const baseHref = def?.legacyHref ? withOrgHref(def.legacyHref, orgId) : null;
+  const [context, setContext] = useState<{ baseHref: string; orgId: string | null; href: string } | null>(null);
+  const follow = useCallback(() => {
+    if (!baseHref) return;
+    const href = hubLegacyContextHref(baseHref, window.location.search, orgId);
+    setContext({ baseHref, orgId, href });
+    window.location.replace(href);
+  }, [baseHref, orgId]);
+  useEffect(follow, [follow]);
+  useFollowUrl(follow);
+  const href = context && context.baseHref === baseHref && context.orgId === orgId ? context.href : baseHref;
 
   if (!href) {
     return (

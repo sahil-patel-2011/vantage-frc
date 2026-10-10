@@ -1,4 +1,8 @@
 .free-scout { display: grid; gap: 20px; max-width: 880px; margin: 0 auto; }
+.free-scout-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 20px; }
+.free-scout-history-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.free-scout-errors { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 12px; padding: 16px; }
+.free-scout-errors ul { margin: 8px 0 0; padding-left: 20px; }
 .free-scout-kind { border: 0; padding: 0; margin: 0; display: flex; gap: 8px; }
 .free-scout-kind legend { font-weight: 600; margin-bottom: 8px; }
 .free-scout-kind label { flex: 1; position: relative; }
@@ -13,14 +17,18 @@
 .free-scout-heading h2, .free-scout-heading h3 { margin: 0; }
 .free-scout-heading p { color: var(--muted); margin: 6px 0 0; }
 .free-scout-card { padding: clamp(16px, 3vw, 28px); border: 1px solid var(--line); background: var(--surface); border-radius: 24px; display: grid; gap: 20px; }
-.free-scout-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 14px; }
+.free-scout-status { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 14px; }
 .free-scout-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .free-scout-inputs label { display: grid; gap: 8px; font-weight: 600; }
 .free-scout-inputs input, .free-scout-inputs select { width: 100%; min-width: 0; min-height: 48px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; }
 .free-scout-report { border-top: 1px solid var(--line); padding-top: 12px; }
-.free-scout-report summary { min-height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.free-scout-report summary { min-height: 48px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .free-scout-report summary span:last-child { font-size: 13px; color: var(--muted); }
 .free-scout-report dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; }
 .free-scout-report dd { margin: 0; overflow-wrap: anywhere; text-align: right; }
-@media (max-width: 480px) { .free-scout-inputs { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .free-scout-inputs { grid-template-columns: 1fr; }
+  .free-scout .scout-report-actions { position: sticky; bottom: max(8px, env(safe-area-inset-bottom)); z-index: 4; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 8px 24px #00000014; }
+  .free-scout .scout-report-actions > * { flex: 1; min-width: 0; white-space: normal; }
+}
 body.has-app-shell:has(.free-scout) .soft-island { display: none !important; }

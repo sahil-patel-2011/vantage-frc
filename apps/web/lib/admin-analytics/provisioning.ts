@@ -8,7 +8,7 @@ export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const TEAM_NUMBER_MIN = 1;
 export const TEAM_NUMBER_MAX = 99999;
 /** One-time owner invite lifetime; matches the member-invite default ceiling. */
-export const OWNER_INVITE_HOURS = 168;
+export const OWNER_INVITE_HOURS = 24;
 
 export type ProvisionInput = {
   name?: unknown;

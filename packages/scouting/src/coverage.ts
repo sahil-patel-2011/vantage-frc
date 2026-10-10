@@ -21,6 +21,8 @@ export type CoverageGapStatus = "unscouted" | "assigned" | "covered" | "double";
 export type CoverageGapSlot = CoverageSlotInput & {
   status: CoverageGapStatus;
   teamNumber: number | null;
+  /** Saved assignments, distinct from authors of completed reports. */
+  assignedScouts?: Array<{ userId: string; name: string; role: string }>;
 };
 
 export type CoverageGapSummary = {

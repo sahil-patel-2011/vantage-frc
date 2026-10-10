@@ -26,6 +26,7 @@ export type MyScoutEntry = {
   matchKey: string | null;
   teamKey: string;
   clientId: string | null;
+  schemaId: string;
   payload: Record<string, unknown> | null;
   confidence: string;
   updatedAt: string;
@@ -62,11 +63,11 @@ export async function loadBootstrapExtras(
 
   const mine = await client.query<MyScoutEntry>(
     `SELECT e.id::text AS id, 'match' AS type, e.match_key AS "matchKey", e.team_key AS "teamKey",
-            e.client_id AS "clientId", e.payload, e.confidence::text AS confidence, e.updated_at AS "updatedAt"
+            e.client_id AS "clientId", e.schema_id AS "schemaId", e.payload, e.confidence::text AS confidence, e.updated_at AS "updatedAt"
      FROM match_scout_entries e
      WHERE e.org_id = $1::uuid AND e.event_key = $2 AND e.scout_user_id = $3::uuid
      UNION ALL
-     SELECT e.id::text, 'pit', NULL, e.team_key, e.client_id, e.payload, e.confidence::text, e.updated_at
+     SELECT e.id::text, 'pit', NULL, e.team_key, e.client_id, e.schema_id, e.payload, e.confidence::text, e.updated_at
      FROM pit_scout_entries e
      WHERE e.org_id = $1::uuid AND e.event_key = $2 AND e.scout_user_id = $3::uuid
      ORDER BY "updatedAt" DESC

@@ -56,6 +56,12 @@ function liveHandler(overrides: Partial<Record<string, unknown[]>> = {}): Handle
 }
 
 describe("computeScoutingCoverageView", () => {
+  it("keeps chronological focus windows even when a watched robot only plays later", async () => {
+    const matches = [1, 2, 3, 4, 5].map(matchNumber => ({ ...MATCH_ROWS[0], matchNumber, matchKey: `${EVENT}_qm${matchNumber}`, redAlliance: { teamKeys: [matchNumber === 5 ? "frc254" : "frc118"] }, blueAlliance: { teamKeys: ["frc1323"] } }));
+    const view = await computeScoutingCoverageView(makeClient(liveHandler({ matches })), { userId: USER, requestedOrg: ORG, priorityTeamKeys: ["frc254"] });
+    if (view.status !== "live") throw new Error("expected live view");
+    expect(view.live.focusMatchKeys).toEqual([1, 2, 3, 4].map(number => `${EVENT}_qm${number}`));
+  });
   it("returns setup_required with steps when the user has no org membership", async () => {
     const view = await computeScoutingCoverageView(
       makeClient(() => ({ rows: [] })),
@@ -96,7 +102,7 @@ describe("computeScoutingCoverageView", () => {
   it("builds the lineup board from real schedule, assignment and entry rows", async () => {
     const client = makeClient(
       liveHandler({
-        assignments: [{ matchKey: `${EVENT}_qm1`, teamKey: "frc118", count: 1 }],
+        assignments: [{ matchKey: `${EVENT}_qm1`, teamKey: "frc118", count: 1, assignedScouts: [{ userId: SCOUT, name: "Grace", role: "primary" }] }],
         entries: [
           {
             matchKey: `${EVENT}_qm1`,
@@ -134,6 +140,8 @@ describe("computeScoutingCoverageView", () => {
     expect(view.summary.covered).toBe(1);
     expect(view.summary.doubleCovered).toBe(1);
     expect(view.summary.assignedWaiting).toBe(1);
+    expect(view.slots.find(slot => slot.teamKey === "frc118")?.assignedScouts).toEqual([{ userId: SCOUT, name: "Grace", role: "primary" }]);
+    expect(view.slots.find(slot => slot.teamKey === "frc118")?.scoutNames).toEqual([]);
     expect(view.summary.unscouted).toBe(1);
     expect(view.canAssign).toBe(true);
     expect(view.scouts.find((scout) => scout.isMe)?.userId).toBe(USER);

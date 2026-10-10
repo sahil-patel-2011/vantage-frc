@@ -14,6 +14,7 @@ export function DashboardHomeTasks({ orgId, role, payload }: {
   const titleId = useId();
   const actions = useDashboardActions();
   const articleRef = useRef<HTMLElement>(null);
+  const savingRef = useRef(false);
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -25,11 +26,13 @@ export function DashboardHomeTasks({ orgId, role, payload }: {
   const open = typeof payload?.data?.open === "number" ? payload.data.open : null;
 
   async function save(key: string, body: Record<string, unknown>) {
-    if (busy || !actions) return;
+    if (savingRef.current || !actions) return;
+    savingRef.current = true;
     setBusy(key); setError(""); setNotice("");
     try {
       const response = await fetch("/api/todos", {
         method: "POST", headers: { "content-type": "application/json" },
+        signal: AbortSignal.timeout(15_000),
         body: JSON.stringify({ orgId, ...body }),
       });
       const data = await response.json();
@@ -39,8 +42,10 @@ export function DashboardHomeTasks({ orgId, role, payload }: {
       try { await actions.refresh("team_todos"); }
       catch { setNotice("Task saved. Open tasks to see the latest changes."); }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save the task. Try again.");
+      const uncertain = cause instanceof Error && ["TimeoutError", "AbortError", "TypeError", "SyntaxError"].includes(cause.name);
+      setError(uncertain ? "Could not confirm the save. Open All tasks to check before trying again; your title is still here." : cause instanceof Error ? cause.message : "Could not confirm the save. Open All tasks to check before trying again.");
     } finally {
+      savingRef.current = false;
       setBusy(null);
       requestAnimationFrame(() => {
         const article = articleRef.current;
