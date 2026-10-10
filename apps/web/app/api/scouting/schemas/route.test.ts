@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
-const fake = vi.hoisted(() => ({ session: vi.fn(), request: vi.fn(), lead: vi.fn(), lock: vi.fn(), query: vi.fn() }));
+const fake = vi.hoisted(() => ({ session: vi.fn(), request: vi.fn(), lead: vi.fn(), lock: vi.fn(), query: vi.fn(), repository: vi.fn(), ensure: vi.fn(), bootstrap: vi.fn() }));
 vi.mock("@vantage/core", () => ({ auth: { api: { getSession: fake.session } } }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@vantage/scouting/permissions", () => ({ assertScoutingLead: fake.lead, canManageScouting: vi.fn() }));
-vi.mock("@vantage/scouting/repository", () => ({ lockScoutingSchemaVersion: fake.lock, ScoutingRepository: vi.fn() }));
+vi.mock("@vantage/scouting/repository", () => ({ lockScoutingSchemaVersion: fake.lock, ScoutingRepository: fake.repository }));
 vi.mock("../../../../lib/scouting-auth", () => ({ withScoutingRequest: fake.request, scoutingErrorResponse: () => Response.json({ error: "Denied" }, { status: 403 }) }));
 
 const orgId = "11111111-1111-4111-8111-111111111111";
@@ -19,9 +19,21 @@ beforeEach(() => {
   vi.resetAllMocks();
   fake.session.mockResolvedValue({ user: { id: "lead" } });
   fake.request.mockImplementation(async (_org, callback) => callback({ query: fake.query }));
+  fake.repository.mockImplementation(function () { return { ensureDefaultSchemas: fake.ensure, bootstrap: fake.bootstrap }; });
   fake.query.mockResolvedValueOnce({ rows: [{ id: currentId, version: 4 }], rowCount: 1 });
 });
 describe("scouting publication concurrency", () => {
+  it("creates starter forms in the explicit linked event after lead authorization", async () => {
+    fake.query.mockReset().mockResolvedValue({ rows: [{ eventKey: "2026txho", eventName: "Linked event" }], rowCount: 1 });
+    fake.bootstrap.mockResolvedValue({ eventKey: "2026txho", schemas: [] });
+    const response = await POST(new Request("https://vantage.example/api/scouting/schemas", { method: "POST",
+      headers: { "content-type": "application/json" }, body: JSON.stringify({ orgId, action: "ensure_defaults", eventKey: "2026txho" }) }));
+    expect(response.status).toBe(200); expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(fake.lead.mock.invocationCallOrder[0]).toBeLessThan(fake.query.mock.invocationCallOrder[0]!);
+    expect(fake.ensure).toHaveBeenCalledWith(orgId, "lead", "2026txho");
+    expect(fake.bootstrap).toHaveBeenCalledWith(orgId, "lead", { eventKey: "2026txho", eventName: "Linked event" });
+    expect(fake.query.mock.calls.some(([sql]) => String(sql).includes("org_active_context"))).toBe(false);
+  });
   it.each([undefined, null, nextId])("refuses an absent or stale baseline before creating a version: %s", async baseline => {
     const response = await POST(request(baseline));
     expect(response.status).toBe(409);

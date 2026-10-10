@@ -149,6 +149,7 @@ export type ScoutingReadyViewProps = {
   retryQuarantineItem: (clientId: string) => Promise<void> | void;
   discardQuarantineItem: (clientId: string) => Promise<void> | void;
   createStarterForms: () => Promise<void> | void;
+  creatingStarterForms?: boolean;
   refreshCounts: () => Promise<void> | void;
   loadConflicts: () => Promise<void> | void;
   reviewConflict: (id: string, status: "resolved" | "dismissed") => Promise<void> | void;
@@ -214,6 +215,7 @@ export function ScoutingReadyView({
   retryQuarantineItem,
   discardQuarantineItem,
   createStarterForms,
+  creatingStarterForms = false,
   refreshCounts,
   loadConflicts,
   reviewConflict,
@@ -396,14 +398,15 @@ return (
           }
         >
           {data?.canManageSchemas ? (
-            <Button variant="primary" type="button" onClick={() => void createStarterForms()}>
-              Create starter forms
+            <Button variant="primary" type="button" disabled={creatingStarterForms || !online} onClick={() => void createStarterForms()}>
+              {creatingStarterForms ? "Creating…" : "Create starter forms"}
             </Button>
           ) : (
             <Button as="a" variant="primary" href={hubHref("/team", "messages", orgId)}>
               Message your team
             </Button>
           )}
+          {data?.canManageSchemas && !online ? <p className="app-muted">Connect to create starter forms.</p> : null}
         </EmptyState>
       </>
     ) : null}

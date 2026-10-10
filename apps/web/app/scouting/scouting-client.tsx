@@ -26,7 +26,6 @@ import {
   writeScoutDraft,
 } from "../../lib/scouting/draft-autosave";
 import {
-  cacheEvent,
   discardQuarantined,
   getCachedEvent,
   listQuarantine,
@@ -61,20 +60,28 @@ import { ScoutingReadyView } from "./scouting-ready-view";
 import { ScoutingShell } from "./scouting-chrome";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot } from "../../lib/offline/feature-cache";
-import { persistScoutingSnapshot } from "../../lib/scouting/snapshot";
 import { cacheLiveScouting } from "../../lib/scouting/live-cache";
+import { bootstrapForEvent, scoutingBootstrapUrl } from "../../lib/scouting/bootstrap-event";
 import { useScoutTask } from "./use-scout-task";
 import { focusInvalidScoutField } from "./scouting-form-focus";
 import { ConfirmProvider, useConfirm } from "../../components/ui";
 import "./scouting-qr.css";
 
 export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
-  return <ConfirmProvider key={orgId}><ScopedScoutingClient orgId={orgId} embedded={embedded} /></ConfirmProvider>;
+  const requestedEventKey = useSearchParams().get("eventKey");
+  return <ConfirmProvider key={`${orgId}:${requestedEventKey ?? "active"}`}><ScopedScoutingClient orgId={orgId} embedded={embedded} requestedEventKey={requestedEventKey} /></ConfirmProvider>;
 }
 
-function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: boolean }) {
+function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: string; embedded: boolean; requestedEventKey: string | null }) {
   const confirm = useConfirm();
   const searchParams = useSearchParams();
+  const bootstrapUrl = scoutingBootstrapUrl(orgId, requestedEventKey);
+  const bootstrapGeneration = useRef(0);
+  const bootstrapAbort = useRef<AbortController | null>(null);
+  const bootstrapMounted = useRef(true);
+  const bootstrapReading = useRef(false);
+  const starterCreating = useRef(false);
+  const [creatingStarterForms, setCreatingStarterForms] = useState(false);
   const [data, setData] = useState<Bootstrap | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -211,22 +218,35 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
   // After an upload, the team's data again, quietly, so the "Done" ticks and your reports include
   // what was just sent. The list used to refresh only on reload.
   const refreshLive = useCallback(async () => {
-    if (!orgId || !navigator.onLine) return;
+    if (!orgId || !navigator.onLine || !bootstrapMounted.current || bootstrapReading.current || starterCreating.current) return;
+    bootstrapReading.current = true;
+    bootstrapAbort.current?.abort();
+    const controller = new AbortController(); bootstrapAbort.current = controller;
+    const generation = ++bootstrapGeneration.current;
+    const current = () => bootstrapMounted.current && generation === bootstrapGeneration.current;
     try {
-      const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-      });
-      if (!response.ok) return;
+      const response = await fetch(bootstrapUrl, { cache: "no-store",
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+      if (!current()) return;
+      if (!response.ok) {
+        if ([400, 401, 403, 404].includes(response.status)) { setData(null); setFromCache(false); }
+        if (response.status === 401 || response.status === 403) { void clearFeatureSnapshot("scouting", orgId); void clearFeatureSnapshot("scouting", "_"); }
+        setFetchFailed(true); setBootstrapStatus(response.status);
+        const failure = await apiErrorMessage(response);
+        if (current()) setMessage(failure ?? "Could not refresh scouting. Your unsent answers stay on this device.");
+        return;
+      }
       const fresh = (await response.json()) as Bootstrap;
-      setData(fresh);
-      setFromCache(false);
-      await cacheEvent(orgId, fresh);
-      await persistScoutingSnapshot(orgId, fresh);
+      if (!current()) return;
+      if (!bootstrapForEvent(fresh, requestedEventKey)) throw new Error("The scouting result did not match the requested event.");
+      setData(fresh); setFromCache(false); setFetchFailed(false); setBootstrapStatus(null);
+      setMessage(previous => /^(Could not (refresh|load) scouting|Using the last copy for this event|Connect to refresh scouting)/.test(previous) ? "" : previous);
+      void cacheLiveScouting(orgId, fresh).then(cacheNotice => { if (current() && cacheNotice) setMessage(previous => previous || cacheNotice); });
+      void loadTrust(fresh.eventKey);
     } catch {
-      // Keep what is on screen; the next save or reload tries again.
-    }
-  }, [orgId]);
+      if (current()) { setFetchFailed(true); setMessage("Could not refresh scouting. Your unsent answers stay on this device."); }
+    } finally { if (current()) { bootstrapReading.current = false; setLoading(false); setSettled(true); } }
+  }, [orgId, bootstrapUrl, requestedEventKey, loadTrust]);
   const sync = useCallback(async () => {
     if (!orgId || !navigator.onLine) return;
     setSyncState("syncing");
@@ -287,72 +307,64 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
   );
 
   useEffect(() => {
+    bootstrapMounted.current = true;
+    bootstrapReading.current = true;
+    bootstrapAbort.current?.abort();
+    const controller = new AbortController(); bootstrapAbort.current = controller;
+    const generation = ++bootstrapGeneration.current;
+    const current = () => bootstrapMounted.current && generation === bootstrapGeneration.current;
     void (async () => {
-      setLoading(true);
-      setFetchFailed(false);
-      setBootstrapStatus(null);
-      const cachedEvent = await getCachedEvent<Bootstrap>(orgId);
-      const cachedSnap = await getFeatureSnapshot<Bootstrap>("scouting", orgId);
-      const cached = cachedEvent ?? cachedSnap?.data ?? null;
-      if (cached) {
-        setData(cached);
-        setFromCache(true);
-      }
+      setLoading(true); setFetchFailed(false); setBootstrapStatus(null);
+      const [cachedEvent, cachedSnap] = await Promise.all([
+        getCachedEvent<Bootstrap>(orgId).catch(() => null),
+        getFeatureSnapshot<Bootstrap>("scouting", orgId).catch(() => null),
+      ]);
+      if (!current()) return;
+      const cached = bootstrapForEvent(cachedEvent, requestedEventKey) ?? bootstrapForEvent(cachedSnap?.data, requestedEventKey);
+      if (cached) { setData(cached); setFromCache(true); }
       try {
-        const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, {
-          cache: "no-store",
-          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-        });
-        if (response.status === 401 || response.status === 403) {
-          setData(null);
-          setFromCache(false);
-          setFetchFailed(true);
-          setBootstrapStatus(response.status);
-          // The route says which sign-in method this team allows, or which
-          // role is missing. Overwriting that with "Could not load scouting"
-          // left the screen with nothing but a 403 to reason from, and a 403
-          // alone reads as a role problem — which is what an owner who simply
-          // signed in the wrong way was told.
-          setMessage((await apiErrorMessage(response)) ?? "Could not load scouting");
-          void clearFeatureSnapshot("scouting", orgId);
-          void clearFeatureSnapshot("scouting", "_");
+        const response = await fetch(bootstrapUrl, { cache: "no-store",
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+        if (!current()) return;
+        if ([400, 401, 403, 404].includes(response.status)) {
+          setData(null); setFromCache(false); setFetchFailed(true); setBootstrapStatus(response.status);
+          const failure = await apiErrorMessage(response);
+          if (current()) setMessage(failure ?? "Could not load scouting.");
+          if (response.status === 401 || response.status === 403) {
+            void clearFeatureSnapshot("scouting", orgId);
+            void clearFeatureSnapshot("scouting", "_");
+          }
+          return;
         } else if (response.ok) {
           const fresh = (await response.json()) as Bootstrap;
-          setData(fresh);
-          setFromCache(false);
-          setFetchFailed(false);
-          const cacheNotice = await cacheLiveScouting(orgId, fresh);
-          if (cacheNotice) setMessage(cacheNotice);
-          await loadTrust(fresh.eventKey);
+          if (!current()) return;
+          if (!bootstrapForEvent(fresh, requestedEventKey)) throw new Error("The scouting result did not match the requested event.");
+          setData(fresh); setFromCache(false); setFetchFailed(false);
+          void cacheLiveScouting(orgId, fresh).then(cacheNotice => { if (current() && cacheNotice) setMessage(previous => previous || cacheNotice); });
+          void loadTrust(fresh.eventKey);
         } else if (cached) {
-          setMessage("Using the last copy on this phone — could not refresh.");
+          setMessage("Using the last copy for this event on this device — could not refresh.");
         } else {
-          setFetchFailed(true);
-          setBootstrapStatus(response.status);
-          setMessage("Could not load scouting");
+          setFetchFailed(true); setBootstrapStatus(response.status); setMessage("Could not load scouting.");
         }
       } catch {
-        if (cached) {
-          setMessage("Using the last copy on this phone");
-        } else {
-          setFetchFailed(true);
-          setMessage("Could not load scouting");
-        }
-      } finally {
-        setLoading(false);
-        setSettled(true);
-      }
+        if (!current()) return;
+        if (cached) setMessage("Using the last copy for this event on this device.");
+        else { setFetchFailed(true); setMessage("Could not load scouting."); }
+      } finally { if (current()) { bootstrapReading.current = false; setLoading(false); setSettled(true); } }
+      if (!current()) return;
       await refreshCounts();
-      await sync();
+      if (current()) await sync();
     })();
-    const handleOnline = () => {
-      void sync();
-    };
+    const handleOnline = () => { void sync(); };
     window.addEventListener("online", handleOnline);
     return () => {
+      bootstrapMounted.current = false; ++bootstrapGeneration.current;
+      bootstrapReading.current = false;
+      bootstrapAbort.current?.abort();
       window.removeEventListener("online", handleOnline);
     };
-  }, [orgId, refreshCounts, sync, loadTrust]);
+  }, [orgId, bootstrapUrl, requestedEventKey, refreshCounts, sync, loadTrust]);
 
   useEffect(() => {
     const deepMatch = searchParams.get("matchKey");
@@ -851,23 +863,28 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
   }
 
   async function createStarterForms() {
-    setMessage("");
-    const response = await fetch("/api/scouting/schemas", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ orgId, action: "ensure_defaults" }),
-    });
-    const body = (await response.json().catch(() => ({}))) as Bootstrap & { error?: string };
-    if (!response.ok) {
-      setMessage(body.error ?? "Could not create starter forms.");
-      return;
-    }
-    setData(body);
+    if (starterCreating.current || !data?.canManageSchemas || !navigator.onLine) return;
+    starterCreating.current = true; setCreatingStarterForms(true); setMessage("");
+    const generation = bootstrapGeneration.current;
+    const current = () => bootstrapMounted.current && generation === bootstrapGeneration.current;
     try {
-      await cacheEvent(orgId, body);
+      const response = await fetch("/api/scouting/schemas", { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orgId, action: "ensure_defaults", ...(requestedEventKey ? { eventKey: requestedEventKey } : {}) }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) });
+      const body = (await response.json().catch(() => null)) as (Bootstrap & { error?: string }) | null;
+      if (!current()) return;
+      if (!response.ok) throw new Error(body?.error ?? "Starter forms could not be created.");
+      if (!body || !bootstrapForEvent(body, requestedEventKey) || !Array.isArray(body.schemas) || !["match", "pit"].every(type => body.schemas.some(schema => schema && schema.type === type && typeof schema.orgId === "string" && schema.orgId.toLowerCase() === orgId.toLowerCase()))) {
+        throw new Error("Starter form creation could not be confirmed. Refresh to check the saved forms before retrying.");
+      }
+      setData(body); setFromCache(false);
       setMessage("Starter match and pit forms are ready.");
+      void cacheLiveScouting(orgId, body).then(cacheNotice => { if (current() && cacheNotice) setMessage(previous => previous === "Starter match and pit forms are ready." ? `Starter forms are ready. ${cacheNotice}` : previous); });
     } catch (error) {
-      setMessage(`Starter forms are ready online. ${error instanceof Error ? error.message : "Could not update the offline copy."}`);
+      if (current()) setMessage(error instanceof Error ? error.message : "Creation may have reached the server. Refresh to check before retrying.");
+    } finally {
+      starterCreating.current = false;
+      if (bootstrapMounted.current) setCreatingStarterForms(false);
     }
   }
 
@@ -911,43 +928,11 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
   });
 
   const reloadBootstrap = useCallback(() => {
-    setLoading(true);
-    setFetchFailed(false);
-    setBootstrapStatus(null);
-    void (async () => {
-      try {
-        const response = await fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, {
-          cache: "no-store",
-          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-        });
-        if (response.status === 401 || response.status === 403) {
-          setData(null);
-          setFromCache(false);
-          setFetchFailed(true);
-          setBootstrapStatus(response.status);
-          setMessage((await apiErrorMessage(response)) ?? "Could not load scouting");
-          void clearFeatureSnapshot("scouting", orgId);
-          void clearFeatureSnapshot("scouting", "_");
-        } else if (response.ok) {
-          const fresh = (await response.json()) as Bootstrap;
-          setData(fresh);
-          setFromCache(false);
-          setFetchFailed(false);
-          const cacheNotice = await cacheLiveScouting(orgId, fresh);
-          if (cacheNotice) setMessage(cacheNotice);
-          await loadTrust(fresh.eventKey);
-        } else {
-          setFetchFailed(true);
-          setBootstrapStatus(response.status);
-        }
-      } catch {
-        setFetchFailed(true);
-      } finally {
-        setLoading(false);
-        setSettled(true);
-      }
-    })();
-  }, [orgId, loadTrust]);
+    if (bootstrapReading.current || starterCreating.current) return;
+    if (!navigator.onLine) { setFetchFailed(true); setMessage("Connect to refresh scouting; your saved answers stay on this device."); return; }
+    setLoading(true); setFetchFailed(false); setBootstrapStatus(null);
+    void refreshLive();
+  }, [refreshLive]);
 
   const offlineDetail = scoutingOfflineBannerDetail({
     online,
@@ -1045,6 +1030,7 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
       retryQuarantineItem={retryQuarantineItem}
       discardQuarantineItem={discardQuarantineItem}
       createStarterForms={createStarterForms}
+      creatingStarterForms={creatingStarterForms}
       refreshCounts={refreshCounts}
       loadConflicts={loadConflicts}
       reviewConflict={reviewConflict}

@@ -14,7 +14,7 @@ export const qualitySeatRequest = z.object({
 
 export const qualityPolicyRequest = z.object({
   schemaId: z.string().uuid().transform(value => value.toLowerCase()),
-  fieldKey: z.string().min(1).max(120),
+  fieldKey: z.string().min(1).max(200),
   preferredSource: z.enum(["scout", "tba", "statbotics", "consensus"]),
   officialKey: z.string().max(120).nullable().optional(),
   teamIndexed: z.boolean().optional(),

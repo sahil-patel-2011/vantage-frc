@@ -36,6 +36,8 @@ describe("scouting schema publication boundary", () => {
     expect(schemaPublicationRequest.safeParse({ ...request, type: "other" }).success).toBe(false);
     expect(schemaPublicationRequest.parse(request)).toEqual(request);
     expect(schemaPublicationRequest.parse({ orgId: request.orgId, action: "ensure_defaults" })).toEqual({ orgId: request.orgId, action: "ensure_defaults" });
+    expect(schemaPublicationRequest.safeParse({ orgId: request.orgId, action: "ensure_defaults", eventKey: "2026txho" }).success).toBe(true);
+    expect(schemaPublicationRequest.safeParse({ orgId: request.orgId, action: "ensure_defaults", eventKey: "../other" }).success).toBe(false);
   });
   it("rejects broken conditional questions, missing controllers and self references", () => {
     for (const rule of [{ anyOf: [null] }, { fieldKey: "missing", isTrue: true }, { fieldKey: "cycles", isSet: true }]) {

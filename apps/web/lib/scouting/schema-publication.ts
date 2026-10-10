@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { officialComparisonConfigError } from "@vantage/scouting/official-fields";
+import { coverageEventKey } from "./coverage-request";
 import { cyclicVisibilityKeys, isVisibleWhen, type VisibleWhen } from "@vantage/scouting/visibility";
 
 const fieldTypes = ["number", "boolean", "text", "select", "dropdown", "multiple_choice", "short_answer", "long_text",
@@ -53,7 +54,7 @@ const definition = scoutSchemaDefinitionShape.superRefine((value, context) => {
 
 /** Validate before identity/budget readers or persistence can consume a schema. */
 export const schemaPublicationRequest = z.union([
-  z.object({ orgId: z.string().uuid(), action: z.literal("ensure_defaults") }).strict(),
+  z.object({ orgId: z.string().uuid(), action: z.literal("ensure_defaults"), eventKey: coverageEventKey.optional() }).strict(),
   z.object({
     orgId: z.string().uuid(), year: z.number().int().min(1992).max(2100), type: z.enum(["match", "pit"]),
     definition, acknowledgeBudget: z.boolean().optional(),

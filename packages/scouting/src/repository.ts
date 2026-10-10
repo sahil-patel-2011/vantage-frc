@@ -38,10 +38,10 @@ export async function lockScoutingSchemaVersion(client: PoolClient, orgId: strin
 export class ScoutingRepository {
   constructor(private readonly client: PoolClient) {}
 
-  async bootstrap(orgId: string, userId: string) {
+  async bootstrap(orgId: string, userId: string, selectedEvent?: { eventKey: string; eventName: string | null }) {
     const canManageSchemas = await canManageScouting(this.client, orgId);
 
-    const context = await this.client.query<{
+    const context = selectedEvent ? { rows: [] } : await this.client.query<{
       activeEventKey: string | null;
       eventName: string | null;
     }>(
@@ -51,8 +51,8 @@ export class ScoutingRepository {
        WHERE c.org_id = $1`,
       [orgId],
     );
-    const eventKey = context.rows[0]?.activeEventKey ?? null;
-    const eventName = context.rows[0]?.eventName ?? null;
+    const eventKey = selectedEvent ? selectedEvent.eventKey : context.rows[0]?.activeEventKey ?? null;
+    const eventName = selectedEvent ? selectedEvent.eventName : context.rows[0]?.eventName ?? null;
     const profile = await this.client.query<{
       name: string | null;
       email: string | null;

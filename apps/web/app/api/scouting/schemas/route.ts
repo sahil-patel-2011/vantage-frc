@@ -96,17 +96,20 @@ export async function POST(request: Request) {
     if ("action" in body && body.action === "ensure_defaults") {
       const result = await withScoutingRequest(body.orgId, async (client) => {
         await assertScoutingLead(client, body.orgId!);
-        const context = await client.query<{ eventKey: string | null }>(
+        const selected = body.eventKey ? await client.query<{ eventKey: string; eventName: string | null }>(
+          'SELECT event_key AS "eventKey",name AS "eventName" FROM events_ref WHERE event_key=$1', [body.eventKey]) : null;
+        if (body.eventKey && !selected?.rows[0]) throw new RequestSecurityError(404, "This event is not available. Choose another event.");
+        const context = selected ? null : await client.query<{ eventKey: string | null }>(
           `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
           [body.orgId],
         );
-        const eventKey = context.rows[0]?.eventKey;
+        const eventKey = selected?.rows[0]?.eventKey ?? context?.rows[0]?.eventKey;
         if (!eventKey) throw new Error("Set your active event before creating starter forms.");
         const repository = new ScoutingRepository(client);
         await repository.ensureDefaultSchemas(body.orgId!, session.user.id, eventKey);
-        return repository.bootstrap(body.orgId!, session.user.id);
+        return repository.bootstrap(body.orgId!, session.user.id, selected?.rows[0]);
       });
-      return Response.json(result);
+      return Response.json(result, { headers: { "cache-control": "private, no-store" } });
     }
 
     if (!("definition" in body)) return Response.json({ error: "Invalid schema" }, { status: 400 });

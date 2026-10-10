@@ -116,6 +116,14 @@ Collection confidence hints now require the exact active schema ID, including re
 
 Additional **unrun** regression sources cover two forms reusing a key for different meanings, original labels, unavailable/noncomparable denominators, missing/unsupported/pit forms, active-schema hint isolation, legacy contract compatibility and private API responses. React hooks, scope remounts, labels, button targets and derived state were inspected. Mechanical checks are limited to `git diff --check`; no local or remote runtime verification ran. Report-level evidence drill-down and historical rechecking remain unfinished.
 
+### Report evidence and linked-event collection
+
+Quality question rows now open an on-demand, original-form report inspector with conflict/all filters, 25-report pages and exact microsecond keyset cursors. Its guarded read route checks current team membership/authentication, original question eligibility, enabled policies, tenant/event/schema scope and current evaluator evidence. Closing or changing scope cancels the read; temporary failures retain explicitly stale confirmed reports, while access denials clear them. The disclosure uses labelled controls, keyboard Escape focus restoration, 56px summary targets and reduced-motion-aware closing. Exact-report correction handoff and deliberate historical rechecking remain unfinished.
+
+Collection bootstrap, refresh and starter-form setup now preserve an explicitly linked event without changing the team's active context. Mismatched cached events are excluded; requests have deadlines and stale/unmounted result guards. Starter creation has a synchronous duplicate-submit guard, visible pending/offline states and scoped acknowledgement checks. Optional device caching and quality hints no longer hold the live-read loading state. Bootstrap validation still checks the event envelope rather than validating every nested record.
+
+Additional regression sources cover linked-event bootstrap/setup, authorization, private error responses, original-form report scope, disabled checks, bounded pages, cursor precision and scalar answer rendering. These sources are **unexecuted**. Manual source review and whitespace checks are the only verification performed; no local or remote tests, builds, databases, workflows or deployments ran.
+
 ## Still required before production acceptance
 
 - Approved hosted verification of normal, failure and final regression journeys, including two isolated teams, invitation delivery and recipient password setup.
@@ -125,4 +133,4 @@ Additional **unrun** regression sources cover two forms reusing a key for differ
 - Desktop CAD acceptance remains deferred; this candidate makes no packaged-app claim.
 - Verified actual deployment allowance before one intentional deployment and hosted smoke check. Actions remain disabled.
 
-Production data access, email delivery and the full app journey have not been proven. Keep this candidate in draft until the acceptance gates can be completed within AGENTS.md and the user's storage/compute rules.
+Production data access, email delivery and the full app journey have not been proven. The user's subsequent explicit instruction authorizes committing, pushing and merging the source changes into main before hosted acceptance. This changes the Git delivery instruction only: deployment, schema compatibility and production acceptance requirements remain in force, and merging does not certify readiness.
