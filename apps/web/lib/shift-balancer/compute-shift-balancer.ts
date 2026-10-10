@@ -13,6 +13,7 @@ import {
 import { BACKUP_ROLE } from "../scouting/assignment-accountability";
 import { assignmentConflict, isOnDriveTeamForMatch, withAssignment } from "../scouting/assignment-conflicts";
 import { loadAssignmentConflictContext } from "../scouting/assignment-conflicts-load";
+import { lockAssignmentEvent } from "../scouting/assignment-write";
 import type { PublishPreview, ShiftBalancerAssignment } from ".";
 import type { ShiftBalancerPlan, ShiftBalancerScout, ShiftBalancerSummary } from "./types";
 
@@ -266,6 +267,7 @@ export async function publishPlan(
   );
   const eventKey = event.rows[0]?.eventKey ?? null;
   if (!eventKey) throw new Error("Set the active event before publishing");
+  await lockAssignmentEvent(client, input.orgId, eventKey);
 
   const raw = plan.rows[0]?.assignments;
   const preview = publishableAssignments(
@@ -279,7 +281,13 @@ export async function publishPlan(
   let conflicts = await loadAssignmentConflictContext(client, { orgId: input.orgId, eventKey });
   const written: typeof preview.rows = [];
   let skippedConflict = 0;
+  let skippedNoMember = preview.skippedNoMember;
+  let skippedNoMatch = preview.skippedNoMatch;
+  const members = await client.query<{ userId: string }>('SELECT user_id AS "userId" FROM memberships WHERE org_id=$1::uuid', [input.orgId]);
+  const memberIds = new Set(members.rows.map(member => member.userId));
   for (const row of preview.rows) {
+    if (!memberIds.has(row.userId)) { skippedNoMember++; continue; }
+    if (!conflicts.matches.get(row.matchKey)?.teamKeys.includes(row.teamKey)) { skippedNoMatch++; continue; }
     if (assignmentConflict(conflicts, row)) {
       skippedConflict += 1;
       continue;
@@ -297,7 +305,7 @@ export async function publishPlan(
       [input.orgId, eventKey, row.userId, row.matchKey, row.teamKey, row.role === "backup" ? BACKUP_ROLE : row.station, row.startsAt],
     );
   }
-  return skippedConflict ? { ...preview, rows: written, skippedConflict } : preview;
+  return { ...preview, rows: written, skippedConflict, skippedNoMember, skippedNoMatch };
 }
 
 export async function removeScout(

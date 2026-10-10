@@ -6,11 +6,13 @@ const DIR = __dirname;
 
 describe("Lineup last snapshot stays on the phone", () => {
   it("reads and writes the lineup IndexedDB feature cache", () => {
-    const src = readFileSync(join(DIR, "lineup-client.tsx"), "utf8");
+    const src = readFileSync(join(DIR, "use-coverage-data.ts"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"lineup"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Lineup & coverage"/);
+    expect(src).toMatch(/getFeatureSnapshot<ScoutingCoverageView>\("lineup", orgId, cacheKey\)/);
+    expect(src).toMatch(/clearFeatureSnapshot/);
+    expect(readFileSync(join(DIR, "lineup-client.tsx"), "utf8")).toMatch(/feature="Assignments"/);
   });
 });

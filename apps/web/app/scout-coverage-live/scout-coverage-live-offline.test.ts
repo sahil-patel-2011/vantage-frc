@@ -11,6 +11,6 @@ describe("Scout Coverage Live last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"scout-coverage-live"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Scout Coverage Live"/);
+    expect(src).toMatch(/feature="Coverage review"/);
   });
 });

@@ -1,62 +1,16 @@
-import { EmptyState, PageHeader, Button } from "../../components/ui";
-import {
-  SCOUT_COVERAGE_LIVE_RELATED_INCLUDE,
-  scoutCoverageLiveRelatedLinks,
-  scoutCoverageLiveSetupSteps,
-  scoutCoverageLiveShellCopy,
-} from "../../lib/scout-coverage-live/scout-coverage-live-related";
-import { withOrgHref } from "../../lib/nav/product-nav";
+import AssignmentPage from "../scouting/lineup/assignment-page";
+import { assignmentWorkspaceHref } from "../../lib/scouting/assignment-navigation";
 import ScoutCoverageLiveClient from "./scout-coverage-live-client";
-import "./scout-coverage-live.css";
 
-export const metadata = {
-  title: "Scout Coverage Live",
-};
+export const metadata = { title: "Scouting assignments" };
 
-export default async function ScoutCoverageLivePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ orgId?: string }>;
+export default async function ScoutCoverageLivePage({ searchParams }: {
+  searchParams: Promise<{ orgId?: string; eventKey?: string; matchKey?: string; qualsOnly?: string; view?: string }>;
 }) {
-  const { orgId } = await searchParams;
-  if (!orgId) {
-    const copy = scoutCoverageLiveShellCopy("setup");
-    const related = scoutCoverageLiveRelatedLinks(null, {
-      include: [...SCOUT_COVERAGE_LIVE_RELATED_INCLUDE],
-    });
-    const setup = scoutCoverageLiveSetupSteps(null)[0];
-    return (
-      <main className="module-page scout-coverage-live-page soft-gate">
-        <PageHeader
-          breadcrumbs="Competition / Scout Coverage Live"
-          title="Scout Coverage Live"
-          description={copy.description}
-        >
-          <nav
-            className="product-hub-related scout-coverage-live-related"
-            aria-label="Related competition tools"
-          >
-            {related.map((link) => (
-              <a key={link.id} href={link.href}>{link.label}</a>
-            ))}
-          </nav>
-        </PageHeader>
-        <EmptyState
-          soft
-          badge="Needs setup"
-          badgeTone="setup"
-          title={copy.title}
-          description={copy.description}
-        >
-          <Button as="a" variant="primary" href={setup?.href ?? "/workspace"}>
-            {setup?.label ?? "Choose your team"}
-          </Button>
-        </EmptyState>
-        <p className="app-muted scout-coverage-live-footer-links">
-          Also see <a href={withOrgHref("/scouting/lineup", null)}>Lineup</a>
-        </p>
-      </main>
-    );
+  const params = await searchParams;
+  if (params.view === "review" && params.orgId) {
+    return <ScoutCoverageLiveClient key={`${params.orgId}:${params.eventKey ?? "active"}`} orgId={params.orgId}
+      assignmentHref={assignmentWorkspaceHref({ orgId: params.orgId, eventKey: params.eventKey, matchKey: params.matchKey, qualsOnly: params.qualsOnly !== "0" && params.qualsOnly !== "false" })} />;
   }
-  return <ScoutCoverageLiveClient orgId={orgId} />;
+  return <AssignmentPage searchParams={Promise.resolve(params)} />;
 }

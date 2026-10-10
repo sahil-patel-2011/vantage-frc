@@ -18,6 +18,12 @@ const KEYS = [
 ];
 
 describe("parseMatchKey", () => {
+  it("supports custom event keys and refuses invalid playoff bounds", () => {
+    expect(parseMatchKey("2026team-practice_qm12")?.eventKey).toBe("2026team-practice");
+    expect(parseMatchKey("2026team_sf0m1")).toBeNull();
+    expect(parseMatchKey("2026team_sf1m0")).toBeNull();
+    expect(parseMatchKey("2026team_qm9007199254740992")).toBeNull();
+  });
   it("reads quals and playoff sets without inventing numbers", () => {
     expect(parseMatchKey("2026casj_qm12")).toMatchObject({
       eventKey: "2026casj",
@@ -35,6 +41,11 @@ describe("parseMatchKey", () => {
 });
 
 describe("expandAssignmentRange", () => {
+  it("requires actual range endpoints and normalizes entered team numbers", () => {
+    const input = { firstMatchKey: "2026casj_qm1", lastMatchKey: "2026casj_qm4", teamKey: "00254", matchKeys: KEYS };
+    expect(expandAssignmentRange(input).slots[0]?.teamKey).toBe("frc254");
+    expect(expandAssignmentRange({ ...input, lastMatchKey: "2026casj_qm9" }).ok).toBe(false);
+  });
   it("fills only official keys between first and last", () => {
     const result = expandAssignmentRange({
       firstMatchKey: "2026casj_qm2",
@@ -107,6 +118,15 @@ describe("expandAssignmentRange", () => {
 });
 
 describe("compactAssignments", () => {
+  it("never joins different events or counts duplicate assignments", () => {
+    const ranges = compactAssignments([
+      { userId: "u1", teamKey: "frc254", matchKey: "2026casj_qm1" },
+      { userId: "u1", teamKey: "frc254", matchKey: "2026casj_qm1" },
+      { userId: "u1", teamKey: "frc254", matchKey: "2026txho_qm2" },
+    ]);
+    expect(ranges).toHaveLength(2);
+    expect(ranges.map(range => range.matchCount)).toEqual([1, 1]);
+  });
   it("joins adjacent quals and splits a hole", () => {
     const ranges = compactAssignments([
       { userId: "u1", teamKey: "frc254", matchKey: "2026casj_qm1" },

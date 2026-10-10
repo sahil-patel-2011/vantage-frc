@@ -16,6 +16,9 @@ import { headers } from "next/headers";
 import { coverageGapMessage } from "../../../../lib/command/match-coverage";
 import { scoutingErrorResponse, withScoutingRequest } from "../../../../lib/scouting-auth";
 import { seatTopAccurateScouts } from "../../../../lib/scouting/pick-feedback";
+import { lockAssignmentEvent } from "../../../../lib/scouting/assignment-write";
+import { loadAssignmentConflictContext } from "../../../../lib/scouting/assignment-conflicts-load";
+import { assignmentConflict, withAssignment } from "../../../../lib/scouting/assignment-conflicts";
 
 type Alliance = { teamKeys?: string[] };
 type MatchRow = { matchKey: string; matchNumber: number; compLevel: string; redAlliance: Alliance; blueAlliance: Alliance };
@@ -172,19 +175,28 @@ export async function POST(request: Request) {
         );
       } else if (action === "auto-assign") {
         const eventKey = text(body.eventKey, 80);
+        if (!eventKey) throw new Error("Choose an event before assigning scouts");
+        await lockAssignmentEvent(client, orgId, eventKey);
         const maximum = Math.max(1, Math.min(8, Number(body.maximumConsecutiveMatches ?? 3)));
         const requested = Array.isArray(body.scoutUserIds) ? body.scoutUserIds.map((value) => text(value, 64)).filter(Boolean) : [];
-        const scouts = requested.length ? requested : (await client.query<{ userId: string }>(
+        const eligible = (await client.query<{ userId: string }>(
           `SELECT m.user_id AS "userId" FROM memberships m WHERE m.org_id=$1
            AND (m.role IN ('owner','admin','scout') OR EXISTS (
              SELECT 1 FROM membership_capabilities c WHERE c.org_id=m.org_id AND c.user_id=m.user_id
                AND c.capability='manage_scouting'::org_capability
            )) ORDER BY m.created_at`, [orgId])).rows.map((row) => row.userId);
+        if (requested.some(userId => !eligible.includes(userId))) throw new Error("Choose current scouting members of this team");
+        const scouts = requested.length ? [...new Set(requested)] : eligible;
         const matches = await client.query<MatchRow>(
           `SELECT match_key AS "matchKey",match_number AS "matchNumber",comp_level AS "compLevel",red_alliance AS "redAlliance",blue_alliance AS "blueAlliance"
            FROM matches_ref WHERE event_key=$1 AND comp_level='qm' ORDER BY match_number`, [eventKey]);
         const balanced = fatigueAwareAssignments({ scouts, maximumConsecutiveMatches: maximum, matches: matches.rows.map((match) => ({ matchKey: match.matchKey, teamKeys: [...(match.redAlliance.teamKeys ?? []), ...(match.blueAlliance.teamKeys ?? [])] })) });
+        let conflicts = await loadAssignmentConflictContext(client, { orgId, eventKey });
+        // Refuse the whole legacy request rather than report success for skipped rows.
+        if (balanced.assignments.some(row => assignmentConflict(conflicts, row))) throw new Error("This rotation conflicts with existing scouting or drive-team duties. Use Assignments to review and assign available scouts.");
         for (const assignment of balanced.assignments) {
+          if (assignmentConflict(conflicts, assignment)) throw new Error("This rotation assigns one scout to two robots in the same match. Review it in Assignments.");
+          conflicts = withAssignment(conflicts, assignment);
           await client.query(
             `INSERT INTO scout_assignments(org_id,event_key,user_id,match_key,team_key,role)
              VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(org_id,user_id,match_key,team_key) DO UPDATE SET role=excluded.role`,

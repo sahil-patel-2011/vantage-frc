@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { CopyShareLink } from "../../../components/copy-share-link";
-import type { CoverageGapSlot, CoverageGapSummary } from "@vantage/scouting/coverage";
+import type { CoverageGapSlot } from "@vantage/scouting/coverage";
 import {
   LINEUP_POLL_MS,
   LINEUP_RELATED_INCLUDE,
@@ -19,77 +19,15 @@ import {
   lineupShellCopy,
   shouldPollLineup,
   shouldShowLineupSummaryTiles,
-  type LineupNextAction,
   type LineupShellKind,
 } from "../../../lib/scouting/lineup-related";
 import { hubHref } from "../../../lib/nav/hubs";
 import { matchLabelFromKey } from "../../../lib/matches/no-next-match";
 import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
-import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { AssignmentRangeForm } from "./assignment-range-form";
-import type { CoverageScopeSummary } from "../../../lib/scouting/coverage";
+import { useCoverageData } from "./use-coverage-data";
+import { assignmentWorkspaceHref } from "../../../lib/scouting/assignment-navigation";
 import "./lineup.css";
-
-type CoverageScout = {
-  userId: string;
-  name: string;
-  role: string;
-  assignedCount: number;
-  isMe: boolean;
-};
-
-type SchemaRoleWarning = {
-  id: string;
-  severity: "blocking" | "warning";
-  message: string;
-};
-
-type CoverageView =
-  | {
-      status: "setup_required";
-      eventKey: null;
-      generatedAt: string;
-      message: string;
-    }
-  | {
-      status: "live";
-      eventKey: string;
-      eventName?: string | null;
-      generatedAt: string;
-      qualsOnly: boolean;
-      canAssign: boolean;
-      summary: CoverageGapSummary;
-      live: {
-        focusMatchKeys: string[];
-        focusSlots: CoverageGapSlot[];
-        gapSlots: CoverageGapSlot[];
-        doubleSlots: CoverageGapSlot[];
-      };
-      slots: CoverageGapSlot[];
-      /** Played vs upcoming robots. Optional: an older saved copy has none. */
-      scope?: CoverageScopeSummary;
-      scouts: CoverageScout[];
-      schemaRoles: { status: string; warnings: SchemaRoleWarning[] };
-      };
-
-function isCoverageView(value: unknown): value is CoverageView {
-  if (!value || typeof value !== "object") return false;
-  const status = (value as { status?: unknown }).status;
-  return status === "setup_required" || status === "live";
-}
-
-async function persistLineupSnapshot(orgHint: string, data: CoverageView): Promise<void> {
-  const cacheOrg = orgHint.trim();
-  if (!cacheOrg) return;
-  try {
-    await putFeatureSnapshot("lineup", cacheOrg, data);
-    if (!orgHint.trim() || cacheOrg === "_") return;
-    await putFeatureSnapshot("lineup", "_", data);
-  } catch {
-    // Live coverage already painted; IndexedDB is best-effort.
-  }
-}
 
 function teamLabel(slot: CoverageGapSlot): string {
   return slot.teamNumber != null ? String(slot.teamNumber) : slot.teamKey.replace(/^frc/i, "");
@@ -117,30 +55,6 @@ function LineupRelatedStrip({ orgId }: { orgId?: string | null }) {
         <a key={link.href} href={link.href}>{link.label}</a>
       ))}
     </nav>
-  );
-}
-
-function LineupNextActionsPanel({ actions }: { actions: LineupNextAction[] }) {
-  if (!actions.length) return null;
-  return (
-    <section
-      className="app-card soft-panel edc-next-actions lineup-next-actions"
-      aria-label="Next actions"
-    >
-      <header>
-        <h2>Next actions</h2>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -191,10 +105,10 @@ function LineupShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Lineup & coverage"}
+            {" / Assignments"}
           </>
         }
-        title="Lineup & coverage"
+        title="Assignments"
         description={description}
       >
         <LineupRelatedStrip orgId={orgId} />
@@ -203,7 +117,7 @@ function LineupShell({
       <EmptyState
         soft
         badge={
-          shell === "setup"
+          failure ? failure.badge : shell === "setup"
             ? "Needs setup"
             : shell === "error"
               ? "Unavailable"
@@ -237,136 +151,24 @@ function LineupShell({
           </Button>
         ) : null}
       </EmptyState>
-      {shell === "ready" ? <LineupNextActionsPanel actions={actions} /> : null}
     </main>
   );
 }
 
-export default function LineupClient({ orgId }: { orgId: string }) {
-  const [view, setView] = useState<CoverageView | null>(null);
-  const [error, setError] = useState("");
-  const [fetchFailed, setFetchFailed] = useState(false);
-  // Kept so an expired session offers sign-in instead of a Retry that cannot work.
-  const [failureStatus, setFailureStatus] = useState<number | null>(null);
-  const [qualsOnly, setQualsOnly] = useState(true);
-  const [focusMatch, setFocusMatch] = useState("");
-  const [updatedAt, setUpdatedAt] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [fromCache, setFromCache] = useState(false);
-  const [cachedAt, setCachedAt] = useState<string | null>(null);
-  const viewRef = useRef<CoverageView | null>(null);
-  viewRef.current = view;
-
-  const load = useCallback(async () => {
-    const params = new URLSearchParams({ orgId, window: "4" });
-    if (!qualsOnly) params.set("qualsOnly", "0");
-    if (focusMatch) params.set("matchKey", focusMatch);
-    let hadCache = Boolean(viewRef.current);
-    if (!viewRef.current) {
-      try {
-        const cached = await getFeatureSnapshot<CoverageView>("lineup", orgId || "_");
-        if (!viewRef.current && cached?.data && isCoverageView(cached.data)) {
-          setView(cached.data);
-          setUpdatedAt(cached.data.generatedAt);
-          setFromCache(true);
-          setCachedAt(cached.cachedAt);
-          hadCache = true;
-          if (cached.data.status === "live" && cached.data.live.focusMatchKeys[0] && !focusMatch) {
-            setFocusMatch(cached.data.live.focusMatchKeys[0]!);
-          }
-        }
-      } catch {
-        // IndexedDB missing or blocked; live fetch still runs.
-      }
-    }
-    try {
-      const response = await fetch(`/api/scouting/coverage?${params}`, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-      });
-      const data = (await response.json()) as CoverageView & { error?: string };
-      if (!response.ok || !isCoverageView(data)) {
-        if (hadCache || viewRef.current) {
-          setFromCache(true);
-          setError("Could not refresh Lineup. Showing the last copy on this device.");
-          setFetchFailed(false);
-        } else {
-          setFetchFailed(true);
-          setFailureStatus(response.status);
-          setError(data.error ?? "Could not load coverage.");
-        }
-        return;
-      }
-      setView(data);
-      setUpdatedAt(data.generatedAt);
-      setError("");
-      setFailureStatus(null);
-      setFetchFailed(false);
-      setFromCache(false);
-      setCachedAt(null);
-      if (data.status === "live" && data.live.focusMatchKeys[0] && !focusMatch) {
-        setFocusMatch(data.live.focusMatchKeys[0]!);
-      }
-      await persistLineupSnapshot(orgId, data);
-    } catch {
-      if (hadCache || viewRef.current) {
-        setFromCache(true);
-        setError("Could not refresh Lineup. Showing the last copy on this device.");
-        setFetchFailed(false);
-      } else {
-        setFetchFailed(true);
-        setError("Network error — coverage will retry.");
-      }
-    }
-  }, [focusMatch, orgId, qualsOnly]);
-
-  /**
-   * Coverage mutations go to the same canonical route as the read, so the response IS the
-   * refreshed board — no optimistic second source of truth to drift.
-   */
-  const mutate = useCallback(
-    async (body: Record<string, unknown>) => {
-      setBusy(true);
-      try {
-        const response = await fetch("/api/scouting/coverage", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, focusMatchKey: focusMatch, qualsOnly, ...body }),
-          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-        });
-        const data = (await response.json()) as CoverageView & { error?: string };
-        if (!response.ok) {
-          setError(data.error ?? "Could not update coverage.");
-          return;
-        }
-        setView(data);
-        setUpdatedAt(data.generatedAt);
-        setError("");
-        void persistLineupSnapshot(orgId, data);
-      } catch {
-        setError("Network error — the assignment was not saved.");
-      } finally {
-        setBusy(false);
-      }
-    },
-    [focusMatch, orgId, qualsOnly],
-  );
-
+export default function LineupClient({ orgId, eventKey, initialMatchKey = "", initialQualsOnly = true }: { orgId: string; eventKey?: string; initialMatchKey?: string; initialQualsOnly?: boolean }) {
+  const [qualsOnly, setQualsOnly] = useState(initialQualsOnly);
+  const [focusMatch, setFocusMatch] = useState(initialMatchKey);
+  const [liveUpdates, setLiveUpdates] = useState(false);
+  const { view, error, notice, fetchFailed, failureStatus, busy, fromCache, cachedAt, refreshing, load, mutate } = useCoverageData(orgId, eventKey, qualsOnly, focusMatch);
+  const controlsDisabled = busy || refreshing || fromCache;
+  const updatedAt = view?.generatedAt ?? "";
   useEffect(() => {
-    void load();
-    // Battery-safe polling: >=15s cadence, paused while the tab is hidden.
+    if (!liveUpdates) return;
     const timer = window.setInterval(() => {
       if (shouldPollLineup(document.visibilityState)) void load();
     }, LINEUP_POLL_MS);
-    const onVisibility = () => {
-      if (shouldPollLineup(document.visibilityState)) void load();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [load]);
+    return () => window.clearInterval(timer);
+  }, [liveUpdates, load]);
 
   const matchOptions = useMemo(() => {
     if (!view || view.status !== "live") return [];
@@ -414,7 +216,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
   if (shell === "loading") {
     return (
       <LineupShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Assignments" fromCache={fromCache} cachedAt={cachedAt} />
       </LineupShell>
     );
   }
@@ -429,7 +231,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         errorStatus={failureStatus}
         onRetry={() => void load()}
       >
-        <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Assignments" fromCache={fromCache} cachedAt={cachedAt} />
       </LineupShell>
     );
   }
@@ -443,7 +245,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Assignments" fromCache={fromCache} cachedAt={cachedAt} />
       </LineupShell>
     );
   }
@@ -460,7 +262,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         : shellCopy.description;
     return (
       <LineupShell description={description} orgId={orgId} shell="empty" canAssign={canAssign}>
-        <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Assignments" fromCache={fromCache} cachedAt={cachedAt} />
       </LineupShell>
     );
   }
@@ -471,27 +273,42 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Lineup & coverage"}
+            {" / Assignments"}
           </>
         }
-        title="Lineup & coverage"
-        description="Who scouts which robot in the next few matches: robots with no scout, robots scouted twice, and one tap to assign."
+        title="Assignments"
+        description="Assign one robot per scout, follow the next matches and see which reports still need collecting."
       >
         <div className="lineup-header-meta">
-          <span className="lineup-live-pill" aria-live="polite">
-            Live · refresh {LINEUP_POLL_MS / 1000}s
+          <span className="lineup-live-pill" data-state={fromCache ? "cached" : refreshing ? "refreshing" : "current"} aria-live="polite">
+            {fromCache ? "Device copy" : refreshing ? "Refreshing…" : "Updated"}
             {updatedAt ? ` · ${new Date(updatedAt).toLocaleTimeString()}` : ""}
           </span>
           <LineupRelatedStrip orgId={orgId} />
-          <CopyShareLink orgId={orgId} />
+          <Button variant="secondary" type="button" disabled={busy || refreshing} onClick={() => void load()}>
+            {refreshing ? "Refreshing…" : "Refresh"}
+          </Button>
+          <CopyShareLink orgId={orgId} pathWithSearch={assignmentWorkspaceHref({ orgId, eventKey: view.eventKey, matchKey: view.live.focusMatchKeys[0], qualsOnly: view.qualsOnly })} />
+          {view.canAssign ? (
+            <Button variant="primary" type="button" disabled={controlsDisabled || !view.slots.some(slot => slot.status === "unscouted" && !view.playedMatchKeys.includes(slot.matchKey))} onClick={() => void mutate({ action: "auto-assign" })}>
+              {busy ? "Saving…" : "Assign available scouts"}
+            </Button>
+          ) : null}
           <Button variant="secondary" type="button" onClick={() => window.print()}>
             Print
           </Button>
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Lineup & coverage" fromCache={fromCache} cachedAt={cachedAt} />
+      <nav className="lineup-workspace-views" aria-label="Assignment workspace views">
+        <a aria-current="page" href={assignmentWorkspaceHref({ orgId, eventKey: view.eventKey, matchKey: view.live.focusMatchKeys[0], qualsOnly: view.qualsOnly })}>Assignments</a>
+        <a href={assignmentWorkspaceHref({ orgId, eventKey: view.eventKey, matchKey: view.live.focusMatchKeys[0], qualsOnly: view.qualsOnly, view: "review" })}>Coverage review</a>
+      </nav>
+      <OfflineBanner feature="Assignments" fromCache={fromCache} cachedAt={cachedAt} />
+      {fromCache ? <p className="app-muted">This copy is read-only. Refresh to check current assignments and permissions before making changes.</p> : null}
 
+      {view.qualsOnly !== qualsOnly ? <p className="lineup-notice" role="status">Showing {view.qualsOnly ? "qualification matches" : "all matches"} until the selected filter finishes loading. Assignment changes are paused.</p> : null}
+      {notice ? <p className="lineup-notice" role="status">{notice}</p> : null}
       {error ? (
         <p className="form-message" role="status">
           {error}
@@ -501,7 +318,7 @@ export default function LineupClient({ orgId }: { orgId: string }) {
       <section className="lineup-controls" aria-label="Coverage filters">
         <label>
           Focus match
-          <select value={focusMatch} onChange={(event) => setFocusMatch(event.target.value)}>
+          <select value={matchOptions.some(option => option.matchKey === focusMatch) ? focusMatch : view.live.focusMatchKeys[0] || ""} disabled={busy} onChange={(event) => setFocusMatch(event.target.value)}>
             {matchOptions.map((option) => (
               <option key={option.matchKey} value={option.matchKey}>
                 {option.label}
@@ -512,55 +329,37 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         <label className="lineup-check">
           <input
             type="checkbox"
+            disabled={busy}
             checked={qualsOnly}
-            onChange={(event) => setQualsOnly(event.target.checked)}
+            onChange={(event) => { setQualsOnly(event.target.checked); setFocusMatch(""); }}
           />
           Quals only
         </label>
-        {view.canAssign ? (
-          <Button variant="secondary" type="button" disabled={busy || !view.live.gapSlots.length} onClick={() => void mutate({ action: "auto-assign" })}>
-            {busy ? "Assigning…" : "Auto-assign upcoming robots"}
-          </Button>
-        ) : null}
+        <label className="lineup-check">
+          <input type="checkbox" checked={liveUpdates} disabled={busy} onChange={event => setLiveUpdates(event.target.checked)} />
+          Refresh every minute
+        </label>
         <span className="app-muted">
           {scoutEventLabel({ eventName: view.eventName, eventKey: view.eventKey }) ?? "Your event"}
         </span>
       </section>
 
       {view.canAssign ? (
-        <AssignmentRangeForm
-          matchKeys={view.slots}
-          scouts={view.scouts}
-          qualsOnly={qualsOnly}
-          busy={busy}
-          onAssign={(payload) => void mutate(payload)}
-        />
+        <details className="lineup-disclosure">
+          <summary>Assign a robot across several matches</summary>
+          <AssignmentRangeForm key={`${view.orgId}:${view.eventKey}`} matchKeys={view.slots} scouts={view.scouts} qualsOnly={qualsOnly} busy={controlsDisabled} onAssign={payload => void mutate(payload)} />
+        </details>
       ) : null}
 
       {view.schemaRoles.warnings.length ? (
-        <section className="lineup-panel" aria-label="Form to strategy mapping">
-          <header>
-            <h2>What Strategy can read from your form</h2>
-            <p className="app-muted">
-              When a question isn&apos;t marked, Strategy shows a blank for it, never a zero.
-            </p>
-          </header>
+        <details className="lineup-disclosure">
+          <summary>Form mapping · {view.schemaRoles.warnings.length} items to review</summary>
+          <p className="app-muted">Unmapped observations stay missing in analysis.</p>
           <ul className="lineup-setup-steps">
-            {view.schemaRoles.warnings.map((warning) => (
-              <li key={warning.id}>
-                <div>
-                  <strong>
-                    {warning.severity === "blocking" ? "Strategy can't use this yet" : "Heads up"}
-                  </strong>
-                  <p className="app-muted lineup-tip">{warning.message}</p>
-                </div>
-                <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>
-                  Open Form builder
-                </Button>
-              </li>
-            ))}
+            {view.schemaRoles.warnings.map(warning => <li key={warning.id}><p>{warning.message}</p></li>)}
           </ul>
-        </section>
+          <Button as="a" variant="secondary" href={hubHref("/competition", "forms", orgId)}>Review form mapping</Button>
+        </details>
       ) : null}
 
       {showTiles ? (
@@ -604,83 +403,10 @@ export default function LineupClient({ orgId }: { orgId: string }) {
         </section>
       ) : null}
 
-      <section className="lineup-split">
-        <div className="lineup-panel" id="lineup-gaps">
-          <header>
-            <h2>Needs coverage</h2>
-            <p className="app-muted">Robots in these matches with no report yet.</p>
-          </header>
-          {view.live.gapSlots.length ? (
-            <ul className="lineup-gap-list">
-              {view.live.gapSlots.map((slot) => (
-                <li key={`${slot.matchKey}-${slot.teamKey}`} className={slot.status}>
-                  <strong>
-                    {slotMatchLabel(slot)} · {teamLabel(slot)}
-                  </strong>
-                  <span>{statusLabel(slot.status)}</span>
-                  <a href={lineupScoutNowHref(orgId, slot.matchKey, slot.teamKey)}>Scout now</a>
-                  {view.canAssign ? (
-                    <label className="lineup-assign">
-                      <span className="app-muted">Assign</span>
-                      <select
-                        value=""
-                        disabled={busy}
-                        onChange={(event) => {
-                          const assignee = event.target.value;
-                          if (!assignee) return;
-                          void mutate({
-                            action: "assign",
-                            matchKey: slot.matchKey,
-                            teamKey: slot.teamKey,
-                            userId: assignee,
-                          });
-                        }}
-                      >
-                        <option value="">Pick a scout…</option>
-                        {view.scouts.map((scout) => (
-                          <option key={scout.userId} value={scout.userId}>
-                            {scout.isMe ? `${scout.name} (me)` : scout.name} · {scout.assignedCount}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="app-muted">Every robot in these matches has a report.</p>
-          )}
-        </div>
-
-        <div className="lineup-panel">
-          <header>
-            <h2>Scouted twice</h2>
-            <p className="app-muted">More than one scout saved a report for this robot.</p>
-          </header>
-          {view.live.doubleSlots.length ? (
-            <ul className="lineup-gap-list">
-              {view.live.doubleSlots.map((slot) => (
-                <li key={`${slot.matchKey}-${slot.teamKey}`} className="double">
-                  <strong>
-                    {slotMatchLabel(slot)} · {teamLabel(slot)}
-                  </strong>
-                  <span>
-                    {slot.entryCount} scouts · {slot.scoutNames?.join(", ") || "members"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="app-muted">No robot in these matches was scouted twice.</p>
-          )}
-        </div>
-      </section>
-
       <section className="lineup-board-wrap">
         <header>
-          <h2>Next matches</h2>
-          <p className="app-muted">Starting from the focus match. Each robot shows who has it.</p>
+          <h2>Match assignments</h2>
+          <p className="app-muted">Four matches from your selection. Assignments and completed reports are shown separately.</p>
         </header>
         {grouped.map((group) => {
           const sample = group.slots[0];
@@ -694,12 +420,33 @@ export default function LineupClient({ orgId }: { orgId: string }) {
                   <article key={`${slot.matchKey}-${slot.teamKey}`} className={slot.status}>
                     <b>{slot.alliance ?? "—"}</b>
                     <span>{teamLabel(slot)}</span>
-                    <small>
-                      {statusLabel(slot.status)}
-                      {slot.status === "double" && slot.scoutNames?.length
-                        ? ` · ${slot.scoutNames.join(" / ")}`
-                        : ""}
-                    </small>
+                    <small>{statusLabel(slot.status)}</small>
+                    {slot.assignedScouts?.length ? (
+                      <ul className="lineup-scouts">
+                        {slot.assignedScouts.map(scout => (
+                          <li key={scout.userId}>
+                            <span>{scout.name}{scout.role === "backup" ? " · backup" : ""}</span>
+                            {view.canAssign ? (
+                              <label>Reassign {scout.name}
+                                <select value={scout.userId} disabled={controlsDisabled} onChange={event => void mutate({ action: "swap", matchKey: slot.matchKey, teamKey: slot.teamKey, fromUserId: scout.userId, toUserId: event.target.value })}>
+                                  {!view.scouts.some(member => member.userId === scout.userId) ? <option value={scout.userId}>{scout.name} · no longer a member</option> : null}
+                                  {view.scouts.filter(member => member.userId === scout.userId || !slot.assignedScouts?.some(assigned => assigned.userId === member.userId)).map(member => <option key={member.userId} value={member.userId}>{member.name}{member.isMe ? " (me)" : ""}</option>)}
+                                </select>
+                              </label>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : slot.assignmentCount ? <p className="app-muted">Assignment details unavailable. Refresh to view scouts.</p> : view.canAssign ? (
+                      <label className="lineup-assign">Assign a scout
+                        <select value="" disabled={controlsDisabled} onChange={event => { if (event.target.value) void mutate({ action: "assign", matchKey: slot.matchKey, teamKey: slot.teamKey, userId: event.target.value }); }}>
+                          <option value="">Choose a scout…</option>
+                          {view.scouts.map(scout => <option key={scout.userId} value={scout.userId}>{scout.name}{scout.isMe ? " (me)" : ""} · {scout.assignedCount}</option>)}
+                        </select>
+                      </label>
+                    ) : <p className="app-muted">No scout assigned</p>}
+                    {slot.entryCount > 0 ? <p className="app-muted">{slot.entryCount} {slot.entryCount === 1 ? "report" : "reports"}{slot.scoutNames?.length ? ` · ${slot.scoutNames.join(", ")}` : ""}</p> : null}
+                    <a className="lineup-scout-link" href={lineupScoutNowHref(orgId, slot.matchKey, slot.teamKey)}>{slot.entryCount ? "Open scouting" : "Scout this robot"}</a>
                   </article>
                 ))}
               </div>

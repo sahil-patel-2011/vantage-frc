@@ -38,14 +38,9 @@
 .lineup-live-pill::before{
   content:"";
   width:8px;height:8px;border-radius:var(--radius-pill);
-  background:var(--positive);
-  box-shadow:0 0 0 4px color-mix(in srgb,var(--positive) 18%,transparent);
-  animation:lineup-pulse 1.6s ease-in-out infinite;
+  background:var(--muted);
 }
-@keyframes lineup-pulse{
-  0%,100%{transform:scale(1);opacity:1}
-  50%{transform:scale(1.15);opacity:.7}
-}
+.lineup-live-pill[data-state="current"]::before{background:var(--positive)}
 .lineup-controls{
   display:flex;flex-wrap:wrap;gap:14px;align-items:end;
   padding:14px 16px;
@@ -127,7 +122,7 @@
 .lineup-match{margin-top:14px}
 .lineup-board{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(112px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));
   gap:8px;
 }
 .lineup-board article{
@@ -136,7 +131,6 @@
   background:var(--bg);
   transition:transform .16s ease,box-shadow .16s ease;
 }
-.lineup-board article:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
 .lineup-board article.unscouted{border-color:color-mix(in srgb,var(--critical) 50%,var(--line));background:color-mix(in srgb,var(--critical) 10%,var(--surface))}
 .lineup-board article.assigned{border-color:color-mix(in srgb,var(--warning) 50%,var(--line));background:color-mix(in srgb,var(--warning) 10%,var(--surface))}
 .lineup-board article.covered{border-color:color-mix(in srgb,var(--positive) 50%,var(--line));background:color-mix(in srgb,var(--positive) 10%,var(--surface))}
@@ -146,7 +140,7 @@
   font:700 9px/1.2 var(--font-ibm-mono),ui-monospace,monospace;
   letter-spacing:.05em;text-transform:uppercase;
 }
-.lineup-board span{font-size:20px;font-weight:800;color:var(--ink)}
+.lineup-board>article>span{font-size:22px;font-weight:700;color:var(--ink)}
 @media (prefers-reduced-motion:reduce){
   .lineup-live-pill::before{animation:none}
   .lineup-board article{transition:none}
@@ -167,7 +161,27 @@
 }
 
 .lineup-range{display:grid;gap:10px;margin:0 0 14px}
-.lineup-range-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:10px}
+.lineup-range-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(10rem,100%),1fr));gap:14px}
+.lineup-page .app-button,.lineup-related a,.lineup-disclosure>summary{min-height:44px}
+.lineup-disclosure{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:0 18px}
+.lineup-disclosure>summary{cursor:pointer;padding:14px 0;font-weight:600;color:var(--ink)}
+.lineup-disclosure[open]{padding-bottom:18px}
+.lineup-range{border:none;box-shadow:none;padding:0;margin:0}
+.lineup-range label,.lineup-board label{display:grid;gap:6px;font-size:13px;color:var(--muted);min-width:0}
+.lineup-range input,.lineup-range select,.lineup-board select{min-height:44px;width:100%;min-width:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);padding:8px 10px;font:inherit}
+.lineup-board article{align-content:start;gap:10px;min-width:0}
+.lineup-board article p{margin:0;font-size:13px;overflow-wrap:anywhere}
+.lineup-board small{font:500 13px/1.4 var(--font-source-sans),ui-sans-serif,system-ui;letter-spacing:0;text-transform:none}
+.lineup-scouts{list-style:none;display:grid;gap:12px;padding:0;margin:0}
+.lineup-scouts li{display:grid;gap:8px;min-width:0}
+.lineup-scouts li>span{font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.lineup-scout-link{display:flex;align-items:center;min-height:44px;color:var(--accent);font-weight:600}
+.lineup-notice{margin:0;padding:12px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink)}
+.lineup-workspace-views{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px}
+.lineup-workspace-views a{display:flex;align-items:center;min-height:44px;padding:8px 16px;border-radius:var(--radius-sm);color:var(--muted);font-weight:600;text-decoration:none}
+.lineup-workspace-views a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.lineup-workspace-views a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.lineup-page :is(a,button,input,select,summary):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
 @media print{
   .lineup-page .lineup-related,.lineup-page .lineup-header-meta .app-button,.lineup-page .lineup-next-actions,.lineup-page .lineup-assign{display:none!important}
@@ -175,7 +189,7 @@
   .lineup-page article{break-inside:avoid;box-shadow:none!important}
 }
 
-/* Phones: every select, link and button a lead taps is at least 44px tall. */
+/* Targets keep the same minimum size on every viewport. */
 @media (max-width:700px){
   .lineup-range select,
   .lineup-range input,

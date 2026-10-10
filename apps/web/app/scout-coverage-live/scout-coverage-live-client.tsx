@@ -34,6 +34,16 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { summarizeMissed } from "../../lib/scouting/assignment-accountability";
 import "./scout-coverage-live.css";
+import "../scouting/lineup/lineup.css";
+import { assignmentWorkspaceHref } from "../../lib/scouting/assignment-navigation";
+
+function CoverageWorkspaceViews({ orgId, assignmentHref }: { orgId?: string | null; assignmentHref?: string }) {
+  const href = assignmentHref ?? assignmentWorkspaceHref({ orgId: orgId ?? undefined });
+  return <nav className="lineup-workspace-views" aria-label="Assignment workspace views">
+    <a href={href}>Assignments</a>
+    <a aria-current="page" href={`${href}${href.includes("?") ? "&" : "?"}view=review`}>Coverage review</a>
+  </nav>;
+}
 
 const statusToneMap: Record<CoverageStatus, BadgeTone> = {
   zero: "demo",
@@ -71,7 +81,7 @@ async function persistScoutCoverageLiveSnapshot(
     await putFeatureSnapshot("scout-coverage-live", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("scout-coverage-live", "_", data);
   } catch {
-    // Live Scout Coverage Live already painted; IndexedDB is best-effort.
+    // Live Coverage review already painted; IndexedDB is best-effort.
   }
 }
 
@@ -146,10 +156,10 @@ function ScoutCoverageLiveShell({
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Coverage Live"}
+            {" / Coverage review"}
           </>
         }
-        title="Scout Coverage Live"
+        title="Coverage review"
         description={description}
       >
         <ScoutCoverageLiveRelatedStrip orgId={orgId} />
@@ -194,7 +204,7 @@ function ScoutCoverageLiveShell({
   );
 }
 
-export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId?: string }) {
+export default function ScoutCoverageLiveClient({ orgId: initialOrgId, assignmentHref }: { orgId?: string; assignmentHref?: string }) {
   const [view, setView] = useState<ScoutCoverageLiveView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -245,7 +255,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         if (!response.ok || !isScoutCoverageLiveView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Coverage Live. Showing the last copy on this device.");
+            setError("Could not refresh Coverage review. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -261,7 +271,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Scout Coverage Live. Showing the last copy on this device.");
+          setError("Could not refresh Coverage review. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -324,7 +334,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
   if (shell === "loading") {
     return (
       <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="loading">
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -337,7 +347,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -353,14 +363,14 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
   if (shell === "empty" || view?.status !== "live") {
     return (
       <ScoutCoverageLiveShell description={shellCopy.description} orgId={orgId} shell="empty">
-        <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+        <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
       </ScoutCoverageLiveShell>
     );
   }
@@ -371,10 +381,10 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         breadcrumbs={
           <>
             <a href={competitionHref}>Competition</a>
-            {" / Scout Coverage Live"}
+            {" / Coverage review"}
           </>
         }
-        title="Scout Coverage Live"
+        title="Coverage review"
         description="Which robots were never scouted in played matches, which upcoming robots have no scout yet, and a quick nudge to the scout coordinator."
       >
         <div className="scout-coverage-live-header-meta">
@@ -382,7 +392,7 @@ export default function ScoutCoverageLiveClient({ orgId: initialOrgId }: { orgId
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Scout Coverage Live" fromCache={fromCache} cachedAt={cachedAt} />
+      <CoverageWorkspaceViews orgId={orgId} assignmentHref={assignmentHref} /><OfflineBanner feature="Coverage review" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="form-message" role="status">

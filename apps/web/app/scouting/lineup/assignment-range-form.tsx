@@ -53,7 +53,8 @@ export function AssignmentRangeForm({
       <div className="lineup-range-grid">
         <label>
           First match
-          <select value={firstMatchKey} onChange={(event) => setFirst(event.target.value)}>
+          <select disabled={busy} value={firstMatchKey} onChange={(event) => setFirst(event.target.value)}>
+            {!keys.includes(firstMatchKey) ? <option value={firstMatchKey}>{firstMatchKey ? `${describeMatchKey(firstMatchKey)} · outside current filter` : "Choose a match"}</option> : null}
             {keys.map((key) => (
               <option key={key} value={key}>
                 {describeMatchKey(key)}
@@ -63,7 +64,8 @@ export function AssignmentRangeForm({
         </label>
         <label>
           Last match
-          <select value={lastMatchKey} onChange={(event) => setLast(event.target.value)}>
+          <select disabled={busy} value={lastMatchKey} onChange={(event) => setLast(event.target.value)}>
+            {!keys.includes(lastMatchKey) ? <option value={lastMatchKey}>{lastMatchKey ? `${describeMatchKey(lastMatchKey)} · outside current filter` : "Choose a match"}</option> : null}
             {keys.map((key) => (
               <option key={key} value={key}>
                 {describeMatchKey(key)}
@@ -73,11 +75,12 @@ export function AssignmentRangeForm({
         </label>
         <label>
           Robot
-          <input value={teamKey} inputMode="numeric" placeholder="Team number, like 6925" onChange={(event) => setTeamKey(event.target.value)} />
+          <input disabled={busy} maxLength={16} value={teamKey} inputMode="numeric" placeholder="Team number, like 6925" onChange={(event) => setTeamKey(event.target.value)} />
         </label>
         <label>
           Scout
-          <select value={userId} onChange={(event) => setUserId(event.target.value)}>
+          <select disabled={busy} value={userId} onChange={(event) => setUserId(event.target.value)}>
+            {!scouts.some(scout => scout.userId === userId) ? <option value={userId}>Choose a current scout</option> : null}
             {scouts.map((scout) => (
               <option key={scout.userId} value={scout.userId}>
                 {scout.isMe ? `${scout.name} (me)` : scout.name}
@@ -91,10 +94,11 @@ export function AssignmentRangeForm({
           ? `${preview.slots.length} ${preview.slots.length === 1 ? "match" : "matches"} for this robot in this range`
           : preview.error}
       </p>
+      {!scouts.some(scout => scout.userId === userId) ? <p className="app-muted">Choose a current team scout before assigning this range.</p> : null}
       <Button
         variant="secondary"
         type="button"
-        disabled={busy || !preview.ok || !userId}
+        disabled={busy || !preview.ok || !scouts.some(scout => scout.userId === userId)}
         onClick={() =>
           onAssign({
             action: "assign-range",
