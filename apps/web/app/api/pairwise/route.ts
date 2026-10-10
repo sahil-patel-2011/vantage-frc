@@ -1,23 +1,14 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { assertScoutingLead } from "@vantage/scouting/permissions";
 import { headers } from "next/headers";
 import {
   addPairwiseComparison,
   computePairwiseView,
-  currentPairwiseSeason,
   deletePairwiseComparison,
-  type PairwiseView,
 } from "../../../lib/pairwise/compute-pairwise";
 import { promotePairwiseOrder } from "../../../lib/pairwise/promote-to-pick-list";
 import { publicErrorMessage } from "../../../lib/security/public-error";
-
-const FALLBACK: PairwiseView = {
-  status: "setup_required",
-  message: "Could not load pairwise ranking. Choose your team and confirm database access.",
-  steps: [{ id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" }],
-  orgId: null,
-  seasonYear: currentPairwiseSeason(),
-};
 
 function uuidOrNull(value: unknown): string | null {
   return typeof value === "string" &&
@@ -38,7 +29,7 @@ export async function GET(request: Request) {
     );
     return Response.json(view);
   } catch {
-    return Response.json(FALLBACK);
+    return Response.json({ error: "Pairwise ranking is temporarily unavailable. Refresh to try again." }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
   }
 }
 
@@ -82,6 +73,7 @@ export async function POST(request: Request) {
         return computePairwiseView(client, { userId: session.user.id, requestedOrg: orgId, criterionId });
       }
       if (action === "promote-to-pick-list" || action === "save-to-pick-list") {
+        await assertScoutingLead(client, orgId);
         const current = await computePairwiseView(client, {
           userId: session.user.id,
           requestedOrg: orgId,
@@ -109,11 +101,17 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
+    if (error && typeof error === "object" && "status" in error && error.status === 403) {
+      return Response.json({ error: "Scouting lead access required." }, { status: 403, headers: { "Cache-Control": "private, no-store" } });
+    }
+    if (error && typeof error === "object" && "status" in error && error.status === 404) {
+      return Response.json({ error: "This comparison is no longer available." }, { status: 404, headers: { "Cache-Control": "private, no-store" } });
+    }
     const message = publicErrorMessage(error, "Pairwise write failed");
     if (message === "Organization access denied") return Response.json({ error: message }, { status: 403 });
     if (/required|criterion|team number|outrank|Unknown pairwise|active event|Nothing to promote/i.test(message)) {
       return Response.json({ error: message }, { status: 400 });
     }
-    return Response.json(FALLBACK);
+    return Response.json({ error: "Could not confirm this change. Refresh the saved comparisons before retrying." }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
   }
 }

@@ -49,42 +49,43 @@ export function usePicklistFieldWeights(listId: string | null): {
   setWeight: (id: PicklistMetricId, weight: number) => void;
   reset: () => void;
 } {
-  const [weights, setWeights] = useState<MetricWeight[]>(() => defaultPicklistWeights());
-  const [hydrated, setHydrated] = useState(false);
+  const [storedState, setStoredState] = useState<{ key: string | null; weights: MetricWeight[] }>(() => ({ key: null, weights: defaultPicklistWeights() }));
+  const weights = storedState.key === listId ? storedState.weights : defaultPicklistWeights();
 
   useEffect(() => {
     if (!listId || typeof window === "undefined") {
-      setHydrated(false);
+      setStoredState({ key: null, weights: defaultPicklistWeights() });
       return;
     }
-    const stored = parseStoredWeights(window.localStorage.getItem(`${WEIGHTS_KEY}:${listId}`));
-    setWeights(stored ?? defaultPicklistWeights());
-    setHydrated(true);
+    let stored: MetricWeight[] | null = null;
+    try { stored = parseStoredWeights(window.localStorage.getItem(`${WEIGHTS_KEY}:${listId}`)); } catch { /* Storage is optional. */ }
+    setStoredState({ key: listId, weights: stored ?? defaultPicklistWeights() });
   }, [listId]);
 
   useEffect(() => {
-    if (!hydrated || !listId || typeof window === "undefined") return;
+    if (storedState.key !== listId || !listId || typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(`${WEIGHTS_KEY}:${listId}`, JSON.stringify(weights));
+      window.localStorage.setItem(`${WEIGHTS_KEY}:${listId}`, JSON.stringify(storedState.weights));
     } catch {
       // Best-effort — ranking still works for this session.
     }
-  }, [hydrated, listId, weights]);
+  }, [listId, storedState]);
 
   return useMemo(
     () => ({
       weights,
       setWeight: (id: PicklistMetricId, weight: number) => {
         // A form field's first move adds it; the built-ins are always present.
-        setWeights((prev) =>
-          prev.some((item) => item.id === id)
-            ? prev.map((item) => (item.id === id ? { ...item, weight } : item))
-            : [...prev, { id, weight }],
-        );
+        setStoredState(previous => {
+          const current = previous.key === listId ? previous.weights : defaultPicklistWeights();
+          const safeWeight = Math.max(0, Math.min(2, Number.isFinite(weight) ? weight : 0));
+          return { key: listId, weights: current.some(item => item.id === id)
+            ? current.map(item => item.id === id ? { ...item, weight: safeWeight } : item) : [...current, { id, weight: safeWeight }] };
+        });
       },
-      reset: () => setWeights(defaultPicklistWeights()),
+      reset: () => setStoredState({ key: listId, weights: defaultPicklistWeights() }),
     }),
-    [weights],
+    [weights, listId],
   );
 }
 
@@ -130,11 +131,11 @@ export function PicklistWeightSliders({
         <h2>Compared to this event</h2>
         <p className="app-muted">
           Drag a slider to say how much that matters to your alliance — the ranking below moves as you drag.
-          {waiting > 0 ? ` ${waiting} more turn on when your scouting form collects them.` : ""}
+          {waiting > 0 ? ` ${waiting} built-in metrics need observations or synced ratings for at least two teams.` : ""}
         </p>
-        <Button variant="ghost" size="sm" type="button" onClick={onReset}>
+        {ready.length ? <Button variant="ghost" size="sm" type="button" onClick={onReset}>
           Reset weights
-        </Button>
+        </Button> : null}
       </header>
       <ol className="picklist-weight-sliders-list">
         {ready.map((metric) => {

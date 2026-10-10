@@ -35,7 +35,7 @@ import {
 import type { DeskAlliance, DeskExportSnapshot, DeskSlot } from "../../lib/alliance-selection-desk/types";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./alliance-selection-desk.css";
 
 function isAllianceSelectionDeskView(value: unknown): value is AllianceSelectionDeskView {
@@ -183,13 +183,15 @@ function DeskShell({
 function SlotRow({
   slot,
   busy,
+  canEdit,
   onSetTeam,
   onAttachNote,
 }: {
   slot: DeskSlot;
   busy: boolean;
-  onSetTeam: (slotId: string, teamKey: string, rationale: string) => void;
-  onAttachNote: (slotId: string, note: string) => void;
+  canEdit: boolean;
+  onSetTeam: (slotId: string, teamKey: string, rationale: string) => Promise<boolean>;
+  onAttachNote: (slotId: string, note: string) => Promise<boolean>;
 }) {
   const [team, setTeam] = useState(slot.teamNumber?.toString() ?? slot.teamKey ?? "");
   const [rationale, setRationale] = useState(slot.rationale);
@@ -222,7 +224,7 @@ function SlotRow({
       {slot.justification ? (
         <p className="app-muted alliance-desk-tip">Why: {slot.justification}</p>
       ) : null}
-      <details className="alliance-desk-slot-editor">
+      {canEdit ? <details className="alliance-desk-slot-editor">
         <summary data-disclosure>{busy ? "View" : "Edit"} {slotName}</summary>
       <FormGrid>
         <FormRow label="Team #">
@@ -256,15 +258,14 @@ function SlotRow({
           variant="secondary"
           aria-label={`Attach evidence, ${slotName}`}
           disabled={busy || !note.trim()}
-          onClick={() => {
-            onAttachNote(slot.id, note);
-            setNote("");
+          onClick={async () => {
+            if (await onAttachNote(slot.id, note)) setNote("");
           }}
         >
           Attach evidence
         </Button>
       </div>
-      </details>
+      </details> : null}
       {slot.evidence.length > 0 ? (
         <ul className="app-muted alliance-desk-evidence">
           {slot.evidence.slice(0, 4).map((e) => (
@@ -282,13 +283,15 @@ function SlotRow({
 function AllianceCard({
   alliance,
   busy,
+  canEdit,
   onSetTeam,
   onAttachNote,
 }: {
   alliance: DeskAlliance;
   busy: boolean;
-  onSetTeam: (slotId: string, teamKey: string, rationale: string) => void;
-  onAttachNote: (slotId: string, note: string) => void;
+  canEdit: boolean;
+  onSetTeam: (slotId: string, teamKey: string, rationale: string) => Promise<boolean>;
+  onAttachNote: (slotId: string, note: string) => Promise<boolean>;
 }) {
   const filled = alliance.slots.filter((s) => s.teamKey).length;
   return (
@@ -300,7 +303,7 @@ function AllianceCard({
         </Badge>
       </div>
       {alliance.slots.map((slot) => (
-        <SlotRow key={slot.id} slot={slot} busy={busy} onSetTeam={onSetTeam} onAttachNote={onAttachNote} />
+        <SlotRow key={slot.id} slot={slot} busy={busy} canEdit={canEdit} onSetTeam={onSetTeam} onAttachNote={onAttachNote} />
       ))}
     </Panel>
   );
@@ -317,28 +320,32 @@ export default function AllianceSelectionDeskClient() {
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<AllianceSelectionDeskView | null>(null);
   viewRef.current = view;
+  const generation = useRef(0);
+  const writePending = useRef(false);
 
   const load = useCallback((overrideSession?: string | null) => {
+    if (writePending.current) return;
+    const sequence = ++generation.current;
+    const current = () => sequence === generation.current;
     void (async () => {
       const params = new URLSearchParams(window.location.search);
       const urlOrg = params.get("orgId")?.trim() ?? "";
       const urlSession = (overrideSession ?? params.get("sessionId") ?? "").trim();
-      let hadCache = Boolean(viewRef.current);
-      try {
-        const cached = await getFeatureSnapshot<AllianceSelectionDeskView>(
+      let accepted = false;
+      void getFeatureSnapshot<AllianceSelectionDeskView>(
           "alliance-desk",
           urlOrg || "_",
           urlSession,
-        );
-        if (!viewRef.current && cached?.data && isAllianceSelectionDeskView(cached.data)) {
+        ).then(cached => {
+        if (current() && !accepted && !viewRef.current && cached?.data && isAllianceSelectionDeskView(cached.data)
+          && (!urlOrg || cached.data.orgId === urlOrg) && (!urlSession || (cached.data.status === "live" && cached.data.session.id === urlSession))) {
+          viewRef.current = cached.data;
           setView(cached.data);
+          setFetchFailed(false);
           setFromCache(true);
           setCachedAt(cached.cachedAt);
-          hadCache = true;
         }
-      } catch {
-        // IndexedDB missing or blocked; live fetch still runs.
-      }
+      }).catch(() => undefined);
       setFetchFailed(false);
       setError("");
       const query = new URLSearchParams();
@@ -353,8 +360,16 @@ export default function AllianceSelectionDeskClient() {
           },
         );
         const data = (await response.json()) as AllianceSelectionDeskView | { error?: string };
-        if (!response.ok || !isAllianceSelectionDeskView(data)) {
-          if (hadCache || viewRef.current) {
+        if (!current()) return;
+        if (response.status === 401 || response.status === 403) {
+          accepted = true; viewRef.current = null; setView(null); setExportSnap(null); setFromCache(false); setCachedAt(null); setFetchFailed(true);
+          setError("error" in data && data.error ? data.error : "Your access changed. Sign in again or choose another team.");
+          void clearFeatureSnapshot("alliance-desk", urlOrg || "_", urlSession).catch(() => undefined);
+          return;
+        }
+        if (!response.ok || !isAllianceSelectionDeskView(data) || (urlOrg && data.orgId !== urlOrg)
+          || (urlSession && (data.status !== "live" || data.session.id !== urlSession))) {
+          if (viewRef.current) {
             setFromCache(true);
             setError("Could not refresh Alliance selection desk. Showing the last copy on this device.");
             setFetchFailed(false);
@@ -363,12 +378,15 @@ export default function AllianceSelectionDeskClient() {
           }
           return;
         }
+        accepted = true; viewRef.current = data;
         setView(data);
+        setExportSnap(null);
         setFromCache(false);
         setCachedAt(null);
-        await persistAllianceDeskSnapshot(urlOrg, urlSession, data);
+        void persistAllianceDeskSnapshot(urlOrg, data.status === "live" ? data.session.id : urlSession, data);
       } catch {
-        if (hadCache || viewRef.current) {
+        if (!current()) return;
+        if (viewRef.current) {
           setFromCache(true);
           setError("Could not refresh Alliance selection desk. Showing the last copy on this device.");
           setFetchFailed(false);
@@ -381,6 +399,7 @@ export default function AllianceSelectionDeskClient() {
 
   useEffect(() => {
     load();
+    return () => { generation.current++; };
   }, [load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
@@ -418,7 +437,9 @@ export default function AllianceSelectionDeskClient() {
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
-      if (!orgId || busy) return null;
+      if (!orgId || writePending.current) return null;
+      writePending.current = true;
+      const sequence = ++generation.current;
       setBusy(true);
       setError("");
       try {
@@ -431,31 +452,31 @@ export default function AllianceSelectionDeskClient() {
         const data = (await response.json()) as
           | { view?: AllianceSelectionDeskView; snapshot?: DeskExportSnapshot; error?: string }
           | AllianceSelectionDeskView;
+        if (sequence !== generation.current) return null;
         if (!response.ok) {
           setError("error" in data && data.error ? String(data.error) : "Something went wrong.");
           return null;
         }
-        if ("view" in data && data.view && isAllianceSelectionDeskView(data.view)) {
+        if ("view" in data && data.view && isAllianceSelectionDeskView(data.view) && data.view.status === "live" && data.view.orgId === orgId
+          && (payload.action === "create-session" || data.view.session.id === sessionId)) {
+          viewRef.current = data.view;
           setView(data.view);
+          setFromCache(false); setCachedAt(null);
           if (data.snapshot) setExportSnap(data.snapshot);
-          void persistAllianceDeskSnapshot(orgId, sessionId ?? "", data.view);
+          void persistAllianceDeskSnapshot(orgId, data.view.session.id, data.view);
           return data;
         }
-        if (isAllianceSelectionDeskView(data)) {
-          setView(data);
-          void persistAllianceDeskSnapshot(orgId, sessionId ?? "", data);
-          return data;
-        }
-        setError("Unexpected response.");
+        setError("Save was not confirmed. Your inputs remain here; refresh the saved board before retrying.");
         return null;
       } catch {
-        setError("Network error — please try again.");
+        if (sequence === generation.current) setError("Could not confirm the save. Your inputs remain here; refresh the saved board before retrying.");
         return null;
       } finally {
-        setBusy(false);
+        writePending.current = false;
+        if (sequence === generation.current) setBusy(false);
       }
     },
-    [orgId, sessionId, busy],
+    [orgId, sessionId],
   );
 
   if (shell === "loading") {
@@ -515,11 +536,11 @@ export default function AllianceSelectionDeskClient() {
                 {view.conflictCount === 0 ? "No conflicts" : `${view.conflictCount} conflict flags`}
               </Badge>
               <Badge tone="neutral">{deskStatusLabel(view.session.status)}</Badge>
-              <Button
+              {view.canEdit ? <Button
                 type="button"
                 size="sm"
                 variant="secondary"
-                disabled={busy || view.session.status === "locked"}
+                disabled={busy}
                 onClick={() =>
                   void mutate({
                     action: "update-session",
@@ -527,8 +548,8 @@ export default function AllianceSelectionDeskClient() {
                   })
                 }
               >
-                {view.session.status === "live" ? "Lock board" : "Go live"}
-              </Button>
+                {view.session.status === "live" ? "Lock board" : view.session.status === "locked" ? "Reopen board" : "Go live"}
+              </Button> : null}
               <Button
                 type="button"
                 size="sm"
@@ -580,7 +601,7 @@ export default function AllianceSelectionDeskClient() {
             title={shellCopy.title}
             description={`${(view as EmptyView).eventName ?? (view as EmptyView).eventKey} — create a session to open the 8-alliance live board. Picks stay empty until you assign teams.`}
           />
-          <Panel
+          {view.canEdit ? <Panel
             id="alliance-desk-create"
             as="form"
             className="alliance-desk-panel"
@@ -599,7 +620,7 @@ export default function AllianceSelectionDeskClient() {
             <Button type="submit" disabled={busy}>
               Create desk session
             </Button>
-          </Panel>
+          </Panel> : <p className="app-muted">Your scouting lead can start the team’s alliance selection board.</p>}
         </div>
       ) : view?.status === "live" ? (
         <div id="alliance-desk-board" className="alliance-desk-layout">
@@ -615,6 +636,7 @@ export default function AllianceSelectionDeskClient() {
                 {(view as LiveView).sessions.map((s) => (
                   <Button
                     key={s.id}
+                    disabled={busy}
                     type="button"
                     size="sm"
                     variant={s.id === (view as LiveView).session.id ? "primary" : "secondary"}
@@ -644,12 +666,9 @@ export default function AllianceSelectionDeskClient() {
                 key={alliance.seed}
                 alliance={alliance}
                 busy={busy || (view as LiveView).session.status === "locked"}
-                onSetTeam={(slotId, teamKey, rationale) => {
-                  void mutate({ action: "set-slot", slotId, teamKey, rationale });
-                }}
-                onAttachNote={(slotId, note) => {
-                  void mutate({ action: "attach-evidence", slotId, sourceKind: "note", note });
-                }}
+                canEdit={view.canEdit && view.session.status !== "locked"}
+                onSetTeam={async (slotId, teamKey, rationale) => Boolean(await mutate({ action: "set-slot", slotId, teamKey, rationale }))}
+                onAttachNote={async (slotId, note) => Boolean(await mutate({ action: "attach-evidence", slotId, sourceKind: "note", note }))}
               />
             ))}
           </div>

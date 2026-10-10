@@ -64,9 +64,9 @@ function TeamPickListWorkspace({ orgId, discussionDefault }: { orgId: string; di
           {discussion ? "Rank teams" : "Team discussion"}
         </Button>
       </div>
-      {discussion ? <Discussion key={orgId} embedded /> : <Ranking key={orgId} orgId={orgId} embedded onDirtyChange={setDirty} onBusyChange={setBusy} />}
-      <Modal open={pendingView !== null} onClose={() => setPendingView(null)} title="Keep your ranking changes?">
-        <p>Save the pick list before switching to discussion, or discard the changes you haven’t saved.</p>
+      {discussion ? <Discussion key={orgId} orgId={orgId} embedded onBusyChange={setBusy} onDirtyChange={setDirty} /> : <Ranking key={orgId} orgId={orgId} embedded onDirtyChange={setDirty} onBusyChange={setBusy} />}
+      <Modal open={pendingView !== null} onClose={() => setPendingView(null)} title="Keep your unsaved changes?">
+        <p>Save your ranking or discussion inputs before switching views, or discard the changes you haven’t saved.</p>
         <div className="app-actions"><Button type="button" variant="primary" onClick={() => setPendingView(null)}>Keep editing</Button><Button type="button" variant="secondary" disabled={busy} onClick={() => { if (pendingView !== null) switchView(pendingView); }}>Discard and switch</Button></div>
       </Modal>
     </section>

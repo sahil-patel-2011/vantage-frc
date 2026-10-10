@@ -7,8 +7,10 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { failDbWrite } from "../../../lib/db-error";
+import { assertScoutingLead } from "@vantage/scouting/permissions";
 import {
   DRAFT_PICK_SLOTS,
+  PickListSaveConflict,
   boardState,
   deleteEntry,
   ensurePickList,
@@ -189,6 +191,7 @@ export async function POST(request: Request) {
         [orgId, userId],
       );
       if (!member.rowCount) throw new Error("forbidden");
+      if (action !== "vote" && action !== "remove-vote") await assertScoutingLead(client, orgId);
 
       const context = await resolveContext(client, userId, orgId);
       const eventKey = trimmedOrNull(body.eventKey, 64) ?? context?.eventKey ?? null;
@@ -352,6 +355,8 @@ export async function POST(request: Request) {
     // events_ref. Before an event is ingested from TBA that insert raises a
     // 23503 whose raw text ("violates foreign key constraint
     // pick_lists_event_key_fkey") used to be handed straight to the pit.
+    if (error instanceof PickListSaveConflict) return Response.json({ error: error.message }, { status: 409, headers: { "cache-control": "private, no-store" } });
+    if (error && typeof error === "object" && "status" in error && error.status === 403) return Response.json({ error: "Scouting lead access required" }, { status: 403, headers: { "cache-control": "private, no-store" } });
     return failDbWrite(error, "Pick-list request failed");
   }
 }

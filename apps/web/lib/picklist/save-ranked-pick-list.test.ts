@@ -7,6 +7,7 @@ const input = { orgId: "org", userId: "lead", id: "list", eventKey: "2026test", 
 
 function database(list: { eventKey: string; status: string; revision: number } | null = { eventKey: "2026test", status: "open", revision: 4 }, draftedRemoval = false) {
   const query = vi.fn(async (sql: string, _params: unknown[] = []) => {
+    if (sql.includes("has_org_capability")) return { rows: [{ allowed: true }], rowCount: 1 };
     if (sql.includes('event_key AS "eventKey"')) return { rows: list ? [list] : [], rowCount: list ? 1 : 0 };
     if (sql.includes("drafted_alliance_seed IS NOT NULL")) return { rows: draftedRemoval ? [{ teamKey: "frc1678" }] : [], rowCount: draftedRemoval ? 1 : 0 };
     return { rows: [], rowCount: 0 };
@@ -35,7 +36,7 @@ describe("ranked snapshot write contract", () => {
   it("locks the parent first, deletes only omitted teams and upserts without replacing retained identities or board data", async () => {
     const { client, query } = database();
     await saveRankedPickList(client, input);
-    expect(query.mock.calls[1]?.[0]).toContain("FOR UPDATE");
+    expect(query.mock.calls.find(([sql]) => sql.includes('event_key AS "eventKey"'))?.[0]).toContain("FOR UPDATE");
     const deletes = query.mock.calls.filter(([sql]) => sql.startsWith("DELETE"));
     expect(deletes).toHaveLength(1);
     expect(deletes[0]?.[0]).toContain("org_id=$1::uuid AND pick_list_id=$2::uuid AND NOT(team_key=ANY");

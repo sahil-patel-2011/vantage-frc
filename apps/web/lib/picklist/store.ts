@@ -7,6 +7,7 @@
 // @vantage/db/admin. Every statement is org-scoped in addition to RLS.
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { assertScoutingLead } from "@vantage/scouting/permissions";
 import {
   aggregateVotes,
   applyReorder,
@@ -314,7 +315,7 @@ async function touchList(
   );
 }
 
-async function assertWritable(
+async function assertOpen(
   client: PoolClient,
   input: { orgId: string; pickListId: string },
 ): Promise<PickListStatus> {
@@ -326,6 +327,11 @@ async function assertWritable(
   if (!status) throw new Error("Pick list not found");
   if (status !== "open") throw new Error(`This pick list is ${status} — reopen it to make changes.`);
   return status;
+}
+
+async function assertWritable(client: PoolClient, input: { orgId: string; pickListId: string }): Promise<PickListStatus> {
+  await assertScoutingLead(client, input.orgId);
+  return assertOpen(client, input);
 }
 
 /** Every shared-list writer locks the parent before its entries to avoid lost snapshots and inverted lock order. */
@@ -343,6 +349,7 @@ export async function saveRankedPickList(client: PoolClient, input: {
   orgId: string; userId: string; id: string; eventKey: string; name: string; expectedRevision: number | null;
   entries: Array<{ teamKey: string; rank: number; tier?: string; notes?: string | null }>;
 }): Promise<string> {
+  await assertScoutingLead(client, input.orgId);
   await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`pick-list:${input.orgId}:${input.id}`]);
   const current = await client.query<{ eventKey: string; status: PickListStatus; revision: number | string }>(
     `SELECT event_key AS "eventKey", status, revision FROM pick_lists WHERE org_id=$1::uuid AND id=$2::uuid FOR UPDATE`,
@@ -406,6 +413,7 @@ export async function ensurePickList(
     source?: PickListRecord["source"];
   },
 ): Promise<string> {
+  await assertScoutingLead(client, input.orgId);
   const name = (input.name ?? "").trim() || "Pick list";
   const existing = await client.query<{ id: string }>(
     `SELECT id FROM pick_lists
@@ -431,6 +439,7 @@ export async function setListStatus(
   client: PoolClient,
   input: { orgId: string; userId: string | null; pickListId: string; status: PickListStatus },
 ): Promise<void> {
+  await assertScoutingLead(client, input.orgId);
   await lockPickList(client, input);
   await client.query(
     `UPDATE pick_lists
@@ -447,7 +456,7 @@ export async function setBoardScratch(
   client: PoolClient,
   input: { orgId: string; userId: string; pickListId: string; boardState: Record<string, unknown> },
 ): Promise<void> {
-  await lockPickList(client, input);
+  await assertWritable(client, input);
   await client.query(
     `UPDATE pick_lists
      SET board_state = $3::jsonb, updated_at = now(), updated_by = $4::uuid, revision = revision + 1
@@ -523,7 +532,7 @@ export async function setEntryNotes(
   client: PoolClient,
   input: { orgId: string; userId: string; pickListId: string; entryId: string; notes: string | null },
 ): Promise<void> {
-  await lockPickList(client, input);
+  await assertWritable(client, input);
   await client.query(
     `UPDATE pick_list_entries
      SET notes = $4::text, updated_by = $5::uuid, updated_at = now(), revision = revision + 1
@@ -538,6 +547,11 @@ export async function deleteEntry(
   input: { orgId: string; userId: string; pickListId: string; entryId: string },
 ): Promise<void> {
   await assertWritable(client, input);
+  const drafted = await client.query(
+    "SELECT 1 FROM pick_list_entries WHERE org_id=$1::uuid AND pick_list_id=$2::uuid AND id=$3::uuid AND drafted_alliance_seed IS NOT NULL",
+    [input.orgId, input.pickListId, input.entryId],
+  );
+  if (drafted.rowCount) throw new PickListSaveConflict("This team is still on the alliance draft board. Clear its board slot before removing it from the pick list.");
   await client.query(
     `DELETE FROM pick_list_entries
      WHERE org_id = $1::uuid AND pick_list_id = $2::uuid AND id = $3::uuid`,
@@ -752,7 +766,7 @@ export async function recordVote(
     comment?: string | null;
   },
 ): Promise<void> {
-  await lockPickList(client, input);
+  await assertOpen(client, input);
   const owned = await client.query(
     `SELECT 1 FROM pick_list_entries
      WHERE org_id = $1::uuid AND pick_list_id = $2::uuid AND id = $3::uuid`,
@@ -784,7 +798,7 @@ export async function removeVote(
   client: PoolClient,
   input: { orgId: string; userId: string; pickListId: string; entryId: string },
 ): Promise<void> {
-  await lockPickList(client, input);
+  await assertOpen(client, input);
   await client.query(
     `DELETE FROM pick_list_entry_votes v USING pick_list_entries e
      WHERE v.org_id=$1::uuid AND v.entry_id=$2::uuid AND v.voter_id=$3::uuid

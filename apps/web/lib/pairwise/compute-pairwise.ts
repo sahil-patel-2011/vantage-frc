@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { assertScoutingLead, canManageScouting } from "@vantage/scouting/permissions";
 import { pairwiseNextActions, type PairwiseNextAction } from "./pairwise-next-actions";
 import { parseTeamNumber, rankPairwise, type PairwiseRank } from "./rank";
 
@@ -26,6 +27,7 @@ export type PairwiseComparisonRow = {
   loserTeamNumber: number;
   notes: string | null;
   loggedByName: string;
+  isOwn?: boolean;
   createdAt: string;
 };
 
@@ -151,11 +153,13 @@ export async function computePairwiseView(
             loserTeamNumber: number;
             notes: string | null;
             loggedByName: string;
+            isOwn: boolean;
             createdAt: string;
           }>(
             `SELECT id, winner_team_number AS "winnerTeamNumber", loser_team_number AS "loserTeamNumber",
                     notes,
                     CASE WHEN created_by = current_app_user_id() THEN 'You' ELSE 'Team member' END AS "loggedByName",
+                    created_by = current_app_user_id() AS "isOwn",
                     created_at::text AS "createdAt"
              FROM pairwise_comparisons
              WHERE org_id = $1 AND criterion_id = $2
@@ -218,7 +222,7 @@ export async function computePairwiseView(
         rankCount: ranks.length,
         eventKey: context.rows[0]?.eventKey ?? null,
       }),
-      canManage: org.role === "owner" || org.role === "admin",
+      canManage: await canManageScouting(client, org.orgId),
       computedAt: new Date().toISOString(),
     };
   } catch (error) {
@@ -268,6 +272,13 @@ export async function deletePairwiseComparison(
   client: PoolClient,
   input: { orgId: string; comparisonId: string },
 ): Promise<void> {
+  const comparison = await client.query<{ isOwn: boolean }>(
+    `SELECT created_by = current_app_user_id() AS "isOwn" FROM pairwise_comparisons
+     WHERE id = $1::uuid AND org_id = $2::uuid FOR UPDATE`,
+    [input.comparisonId, input.orgId],
+  );
+  if (!comparison.rows[0]) throw Object.assign(new Error("This comparison is no longer available."), { status: 404 });
+  if (!comparison.rows[0].isOwn) await assertScoutingLead(client, input.orgId);
   await client.query(
     `DELETE FROM pairwise_comparisons WHERE id = $1::uuid AND org_id = $2::uuid`,
     [input.comparisonId, input.orgId],

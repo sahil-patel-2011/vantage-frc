@@ -30,6 +30,7 @@ export function PicklistEventRanking({
   onList,
   busy,
   onAdd,
+  canAdd = true,
 }: {
   eventTeams: TeamMetricRow[];
   weights: MetricWeight[];
@@ -37,13 +38,15 @@ export function PicklistEventRanking({
   onList: Set<number>;
   busy: boolean;
   onAdd: (teamNumber: number) => void;
+  canAdd?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   const ranked = useMemo(
     () => rankByWeightedZScores(eventTeams, weights, fieldStats).filter((row) => row.score != null),
     [eventTeams, weights, fieldStats],
   );
-  if (ranked.length === 0) return null;
+  if (ranked.length === 0) return <Panel className="picklist-collab-panel picklist-event-ranking"><h2>Comparison ranking</h2><p className="app-muted">No teams have usable data for the selected weights. Give an available metric a weight above zero, or collect more observations.</p></Panel>;
+  const activeMetrics = weights.filter(metric => metric.weight > 0 && fieldStats[metric.id]).length;
   const top = ranked[0]?.score ?? 0;
   const bottom = ranked[ranked.length - 1]?.score ?? 0;
   const span = Math.max(0.0001, top - bottom);
@@ -55,6 +58,7 @@ export function PicklistEventRanking({
         <h2 style={{ margin: 0 }}>Ranked by your sliders</h2>
         <p className="app-muted">
           All {ranked.length} rated teams at this event, re-ranked as you drag. Add the ones you want to talk about.
+          {eventTeams.length > ranked.length ? ` ${eventTeams.length - ranked.length} teams have no usable data for these weights.` : ""}
         </p>
       </header>
       <ol className="picklist-event-ranking-list">
@@ -74,14 +78,14 @@ export function PicklistEventRanking({
               <span className="picklist-event-bar" aria-hidden="true">
                 <i style={{ width }} />
               </span>
-              <small className="app-muted picklist-event-why">{why.length ? `strong: ${why.join(", ")}` : ""}</small>
+              <small className="app-muted picklist-event-why" title={`${row.breakdown.length} of ${activeMetrics} weighted metrics observed${why.length ? ` · strong: ${why.join(", ")}` : ""}`}>{row.breakdown.length}/{activeMetrics} metrics{why.length ? ` · strong: ${why.join(", ")}` : ""}</small>
               {listed ? (
                 <span className="app-badge">On list</span>
-              ) : (
+              ) : canAdd ? (
                 <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => onAdd(teamNumber)}>
                   Add
                 </Button>
-              )}
+              ) : <span className="app-muted">Not on list</span>}
             </li>
           );
         })}

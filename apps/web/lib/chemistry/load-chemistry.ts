@@ -1,5 +1,6 @@
 import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import type { PoolClient } from "@neondatabase/serverless";
+import { canManageScouting } from "@vantage/scouting/permissions";
 import {
   deriveFoulRisk,
   deriveReliability,
@@ -21,6 +22,7 @@ export type ChemistryView = {
   tbaConfigured: boolean;
   /** Owner or admin can open Team Data. Scouts still score seats they type. */
   canEdit?: boolean;
+  canManagePickList?: boolean;
   teamKeys: string[];
   chemistry: AllianceChemistryResult | null;
   teams: Array<{
@@ -93,6 +95,7 @@ export async function loadAllianceChemistry(
   }
 
   const canEdit = row.role === "owner" || row.role === "admin";
+  const canManagePickList = await canManageScouting(client, input.orgId);
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const tbaAccess = await resolveTbaAccess(client, input.orgId);
   let selected = (input.teamKeys ?? [])
@@ -131,6 +134,7 @@ export async function loadAllianceChemistry(
       teamKey,
       tbaConfigured: tbaAccess.tbaConfigured,
       canEdit,
+      canManagePickList,
       teamKeys: selected,
       chemistry: null,
       teams: [],
@@ -151,6 +155,7 @@ export async function loadAllianceChemistry(
       teamKey,
       tbaConfigured: tbaAccess.tbaConfigured,
       canEdit,
+      canManagePickList,
       teamKeys: selected,
       chemistry: null,
       teams: [],
@@ -276,6 +281,7 @@ export async function loadAllianceChemistry(
     teamKey,
     tbaConfigured: tbaAccess.tbaConfigured,
     canEdit,
+    canManagePickList,
     teamKeys: selected,
     chemistry,
     teams: teamInputs.map((t) => ({

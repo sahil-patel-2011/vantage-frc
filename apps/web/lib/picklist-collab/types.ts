@@ -17,6 +17,7 @@ export type EpaRoleId =
 export type PicklistCollabVote = {
   id: string;
   voterId: string;
+  voterName?: string | null;
   weight: number;
   rankSuggestion: number | null;
   comment: string | null;
@@ -52,6 +53,7 @@ export type PicklistCollabList = {
   status: PicklistCollabListStatus;
   createdBy: string;
   updatedAt: string;
+  revision?: number;
 };
 
 export type PicklistCollabSummary = {

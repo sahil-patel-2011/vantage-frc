@@ -30,6 +30,7 @@ import {
   type TeamMetricRow,
 } from "@vantage/prediction-strategy";
 import { withSavepoint } from "@vantage/db";
+import { canManageScouting } from "@vantage/scouting/permissions";
 import { hubHref } from "../nav/hubs";
 import { scoutEventLabel } from "../scouting/scouting-related";
 import { loadTeamProfiles } from "../scouting/team-profiles";
@@ -59,6 +60,7 @@ export type PicklistCollabView =
       orgId: string | null;
       eventKey?: string | null;
       eventName?: string | null;
+      canManage?: boolean;
     }
   | {
       status: "live";
@@ -78,6 +80,8 @@ export type PicklistCollabView =
        */
       eventTeams?: TeamMetricRow[];
       computedAt: string;
+      canManage?: boolean;
+      currentUserId?: string;
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
@@ -137,6 +141,7 @@ function toCollabList(record: {
   status: PicklistCollabListStatus | string;
   createdBy: string;
   updatedAt: string;
+  revision?: number;
 }): PicklistCollabList {
   const status = (["open", "locked", "archived"] as string[]).includes(record.status)
     ? (record.status as PicklistCollabListStatus)
@@ -149,6 +154,7 @@ function toCollabList(record: {
     status,
     createdBy: record.createdBy,
     updatedAt: record.updatedAt,
+    revision: record.revision,
   };
 }
 
@@ -156,6 +162,7 @@ function toCollabVote(vote: PickListEntry["votes"][number]): PicklistCollabVote 
   return {
     id: vote.id,
     voterId: vote.voterId,
+    voterName: vote.voterName,
     weight: vote.weight,
     rankSuggestion: vote.rankSuggestion,
     comment: vote.comment,
@@ -298,6 +305,7 @@ export async function computePicklistCollabView(
 ): Promise<PicklistCollabView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) return setupRequired(null);
+  const canManage = await canManageScouting(client, org.orgId);
 
   const records = await listPickLists(client, { orgId: org.orgId });
   if (records.length === 0) {
@@ -314,6 +322,7 @@ export async function computePicklistCollabView(
           },
         ],
         orgId: org.orgId,
+        canManage,
         eventKey: null,
         eventName: null,
       };
@@ -326,7 +335,7 @@ export async function computePicklistCollabView(
     const label = scoutEventLabel({ eventName, eventKey: org.eventKey }) ?? "this event";
     return {
       status: "setup_required",
-      message: `Create your first pick list for ${label}.`,
+      message: canManage ? `Create your first pick list for ${label}.` : `Your scouting lead can create the first pick list for ${label}.`,
       steps: [
         {
           id: "create-list",
@@ -336,6 +345,7 @@ export async function computePicklistCollabView(
         },
       ],
       orgId: org.orgId,
+      canManage,
       eventKey: org.eventKey,
       eventName,
     };
@@ -396,6 +406,8 @@ export async function computePicklistCollabView(
     // The field averages count us; the list we pick from does not (we ranked ourselves first).
     eventTeams: eventTeams.filter((row) => row.teamKey !== (org.teamNumber ? `frc${org.teamNumber}` : null)),
     computedAt: new Date().toISOString(),
+    canManage,
+    currentUserId: input.userId,
   };
 }
 
@@ -406,9 +418,9 @@ export async function computePicklistCollabView(
 export async function createList(
   client: PoolClient,
   input: { orgId: string; userId: string; eventKey: string; name: string; seasonYear: number },
-): Promise<void> {
+): Promise<string> {
   try {
-    await ensurePickList(client, {
+    return await ensurePickList(client, {
       orgId: input.orgId,
       userId: input.userId,
       eventKey: input.eventKey,
