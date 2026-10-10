@@ -78,6 +78,12 @@ Additional unrun sources cover pick-list request bounds and dense/unique identit
 
 Additional **unexecuted** sources cover discussion action validation, malformed snapshots, exact own-vote/status/removal acknowledgements, role denial, stale revisions, frozen votes, cross-list targets, newly created-list selection, authentication policy failures, shared-store lead restrictions, pairwise comparison ownership and locked/cross-session alliance evidence. Custom metric sources additionally cover unequal report counts per match, confidence exclusion, explicit zeros, hidden/unknown answers, partial subcounts, sample denominators, original labels/units and incompatible saved versions. Legacy specialist tools still need their full hosted editing/recovery and authentication journey audited; these changes do not establish whole-app completion.
 
+### Official-check audit in progress
+
+A source audit found that the legacy Cross-Validation and Accuracy screens compare a robot's reported point estimate directly with its alliance's official points. That does not establish individual scout accuracy and overlaps the existing Trust workspace's robot-attributed field checks and full-alliance reconciliation. Their legacy screen/API consolidation is still required before release; stored reports, snapshots and previous runs have not been deleted or rewritten.
+
+Private Edge's calibration loader now reads the existing `scout_entry_validations` source instead of those legacy point comparisons. It joins each validation to its report with matching team ownership, excludes soft Statbotics predictions and unavailable/noncomparable fields, and requires at least three actual checks. Returned sample counts remain visible. The existing set-based upsert is preserved. SQL-contract regression sources are unexecuted; production query/RLS behavior remains unverified.
+
 ## Still required before production acceptance
 
 - Approved hosted verification of normal, failure and final regression journeys, including two isolated teams, invitation delivery and recipient password setup.

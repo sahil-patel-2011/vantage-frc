@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
+import { loadScoutCalibrations } from "./scout-calibration-load";
 import {
   blendPrivateEpa,
   buildPrivateEdgeView,
@@ -185,34 +186,11 @@ export async function computePrivateEdgeView(
   // empty. Savepointed: the calibration rows are lost, the match view is not.
   let calibrations: ScoutCalibration[] = [];
   await withSavepoint(client, async () => {
-    const cal = await client.query<{
-      scoutUserId: string;
-      fieldKey: string;
-      agreementRate: number;
-      nSamples: number;
-    }>(
-      `SELECT e.scout_user_id::text AS "scoutUserId", f.field_key AS "fieldKey",
-              (count(*) FILTER (WHERE f.status = 'agree'))::float
-                / NULLIF(count(*) FILTER (WHERE f.status IN ('agree', 'conflict')), 0) AS "agreementRate",
-              count(*) FILTER (WHERE f.status IN ('agree', 'conflict'))::int AS "nSamples"
-       FROM scout_crossval_fields f
-       JOIN scout_crossval_runs r ON r.id = f.run_id
-       JOIN match_scout_entries e ON e.id = r.match_scout_entry_id
-       WHERE f.org_id = $1 AND r.event_key = $2
-       GROUP BY e.scout_user_id, f.field_key
-       HAVING count(*) FILTER (WHERE f.status IN ('agree', 'conflict')) >= 3`,
-      [input.orgId, input.eventKey],
-    );
-    calibrations = cal.rows
-      .filter((row) => row.agreementRate != null)
-      .map((row) => ({
-        scoutUserId: row.scoutUserId,
-        fieldKey: row.fieldKey,
-        agreementRate: Number(row.agreementRate),
-        nSamples: row.nSamples,
-      }));
+    // Per-robot field checks share scouting's source of truth. A robot's
+    // points cannot be graded against its entire alliance's points.
+    calibrations = await loadScoutCalibrations(client, input.orgId, input.eventKey);
     // One set-based upsert instead of one round trip per (scout, field) pair.
-    // The GROUP BY above makes (field_key, scout_user_id) unique, so DO UPDATE
+    // The calibration query groups (field_key, scout_user_id), so DO UPDATE
     // never touches the same row twice in this statement.
     if (calibrations.length) {
       await client.query(
