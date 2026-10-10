@@ -60,7 +60,24 @@ describe("match cross-validation", () => {
         facts,
         scoreBreakdown: match.scoreBreakdown,
       }),
-    ).toEqual({ value: 2, officialKey: "foulCount", kind: "foul" });
+    ).toBeNull();
+  });
+
+  it("rejects phase totals, attempts and configured alliance or wrong-robot keys", () => {
+    expect(classifyComparableField("endgamePoints")).toBe("other");
+    expect(classifyComparableField("climb_attempted")).toBe("other");
+    const facts = extractTbaTeamMatchFacts(match, "frc2")!;
+    for (const officialKey of ["foulCount", "endGameRobot1"]) {
+      expect(officialValueFromTbaFacts({ fieldKey: "climb", facts, scoreBreakdown: match.scoreBreakdown, policy: { fieldKey: "climb", officialKey } })).toBeNull();
+    }
+    expect(officialValueFromTbaFacts({ fieldKey: "climb", facts, scoreBreakdown: match.scoreBreakdown,
+      policy: { fieldKey: "climb", officialKey: "endGameRobot{n}", teamIndexed: true } }))
+      .toEqual({ value: "DeepCage", officialKey: "endGameRobot2", kind: "climb" });
+  });
+
+  it("does not turn a missing robot result into a negative observation", () => {
+    const snapshot = { ...match, scoreBreakdown: { red: { endGameRobot2: null } } };
+    expect(officialValueFromTbaFacts({ fieldKey: "climb", facts: extractTbaTeamMatchFacts(snapshot, "frc2")!, scoreBreakdown: snapshot.scoreBreakdown })).toBeNull();
   });
 
   it("emits soft Statbotics notes only from real EPA values", () => {

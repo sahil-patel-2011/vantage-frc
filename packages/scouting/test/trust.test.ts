@@ -19,6 +19,8 @@ import {
   stripContradictedFields,
   summarizeFieldTrust,
   valuesAgree,
+  isCurrentRobotCheck,
+  robotCheckDescription,
 } from "../src/trust";
 
 describe("scouting trust", () => {
@@ -103,7 +105,31 @@ describe("scouting trust", () => {
     expect(valuesAgree("high", "High")).toBe(true);
   });
 
-  it("flags climb mobility and foul contradictions live", () => {
+  it("preserves distinct climb levels, missing values and unobservable attempts", () => {
+    expect(valuesAgree("deep", "DeepCage", "climb")).toBe(true);
+    expect(valuesAgree("deep", "ShallowCage", "climb")).toBe(false);
+    expect(valuesAgree("high", "Parked", "climb")).toBe(false);
+    expect(valuesAgree("none", "Parked", "climb")).toBe(false);
+    expect(valuesAgree(true, "DeepCage", "climb")).toBe(true);
+    expect(valuesAgree(false, null, "climb")).toBe(false);
+    const checks = crossValidateScoutPayload({ payload: { climb: "failed", climb_attempted: true, endgamePoints: 12 },
+      fieldKeys: ["climb", "climb_attempted", "endgamePoints"], teamKey: "frc1", redAlliance: { teamKeys: ["frc1"] }, blueAlliance: { teamKeys: [] },
+      scoreBreakdown: { red: { endGameRobot1: "None", endgamePoints: 12 } } });
+    expect(checks.filter(check => check.officialSource === "tba")).toEqual([expect.objectContaining({ fieldKey: "climb", status: "not_comparable" })]);
+  });
+
+  it("recognizes versioned robot evidence without exposing its tag in student copy", () => {
+    expect(isCurrentRobotCheck("Conflicts with TBA score_breakdown.foulCount")).toBe(false);
+    expect(isCurrentRobotCheck("[robot-check-v2] Matches TBA score_breakdown.endGameRobot1")).toBe(true);
+    expect(robotCheckDescription("Video re-scout: [robot-check-v2] Matches TBA score_breakdown.endGameRobot1"))
+      .toBe("Video re-scout: Matches TBA score_breakdown.endGameRobot1");
+  });
+
+  it("honors a ten-scout selection instead of silently limiting it to eight", () => {
+    expect(rankScoutsForStrategySeats({ scouts: Array.from({ length: 10 }, (_, index) => ({ userId: `scout-${index}`, checks: 3, matches: 3, entries: 2 })), seatCount: 10, minChecks: 3 })).toHaveLength(10);
+  });
+
+  it("checks robot outcomes but does not attribute alliance fouls to one robot", () => {
     const flags = crossValidateScoutPayload({
       payload: { climb: "none", mobility: true, fouls: 0 },
       fieldKeys: ["climb", "mobility", "fouls", "notes"],
@@ -121,7 +147,7 @@ describe("scouting trust", () => {
     });
     expect(flags.find((flag) => flag.fieldKey === "climb" && flag.officialSource === "tba")?.status).toBe("conflict");
     expect(flags.find((flag) => flag.fieldKey === "mobility")?.status).toBe("match");
-    expect(flags.find((flag) => flag.fieldKey === "fouls")?.status).toBe("conflict");
+    expect(flags.find((flag) => flag.fieldKey === "fouls")?.status).toBe("unavailable");
     expect(flags.some((flag) => flag.soft && flag.officialSource === "statbotics")).toBe(true);
     expect(flags.some((flag) => flag.fieldKey === "notes")).toBe(false);
   });

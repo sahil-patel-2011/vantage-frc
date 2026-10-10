@@ -2,6 +2,8 @@
 
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { scoutingQualityHref, type QualityQuery } from "../../lib/scouting/quality-navigation";
+import { qualityEvidenceSchema } from "../../lib/scouting/quality-evidence";
 import type { ScoutSchema, SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior, recordScoutAction, undoScoutAction, validatePayload } from "@vantage/scouting";
 import { answersToSave } from "../../lib/scouting/entry-answers";
@@ -149,7 +151,12 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
   const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
   const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({});
   const [officialFlags, setOfficialFlags] = useState<OfficialFlag[]>([]);
-  const [trust, setTrust] = useState<TrustSnapshot | null>(null);
+  const [trustContext, setTrust] = useState<{ orgId: string; eventKey: string; snapshot: TrustSnapshot } | null>(null);
+  const trust = trustContext && trustContext.orgId === orgId && trustContext.eventKey === data?.eventKey ? trustContext.snapshot : null;
+  const trustGeneration = useRef(0);
+  const trustAbort = useRef<AbortController | null>(null);
+  const trustMounted = useRef(true);
+  useEffect(() => { trustMounted.current = true; return () => { trustMounted.current = false; ++trustGeneration.current; trustAbort.current?.abort(); }; }, []);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [draftDirty, setDraftDirty] = useState(false);
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
@@ -182,15 +189,23 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
   }, [orgId]);
   useScoutQueueRefresh(refreshCounts);
   const loadTrust = useCallback(async (eventKey: string | null | undefined) => {
+    if (!trustMounted.current) return;
+    trustAbort.current?.abort();
+    const generation = ++trustGeneration.current;
+    setTrust(null);
     if (!orgId || !eventKey || !navigator.onLine) return;
+    const controller = new AbortController(); trustAbort.current = controller;
     try {
       const params = new URLSearchParams({ orgId, eventKey });
-      const response = await fetch(`/api/scouting/trust?${params}`);
+      const response = await fetch(`/api/scouting/trust?${params}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+      const raw: unknown = await response.json().catch(() => null);
+      if (generation !== trustGeneration.current) return;
       if (!response.ok) return;
-      const body = (await response.json()) as TrustSnapshot;
-      setTrust({ fieldTrust: body.fieldTrust ?? [], leaderboard: body.leaderboard ?? [] });
+      const body = qualityEvidenceSchema.safeParse(raw);
+      if (!body.success || body.data.orgId !== orgId || body.data.eventKey !== eventKey) return;
+      setTrust({ orgId, eventKey, snapshot: { fieldTrust: body.data.fieldTrust, leaderboard: body.data.leaderboard } });
     } catch {
-      /* keep last-good field confidence */
+      /* Optional hints stay absent when their current scope cannot be confirmed. */
     }
   }, [orgId]);
   // After an upload, the team's data again, quietly, so the "Done" ticks and your reports include
@@ -357,13 +372,21 @@ function ScopedScoutingClient({ orgId, embedded }: { orgId: string; embedded: bo
         value === "trust" ||
         value === "impact",
     );
+    if (deepTab === "trust" || deepTab === "impact") {
+      const query: QualityQuery = {};
+      for (const key of searchParams.keys()) query[key] = searchParams.getAll(key);
+      query.orgId = orgId;
+      if (deepTab === "impact") query.section = "impact";
+      window.location.replace(scoutingQualityHref(query));
+      return;
+    }
     if (deepMatch) setMatchKey(deepMatch);
     if (deepTeam) setTeamKey(deepTeam);
     if (searchParams.get("handoff") || searchParams.get("code")) setTab("handoff");
     else if (deepTab) {
-      setTab(deepTab === "impact" ? "trust" : deepTab);
+      setTab(deepTab);
     }
-  }, [searchParams]);
+  }, [orgId, searchParams]);
 
   // Fetch disagreements for both task switches and notification deep links.
   const conflictsEventKey = data?.eventKey ?? "";

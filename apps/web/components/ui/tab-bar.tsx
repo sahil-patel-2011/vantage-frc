@@ -12,6 +12,8 @@ type TabBarProps = {
   onChange: (id: string) => void;
   "aria-label": string;
   className?: string;
+  /** Associate these tabs with a single panel whose content follows selection. */
+  panelId?: string;
   /** Extra actions rendered after the tab buttons (e.g. Mark all read). */
   children?: ReactNode;
   /**
@@ -28,6 +30,7 @@ export function TabBar({
   onChange,
   "aria-label": ariaLabel,
   className,
+  panelId,
   children,
   variant = "pill",
 }: TabBarProps) {
@@ -56,6 +59,8 @@ export function TabBar({
             key={tab.id}
             type="button"
             role="tab"
+            id={panelId ? `${panelId}-tab-${tab.id}` : undefined}
+            aria-controls={panelId}
             aria-selected={selected}
             tabIndex={selected ? 0 : -1}
             className={selected ? (variant === "toolbar" ? "primary" : "active") : undefined}

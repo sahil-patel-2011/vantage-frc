@@ -19,12 +19,13 @@ const AGREEMENT_TOLERANCE_ABS = 6;
 export const PROMOTE_MIN_ENTRIES = 3;
 export const PROMOTE_MIN_ACCURACY_SCORE = 75;
 
-type AllianceValue = { team_keys?: string[] } | string[] | null | undefined;
+type AllianceValue = { team_keys?: string[]; teamKeys?: string[] } | string[] | null | undefined;
 
 export function teamKeysFromAlliance(value: AllianceValue): string[] {
   if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-  if (value && Array.isArray(value.team_keys)) {
-    return value.team_keys.filter((v): v is string => typeof v === "string");
+  const keys = value?.teamKeys ?? value?.team_keys;
+  if (Array.isArray(keys)) {
+    return keys.filter((v): v is string => typeof v === "string");
   }
   return [];
 }
@@ -65,6 +66,7 @@ export function computeEntryAccuracy(input: {
   scoreBreakdown: Record<string, unknown> | null | undefined;
   redAlliance: AllianceValue;
   blueAlliance: AllianceValue;
+  comparisonScope?: "robot" | "alliance";
 }): ScoutAccuracyEntry {
   const allianceColor = resolveAllianceColor(input.teamKey, input.redAlliance, input.blueAlliance);
   const scoutValue = numberFromRecord(input.payload, TOTAL_POINTS_ALIASES);
@@ -74,7 +76,7 @@ export function computeEntryAccuracy(input: {
       : null;
   const officialValue = numberFromRecord(allianceBreakdown, TOTAL_POINTS_ALIASES);
 
-  const verifiable = scoutValue != null && officialValue != null;
+  const verifiable = input.comparisonScope === "alliance" && scoutValue != null && officialValue != null;
   let absErrorPct: number | null = null;
   let accurate = false;
   if (verifiable && scoutValue != null && officialValue != null) {

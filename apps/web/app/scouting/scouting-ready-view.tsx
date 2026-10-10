@@ -413,6 +413,7 @@ return (
       onChange={onTabChange}
       orgId={orgId}
       embedded={embedded}
+      eventKey={data?.eventKey ?? null}
       lead={Boolean(data?.canManageSchemas)}
     />
     {tab === "teams" || tab === "trust" ? <ScoutingSharing key={orgId} orgId={orgId} /> : null}

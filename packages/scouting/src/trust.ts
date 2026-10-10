@@ -33,10 +33,10 @@ export function lintSchemaBudget(
     hardWarningAt,
     status,
     message: status === "healthy"
-      ? `${fieldCount} fields — within the accuracy budget (~${recommendedMaximum}).`
+      ? `${fieldCount} questions — within the suggested length (${recommendedMaximum}).`
       : status === "caution"
-        ? `${fieldCount} fields — CD studies show more columns often mean worse accuracy; aim for ≤${recommendedMaximum}.`
-        : `${fieldCount} fields — over the ~${hardWarningAt} hard warning; remove or defer at least ${fieldCount - hardWarningAt} before relying on this form.`,
+        ? `${fieldCount} questions — consider shortening the form toward ${recommendedMaximum}; verify scouts can finish it during a match.`
+        : `${fieldCount} questions — above the suggested ${hardWarningAt}-question warning. Review which observations scouts can reliably finish during a match.`,
   };
 }
 
@@ -145,12 +145,25 @@ export type OfficialFieldPolicy = ReferenceOfficialFieldPolicy & {
 
 const compact = (value: unknown) => String(value ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
 
-export function valuesAgree(scoutValue: unknown, officialValue: unknown): boolean {
+export const ROBOT_CHECK_DETAIL_PREFIX = "[robot-check-v2]";
+export function isCurrentRobotCheck(detail: string | undefined): boolean {
+  return Boolean(detail?.startsWith(`${ROBOT_CHECK_DETAIL_PREFIX} `) || detail?.startsWith(`Video re-scout: ${ROBOT_CHECK_DETAIL_PREFIX} `));
+}
+export function robotCheckDescription(detail: string): string {
+  return isCurrentRobotCheck(detail) ? detail.replace(`${ROBOT_CHECK_DETAIL_PREFIX} `, "") : detail;
+}
+
+export function valuesAgree(scoutValue: unknown, officialValue: unknown, kind?: "climb" | "mobility" | "foul" | "other"): boolean {
+  if (scoutValue == null || officialValue == null || scoutValue === "" || officialValue === "") return false;
   if (typeof scoutValue === "number" && typeof officialValue === "number") {
     return Math.abs(scoutValue - officialValue) < 0.001;
   }
   if (typeof scoutValue === "boolean") {
     const official = compact(officialValue);
+    if (kind === "climb") {
+      if (["deep", "deepcage", "shallow", "shallowcage", "high", "mid", "low", "traversal", "stage"].includes(official)) return scoutValue;
+      if (["none", "park", "parked"].includes(official)) return !scoutValue;
+    }
     if (scoutValue) {
       return (
         ["true", "yes", "1", "on", "taxi", "mobility", "left"].includes(official) ||
@@ -165,15 +178,10 @@ export function valuesAgree(scoutValue: unknown, officialValue: unknown): boolea
   const scout = compact(scoutValue);
   const official = compact(officialValue);
   if (scout === official) return true;
-  if (scout === "none" && ["notattempted", "none", "no", "park", "parked"].includes(official)) return true;
-  if (["high", "traversal", "deep", "deepcage", "shallowcage", "full"].includes(scout)
-    && ["high", "traversal", "deep", "deepcage", "shallowcage", "parked", "full", "stage"].some((token) => official.includes(token))) {
-    return true;
-  }
-  if (["partial", "low", "park", "parked"].includes(scout) && ["park", "parked", "low", "shallow", "shallowcage"].some((token) => official.includes(token))) {
-    return true;
-  }
-  if (Number.isFinite(Number(scoutValue)) && Number.isFinite(Number(officialValue))) {
+  const synonyms = [["deep", "deepcage"], ["shallow", "shallowcage"], ["park", "parked"]];
+  if (synonyms.some(group => group.includes(scout) && group.includes(official))) return true;
+  if (["string", "number"].includes(typeof scoutValue) && ["string", "number"].includes(typeof officialValue)
+    && scout.trim() && official.trim() && Number.isFinite(Number(scoutValue)) && Number.isFinite(Number(officialValue))) {
     return Math.abs(Number(scoutValue) - Number(officialValue)) < 0.001;
   }
   return false;
@@ -294,7 +302,13 @@ export function crossValidateScoutPayload(input: {
       continue;
     }
 
-    const status = valuesAgree(scoutValue, reference.value) ? "match" : "conflict";
+    if (scoutValue == null || (typeof scoutValue === "string" && !scoutValue.trim()) ||
+      (reference.kind === "climb" && ["failed", "notattempted", "attemptedfailed", "unseen", "notseen"].includes(compact(scoutValue)))) {
+      results.push({ fieldKey, status: "not_comparable", scoutValue, officialValue: reference.value,
+        officialSource: "tba", officialKey: reference.officialKey, detail: "Official outcomes cannot verify a missing observation or whether a climb was attempted." });
+      continue;
+    }
+    const status = valuesAgree(scoutValue, reference.value, reference.kind) ? "match" : "conflict";
     results.push({
       fieldKey,
       status,
@@ -564,7 +578,7 @@ export function rankScoutsForStrategySeats(input: {
   seatCount?: number;
   minChecks?: number;
 }): Array<{ userId: string; accuracy: number; reason: string }> {
-  const seatCount = Math.max(1, Math.min(8, Math.trunc(input.seatCount ?? 3)));
+  const seatCount = Math.max(1, Math.min(10, Math.trunc(input.seatCount ?? 3)));
   const minChecks = Math.max(1, Math.trunc(input.minChecks ?? 1));
   return rankScoutsByAccuracy(
     input.scouts
@@ -583,7 +597,7 @@ export function rankScoutsForStrategySeats(input: {
     .map((scout) => ({
       userId: scout.userId,
       accuracy: scout.accuracy,
-      reason: `Top accuracy ${Math.round(scout.accuracy * 100)}% (${scout.matches}/${scout.checks} vs TBA)`,
+      reason: `Official agreement ${Math.round(scout.accuracy * 100)}% (${scout.matches}/${scout.checks} checks)`,
     }));
 }
 

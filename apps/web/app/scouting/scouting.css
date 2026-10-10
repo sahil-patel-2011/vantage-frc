@@ -256,3 +256,36 @@
 .scout-report-actions { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin: 20px 0; }
 .scout-report-actions .scout-save-button { flex: 1; margin: 0; }
 @media(max-width: 480px) { .scout-form-panel > .scout-field-wrap, .free-scout .scout-field-wrap, .sfb-tablet .scout-field-wrap { padding-block: 18px; } }
+
+/* Quality is a focused analysis workspace, separate from active collection. */
+.scout-quality-page { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+.scout-quality-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.scout-quality-toolbar > div { flex: 1; min-width: min(260px, 100%); }
+.scout-quality-toolbar p { margin: 4px 0 0; }
+.scout-trust .scout-trust-kpis { grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px; }
+.scout-trust-kpis article { box-shadow: none; }
+.scout-trust-kpis :is(span, small) { font-size: 13px; line-height: 1.5; text-transform: none; }
+.scout-trust :is(button, .app-button, input, select, summary) { min-height: 44px; }
+.scout-trust :is(button, a, input, select, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.scout-trust input { width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface-2); color: var(--ink); font: inherit; }
+.scout-quality-seat-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; align-items: end; }
+.scout-quality-seat-form button { justify-self: start; }
+.scout-quality-form-checks { padding-block: 12px; border-top: 1px solid var(--line); }
+.scout-quality-form-checks summary { cursor: pointer; font-weight: 600; padding-block: 10px; }
+.scout-quality-rule { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 14px; border-top: 1px solid var(--line); }
+.scout-quality-rule > div { min-width: 0; }
+.scout-quality-rule small { display: block; margin-top: 4px; }
+.scout-quality-rule strong { overflow-wrap: anywhere; }
+.scout-quality-rule button { flex-shrink: 0; }
+.scout-trust .accuracy-list li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto; gap: 12px; align-items: center; }
+.scout-trust .accuracy-list li > * { min-width: 0; overflow-wrap: anywhere; }
+.scout-trust .field-trust-list article > div { min-width: 0; }
+.scout-trust .field-trust-list strong { overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  .scout-quality-seat-form { grid-template-columns: 1fr; }
+  .scout-quality-rule { flex-direction: column; align-items: stretch; }
+  .scout-trust .accuracy-list li { grid-template-columns: 1fr; gap: 6px; }
+}
+.scout-quality-tabs { flex-wrap: wrap; max-width: 100%; }
+.scout-trust > [role="tabpanel"] { display: grid; gap: 16px; min-width: 0; }
+.scout-trust > [role="tabpanel"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }

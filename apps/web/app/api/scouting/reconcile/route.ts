@@ -12,12 +12,12 @@ import {
   type ReconciledMatch,
 } from "../../../../lib/scouting/reconcile";
 import type { OrgValueFormula } from "../../../../lib/scouting/scouted-ratings";
+import { z } from "zod";
+import { coverageEventKey } from "../../../../lib/scouting/coverage-request";
+import { RequestSecurityError } from "../../../../lib/security/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-/** Keeps the response small on a full 80-qual event without hiding the flags. */
-const MAX_MATCHES = 40;
 
 function setupRequired(message: string) {
   return {
@@ -48,9 +48,12 @@ type ReconciledMatchWithShares = ReconciledMatch & {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const orgId = text(url.searchParams.get("orgId"), 64);
-  const eventOverride = text(url.searchParams.get("eventKey"), 80);
+  const eventOverride = text(url.searchParams.get("eventKey"), 120);
 
   try {
+    if (!z.string().uuid().safeParse(url.searchParams.get("orgId")).success) throw new RequestSecurityError(400, "Choose a valid team.");
+    const rawEvent = url.searchParams.get("eventKey");
+    if (rawEvent !== null && !coverageEventKey.safeParse(rawEvent).success) throw new RequestSecurityError(400, "Choose a valid event.");
     const view = await withScoutingRequest(orgId, async (client) => {
       // withScoutingRequest already rejected a missing org; this narrows the type.
       if (!orgId) throw new ScoutingHttpError(400, "orgId is required");
@@ -104,16 +107,14 @@ export async function GET(request: Request) {
         formulas: formulas.rows,
       });
 
-      const withShares: ReconciledMatchWithShares[] = report.matches
-        .slice(0, MAX_MATCHES)
-        .map((match) => ({
-          ...match,
-          // Split what the ROBOTS scored — foul points were not theirs to earn.
-          distribution: {
-            red: distributeByShare(match.red.officialScoringTotal, match.red.robots),
-            blue: distributeByShare(match.blue.officialScoringTotal, match.blue.robots),
-          },
-        }));
+      const withShares: ReconciledMatchWithShares[] = report.matches.map((match) => ({
+        ...match,
+        // Split what the ROBOTS scored — foul points were not theirs to earn.
+        distribution: {
+          red: distributeByShare(match.red.officialScoringTotal, match.red.robots),
+          blue: distributeByShare(match.blue.officialScoringTotal, match.blue.robots),
+        },
+      }));
 
       return {
         status: "live" as const,
@@ -126,16 +127,12 @@ export async function GET(request: Request) {
         matches: withShares,
       };
     });
-    return Response.json(view, { headers: { "Cache-Control": "private, no-store" } });
+    return Response.json({ ...view, orgId }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
-    // Auth / org-access failures stay real errors so the client can offer sign-in.
-    if (error instanceof ScoutingHttpError) return scoutingErrorResponse(error);
-    // No database (or schema not migrated yet): honest setup state, never a crash.
-    return Response.json(
-      setupRequired(
-        "Scouted vs official could not load right now. Try again in a moment.",
-      ),
-      { status: 200, headers: { "Cache-Control": "private, no-store" } },
-    );
+    const response = error instanceof RequestSecurityError ? Response.json({ error: error.message }, { status: error.status }) :
+      error instanceof ScoutingHttpError ? scoutingErrorResponse(error) :
+      Response.json({ error: "Alliance review is temporarily unavailable. Refresh to try again." }, { status: 503 });
+    response.headers.set("cache-control", "private, no-store");
+    return response;
   }
 }

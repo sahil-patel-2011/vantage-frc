@@ -90,7 +90,7 @@ export async function recordPickListInfluence(
         eventKey: input.eventKey,
         pickListId: input.pickListId,
         teamKey: attribution.teamKey,
-        href: `/competition?tab=scouting&orgId=${encodeURIComponent(input.orgId)}&scoutTab=trust`,
+        href: `/scouting/quality?orgId=${encodeURIComponent(input.orgId)}&eventKey=${encodeURIComponent(input.eventKey)}&section=impact`,
         message: attribution.reason,
       },
     });
@@ -113,6 +113,7 @@ export async function seatTopAccurateScouts(
   const meetingOn =
     input.meetingOn && /^\d{4}-\d{2}-\d{2}$/.test(input.meetingOn) ? input.meetingOn : todayUtc();
 
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`scout-seats:${input.orgId.toLowerCase()}:${input.eventKey}:${meetingOn}`]);
   const leaderboard = await client.query<{
     userId: string;
     entries: number;
@@ -124,7 +125,9 @@ export async function seatTopAccurateScouts(
             count(v.id) FILTER (WHERE v.status IN ('match','conflict'))::int AS checks,
             count(v.id) FILTER (WHERE v.status = 'match')::int AS matches
      FROM match_scout_entries e
-     LEFT JOIN scout_entry_validations v ON v.entry_id = e.id
+     JOIN memberships member ON member.org_id=e.org_id AND member.user_id=e.scout_user_id
+     LEFT JOIN scout_entry_validations v ON v.entry_id=e.id AND v.org_id=e.org_id AND v.official_source='tba' AND (v.detail LIKE '[robot-check-v2] %' OR v.detail LIKE 'Video re-scout: [robot-check-v2] %')
+       AND NOT EXISTS (SELECT 1 FROM scout_field_policies p WHERE p.org_id=v.org_id AND p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled)
      WHERE e.org_id = $1::uuid AND e.event_key = $2
      GROUP BY e.scout_user_id`,
     [input.orgId, input.eventKey],
@@ -133,17 +136,20 @@ export async function seatTopAccurateScouts(
   const ranked = rankScoutsForStrategySeats({
     scouts: leaderboard.rows,
     seatCount: input.seatCount,
-    minChecks: 1,
+    minChecks: 3,
   });
 
   for (const seat of ranked) {
-    await client.query(
+    const saved = await client.query<{ inserted: boolean }>(
       `INSERT INTO scout_strategy_seats(org_id, event_key, user_id, meeting_on, reason, assigned_by)
        VALUES ($1::uuid, $2, $3::uuid, $4::date, $5, $6::uuid)
        ON CONFLICT (org_id, event_key, user_id, meeting_on)
-       DO UPDATE SET reason = excluded.reason, assigned_by = excluded.assigned_by`,
+       DO UPDATE SET reason = excluded.reason, assigned_by = excluded.assigned_by
+       RETURNING (xmax=0) AS inserted`,
       [input.orgId, input.eventKey, seat.userId, meetingOn, seat.reason, input.assignedBy],
     );
+    if (!saved.rows[0]) throw new Error("Meeting seat could not be confirmed");
+    if (!saved.rows[0].inserted) continue;
     await emitPreferredNotification(client, {
       userId: seat.userId,
       orgId: input.orgId,
@@ -152,7 +158,7 @@ export async function seatTopAccurateScouts(
         title: "Strategy meeting seat",
         eventKey: input.eventKey,
         meetingOn,
-        href: `/strategy?orgId=${encodeURIComponent(input.orgId)}&tab=picks`,
+        href: `/scouting/quality?orgId=${encodeURIComponent(input.orgId)}&eventKey=${encodeURIComponent(input.eventKey)}&section=scouts`,
         message: `You earned a strategy seat for ${meetingOn}: ${seat.reason}`,
       },
     });

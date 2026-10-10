@@ -12,6 +12,7 @@ import {
 } from "../../../lib/scout-accuracy/compute-scout-accuracy";
 import { scoutAccuracySetupSteps } from "../../../lib/scout-accuracy/scout-accuracy-related";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import { RequestSecurityError } from "../../../lib/security/request";
 
 export type { ScoutAccuracyView };
 
@@ -102,6 +103,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (error instanceof RequestSecurityError) return Response.json({ error: error.message }, { status: error.status, headers: { "cache-control": "private, no-store" } });
     const message = publicErrorMessage(error, "Scout accuracy request failed");
     const status =
       message === "forbidden" || /administrator access required|scouting lead/i.test(message) ? 403 : 400;

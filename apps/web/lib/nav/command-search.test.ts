@@ -9,6 +9,15 @@ const hrefs = (query: string, count = 5): string[] =>
   searchCommands(query, catalog).slice(0, count).map((hit) => hit.href);
 
 describe("commandCatalog", () => {
+  it("finds one quality workspace through old accuracy terms and retains the original alias access scope", () => {
+    const quality = catalog.find(entry => entry.id === "competition:scout-crossval");
+    expect(quality?.label).toBe("Quality");
+    expect(quality?.alternativeHrefs).toContain("/competition?tab=scout-accuracy");
+    expect(hrefs("scout consistency")).toContain("/competition?tab=scout-crossval");
+    const hits = searchCommands("scout consistency", catalog, { isAllowed: href => href === "/competition?tab=scout-accuracy" });
+    expect(hits.map(hit => hit.href)).toContain("/competition?tab=scout-accuracy");
+    expect(catalog.some(entry => entry.id === "competition:scout-accuracy")).toBe(false);
+  });
   it("opens connection setup directly while retaining its AI permission scope", () => {
     const connection = catalog.find(entry => entry.id === "ai:connections");
     expect(connection?.href).toBe("/ai/connect");

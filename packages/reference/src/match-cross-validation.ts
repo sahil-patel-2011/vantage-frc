@@ -50,6 +50,8 @@ const compact = (value: unknown) =>
 
 export function classifyComparableField(fieldKey: string): ComparableFieldKind {
   const field = compact(fieldKey);
+  // Attempts, capabilities and phase point totals are not robot outcome facts.
+  if (/attempt|fail|capab|canclimb|mechanism|climbtype|prefer|planned|reason|duration|time|point|score/.test(field)) return "other";
   if (field.includes("climb") || field.includes("endgame") || field.includes("hang")) return "climb";
   if (field.includes("mobility") || field.includes("taxi") || field.includes("autoline") || field.includes("leave")) {
     return "mobility";
@@ -102,11 +104,16 @@ function readRobotValue(
 ): { value: unknown | null; key: string | null } {
   for (const prefix of prefixes) {
     const key = `${prefix}${teamIndex}`;
-    if (Object.prototype.hasOwnProperty.call(record, key)) {
+    if (Object.prototype.hasOwnProperty.call(record, key) && observedRobotValue(record[key])) {
       return { value: record[key], key };
     }
   }
   return { value: null, key: null };
+}
+
+function observedRobotValue(value: unknown): boolean {
+  return typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value)) ||
+    (typeof value === "string" && value.trim().length > 0);
 }
 
 /** Extract climb / mobility / foul facts for one team from a cached TBA match. */
@@ -161,25 +168,22 @@ export function officialValueFromTbaFacts(input: {
     const key = input.policy?.teamIndexed
       ? configured.replace("{n}", String(input.facts.teamIndex))
       : configured;
+    // A configured alliance key or another robot's seat cannot verify this robot.
+    const robotKey = kind === "climb" ? input.facts.climbKey : kind === "mobility" ? input.facts.mobilityKey : null;
+    const indexedFoul = kind === "foul" && new RegExp(`^(?:techFoul|foul|penalty|card)(?:Count|Status)?Robot${input.facts.teamIndex}$`, "i").test(key);
+    if (key !== robotKey && !indexedFoul) return null;
     if (!Object.prototype.hasOwnProperty.call(record, key)) return null;
+    if (!observedRobotValue(record[key])) return null;
     return { value: record[key], officialKey: key, kind };
   }
-  if (kind === "climb" && input.facts.climbKey) {
+  if (kind === "climb" && input.facts.climbKey && input.facts.climb != null && input.facts.climb !== "") {
     return { value: input.facts.climb, officialKey: input.facts.climbKey, kind };
   }
-  if (kind === "mobility" && input.facts.mobilityKey) {
+  if (kind === "mobility" && input.facts.mobilityKey && input.facts.mobility != null && input.facts.mobility !== "") {
     return { value: input.facts.mobility, officialKey: input.facts.mobilityKey, kind };
   }
-  if (kind === "foul" && input.facts.foulKey) {
-    const field = compact(input.fieldKey);
-    const value = field.includes("tech")
-      ? input.facts.techFoulCount
-      : field.includes("point")
-        ? input.facts.foulPoints
-        : (input.facts.foulCount ?? input.facts.foulPoints ?? input.facts.techFoulCount);
-    if (value == null) return null;
-    return { value, officialKey: input.facts.foulKey, kind };
-  }
+  // TBA foul totals belong to the alliance. Keep them in extracted context,
+  // but require an explicitly indexed robot value to check a robot's fouls.
   return null;
 }
 

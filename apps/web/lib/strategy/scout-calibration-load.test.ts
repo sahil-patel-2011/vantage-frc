@@ -15,6 +15,8 @@ describe("scout calibration evidence", () => {
     expect(sql).toContain("FROM scout_entry_validations v");
     expect(sql).toContain("e.org_id=v.org_id");
     expect(sql).toContain("v.official_source='tba'");
+    expect(sql).toContain("[robot-check-v2]");
+    expect(sql).toContain("p.schema_id=e.schema_id AND p.field_key=v.field_key AND NOT p.enabled");
     expect(sql).toContain("WHERE v.status IN ('match','conflict')");
     expect(sql).not.toContain("scout_crossval");
     expect(result).toEqual([{ scoutUserId: "11111111-1111-4111-8111-111111111111", fieldKey: "endgame", agreementRate: 0.75, nSamples: 4 }]);

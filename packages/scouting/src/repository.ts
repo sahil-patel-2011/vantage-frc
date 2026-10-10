@@ -12,7 +12,7 @@ import {
   type SyncEntry,
 } from "./index";
 import { bindScoutIdentity, lockScoutPayload, stripScoutIdentityFields } from "./identity"; // CD4_IDENTITY_LOCK
-import { crossValidateScoutPayload, type FieldValidation } from "./trust";
+import { crossValidateScoutPayload, isCurrentRobotCheck, robotCheckDescription, ROBOT_CHECK_DETAIL_PREFIX, type FieldValidation } from "./trust";
 
 type StoredEntry = {
   id: string;
@@ -525,12 +525,13 @@ export class ScoutingRepository {
     );
     return rows.rows.map((row) => ({
       fieldKey: row.fieldKey,
-      status: row.status,
+      status: row.officialSource === "tba" && (row.status === "match" || row.status === "conflict") && !isCurrentRobotCheck(row.detail) ? "not_comparable" : row.status,
       scoutValue: row.scoutValue,
       officialValue: row.officialValue,
       officialSource: row.officialSource,
       officialKey: null,
-      detail: row.detail,
+      detail: row.officialSource === "tba" && (row.status === "match" || row.status === "conflict") && !isCurrentRobotCheck(row.detail)
+        ? "Earlier official check needs review with the current evaluator. Reopen and correct the report to check it again." : robotCheckDescription(row.detail),
       soft: row.officialSource === "statbotics",
     }));
   }
@@ -593,14 +594,18 @@ export class ScoutingRepository {
       epaEndgame: epa.rows[0]?.epaEndgame ?? null,
     });
     for (const validation of validations) {
+      // Version stored evidence without requiring a schema change or exposing
+      // implementation tags in the scout-facing result.
+      const checkedDetail = validation.officialSource === "tba" && (validation.status === "match" || validation.status === "conflict")
+        ? `${ROBOT_CHECK_DETAIL_PREFIX} ${validation.detail}` : validation.detail;
       const detail =
-        input.source === "video" && validation.detail
-          ? validation.detail.startsWith("Video re-scout: ")
-            ? validation.detail
-            : `Video re-scout: ${validation.detail}`
+        input.source === "video" && checkedDetail
+          ? checkedDetail.startsWith("Video re-scout: ")
+            ? checkedDetail
+            : `Video re-scout: ${checkedDetail}`
           : input.source === "video"
             ? "Video re-scout: compared against official match data."
-            : validation.detail;
+          : checkedDetail;
       await this.client.query(
         `INSERT INTO scout_entry_validations
           (org_id,entry_id,field_key,scout_value,official_value,official_source,status,detail)

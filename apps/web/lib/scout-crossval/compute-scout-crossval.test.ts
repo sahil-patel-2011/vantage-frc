@@ -7,7 +7,7 @@ const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const USER = "11111111-1111-4111-8111-111111111111";
 
 /** Returns queued rows in call order — mirrors the sequential query order inside
- * computeScoutCrossvalView (resolveOrg, events, entries, [fields]). */
+ * computeScoutCrossvalView (resolveOrg, events, entries). */
 function queueClient(responses: Array<{ rows: unknown[] }>): PoolClient {
   let index = 0;
   return {
@@ -20,6 +20,18 @@ function queueClient(responses: Array<{ rows: unknown[] }>): PoolClient {
 }
 
 describe("computeScoutCrossvalView", () => {
+  it("keeps a legacy run identity but does not reuse its invalid alliance-point verdict", async () => {
+    const client = queueClient([{ rows: [{ orgId: ORG, teamNumber: 118 }] }, { rows: [{ eventKey: "2026test" }] },
+      { rows: [{ entryId: "entry", eventKey: "2026test", matchKey: "2026test_qm1", teamKey: "frc118", teamNumber: 118,
+        scoutUserId: USER, payload: { totalPoints: 50 }, redAlliance: { teamKeys: ["frc118"] }, blueAlliance: { teamKeys: [] },
+        scoreBreakdown: { red: { totalPoints: 50 } }, runId: "old-run", runOverallStatus: "agree", runAgreeCount: 4, runConflictCount: 0, runUnverifiableCount: 0 }] }]);
+    const view = await computeScoutCrossvalView(client, { userId: USER, requestedOrg: ORG, eventKey: "2026test" });
+    expect(view.status).toBe("live");
+    if (view.status === "live") {
+      expect(view.entries[0]).toMatchObject({ id: "old-run", overallStatus: "unverifiable", agreeCount: 0 });
+      expect(view.entries[0]?.fields.every(field => field.deltaAbs === null && field.deltaPct === null)).toBe(true);
+    }
+  });
   it("returns setup_required when the caller has no org membership", async () => {
     const client = queueClient([{ rows: [] }]);
     const view = await computeScoutCrossvalView(client, { userId: USER, requestedOrg: null });
@@ -44,7 +56,7 @@ describe("computeScoutCrossvalView", () => {
     }
   });
 
-  it("classifies entries as agree/conflict/unverifiable when computed live over cached score breakdowns", async () => {
+  it("does not grade individual robot points against alliance totals over cached score breakdowns", async () => {
     const client = queueClient([
       { rows: [{ orgId: ORG, teamNumber: 118 }] }, // resolveOrg
       { rows: [{ eventKey: "2026test" }] }, // events
@@ -117,11 +129,11 @@ describe("computeScoutCrossvalView", () => {
     const agreeEntry = view.entries.find((e) => e.matchScoutEntryId === "entry-agree");
     const conflictEntry = view.entries.find((e) => e.matchScoutEntryId === "entry-conflict");
     const unverifiableEntry = view.entries.find((e) => e.matchScoutEntryId === "entry-unverifiable");
-    expect(agreeEntry?.overallStatus).toBe("agree");
-    expect(conflictEntry?.overallStatus).toBe("conflict");
+    expect(agreeEntry?.overallStatus).toBe("unverifiable");
+    expect(conflictEntry?.overallStatus).toBe("unverifiable");
     expect(unverifiableEntry?.overallStatus).toBe("unverifiable");
     expect(view.summary.totalEntries).toBe(3);
-    expect(view.summary.conflictEntries).toBe(1);
+    expect(view.summary.conflictEntries).toBe(0);
   });
 });
 
@@ -136,7 +148,7 @@ describe("scout-crossval pure helpers", () => {
     const fields = computeFieldChecks({
       payload: { autoPoints: 10 },
       scoreBreakdown: null,
-      allianceColor: "red",
+      allianceColor: "red", comparisonScope: "alliance",
     });
     expect(fields.every((f) => f.status === "unverifiable")).toBe(true);
   });
@@ -145,7 +157,7 @@ describe("scout-crossval pure helpers", () => {
     const fields = computeFieldChecks({
       payload: { autoPoints: 10, teleopPoints: 10 },
       scoreBreakdown: { red: { autoPoints: 11, teleopPoints: 40 } },
-      allianceColor: "red",
+      allianceColor: "red", comparisonScope: "alliance",
     });
     const auto = fields.find((f) => f.fieldKey === "autoPoints");
     const teleop = fields.find((f) => f.fieldKey === "teleopPoints");
@@ -157,7 +169,7 @@ describe("scout-crossval pure helpers", () => {
     const fields = computeFieldChecks({
       payload: { autoPoints: 10, teleopPoints: 10 },
       scoreBreakdown: { red: { autoPoints: 11, teleopPoints: 90 } },
-      allianceColor: "red",
+      allianceColor: "red", comparisonScope: "alliance",
     });
     const rollup = overallStatusFromFields(fields);
     expect(rollup.overallStatus).toBe("conflict");
