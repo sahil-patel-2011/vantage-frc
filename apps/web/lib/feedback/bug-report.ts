@@ -1,10 +1,30 @@
 /**
- * Pure helpers for the Report-a-bug flow.
+ * Pure helpers for the Send-feedback flow (the corner button and dialog, and the
+ * Report-a-bug page behind it).
  *
  * Everything the client submits is shown to the reporter first — this module is
  * the single place that decides what "client info" even means (viewport + user
  * agent, nothing else), so no silent collection can creep in behind the form.
  */
+
+/** A note is either something that went wrong or an idea. Both land in bug_reports (0726). */
+export const BUG_KINDS = ["bug", "idea"] as const;
+export type BugKind = (typeof BUG_KINDS)[number];
+
+export const BUG_KIND_LABELS: Record<BugKind, string> = {
+  bug: "Something's wrong",
+  idea: "I have an idea",
+};
+
+/** The textarea hint follows the choice, so the box asks for the right thing. */
+export const BUG_KIND_PLACEHOLDERS: Record<BugKind, string> = {
+  bug: "Describe the issue",
+  idea: "Describe your idea",
+};
+
+export function isBugKind(value: unknown): value is BugKind {
+  return typeof value === "string" && (BUG_KINDS as readonly string[]).includes(value);
+}
 
 export const BUG_SEVERITIES = ["annoyance", "blocking", "data-loss"] as const;
 export type BugSeverity = (typeof BUG_SEVERITIES)[number];
@@ -76,6 +96,7 @@ export function sanitizeBugClientInfo(value: unknown): BugClientInfo {
 }
 
 export type NormalizedBugReport = {
+  kind: BugKind;
   description: string;
   severity: BugSeverity | null;
   route: string | null;
@@ -87,13 +108,21 @@ export type BugReportResult =
   | { ok: true; report: NormalizedBugReport }
   | { ok: false; error: string };
 
-/** Validate + normalize a submission. The description is the only required field. */
+/**
+ * Validate + normalize a submission. The description is the only required field; the kind
+ * defaults to a problem, and an idea never carries a severity.
+ */
 export function normalizeBugReport(input: {
+  kind?: unknown;
   description?: unknown;
   severity?: unknown;
   route?: unknown;
   clientInfo?: unknown;
 }): BugReportResult {
+  if (input.kind !== undefined && input.kind !== null && !isBugKind(input.kind)) {
+    return { ok: false, error: "Unknown kind of feedback." };
+  }
+  const kind: BugKind = isBugKind(input.kind) ? input.kind : "bug";
   const description = typeof input.description === "string" ? input.description.trim() : "";
   if (!description) {
     return { ok: false, error: "Tell us what happened — the description is the whole report." };
@@ -108,8 +137,9 @@ export function normalizeBugReport(input: {
   return {
     ok: true,
     report: {
+      kind,
       description,
-      severity: isBugSeverity(input.severity) ? input.severity : null,
+      severity: kind === "bug" && isBugSeverity(input.severity) ? input.severity : null,
       route,
       appArea: bugAppAreaFromRoute(route),
       clientInfo: sanitizeBugClientInfo(input.clientInfo),

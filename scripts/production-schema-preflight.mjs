@@ -26,6 +26,8 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // Operations trust: /api/hours reads hour_logs.entry_source and correction columns; the
   // two-person reimbursement rule, lead-only certifications and sign-off notices live in RLS.
   "0723_operations_trust.sql",
+  // Send feedback: POST /api/feedback/bug writes bug_reports.kind and /api/admin/feedback filters on it.
+  "0726_feedback_kind.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */

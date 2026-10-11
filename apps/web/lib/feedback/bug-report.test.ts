@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   BUG_DESCRIPTION_MAX,
+  BUG_KINDS,
+  BUG_KIND_LABELS,
+  BUG_KIND_PLACEHOLDERS,
   BUG_USER_AGENT_MAX,
   bugAppAreaFromRoute,
+  isBugKind,
   normalizeBugReport,
   normalizeBugRoute,
   sanitizeBugClientInfo,
@@ -98,5 +102,39 @@ describe("normalizeBugReport", () => {
     const result = normalizeBugReport({ description: "d", route: "/competition?tab=scouting" });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.report.appArea).toBe("competition");
+  });
+});
+
+describe("feedback kind", () => {
+  it("defaults to a problem, so the Report-a-bug page and older clients keep working", () => {
+    const result = normalizeBugReport({ description: "The save button does nothing." });
+    expect(result.ok && result.report.kind).toBe("bug");
+    const explicitNull = normalizeBugReport({ kind: null, description: "d" });
+    expect(explicitNull.ok && explicitNull.report.kind).toBe("bug");
+  });
+
+  it("accepts an idea and keeps it an idea", () => {
+    const result = normalizeBugReport({ kind: "idea", description: "A dark pit-wall view would be great." });
+    expect(result.ok && result.report.kind).toBe("idea");
+  });
+
+  it("refuses a kind it does not know rather than filing it as a problem", () => {
+    const result = normalizeBugReport({ kind: "praise", description: "d" });
+    expect(result).toEqual({ ok: false, error: "Unknown kind of feedback." });
+    expect(isBugKind("praise")).toBe(false);
+    expect(isBugKind(undefined)).toBe(false);
+  });
+
+  it("gives an idea no severity, even if one is sent", () => {
+    const idea = normalizeBugReport({ kind: "idea", description: "d", severity: "blocking" });
+    expect(idea.ok && idea.report.severity).toBeNull();
+    const bug = normalizeBugReport({ kind: "bug", description: "d", severity: "blocking" });
+    expect(bug.ok && bug.report.severity).toBe("blocking");
+  });
+
+  it("names both kinds in the words the dialog shows", () => {
+    expect([...BUG_KINDS]).toEqual(["bug", "idea"]);
+    expect(BUG_KIND_LABELS).toEqual({ bug: "Something's wrong", idea: "I have an idea" });
+    expect(BUG_KIND_PLACEHOLDERS).toEqual({ bug: "Describe the issue", idea: "Describe your idea" });
   });
 });

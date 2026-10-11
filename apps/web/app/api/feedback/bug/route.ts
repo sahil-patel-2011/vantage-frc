@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import {
   BUG_DESCRIPTION_MAX,
+  BUG_KINDS,
   BUG_SEVERITIES,
   normalizeBugReport,
 } from "../../../../lib/feedback/bug-report";
@@ -14,6 +15,8 @@ const bugLimiter = createRateLimiter({ limit: 5, windowMs: 10 * 60_000, namespac
 
 const bugSchema = z
   .object({
+    // Omitted means a problem: the Report-a-bug page and older clients never sent one.
+    kind: z.enum(BUG_KINDS).nullish(),
     description: z.string().min(1).max(BUG_DESCRIPTION_MAX),
     severity: z.enum(BUG_SEVERITIES).nullish(),
     route: z.string().max(2000).nullish(),
@@ -46,6 +49,7 @@ export async function POST(request: Request) {
 
     const body = await parseSecureJson(request, bugSchema);
     const normalized = normalizeBugReport({
+      kind: body.kind ?? undefined,
       description: body.description,
       severity: body.severity ?? undefined,
       route: body.route ?? undefined,
@@ -56,16 +60,20 @@ export async function POST(request: Request) {
     }
     const report = normalized.report;
 
-    // RLS enforces user_id = current_app_user_id() and org membership when orgId is given.
+    // RLS enforces user_id = current_app_user_id(). The team on the page is only kept when the
+    // reporter belongs to it: a stale or foreign ?orgId= must not cost them their note.
     const orgId = body.orgId ?? undefined;
     const id = await withRls({ userId, ...(orgId ? { orgId } : {}) }, async (client) => {
       const result = await client.query<{ id: string }>(
-        `INSERT INTO bug_reports (org_id, user_id, route, description, severity, app_area, client_info)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7::jsonb)
+        `INSERT INTO bug_reports (org_id, user_id, kind, route, description, severity, app_area, client_info)
+         VALUES (
+           CASE WHEN $1::uuid IS NOT NULL AND is_org_member($1::uuid) THEN $1::uuid ELSE NULL END,
+           $2::uuid, $3, $4, $5, $6, $7, $8::jsonb)
          RETURNING id`,
         [
           orgId ?? null,
           userId,
+          report.kind,
           report.route,
           report.description,
           report.severity,
