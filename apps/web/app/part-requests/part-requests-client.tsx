@@ -430,11 +430,11 @@ export default function PartRequestsClient() {
           {confirmSubmit ? (
             <p className="pr-confirm">
               Send this request for about {money(totalPreview)}?{" "}
-              <Button variant="primary" type="submit" disabled={busy}>
-                Yes, send it
-              </Button>{" "}
               <Button variant="ghost" type="button" onClick={() => setConfirmSubmit(false)}>
                 Cancel
+              </Button>{" "}
+              <Button variant="primary" type="submit" disabled={busy}>
+                Yes, send it
               </Button>
             </p>
           ) : (
@@ -487,11 +487,11 @@ export default function PartRequestsClient() {
                           {decide?.kind === "approve"
                             ? `Approve ${money(request.totalCostUsd)}? This records the money as spent against the season budget straight away.`
                             : "Reject this request? Nothing is charged."}{" "}
-                          <Button variant="primary" type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
-                            Yes, {decide?.kind === "approve" ? "approve" : "reject"}
-                          </Button>{" "}
                           <Button variant="ghost" type="button" onClick={() => { setDecide(null); setReviewNotes(""); }}>
                             Cancel
+                          </Button>{" "}
+                          <Button variant="primary" type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
+                            Yes, {decide?.kind === "approve" ? "approve" : "reject"}
                           </Button>
                         </p>
                       </div>

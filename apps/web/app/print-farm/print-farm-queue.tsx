@@ -305,11 +305,11 @@ function FinishJobForm({
         Grams used (optional — decrements the spool)
         <input type="number" min={1} value={actualGrams} onChange={(e) => setActualGrams(e.target.value)} />
       </label>
-      <Button type="submit" variant="primary" size="sm" disabled={busy}>
-        Confirm done
-      </Button>
       <Button variant="ghost" size="sm" onClick={onDismiss}>
         Back
+      </Button>
+      <Button type="submit" variant="primary" size="sm" disabled={busy}>
+        Confirm done
       </Button>
     </form>
   );
@@ -361,11 +361,11 @@ function FailJobForm({
         Grams wasted (optional — decrements the spool)
         <input type="number" min={1} value={wastedGrams} onChange={(e) => setWastedGrams(e.target.value)} />
       </label>
-      <Button type="submit" variant="danger" size="sm" disabled={busy}>
-        Confirm failed
-      </Button>
       <Button variant="ghost" size="sm" onClick={onDismiss}>
         Back
+      </Button>
+      <Button type="submit" variant="danger" size="sm" disabled={busy}>
+        Confirm failed
       </Button>
     </form>
   );

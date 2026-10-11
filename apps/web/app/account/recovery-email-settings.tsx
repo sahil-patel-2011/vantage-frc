@@ -126,11 +126,11 @@ export function RecoveryEmailSettings({ suggested }: { suggested?: string }) {
                 if (code.length === 6 && !working) void confirm();
               }}
             />
-            <Button variant="primary" size="sm" type="button" disabled={working || code.length !== 6} onClick={() => void confirm()}>
-              {working ? "Checking…" : "Confirm"}
-            </Button>
             <Button variant="ghost" size="sm" type="button" disabled={working} onClick={() => setSentTo(null)}>
               Back
+            </Button>
+            <Button variant="primary" size="sm" type="button" disabled={working || code.length !== 6} onClick={() => void confirm()}>
+              {working ? "Checking…" : "Confirm"}
             </Button>
           </div>
         ) : (

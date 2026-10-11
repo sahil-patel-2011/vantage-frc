@@ -593,12 +593,12 @@ export function CodeBugbotPanel({
                       />
                     </label>
                     <div className="cdc-dismiss-actions">
-                      <button type="submit" className="primary-action" disabled={busy || dismissReason.trim().length < 3}>
-                        Dismiss this finding
-                      </button>
                       <Button variant="ghost" type="button" onClick={() => { setDismissTarget(null); setDismissReason(""); }}>
                         Cancel
                       </Button>
+                      <button type="submit" className="primary-action" disabled={busy || dismissReason.trim().length < 3}>
+                        Dismiss this finding
+                      </button>
                     </div>
                     <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
                       Kept against this finding&apos;s fingerprint, so it stays dismissed across commits even when

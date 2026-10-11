@@ -613,11 +613,11 @@ export default function BudgetClient() {
             <p className="budget-confirm">
               Record {money(Number(feeAmount) || 0)} for &ldquo;{feeLabel}&rdquo;
               {feePaid ? " as money already spent" : " as a planned fee"}?{" "}
-              <Button variant="primary" type="submit" disabled={busy}>
-                Yes, record it
-              </Button>{" "}
               <Button variant="ghost" type="button" onClick={() => setConfirmFee(false)}>
                 Cancel
+              </Button>{" "}
+              <Button variant="primary" type="submit" disabled={busy}>
+                Yes, record it
               </Button>
             </p>
           ) : (

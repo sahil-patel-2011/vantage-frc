@@ -745,11 +745,11 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               call.
             </p>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "1rem" }}>
-              <button type="button" className="primary-action" onClick={acceptFinanceRisks}>
-                Accept and enable
-              </button>
               <button type="button" onClick={dismissFinanceRisks}>
                 Cancel
+              </button>
+              <button type="button" className="primary-action" onClick={acceptFinanceRisks}>
+                Accept and enable
               </button>
             </div>
           </div>

@@ -521,11 +521,11 @@ function DraftCard({
           </>
         ) : mode === "dismiss" ? (
           <>
-            <Button variant="primary" type="button" disabled={busy || !reason.trim()} onClick={() => { void mutate( { action: "dismiss", draftId: draft.id, reason: reason.trim() }, "Dismissed. No page was created.", ); }}>
-              Confirm dismiss
-            </Button>
             <Button variant="secondary" type="button" disabled={busy} onClick={() => setMode("view")}>
               Cancel
+            </Button>
+            <Button variant="primary" type="button" disabled={busy || !reason.trim()} onClick={() => { void mutate( { action: "dismiss", draftId: draft.id, reason: reason.trim() }, "Dismissed. No page was created.", ); }}>
+              Confirm dismiss
             </Button>
           </>
         ) : (

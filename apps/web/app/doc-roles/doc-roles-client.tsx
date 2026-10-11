@@ -341,11 +341,11 @@ export default function DocRolesClient() {
                     view.candidates.find((c) => c.userId === grantUserId)?.email ||
                     "this member"}{" "}
                   create and edit the team&rsquo;s docs?{" "}
-                  <Button variant="primary" type="submit" disabled={busy}>
-                    Yes, grant it
-                  </Button>{" "}
                   <Button variant="ghost" type="button" onClick={() => setConfirmGrant(false)}>
                     Cancel
+                  </Button>{" "}
+                  <Button variant="primary" type="submit" disabled={busy}>
+                    Yes, grant it
                   </Button>
                 </p>
               ) : (
