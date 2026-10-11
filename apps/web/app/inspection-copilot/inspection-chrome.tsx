@@ -110,7 +110,7 @@ export function InspectionShell({
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#inspection-copilot-form">
+          <Button as="a" variant="secondary" href="#inspection-copilot-form">
             Run a check
           </Button>
         ) : null}

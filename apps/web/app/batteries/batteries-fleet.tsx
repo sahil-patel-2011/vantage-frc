@@ -44,7 +44,7 @@ export function BatteriesFleetColumn({
           description="Add a pack label to start. Resistance, voltage, and cycles stay blank until someone logs them."
           soft
         >
-          <Button as="a" variant="primary" href="#batt-add-pack">
+          <Button as="a" variant="secondary" href="#batt-add-pack">
             Add a battery
           </Button>
         </EmptyState>

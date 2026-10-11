@@ -4,7 +4,7 @@
  * of sibling buttons on the empty card.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { isPrimaryControl } from "./primary-control";
 
@@ -185,9 +185,13 @@ const clients = [...collectClients(APP_ROOT), ...HUB_EMPTY_FILES];
  * A link that only scrolls to a form on the same page may stay secondary: that form's own
  * submit is the page's one primary, so a primary jump link would make two.
  */
-function jumpsToOnPageForm(tag: string, src: string): boolean {
+function jumpsToOnPageForm(tag: string, src: string, file: string): boolean {
   const anchor = /href="#([\w-]+)"/.exec(tag)?.[1];
-  return Boolean(anchor && src.includes(`id="${anchor}"`));
+  if (!anchor) return false;
+  if (src.includes(`id="${anchor}"`)) return true;
+  // The form can live in a sibling module of the same page (e.g. inspection-new-check-form.tsx).
+  const dir = dirname(file);
+  return readdirSync(dir).some((name) => name.endsWith(".tsx") && readFileSync(join(dir, name), "utf8").includes(`id="${anchor}"`));
 }
 
 describe("empty-state R4 (one primary on the empty card)", () => {
@@ -207,7 +211,7 @@ describe("empty-state R4 (one primary on the empty card)", () => {
           continue;
         }
         const tag = tags[0] ?? "";
-        if (!isPrimaryTag(tag) && !jumpsToOnPageForm(tag, src)) {
+        if (!isPrimaryTag(tag) && !jumpsToOnPageForm(tag, src, file)) {
           problems.push(`${file} empty card control is not primary: ${tag.slice(0, 120)}`);
         }
       }

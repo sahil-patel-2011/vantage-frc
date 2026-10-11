@@ -46,7 +46,7 @@ export function PrioritySection({
           title="No priorities yet"
           description="Generate a release summary above to seed Strategy priorities, or add capabilities manually."
         >
-          <Button as="a" variant="primary" href={hubHref("/competition", "strategy", orgId)}>
+          <Button as="a" variant="secondary" href={hubHref("/competition", "strategy", orgId)}>
             Open Strategy
           </Button>
         </EmptyState>
