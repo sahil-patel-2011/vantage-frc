@@ -91,12 +91,15 @@ function SubsystemCard({
   subsystem,
   priorities,
   orgId,
+  codeSuggestion,
   busyKey,
   run,
 }: {
   subsystem: EnrichedSubsystem;
   priorities: PriorityOption[];
   orgId: string;
+  /** A file from the team's mapped robot code that looks like this subsystem. */
+  codeSuggestion?: string;
   busyKey: string | null;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
@@ -168,6 +171,26 @@ function SubsystemCard({
               <button type="button" className="robot-link" disabled={busy} onClick={() => void patch({ codeRef: "" })}>
                 clear
               </button>
+            </span>
+          ) : codeSuggestion ? (
+            <span className="robot-domain-value">
+              <button
+                type="button"
+                className="robot-link"
+                disabled={busy}
+                title={codeSuggestion}
+                aria-label={`Use ${codeSuggestion} from the mapped robot code`}
+                onClick={() => void patch({ codeRef: codeSuggestion })}
+              >
+                Use {codeSuggestion.split("/").pop()}
+              </button>
+              <LinkEditor
+                value=""
+                placeholder="src/main/java/frc/robot/subsystems/Drivetrain.java"
+                buttonLabel="Other file…"
+                busy={busy}
+                onSave={(next) => void patch({ codeRef: next })}
+              />
             </span>
           ) : (
             <LinkEditor
@@ -503,6 +526,7 @@ export default function RobotClient() {
               subsystem={subsystem}
               priorities={view.priorities}
               orgId={orgId}
+              codeSuggestion={view.codeSuggestions?.[subsystem.id]}
               busyKey={busyKey}
               run={run}
             />

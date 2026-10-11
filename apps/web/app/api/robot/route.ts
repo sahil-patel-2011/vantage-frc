@@ -1,9 +1,11 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { bomCoverage, type BomEntry, type InventoryItem } from "../../../lib/inventory";
 import { loadVaultDocumentCounts } from "../../../lib/cad-vault/load-vault-coverage";
+import { suggestCodeRef } from "../../../lib/github/code-map";
+import { loadCodeMap } from "../../../lib/github/pr-review-run";
 import {
   parseBlueprintAction,
   SEED_SUBSYSTEMS,
@@ -164,6 +166,21 @@ export async function GET(request: Request) {
         };
       });
 
+      // The mapped robot code (Code Coach → GitHub) suggests a file for each subsystem with none.
+      // Optional: a team without GitHub, or before migration 0716, simply gets no suggestions.
+      const codeMap = enriched.some((subsystem) => !subsystem.codeRef.trim())
+        ? await withSavepoint(client, () => loadCodeMap(client, row.orgId), null)
+        : null;
+      const codeSuggestions: Record<string, string> = {};
+      if (codeMap) {
+        const taken = enriched.map((subsystem) => subsystem.codeRef).filter(Boolean);
+        for (const subsystem of enriched) {
+          if (subsystem.codeRef.trim()) continue;
+          const path = suggestCodeRef(subsystem.name, codeMap.map.subsystems, taken);
+          if (path) codeSuggestions[subsystem.id] = path;
+        }
+      }
+
       return {
         status: "ready",
         context: {
@@ -175,6 +192,7 @@ export async function GET(request: Request) {
         },
         subsystems: enriched,
         priorities: priorities.rows,
+        codeSuggestions,
       } satisfies BlueprintView;
     });
 

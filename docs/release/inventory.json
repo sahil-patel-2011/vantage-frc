@@ -1,12 +1,12 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-11T17:30:31.728Z",
+  "generatedAt": "2026-10-11T17:59:36.914Z",
   "summary": {
     "pages": 331,
-    "apis": 509,
+    "apis": 511,
     "manifests": 123,
     "coreWorkflows": 20,
-    "historicalTables": 622,
+    "historicalTables": 624,
     "scheduledJobs": 0,
     "cronRoutes": 11,
     "durableWorkflows": 3,
@@ -1970,6 +1970,15 @@
       ]
     },
     {
+      "path": "apps/web/app/api/github/pulls/route.ts",
+      "route": "/api/github/pulls",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
       "path": "apps/web/app/api/github/repos/route.ts",
       "route": "/api/github/repos",
       "kind": "api",
@@ -1983,6 +1992,14 @@
       "kind": "api",
       "methods": [
         "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/github/webhook/[token]/route.ts",
+      "route": "/api/github/webhook/[token]",
+      "kind": "api",
+      "methods": [
         "POST"
       ]
     },
@@ -7779,7 +7796,9 @@
     "fundraiser_events",
     "game_scoring_actions",
     "gearboxes",
+    "github_code_index",
     "github_connections",
+    "github_pr_reviews",
     "goals_tracker_checkins",
     "goals_tracker_goals",
     "grant_application_items",

@@ -1,6 +1,6 @@
 # GitHub connection (Team settings + AI context)
 
-*For team admins linking the robot-code repository, and operators configuring GitHub OAuth. Last updated 2026-09-09.*
+*For team admins linking the robot-code repository, and operators configuring GitHub OAuth. Last updated 2026-10-11.*
 
 Org-scoped robot-code bridge so FRC Assistant / code assist can pull **size-capped, read-only** file
 snippets from one linked GitHub account. Never pushes. Never requests the `workflow` scope.
@@ -122,6 +122,41 @@ step also links to Team → GitHub.
 | GET | `/api/github/oauth/callback` | OAuth redirect |
 | GET | `/api/github/repos?orgId=` | List repos for linked account |
 | GET | `/api/github/contents?orgId=&path=` | Size-capped file/tree snippets |
+| GET | `/api/github/pulls?orgId=` | Open pull requests, their latest AI review, the code map |
+| POST | `/api/github/pulls` | `review` \| `refresh-map` \| `auto-reviews` (owner/admin) |
+| POST | `/api/github/webhook/<token>` | GitHub deliveries (no session; signed — see below) |
+
+## Pull request reviews and the code map
+
+Build → Code → **Pull requests** (`app/code/code-pr-panel.tsx`). Migration
+`0716_github_pr_reviews.sql` adds `github_pr_reviews`, `github_code_index` and the webhook columns on
+`github_connections`; it is in the production schema preflight.
+
+- **Review a pull request.** Owners, admins and team members can review any open PR in the default
+  repo. Vantage reads the PR's changed files (up to 25 files, 60k characters of patch), asks the
+  team's AI route for a JSON review, and stores it per head commit. A finding is kept only when it
+  quotes a line the PR added — anything the model cannot point at is dropped, never shown. Metered as
+  `feature=coding` like every other AI call; viewers can read reviews but not start one.
+- **Review every new pull request** (owner/admin switch). Creates one repository webhook for
+  `pull_request` and `push`, with a per-team URL token and a per-team signing secret (encrypted at rest
+  like the token). Opened, reopened, ready-for-review and updated non-draft PRs are reviewed
+  automatically; a push to the default branch refreshes the code map. Reviews run as the owner/admin who
+  turned the switch on and are metered to the team. Turning it off deletes the webhook.
+  - Creating the webhook needs a token that can manage hooks: the OAuth `repo` scope, or a
+    fine-grained PAT with **Webhooks: Read and write** and **Pull requests: Read**. With a read-only
+    token the card shows the URL, secret and events to paste into GitHub → Settings → Webhooks.
+  - `/api/github/webhook/<token>` is a public proxy prefix (like the Stripe and TBA webhooks). The token
+    picks the team through `github_pr_webhook_target()` (SECURITY DEFINER, callable with no user; every
+    table policy still refuses that context), then `X-Hub-Signature-256` must verify against that team's
+    secret over the raw body before anything runs. Unknown token → 404, bad signature → 401.
+- **Code map.** One tree read plus at most six small files (the GradleRIO build file and constants)
+  — no AI. It lists subsystems, commands, vendor libraries, the WPILib version and CAN IDs, and flags
+  one CAN ID used twice. It feeds:
+  - **Ask AI** — robot and code questions get the map and the five latest reviews as context
+    (`robotCodeContextItems`); other chat does not pay for it.
+  - **Robot Blueprint** — a subsystem with no code ref gets a one-tap "Use SwerveSubsystem.java"
+    suggestion when exactly one mapped file fits its name.
+  - **PR reviews** — the reviewer sees what already exists in the robot.
 
 ## Bugbot
 

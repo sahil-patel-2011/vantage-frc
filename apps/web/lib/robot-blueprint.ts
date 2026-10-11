@@ -87,6 +87,8 @@ export type BlueprintView =
       context: BlueprintContext;
       subsystems: EnrichedSubsystem[];
       priorities: PriorityOption[];
+      /** Subsystem id → a file from the team's mapped robot code, for subsystems with no code ref. */
+      codeSuggestions?: Record<string, string>;
     }
   | { status: "setup_required"; context: BlueprintContext; message: string };
 

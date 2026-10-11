@@ -9,6 +9,7 @@ import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { CodeBugbotPanel } from "./code-bugbot-panel";
 import { CodeCoachPanel } from "./code-coach-panel";
+import { CodePullRequests } from "./code-pr-panel";
 import type { CodeReadyViewProps } from "./code-view-props";
 
 export type { CodeReadyViewProps } from "./code-view-props";
@@ -188,6 +189,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
 
       <CodeCoachPanel {...props} />
       <CodeBugbotPanel {...props} />
+      {orgId ? <CodePullRequests orgId={orgId} /> : null}
     </main>
   );
 }

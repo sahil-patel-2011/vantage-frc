@@ -1,7 +1,8 @@
 import { getOrgPromptCachingEnabled, resolveOrgChatAdapter } from "@vantage/agent";
 import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { withRls, withSavepoint } from "@vantage/db";
+import { robotCodeContextItems } from "../../../lib/github/pr-review-run";
 import { createBridgeTransport } from "../../../lib/ai-bridge/transport";
 import { headers } from "next/headers";
 import {
@@ -101,6 +102,9 @@ export async function POST(request: Request) {
         ...(body.githubContext
           ? await loadGitHubContextItems(client, orgId, body.githubContext)
           : []),
+        // What the team's robot code looks like (code map + recent PR reviews), for questions
+        // about the robot. Read from the stored map; no GitHub call on the chat path.
+        ...(await withSavepoint(client, () => robotCodeContextItems(client, orgId, historyContext.message), [])),
       ];
 
       return repository.sendMessage({
