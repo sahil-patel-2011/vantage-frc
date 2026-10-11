@@ -12,6 +12,7 @@ import { rootCertificates } from "node:tls";
 import { pipeline } from "node:stream/promises";
 import pg from "pg";
 import { parseEnvFile } from "./deploy-preflight.mjs";
+import { databaseSslCa, pgTlsOptions } from "./lib/database-ssl.mjs";
 
 const argument = (name) => process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : undefined;
 if (!process.argv.includes("--env-file") || !process.argv.includes("--pg-dump")) throw new Error("Supply --env-file and --pg-dump.");
@@ -30,12 +31,13 @@ catch (error) {
 }
 if (key.length !== 32) throw new Error("Invalid checkpoint encryption key.");
 const caPath = join(directory, "trusted-roots.pem");
-await writeFile(caPath, rootCertificates.join("\n"), { mode: 0o600 });
+// A NAS with its own certificate authority (DATABASE_SSL_CA) is verified against that CA alone.
+await writeFile(caPath, databaseSslCa(env.DATABASE_SSL_CA) ?? rootCertificates.join("\n"), { mode: 0o600 });
 const id = `checkpoint-${new Date().toISOString().replaceAll(":", "-")}`;
 const nonce = randomBytes(12);
 const cipher = createCipheriv("aes-256-gcm", key, nonce);
 cipher.setAAD(Buffer.from(id));
-const client = new pg.Client({ connectionString: connection });
+const client = new pg.Client(pgTlsOptions(connection, env));
 await client.connect();
 try {
   await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");

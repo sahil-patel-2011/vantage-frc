@@ -9,6 +9,8 @@ import {
   resolveAppDatabaseUrl,
   shouldUseNodePostgres,
   sslOptionForUrl,
+  databaseSslCa,
+  connectionStringForSsl,
   UnsafePostgresUrlError,
 } from "./postgres-url";
 
@@ -77,6 +79,55 @@ describe("postgres host detection", () => {
       else process.env.DATABASE_URL = previous.database;
       if (previous.postgres == null) delete process.env.POSTGRES_URL;
       else process.env.POSTGRES_URL = previous.postgres;
+    }
+  });
+
+  it("verifies a self-hosted server against its own CA, never by turning verification off", () => {
+    const previous = process.env.DATABASE_SSL_CA;
+    const pem = "-----BEGIN CERTIFICATE-----\nMIIBfake\n-----END CERTIFICATE-----";
+    try {
+      delete process.env.DATABASE_SSL_CA;
+      expect(sslOptionForUrl("postgresql://vantage:p@nas.example.org:5432/vantage")).toEqual({ rejectUnauthorized: true });
+      process.env.DATABASE_SSL_CA = pem;
+      expect(sslOptionForUrl("postgresql://vantage:p@nas.example.org:5432/vantage")).toEqual({ rejectUnauthorized: true, ca: pem });
+      process.env.DATABASE_SSL_CA = Buffer.from(pem).toString("base64");
+      expect(databaseSslCa()).toBe(pem);
+      process.env.DATABASE_SSL_CA = "not a certificate";
+      expect(databaseSslCa()).toBeNull();
+      expect(sslOptionForUrl("postgresql://vantage:p@nas.example.org:5432/vantage?sslmode=disable")).toBe(false);
+    } finally {
+      if (previous == null) delete process.env.DATABASE_SSL_CA;
+      else process.env.DATABASE_SSL_CA = previous;
+    }
+  });
+
+  it("keeps self-hosted pools small and quick to give up when the server is unreachable", () => {
+    expect(poolLimitsForUrl("postgresql://vantage_app:p@nas.example.org:5432/vantage")).toEqual({
+      max: 4,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 10_000,
+    });
+  });
+
+  it("drops sslmode from the URL when a CA is set, because node-postgres would let it replace the CA", () => {
+    const previous = process.env.DATABASE_SSL_CA;
+    const nas = "postgresql://vantage_app:p%40ss@nas.example.org:5432/vantage?sslmode=require&application_name=vantage";
+    try {
+      delete process.env.DATABASE_SSL_CA;
+      expect(connectionStringForSsl(nas)).toBe(nas);
+      process.env.DATABASE_SSL_CA = "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----";
+      expect(connectionStringForSsl(nas)).toBe(
+        "postgresql://vantage_app:p%40ss@nas.example.org:5432/vantage?application_name=vantage",
+      );
+      // Off stays off, and a laptop URL is never touched.
+      const off = "postgresql://vantage:p@nas.example.org:5432/vantage?sslmode=disable";
+      expect(connectionStringForSsl(off)).toBe(off);
+      expect(connectionStringForSsl("postgresql://v:p@localhost:5432/v?sslmode=require")).toBe(
+        "postgresql://v:p@localhost:5432/v?sslmode=require",
+      );
+    } finally {
+      if (previous == null) delete process.env.DATABASE_SSL_CA;
+      else process.env.DATABASE_SSL_CA = previous;
     }
   });
 });
