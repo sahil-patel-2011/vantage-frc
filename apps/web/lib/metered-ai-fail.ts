@@ -51,8 +51,12 @@ function isProviderSetupError(error: unknown): boolean {
  * plumbing, so that version goes to the server log only. Key problems a team can fix themselves
  * ("could not be decrypted", "was rejected") keep their own message.
  */
+/**
+ * Says who can act (A5-20): anyone can connect their own AI (Codex account or personal key) at
+ * /ai/connect, and a shared team connection is an owner's or admin's.
+ */
 export const AI_OFF_MESSAGE =
-  "Connect AI to use the assistant. Choose a connection in AI settings, then try again.";
+  "AI isn't connected yet. Connect your own in AI settings, or ask your team's owner or an admin to set up a team connection, then try again.";
 
 function isAiOffError(message: string): boolean {
   return /No AI provider key|must configure a BYO AI key|local desktop relay/i.test(message);

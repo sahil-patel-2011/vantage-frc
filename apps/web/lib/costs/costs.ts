@@ -3,6 +3,7 @@
 // the numbers, gated by the org's opt-in. Money is handled in whole cents internally to avoid
 // float drift, then surfaced as rounded dollars.
 
+import { formatUsd } from "../finance/format-usd";
 import type {
   AllCostsSummary,
   BudgetInsight,
@@ -61,8 +62,9 @@ export function subscriptionCadenceLabel(cadence: SubscriptionCadence): string {
   return labels[cadence];
 }
 
+/** The shared money format: "$1,234.50", never "$1,234.5" (A5-07). */
 export function usd(amount: number): string {
-  return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  return formatUsd(amount);
 }
 
 function monthOf(iso: string): string | null {

@@ -63,6 +63,19 @@ export function fmtRange(startIso: string, endIso?: string | null): string {
   return `${start} → ${sameDay ? fmtTime(endIso) : fmtWhen(endIso)}`;
 }
 
+/**
+ * "Added Tuesday build practice · Tue, Sep 29, 6:00 PM": the form said nothing after Add. It used
+ * to end "It is under Coming up.", which was false for a past date (A5-06); a past event says so.
+ */
+export function addedNote(title: string, startsAt: string, now: number = Date.now()): string {
+  const at = new Date(startsAt);
+  if (Number.isNaN(at.getTime())) return `Added ${title}.`;
+  const when = at.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  return at.getTime() < now
+    ? `Added ${title} · ${when}. That date has passed, so it is on the calendar but not under Coming up.`
+    : `Added ${title} · ${when}.`;
+}
+
 export function dayNum(day: string): string {
   return String(Number(day.slice(8, 10)));
 }

@@ -1,5 +1,16 @@
 /** Client-safe todos barrel — never re-export compute-todos (@vantage/core). */
-export { asOfUtcDate, computeMetrics, daysToDue, sortTodos, statusLabel, withFlags } from "./evaluate";
+export {
+  TODO_TITLE_MAX,
+  TODO_TITLE_TOO_LONG,
+  asOfUtcDate,
+  computeMetrics,
+  daysToDue,
+  localDateIso,
+  resolveAsOf,
+  sortTodos,
+  statusLabel,
+  withFlags,
+} from "./evaluate";
 export {
   TODO_LIST_FILTERS,
   TODOS_RELATED_INCLUDE,

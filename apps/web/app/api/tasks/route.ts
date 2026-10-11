@@ -59,7 +59,7 @@ export async function GET(request: Request) {
 
   try {
     const view = await withRls({ userId: session.user.id }, (client) =>
-      computeTasksView(client, { userId: session.user.id, requestedOrg, seasonYear }),
+      computeTasksView(client, { userId: session.user.id, requestedOrg, seasonYear, today: url.searchParams.get("today") }),
     );
     return Response.json(view);
   } catch {
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
           throw new Error("Unknown action");
       }
 
-      return computeTasksView(client, { userId, requestedOrg: orgId, seasonYear });
+      return computeTasksView(client, { userId, requestedOrg: orgId, seasonYear, today: typeof body.today === "string" ? body.today : null });
     });
 
     return Response.json(view);

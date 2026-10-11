@@ -104,10 +104,25 @@ export function cadProvider(url: string | null): string | null {
     if (host === "cad.onshape.com" || host.endsWith(".onshape.com")) return "Onshape";
     if (host.includes("autodesk") || host === "a360.co" || host.includes("fusion")) return "Fusion 360";
     if (host === "grabcad.com" || host.endsWith(".grabcad.com")) return "GrabCAD";
-    return "CAD";
+    // Any other host is named, not called "CAD": a link to evil.example.com read "Open CAD" (A5-25).
+    return host.replace(/^www\./, "");
   } catch {
     return null;
   }
+}
+
+/**
+ * A file in the robot code: a repository path with no spaces or symbols ("Drive 🚀.java" was
+ * accepted, A5-25). Empty clears it.
+ */
+export function optionalCodeRef(value: unknown): string {
+  const text = String(value ?? "").trim();
+  if (!text) return "";
+  if (text.length > 300) throw new Error("Keep the code file path to 300 characters.");
+  if (!/^[A-Za-z0-9_][A-Za-z0-9_./-]*$/.test(text) || text.includes("..")) {
+    throw new Error("Use the file's path in the robot code, like src/main/java/frc/robot/subsystems/Drivetrain.java.");
+  }
+  return text;
 }
 
 /** Validate an optional https CAD URL (max 500 chars); normalized string or null. */
@@ -119,10 +134,10 @@ export function optionalCadUrl(value: unknown): string | null {
   try {
     parsed = new URL(text);
   } catch {
-    throw new Error("CAD link must be a full https:// URL");
+    throw new Error("Paste the full link to the CAD document, starting with https://.");
   }
-  if (parsed.protocol !== "https:") throw new Error("CAD link must use https");
-  if (!parsed.hostname.includes(".")) throw new Error("CAD link must be a full https:// URL");
+  if (parsed.protocol !== "https:") throw new Error("The CAD link has to start with https://.");
+  if (!parsed.hostname.includes(".")) throw new Error("Paste the full link to the CAD document, starting with https://.");
   return parsed.toString();
 }
 
@@ -264,7 +279,7 @@ export function parseBlueprintAction(input: unknown): BlueprintAction {
         patch.status = status;
       }
       if (has(body, "cadUrl")) patch.cadUrl = optionalCadUrl(body.cadUrl);
-      if (has(body, "codeRef")) patch.codeRef = optionalText(body.codeRef, 300) ?? "";
+      if (has(body, "codeRef")) patch.codeRef = optionalCodeRef(body.codeRef);
       if (has(body, "priorityId")) patch.priorityId = optionalUuid(body.priorityId, "Priority");
       if (has(body, "practiceAction")) patch.practiceAction = optionalText(body.practiceAction, 80);
       if (has(body, "bomSubsystem")) patch.bomSubsystem = optionalText(body.bomSubsystem, 80) ?? "";

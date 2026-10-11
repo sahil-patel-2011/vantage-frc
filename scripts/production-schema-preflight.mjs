@@ -23,6 +23,9 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0720_team_lifecycle.sql",
   // Un-assign on the Assignments board: /api/scouting/coverage deletes scout_assignments rows.
   "0722_scout_assignment_unassign.sql",
+  // Operations trust: /api/hours reads hour_logs.entry_source and correction columns; the
+  // two-person reimbursement rule, lead-only certifications and sign-off notices live in RLS.
+  "0723_operations_trust.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */

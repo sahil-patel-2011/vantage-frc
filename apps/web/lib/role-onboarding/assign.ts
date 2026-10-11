@@ -104,6 +104,13 @@ export function assignOnboardingTracks(input: AssignInput): AssignedTrack[] {
     pushUnique(out, seen, ROLE_TRACK[role], "role", `From your team role (${input.teamRole})`);
   }
 
+  // View only (a parent, a guest) can look but not change anything, so the build, business and
+  // subteam lists ("Connect CAD", "Open Code") are not theirs: a parent saw "0 of 10 done" (A5-21).
+  if (orgRole === "viewer") {
+    if (!role || !ROLE_TRACK[role]) pushUnique(out, seen, ROLE_TRACK.parent!, "role", "View only on this team");
+    return out;
+  }
+
   const focus = input.primaryFocus ? normalize(input.primaryFocus) : "";
   if (focus && FOCUS_TRACK[focus]) {
     pushUnique(

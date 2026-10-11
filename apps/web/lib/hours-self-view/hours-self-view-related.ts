@@ -129,7 +129,7 @@ export function hoursSelfViewShellCopy(kind: HoursSelfViewShellKind): HoursSelfV
         badge: "Unavailable",
         title: "Could not load My Hours",
         description:
-          "A network or server issue blocked your hours. Retry, or open Attendance while it reloads.",
+          "Your hours didn't load. Nothing you logged is lost: check your connection and press Retry.",
       };
     case "setup":
       return {

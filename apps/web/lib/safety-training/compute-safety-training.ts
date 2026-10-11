@@ -5,6 +5,7 @@ import {
   expiryDateFor,
   summarizeSafetyTraining,
 } from ".";
+import { canRecordCertification } from "../safety/authorization";
 import type {
   SafetyCategory,
   SafetyCompletion,
@@ -33,6 +34,11 @@ export type SafetyTrainingView =
       status: "live";
       orgId: string;
       teamNumber: number | null;
+      /**
+       * An owner or admin: sets the modules and records who completed them (0723). Everyone
+       * else reads the list and asks a lead to check them.
+       */
+      canManage: boolean;
       modules: SafetyModule[];
       completions: SafetyCompletion[];
       members: Array<{ id: string; name: string }>;
@@ -100,9 +106,9 @@ async function resolveOrg(
   client: PoolClient,
   userId: string,
   requestedOrg: string | null,
-): Promise<{ orgId: string; teamNumber: number | null } | null> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
+): Promise<{ orgId: string; teamNumber: number | null; role?: string | null } | null> {
+  const membership = await client.query<{ orgId: string; teamNumber: number | null; role?: string | null }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber", m.role::text AS role
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      WHERE m.user_id = $1
@@ -172,6 +178,7 @@ export async function computeSafetyTrainingView(
     status: "live",
     orgId: org.orgId,
     teamNumber: org.teamNumber,
+    canManage: canRecordCertification(org.role),
     modules,
     completions,
     members,

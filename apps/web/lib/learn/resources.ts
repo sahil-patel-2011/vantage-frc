@@ -16,7 +16,7 @@ export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
     id: "guided",
     title: "Checked step by step",
     description:
-      "Onshape from zero to robot parts (a first part, an assembly, sheet metal, a shop drawing, parts from FRC libraries, a belt layout) and Team 6925's programming weeks. Vantage checks each step in your own Onshape document, build output or pull request before it counts.",
+      "Start here. Onshape from zero to robot parts (a first part, an assembly, sheet metal, a shop drawing, parts from FRC libraries, a belt layout), Git and GitHub, and Team 6925's weeks. Vantage checks each step in your own Onshape document, build output or pull request before it counts.",
     href: "/learn/guided",
     primary: "Start a checked track",
   },
@@ -38,14 +38,14 @@ export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
   {
     id: "cad-learn",
     title: "Learn Onshape",
-    description: "Sketch, parts, mates, then a drawing for the shop. Ends in a graded part.",
+    description: "The reading course behind the checked Onshape tracks: sketch, parts, mates, then a drawing for the shop. Use it to look something up.",
     href: "/cad-learn",
     primary: "Open Learn CAD",
   },
   {
     id: "drawings",
     title: "Onshape drawings",
-    description: "Views and dimensions so someone else can assemble what you modeled.",
+    description: "The drawings chapter of Learn Onshape: views and dimensions so someone else can make what you modeled.",
     href: "/cad-learn#drawings",
     primary: "Open the drawings lesson",
   },

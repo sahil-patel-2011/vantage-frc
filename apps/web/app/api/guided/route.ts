@@ -1,9 +1,16 @@
-import { auth } from "@vantage/core";
+import { auth, emitNotification } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
-import { HttpError, failResponse, markProgress, resolveMembership } from "../../../lib/cad-learn/store";
+import { HttpError, failResponse, isLead, markProgress, resolveMembership } from "../../../lib/cad-learn/store";
 import { runGuidedCheck, type CheckInput } from "../../../lib/guided/run-check";
-import { clearMySignoff, needsLeadSignoff, readMySignoffs, requestSignoff } from "../../../lib/guided/signoffs";
+import {
+  clearMySignoff,
+  needsLeadSignoff,
+  notifyLeadsOfRequest,
+  readMySignoffs,
+  requestSignoff,
+  summarizeTeamProgress,
+} from "../../../lib/guided/signoffs";
 import { guidedStep, guidedTrack } from "../../../lib/guided/tracks";
 import { GUIDED_PREFIX, guidedLessonId } from "../../../lib/guided/types";
 
@@ -13,6 +20,34 @@ export async function GET(request: Request) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) throw new HttpError(401, "Authentication required");
     const url = new URL(request.url);
+    // No track: the student's steps done on every track, for the index (A5-27).
+    if (!url.searchParams.get("track")) {
+      const summary = await withRls({ userId: session.user.id }, async (client) => {
+        const membership = await resolveMembership(client, session.user.id, url.searchParams.get("orgId"));
+        const rows = await client.query<{ lessonId: string; via: "check" | "signoff" }>(
+          `SELECT lesson_id AS "lessonId", 'check'::text AS via FROM cad_learn_progress
+            WHERE org_id = $1::uuid AND user_id = $2::uuid AND completed_at IS NOT NULL AND lesson_id LIKE 'guided:%'`,
+          [membership.orgId, session.user.id],
+        );
+        const approved = await withSavepoint(
+          client,
+          async () =>
+            (
+              await client.query<{ lessonId: string; via: "check" | "signoff" }>(
+                `SELECT lesson_id AS "lessonId", 'signoff'::text AS via FROM guided_signoffs
+                  WHERE org_id = $1::uuid AND user_id = $2::uuid AND status = 'approved'`,
+                [membership.orgId, session.user.id],
+              )
+            ).rows,
+          [],
+        );
+        const counted = summarizeTeamProgress(
+          [...rows.rows, ...approved].map((row) => ({ ...row, userId: session.user.id, displayName: "", at: "" })),
+        );
+        return { tracks: counted[0]?.tracks ?? {}, isLead: isLead(membership) };
+      });
+      return Response.json(summary, { headers: { "cache-control": "private, no-store" } });
+    }
     const track = guidedTrack(url.searchParams.get("track") ?? "");
     if (!track) throw new HttpError(404, "Unknown track");
     const { done, signoffs } = await withRls({ userId: session.user.id }, async (client) => {
@@ -65,10 +100,32 @@ export async function POST(request: Request) {
           : { passed: false, message: "Reopened. Check it again when you are ready." };
       }
       if (step.check.kind === "lead-signoff") {
-        const status = await requestSignoff(client, signoffKey);
-        return status === "approved"
-          ? { passed: true, message: "A lead signed this off." }
-          : { passed: false, pending: true, message: "Asked a lead. It counts as done once an owner or admin signs it off on Team progress." };
+        const request = await requestSignoff(client, signoffKey);
+        if (request.status === "approved") return { passed: true, message: "A lead signed this off." };
+        // Tell the leads (A5-16). A failed notice never undoes the request: the step still waits
+        // on Team progress, where every lead sees it.
+        const told =
+          request.fresh && request.id
+            ? await withSavepoint(
+                client,
+                () =>
+                  notifyLeadsOfRequest(client, emitNotification, {
+                    ...who,
+                    signoffId: request.id!,
+                    trackId: String(body.trackId),
+                    stepId: step.id,
+                  }),
+                0,
+              )
+            : null;
+        return {
+          passed: false,
+          pending: true,
+          message:
+            told === 0
+              ? "Asked for a sign-off. Your team has no owner or admin to check it yet; it waits on Team progress."
+              : "Sent to your team's owners and admins. They get a notice and check it with you; the step counts once one of them signs it off.",
+        };
       }
       const outcome = await runGuidedCheck(client, who, step.check, body.input ?? {});
       if (outcome.passed) await markProgress(client, { ...who, lessonId, completed: true });

@@ -102,6 +102,17 @@ describe("home widget loaders", () => {
     expect(empty.status).toBe("empty");
   });
 
+  it("counts sign-off requests waiting on a lead in My day (A5-16)", async () => {
+    const waiting = await loadHomeWidget(
+      fakeClient({ "home-widget:my_day-signoffs": [{ n: 2 }] }),
+      "my_day",
+      ctx,
+      stamp,
+    );
+    expect(waiting.status).toBe("live");
+    expect(waiting.data?.signoffsWaiting).toBe(2);
+  });
+
   it("hides sponsor follow-ups for a school-funded team with no sponsors", async () => {
     const result = await loadHomeWidget(
       fakeClient({

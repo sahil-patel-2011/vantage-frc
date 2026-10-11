@@ -55,6 +55,43 @@ describe("Git and GitHub: your first pull request", () => {
     expect(nothing.passed).toBe(false);
   });
 
+  it("says what it found, not the failure sentence with Found: in front (A5-17)", async () => {
+    const ok = await paste(
+      "install",
+      "git version 2.43.0.windows.1\ngh version 2.40.1 (2023-12-13)\n✓ Logged in to github.com account octocat (keyring)",
+    );
+    expect(ok.passed).toBe(true);
+    expect(ok.evidence?.slice(0, 3)).toEqual([
+      "Found “git version 2.43.0.windows.1”",
+      "Found “gh version 2.40.1 (2023-12-13)”",
+      "Found “✓ Logged in to github.com account octocat (keyring)”",
+    ]);
+    expect(ok.evidence?.join(" ")).not.toMatch(/Found: no/);
+  });
+
+  it("tells a student whose commit failed for want of a name and email how to fix it (A5-17)", async () => {
+    const failed = await paste(
+      "commit",
+      "Author identity unknown\n\n*** Please tell me who you are.\n\nRun\n\n  git config --global user.email \"you@example.com\"\n  git config --global user.name \"Your Name\"\n\nfatal: unable to auto-detect email address (got 'riley@LAPTOP.(none)')",
+    );
+    expect(failed.passed).toBe(false);
+    expect(failed.message).toMatch(/^Not yet: Git doesn't know who you are yet\. Run git config --global user\.name/);
+  });
+
+  it("has a step that sets the Git name and email, checked from git config's output (A5-17)", async () => {
+    const order = track.steps.map((s) => s.id);
+    expect(order.indexOf("identity")).toBe(order.indexOf("install") + 1);
+    const ok = await paste("identity", "PS C:\\Users\\riley> git config user.name\nRiley Chen\nPS C:\\Users\\riley> git config user.email\nriley.chen@example.org");
+    expect(ok.passed).toBe(true);
+    expect((await paste("identity", "user.name=Riley Chen\nuser.email=123456+riley@users.noreply.github.com")).passed).toBe(true);
+    const noName = await paste("identity", "PS C:\\Users\\riley> git config user.name\nPS C:\\Users\\riley> git config user.email\nriley@example.org");
+    expect(noName.passed).toBe(false);
+    expect(noName.message).toMatch(/no name/);
+    const example = await paste("identity", "Riley Chen\nyou@example.com");
+    expect(example.passed).toBe(false);
+    expect(example.message).toMatch(/example email/);
+  });
+
   it("passes a clean merge and names a conflict", async () => {
     expect((await paste("update", "Already up to date.")).passed).toBe(true);
     expect((await paste("update", "Updating 1a2b3c4..5d6e7f8\nFast-forward\n src/main/java/frc/robot/Robot.java | 2 +-")).passed).toBe(true);

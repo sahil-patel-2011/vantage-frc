@@ -96,4 +96,15 @@ describe("team setup for the people who run the team", () => {
       expect(tracks.map((track) => track.trackKey)).not.toContain("team_setup");
     }
   });
+
+  it("gives a View-only parent their own list, not the build and subteam lists (A5-21)", () => {
+    const tracks = assignOnboardingTracks({
+      orgRole: "viewer",
+      teamRole: null,
+      primaryFocus: "build",
+      subteamNames: ["Mechanical"],
+      crewRole: "programming",
+    });
+    expect(tracks.map((track) => track.trackKey)).toEqual(["welcome", "role_parent"]);
+  });
 });

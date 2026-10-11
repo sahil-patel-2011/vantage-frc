@@ -11,6 +11,7 @@ import {
   type SafetyTrainingView,
 } from "../../../lib/safety-training/compute-safety-training";
 import type { SafetyCategory } from "../../../lib/safety-training/types";
+import { SafetyAuthError, assertCanRecordCertification } from "../../../lib/safety/authorization";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { SafetyTrainingView };
@@ -85,6 +86,9 @@ export async function POST(request: Request) {
         userId,
       ]);
       if (!member.rowCount) throw new Error("forbidden");
+      // Modules and completions are a lead's record of who is cleared (0723); RLS refuses the
+      // same writes for anyone else.
+      await assertCanRecordCertification(client, { orgId, userId });
 
       switch (action) {
         case "create-module": {
@@ -141,6 +145,7 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (error instanceof SafetyAuthError) return Response.json({ error: error.message }, { status: error.status });
     const message = publicErrorMessage(error, "Safety Training request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(

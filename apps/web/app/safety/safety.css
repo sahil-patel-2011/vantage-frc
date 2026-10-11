@@ -10,5 +10,6 @@
 /* Tool certifications: three counts, then the record form beside the list of who is cleared. */
 .safety-page .safety-cert-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
 .safety-page .safety-card-title{margin:0;font-size:var(--title-3,17px);letter-spacing:-.01em}
+.safety-page .safety-card-hint{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
 /* The list is as tall as its rows; an empty list does not stretch to the form's height. */
 .safety-page .safety-grid{align-items:start}

@@ -547,7 +547,7 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
       tone: "",
     },
     {
-      label: "Committed (real-world)",
+      label: "Paid and planned",
       value: usd(summary.totalCommitted),
       tone: "",
     },

@@ -3,6 +3,8 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
+  describeSessionRange,
+  overlapMessage,
   parseBuildHoursAction,
   type BuildHoursView,
   type HourLog,
@@ -47,6 +49,25 @@ async function membershipRole(client: PoolClient, orgId: string, userId: string)
 
 const isAdmin = (role: string) => role === "owner" || role === "admin";
 
+/** The member's session that overlaps [clockIn, clockOut), if any; an open session runs until now. */
+async function overlappingSession(
+  client: PoolClient,
+  input: { orgId: string; userId: string; clockIn: string; clockOut: string; excludeId: string | null },
+): Promise<{ clockIn: string; clockOut: string | null } | null> {
+  const result = await client.query<{ clockIn: string; clockOut: string | null }>(
+    `SELECT clock_in::text AS "clockIn", clock_out::text AS "clockOut"
+     FROM hour_logs
+     WHERE org_id = $1::uuid AND user_id = $2::uuid
+       AND ($5::uuid IS NULL OR id <> $5::uuid)
+       AND clock_in < $4::timestamptz
+       AND COALESCE(clock_out, now()) > $3::timestamptz
+     ORDER BY clock_in
+     LIMIT 1`,
+    [input.orgId, input.userId, input.clockIn, input.clockOut, input.excludeId],
+  );
+  return result.rows[0] ?? null;
+}
+
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: publicErrorMessage(error, "Hours request failed") }, { status });
@@ -89,13 +110,20 @@ export async function GET(request: Request) {
            FROM hour_policies WHERE org_id = $1`,
           [row.orgId],
         ),
+        // entry_source and the correction columns arrive with 0723; reading them through
+        // to_jsonb(r) keeps this list loading on a database that does not have them yet.
         client.query<HourLog>(
           `SELECT r.id, r.user_id AS "userId", u.name AS "userName", r.kind,
                   r.clock_in::text AS "clockIn", r.clock_out::text AS "clockOut", r.note,
-                  cb.name AS "closedByName"
+                  cb.name AS "closedByName",
+                  to_jsonb(r) ->> 'entry_source' AS "entrySource",
+                  to_jsonb(r) ->> 'correction_note' AS "correctionNote",
+                  to_jsonb(r) ->> 'corrected_at' AS "correctedAt",
+                  cr.name AS "correctedByName"
            FROM hour_logs r
            JOIN users u ON u.id = r.user_id
            LEFT JOIN users cb ON cb.id = r.closed_by
+           LEFT JOIN users cr ON cr.id::text = to_jsonb(r) ->> 'corrected_by'
            WHERE r.org_id = $1
              AND (
                r.clock_out IS NULL
@@ -261,12 +289,60 @@ export async function POST(request: Request) {
             ]);
             if (!member.rowCount) throw new HttpError(400, "That member is not in this organization");
           }
+          // Two sessions at once would count the same hours twice on the leaderboard.
+          const clash = await overlappingSession(client, {
+            orgId: action.orgId,
+            userId: targetUser,
+            clockIn: action.clockIn,
+            clockOut: action.clockOut,
+            excludeId: null,
+          });
+          if (clash) throw new HttpError(409, overlapMessage(clash, action.timeZone));
+          // 0723's trigger marks a session that arrives already closed as entry_source 'manual'.
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO hour_logs (org_id, user_id, kind, clock_in, clock_out, note, created_by, closed_by)
              VALUES ($1, $2, $3, $4::timestamptz, $5::timestamptz, $6, $7, $7) RETURNING id`,
             [action.orgId, targetUser, action.kind, action.clockIn, action.clockOut, action.note, userId],
           );
           return { id: inserted.rows[0]!.id };
+        }
+
+        case "correct_record": {
+          if (!isAdmin(role)) {
+            throw new HttpError(403, "Only an owner or admin can change the times on an hours entry. Ask one to correct it.");
+          }
+          const target = await client.query<{ userId: string; clockIn: string; clockOut: string | null }>(
+            `SELECT user_id AS "userId", clock_in::text AS "clockIn", clock_out::text AS "clockOut"
+             FROM hour_logs WHERE id = $1::uuid AND org_id = $2::uuid`,
+            [action.id, action.orgId],
+          );
+          const before = target.rows[0];
+          if (!before) throw new HttpError(404, "That entry was deleted. Reload the page.");
+          const clash = await overlappingSession(client, {
+            orgId: action.orgId,
+            userId: before.userId,
+            clockIn: action.clockIn,
+            clockOut: action.clockOut,
+            excludeId: action.id,
+          });
+          if (clash) throw new HttpError(409, overlapMessage(clash, action.timeZone));
+          // The note keeps the times it replaced, so the correction is its own audit trail.
+          const note = `Was ${describeSessionRange(before.clockIn, before.clockOut, action.timeZone)}. ${action.note}`.slice(0, 500);
+          try {
+            await client.query(
+              `UPDATE hour_logs
+               SET clock_in = $3::timestamptz, clock_out = $4::timestamptz, closed_by = COALESCE(closed_by, $5::uuid),
+                   corrected_by = $5::uuid, corrected_at = now(), correction_note = $6
+               WHERE id = $1::uuid AND org_id = $2::uuid`,
+              [action.id, action.orgId, action.clockIn, action.clockOut, userId, note],
+            );
+          } catch (error) {
+            if ((error as { code?: string } | null)?.code === "42703") {
+              throw new HttpError(503, "Correcting hours isn't switched on for your team yet. Delete the entry and add it again for now.");
+            }
+            throw error;
+          }
+          return { ok: true };
         }
 
         case "delete_record": {

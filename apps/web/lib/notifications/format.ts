@@ -33,6 +33,9 @@ export function notificationTypeLabel(type: string): string {
     case "team_deleted":
     case "team_owner_added":
       return "Team";
+    case "guided_signoff_requested":
+    case "guided_signoff_decided":
+      return "Learning";
     case "billing":
     case "credit_low":
       return "AI limits";

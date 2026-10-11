@@ -35,6 +35,19 @@ export function checkFeatures(features: readonly FeatureRow[], expect: readonly 
   };
 }
 
+/**
+ * The line a rule matched, as the student pasted it, for "What was checked". The evidence used to
+ * be the rule's failure sentence with "Found:" in front ("Found: no “git version …” line").
+ */
+function foundLine(rule: { pattern: string; flags?: string }, pasted: string): string {
+  const match = new RegExp(rule.pattern, (rule.flags ?? "i").replace("g", "")).exec(pasted);
+  if (!match) return "Found what this step looks for.";
+  const start = pasted.lastIndexOf("\n", match.index) + 1;
+  const end = pasted.indexOf("\n", match.index + Math.max(0, match[0].length - 1));
+  const line = pasted.slice(start, end === -1 ? undefined : end).trim().replace(/\s+/g, " ");
+  return `Found “${line.length > 90 ? `${line.slice(0, 89)}…` : line}”`;
+}
+
 /** Every pattern must appear in what was pasted; the first missing one is named. */
 export function checkPaste(check: Extract<StepCheck, { kind: "paste" }>, text: string): CheckResult {
   const pasted = text.trim();
@@ -45,7 +58,7 @@ export function checkPaste(check: Extract<StepCheck, { kind: "paste" }>, text: s
     return {
       passed: true,
       message: "Checked: everything this step looks for is there.",
-      evidence: check.must.map((rule) => `Found: ${rule.missing.replace(/^Missing:?\s*/i, "")}`),
+      evidence: check.must.map((rule) => foundLine(rule, pasted)),
     };
   }
   return {

@@ -38,6 +38,7 @@ import { Budget, Evidence, Grants, Overview } from "./business-panels";
 import "../product-hub.css";
 import { withWaitlistLink } from "../../components/waitlist-link";
 import { MoneyManagersLine } from "../team/admin/money-managers-line";
+import { actionFailureMessage } from "../../lib/ui/action-failure";
 
 const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false, loading: HubPanelSkeleton });
 const SeasonFinanceClient = dynamic(() => import("./season-finance-client"), { ssr: false, loading: HubPanelSkeleton });
@@ -157,7 +158,7 @@ export default function BusinessClient() {
       } else {
         setLoadFailure({
           status: null,
-          message: cause instanceof Error ? cause.message : "Could not load the business portal",
+          message: actionFailureMessage(cause, "Could not load the business portal"),
         });
       }
     }
@@ -226,7 +227,7 @@ export default function BusinessClient() {
       await persistBusinessSnapshot(live.orgId, String(live.seasonYear), data);
       return true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Request failed");
+      setError(actionFailureMessage(cause, "That didn't save. Try again."));
       return false;
     } finally {
       setBusy(false);
@@ -266,7 +267,7 @@ export default function BusinessClient() {
       setNotice(data.message ?? "Sponsor research complete.");
       await load(live.seasonYear);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Sponsor research failed");
+      setError(actionFailureMessage(cause, "Sponsor research failed"));
     } finally {
       setBusy(false);
     }
@@ -290,7 +291,9 @@ export default function BusinessClient() {
     <main className="module-page business-page product-hub product-hub--business">
       <div className="workspace-hub-header">
         <div className="hub-bar-id"><span className="workspace-hub-eyebrow">Business</span><h1>{hubPageTitle(BUSINESS_HUB, tab)}</h1></div>
-        {live ? <MoneyAddMenu orgId={orgId ?? null} /> : null}
+        {live ? (
+          <MoneyAddMenu orgId={orgId ?? null} canManageFinances={live.canManageFinances} viewOnly={live.role === "viewer"} />
+        ) : null}
       </div>
       <TabBar className="workspace-hub-tabs" aria-label="Business sections" tabs={visibleWorkbenches} value={workbenchId} onChange={next => selectTab(next as Tab)} />
 

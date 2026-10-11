@@ -104,8 +104,23 @@ describe("homeNowAction", () => {
     });
     expect(homeNowAction({ orgId: "org-1", openTodos: 3 }).title).toBe("3 open team tasks");
     expect(homeNowAction({ orgId: "org-1", openTodos: 3, mineTodos: 1 }).title).toBe("One task assigned to you");
-    expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing you have to do right now");
+    expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing assigned to you right now");
     expect(homeNowAction({ orgId: "org-1" }).quiet).toBe(true);
+  });
+
+  it("tells a lead when a student is waiting for a sign-off (A5-16)", () => {
+    expect(homeNowAction({ orgId: "org-1", signoffsWaiting: 2, openTodos: 3 })).toEqual({
+      title: "2 steps are waiting for your sign-off",
+      detail: "Check each step with them, then sign it off or send it back with a note.",
+      href: "/learn/guided/team",
+      cta: "Review sign-offs",
+    });
+    expect(homeNowAction({ orgId: "org-1", signoffsWaiting: 1 }).title).toBe("A step is waiting for your sign-off");
+    // A match still comes first.
+    expect(homeNowAction({ orgId: "org-1", nextMatchLabel: "Qual 3", signoffsWaiting: 1 }).title).toBe("Our next match");
+    expect(
+      homeNowFromWidgets({ orgId: "org-1", widgets: { a: { type: "my_day", data: { signoffsWaiting: 1 } } } }).cta,
+    ).toBe("Review sign-offs");
   });
 
   it("reads next match, duties, and todos from widget payloads without inventing counts", () => {
@@ -180,7 +195,7 @@ describe("dashboardBoardLists", () => {
 describe("before the widgets have arrived", () => {
   it("says it is still working it out, not that there is nothing to do", () => {
     // Every check in the card falls through when the widgets are empty, so an
-    // unloaded board used to read "Nothing you have to do right now" — the one
+    // unloaded board used to read "Nothing assigned to you right now" — the one
     // answer that tells a student to stop looking — and then replace it with
     // the real one a moment later.
     const card = homeNowFromWidgets({ orgId: "org-1", widgets: {}, loaded: false });
@@ -190,12 +205,12 @@ describe("before the widgets have arrived", () => {
 
   it("says there is nothing only once it has looked", () => {
     const card = homeNowFromWidgets({ orgId: "org-1", widgets: {}, loaded: true });
-    expect(card.title).toBe("Nothing you have to do right now");
+    expect(card.title).toBe("Nothing assigned to you right now");
   });
 
   it("treats a missing flag as loaded, so nothing that does not pass it changes", () => {
     const card = homeNowFromWidgets({ orgId: "org-1", widgets: {} });
-    expect(card.title).toBe("Nothing you have to do right now");
+    expect(card.title).toBe("Nothing assigned to you right now");
   });
 
   it("does not ask for a team while the team is still loading", () => {
@@ -277,7 +292,7 @@ describe("what the calendar puts on the card", () => {
 
   it("falls through to the quiet state when nothing is on", () => {
     expect(homeNowAction({ orgId: "o", nextEventToday: null }).title).toBe(
-      "Nothing you have to do right now",
+      "Nothing assigned to you right now",
     );
   });
 });
@@ -307,7 +322,7 @@ describe("home now: scouting duty", () => {
   it("leaves the station out when the match does not list the robot, and never invents one", () => {
     const action = homeNowAction({ orgId: "org-1", scoutDuty: { ...scoutDuty, station: null } });
     expect(action.title).toBe("Scout Qual 34 · 148");
-    expect(homeNowAction({ orgId: "org-1", scoutDuty: null, role: "scout" }).title).toBe("Nothing you have to do right now");
+    expect(homeNowAction({ orgId: "org-1", scoutDuty: null, role: "scout" }).title).toBe("Nothing assigned to you right now");
   });
 
   it("reads the duty from the my_day widget", () => {

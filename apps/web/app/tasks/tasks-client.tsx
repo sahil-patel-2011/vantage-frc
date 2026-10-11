@@ -13,6 +13,7 @@ import {
   TASK_PRIORITIES,
   TASK_STATUSES,
 } from "../../lib/tasks/task-constants";
+import { localDateIso } from "../../lib/todos/evaluate";
 import type { TasksView } from "../../lib/tasks/compute-tasks";
 import type { TaskPriority, TaskWithFlags } from "../../lib/tasks/types";
 import {
@@ -72,6 +73,7 @@ export default function TasksClient() {
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (seasonQuery) query.set("season", String(seasonQuery));
+    query.set("today", localDateIso());
     void (async () => {
       const cached = urlOrg
         ? await getFeatureSnapshot<TasksView>("season-tasks", urlOrg, seasonQuery ? String(seasonQuery) : "")
@@ -135,7 +137,7 @@ export default function TasksClient() {
       void fetch("/api/tasks", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
+        body: JSON.stringify({ orgId, seasonYear: season ?? undefined, today: localDateIso(), ...payload }),
       })
         .then(async (response) => {
           const data = (await response.json()) as TasksView | { error?: string };

@@ -30,12 +30,13 @@ export const TEAM_6925_SETUP_COMMAND = `irm ${LIVE_SITE_ORIGIN}/team-setup.ps1 |
 export type Checked = { checkedBy: string; check: StepCheck };
 
 /**
- * Software cannot see this (a band saw, a printed checklist, a robot moving the right way). A
- * lead checks it with the student, who then marks it done; the page labels it that way.
+ * Software cannot see this (a band saw, a printed checklist, a robot moving the right way). The
+ * student presses "Ask a lead to sign this off", a lead checks it with them, and the step counts
+ * once the lead signs it off on Team progress (0719). The student never marks it done.
  */
 export function leadSignoff(what: string): Checked {
   return {
-    checkedBy: `No software can see this, so a lead checks it with you and then you mark it done. The lead is looking for: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
+    checkedBy: `No software can see this. Press "Ask a lead to sign this off": a lead checks it with you and signs it off, and then it counts. The lead is looking for: ${what.charAt(0).toLowerCase()}${what.slice(1)}`,
     check: { kind: "lead-signoff", what },
   };
 }

@@ -20,6 +20,7 @@
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { formatUsd } from "./format-usd";
 
 export type BudgetLineState =
   /** Budget set, spending comfortably inside it. */
@@ -184,8 +185,8 @@ export function rollupBudgetVsActual(rows: readonly BudgetVsActualInput[]): {
 
 /** Plain-language line the panel shows under each bar. Never a fabricated number. */
 export function describeBudgetLine(line: BudgetLine): string {
-  const money = (value: number) =>
-    value.toLocaleString(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  // The page's own totals print cents; rounding here made "$1,235 spent" sit above "$1,234.51 spent".
+  const money = formatUsd;
   switch (line.state) {
     case "no_budget":
       return `${money(line.spentUsd)} spent — no budget set for this category yet.`;
