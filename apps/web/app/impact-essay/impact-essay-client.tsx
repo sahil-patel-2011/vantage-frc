@@ -503,7 +503,8 @@ function GenerateForm({
         </select>
       </label>
       <div>
-        <Button variant="primary" type="submit" disabled={busy || !hasData}>
+        {/* Until there are records to cite, Open Community Impact (above) is the primary. */}
+        <Button variant={hasData ? "primary" : "secondary"} type="submit" disabled={busy || !hasData}>
           Generate essay draft
         </Button>
         {!hasData ? (

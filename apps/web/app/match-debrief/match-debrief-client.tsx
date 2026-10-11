@@ -288,9 +288,10 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
           </>
         ) : (
           <div style={{ display: "grid", gap: 6, justifyItems: "start", marginTop: 8 }}>
+            {/* Save debrief is the page's one primary; the AI expansion is optional. */}
             <button
               type="button"
-              className="primary-action"
+              className="app-button secondary"
               style={{ minHeight: 44 }}
               disabled={coach.status === "loading" || view.summary.total === 0}
               onClick={() => void askCoach()}
