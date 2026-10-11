@@ -14,6 +14,7 @@ export {
   TextField,
 } from "./field";
 export { PageHeader } from "./page-header";
+export { PageMain } from "./page-main";
 export { Panel } from "./panel";
 export { TabBar, type SoftTab } from "./tab-bar";
 export { ToolStrip, type ToolStripItem } from "./tool-strip";

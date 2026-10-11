@@ -9,7 +9,7 @@ import { AiAgentStatus } from "../../components/ai-agent-status";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button, EmptyState, askConfirm } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState, PageMain, askConfirm } from "../../components/ui";
 import {
   AI_CHAT_RELATED_INCLUDE,
   AI_CHAT_SCOPE_CARDS,
@@ -443,7 +443,7 @@ export default function ChatClient({
   const connectionHref = aiConnectionHref(orgId);
 
   return (
-    <main className="module-page ch-page">
+    <PageMain className="module-page ch-page">
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Ask AI / Chat</span>
@@ -847,6 +847,6 @@ export default function ChatClient({
         ) : null}
       </div>
       ) : null}
-    </main>
+    </PageMain>
   );
 }

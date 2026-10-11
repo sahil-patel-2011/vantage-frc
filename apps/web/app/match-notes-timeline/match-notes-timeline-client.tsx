@@ -236,7 +236,7 @@ export default function MatchNotesTimelineClient() {
         });
         const data = (await response.json()) as MatchNotesTimelineView | { error?: string };
         if (!response.ok || !("status" in data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

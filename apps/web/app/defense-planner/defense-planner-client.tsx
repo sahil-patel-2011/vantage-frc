@@ -311,7 +311,7 @@ export default function DefensePlannerClient() {
             setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
             return;
           }
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

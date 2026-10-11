@@ -518,7 +518,7 @@ export function renderOpsWidget({
           assigneeName: string | null;
         }> | undefined) ?? [];
       return (
-        <Shell type={type} title="Team tasks" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId}>
+        <Shell type={type} title="Tasks" payload={payload} href={withOrg("/todos")} emptyHint={hint} orgId={orgId}>
           {payload?.status === "live" ? (
             <p className="dash-task-summary">
               {typeof data.open === "number" && Number.isFinite(data.open) ? <span>{data.open} open {data.open === 1 ? "task" : "tasks"}</span> : null}

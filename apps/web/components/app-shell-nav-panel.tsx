@@ -11,6 +11,7 @@ import {
 import type { CommandHit } from "../lib/nav/command-search";
 import { withOrgHref, type IslandTabDefinition, type ProductNavGroup } from "../lib/nav/product-nav";
 import { AppShellNavGroups } from "./app-shell-nav-groups";
+import { workspacePickerHref } from "../lib/workspace";
 
 function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
   if (event.key !== "Tab") return;
@@ -146,9 +147,12 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <a className="soft-org-chip" href={withOrgHref("/account/teams", orgId)} onClick={closeNav} aria-label={`${orgLabel}. Choose or manage your teams`}>
+          {/* The same destination as the top bar's team button and the sidebar's team card: the
+              picker, which brings you back to this page for the team you pick. This one went to
+              Account → Your teams, a different page for the same words. */}
+          <a className="soft-org-chip" href={workspacePickerHref(pathname, pathSearch)} onClick={closeNav} aria-label={`Switch team — ${orgLabel}`}>
             <Icon name="users" />
-            <div><strong>{orgLabel}</strong><span>{orgId ? rolePlanCue : "Choose a team in Settings"}</span></div>
+            <div><strong>{orgLabel}</strong><span>{orgId ? rolePlanCue : "Choose your team"}</span></div>
             <Icon name="chevron" />
           </a>
         </div>
@@ -230,7 +234,7 @@ export function AppShellNavPanel({
                       goToCommand(hit);
                     }}
                   >
-                    <Icon name={hit.kind === "action" ? "bolt" : "grid"} />
+                    <Icon name={hit.kind === "action" ? "bolt" : "chevron"} />
                     <span>
                       {hit.label}
                       <small>{hit.context}</small>
@@ -280,7 +284,10 @@ export function AppShellNavPanel({
             </button>
             {resultRows.length === 0 && !searchLoading ? (
               <p className="command-empty">
-                Nothing matches “{navQuery.trim()}”. Press Ctrl/⌘+Enter to search your data.
+                {/* A phone has no Ctrl or ⌘: the keys are said only where there is a keyboard,
+                    and only the one this device has. */}
+                No page or tool matches “{navQuery.trim()}”. Open full search to look through your team’s data
+                <span className="command-empty-keys"> ({shortcutHint.startsWith("⌘") ? "⌘" : "Ctrl"}+Enter)</span>.
               </p>
             ) : null}
           </div>
@@ -296,10 +303,10 @@ export function AppShellNavPanel({
             <div className="soft-drawer-settings" aria-label="Settings">
               <p className="main-menu-heading">Manage</p>
               {me.platformAdmin ? (
-                <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
+                <a href="/admin" onClick={closeNav}><Icon name="shield" /><span><strong>Platform admin</strong></span></a>
               ) : null}
               <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
-                <Icon name="gear" /><span><strong>Personal settings</strong></span>
+                <Icon name="gear" /><span><strong>Account</strong></span>
               </a>
               {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
                 <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>

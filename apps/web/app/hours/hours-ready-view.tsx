@@ -154,8 +154,10 @@ export function HoursReadyView({
                   </option>
                 ))}
               </select>
+              {/* Secondary: scanning a card is this card's main action and its fallback is this
+                  button (the hint says so). Two filled buttons in one card was two "next steps". */}
               <Button
-                variant="primary"
+                variant="secondary"
                 type="button"
                 className="hours-big-btn"
                 disabled={busy}

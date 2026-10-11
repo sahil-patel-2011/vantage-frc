@@ -107,7 +107,7 @@ export function homeQuickStart(orgId: string | null) {
     },
     {
       id: "work",
-      label: "Work",
+      label: "Tasks",
       detail: "Your open team tasks",
       href: withOrgHref("/todos", orgId),
       icon: "grid" as const satisfies IconName,

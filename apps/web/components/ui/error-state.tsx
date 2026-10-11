@@ -18,6 +18,9 @@ type ErrorStateProps = {
   status?: number | null;
 };
 
+/** A title that says nothing ("Something went wrong") gives way to the diagnosis. */
+const OLD_CATCH_ALL = /^\s*something went wrong\.?\s*$/i;
+
 const WarnGlyph = () => (
   <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <path d="M12 3 22 20H2L12 3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
@@ -55,17 +58,23 @@ export function ErrorState({
       if (typeof window !== "undefined") window.location.reload();
     });
 
-  // An explicit title from the caller still wins; otherwise use the diagnosis.
-  const heading = title ?? copy.title;
-  // Only replace the caller's message when we have something more useful to say.
+  // An explicit title from the caller still wins, unless it is the old catch-all, which says
+  // nothing the diagnosis cannot say better.
+  const heading = title != null && !OLD_CATCH_ALL.test(String(title)) ? title : copy.title;
+  // A string message is used through the diagnosis, which shows it only when it is a sentence a
+  // person can use: "signal timed out" (the browser's AbortSignal text) was printed as the whole
+  // explanation on Money under load. A caller-built element is shown as given.
   const body =
-    message != null && message !== "" && kind === "unknown" ? message : copy.description;
+    message != null && message !== "" && typeof message !== "string" && kind === "unknown"
+      ? message
+      : copy.description;
 
-  // A session that expired, a network that dropped, a page this member may not
+  // A session that expired, a network that dropped or slowed, a page this member may not
   // open: all recoverable, none of them a failure of the product. Painting them
   // in the danger colour — a red hairline and a red plate — told a team their
   // data was broken when the only thing wrong was that they were signed out.
-  const severity = kind === "auth" || kind === "forbidden" || kind === "offline" ? "notice" : "error";
+  const severity =
+    kind === "auth" || kind === "forbidden" || kind === "offline" || kind === "slow" ? "notice" : "error";
 
   return (
     <section
@@ -79,7 +88,7 @@ export function ErrorState({
       {/* icon={null}: the glyph above is already this state's warning mark, and
           the badge's own glyph made two of them, stacked, saying one thing. */}
       <Badge tone={severity === "notice" ? "setup" : "error"} icon={null}>
-        {kind === "auth" ? "Signed out" : kind === "forbidden" ? "No access" : kind === "offline" ? "Offline" : "Error"}
+        {copy.badge}
       </Badge>
       <h2 style={{ margin: 0 }}>{heading}</h2>
       {body != null && body !== "" ? <p className={styles.errorMessage}>{body}</p> : null}

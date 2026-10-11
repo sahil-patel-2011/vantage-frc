@@ -8,7 +8,7 @@
  * action that resolves it.
  */
 
-export type LoadFailureKind = "auth" | "reauth" | "forbidden" | "offline" | "setup" | "unknown";
+export type LoadFailureKind = "auth" | "reauth" | "forbidden" | "offline" | "slow" | "setup" | "unknown";
 
 export type LoadFailureCopy = {
   kind: LoadFailureKind;
@@ -81,6 +81,59 @@ const REAUTH_PATTERNS = [
 
 const SETUP_PATTERNS = ["setup_required", "setup required", "not configured", "configure"];
 
+/**
+ * The connection was slow, dropped, or the server asked us to slow down. What the browser says
+ * for these ("signal timed out", "Failed to fetch", "Load failed") is not a sentence for a team,
+ * and it was printed as the whole explanation under "Something went wrong" on venue Wi-Fi.
+ */
+const SLOW_PATTERNS = [
+  "timed out",
+  "timeout",
+  "timeouterror",
+  "failed to fetch",
+  "fetch failed",
+  "load failed",
+  "networkerror",
+  "network error",
+  "network request failed",
+  "the operation was aborted",
+  "signal is aborted",
+  "too many requests",
+  "rate limit",
+];
+
+/**
+ * Text that is a program talking, not a sentence for a person: exception names, stack frames,
+ * JSON and SQL errors, HTTP reason phrases, server setting names. An API's own refusal ("Only an
+ * owner can delete the team.") is still shown; this is never shown.
+ */
+const TECHNICAL_TEXT = [
+  /\b(?:TypeError|ReferenceError|SyntaxError|RangeError|AbortError|TimeoutError|DOMException|Error:)/,
+  /\bE(?:CONN\w+|TIMEDOUT|NOTFOUND|AI_AGAIN|PIPE)\b/,
+  /\bat \S+ \(?\S+:\d+:\d+\)?/,
+  /Unexpected (?:token|end of JSON)|is not valid JSON|JSON\.parse/i,
+  /Cannot read propert|is not a function|is not defined|\bundefined\b|\bnull\b|\bNaN\b/,
+  /relation "[^"]*" does not exist|violates [\w ]*constraint|syntax error at or near|\bSQLSTATE\b/i,
+  /^\s*(?:HTTP\s*)?\d{3}\b|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Time-?out/i,
+  /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b|Environment Variables|Vercel/,
+  /[{}<>]|=>|\bfunction\b/,
+];
+
+/**
+ * What a failed load says when nothing more specific is known. "Something went wrong" said
+ * neither what happened nor what to do; this says both.
+ */
+export const GENERIC_LOAD_FAILURE =
+  "Vantage couldn't get this from the server. Try again in a moment. If it keeps happening, report it from Help.";
+
+/** Whether an error message is a sentence a team member can use, rather than internals. */
+export function isTeamReadableMessage(message: string | null | undefined): boolean {
+  const text = (message ?? "").trim();
+  if (!text || text.length > 240) return false;
+  if (matches(text.toLowerCase(), SLOW_PATTERNS)) return false;
+  return !TECHNICAL_TEXT.some((pattern) => pattern.test(text));
+}
+
 function matches(haystack: string, needles: string[]): boolean {
   return needles.some((needle) => haystack.includes(needle));
 }
@@ -106,6 +159,8 @@ export function classifyLoadFailure(input: {
 
   if (status === 401) return "auth";
   if (status === 403) return "forbidden";
+  // Too many requests, or a gateway that gave up waiting: the request can succeed in a moment.
+  if (status === 429 || status === 408 || status === 504) return "slow";
   // A temporary outage also returns 503. Only an explicit configuration
   // message means setup is missing; retrying an outage needs no team changes.
   if (status === 503) return matches(text, SETUP_PATTERNS) ? "setup" : "unknown";
@@ -116,6 +171,7 @@ export function classifyLoadFailure(input: {
   if (matches(text, FORBIDDEN_PATTERNS)) return "forbidden";
   if (matches(text, AUTH_PATTERNS)) return "auth";
   if (matches(text, SETUP_PATTERNS)) return "setup";
+  if (matches(text, SLOW_PATTERNS)) return "slow";
   return "unknown";
 }
 
@@ -179,14 +235,23 @@ export function loadFailureCopy(
           "This screen needs a connection. Anything you have already queued will sync once you reconnect.",
         showRetry: true,
       };
+    case "slow":
+      return {
+        kind,
+        badge: "Slow connection",
+        title: "This is taking longer than usual",
+        description:
+          "The connection is slow or busy right now. Try again in a moment. Nothing you saved is lost.",
+        showRetry: true,
+      };
     case "setup":
       return {
         kind,
         badge: "Needs setup",
         title: "Not set up yet",
-        description:
-          options.message?.trim() ||
-          "This feature needs to be connected before it can show anything.",
+        description: isTeamReadableMessage(options.message)
+          ? options.message!.trim()
+          : "This feature needs to be connected before it can show anything.",
         showRetry: true,
       };
     case "unknown":
@@ -194,8 +259,11 @@ export function loadFailureCopy(
       return {
         kind,
         badge: "Error",
-        title: "Something went wrong",
-        description: options.message?.trim() || "That did not load. Try again in a moment.",
+        title: "This didn't load",
+        // The API's own sentence when it sent one a person can use; never the exception text.
+        description: isTeamReadableMessage(options.message)
+          ? options.message!.trim()
+          : GENERIC_LOAD_FAILURE,
         showRetry: true,
       };
   }

@@ -56,7 +56,7 @@ test("viewers get a task destination instead of a creation button", async ({ pag
   await workspace(page, "viewer");
   await page.goto("/dashboard?orgId=ui-team");
   const actions = page.getByTestId("dash-workspace-actions");
-  await expect(actions.getByRole("link", { name: "Team tasks" })).toHaveAttribute("href", "/todos?orgId=ui-team");
+  await expect(actions.getByRole("link", { name: "Tasks" })).toHaveAttribute("href", "/todos?orgId=ui-team");
   await expect(actions.getByRole("button", { name: "Add a task" })).toHaveCount(0);
   await expect(actions.getByRole("link", { name: "Explore teams" })).toHaveAttribute("href", "/competition?tab=teams&orgId=ui-team");
 });

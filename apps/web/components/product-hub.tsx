@@ -5,7 +5,7 @@ import { hubPageTitle, hubNavigationSections } from "../lib/nav/hub-navigation";
 import { HubContextActions } from "./hub-context-actions";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
-import { EmptyState, PageHeader, Button, TabBar } from "./ui";
+import { EmptyState, PageHeader, PageMain, Button, TabBar } from "./ui";
 import {
   clientCanAccessHub,
   filterTabsByHubAccess,
@@ -27,6 +27,8 @@ import { useClientAccessProfile } from "../lib/nav/use-client-access";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import { useFollowUrl } from "../lib/nav/use-follow-url";
 import { hubLegacyContextHref } from "../lib/nav/hub-legacy-context";
+import { hubDocumentTitle, hubInitialTab } from "../lib/nav/hub-title";
+import { useDocumentTitle } from "../lib/ui/use-document-title";
 
 type ProductHubShellProps = {
   hubId: ProductHubDef["id"];
@@ -40,6 +42,11 @@ type ProductHubShellProps = {
    * a dead end.
    */
   embeddedTabs?: readonly string[];
+  /**
+   * `?tab=` as the server saw it. The server HTML then has the right heading: it used to render
+   * the default tab ("Calendar" on /team?tab=todos) and switch after hydration.
+   */
+  initialTab?: string | null;
 };
 
 function readOrgId(): string | null {
@@ -147,6 +154,7 @@ export function ProductHubShell({
   breadcrumbs,
   children,
   headerActions,
+  initialTab,
 }: ProductHubShellProps) {
   const hub = hubById(hubId);
   const access = useClientAccessProfile();
@@ -156,7 +164,7 @@ export function ProductHubShell({
     [access.hubAccess, accessHubId, hub],
   );
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, accessHubId);
-  const [tab, setTab] = useState(hub.defaultTab);
+  const [tab, setTab] = useState(() => hubInitialTab(hubId, initialTab));
   const [orgId, setOrgId] = useState<string | null>(null);
   const [orgReady, setOrgReady] = useState(false);
   const [canManageTeam, setCanManageTeam] = useState(false);
@@ -197,6 +205,9 @@ export function ProductHubShell({
     const next = readTab(hub);
     setTab((current) => (current === next ? current : next));
   });
+
+  // Switching tabs rewrites the address without navigating, so Next never retitles the page.
+  useDocumentTitle(hubDocumentTitle(hubId, tab));
 
   useEffect(() => {
     if (!orgReady) return;
@@ -247,7 +258,7 @@ export function ProductHubShell({
 
   if (access.ready && hubDenied) {
     return (
-      <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id} soft-gate`}>
+      <PageMain className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id} soft-gate`}>
         <PageHeader breadcrumbs={breadcrumbs} title={hub.title} description={hub.description || undefined}>
           {headerActions}
         </PageHeader>
@@ -262,7 +273,7 @@ export function ProductHubShell({
             Home
           </Button>
         </EmptyState>
-      </main>
+      </PageMain>
     );
   }
 
@@ -275,7 +286,7 @@ export function ProductHubShell({
     ?? sections[0];
 
   return (
-    <main className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
+    <PageMain className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
       <OfflineBanner feature={hub.label} />
       <div className="workspace-hub-header">
         <div className="hub-bar-id">
@@ -291,17 +302,9 @@ export function ProductHubShell({
         data-hub-tab={tab}
       >
         {(() => {
-          if (!orgReady) {
-            return (
-              <EmptyState
-                soft
-                aria-busy
-                badge="Loading"
-                title="Opening your team"
-                description="This only takes a moment."
-              />
-            );
-          }
+          // One loading pattern: the same card-shaped skeleton the tab shows while its own data
+          // loads, not a centred "Opening your team" card that then turned into it (A6-20).
+          if (!orgReady) return <HubPanelSkeleton />;
           if (access.ready && !tabAllowed) {
             const active = hub.tabs.find((entry) => entry.id === tab);
             return <HubTabForbidden hubLabel={hub.label} tabLabel={active?.label} />;
@@ -312,7 +315,7 @@ export function ProductHubShell({
         })()}
       </div>
       {orgReady && access.ready && tabAllowed ? <HubContextActions hub={hub} tab={tab} tabs={workspaceTabs} orgId={orgId} canManage={canManageTeam} /> : null}
-    </main>
+    </PageMain>
   );
 }
 

@@ -12,7 +12,7 @@ const DESCRIPTION =
 function Breadcrumbs({ orgId }: { orgId: string | null }) {
   return (
     <>
-      <a href={withOrgHref("/learn", orgId)}>Code &amp; CAD</a>
+      <a href={withOrgHref("/learn", orgId)}>Learn</a>
       {" / Team lessons"}
     </>
   );

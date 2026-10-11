@@ -26,12 +26,12 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
         here too put the same eight links on screen twice; the sidebar keeps the daily tools. */}
     <nav className="app-sidebar-section" aria-label="Daily tools">
       <p className="app-sidebar-label">Your day</p>
-      {[{ href: "/my-day", label: "My day", icon: "calendar" as const }, { href: "/todos", label: "Team tasks", icon: "clipboard" as const }, { href: "/hours-self-view", label: "My hours", icon: "activity" as const }]
+      {[{ href: "/my-day", label: "My Day", icon: "calendar" as const }, { href: "/todos", label: "Tasks", icon: "assignment" as const }, { href: "/hours-self-view", label: "My hours", icon: "activity" as const }]
         .filter(item => allowed(item.href)).map(item => <a key={item.href} href={withOrgHref(item.href, orgId)}
           aria-current={pathname === item.href ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav>
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
-      {[{ href: "/ai?tab=chat", label: "Ask AI", icon: "sparkles" as const }, { href: "/help", label: "Help & guides", icon: "pin" as const }, { href: "/account", label: "Settings", icon: "gear" as const }]
+      {[{ href: "/ai?tab=chat", label: "Ask AI", icon: "sparkles" as const }, { href: "/help", label: "Help", icon: "book" as const }, { href: "/account", label: "Account", icon: "gear" as const }]
         .filter(item => allowed(item.href)).map(item => <a key={item.href} data-tour={item.href.startsWith("/ai?") ? "ask-ai" : undefined} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav>
   </aside>;

@@ -30,6 +30,19 @@ describe("legal update banner on a phone", () => {
     expect(css.slice(0, css.indexOf("@media"))).toMatch(/\.legal-update \.legal-update-short \{ display: none; \}/);
   });
 
+  it("floats over the page instead of pushing it down when /api/legal answers (A6-02)", () => {
+    const base = css.slice(0, css.indexOf("@media"));
+    expect(base).toMatch(/\.legal-update \{\n {2}position: fixed;/);
+    expect(base).toMatch(/bottom: calc\(12px \+ var\(--safe-bottom, 0px\) \+ var\(--island-clearance, 80px\)\);/);
+    // The end of the page can still scroll clear of the card.
+    expect(base).toMatch(/body\.has-app-shell:has\(\.legal-update\) \{ padding-bottom:/);
+    // Hide waits for the next visit; it never records an acceptance.
+    expect(src).toMatch(/aria-label="Hide until next time"/);
+    expect(src).toMatch(/window\.sessionStorage\.setItem\(LATER_KEY, "1"\)/);
+    const later = src.slice(src.indexOf("function later()"), src.indexOf("async function accept()"));
+    expect(later).not.toMatch(/fetch\(/);
+  });
+
   it("keeps the full notice, the short-version link and the accept flow", () => {
     expect(src).toMatch(/We rewrote our Terms and Privacy Policy/);
     expect(src).toMatch(/href="\/privacy#summary"/);

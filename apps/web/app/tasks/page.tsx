@@ -1,7 +1,7 @@
 import TasksClient from "./tasks-client";
 
 export const metadata = {
-  title: "Build-season task board",
+  title: "Task board",
 };
 
 export default function TasksPage() {

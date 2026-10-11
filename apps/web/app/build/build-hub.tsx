@@ -19,9 +19,9 @@ const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), {
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
 const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad"] as const;
 
-export default function BuildHub() {
+export default function BuildHub({ initialTab }: { initialTab?: string | null }) {
   return (
-    <ProductHubShell hubId="build" embeddedTabs={EMBEDDED_TABS}>
+    <ProductHubShell hubId="build" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab}>
       {({ tab, orgId }) => {
         if (tab === "kickoff") {
           return (

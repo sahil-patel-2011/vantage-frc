@@ -301,7 +301,7 @@ export default function SeasonReportClient() {
             setCutoffCode(cutoff);
             setError("");
           } else {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
+            setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           }
           return;
         }

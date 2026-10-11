@@ -74,8 +74,8 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
   return (
     <main className="module-page help-page soft-gate">
       <PageHeader
-        breadcrumbs={hasGuide ? "Settings / App manual" : "Settings / Help centre"}
-        title={hasGuide ? "App manual" : "Help centre"}
+        // No breadcrumb: the top bar already has the back button and says where this is.
+        title={hasGuide ? "App manual" : "Help"}
         description={
           hasGuide
             ? "Guides for every part of Vantage."
@@ -200,7 +200,7 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
               <Button as="a" variant="secondary"
                 href={hasGuide ? "/help" : "/docs?view=sections"}
               >
-                {hasGuide ? "Open Help centre" : "Open the guide"}
+                {hasGuide ? "Open Help" : "Open the guide"}
               </Button>
             </div>
           ) : null}

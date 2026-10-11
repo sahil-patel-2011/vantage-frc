@@ -200,7 +200,7 @@ export default function CodePerfClient() {
         });
         const data: unknown = await response.json().catch(() => null);
         if (!response.ok || !isCodePerfView(data)) {
-          setError(responseError(data) || "Something went wrong.");
+          setError(responseError(data) || "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

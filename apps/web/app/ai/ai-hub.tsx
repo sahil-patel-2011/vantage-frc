@@ -34,9 +34,9 @@ const EMBEDDED_TABS = [
   "decisions",
 ] as const;
 
-export default function AiHub() {
+export default function AiHub({ initialTab }: { initialTab?: string | null }) {
   return (
-    <ProductHubShell hubId="ai" headerActions={<AiSponsorBranding />} embeddedTabs={EMBEDDED_TABS}>
+    <ProductHubShell hubId="ai" headerActions={<AiSponsorBranding />} embeddedTabs={EMBEDDED_TABS} initialTab={initialTab}>
       {({ tab, orgId }) => (
         <HubOrgGate orgId={orgId} label="AI">
           {(id) => {

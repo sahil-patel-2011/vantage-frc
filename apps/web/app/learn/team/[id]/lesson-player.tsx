@@ -47,7 +47,7 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
 
   const crumbs = (title?: string) => (
     <>
-      <a href={withOrgHref("/learn", orgId)}>Code &amp; CAD</a> / <a href={lessonsHref(orgId)}>Team lessons</a>
+      <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team lessons</a>
       {title ? ` / ${title}` : ""}
     </>
   );

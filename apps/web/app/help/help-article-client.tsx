@@ -10,7 +10,7 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
       <PageHeader
         breadcrumbs={
           <>
-            <a href="/help">Help centre</a>
+            <a href="/help">Help</a>
             {" / "}
             {article.title}
           </>
@@ -44,7 +44,7 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
       </div>
 
       <nav className="help-article-footer" aria-label="Help navigation">
-        <a href="/help">← Help centre</a>
+        <a href="/help">← Help</a>
         <a href="/docs?view=sections">Section-by-section guide</a>
         <a href="/support">Support tickets</a>
       </nav>

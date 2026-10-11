@@ -131,7 +131,7 @@ export default function ShiftBalancerClient() {
           | (ShiftBalancerView & { published?: string })
           | { error?: string };
         if (!response.ok || !isShiftBalancerView(data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         // Publishing reports what it wrote and what it skipped, so "done" never

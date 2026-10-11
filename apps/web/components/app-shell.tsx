@@ -39,7 +39,8 @@ import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
 import { listenInboxUpdates } from "../lib/notifications/inbox-events";
 import { watchSessionBoundary } from "../lib/offline/identity";
-import { isKnownAppPath } from "../lib/nav/app-route-roots";
+import { pathnameIsBareShell } from "../lib/nav/shell-body-class";
+import { workspacePickerHref } from "../lib/workspace";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import { NextActionsDedupe } from "./next-actions-dedupe";
 import {
@@ -51,7 +52,10 @@ import {
   formatRolePlanCue,
   isHubRootPath,
   navResultRows,
-  orgLabelFor,
+  readRememberedTeamLabel,
+  rememberTeamLabel,
+  shellOrgLabel,
+  teamLabelFor,
   shellTitleForPath,
   showBackForPath,
   switchWorkspaceHrefFor,
@@ -61,6 +65,15 @@ import {
 } from "./app-shell-model";
 
 const groups = PRODUCT_NAV_GROUPS;
+
+/** localStorage, or null where the browser blocks it (private mode, blocked site data). */
+function safeLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 export default function AppShell() {
   const pathname = usePathname();
@@ -95,6 +108,12 @@ export default function AppShell() {
     try { localStorage.setItem("vantage.sidebar.collapsed", String(next)); } catch { /* Still works for this visit. */ }
   };
   const [me, setMe] = useState<Me>({});
+  const [rememberedTeamLabel, setRememberedTeamLabel] = useState<string | null>(null);
+  useEffect(() => {
+    const label = teamLabelFor(me.teamNumber, me.orgName);
+    const id = me.orgId ?? "";
+    if (label && id) rememberTeamLabel(safeLocalStorage(), id, label);
+  }, [me.orgId, me.orgName, me.teamNumber]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const notificationRevision = useRef(0);
@@ -133,6 +152,8 @@ export default function AppShell() {
   const islandLongPressed = useRef(false);
   const focusSearchOnOpen = useRef(false);
   const navOpenerRef = useRef<HTMLElement | null>(null);
+  /** Focus goes back only after a real close, never on the first render. */
+  const navWasOpenRef = useRef(false);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
 
@@ -143,7 +164,10 @@ export default function AppShell() {
 
   const openNav = useCallback((options?: { focusSearch?: boolean }) => {
     if (!document.activeElement?.closest(".soft-drawer")) {
-      navOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      // Ctrl/⌘+K from the page itself has <body> as the "opener"; focusing that again on close
+      // dropped keyboard users at the top of the document. null sends focus to the search button.
+      const active = document.activeElement;
+      navOpenerRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
     }
     focusSearchOnOpen.current = Boolean(options?.focusSearch);
     setAccountMenuOpen(false);
@@ -209,8 +233,11 @@ export default function AppShell() {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
     setOrgId(id);
-    document.body.classList.add("has-app-shell");
-    return () => document.body.classList.remove("has-app-shell");
+    // Same render as the team id, so the label goes straight from the placeholder to the name
+    // this device last showed for the team.
+    setRememberedTeamLabel(readRememberedTeamLabel(safeLocalStorage(), id));
+    // has-app-shell, shell-bare and shell-onboarding are on <body> in the server HTML
+    // (components/app-body.tsx), so the first paint is already this frame.
   }, [pathname, locationTick]);
 
   useEffect(() => {
@@ -245,9 +272,11 @@ export default function AppShell() {
   useEffect(() => {
     if (!navOpen) {
       const opener = navOpenerRef.current;
+      const wasOpen = navWasOpenRef.current;
       navOpenerRef.current = null;
-      if (opener) requestAnimationFrame(() => {
-        const visible = opener.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden";
+      navWasOpenRef.current = false;
+      if (wasOpen) requestAnimationFrame(() => {
+        const visible = Boolean(opener?.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden");
         const fallback = [...document.querySelectorAll<HTMLElement>(".app-topbar-search, .soft-menu-btn")]
           .find(control => control.getClientRects().length > 0 && getComputedStyle(control).visibility !== "hidden");
         (visible ? opener : fallback)?.focus();
@@ -258,6 +287,7 @@ export default function AppShell() {
       setResultCursor(0);
       return;
     }
+    navWasOpenRef.current = true;
     setRecentCommands(listRecentCommands());
     const wantsSearch = focusSearchOnOpen.current;
     focusSearchOnOpen.current = false;
@@ -541,30 +571,16 @@ export default function AppShell() {
 
   // Onboarding is a short, focused flow: its tabs and shortcuts only bounced back to it.
   const onboarding = pathname === "/onboarding";
-  useEffect(() => {
-    document.body.classList.toggle("shell-onboarding", onboarding);
-    return () => document.body.classList.remove("shell-onboarding");
-  }, [onboarding]);
   // The invite landing and the 404 keep the product's styles but not its chrome: the person
   // there usually has no account yet, or took a wrong turn, and a team switcher reading
   // "No team selected" plus a tab bar of sign-in walls only looked broken.
-  const bare = pathname === "/invite" || pathname === "/join-team" || pathname === "/access-unavailable" || !isKnownAppPath(pathname);
-  useEffect(() => {
-    document.body.classList.toggle("shell-bare", bare);
-    return () => document.body.classList.remove("shell-bare");
-  }, [bare]);
+  const bare = pathnameIsBareShell(pathname);
   const isHubRoot = isHubRootPath(pathname);
   const showBack = showBackForPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
   const title = shellTitleForPath(pathname);
-  // During onboarding the person is joining a team, so "No team selected" contradicts the page.
-  const orgLabel =
-    !orgId && pathname === "/onboarding"
-      ? "Getting set up"
-      : !orgId && !teamsLoaded
-        ? // Until /api/me answers, "No team selected" is a guess, and usually a wrong one.
-          "Your team"
-        : orgLabelFor(me, orgId);
+  // One placeholder, then the real team: never "Your team" → "This team" → "Team 6925".
+  const orgLabel = shellOrgLabel({ pathname, orgId, me, teamsLoaded, remembered: rememberedTeamLabel });
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
   const crumbHint = breadcrumbForPath(pathname);
   // Not on Home: Home leads with its own next-match card, and the strip made it three times.
@@ -719,7 +735,7 @@ export default function AppShell() {
         menuOpen={navOpen}
         onOpenNav={toggleMenu}
         shortcutHint={shortcutHint}
-        onOpenTeams={() => navigate(`/workspace?next=${encodeURIComponent(`${pathname}${pathSearch}`)}`)}
+        onOpenTeams={() => navigate(workspacePickerHref(pathname, pathSearch))}
         minimal={onboarding}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}
@@ -809,6 +825,8 @@ export default function AppShell() {
         activeIslandTabHref={activeIslandTabHref}
         unreadMessages={unreadMessages}
         onOpenEditor={openIslandEditor}
+        onOpenMore={toggleMenu}
+        navOpen={navOpen}
         islandPressTimer={islandPressTimer}
         islandPressOrigin={islandPressOrigin}
         islandLongPressed={islandLongPressed}

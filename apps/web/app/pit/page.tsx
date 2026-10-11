@@ -9,7 +9,7 @@ import "./pit-command.css";
 import PitCommandClient from "./pit-command-client";
 
 export const metadata: Metadata = {
-  title: "Pit Command",
+  title: "Robot status",
   description:
     "Is the robot ready to play? Open repairs, maintenance, and batteries from what your team logged.",
 };

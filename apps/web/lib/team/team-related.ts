@@ -7,7 +7,7 @@ export const TEAM_HUB_RELATED_LINKS = [
   { id: "attendance", label: "People" },
   { id: "knowledge", label: "Playbook" },
   { id: "messages", label: "Chat" },
-  { id: "todos", label: "Work" },
+  { id: "todos", label: "Tasks" },
   { id: "batteries", label: "Batteries" },
   { id: "fmea", label: "Failure notes" },
 ] as const;

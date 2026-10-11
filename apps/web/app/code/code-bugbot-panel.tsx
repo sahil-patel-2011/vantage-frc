@@ -371,9 +371,10 @@ export function CodeBugbotPanel({
           ) : null}
 
           <footer className="cdc-bugbot-actions">
+            {/* Secondary: the page's one filled button is Run risk review, above (A6-13). */}
             <button
               type="button"
-              className="primary-action"
+              className="app-button secondary"
               disabled={busy || !orgId || !hasSource}
               onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: false })}
             >

@@ -312,7 +312,7 @@ export default function CrossTeamScrimClient() {
         });
         const data = (await response.json()) as CrossTeamScrimView | { error?: string };
         if (!response.ok || !isCrossTeamScrimView(data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

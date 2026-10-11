@@ -60,6 +60,7 @@ import { DashboardBoardSwitcher } from "./dashboard-board-bar";
 import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
 import { DashboardWorkspaceActions } from "./dashboard-workspace-actions";
 import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
+import { useHydrated } from "../../lib/ui/use-hydrated";
 import "./dashboard-edit.css";
 import "./dashboard-home.css";
 
@@ -317,8 +318,11 @@ export function DashboardHomeView(props: {
     onDragPointerCancel,
   } = props;
 
+  const hydrated = useHydrated();
   const knownName = meLoaded ? (me.firstName || me.name || "").trim().split(/\s+/)[0] : "";
-  const hello = mounted ? greeting() : "Welcome";
+  // The local time of day is unknown on the server ("Welcome"); on a client navigation back to
+  // Home it is known on the first render, so there is no "Welcome" frame before it.
+  const hello = hydrated ? greeting() : "Welcome";
   const greetingText = knownName ? `${hello}, ${knownName}` : hello;
   const boardIsEmpty = layout.length === 0;
   const now = homeNowFromWidgets({ orgId, nextMatchData, widgets, loaded: widgetsLoaded, role });

@@ -142,7 +142,7 @@ export default function TasksClient() {
         .then(async (response) => {
           const data = (await response.json()) as TasksView | { error?: string };
           if (!response.ok || !("status" in data)) {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
+            setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
             return;
           }
           setView(data);
@@ -168,11 +168,11 @@ export default function TasksClient() {
   return (
     <main className="module-page">
       <PageHeader
-        breadcrumbs="Team / Task board"
-        title="Build-season task board"
+        breadcrumbs="Team / Tasks"
+        title="Task board"
         description={
           <>
-            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Todos lists all team work in one place; this board holds the build tasks your team adds here.
+            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Tasks lists all team work in one place; this board holds the build tasks your team adds here.
           </>
         }
       >
@@ -197,7 +197,7 @@ export default function TasksClient() {
         ) : null}
       </PageHeader>
       <TeamOpsNav orgId={orgId} within="todos" />
-      <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Task board" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

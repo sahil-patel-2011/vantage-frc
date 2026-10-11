@@ -253,7 +253,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
       }
       const data = (await response.json()) as SponsorshipView | { error?: string };
       if (!response.ok || !isSponsorshipView(data)) {
-        setError("error" in data && data.error ? data.error : "Something went wrong.");
+        setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
         return;
       }
       setView(data);

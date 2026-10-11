@@ -57,7 +57,7 @@ describe("Parents / Leadership student chrome", () => {
     expect(leadershipRelatedLinks("org-1", { include: [...LEADERSHIP_RELATED_INCLUDE] }).map((l) => l.label)).toEqual([
       "Season roles",
       "Skills",
-      "Safety",
+      "Safety training",
     ]);
   });
 

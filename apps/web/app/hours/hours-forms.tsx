@@ -462,7 +462,8 @@ export function ScanClockForm({
         void submit();
       }}
     >
-      <h3>Scan a card</h3>
+      {/* The first card under the page title: an h2, so the outline does not skip from h1 to h3. */}
+      <h2>Scan a card</h2>
       <p className="hours-kiosk-hint app-muted">
         For a shop scanner or a student ID card: one scan clocks in, the next scan from the same card clocks out.
         No card? Use Clock in above.

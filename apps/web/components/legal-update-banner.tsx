@@ -5,10 +5,18 @@ import { LegalAgreementCheckbox } from "./legal-agreement-checkbox";
 import { LEGAL_LAST_UPDATED } from "../lib/legal/documents";
 import "./legal-update-banner.css";
 
+/** "Hide": asked again on the next visit (a new tab or session), never silently accepted. */
+const LATER_KEY = "vantage.legal.later";
+
 /**
  * "We updated the Terms and Privacy Policy", once, for someone who accepted an earlier version.
- * In the page, never over it, and it does not block anything: the two boxes and one button record
- * the new acceptance, the same two consents onboarding asks for.
+ * It does not block anything: the two boxes and one button record the new acceptance, the same
+ * two consents onboarding asks for.
+ *
+ * It floats above the bottom bar instead of sitting in the page. It can only know it is needed
+ * after /api/legal answers, and in the page it then pushed everything down 56-66px: the biggest
+ * single layout shift on Account and Business, landing under a thumb mid-tap. Hide puts it away
+ * until the next visit.
  *
  * On a phone it is one line and a Review button until opened: the full sentence, its link and
  * a wrapping button took a fifth of the first screen, and with the event bar under it most of
@@ -26,6 +34,7 @@ export function LegalUpdateBanner() {
     let cancelled = false;
     try {
       if (window.sessionStorage.getItem("vantage.legal.accepted") === "1") return;
+      if (window.sessionStorage.getItem(LATER_KEY) === "1") return;
     } catch {
       // Private mode: ask the server.
     }
@@ -41,6 +50,15 @@ export function LegalUpdateBanner() {
   }, []);
 
   if (!needed) return null;
+
+  function later() {
+    try {
+      window.sessionStorage.setItem(LATER_KEY, "1");
+    } catch {
+      // Private mode: hidden on this page only.
+    }
+    setNeeded(false);
+  }
 
   async function accept() {
     if (!agreed.terms || !agreed.privacy) {
@@ -108,6 +126,9 @@ export function LegalUpdateBanner() {
           <span className="legal-update-short">Review</span>
         </button>
       )}
+      <button type="button" className="legal-update-later" onClick={later} aria-label="Hide until next time">
+        <span aria-hidden="true">×</span>
+      </button>
     </section>
   );
 }

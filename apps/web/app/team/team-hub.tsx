@@ -60,9 +60,9 @@ function MessagesTab({ orgId }: { orgId: string }) {
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
 const EMBEDDED_TABS = ["calendar", "logistics", "todos", "practice", "knowledge", "attendance", "batteries", "fmea", "messages"] as const;
 
-export default function TeamHub() {
+export default function TeamHub({ initialTab }: { initialTab?: string | null }) {
   return (
-    <ProductHubShell hubId="team" embeddedTabs={EMBEDDED_TABS}>
+    <ProductHubShell hubId="team" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab}>
       {({ tab, orgId }) => {
         if (tab === "logistics") {
           return <HubOrgGate orgId={orgId} label="Logistics">{() => <LogisticsClient embedded />}</HubOrgGate>;
@@ -76,7 +76,7 @@ export default function TeamHub() {
         }
         if (tab === "todos") {
           return (
-            <HubOrgGate orgId={orgId} label="Work">
+            <HubOrgGate orgId={orgId} label="Tasks">
               {() => <TodosClient embedded />}
             </HubOrgGate>
           );

@@ -34,11 +34,12 @@ type LiveView = Extract<TodosView, { status: "live" }>;
 type LiveWorkView = Extract<WorkItemsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
+/** Tones are theme tokens: a fixed #c02626 was 2.65:1 on a dark card (A6-07). */
 function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
   if (!todo.dueOn || todo.flags.daysToDue == null) return null;
   const d = todo.flags.daysToDue;
-  if (todo.flags.overdue) return { text: `Overdue ${Math.abs(d)}d`, tone: "#c02626" };
-  if (todo.flags.dueSoon) return { text: d === 0 ? "Due today" : `Due ${d}d`, tone: "#b26a00" };
+  if (todo.flags.overdue) return { text: `Overdue ${Math.abs(d)}d`, tone: "var(--critical)" };
+  if (todo.flags.dueSoon) return { text: d === 0 ? "Due today" : `Due ${d}d`, tone: "var(--warning)" };
   return { text: `Due ${todo.dueOn}`, tone: "inherit" };
 }
 
@@ -102,14 +103,14 @@ function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
     <Panel className="todos-unified-work" aria-label="All team work">
       <header>
         <div>
-          <span className="app-badge">One work view</span>
-          <h2>Todos, build tasks, and milestones</h2>
+          <span className="app-badge">All trackers</span>
+          <h2>Tasks, build tasks, and milestones</h2>
           <p className="app-muted">
             One read across the team&apos;s trackers. Open an item in its owning board to update it.
           </p>
         </div>
         <Button as="a" variant="secondary" href={withOrgHref("/tasks", view.orgId)}>
-          Open build board
+          Open task board
         </Button>
       </header>
       <div className="todos-unified-metrics">
@@ -307,18 +308,18 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       {!embedded ? (
         <>
           <PageHeader
-            breadcrumbs="Team / Todos"
-            title="Team work"
+            breadcrumbs="Team"
+            title="Tasks"
             description={
               <>
-                Todos, build tasks, and season milestones in one workbench. Create quick team todos here and open
+                Tasks, build tasks, and season milestones in one place. Add quick team tasks here and open
                 specialized work in its owning board.
               </>
             }
           >
             {view?.status === "live" ? (
               <Button as="a" variant="secondary" href={withOrgHref("/tasks", orgId)}>
-                Build-season board
+                Task board
               </Button>
             ) : null}
           </PageHeader>
@@ -331,7 +332,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
           />
         </>
       ) : null}
-      <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Tasks" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">

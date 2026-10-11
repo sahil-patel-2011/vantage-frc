@@ -13,7 +13,9 @@ import "./vantage-fluid.css";
 import "./vantage-redesign.css";
 import PwaRegister from "./pwa-register";
 import ThemeProvider from "./theme-provider";
+import { AppBody } from "../components/app-body";
 import { ConsentBanner } from "../components/consent-banner";
+import { THEME_BOOTSTRAP_SCRIPT } from "../lib/theme/theme-bootstrap";
 import { VercelWebAnalytics } from "../components/vercel-web-analytics";
 import { rootMarketingMetadata } from "../lib/marketing/seo";
 
@@ -61,7 +63,6 @@ export const viewport: Viewport = {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const domain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
-  const themeBootstrap = `(function(){try{var p=(document.cookie.match(/(?:^|; )vantage-theme-pref=(light|dark|system)/)||[])[1]||localStorage.getItem("vantage-theme-pref");var c=document.cookie.match(/(?:^|; )vantage-theme=(light|dark)/);var s=localStorage.getItem("vantage-theme");var t;if(p==="system"){t=window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}else if(p==="light"||p==="dark"){t=p;}else{t=c?c[1]:(s==="dark"?"dark":"light");}document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.dataset.theme="light";document.documentElement.style.colorScheme="light";}})();`;
   return (
     <html
       lang="en"
@@ -69,13 +70,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       className={`${inter.variable} ${sourceSans.variable} ${sourceSerif.variable} ${ibmMono.variable}`}
       suppressHydrationWarning
     >
-      <body>
-        {/* beforeInteractive, not a raw <script> in <head>. A script tag rendered
-            by React is ignored on the client and Next logs that on every page.
-            This still runs before paint, so the theme is set before the first frame. */}
-        <Script id="vantage-theme" strategy="beforeInteractive">
-          {themeBootstrap}
-        </Script>
+      <head>
+        {/* A raw inline script, so the browser runs it while parsing <head>, before the first
+            frame. next/script's beforeInteractive only queues inline code for Next's runtime in
+            the App Router, which runs after paint: dark-mode users got a light first frame. This
+            element is hydrated with the root layout, never created on the client, so React's
+            "script tags are not executed" warning does not apply. */}
+        <script id="vantage-theme" dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+      </head>
+      {/* <body> carries the app frame's classes in the server HTML (has-app-shell and friends). */}
+      <AppBody>
         <PwaRegister />
         <ThemeProvider>{children}</ThemeProvider>
         {/* Asks before any first-party product analytics are collected, and
@@ -90,7 +94,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             strategy="afterInteractive"
           />
         )}
-      </body>
+      </AppBody>
     </html>
   );
 }

@@ -513,7 +513,7 @@ export default function ReimbursementsClient() {
       {status === "error" && !view ? (
         <EmptyState
           title="Could not load reimbursements"
-          description={error ?? "Something went wrong."}
+          description={error ?? "That didn't go through. Check your connection and try again."}
         >
           <button type="button" className="rb-receipt-pick" onClick={() => void load()}>
             Retry
