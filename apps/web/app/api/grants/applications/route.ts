@@ -1,6 +1,7 @@
 import { withRls } from "@vantage/db";
 import { syncGrantAwardMoney } from "../../../../lib/finance/source-mirrors";
 import {
+  requireFinanceManager,
   requireGrantOpportunityInOrg,
   requireOrgAdmin,
   requireOrgMember,
@@ -77,7 +78,19 @@ export async function PATCH(request: Request) {
     const status = body.status != null ? String(body.status) : undefined;
     if (status && !VALID_STATUSES.includes(status)) throw new Error("Invalid status");
     const application = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, current.user.id);
+      await requireOrgMember(client, orgId, current.user.id);
+      const previous = await client.query<{ status: string }>(
+        `SELECT status::text AS status FROM grant_applications WHERE id = $1::uuid AND org_id = $2::uuid`,
+        [id, orgId],
+      );
+      // Recording or undoing an award, or naming the awarded amount, changes the
+      // team's income: finance managers only (0714, also enforced by the
+      // grant_applications_award_guard trigger). Drafting stays with admins.
+      const wasAwarded = previous.rows[0]?.status === "awarded";
+      const willBeAwarded = status ? status === "awarded" : wasAwarded;
+      const touchesAward = wasAwarded !== willBeAwarded || (willBeAwarded && body.amountAwardedUsd != null);
+      if (touchesAward) await requireFinanceManager(client, orgId, current.user.id);
+      else await requireOrgAdmin(client, orgId, current.user.id);
       const result = await client.query<{
         id: string;
         grantOpportunityId: string | null;
@@ -112,7 +125,7 @@ export async function PATCH(request: Request) {
             [row.grantOpportunityId, orgId],
           )
         : null;
-      await syncGrantAwardMoney(client, {
+      if (touchesAward) await syncGrantAwardMoney(client, {
         orgId,
         grantApplicationId: id,
         seasonYear: row.seasonYear,

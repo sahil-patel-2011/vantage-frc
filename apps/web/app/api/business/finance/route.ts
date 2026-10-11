@@ -14,6 +14,11 @@ import {
   type SeasonFinanceView,
 } from "../../../../lib/business/compute-season-finance";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  canManageFinances,
+  isFinanceAccessDenied,
+} from "../../../../lib/finance/finance-managers";
 
 const FALLBACK: SeasonFinanceView = {
   status: "setup_required",
@@ -71,10 +76,13 @@ export async function POST(request: Request) {
         [orgId, session.user.id],
       );
       if (!member.rows[0]) throw new Error("Organization access denied");
-      const admin = member.rows[0].role === "owner" || member.rows[0].role === "admin";
+      // Every action on this desk records or changes money: funding in, receipts
+      // out, repayments. Finance managers only (0714) — RLS refuses the same
+      // writes; this answers first with the plain sentence. Members who need
+      // something bought submit a purchase request instead.
+      if (!(await canManageFinances(client, orgId))) throw new Error(FINANCE_MANAGER_REQUIRED);
 
       if (action === "add-funding" || action === "update-funding") {
-        if (!admin) throw new Error("Only owners and admins can post funding sources.");
         const parsed = parseFundingSourceInput(raw);
         if (action === "add-funding") {
           const inserted = await client.query<{ id: string }>(
@@ -145,7 +153,6 @@ export async function POST(request: Request) {
           });
         }
       } else if (action === "delete-funding") {
-        if (!admin) throw new Error("Only owners and admins can remove funding sources.");
         const fundingId = uuidOrNull(raw.fundingId);
         if (!fundingId) throw new Error("fundingId is required");
         await client.query(
@@ -202,7 +209,6 @@ export async function POST(request: Request) {
           userId: session.user.id,
         });
       } else if (action === "mark-reimbursed") {
-        if (!admin) throw new Error("Only owners and admins can mark reimbursements repaid.");
         const purchaseId = uuidOrNull(raw.purchaseId);
         if (!purchaseId) throw new Error("purchaseId is required");
         const reimbursedOn = typeof raw.reimbursedOn === "string" ? raw.reimbursedOn : new Date().toISOString().slice(0, 10);
@@ -241,6 +247,9 @@ export async function POST(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
+    if (isFinanceAccessDenied(error)) {
+      return Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 });
+    }
     const message = publicErrorMessage(error, "Season finance write failed");
     if (message === "Organization access denied") {
       return Response.json({ error: message }, { status: 403 });

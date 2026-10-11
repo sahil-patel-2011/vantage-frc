@@ -5,6 +5,9 @@ import {
   defaultThankYouDueOn,
 } from "../../../../lib/sponsor-pipeline";
 import {
+  FINANCE_MANAGER_REQUIRED,
+  TenantHttpError,
+  canManageFinances,
   requireSponsorsAdmin,
   requireSponsorsMember,
   requireSponsorInOrg,
@@ -34,16 +37,16 @@ export async function GET(request: Request) {
       params.push(Number(seasonYear));
       conditions.push(`season_year=$${params.length}`);
     }
-    const contributions = await withRls({ userId: current.user.id, orgId }, async (client) => {
+    const { contributions, canManage } = await withRls({ userId: current.user.id, orgId }, async (client) => {
       await requireSponsorsMember(client, orgId, current.user.id);
       if (sponsorId) await requireSponsorInOrg(client, orgId, sponsorId);
       const result = await client.query(
         `SELECT ${RETURNING} FROM sponsor_contributions WHERE ${conditions.join(" AND ")} ORDER BY received_at DESC`,
         params,
       );
-      return result.rows;
+      return { contributions: result.rows, canManage: await canManageFinances(client, orgId) };
     });
-    return Response.json({ contributions });
+    return Response.json({ contributions, canManageFinances: canManage });
   } catch (error) {
     return tenantErrorResponse(error, "Sponsor contribution request failed");
   }
@@ -63,7 +66,10 @@ export async function POST(request: Request) {
     const estimatedValueUsd =
       body.estimatedValueUsd != null && body.estimatedValueUsd !== "" ? Number(body.estimatedValueUsd) : null;
     const contribution = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      await requireSponsorsAdmin(client, orgId, current.user.id);
+      await requireSponsorsMember(client, orgId, current.user.id);
+      // Recording money a sponsor gave is a finance write (0714), whatever the
+      // person's role. Marking a thank-you sent (PATCH) stays with sponsor leads.
+      if (!(await canManageFinances(client, orgId))) throw new TenantHttpError(403, FINANCE_MANAGER_REQUIRED);
       await requireSponsorInOrg(client, orgId, sponsorId);
       const result = await client.query(
         `INSERT INTO sponsor_contributions(sponsor_id, org_id, season_year, type, amount_usd, estimated_value_usd, description, received_at, created_by)

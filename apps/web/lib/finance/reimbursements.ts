@@ -23,6 +23,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { recordMoney, removeMoney } from "./ledger";
+import { FINANCE_MANAGER_REQUIRED } from "./finance-managers";
 
 export const REIMBURSEMENT_STATUSES = [
   "draft",
@@ -57,8 +58,10 @@ export const REIMBURSEMENT_STATUS_HINTS: Record<ReimbursementStatus, string> = {
 
 /**
  * Who may drive each transition. 'member' is the claim's own filer; 'admin' is
- * an org owner/admin. Anything not listed here is impossible — the API refuses
- * it before touching the database, and RLS refuses it again.
+ * the treasurer — a finance manager (0714: the team owner, or someone the owner
+ * chose to manage money), NOT every org admin. Anything not listed here is
+ * impossible — the API refuses it before touching the database, and RLS
+ * (can_manage_finances) refuses it again.
  */
 export type ReimbursementActor = "member" | "admin";
 
@@ -115,7 +118,7 @@ export function evaluateTransition(input: {
     return { ok: false, reason: "You can only change reimbursements you filed." };
   }
   if (!transition.actors.includes(input.actor)) {
-    return { ok: false, reason: "Only a team owner or admin can do that." };
+    return { ok: false, reason: FINANCE_MANAGER_REQUIRED };
   }
   if (!transition.from.includes(input.from)) {
     return {
@@ -346,8 +349,12 @@ export type ReimbursementsView =
       status: "ready";
       orgId: string;
       seasonYear: number;
-      /** True when the viewer is an org owner/admin and sees the whole queue. */
+      /** True when the viewer is a finance manager (0714) and sees the whole queue. */
       isTreasurer: boolean;
+      /** Same value, under the name every finance GET uses. */
+      canManageFinances: boolean;
+      /** False for a view-only member (0714): they can't file claims. */
+      canFile: boolean;
       viewerUserId: string;
       requests: ReimbursementSummary[];
       totals: ReimbursementTotals;
@@ -429,7 +436,7 @@ export function isMissingRelationOrColumn(error: unknown): boolean {
  */
 export async function computeReimbursementsView(
   client: PoolClient,
-  input: { orgId: string; userId: string; isTreasurer: boolean; seasonYear: number },
+  input: { orgId: string; userId: string; isTreasurer: boolean; seasonYear: number; canFile?: boolean },
 ): Promise<ReimbursementsView> {
   try {
     const [requests, categories] = await Promise.all([
@@ -448,6 +455,8 @@ export async function computeReimbursementsView(
       orgId: input.orgId,
       seasonYear: input.seasonYear,
       isTreasurer: input.isTreasurer,
+      canManageFinances: input.isTreasurer,
+      canFile: input.canFile !== false,
       viewerUserId: input.userId,
       requests: rows,
       totals: summarizeReimbursements(rows),

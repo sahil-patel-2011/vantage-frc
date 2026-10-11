@@ -13,6 +13,12 @@ import { recordMoney, removeMoney } from "../../../../lib/finance/ledger";
 import { sanitizeFinanceWriteBody } from "../../../../lib/finance/sanitize-write";
 import { receiveToInventory } from "../../../../lib/orders/receive-to-inventory";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  assertFinanceManager,
+  canManageFinances,
+  isFinanceAccessDenied,
+} from "../../../../lib/finance/finance-managers";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -20,7 +26,9 @@ async function session() {
   return value;
 }
 const fail = (error: unknown) =>
-  Response.json({ error: publicErrorMessage(error, "Purchase request failed") }, { status: 400 });
+  isFinanceAccessDenied(error)
+    ? Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 })
+    : Response.json({ error: publicErrorMessage(error, "Purchase request failed") }, { status: 400 });
 
 const LIST_FIELDS = `pr.id, pr.season_year AS "seasonYear", pr.category_id AS "categoryId", c.name AS "categoryName",
   pr.requested_by AS "requestedBy",
@@ -43,16 +51,16 @@ export async function GET(request: Request) {
     const params: unknown[] = [orgId];
     if (status) { params.push(status); conditions.push(`pr.status=$${params.length}`); }
     if (seasonYear) { params.push(Number(seasonYear)); conditions.push(`pr.season_year=$${params.length}`); }
-    const requests = await withRls({ userId: current.user.id, orgId }, async (client) => {
+    const { requests, canManage } = await withRls({ userId: current.user.id, orgId }, async (client) => {
       const result = await client.query(
         `SELECT ${LIST_FIELDS} FROM purchase_requests pr
          LEFT JOIN finance_categories c ON c.id = pr.category_id
          WHERE ${conditions.join(" AND ")} ORDER BY pr.created_at DESC`,
         params,
       );
-      return result.rows;
+      return { requests: result.rows, canManage: await canManageFinances(client, orgId) };
     });
-    return Response.json({ requests });
+    return Response.json({ requests, canManageFinances: canManage });
   } catch (error) { return fail(error); }
 }
 
@@ -109,11 +117,9 @@ export async function PATCH(request: Request) {
         });
       }
 
-      const admin = await client.query(
-        `SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2 AND role IN ('owner','admin')`,
-        [orgId, current.user.id],
-      );
-      if (!admin.rowCount) throw new Error("Organization administrator access required");
+      // Every status move here (approve, reject, ordered, received, reimbursed)
+      // is a finance-manager action; the requester's own edit is handled above.
+      await assertFinanceManager(client, orgId);
 
       const nextStatus: Record<string, PurchaseRequestStatus> = {
         approve: "approved", reject: "rejected", mark_ordered: "ordered",

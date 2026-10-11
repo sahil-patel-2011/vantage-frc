@@ -94,7 +94,10 @@ describe("evaluateTransition", () => {
         hasReceipt: true,
       });
       expect(verdict.ok).toBe(false);
-      expect(verdict.ok === false && verdict.reason).toMatch(/owner or admin/i);
+      // 0714: deciding a claim is a finance-manager job, said in one plain sentence.
+      expect(verdict.ok === false && verdict.reason).toBe(
+        "Only people your team owner chose can change money. Ask an owner for access.",
+      );
     }
   });
 

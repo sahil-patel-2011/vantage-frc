@@ -8,14 +8,21 @@ import {
   writeReimbursementAudit,
   type ReimbursementsView,
 } from "../../../lib/finance/reimbursements";
-import { requireOrgMember, requireTenantSession, tenantErrorResponse } from "../../../lib/tenant-org-access";
+import {
+  TenantHttpError,
+  canManageFinances,
+  requireOrgMember,
+  requireTenantSession,
+  tenantErrorResponse,
+} from "../../../lib/tenant-org-access";
 
 export const runtime = "nodejs";
 
 /**
- * Member reimbursement claims (0482). RLS is the security model: a non-admin
- * only ever sees rows where member_user_id = current_app_user_id(), so both
- * roles run the same SELECT. requireOrgMember turns a wrong orgId into an
+ * Member reimbursement claims (0482). RLS is the security model: anyone who is
+ * not a finance manager (0714 — the owner, or someone the owner chose to manage
+ * money) only ever sees rows where member_user_id = current_app_user_id(), so
+ * both run the same SELECT. requireOrgMember turns a wrong orgId into an
  * explicit 403 instead of a silently empty list.
  */
 export async function GET(request: Request) {
@@ -53,7 +60,8 @@ export async function GET(request: Request) {
       return computeReimbursementsView(client, {
         orgId: row.orgId,
         userId: session.user.id,
-        isTreasurer: row.role === "owner" || row.role === "admin",
+        isTreasurer: await canManageFinances(client, row.orgId),
+        canFile: row.role !== "viewer",
         seasonYear,
       });
     });
@@ -100,7 +108,10 @@ export async function POST(request: Request) {
 
   try {
     const created = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      await requireOrgMember(client, orgId, session.user.id);
+      const member = await requireOrgMember(client, orgId, session.user.id);
+      if (member.role === "viewer") {
+        throw new TenantHttpError(403, "You have view-only access, so you can't file a reimbursement. Ask an owner for access.");
+      }
       const result = await client.query<{ id: string }>(
         `INSERT INTO reimbursement_requests
            (org_id, season_year, member_user_id, amount_usd, description, category_id, purchased_on, status)

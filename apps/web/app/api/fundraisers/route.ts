@@ -5,6 +5,11 @@ import { headers } from "next/headers";
 import { parseFundraiserAction, summarizeFundraisers, type FundraiserStatus, type FundraiserType } from "../../../lib/fundraisers";
 import { syncFundraiserMoney } from "../../../lib/finance/source-mirrors";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  canManageFinances,
+  isFinanceAccessDenied,
+} from "../../../lib/finance/finance-managers";
 
 class HttpError extends Error {
   constructor(readonly status: number, message: string) {
@@ -18,17 +23,27 @@ async function requireSession() {
   return session;
 }
 
+/** Members plan fundraisers; view-only people only look (0714). */
 async function requireMembership(client: PoolClient, orgId: string, userId: string) {
-  const row = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`, [orgId, userId]);
+  const row = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2 LIMIT 1`,
+    [orgId, userId],
+  );
   if (!row.rowCount) throw new HttpError(403, "Organization membership required");
+  if (row.rows[0]?.role === "viewer") {
+    throw new HttpError(403, "You have view-only access, so you can't change fundraisers. Ask an owner for access.");
+  }
 }
 
-async function requireAdmin(client: PoolClient, orgId: string, userId: string) {
-  const row = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2 AND role IN ('owner', 'admin') LIMIT 1`, [orgId, userId]);
-  if (!row.rowCount) throw new HttpError(403, "Organization administrator access required to record money");
+/** Proceeds are money: the owner and the people the owner chose (0714). */
+async function requireFinanceManager(client: PoolClient, orgId: string) {
+  if (!(await canManageFinances(client, orgId))) throw new HttpError(403, FINANCE_MANAGER_REQUIRED);
 }
 
 function fail(error: unknown) {
+  if (!(error instanceof HttpError) && isFinanceAccessDenied(error)) {
+    return Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 });
+  }
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: publicErrorMessage(error, "Fundraiser request failed") }, { status });
 }
@@ -70,6 +85,7 @@ export async function GET(request: Request) {
       return {
         status: "ready" as const,
         context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        canManageFinances: await canManageFinances(client, row.orgId),
         seasonYear,
         events: events.rows,
         summary,
@@ -106,8 +122,9 @@ export async function POST(request: Request) {
             [action.id, action.orgId],
           );
           if (!current.rows[0]) throw new HttpError(404, "Fundraiser not found");
+          // Cancelling or reviving an event with proceeds moves money on the ledger.
           if (Number(current.rows[0].proceedsUsd) > 0) {
-            await requireAdmin(client, action.orgId, userId);
+            await requireFinanceManager(client, action.orgId);
           }
           const updated = await client.query<{
             seasonYear: number;
@@ -136,7 +153,7 @@ export async function POST(request: Request) {
           return { ok: true };
         }
         case "record_proceeds": {
-          await requireAdmin(client, action.orgId, userId);
+          await requireFinanceManager(client, action.orgId);
           const event = await client.query<{
             seasonYear: number;
             name: string;
@@ -167,6 +184,14 @@ export async function POST(request: Request) {
           return { ok: true };
         }
         case "delete_event": {
+          const existing = await client.query<{ proceedsUsd: string }>(
+            `SELECT proceeds_usd::text AS "proceedsUsd" FROM fundraiser_events WHERE id = $1 AND org_id = $2`,
+            [action.id, action.orgId],
+          );
+          // Deleting an event that raised money deletes that income.
+          if (Number(existing.rows[0]?.proceedsUsd ?? 0) > 0) {
+            await requireFinanceManager(client, action.orgId);
+          }
           const deleted = await client.query(`DELETE FROM fundraiser_events WHERE id = $1 AND org_id = $2`, [action.id, action.orgId]);
           if (!deleted.rowCount) throw new HttpError(403, "You cannot delete this fundraiser");
           await syncFundraiserMoney(client, {

@@ -53,8 +53,15 @@ export type PartRequestsView =
       orgId: string;
       orgName: string;
       seasonYear: number;
-      /** Approving/rejecting is gated on this, in the API and in RLS. */
+      /**
+       * Approving/rejecting is gated on this, in the API and in RLS: true for a
+       * finance manager (0714 — the owner, or someone the owner chose).
+       */
       canDecide: boolean;
+      /** Same value, under the name every finance GET uses. */
+      canManageFinances: boolean;
+      /** False for a view-only member: the ask form is hidden, the API refuses. */
+      canAsk: boolean;
       mine: PartRequest[];
       /** Everyone's pending asks — only populated for a budget manager. */
       queue: PartRequest[];
@@ -137,6 +144,8 @@ export async function computePartRequestsView(
     orgName: string;
     userId: string;
     canDecide: boolean;
+    /** False for a view-only member (0714): they can look, not ask. */
+    canAsk?: boolean;
     seasonYear: number;
   },
 ): Promise<PartRequestsView> {
@@ -207,6 +216,8 @@ export async function computePartRequestsView(
       orgName: input.orgName,
       seasonYear,
       canDecide: input.canDecide,
+      canManageFinances: input.canDecide,
+      canAsk: input.canAsk !== false,
       mine: mineResult.rows.map((row) => mapRequest(row, userId)),
       queue: (queueResult?.rows ?? []).map((row) => mapRequest(row, userId)),
       budget,

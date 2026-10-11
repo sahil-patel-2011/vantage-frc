@@ -6,11 +6,11 @@
  * mirror that /budget subtracts from the season budget) is the SAME code path
  * the treasurer console has always used. Nothing about dollars is duplicated.
  *
- * WHO CAN DECIDE: owners and admins. `reviewOrder` asserts that itself, and
- * `purchase_requests_admin_write` (0035) enforces it in RLS. A person holding
- * only the 0620 `manage_budget` capability can see and set the budget but cannot
- * approve a request — the route says so in those words rather than letting them
- * press a button that fails.
+ * WHO CAN DECIDE: finance managers (0714) — the team owner, plus the people the
+ * owner chose to "Manage money" (the `manage_budget` capability). Admins are not
+ * finance managers by role. `reviewOrder` asserts it itself, and
+ * `purchase_requests_admin_write` plus the decision guard enforce it in RLS. The
+ * same person who can see the budget can decide what is spent against it.
  *
  * org_id comes from `resolveMembership`, never from the body.
  */
@@ -23,10 +23,13 @@ import { computePartRequestsView } from "../../../lib/part-requests/compute-part
 import { currentSeasonYear } from "../../../lib/budget/compute-budget";
 import { progressOrder, reviewOrder, submitOrder } from "../../../lib/orders/compute-orders";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  canManageFinances,
+  isFinanceAccessDenied,
+} from "../../../lib/finance/finance-managers";
 
-const DECIDE_DENIED =
-  "Approving a part request is limited to the team Owner and Admins. Budget access alone " +
-  "does not include it — ask an owner to make you an admin if you should be deciding these.";
+const DECIDE_DENIED = FINANCE_MANAGER_REQUIRED;
 
 function moneyOrNull(value: unknown): number | null {
   if (value === undefined || value === null || value === "") return null;
@@ -53,7 +56,13 @@ function fail(error: unknown): Response {
   if (error instanceof CapabilityError) {
     return Response.json({ error: error.message, reason: error.reason }, { status: error.status });
   }
+  if (isFinanceAccessDenied(error)) {
+    return Response.json({ error: DECIDE_DENIED, reason: "not_allowed" }, { status: 403 });
+  }
   const message = publicErrorMessage(error, "Part request failed");
+  if (/view-only access/i.test(message)) {
+    return Response.json({ error: message, reason: "view_only" }, { status: 403 });
+  }
   if (/row-level security/i.test(message)) {
     return Response.json({ error: DECIDE_DENIED, reason: "not_allowed" }, { status: 403 });
   }
@@ -78,12 +87,12 @@ export async function GET(request: Request) {
   try {
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await resolveMembership(client, session.user.id, requestedOrg);
-      const leadership = membership.role === "owner" || membership.role === "admin";
       return computePartRequestsView(client, {
         orgId: membership.orgId,
         orgName: membership.orgName,
         userId: session.user.id,
-        canDecide: leadership,
+        canDecide: await canManageFinances(client, membership.orgId),
+        canAsk: membership.role !== "viewer",
         seasonYear,
       });
     });
@@ -114,7 +123,7 @@ export async function POST(request: Request) {
       const membership = await resolveMembership(client, session.user.id, requestedOrg);
       const orgId = membership.orgId;
       const userId = session.user.id;
-      const leadership = membership.role === "owner" || membership.role === "admin";
+      const leadership = await canManageFinances(client, orgId);
 
       const requireLeadership = () => {
         if (!leadership) throw new CapabilityError(403, DECIDE_DENIED, "not_allowed");
@@ -165,6 +174,7 @@ export async function POST(request: Request) {
         orgName: membership.orgName,
         userId,
         canDecide: leadership,
+        canAsk: membership.role !== "viewer",
         seasonYear,
       });
     });

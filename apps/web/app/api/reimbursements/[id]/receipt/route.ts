@@ -9,6 +9,7 @@ import {
   writeReimbursementAudit,
 } from "../../../../../lib/finance/reimbursements";
 import {
+  canManageFinances,
   requireOrgMember,
   requireTenantSession,
   TenantHttpError,
@@ -61,8 +62,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 }
 
 /**
- * Attach (or replace) a PDF receipt document. Only the filer or an authorized
- * administrator may attach, and only while the claim is
+ * Attach (or replace) a PDF receipt document. Only the filer or a finance
+ * manager (0714) may attach, and only while the claim is
  * still theirs to change; once approved the evidence is frozen.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -98,7 +99,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   try {
     const saved = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const member = await requireOrgMember(client, orgId, session.user.id);
+      await requireOrgMember(client, orgId, session.user.id);
+      const treasurer = await canManageFinances(client, orgId);
       const claim = await client.query<{ memberUserId: string; status: string; amountUsd: string }>(
         `SELECT member_user_id::text AS "memberUserId", status, amount_usd::text AS "amountUsd"
          FROM reimbursement_requests WHERE org_id = $1::uuid AND id = $2::uuid`,
@@ -106,7 +108,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
       const row = claim.rows[0];
       if (!row) throw new TenantHttpError(404, "Reimbursement not found.");
-      if (row.memberUserId !== session.user.id && !member.admin) {
+      if (row.memberUserId !== session.user.id && !treasurer) {
         throw new TenantHttpError(403, "You can only attach receipts to reimbursements you filed.");
       }
       if (row.status === "approved" || row.status === "paid") {
