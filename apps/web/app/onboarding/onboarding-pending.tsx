@@ -27,6 +27,7 @@ export function PendingPanel({
     orgName: state.workspaceOrgName ?? state.lockedOrgName ?? null,
     workspaceMissing: state.workspaceMissing,
     adult,
+    platformAdmin: state.platformAdmin,
   });
 
   return (
@@ -81,6 +82,7 @@ export function PendingPanel({
           label={plan.primaryAction.label}
           checking={checking}
           orgId={state.workspaceOrgId}
+          teamNumber={state.preferredTeamNumber ?? null}
           onCheck={onCheck}
           onEdit={onEdit}
         />
@@ -133,13 +135,16 @@ function PendingPrimaryAction({
   label,
   checking,
   orgId,
+  teamNumber,
   onCheck,
   onEdit,
 }: {
-  kind: "check" | "edit" | "invite" | "claim" | "join";
+  kind: "check" | "edit" | "invite" | "claim" | "join" | "admin";
   label: string;
   checking: boolean;
   orgId: string | null;
+  /** The number the server said has no workspace: /claim starts with it. */
+  teamNumber: number | null;
   onCheck: () => void;
   onEdit: () => void;
 }) {
@@ -158,7 +163,11 @@ function PendingPrimaryAction({
       );
     case "claim":
       return (
-        <a className="signin-submit" href="/claim">{label}</a>
+        <a className="signin-submit" href={teamNumber ? `/claim?teamNumber=${teamNumber}` : "/claim"}>{label}</a>
+      );
+    case "admin":
+      return (
+        <a className="signin-submit" href="/admin">{label}</a>
       );
     case "edit":
       return (

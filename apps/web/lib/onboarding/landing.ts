@@ -123,9 +123,10 @@ export function buildOnboardingLanding(input: {
       summary: input.orgName
         ? `Home keeps these steps for ${input.orgName} until they're done.`
         : "Home keeps these steps until they're done.",
-      // Step 1 below is "Invite your team"; the button repeated it. The way on is Home.
-      primary: { href: withOrg("/dashboard", input.orgId), label: "Open Home" },
-      secondary: null,
+      // The heading says "Start by inviting people" and step 1 is "Invite your team", so the
+      // button does that; Home (which keeps these steps) is the quieter way on.
+      primary: { href: withOrg(SETUP_HREF.invite!, input.orgId), label: "Invite your team" },
+      secondary: { href: withOrg("/dashboard", input.orgId), label: "Open Home" },
       trackKeys,
       firstFiveMinutes: setup.map((check) => ({
         key: `${TEAM_SETUP_TRACK}:${check.key}`,
