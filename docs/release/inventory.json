@@ -1,12 +1,12 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-11T20:00:09.751Z",
+  "generatedAt": "2026-10-11T20:23:34.644Z",
   "summary": {
-    "pages": 334,
-    "apis": 513,
+    "pages": 336,
+    "apis": 519,
     "manifests": 123,
     "coreWorkflows": 20,
-    "historicalTables": 627,
+    "historicalTables": 628,
     "scheduledJobs": 0,
     "cronRoutes": 11,
     "durableWorkflows": 3,
@@ -274,6 +274,15 @@
         "GET",
         "POST",
         "PATCH"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/admin/outage-contacts/route.ts",
+      "route": "/api/admin/outage-contacts",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
       ]
     },
     {
@@ -2108,6 +2117,15 @@
     {
       "path": "apps/web/app/api/guided/route.ts",
       "route": "/api/guided",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/guided/team/route.ts",
+      "route": "/api/guided/team",
       "kind": "api",
       "methods": [
         "GET",
@@ -4070,6 +4088,38 @@
       ]
     },
     {
+      "path": "apps/web/app/api/status/outage/banner/route.ts",
+      "route": "/api/status/outage/banner",
+      "kind": "api",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/status/outage/broadcast/route.ts",
+      "route": "/api/status/outage/broadcast",
+      "kind": "api",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/status/outage/route.ts",
+      "route": "/api/status/outage",
+      "kind": "api",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/status/route.ts",
+      "route": "/api/status",
+      "kind": "api",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
       "path": "apps/web/app/api/storage/finalize/route.ts",
       "route": "/api/storage/finalize",
       "kind": "api",
@@ -5315,6 +5365,12 @@
       "methods": []
     },
     {
+      "path": "apps/web/app/learn/guided/team/page.tsx",
+      "route": "/learn/guided/team",
+      "kind": "page",
+      "methods": []
+    },
+    {
       "path": "apps/web/app/learn/page.tsx",
       "route": "/learn",
       "kind": "page",
@@ -6113,6 +6169,12 @@
     {
       "path": "apps/web/app/start/page.tsx",
       "route": "/start",
+      "kind": "page",
+      "methods": []
+    },
+    {
+      "path": "apps/web/app/status/outage/page.tsx",
+      "route": "/status/outage",
       "kind": "page",
       "methods": []
     },
@@ -7851,6 +7913,7 @@
     "grant_opportunities",
     "grant_report_reports",
     "grant_writing_drafts",
+    "guided_signoffs",
     "hour_logs",
     "hour_policies",
     "hours_self_view_biometric_consents",

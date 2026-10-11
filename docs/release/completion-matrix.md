@@ -1,6 +1,6 @@
 # Production completion matrix
 
-Generated inventory: {"pages":334,"apis":513,"manifests":123,"coreWorkflows":20,"historicalTables":627,"scheduledJobs":0,"cronRoutes":11,"durableWorkflows":3,"connectorRoots":7}. Historical table names are not proof of the current database schema.
+Generated inventory: {"pages":336,"apis":519,"manifests":123,"coreWorkflows":20,"historicalTables":628,"scheduledJobs":0,"cronRoutes":11,"durableWorkflows":3,"connectorRoots":7}. Historical table names are not proof of the current database schema.
 
 An unchecked item is unverified, not a passing feature. Record test names and deployed evidence before marking it complete. A partial test is evidence for that dimension only, not acceptance of the entire workflow.
 

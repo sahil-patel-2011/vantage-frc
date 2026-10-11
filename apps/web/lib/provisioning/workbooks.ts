@@ -32,7 +32,7 @@ export function verifyWorkbookLayout(tables: readonly BuiltTable[], layout?: Wor
 const GROUPS = [
   { name: "Start Here", entities: ["Tables", "SyncInfo"] },
   { name: "Competition", entities: ["Teams", "Matches", "MatchScouting", "PitScouting", "PickList", "SeasonEvents", "SeasonMatches", "RobotFailures", "Batteries"] },
-  { name: "Team", entities: ["Members", "Hours", "Calendar", "Tasks"] },
+  { name: "Team", entities: ["Members", "Hours", "Calendar", "Tasks", "Lessons"] },
   { name: "Build", entities: ["RobotFailures", "Batteries"] },
   { name: "Business", entities: ["Finance", "Sponsors"] },
 ] as const;

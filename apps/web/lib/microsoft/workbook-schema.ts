@@ -35,6 +35,8 @@ export type WorkbookEntity =
   // The team's own season from TBA and Statbotics, read-only in the workbook.
   | "SeasonEvents"
   | "SeasonMatches"
+  // The team's own lessons (team_lessons), read-only.
+  | "Lessons"
   | "LongText"
   | "Tables"
   | "SyncInfo";

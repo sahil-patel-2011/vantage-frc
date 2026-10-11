@@ -35,7 +35,8 @@ export type OpsEntity =
   | "Batteries"
   | "PracticeScouting"
   | "SeasonEvents"
-  | "SeasonMatches";
+  | "SeasonMatches"
+  | "Lessons";
 
 type OpsTableDef = {
   entity: OpsEntity;
@@ -259,6 +260,25 @@ export const OPS_TABLES: OpsTableDef[] = [
           FROM free_scout_reports WHERE org_id=$1::uuid ORDER BY created_at, id`,
   },
   ...SEASON_TABLES,
+  {
+    entity: "Lessons",
+    description: "The team's own lessons (Learn › Team lessons): title, status, steps and their text. Practice answers are left out.",
+    columns: [
+      "id", "title", "status", "kind", "audience", "minutes", "steps", "practice_questions", "text", "author",
+      "published_at", "updated_at", "source",
+    ],
+    sql: `SELECT l.id::text AS id, l.title, l.status, l.source AS kind, l.audience, l.minutes,
+                 jsonb_array_length(l.body->'steps') AS steps,
+                 jsonb_array_length(l.body->'practice') AS practice_questions,
+                 (SELECT string_agg(COALESCE(st.step->>'title', '') || E'\n' || COALESCE(st.step->>'text', ''), E'\n\n' ORDER BY st.n)
+                    FROM jsonb_array_elements(l.body->'steps') WITH ORDINALITY AS st(step, n)) AS text,
+                 COALESCE(NULLIF(u.name, ''), 'Member') AS author,
+                 ${ISO("l.published_at")} AS published_at, ${ISO("l.updated_at")} AS updated_at, 'team_lessons' AS source
+            FROM team_lessons l
+            LEFT JOIN users u ON u.id = l.created_by
+           WHERE l.org_id = $1::uuid AND l.status <> 'archived'
+           ORDER BY l.title, l.id`,
+  },
 ];
 
 export type OpsRows = Partial<Record<OpsEntity, Record<string, unknown>[]>>;
