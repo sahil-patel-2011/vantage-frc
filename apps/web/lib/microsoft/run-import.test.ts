@@ -53,6 +53,8 @@ function fakeClient(options: {
   movedOn?: string[];
   /** Pick-list updated_at text the FOR UPDATE read returns for P1 (defaults to unchanged). */
   p1LockedVersion?: string;
+  /** Whether the importing member holds manage_scouting (pick-list writes are lead-only). */
+  lead?: boolean;
 } = {}) {
   const log: Recorded[] = [];
   const client = {
@@ -61,6 +63,7 @@ function fakeClient(options: {
       const rows = (r: unknown[], rowCount = r.length) => ({ rows: r, rowCount });
       if (sql.includes("to_regclass")) return rows([{ ready: options.migrated ?? true }]);
       if (sql.includes("pg_try_advisory_xact_lock")) return rows([{ locked: options.locked ?? true }]);
+      if (sql.includes("has_org_capability")) return rows([{ allowed: options.lead ?? true }]);
       if (sql.includes("FROM org_active_context")) return rows([{ activeEventKey: "2026casj" }]);
       if (sql.startsWith("UPDATE match_scout_entries") || sql.includes("UPDATE match_scout_entries")) {
         return rows([], (options.movedOn ?? []).includes(String(params[0])) ? 0 : 1);
@@ -224,6 +227,7 @@ describe("applyWorkbookImport", () => {
     const ranks = log.find((entry) => entry.sql.includes("unnest($2::uuid[])"))!;
     expect(ranks.params).toEqual([LIST, [P2, P1], [1, 2], USER, ORG]);
     expect(log.some((entry) => entry.sql.includes("FOR UPDATE"))).toBe(true);
+    expect(log.some((entry) => entry.sql.includes("has_org_capability"))).toBe(true);
 
     const run = runInsert(log)!;
     expect(run).toMatchObject({ orgId: ORG, status: "applied", startedBy: USER, applied: 4, conflicts: 0, skipped: 1, error: null });
@@ -254,6 +258,19 @@ describe("applyWorkbookImport", () => {
     const result = await applyWorkbookImport(client, { orgId: ORG, userId: USER, changeIds: ids, openReader: async () => reader });
     expect(result).toMatchObject({ status: "nothing_applied", applied: 0, stale: 1 });
     expect(log.some((entry) => entry.sql.includes("UPDATE match_scout_entries"))).toBe(false);
+  });
+
+  it("stops before any write when the member cannot manage the shared pick list", async () => {
+    const reader = await syncedWorkbook();
+    reader.set("VantagePickList", "notes", P2, "solid auto");
+    reader.set("VantageMatchScouting", "data.autoPoints", M1, 20);
+    const ids = (await previewIds(reader)).tables.flatMap((t) => t.changes).map((c) => c.id);
+    const { client, log } = fakeClient({ lead: false });
+    await expect(
+      applyWorkbookImport(client, { orgId: ORG, userId: USER, changeIds: ids, openReader: async () => reader }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(log.some((entry) => /UPDATE (pick_list_entries|match_scout_entries)/.test(entry.sql))).toBe(false);
+    expect(runInsert(log)).toBeNull();
   });
 
   it("returns busy while a sync or another import holds the team's lock", async () => {
