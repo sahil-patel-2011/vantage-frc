@@ -775,7 +775,7 @@
   text-underline-offset: 3px;
 }
 
-.marketing-lux .mx-hero-stage {
+.marketing-lux .mx-figure.mx-hero-stage {
   position: relative;
   margin: clamp(48px, 6vw, 80px) auto 0;
   max-width: 1080px;
@@ -1131,6 +1131,7 @@
 
 .marketing-lux .mx-rows {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
   padding: 0;
   list-style: none;
