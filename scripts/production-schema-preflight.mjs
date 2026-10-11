@@ -18,6 +18,9 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0718_service_notice_recipients.sql",
   // Guided-track lead sign-offs: /api/guided and /api/guided/team read guided_signoffs.
   "0719_guided_signoffs.sql",
+  // Operations trust: /api/hours reads hour_logs.entry_source and correction columns; the
+  // two-person reimbursement rule, lead-only certifications and sign-off notices live in RLS.
+  "0723_operations_trust.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */
