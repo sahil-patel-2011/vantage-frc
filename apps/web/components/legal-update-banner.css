@@ -17,3 +17,25 @@
 .legal-update p { margin: 0; flex: 1 1 360px; }
 .legal-update a { color: var(--accent); }
 .legal-update-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+/* The one-line wording is the phone's, and only until the notice is opened. */
+.legal-update .legal-update-short { display: none; }
+
+@media (max-width: 640px) {
+  /* One line and a Review button: about 60px instead of a fifth of the first screen. */
+  .legal-update[data-open="false"] {
+    flex-wrap: nowrap;
+    gap: 12px;
+    margin-top: 8px;
+    padding: 6px 6px 6px 14px;
+  }
+  .legal-update[data-open="false"] p {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .legal-update[data-open="false"] .legal-update-full { display: none; }
+  .legal-update[data-open="false"] .legal-update-short { display: inline; }
+  .legal-update[data-open="false"] > .app-button { flex: none; min-height: 44px; }
+}
