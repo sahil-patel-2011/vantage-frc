@@ -196,7 +196,15 @@ export function AppShellTopbar({
             aria-label="Account menu"
             aria-expanded={accountMenuOpen}
             aria-haspopup="menu"
+            aria-controls={accountMenuOpen ? "soft-account-menu" : undefined}
             onClick={onToggleAccount}
+            onKeyDown={(event) => {
+              // Arrow keys on a menu button open its menu (focus then lands on the first item).
+              if ((event.key === "ArrowDown" || event.key === "ArrowUp") && !accountMenuOpen) {
+                event.preventDefault();
+                onToggleAccount();
+              }
+            }}
           >
             {me.image ? <img src={me.image} alt="" /> : initial === "?" ? <PersonGlyph /> : initial}
           </button>
