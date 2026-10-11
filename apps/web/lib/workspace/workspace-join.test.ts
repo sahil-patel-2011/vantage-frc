@@ -12,6 +12,7 @@ import {
   workspaceRelatedLinks,
   workspaceSetupSteps,
   workspaceShellCopy,
+  workspaceNotOnTeamCopy,
 } from "./workspace-join";
 
 describe("workspaceRelatedLinks", () => {
@@ -39,6 +40,7 @@ describe("workspace Soft-UI join helpers", () => {
   it("formats org labels without inventing team numbers", () => {
     expect(formatWorkspaceOrgLabel({ orgName: "Vantage", teamNumber: 254 })).toBe("Team 254 · Vantage");
     expect(formatWorkspaceOrgLabel({ orgName: "Solo", teamNumber: null })).toBe("Solo");
+    expect(formatWorkspaceOrgLabel({ orgName: "Team 9203", teamNumber: 9203 })).toBe("Team 9203");
   });
 
   it("keeps empty join copy invite-based and concise", () => {
@@ -111,5 +113,24 @@ describe("team picker destinations", () => {
       expect(workspaceOrgHref("org-2", next)).toBe("/workspace?orgId=org-2");
     }
     expect(workspaceOrgHref("org-2", "/admin")).toBe("/workspace?orgId=org-2");
+  });
+});
+
+describe("workspaceNotOnTeamCopy", () => {
+  it("names the one team the person is on and says who to ask", () => {
+    const copy = workspaceNotOnTeamCopy([{ orgId: "a", orgName: "Team 1678", teamNumber: 1678 }]);
+    expect(copy.title).toBe("You're not on that team");
+    expect(copy.description).toContain("You're on Team 1678.");
+    expect(copy.description).toContain("ask its owner for an invite");
+    // Never the advice the old screens gave: wait for an invite, or ask for a role.
+    expect(copy.description).not.toMatch(/waitlist|role/i);
+  });
+
+  it("points at the list when the person is on several teams", () => {
+    const copy = workspaceNotOnTeamCopy([
+      { orgId: "a", orgName: "QA 2 Alpha", teamNumber: 9201 },
+      { orgId: "b", orgName: "QA 2 Bravo", teamNumber: 9202 },
+    ]);
+    expect(copy.description).toContain("Open one of your teams instead.");
   });
 });

@@ -10,14 +10,17 @@ import {
   formatWorkspaceOrgLabel,
   realWorkspaceMemberships,
   workspaceJoinNextActions,
+  workspaceNotOnTeamCopy,
   workspaceOrgHref,
   workspaceShellCopy,
 } from "../../lib/workspace";
+import { accessRoleLabel } from "../../lib/team-lifecycle/model";
 import SyncIndicator from "./sync-indicator";
 import QuickActions from "./quick-actions";
 import { VantageLogo } from "../../components/brand";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import "../invite/invite-flow.css";
+import "./workspace-chooser.css";
 
 export const metadata = {
   title: "Your team",
@@ -26,8 +29,8 @@ export const metadata = {
 // Session-gated server page: never prerendered, so a credential-free build works.
 export const dynamic = "force-dynamic";
 
-export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string; next?: string }> }) {
-  const { orgId: orgIdParam, next: nextDestination } = await searchParams;
+export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ orgId?: string; next?: string; notOnTeam?: string }> }) {
+  const { orgId: orgIdParam, next: nextDestination, notOnTeam } = await searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/signin?next=%2Fworkspace");
 
@@ -35,16 +38,18 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
   const orgId = nextDestination !== undefined ? null : orgIdParam ?? null;
   if (!orgId) {
     const memberships = await withRls({ userId: session.user.id }, async (client) =>
-      client.query<{ orgId: string; orgName: string; teamNumber: number | null }>(
-        `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber"
+      client.query<{ orgId: string; orgName: string; teamNumber: number | null; role: string }>(
+        // The order /api/me and the team switcher use: the teams you run first, then by number.
+        `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber", m.role::text AS role
          FROM memberships m
          JOIN organizations o ON o.id = m.org_id
          WHERE m.user_id = $1
-         ORDER BY o.name`,
+         ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number NULLS LAST, o.name`,
         [session.user.id],
       ),
     );
     const options = realWorkspaceMemberships(memberships.rows);
+    const roleOf = new Map(memberships.rows.map((row) => [row.orgId, row.role]));
     const shell = classifyWorkspaceShell({ membershipCount: options.length });
 
     if (shell === "ready" && options[0] && nextDestination === undefined) {
@@ -72,26 +77,28 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
                 </Button>
               </p>
             ) : null}
-            <ul className="workspace-quiet-links">
-              {actions
-                .filter((a) => a.id !== primary?.id)
-                .map((action) => (
-                  <li key={action.id}>
-                    <a href={action.href}>{action.label}</a>
-                    <span>{action.detail}</span>
-                  </li>
-                ))}
-            </ul>
+            {actions
+              .filter((a) => a.id !== primary?.id)
+              .map((action) => (
+                <p key={action.id} className="workspace-team-more">
+                  <Button as="a" variant="secondary" href={action.href}>
+                    {action.label}
+                  </Button>
+                  <span>{action.detail}</span>
+                </p>
+              ))}
           </section>
         </main>
       );
     }
 
-    const copy = workspaceShellCopy("select");
+    const notMember = notOnTeam === "1";
+    const copy = notMember ? workspaceNotOnTeamCopy(options) : workspaceShellCopy("select");
     const actions = workspaceJoinNextActions("select");
+    const only = notMember && options.length === 1 ? options[0] : null;
     return (
       <main className="onboarding-page invite-flow-page">
-        <section className="onboarding-card invite-flow-card" aria-labelledby="workspace-select-title">
+        <section className="onboarding-card invite-flow-card workspace-chooser" aria-labelledby="workspace-select-title">
           <header className="invite-flow-header">
             <div className="onboarding-brand">
               <VantageLogo />
@@ -99,21 +106,38 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
             <h1 id="workspace-select-title">{copy.title}</h1>
             <p className="onboarding-sub">{copy.description}</p>
           </header>
-          <ul className="dash-checklist workspace-org-pick">
-            {options.map((row) => (
-              <li key={row.orgId}>
-                <a href={workspaceOrgHref(row.orgId, nextDestination)}>{formatWorkspaceOrgLabel(row)}</a>
-              </li>
-            ))}
-          </ul>
-          <ul className="workspace-quiet-links">
-            {actions.map((action) => (
-              <li key={action.id}>
-                <a href={action.href}>{action.label}</a>
-                <span>{action.detail}</span>
-              </li>
-            ))}
-          </ul>
+          {only ? (
+            // One team to go back to: one clear button, not a list of one.
+            <p className="invite-primary-cta">
+              <Button as="a" variant="primary" href={workspaceOrgHref(only.orgId, nextDestination)}>
+                Go to {formatWorkspaceOrgLabel(only)}
+              </Button>
+            </p>
+          ) : (
+            <ul className="workspace-team-list" aria-label="Your teams">
+              {options.map((row) => (
+                <li key={row.orgId}>
+                  <a className="workspace-team-row" href={workspaceOrgHref(row.orgId, nextDestination)}>
+                    <span className="workspace-team-text">
+                      <strong>{formatWorkspaceOrgLabel(row)}</strong>
+                      <small>{accessRoleLabel(roleOf.get(row.orgId))}</small>
+                    </span>
+                    <span className="workspace-team-chevron" aria-hidden="true">
+                      ›
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+          {actions.map((action) => (
+            <p key={action.id} className="workspace-team-more">
+              <Button as="a" variant="secondary" href={action.href}>
+                {action.label}
+              </Button>
+              <span>{action.detail}</span>
+            </p>
+          ))}
         </section>
       </main>
     );

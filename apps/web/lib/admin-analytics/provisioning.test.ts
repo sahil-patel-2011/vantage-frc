@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   confirmationDetails,
   confirmationLines,
+  ownerInviteExpired,
   ownerProvisionMode,
   provisionConflictMessage,
+  teamNumberTakenMessage,
   validateProvisionInput,
 } from "./provisioning";
 
@@ -37,6 +39,13 @@ describe("validateProvisionInput", () => {
     expect(validateProvisionInput({ ...valid, teamNumber: 0 })).toMatchObject({ ok: false });
     expect(validateProvisionInput({ ...valid, teamNumber: 100000 })).toMatchObject({ ok: false });
     expect(validateProvisionInput({ ...valid, teamNumber: "12.5" })).toMatchObject({ ok: false });
+    // QA A2-12: `true` became team #1. Only a whole number, or digits as typed, is a team number.
+    for (const teamNumber of [true, "9e3", " 9202 ", [5], "", null, {}]) {
+      expect(validateProvisionInput({ ...valid, teamNumber })).toMatchObject({ ok: false });
+    }
+    expect(validateProvisionInput({ ...valid, teamNumber: "9202" })).toMatchObject({ ok: true, value: { teamNumber: 9202 } });
+    expect(validateProvisionInput({ ...valid, name: "x".repeat(81) })).toMatchObject({ ok: false });
+    expect(validateProvisionInput({ ...valid, ownerEmail: `${"a".repeat(250)}@x.org` })).toMatchObject({ ok: false });
     expect(validateProvisionInput({ ...valid, ownerEmail: "not-an-email" })).toMatchObject({
       ok: false,
       error: "A valid owner email is required",
@@ -55,13 +64,22 @@ describe("ownerProvisionMode", () => {
 describe("confirmationLines", () => {
   const base = { id: "org-1", name: "Circuit Breakers", slug: "circuit-breakers", teamNumber: 4926 };
 
-  it("summarizes the seeded path without any invite link", () => {
-    const lines = confirmationLines({
+  it("says whether anyone told an existing account they own a new team (A2-08)", () => {
+    const quiet = confirmationLines({
       ...base,
-      owner: { email: "coach@example.com", mode: "seeded" },
-    });
-    expect(lines.join(" ")).toContain("is the owner and can sign in now");
-    expect(lines.join(" ")).not.toContain("invite");
+      owner: { email: "coach@example.com", mode: "seeded", emailSent: false, delivery: "unconfigured" },
+    }).join(" ");
+    expect(quiet).toContain("is the owner now");
+    expect(quiet).toContain("tell them yourself");
+    expect(quiet).not.toContain("invite");
+    const emailed = confirmationLines({
+      ...base,
+      owner: { email: "coach@example.com", mode: "seeded", emailSent: true, delivery: "resend" },
+    }).join(" ");
+    expect(emailed).toContain("We emailed them");
+    // A local mailbox only logs the email: never counted as sent.
+    expect(confirmationLines({ ...base, owner: { email: "c@example.com", mode: "seeded", emailSent: true, delivery: "local" } }).join(" "))
+      .toContain("tell them yourself");
   });
 
   it("explains the invited path including manual delivery when email is unconfigured", () => {
@@ -110,7 +128,7 @@ describe("provisionConflictMessage", () => {
       provisionConflictMessage(
         'duplicate key value violates unique constraint "organizations_team_number_uq"',
       ),
-    ).toBe("That team number already has a team");
+    ).toBe("That team number already has a team. Find it in the list on the right.");
     expect(
       provisionConflictMessage('duplicate key value violates unique constraint "organizations_slug_key"'),
     ).toBe("Another team already uses that web address. Change it under Advanced, or check the team isn't already set up");
@@ -121,5 +139,22 @@ describe("provisionConflictMessage", () => {
 
   it("passes non-conflict errors through", () => {
     expect(provisionConflictMessage("Platform administrator access required")).toBeNull();
+  });
+});
+
+describe("teamNumberTakenMessage", () => {
+  it("names the team that has the number and where to find it (A2-07)", () => {
+    expect(teamNumberTakenMessage(6925, "Ionic Bond")).toBe("Team 6925 already has a team (Ionic Bond). Find it in the list on the right.");
+    expect(teamNumberTakenMessage(6925, "Team 6925")).toBe("Team 6925 already has a team. Find it in the list on the right.");
+    expect(teamNumberTakenMessage(6925, "Team 6925")).not.toMatch(/web address|Advanced/);
+  });
+});
+
+describe("ownerInviteExpired", () => {
+  const now = new Date("2026-10-13T12:00:00Z");
+  it("tells an expired owner invite from a live one (A2-03)", () => {
+    expect(ownerInviteExpired("2026-10-12T19:48:00Z", now)).toBe(true);
+    expect(ownerInviteExpired("2026-10-14T19:48:00Z", now)).toBe(false);
+    expect(ownerInviteExpired(null, now)).toBe(false);
   });
 });

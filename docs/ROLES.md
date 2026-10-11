@@ -33,9 +33,14 @@ database lets a role write.
 | Ask AI and the research agent (private threads, metered on the team's AI budget) | yes | yes | yes | **yes** — private only, never shared to the team |
 | AI proposals ("Confirm to create…") | yes | yes | yes | **no** |
 
-Leaving a team is not self-service for any role today: an owner or admin removes the person
-(Team admin › a person › Remove). The View only rule deliberately leaves a person's own
-membership DELETE alone, so a future "Leave team" works for viewers too.
+Anyone can leave a team themselves (Settings › Your teams › Leave), except the team's only owner,
+who hands the team over first (Team admin › Hand over team) or deletes it. The owner deletes the
+team from Team admin › Team profile › Delete this team (typing the team number; a paid plan is
+cancelled first). Anyone can delete their own account (Account › Delete account, typing their
+email); team work they added stays with the team without their name. All three run through the
+`leave_team`, `delete_team` and `delete_my_account` functions in migration
+`0720_team_lifecycle.sql`, which check the caller themselves; an owner or admin can still remove
+someone (Team admin › a person › Remove).
 
 ## How it is enforced
 

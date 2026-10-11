@@ -6,13 +6,13 @@ import {
   classifyOtpFailure,
   codeSecondsRemaining,
   initialSignInState,
-  invitedOnlyHint,
   inviteReturnPath,
   inviteTokenFromNext,
   isCodeExpired,
   postAuthDestination,
   resendSecondsRemaining,
   restoreInviteNextPath,
+  showCodeHelp,
   signInFlowReducer,
   signInStepCopy,
   type SignInFlowEvent,
@@ -225,19 +225,58 @@ describe("expired vs wrong code", () => {
     expect(failure.message).toMatch(/connection/i);
   });
 
-  it("names the closed-access reason instead of repeating 'wrong code'", () => {
+  it("waits to explain where codes come from until a new code could be sent (QA A1-04)", () => {
+    const sent = run(initialSignInState(), { type: "code_sent", now: NOW, email: "scout@example.com" });
+    // An invited person waiting a few seconds is not told they are "probably not invited".
+    expect(showCodeHelp(sent, NOW + 5_000, { resentOnce: false })).toBe(false);
+    // Two typos are typos: still no word about the invitation.
     const wrong = classifyOtpFailure({ channel: "email-otp", status: 400, code: "INVALID_OTP" });
-    let state = run(initialSignInState(), {
-      type: "code_sent",
-      now: NOW,
-      email: "outsider@example.com",
+    const typos = run(sent, { type: "code_failed", now: NOW + 6_000, failure: wrong }, { type: "code_failed", now: NOW + 7_000, failure: wrong });
+    expect(showCodeHelp(typos, NOW + 8_000, { resentOnce: false })).toBe(false);
+    // Once the resend cooldown is over, or after asking for another code, the note appears.
+    expect(showCodeHelp(sent, NOW + 31_000, { resentOnce: false })).toBe(true);
+    expect(showCodeHelp(sent, NOW + 5_000, { resentOnce: true })).toBe(true);
+    // Never on the second factor (the account exists) or on the identity step.
+    expect(showCodeHelp({ ...sent, channel: "email-2fa" }, NOW + 31_000, { resentOnce: true })).toBe(false);
+    expect(showCodeHelp(initialSignInState(), NOW, { resentOnce: true })).toBe(false);
+  });
+
+  it("says how many tries a code has left, and ends it on the last one (QA A1-12)", () => {
+    const wrong = classifyOtpFailure({ channel: "email-otp", status: 400, code: "INVALID_OTP" });
+    let state = run(initialSignInState(), { type: "code_sent", now: NOW, email: "scout@example.com" });
+    const messages: string[] = [];
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      state = run(state, { type: "code_failed", now: NOW + attempt, failure: wrong });
+      messages.push(state.failure?.message ?? "");
+    }
+    expect(messages[0]).not.toMatch(/left/);
+    expect(messages[1]).not.toMatch(/left/);
+    expect(messages[2]).toMatch(/2 tries left on this code/);
+    expect(messages[3]).toMatch(/1 try left on this code/);
+    // The fifth wrong try uses the code up on the server; say so now, with the way out.
+    expect(state.failure?.kind).toBe("too_many_attempts");
+    expect(state.failure?.needsNewCode).toBe(true);
+    expect(canResendCode(state, NOW + 10)).toBe(true);
+    // A dropped connection is not a try against the code.
+    const offline = run(
+      run(initialSignInState(), { type: "code_sent", now: NOW, email: "scout@example.com" }),
+      { type: "code_failed", now: NOW, failure: classifyOtpFailure({ channel: "email-otp", networkError: true }) },
+    );
+    expect(offline.failedAttempts).toBe(0);
+  });
+
+  it("brings back the code step after a reload, with the same clock (QA A1-15)", () => {
+    const restored = run(initialSignInState(), {
+      type: "code_restored",
+      email: " Scout@Example.com ",
+      codeExpiresAt: NOW + 200_000,
+      resendAvailableAt: NOW + 10_000,
     });
-    state = run(state, { type: "code_failed", now: NOW, failure: wrong });
-    expect(invitedOnlyHint(state)).toBeNull();
-    state = run(state, { type: "code_failed", now: NOW, failure: wrong });
-    expect(invitedOnlyHint(state)).toMatch(/invite-only/i);
-    // The second factor already proved the account exists — no hint there.
-    expect(invitedOnlyHint({ ...state, channel: "email-2fa" })).toBeNull();
+    expect(restored.step).toBe("code");
+    expect(restored.channel).toBe("email-otp");
+    expect(restored.email).toBe("scout@example.com");
+    expect(codeSecondsRemaining(restored, NOW)).toBe(200);
+    expect(resendSecondsRemaining(restored, NOW)).toBe(10);
   });
 
   it("tells a closed email to join the waitlist instead of calling it a crash", () => {

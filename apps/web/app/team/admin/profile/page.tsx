@@ -2,6 +2,7 @@ import { PageHeader } from "../../../../components/ui";
 import { TeamBrandingPanel } from "../../../../lib/branding/team-branding-panel";
 import { withOrgHref } from "../../../../lib/nav/product-nav";
 import { TeamProfilePanel } from "../../team-profile-panel";
+import { TeamDeletePanel, TeamLifecyclePanel } from "../team-lifecycle-panel";
 import { ResolveTeamProfile } from "./resolve-team";
 import "../../team-admin.css";
 import { TeamSettingsNav } from "../../../../components/team-settings-nav";
@@ -39,8 +40,10 @@ export default async function TeamProfileSettingsPage({
           <a href={withOrgHref("/team/background", orgId)}>History and numbers for sponsors →</a>
         </p>
       </PageHeader>
+      <TeamLifecyclePanel orgId={orgId} />
       <TeamProfilePanel orgId={orgId} />
       <TeamBrandingPanel orgId={orgId} />
+      <TeamDeletePanel orgId={orgId} />
     </main>
   );
 }

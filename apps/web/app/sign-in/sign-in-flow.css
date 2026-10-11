@@ -51,8 +51,8 @@
 .signin-product {
   padding: 3px 10px;
   border-radius: 999px;
-  background: color-mix(in srgb, #2563eb 12%, transparent);
-  color: #2563eb;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -391,12 +391,12 @@
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--surface);
-  color: #2563eb;
+  color: var(--accent);
   font-weight: 700;
   text-decoration: none;
 }
 .signin-invite-help-cta:hover {
-  border-color: #2563eb;
+  border-color: var(--accent);
 }
 .signin-not-invited {
   display: grid;
@@ -445,8 +445,31 @@
 .signin-waitlist .signin-waitlist-btn:hover { text-decoration: none; border-color: var(--accent); color: var(--accent); }
 
 /* The code clock and resend timer were ~11px low-contrast grey on separate lines. */
-p.signin-expiry { font-size: 14px; color: var(--ink-2, var(--ink)); opacity: .85; margin: 4px 0 0; }
+p.signin-expiry { font-size: 14px; color: var(--ink); margin: 4px 0 0; font-variant-numeric: tabular-nums; }
 .signin-footer-modes .signin-link { font-size: 14px; }
+/* "Resend in 16s" is a live countdown people read, so it is not faded like a dead link: muted
+   colour at full opacity, and the not-allowed cursor says it can't be pressed yet. */
+.signin-footer-modes .signin-link:disabled { opacity: 1; color: var(--muted); }
+
+/* The logo sits on the same left edge as the heading under it. Centred (soft-ui.css) it was
+   neither centred on the card nor lined up with the text. */
+.signin-card .signin-brand { justify-content: flex-start; }
+
+/* The card keeps its place from step to step. Centred on the page, it jumped down when a step
+   was shorter (the "not on a team yet" step after the code step). */
+.signin-page { place-items: start center; padding-top: clamp(18px, 8vh, 96px); }
+
+/* "Edit" and "Use a different email" are full 44px targets, not word-sized ones. */
+.signin-code-target .signin-link,
+.signin-not-invited .signin-link { min-width: 44px; padding: 0 12px; justify-content: center; }
+
+/* While an invitation is read: the shape of the form, so nothing jumps when it arrives. Static,
+   not a shimmer, so there is no motion to switch off. */
+.signin-invite-loading { display: grid; gap: 12px; margin: 8px 0 4px; }
+.signin-invite-loading span { display: block; height: 48px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--line) 55%, transparent); }
+.signin-invite-loading span:first-child { height: 64px; }
+
+.signin-sending { margin: 10px 0 0; }
 
 /* A network rate limit: a calm status with a live countdown, not a red error on the boxes. */
 .signin-code-wait { margin: 8px 0 0; color: var(--muted); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }

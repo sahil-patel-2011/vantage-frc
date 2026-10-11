@@ -20,10 +20,43 @@ import {
   type OnboardingState,
 } from "./onboarding-model";
 
+/** The one id an error note carries, so the field it is about can point at it. */
+export const ONBOARDING_ERROR_ID = "onboarding-error";
+
+/** Under the field it is about, when Continue stopped on that field. */
+function FieldError({ field, errorField, message }: { field: string; errorField: string | null; message: string }) {
+  if (!message || errorField !== field) return null;
+  return <p id={ONBOARDING_ERROR_ID} className="onboarding-field-error" role="alert">{message}</p>;
+}
+
+/**
+ * Just above the step's buttons, for anything no field on this screen shows: a lost connection,
+ * a server fault. It used to sit at the top of the card, a screen above Continue on a phone, so
+ * the press looked like it did nothing.
+ */
+function FormError({ message, errorField, inPlace }: { message: string; errorField: string | null; inPlace: string[] }) {
+  if (!message || (errorField && inPlace.includes(errorField))) return null;
+  return <p id={ONBOARDING_ERROR_ID} className="onboarding-message invalid onboarding-form-error" role="alert">{message}</p>;
+}
+
+/** aria props for a field that may be the one Continue stopped on. */
+function invalidProps(field: string, errorField: string | null) {
+  return errorField === field ? { "aria-invalid": true as const, "aria-describedby": ONBOARDING_ERROR_ID } : {};
+}
+
+const PROFILE_FIELDS = ["firstName", "lastName", "teamRole", "dateOfBirth", "gender"];
+
+const THEME_CHOICES: Array<{ value: OnboardingDraft["themePreference"]; label: string }> = [
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+  { value: "system", label: "System (follows your device)" },
+];
+
 export function ProfileForm({
   draft,
   patch,
   errorField,
+  message,
   busy,
   pickRole,
   pickCrew,
@@ -32,9 +65,10 @@ export function ProfileForm({
   draft: OnboardingDraft;
   patch: (next: Partial<OnboardingDraft>) => void;
   errorField: string | null;
+  message: string;
   busy: boolean;
   pickRole: (value: OnboardingRole) => void;
-  pickCrew: (value: OnboardingCrew) => void;
+  pickCrew: (value: OnboardingCrew | "") => void;
   onSubmit: () => void;
 }) {
   return (
@@ -55,8 +89,9 @@ export function ProfileForm({
             onChange={(event) => patch({ firstName: event.target.value })}
             autoComplete="given-name"
             autoCapitalize="words"
-            aria-invalid={errorField === "firstName" || undefined}
+            {...invalidProps("firstName", errorField)}
           />
+          <FieldError field="firstName" errorField={errorField} message={message} />
         </label>
         <label>
           Last name
@@ -67,8 +102,9 @@ export function ProfileForm({
             onChange={(event) => patch({ lastName: event.target.value })}
             autoComplete="family-name"
             autoCapitalize="words"
-            aria-invalid={errorField === "lastName" || undefined}
+            {...invalidProps("lastName", errorField)}
           />
+          <FieldError field="lastName" errorField={errorField} message={message} />
         </label>
       </div>
 
@@ -83,13 +119,14 @@ export function ProfileForm({
               checked={draft.teamRole === option.value}
               onChange={() => pickRole(option.value)}
               // Nothing is picked for you; Continue points here until a card is chosen.
-              aria-invalid={errorField === "teamRole" || undefined}
+              {...invalidProps("teamRole", errorField)}
             />
             <strong>{option.label}</strong>
             <span>{option.detail}</span>
           </label>
         ))}
       </fieldset>
+      <FieldError field="teamRole" errorField={errorField} message={message} />
 
       <details className="onboarding-specialty">
         <summary>
@@ -99,12 +136,14 @@ export function ProfileForm({
           </span>
           <b aria-hidden="true">+</b>
         </summary>
+        {/* One answer, so radios: these were checkboxes that unticked each other, which a screen
+            reader announced as "checkbox" and people read as "pick several". */}
         <fieldset className="onboarding-cards onboarding-cards-crew">
           <legend className="sr-only">Choose your team specialty</legend>
-          {CREW_ROLES.map((option) => (
-            <label key={option.value} className={draft.crewRole === option.value ? "selected" : undefined}>
+          {[...CREW_ROLES, { value: "" as const, label: "Not sure yet", detail: "Pick one later in Account" }].map((option) => (
+            <label key={option.value || "none"} className={draft.crewRole === option.value ? "selected" : undefined}>
               <input
-                type="checkbox"
+                type="radio"
                 name="crewRole"
                 value={option.value}
                 checked={draft.crewRole === option.value}
@@ -120,7 +159,7 @@ export function ProfileForm({
       <fieldset className="onboarding-account-fields">
         <legend>Only you can see this</legend>
         <p className="onboarding-team-profile-hint">
-          Both are required, and both stay on your account: teammates and team leaders never see them. Your birthday tells Vantage whether this is a student account, which gets extra protections.
+          Both stay on your account: teammates and team leaders never see them. Your birthday tells Vantage whether this is a student account, which gets extra protections.
         </p>
         <label>
           <span>Date of birth <small className="onboarding-required">Required</small></span>
@@ -130,25 +169,29 @@ export function ProfileForm({
             value={draft.dateOfBirth}
             onChange={(event) => patch({ dateOfBirth: event.target.value })}
             autoComplete="bday"
-            aria-invalid={errorField === "dateOfBirth" || undefined}
+            {...invalidProps("dateOfBirth", errorField)}
           />
+          <FieldError field="dateOfBirth" errorField={errorField} message={message} />
         </label>
         <label>
-          <span>Gender <small className="onboarding-required">Required</small></span>
+          {/* "Prefer not to say" is a full answer: nobody has to tell us. */}
+          <span>Gender <small>Optional</small></span>
           <select
-            required
             value={draft.gender}
             onChange={(event) => patch({ gender: event.target.value as OnboardingGender })}
+            {...invalidProps("gender", errorField)}
           >
             {GENDERS.map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+          <FieldError field="gender" errorField={errorField} message={message} />
         </label>
       </fieldset>
 
+      <FormError message={message} errorField={errorField} inPlace={PROFILE_FIELDS} />
+      {/* No spacer before Continue: its gap left the button 12px narrower than the fields above. */}
       <div className="onboarding-actions">
-        <span />
         <button className="signin-submit" type="submit" disabled={busy}>
           {busy ? "Saving…" : "Continue"}
         </button>
@@ -209,8 +252,8 @@ export function TeamForm({
             placeholder="1234"
             value={draft.teamNumber}
             disabled={locked || draft.noTeam}
-            aria-invalid={lookup.ok ? undefined : true}
-            aria-describedby="onboarding-team-lookup"
+            aria-invalid={lookup.ok && errorField !== "teamNumber" ? undefined : true}
+            aria-describedby={errorField === "teamNumber" && errorMessage !== lookup.body ? `onboarding-team-lookup ${ONBOARDING_ERROR_ID}` : "onboarding-team-lookup"}
             onChange={(event) => patch({ teamNumber: sanitizeTeamNumberInput(event.target.value) })}
           />
         </label>
@@ -275,6 +318,12 @@ export function TeamForm({
 
       {isTeamHead ? <FundingFields draft={draft} patch={patch} errorField={errorField} errorMessage={errorMessage} /> : null}
 
+      <FormError
+        message={errorMessage ?? ""}
+        errorField={errorField ?? null}
+        // The team-number check already says the same thing under the field.
+        inPlace={["teamAffiliation", "funding", ...(errorMessage === lookup.body ? ["teamNumber"] : [])]}
+      />
       <div className="onboarding-actions">
         <button type="button" className="signin-link" onClick={onBack}>Back</button>
         <button className="signin-submit" type="submit" disabled={busy}>
@@ -291,6 +340,8 @@ export function PreferencesForm({
   state,
   lookup,
   errorField,
+  message,
+  onThemeChange,
   legalNeeded,
   legalError,
   setLegalError,
@@ -304,6 +355,9 @@ export function PreferencesForm({
   state: OnboardingState;
   lookup: TeamLookupResult;
   errorField: string | null;
+  message: string;
+  /** Applies the theme on this device at once; Finish saves it to the account. */
+  onThemeChange: (value: OnboardingDraft["themePreference"]) => void;
   legalNeeded: boolean;
   legalError: string | null;
   setLegalError: (message: string | null) => void;
@@ -401,14 +455,21 @@ export function PreferencesForm({
             onChange={(event) => patch({ displayName: event.target.value })}
           />
         </label>
+        {/* The same three choices as Account › Appearance, applied the moment one is picked. */}
         <fieldset className="onboarding-theme">
           <legend>Appearance</legend>
-          <label className="check-field">
-            <input type="radio" name="theme" checked={draft.themePreference === "light"} onChange={() => patch({ themePreference: "light" })} /> Light
-          </label>
-          <label className="check-field">
-            <input type="radio" name="theme" checked={draft.themePreference === "dark"} onChange={() => patch({ themePreference: "dark" })} /> Dark
-          </label>
+          {THEME_CHOICES.map((choice) => (
+            <label key={choice.value} className="check-field">
+              <input
+                type="radio"
+                name="theme"
+                value={choice.value}
+                checked={draft.themePreference === choice.value}
+                onChange={() => onThemeChange(choice.value)}
+              />{" "}
+              {choice.label}
+            </label>
+          ))}
         </fieldset>
       </details>
 
@@ -457,6 +518,7 @@ export function PreferencesForm({
         </p>
       </div>
 
+      <FormError message={message} errorField={errorField} inPlace={["legal"]} />
       <div className="onboarding-actions">
         <button type="button" className="signin-link" onClick={onBack}>Back</button>
         <button className="signin-submit" type="submit" disabled={busy || !canSubmit}>

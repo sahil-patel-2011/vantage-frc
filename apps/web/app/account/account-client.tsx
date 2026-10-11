@@ -12,6 +12,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { KitCard, KitEyebrow, KitRow } from "../../components/ui/kit";
+import { AccountDeleteRow } from "./account-delete-row";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
 import { AccountProfilePanel } from "./account-profile-panel";
 import { OrgContextCard } from "./account-shell";
@@ -554,11 +555,8 @@ export default function AccountClient() {
 
       {/* The account actions people come to this page to use that are not a
           toggle. One card, one shape each, chevrons so they read as somewhere
-          you go rather than something that happens on tap.
-
-          No "Delete account" row: the reference has one and this deployment
-          has no endpoint behind it, and a destructive-looking button that
-          silently does nothing is worse than its absence. */}
+          you go rather than something that happens on tap. "Delete account" is
+          last and red, and asks for the email address first (account-delete-row). */}
       <KitEyebrow>Account</KitEyebrow>
       <KitCard className="acct-actions">
         <KitRow
@@ -576,6 +574,7 @@ export default function AccountClient() {
           onClick={() => void signOut()}
           chevron={false}
         />
+        <AccountDeleteRow email={account?.email} />
       </KitCard>
       </aside>
       </div>

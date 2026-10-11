@@ -244,29 +244,33 @@ html[data-motion="reduced"] {
   --m-section-pad: clamp(64px, 8vw, 112px);
 }
 
-:root[data-theme="dark"] .marketing-lux,
-html[data-theme="dark"] .marketing-lux {
-  --m-ink: #f2f3f5;
-  --m-muted: #a3a8b2;
-  --m-line: rgba(255, 255, 255, .12);
-  --m-line-soft: rgba(255, 255, 255, .09);
-  --m-line-strong: rgba(255, 255, 255, .24);
-  --m-paper: #12171b;
-  --m-canvas: #0c1013;
-  --m-surface: #171c21;
-  --m-surface-2: #1e242a;
-  --m-white: #171c21;
-  --m-accent: #f2f3f5;
-  --m-accent-dark: #ffffff;
-  --m-on-accent: #0e1013;
-  --m-blue: #86cdd0;
-  --m-warm: #7fd2dc;
-  --m-warm-soft: rgba(127, 210, 220, .12);
-  --m-warm-line: rgba(127, 210, 220, .3);
-  --m-grid-line: rgba(255, 255, 255, .045);
-  --m-grid-line-strong: rgba(255, 255, 255, .08);
-  --m-card-shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .28);
-  --m-card-shadow-lg: 0 2px 4px rgba(0, 0, 0, .45), 0 18px 44px rgba(0, 0, 0, .4);
+/* The public site (home, pricing, legal pages) has one palette, and it is light. A dark variant
+   was started here, but the polish layer (apple-polish-marketing.css) paints a white canvas, so
+   after someone picked Dark in Account every signed-out page drew pale text on white, "Sign in"
+   included. These pages now stay light whatever the device chose: ThemeProvider shows the
+   document light on them, and this block keeps the content light for the first frame, before
+   that runs, and on a not-found page at any address. The product tokens the marketing sheets
+   read are the light ones from :root, restated so a dark <html> cannot reach them. */
+.marketing-lux {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f5;
+  --line: #d9dfe5;
+  --line-soft: color-mix(in srgb, #d9dfe5 55%, transparent);
+  --ink: #202a35;
+  --muted: #556270;
+  --accent: #155e68;
+  --accent-ink: #fff;
+  --accent-soft: #e7f0f1;
+  --accent-hover: color-mix(in srgb, #155e68 82%, #000);
+  --ring: color-mix(in srgb, #155e68 62%, transparent);
+  --positive: #15803d;
+  --critical: #b91c1c;
+  --danger: #b91c1c;
+  --warning: #87580a;
+  --island: rgba(255, 255, 255, .7);
+  --shadow: 0 1px 2px rgba(19, 32, 51, .04), 0 4px 14px rgba(19, 32, 51, .035);
 }
 
 .public-form {
