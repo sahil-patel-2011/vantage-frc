@@ -357,7 +357,7 @@ export function QuickScoutMatch({
         </p>
       ) : null}
 
-      <main className="qs-stage" aria-label={QUICK_STAGE_LABELS[stage]}>
+      <section className="qs-stage" aria-label={QUICK_STAGE_LABELS[stage]}>
         {stage === "pre" ? (
           <div className="qs-pre">
             <div className="qs-start-card">
@@ -442,7 +442,7 @@ export function QuickScoutMatch({
             onSave={() => void save()}
           />
         ) : null}
-      </main>
+      </section>
     </div>
   );
 }

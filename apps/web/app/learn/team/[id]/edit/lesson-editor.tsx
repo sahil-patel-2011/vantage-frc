@@ -289,7 +289,7 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
       <PageHeader
         breadcrumbs={
           <>
-            <a href={withOrgHref("/learn", orgId)}>Code &amp; CAD</a> / <a href={lessonsHref(orgId)}>Team lessons</a> / Edit
+            <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team lessons</a> / Edit
           </>
         }
         title={draft.title.trim() || "Untitled lesson"}
@@ -491,7 +491,7 @@ export function LessonEditor({ lessonId }: { lessonId: string }) {
     <PageHeader
       breadcrumbs={
         <>
-          <a href={withOrgHref("/learn", orgId)}>Code &amp; CAD</a> / <a href={lessonsHref(orgId)}>Team lessons</a> / Edit
+          <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team lessons</a> / Edit
         </>
       }
       title="Edit lesson"

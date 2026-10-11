@@ -9,10 +9,10 @@ export function LearnResources() {
         breadcrumbs={
           <>
             <a href={withOrgHref("/build", null)}>Build</a>
-            {" / Code & CAD"}
+            {" / Learn"}
           </>
         }
-        title="Code & CAD"
+        title="Learn"
         description={LEARN_PAGE_DESCRIPTION}
       >
         <nav className="product-hub-related" aria-label="Related build tools">

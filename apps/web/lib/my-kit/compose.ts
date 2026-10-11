@@ -336,7 +336,7 @@ const FOCUS_LINKS: Record<MyKitFocus, MyKitQuickLink[]> = {
   general: [
     { id: "team", label: "Team hub", href: "/team" },
     { id: "calendar", label: "Calendar", href: "/team/calendar" },
-    { id: "todos", label: "Work", href: "/todos" },
+    { id: "todos", label: "Tasks", href: "/todos" },
   ],
 };
 

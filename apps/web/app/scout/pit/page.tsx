@@ -20,5 +20,10 @@ export default async function QuickPitPage({ searchParams }: { searchParams: Pro
       </main>
     );
   }
-  return <QuickPitClient key={orgId} orgId={orgId} />;
+  // The page's one <main> landmark: the client draws several shells (loading, picker, form).
+  return (
+    <main className="qs-page">
+      <QuickPitClient key={orgId} orgId={orgId} />
+    </main>
+  );
 }

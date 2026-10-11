@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button, EmptyState, PageHeader } from "./ui";
+import { Button, EmptyState, PageHeader, PageMain } from "./ui";
 import {
   clientCanAccessHub,
   clientCanAccessHubTab,
@@ -35,7 +35,7 @@ export function SoftAccessDenied({
   actions?: ReactNode;
 }) {
   return (
-    <main className="module-page soft-gate soft-access-denied">
+    <PageMain className="module-page soft-gate soft-access-denied">
       <PageHeader breadcrumbs={breadcrumbs} title={title} />
       <EmptyState soft badge={badge} badgeTone="setup" title={heading} description={description}>
         {actions ?? (
@@ -49,7 +49,7 @@ export function SoftAccessDenied({
           </>
         )}
       </EmptyState>
-    </main>
+    </PageMain>
   );
 }
 
@@ -113,10 +113,10 @@ export function SponsorsFundingGate({
   const access = useClientAccessProfile();
   if (!access.ready) {
     return (
-      <main className="module-page soft-gate" aria-busy>
+      <PageMain className="module-page soft-gate" aria-busy>
         <PageHeader breadcrumbs={breadcrumbs ?? "Business / Sponsors"} title="Sponsors" />
         <EmptyState soft badge="Loading" title="Opening Sponsors…" />
-      </main>
+      </PageMain>
     );
   }
   if (access.sponsorsAllowed === false) {

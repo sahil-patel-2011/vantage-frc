@@ -27,7 +27,7 @@ const LEAVES = [
   { path: "/files", heading: "Files" },
   // A media tool: the paused page while media is switched off.
   { path: "/media", heading: "Media", pausedAs: "Media" },
-  { path: "/help", heading: "Help centre" },
+  { path: "/help", heading: "Help" },
   { path: "/whats-new", heading: "What’s new" },
   { path: "/print-farm", heading: "Print farm" },
   { path: "/team/knowledge", heading: /Playbook|Team|Choose your team/ },

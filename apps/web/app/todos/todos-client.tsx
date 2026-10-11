@@ -83,7 +83,7 @@ function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
     <Panel className="todos-unified-work" aria-label="All team work">
       <header>
         <div>
-          <span className="app-badge">One work view</span>
+          <span className="app-badge">All trackers</span>
           <h2>Todos, build tasks, and milestones</h2>
           <p className="app-muted">
             One read across the team&apos;s trackers. Open an item in its owning board to update it.

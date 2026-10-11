@@ -6,7 +6,9 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import "./scouting-sharing.css";
 
 type Settings = { enabled: boolean; canManage: boolean };
-export function ScoutingSharing({ orgId }: { orgId: string }) {
+/** `headingLevel`: 2 where the card sits straight under a page title (the Scouting app home). */
+export function ScoutingSharing({ orgId, headingLevel = 3 }: { orgId: string; headingLevel?: 2 | 3 }) {
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   const [settings, setSettings] = useState<Settings | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -60,7 +62,7 @@ export function ScoutingSharing({ orgId }: { orgId: string }) {
   return (
     <section className="scout-sharing-card" aria-label="Scouting sharing">
       <div>
-        <h3>Scouting network</h3>
+        <Heading>Scouting network</Heading>
         <p>
           {settings
             ? settings.enabled

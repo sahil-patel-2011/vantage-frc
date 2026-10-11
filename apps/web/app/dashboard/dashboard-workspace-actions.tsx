@@ -34,7 +34,7 @@ export function DashboardWorkspaceActions({ orgId, role, hasEvent, hasForms, pri
         ) : showTask ? (
           <a className="dash-workspace-action" href={withOrgHref("/todos", orgId)}>
             <Icon name="clipboard" />
-            <span>Team tasks</span>
+            <span>Tasks</span>
           </a>
         ) : null}
         {showScout ? <a className="dash-workspace-action" href={scouting.href}>

@@ -51,10 +51,10 @@ export function AppShellAccountMenu({
             appearance, notifications, security, keys. Repeating two of
             its rows here meant this menu had two ways to /account. */}
         <a className="soft-account-destination" role="menuitem" href={withOrgHref("/account", orgId)} onClick={onClose}>
-          {/* The page it opens is titled Account; the menu said Settings. */}
-          <Icon name="gear" /><span>Account and settings</span>
+          {/* The page it opens is titled Account, and the sidebar and menu panel say Account too. */}
+          <Icon name="gear" /><span>Account</span>
         </a>
-        {/* One tap to the team for the people who run it; it took Account and settings first. */}
+        {/* One tap to the team for the people who run it; it took Account first. */}
         {memberships.some((row) => row.orgId === orgId && (row.role === "owner" || row.role === "admin")) ? (
           <a className="soft-account-destination" role="menuitem" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`} onClick={onClose}>
             <Icon name="users" /><span>Team admin</span>
@@ -62,7 +62,7 @@ export function AppShellAccountMenu({
         ) : null}
         {/* The help centre keeps the manual, tickets and bug reporting together. */}
         <a className="soft-account-destination" role="menuitem" href={withOrgHref("/help", orgId)} onClick={onClose}>
-          <Icon name="chat" /><span>Help and support</span>
+          <Icon name="book" /><span>Help</span>
         </a>
         {me.platformAdmin ? (
           <a role="menuitem" href="/admin" onClick={onClose}>

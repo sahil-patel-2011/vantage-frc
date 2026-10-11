@@ -369,7 +369,8 @@ export function ScanClockForm({
         void submit();
       }}
     >
-      <h3>Scan a card</h3>
+      {/* The first card under the page title: an h2, so the outline does not skip from h1 to h3. */}
+      <h2>Scan a card</h2>
       <p className="hours-kiosk-hint app-muted">
         Barcode, student ID, or RFID — a USB scanner types into this field and presses Enter. One scan clocks in;
         the next scan from the same card clocks out. Manual clock buttons below are a fallback for members without a

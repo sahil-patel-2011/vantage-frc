@@ -20,7 +20,7 @@ const CAD_LEARN_RELATED_LINKS = [
   { id: "cad-vault" as const, label: "CAD vault", kind: "path" as const, path: "/cad-vault" },
   { id: "cad" as const, label: "CAD workbench", kind: "build" as const, tab: "cad" },
   { id: "assembly-manual" as const, label: "Assembly manual", kind: "path" as const, path: "/assembly-manual" },
-  { id: "learn-hub" as const, label: "Code & CAD", kind: "path" as const, path: "/learn" },
+  { id: "learn-hub" as const, label: "Learn", kind: "path" as const, path: "/learn" },
   { id: "dev-setup" as const, label: "Programming setup", kind: "path" as const, path: "/dev-setup" },
 ];
 

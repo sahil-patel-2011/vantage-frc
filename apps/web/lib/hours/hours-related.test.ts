@@ -10,7 +10,7 @@ import {
 import { expectPlainCopy } from "../ui/copy-assertions";
 
 describe("hoursRelatedLinks", () => {
-  it("builds Attendance / My hours / Shop kiosk via hubHref / withOrgHref", () => {
+  it("builds Attendance / My hours / Hours kiosk via hubHref / withOrgHref", () => {
     const links = hoursRelatedLinks("org-1", { include: [...HOURS_RELATED_INCLUDE] });
     expect(links.map((link) => link.id)).toEqual(["attendance", "hours-self-view", "kiosk"]);
     expect(links.find((link) => link.id === "attendance")?.href).toBe(

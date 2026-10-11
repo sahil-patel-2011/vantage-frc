@@ -129,6 +129,8 @@
 .product-hub-panel > main.intel-app,
 .product-hub-panel > main.workspace-page,
 .product-hub-panel > main,
+/* PageMain renders a <div> inside the hub's own <main> (one landmark per page). */
+.product-hub-panel > [data-page-main],
 .product-hub-panel > section.scout-page.is-embedded { display: contents; }
 .product-hub-panel .team-ops-nav { display: none; }
 /* One row of links under a page title, not two. Where the header already carries the

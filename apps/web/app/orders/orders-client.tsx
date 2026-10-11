@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, PageMain } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
@@ -385,14 +385,14 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
   }
 
   return (
-    <main className="module-page orders-page">
+    <PageMain className="module-page orders-page">
       <PageHeader
         navPath="/orders"
         title="Buy sheet"
         description="What we bought, why, when, and what it cost. Mentors approve, then pay on the vendor site. Vantage never stores card details."
       />
       {body}
-    </main>
+    </PageMain>
   );
 }
 

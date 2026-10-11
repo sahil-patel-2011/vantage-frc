@@ -42,7 +42,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   const shell = compact ? "soft-empty-compact" : soft ? "soft-empty scan-empty" : "app-card soft-panel scan-empty";
   return (
-    <section className={[shell, className].filter(Boolean).join(" ")} aria-busy={ariaBusy}>
+    // A loading card ("Opening your team…") is a status: without the role, the change from
+    // loading to loaded was silent to a screen reader on Business, Tasks, Team and Pit.
+    <section className={[shell, className].filter(Boolean).join(" ")} aria-busy={ariaBusy} role={ariaBusy ? "status" : undefined}>
       {badge != null && badge !== "" ? (
         <span className={["app-badge", badgeTone].filter(Boolean).join(" ")}>{badge}</span>
       ) : null}

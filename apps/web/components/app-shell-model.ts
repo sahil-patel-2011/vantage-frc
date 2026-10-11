@@ -187,7 +187,7 @@ export function shellTitleForPath(pathname: string): string | null {
   if (pathname.startsWith("/notifications")) return "Notifications";
   if (pathname.startsWith("/admin")) return "Admin";
   if (pathname.startsWith("/docs")) return "App manual";
-  if (pathname.startsWith("/help")) return "Help centre";
+  if (pathname.startsWith("/help")) return "Help";
   if (pathname === "/support") return "Support";
   if (pathname === "/start") return "Your first week";
   if (pathname.startsWith("/team/slack")) return "Slack";

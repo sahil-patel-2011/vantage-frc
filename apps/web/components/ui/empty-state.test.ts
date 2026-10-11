@@ -25,6 +25,11 @@ describe("EmptyState", () => {
     expect(markup).toMatch(/class="soft-empty-compact/);
   });
 
+  it("announces a loading card as a status, and only a loading card", () => {
+    expect(render({ title: "Opening your team", "aria-busy": true })).toMatch(/aria-busy="true" role="status"/);
+    expect(render({ title: "Nothing yet" })).not.toContain('role="status"');
+  });
+
   it("always renders a visible title and only renders the badge/description when given", () => {
     const bare = render({ title: "Nothing yet" });
     expect(bare).toContain("Nothing yet");

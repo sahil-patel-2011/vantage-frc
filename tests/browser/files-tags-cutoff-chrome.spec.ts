@@ -29,7 +29,7 @@ test("Files, Drive-team tags, Help, and Account drop leftover engineering chrome
   await expect(page.getByText("object storage")).toHaveCount(0);
 
   await page.goto("/help");
-  await expect(page.getByRole("heading", { name: "Help centre" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Help" })).toBeVisible({
     timeout: 20_000,
   });
   const helpSearch = page.getByPlaceholder("e.g. library, pricing, scouting…");

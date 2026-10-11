@@ -60,7 +60,7 @@ const EMPTY_STEPS: StandupSetupStep[] = [
   {
     id: "work",
     label: "Track work",
-    detail: "Create or complete a task on Work.",
+    detail: "Create or complete a task on Tasks.",
     href: "/todos",
   },
 ];

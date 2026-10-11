@@ -20,5 +20,10 @@ export default async function QuickScoutPage({ searchParams }: { searchParams: P
       </main>
     );
   }
-  return <QuickScoutClient key={orgId} orgId={orgId} />;
+  // The page's one <main> landmark: the client draws several shells (loading, picker, match).
+  return (
+    <main className="qs-page">
+      <QuickScoutClient key={orgId} orgId={orgId} />
+    </main>
+  );
 }

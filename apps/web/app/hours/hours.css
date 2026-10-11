@@ -50,7 +50,7 @@
 .hours-kind{padding:2px 7px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap}
 .hours-forms{display:grid;gap:12px}
 .hours-manual,.hours-policy{display:grid;gap:10px;padding:14px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm)}
-.hours-manual h3,.hours-policy h3{margin:0;font-size:var(--title-4)}
+.hours-manual :is(h2,h3),.hours-policy h3{margin:0;font-size:var(--title-4)}
 .hours-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .hours-field{display:grid;gap:4px;min-width:0;color:var(--muted)}
 .hours-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}

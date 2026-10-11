@@ -425,7 +425,7 @@ export function ScoutingHome() {
           <span>Weigh what your alliance needs and rank every team at the event as you drag.</span>
         </a>
       </section>
-      {orgId ? <details className="scout-home-network"><summary>Scouting network and sharing</summary><ScoutingSharing key={orgId} orgId={orgId} /></details> : null}
+      {orgId ? <details className="scout-home-network"><summary>Scouting network and sharing</summary><ScoutingSharing key={orgId} orgId={orgId} headingLevel={2} /></details> : null}
     </main>
   );
 }

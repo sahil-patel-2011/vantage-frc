@@ -431,7 +431,7 @@ const STANDALONE: CommandEntry[] = [
   { id: "team-admin", label: "Team admin", context: "Settings", href: "/team/admin", kind: "destination", keywords: ["admin", "invite", "members", "roles", "permissions", "add someone"] },
   { id: "exports", label: "Export data", context: "Settings", href: "/exports", kind: "destination", keywords: ["export", "download", "csv", "takeout", "backup"] },
   { id: "search", label: "Search", context: "Settings", href: "/search", kind: "destination", keywords: ["search", "find", "look up", "global search", "search tasks", "search parts"] },
-  { id: "help", label: "Help centre", context: "Support", href: "/help", kind: "destination", keywords: ["help", "how do i", "support", "docs", "manual", "articles", "tutorial", "faq"] },
+  { id: "help", label: "Help", context: "Support", href: "/help", kind: "destination", keywords: ["help", "how do i", "support", "docs", "manual", "articles", "tutorial", "faq"] },
   { id: "custom-access-roles", label: "Custom roles and scouting leads", context: "Team admin", href: "/team/admin/presets", kind: "destination", keywords: ["custom roles", "permissions", "scouting lead", "access presets", "delegate"] },
   { id: "app-manual", label: "App manual", context: "Support", href: "/docs", kind: "destination", keywords: ["manual", "app manual", "section guide", "section by section", "walkthrough", "how vantage works", "guide"] },
   { id: "support", label: "Contact support", context: "Support", href: "/support", kind: "destination", keywords: ["support", "contact", "problem", "stuck"] },

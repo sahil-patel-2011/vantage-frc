@@ -211,7 +211,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">
-            <a href="/learn">Code &amp; CAD</a> / <a href="/learn/guided">Checked step by step</a>
+            <a href="/learn">Learn</a> / <a href="/learn/guided">Guided tracks</a>
           </span>
           <h1>{track.title}</h1>
           <p>{track.summary}</p>

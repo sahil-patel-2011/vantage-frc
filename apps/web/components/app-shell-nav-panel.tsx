@@ -299,7 +299,7 @@ export function AppShellNavPanel({
                 <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
               ) : null}
               <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
-                <Icon name="gear" /><span><strong>Personal settings</strong></span>
+                <Icon name="gear" /><span><strong>Account</strong></span>
               </a>
               {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
                 <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>

@@ -94,7 +94,7 @@ export function TeamProgressClient() {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">
-            <a href="/learn">Code &amp; CAD</a> / <a href="/learn/guided">Checked step by step</a> / Team progress
+            <a href="/learn">Learn</a> / <a href="/learn/guided">Guided tracks</a> / Team progress
           </span>
           <h1>Team progress</h1>
           <p>Sign off the steps software can&apos;t check, then see how far each member has got on every track.</p>
@@ -152,7 +152,7 @@ export function TeamProgressClient() {
           <section className="guided-group" aria-labelledby="guided-members">
             <h2 id="guided-members">Steps done, by member</h2>
             {view.members.length === 0 ? (
-              <p>No one has finished a checked step yet. Share a track from Checked step by step to get started.</p>
+              <p>No one has finished a checked step yet. Share a track from Guided tracks to get started.</p>
             ) : (
               <div className="guided-table-wrap" role="region" aria-labelledby="guided-members" tabIndex={0}>
                 <table className="guided-table">

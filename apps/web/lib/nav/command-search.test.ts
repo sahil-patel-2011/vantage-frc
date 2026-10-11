@@ -301,6 +301,6 @@ describe("equivalent destinations across permission scopes",()=>{
  it("retains the Team link when Competition and Build are not permitted",()=>{
   const hits=searchCommands("fmea",commandCatalog(),{limit:100,isAllowed:href=>href.startsWith("/team?")});
   expect(hits.some(hit=>hit.href==="/team?tab=fmea")).toBe(true);
-  expect(hits.find(hit=>hit.href==="/team?tab=fmea")?.context).toBe("Team › Work");
+  expect(hits.find(hit=>hit.href==="/team?tab=fmea")?.context).toBe("Team › Tasks");
  });
 });

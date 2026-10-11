@@ -14,7 +14,7 @@ export const PIT_RELATED_LINKS = [
     tab: "match-checklist",
   },
   { id: "command", label: "Event Day", kind: "competition" as const, tab: "command" },
-  { id: "pit", label: "Pit Command", kind: "path" as const, path: "/pit" },
+  { id: "pit", label: "Robot status", kind: "path" as const, path: "/pit" },
 ] as const;
 
 export type PitRelatedId = (typeof PIT_RELATED_LINKS)[number]["id"];
@@ -89,7 +89,7 @@ export function pitSetupSteps(orgId?: string | null): PitSetupStep[] {
     {
       id: "workspace",
       label: "Choose your team",
-      detail: "Choose your team to open Pit Command.",
+      detail: "Choose your team to open Robot status.",
       href: orgId ? withOrgHref("/workspace", orgId) : "/workspace",
     },
     {
@@ -187,7 +187,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading Pit Command…",
+        title: "Loading robot status…",
         description:
           "Checking which team you are on and real issues / maintenance / battery logs.",
       };
@@ -195,7 +195,7 @@ export function pitShellCopy(kind: PitShellKind): PitEmptyCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Pit Command",
+        title: "Couldn't load robot status",
         description:
           "A network or server issue blocked the release board. Retry, or open Batteries / Match checklist / Event Day while it reloads.",
       };
@@ -270,7 +270,7 @@ export function pitNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Pit Command",
+        label: "Try again",
         detail: "Reload real issues / batteries / maintenance.",
         href: withOrgHref("/pit", orgId),
         primary: true,
@@ -284,7 +284,7 @@ export function pitNextActions(input: {
       {
         id: "match-checklist",
         label: "Open Match checklist",
-        detail: "Timed pit runs stay available while Pit Command reloads.",
+        detail: "Timed pit runs stay available while robot status reloads.",
         href: hubHref("/competition", "match-checklist", orgId),
       },
       {

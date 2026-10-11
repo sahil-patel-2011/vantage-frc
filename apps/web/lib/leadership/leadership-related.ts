@@ -6,7 +6,7 @@ import { setupActionsFrom } from "../setup-actions";
 export const LEADERSHIP_RELATED_LINKS = [
   { id: "roles", label: "Season roles", tab: "roles" },
   { id: "skills-graph", label: "Skills", tab: "skills-graph" },
-  { id: "safety-training", label: "Safety", tab: "safety-training" },
+  { id: "safety-training", label: "Safety training", tab: "safety-training" },
 ] as const;
 
 export type LeadershipRelatedId = (typeof LEADERSHIP_RELATED_LINKS)[number]["id"];

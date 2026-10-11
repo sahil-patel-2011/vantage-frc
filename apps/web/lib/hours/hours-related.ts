@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const HOURS_RELATED_LINKS = [
   { id: "attendance", label: "Attendance", kind: "team" as const, tab: "attendance" },
   { id: "hours-self-view", label: "My hours", kind: "team" as const, tab: "hours-self-view" },
-  { id: "kiosk", label: "Shop kiosk", kind: "path" as const, path: "/hours/kiosk" },
+  { id: "kiosk", label: "Hours kiosk", kind: "path" as const, path: "/hours/kiosk" },
 ] as const;
 
 export type HoursRelatedId = (typeof HOURS_RELATED_LINKS)[number]["id"];
