@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { bomCategoryLabel, bomSourceLabel, bomStatusLabel } from "../../lib/bom-cost-rollup";
 import type { BomCostRollupView } from "../../lib/bom-cost-rollup/compute-bom-cost-rollup";
@@ -577,7 +577,7 @@ function ItemsTable({
                 <td style={{ textAlign: "right" }}>{usd(item.lineTotalUsd)}</td>
                 <td>{bomSourceLabel(item.source)}</td>
                 <td style={{ textAlign: "right" }}>
-                  <Button variant="secondary" type="button" disabled={busy} aria-label={`Remove ${item.partName}`} onClick={() => mutate({ action: "delete-item", itemId: item.id })}>
+                  <Button variant="secondary" type="button" disabled={busy} aria-label={`Remove ${item.partName}`} onClick={async () => { if (await askConfirm({ title: "Remove this line?", body: `“${item.partName}” comes out of the cost rollup.`, confirmLabel: "Remove line", tone: "destructive" })) void (mutate({ action: "delete-item", itemId: item.id })); }}>
                     Remove
                   </Button>
                 </td>

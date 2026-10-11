@@ -68,7 +68,8 @@ describe("scouting quality permissions and confirmed rule writes", () => {
     expect(inserted()).toBe(false);
   });
   it("refuses an absent baseline and a competing edit", async () => {
-    const { expectedUpdatedAt: _baseline, ...missing } = payload;
+    const missing: Partial<typeof payload> = { ...payload };
+    delete missing.expectedUpdatedAt;
     expect((await POST(post(missing))).status).toBe(409);
     expect((await POST(post({ ...payload, expectedUpdatedAt: "older" }))).status).toBe(409);
     expect(inserted()).toBe(false);

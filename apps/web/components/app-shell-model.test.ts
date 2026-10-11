@@ -109,6 +109,7 @@ describe("hub chrome paths", () => {
   it("titles Account / App manual when the nav catalog has no match", () => {
     expect(shellTitleForPath("/account")).toBe("Account");
     expect(shellTitleForPath("/docs")).toBe("App manual");
+    expect(shellTitleForPath("/help")).toBe("Help centre");
     expect(shellTitleForPath("/support")).toBe("Support");
   });
 

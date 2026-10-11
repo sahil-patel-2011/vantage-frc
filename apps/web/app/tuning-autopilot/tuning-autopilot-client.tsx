@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { TUNING_CONTROLLER_TYPES, tuningControllerTypeLabel, tuningSessionStatusLabel } from "../../lib/tuning-autopilot";
 import type { TuningAutopilotView } from "../../lib/tuning-autopilot/compute-tuning-autopilot";
 import {
@@ -155,7 +155,7 @@ function TuningShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#tuning-autopilot-new-session">Start a session</Button>
+          <Button as="a" variant="secondary" href="#tuning-autopilot-new-session">Start a session</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <TuningNextActionsPanel actions={actions} /> : null}
@@ -420,7 +420,7 @@ export default function TuningAutopilotClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#tuning-autopilot-new-session">
+          <Button as="a" variant="secondary" href="#tuning-autopilot-new-session">
             Start a session
           </Button>
         </EmptyState>
@@ -572,8 +572,8 @@ function SessionSwitcher({
                 className="text-button"
                 disabled={busy}
                 aria-label={`Delete session ${selected.session.subsystem}`}
-                onClick={() => {
-                  if (window.confirm(`Delete session "${selected.session.subsystem}" and all its iterations?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete session “${selected.session.subsystem}” and all its iterations?`, body: null, confirmLabel: "Delete session", tone: "destructive" })) {
                     mutate({ action: "delete-session", sessionId: selected.session.id });
                   }
                 }}
@@ -826,7 +826,7 @@ function IterationHistory({
         title="Log your first gain set and test result"
         description="Each iteration you log sharpens the next-gain suggestion above."
       >
-        <Button as="a" variant="primary" href="#tuning-autopilot-log-iteration">
+        <Button as="a" variant="secondary" href="#tuning-autopilot-log-iteration">
           Log iteration
         </Button>
       </EmptyState>
@@ -869,9 +869,7 @@ function IterationHistory({
                 className="text-button"
                 disabled={busy}
                 aria-label={`Delete iteration ${iteration.notes || `#${iteration.iterationIndex}`}`}
-                onClick={() =>
-                  mutate({ action: "delete-iteration", iterationId: iteration.id, sessionId: view.selectedSessionId })
-                }
+                onClick={async () => { if (await askConfirm({ title: "Delete this iteration?", body: `Iteration #${iteration.iterationIndex} is deleted.`, confirmLabel: "Delete iteration", tone: "destructive" })) void (mutate({ action: "delete-iteration", iterationId: iteration.id, sessionId: view.selectedSessionId })); }}
               >
                 Delete
               </button>

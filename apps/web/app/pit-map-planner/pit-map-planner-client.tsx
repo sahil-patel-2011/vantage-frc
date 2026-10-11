@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { venueShapeLabel, type NexusVenueMapView } from "../../lib/display";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
@@ -601,8 +601,8 @@ function ItemList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Remove "${item.name}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Remove “${item.name}”?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                   mutate({ action: "delete-item", itemId: item.id });
                 }
               }}

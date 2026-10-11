@@ -272,6 +272,19 @@ export function dashboardSetupTitle(shell: DashboardShellKind): string {
   }
 }
 
+/**
+ * A platform admin with no team of their own is not someone waiting for an invite: they
+ * create teams. Home points them at the admin console instead of "Join your team".
+ */
+export function platformAdminNoTeamSetup(): { title: string; blurb: string; label: string; href: string } {
+  return {
+    title: "No team on this account yet",
+    blurb: "You run Vantage. Create a team and its owner from the admin console, or join a team with its code.",
+    label: "Open the admin console",
+    href: "/admin",
+  };
+}
+
 export function dashboardSetupBlurb(shell: DashboardShellKind): string {
   switch (shell) {
     case "no_org":

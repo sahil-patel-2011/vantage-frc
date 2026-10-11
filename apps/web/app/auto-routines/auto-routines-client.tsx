@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
 import {
   canDeleteAutoRoutine,
   AUTO_PRIORITIES,
@@ -525,7 +525,7 @@ export default function AutoRoutinesClient({ orgId }: { orgId: string | null }) 
                       size="sm"
                       variant="danger"
                       aria-label={`Delete routine ${r.name}`}
-                      onClick={() => void post({ action: "delete_routine", id: r.id }, "Routine deleted.")}
+                      onClick={async () => { if (await askConfirm({ title: "Delete this auto routine?", body: `“${r.name}” is deleted from the routine library.`, confirmLabel: "Delete routine", tone: "destructive" })) void post({ action: "delete_routine", id: r.id }, "Routine deleted."); }}
                     >
                       Delete
                     </Button>

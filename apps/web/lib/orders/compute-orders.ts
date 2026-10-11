@@ -3,6 +3,11 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
 import { recordMoney, removeMoney } from "../finance/ledger";
 import {
+  FinanceAccessError,
+  canManageFinances,
+  financeManagerRecipientIds,
+} from "../finance/finance-managers";
+import {
   canTransitionOrder,
   computeOrderMetrics,
   summarizeOpenOrders,
@@ -182,13 +187,25 @@ async function assertMember(client: PoolClient, orgId: string, userId: string): 
   if (!member.rowCount) throw new Error("forbidden");
 }
 
-async function assertAdmin(client: PoolClient, orgId: string, userId: string): Promise<void> {
-  const admin = await client.query(
-    `SELECT 1 FROM memberships
-     WHERE org_id = $1::uuid AND user_id = $2::uuid AND role IN ('owner', 'admin')`,
+/**
+ * Deciding, pricing and assigning a purchase is a money decision: the team owner
+ * and the people the owner chose to manage money (0714), not every admin.
+ * purchase_requests_admin_write and the decision guard enforce it in the DB.
+ */
+async function assertFinanceManager(client: PoolClient, orgId: string): Promise<void> {
+  if (!(await canManageFinances(client, orgId))) throw new FinanceAccessError();
+}
+
+/** Anyone who can change things may ask; a view-only member only looks. */
+async function assertCanRequest(client: PoolClient, orgId: string, userId: string): Promise<void> {
+  const member = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
     [orgId, userId],
   );
-  if (!admin.rowCount) throw new Error("Organization administrator access required");
+  if (!member.rows[0]) throw new Error("forbidden");
+  if (member.rows[0].role === "viewer") {
+    throw new Error("You have view-only access, so you can't submit requests. Ask an owner for access.");
+  }
 }
 
 async function assertBuyerMember(client: PoolClient, orgId: string, buyerUserId: string): Promise<void> {
@@ -210,15 +227,12 @@ async function notifyAdminsSubmitted(
     seasonYear?: number;
   },
 ): Promise<void> {
-  const admins = await client.query<{ userId: string }>(
-    `SELECT user_id AS "userId" FROM memberships
-     WHERE org_id = $1::uuid AND role IN ('owner', 'admin') AND user_id <> $2::uuid`,
-    [input.orgId, input.actorUserId],
-  );
+  // The people who can approve it: finance managers (0714), not every admin.
+  const reviewers = await financeManagerRecipientIds(client, input.orgId, input.actorUserId);
   const href = orderHref(input.orgId, input.orderId, input.seasonYear);
-  for (const admin of admins.rows) {
+  for (const reviewerId of reviewers) {
     await emitPreferredNotification(client, {
-      userId: admin.userId,
+      userId: reviewerId,
       orgId: input.orgId,
       type: "purchase_request_submitted",
       payload: {
@@ -324,6 +338,8 @@ export async function computeOrdersView(
       seasonYear,
       currentUserId: input.userId,
       isAdmin: org.role === "owner" || org.role === "admin",
+      canManageFinances: await canManageFinances(client, org.orgId),
+      canRequest: org.role !== "viewer",
       orders,
       members,
       metrics,
@@ -347,7 +363,7 @@ export async function submitOrder(
   client: PoolClient,
   input: { orgId: string; userId: string; seasonYear?: number; body: Record<string, unknown> },
 ): Promise<string> {
-  await assertMember(client, input.orgId, input.userId);
+  await assertCanRequest(client, input.orgId, input.userId);
   const validated = validateOrderSubmit(input.body);
   if (!validated.ok) throw new Error(validated.error);
 
@@ -445,7 +461,7 @@ export async function reviewOrder(
     totalCostUsd?: number | null;
   },
 ): Promise<void> {
-  await assertAdmin(client, input.orgId, input.userId);
+  await assertFinanceManager(client, input.orgId);
 
   const existing = await client.query<{
     status: OrderStatus;
@@ -595,11 +611,8 @@ export async function updateOrderItemUrl(
     throw new Error("Vendor link must be a valid URL.", { cause: error });
   }
 
-  const org = await client.query<{ role: string }>(
-    `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
-    [input.orgId, input.userId],
-  );
-  const isAdmin = org.rows[0]?.role === "owner" || org.rows[0]?.role === "admin";
+  // A finance manager may fix any buy link; otherwise only the buyer/requester.
+  const isAdmin = await canManageFinances(client, input.orgId);
 
   const existing = await client.query<{
     status: OrderStatus;
@@ -620,7 +633,7 @@ export async function updateOrderItemUrl(
     isAdmin ||
     row.buyerUserId === input.userId ||
     (!row.buyerUserId && row.requestedBy === input.userId);
-  if (!canEdit) throw new Error("Only the assigned buyer, requester, or an admin can set the buy link");
+  if (!canEdit) throw new Error("Only the assigned buyer, the requester, or a finance manager can set the buy link");
 
   await client.query(
     `UPDATE purchase_requests SET item_url = $3, updated_at = now()
@@ -633,7 +646,7 @@ export async function assignBuyer(
   client: PoolClient,
   input: { orgId: string; userId: string; orderId: string; buyerUserId: string },
 ): Promise<void> {
-  await assertAdmin(client, input.orgId, input.userId);
+  await assertFinanceManager(client, input.orgId);
   await assertBuyerMember(client, input.orgId, input.buyerUserId);
 
   const existing = await client.query<{ status: OrderStatus; title: string; buyerUserId: string | null }>(
@@ -671,7 +684,7 @@ async function assertCanProgress(
   const isRequesterFallback =
     !input.order.buyerUserId && input.order.requestedBy === input.userId;
   if (isBuyer || isRequesterFallback) return;
-  throw new Error("Only the assigned buyer, requester, or an admin can update order progress");
+  throw new Error("Only the assigned buyer, the requester, or a finance manager can update order progress");
 }
 
 export async function progressOrder(
@@ -680,11 +693,8 @@ export async function progressOrder(
 ): Promise<void> {
   await assertMember(client, input.orgId, input.userId);
 
-  const org = await client.query<{ role: string }>(
-    `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
-    [input.orgId, input.userId],
-  );
-  const isAdmin = org.rows[0]?.role === "owner" || org.rows[0]?.role === "admin";
+  // A finance manager may move any approved order along (0714).
+  const isAdmin = await canManageFinances(client, input.orgId);
 
   const existing = await client.query<OrderRow>(
     `SELECT

@@ -8,7 +8,7 @@ import {
   FormRow,
   PageHeader,
   Panel,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { ScoutDataImpactView } from "../../lib/scout-data-impact/compute-scout-data-impact";
 import {
@@ -194,7 +194,7 @@ function ScoutDataImpactShell({
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#log-alliance-pick">Log an alliance pick</Button>
+          <Button as="a" variant="secondary" href="#log-alliance-pick">Log an alliance pick</Button>
         ) : null}
       </EmptyState>
       {shell === "empty" || shell === "setup" ? logPick : null}
@@ -580,7 +580,7 @@ function PicksList({
                     {item.pick.notes ? ` · ${item.pick.notes}` : ""}
                   </small>
                 </div>
-                <Button variant="secondary" type="button" disabled={busy} onClick={() => { if ( window.confirm( `Remove pick for Team ${item.pick.teamNumber ?? item.pick.teamKey}?`, ) ) { void mutate({ action: "delete-pick", pickId: item.pick.id }); } }}>
+                <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: `Remove the pick for Team ${item.pick.teamNumber ?? item.pick.teamKey}?`, body: null, confirmLabel: "Remove pick", tone: "destructive" })) { void mutate({ action: "delete-pick", pickId: item.pick.id }); } }}>
                   Delete
                 </Button>
               </div>

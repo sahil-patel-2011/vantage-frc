@@ -4,7 +4,19 @@ import { Icon } from "./icon";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import { AppShellAccountMenu } from "./app-shell-account-menu";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { VIEW_ONLY_CHIP_TITLE, isViewOnlyIn } from "../lib/nav/view-only";
 import type { Me, MembershipOption } from "./app-shell-model";
+import "./view-only.css";
+
+/** Shown when no name, email or photo is known yet: a person, not a "?". */
+function PersonGlyph() {
+  return (
+    <svg className="soft-avatar-glyph" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="8.5" r="3.75" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4.75 19.25c1.3-3.3 4-5 7.25-5s5.95 1.7 7.25 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 /** The current team also opens the workspace picker. */
 function TeamChip({ label, className, onOpen }: { label: string; onOpen: () => void; className: string }) {
@@ -24,6 +36,7 @@ export function AppShellTopbar({
   onOpenNav,
   shortcutHint,
   onOpenTeams,
+  minimal = false,
 
   unreadCount,
   accountMenuOpen,
@@ -55,6 +68,11 @@ export function AppShellTopbar({
   shortcutHint: string;
   /** Opens the workspace picker. */
   onOpenTeams: () => void;
+  /**
+   * Onboarding: the logo and the account menu (for Sign out) only. The menu and search buttons
+   * there led nowhere, and CSS hid only their icons, leaving an invisible 44×44 button.
+   */
+  minimal?: boolean;
 
   unreadCount: number;
   accountMenuOpen: boolean;
@@ -72,12 +90,14 @@ export function AppShellTopbar({
   onWorkspaceSwitch: (nextOrgId: string) => void;
   onSignOut: () => void;
 }) {
+  // View only (0715): say so once, calmly, so a refused button is never a surprise.
+  const viewOnly = isViewOnlyIn(memberships, orgId, me.role);
   return (
     <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
         {/* Navigation opens from the left, where a hamburger lives on every
             other app. The right side is for things you act on. */}
-          <button
+          {minimal ? null : <button
             hidden={navOpen}
             className={`soft-icon-btn soft-menu-btn${menuOpen ? " is-open" : ""}`}
             data-tour="menu"
@@ -93,7 +113,7 @@ export function AppShellTopbar({
               <i />
               <i />
             </span>
-          </button>
+          </button>}
         <div className="soft-page-head">
           {showBack ? (
             <button
@@ -106,7 +126,10 @@ export function AppShellTopbar({
             </button>
           ) : null}
           <div className="soft-page-head-copy">
-            {isHubRoot ? (
+            {/* A page with no title of its own showed "Vantage" over the team ("Vantage /
+                Team 6925" on Calendar); without a title the team switcher stands alone, as on a
+                hub's front page. */}
+            {isHubRoot || (!showBack && (!title || title.trim() === "Vantage")) ? (
               <TeamChip
                 label={orgLabel}
                 onOpen={onOpenTeams}
@@ -147,8 +170,15 @@ export function AppShellTopbar({
         </div>
       </div>
       <div className="soft-topbar-actions">
-        <button hidden={navOpen} className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>
-        <ShellOutboxStatus orgId={orgId || null} />
+        {viewOnly ? (
+          <span className="view-only-chip" title={VIEW_ONLY_CHIP_TITLE} aria-label={`View only. ${VIEW_ONLY_CHIP_TITLE}`}>
+            View only
+          </span>
+        ) : null}
+        {minimal ? null : <button hidden={navOpen} className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
+        {/* Nothing is queued before someone is on a team, and its 12-second check read /api/me,
+            which answers 403 during onboarding. */}
+        {minimal ? null : <ShellOutboxStatus orgId={orgId || null} />}
         <a
           className="soft-icon-btn soft-ask-ai"
           data-tour="ask-ai"
@@ -175,7 +205,7 @@ export function AppShellTopbar({
             aria-haspopup="menu"
             onClick={onToggleAccount}
           >
-            {me.image ? <img src={me.image} alt="" /> : initial}
+            {me.image ? <img src={me.image} alt="" /> : initial === "?" ? <PersonGlyph /> : initial}
           </button>
           <AppShellAccountMenu
             open={accountMenuOpen}

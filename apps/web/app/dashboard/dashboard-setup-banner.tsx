@@ -8,6 +8,7 @@ import {
   dashboardSetupBannerPrimary,
   dashboardSetupBlurb,
   dashboardSetupTitle,
+  platformAdminNoTeamSetup,
   type DashboardNextAction,
   type DashboardSetupStep,
   type DashboardShellKind,
@@ -18,13 +19,28 @@ export function DashboardSetupBanner({
   nextActions,
   setupSteps,
   compact = false,
+  platformAdmin = false,
 }: {
   shell: DashboardShellKind;
   nextActions: DashboardNextAction[];
   setupSteps: DashboardSetupStep[];
   compact?: boolean;
+  platformAdmin?: boolean;
 }) {
   if (shell === "ready") return null;
+  if (shell === "no_org" && platformAdmin) {
+    const admin = platformAdminNoTeamSetup();
+    return (
+      <section className="dash-setup-banner" aria-label="First-run setup">
+        <div>
+          <Badge tone="setup">Setup</Badge>
+          <h2>{admin.title}</h2>
+          <p>{admin.blurb}</p>
+        </div>
+        <Button as="a" variant="primary" href={admin.href}>{admin.label}</Button>
+      </section>
+    );
+  }
   const primary = dashboardSetupBannerPrimary(shell, nextActions, setupSteps);
   const href = primary && "href" in primary ? primary.href : "#";
   const label = primary ? dashboardSetupBannerLabel(primary) : null;

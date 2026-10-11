@@ -159,11 +159,12 @@ describe("nudgeOrder and describePlace", () => {
 });
 
 describe("hiddenOnHome while setup is the hero", () => {
-  it("does not silently remove a saved setup card when onboarding state changes", () => {
+  it("says the setup card is at the top, not that the team is set up", () => {
     const layout = [card("s", "onboarding_checklist", 0, 0, 12, 4), card("h", "hours_month", 0, 4)];
     const widgets = { hours_month: { status: "live" }, onboarding_checklist: { status: "live" } };
-    expect(hiddenOnHome(layout, { shell: "ready", widgets, teamSetupCard: true }).size).toBe(0);
-    expect(hiddenOnHome(layout, { shell: "ready", widgets, teamSetupCard: false }).size).toBe(0);
+    // Never silently removed: the card stays on the saved board and the editor names why Home skips it.
+    expect(hiddenOnHome(layout, { shell: "ready", widgets, teamSetupCard: true })).toEqual(new Map([["s", "setup_top"]]));
+    expect(hiddenOnHome(layout, { shell: "ready", widgets, teamSetupCard: false })).toEqual(new Map([["s", "setup_done"]]));
   });
 });
 

@@ -6,7 +6,7 @@ import {
   EmptyState,
   PageHeader,
   Panel,
-  SoftBlockSkeleton, Button } from "../../components/ui";
+  SoftBlockSkeleton, Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -467,7 +467,7 @@ export default function MediaLibraryClient() {
 
   const deleteSelected = useCallback(async () => {
     if (!selected || selected.origin !== "library") return;
-    if (!window.confirm(`Delete "${selected.title}" permanently?`)) return;
+    if (!(await askConfirm({ title: `Delete “${selected.title}” permanently?`, body: null, confirmLabel: "Delete", tone: "destructive" }))) return;
     const result = await postAction({ action: "delete-item", itemId: selected.id });
     if (result) {
       setSelectedId(null);

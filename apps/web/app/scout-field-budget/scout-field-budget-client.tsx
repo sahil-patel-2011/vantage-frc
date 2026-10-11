@@ -12,7 +12,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { fieldBudgetPhaseLabel } from "../../lib/scout-field-budget";
 import type { ScoutFieldBudgetView } from "../../lib/scout-field-budget/compute-scout-field-budget";
 import type { FieldBudgetLintResult, FieldBudgetSeverity } from "../../lib/scout-field-budget/types";
@@ -152,7 +152,7 @@ function BudgetShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#scout-field-budget-lint">Check a form</Button>
+            <Button as="a" variant="secondary" href="#scout-field-budget-lint">Check a form</Button>
           ) : null}
         </EmptyState>
       )}
@@ -424,8 +424,8 @@ function LintRow({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${lint.schemaName}"?`)) {
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${lint.schemaName}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
               mutate({ action: "delete-snapshot", snapshotId: lint.snapshotId });
             }
           }}

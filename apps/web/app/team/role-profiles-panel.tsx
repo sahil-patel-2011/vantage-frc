@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, Card } from "../../components/ui";
+import { Button, Card, askConfirm } from "../../components/ui";
 import {
   BASE_ROLE_COPY,
   PROFILE_CAPABILITIES,
@@ -379,9 +379,7 @@ export function RoleProfilesPanel({ orgId }: { orgId: string }) {
                   variant="ghost"
                   size="sm"
                   disabled={busy}
-                  onClick={() =>
-                    void post({ action: "delete", key: profile.key }, `${profile.name} removed.`)
-                  }
+                  onClick={async () => { if (await askConfirm({ title: "Delete this role profile?", body: `“${profile.name}” is deleted.`, confirmLabel: "Delete profile", tone: "destructive" })) void post({ action: "delete", key: profile.key }, `${profile.name} removed.`); }}
                 >
                   Delete
                 </Button>

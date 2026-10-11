@@ -13,8 +13,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, askText } from "../../components/ui";
 import {
   KANBAN_STATES,
   MANUFACTURING_METHODS,
@@ -416,10 +415,16 @@ function PartCard({
             size="sm"
             disabled={busy}
             aria-label={`Scrap ${part.partName}`}
-            onClick={() => {
-              const reason = window.prompt(`Scrap "${part.partName}" — why? (optional)`);
+            onClick={async () => {
+              const reason = await askText({
+                title: `Scrap “${part.partName}”?`,
+                body: null,
+                confirmLabel: "Scrap part",
+                tone: "destructive",
+                input: { label: "Why (optional)" },
+              });
               if (reason === null) return;
-              mutate({ action: "scrap", partId: part.id, reason: reason || undefined });
+              mutate({ action: "scrap", partId: part.id, reason: reason.trim() || undefined });
             }}
           >
             Scrap

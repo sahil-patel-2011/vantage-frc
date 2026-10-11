@@ -1,6 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { MEDIA_ENABLED } from "../media-availability";
-import { commandCatalog, isTeamAdminCommand, searchCommands, type CommandEntry } from "./command-search";
+import { PLATFORM_ADMIN_COMMAND, commandCatalog, commandCatalogFor, isTeamAdminCommand, searchCommands, type CommandEntry } from "./command-search";
+
+describe("the admin console in search", () => {
+  it("is found by 'admin' for platform admins, ahead of a team's own admin pages", () => {
+    const admin = commandCatalogFor({ platformAdmin: true });
+    const hits = searchCommands("admin", admin, { limit: 8, canManageTeam: false });
+    expect(hits[0]?.href).toBe("/admin");
+    expect(hits[0]?.label).toBe("Admin console");
+    expect(searchCommands("admin console", admin, { limit: 3 })[0]?.href).toBe(PLATFORM_ADMIN_COMMAND.href);
+    expect(searchCommands("add a team", admin, { limit: 5 }).some((hit) => hit.href === "/admin")).toBe(true);
+  });
+  it("is never listed for anyone else", () => {
+    for (const access of [{}, { platformAdmin: false }, { platformAdmin: null }]) {
+      const entries = commandCatalogFor(access);
+      expect(entries.some((entry) => entry.href === "/admin")).toBe(false);
+      expect(searchCommands("admin", entries, { limit: 50 }).some((hit) => hit.href === "/admin")).toBe(false);
+    }
+    expect(commandCatalog().some((entry) => entry.href === "/admin")).toBe(false);
+  });
+});
 
 const catalog = commandCatalog();
 const top = (query: string, count = 1): string[] =>
@@ -223,7 +242,7 @@ describe("newly surfaced tools are findable by their real-world words", () => {
     ["how heavy", "/build?tab=weight-budget"],
     ["first power", "/build?tab=bringup"],
     ["when do we play", "/competition?tab=schedule"],
-    ["injury", "/team?tab=safety"],
+    ["tool training", "/team?tab=safety"],
     ["engineering notebook", "/team?tab=notebook"],
     ["where to buy", "/business?tab=vendors"],
     // The rookie-survival roadmap, found by the words a first-year coach types.

@@ -309,7 +309,7 @@ export default function InspectionCopilotClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#inspection-copilot-form">
+          <Button as="a" variant="secondary" href="#inspection-copilot-form">
             Run a check
           </Button>
         </EmptyState>

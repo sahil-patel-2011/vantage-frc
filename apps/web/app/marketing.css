@@ -743,6 +743,8 @@
   max-width:38rem;margin:0;color:var(--m-muted);font-size:16px;line-height:1.5;
 }
 .marketing-lux .lux-route-hero .actions{margin-top:22px;gap:12px}
+.marketing-lux .lux-route-hero>p.desktop-download-note{margin-top:12px;font-size:14px}
+.marketing-lux .desktop-download-note a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 .marketing-lux .section-id{
   font-family:var(--m-sans)!important;font-weight:600;font-size:11px;
   letter-spacing:.08em;color:var(--m-muted);

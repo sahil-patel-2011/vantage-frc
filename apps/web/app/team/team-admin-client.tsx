@@ -18,6 +18,7 @@ import {
   type InviteDeliveryMode,
 } from "../../lib/team/team-invites";
 import { MemberAccessPanel, type HubAccessRow } from "./admin/member-access-panel";
+import { MoneyManagersLine } from "./admin/money-managers-line";
 import { TeamAdminAccessPanel } from "./team-admin-access";
 import { TeamAdminInvitesPanel } from "./team-admin-invites";
 import { TeamJoinCode } from "./team-join-code";
@@ -638,8 +639,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     <main className="module-page team-admin-page">
       {header}
       <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
-      <TeamJoinCode key={orgId} orgId={orgId} />
-
       <TeamAdminInvitesPanel
         deliveryBanner={deliveryBanner}
         emailOff={inviteEmailIsOff(deliveryMode)}
@@ -659,6 +658,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         onCopyLink={(id, url) => void copyInviteLink(id, url)}
         onAct={(inviteId, action) => void act(inviteId, action)}
       />
+
+      {/* Inviting is this page's main job, so it comes first; the team code is the other way in. */}
+      <TeamJoinCode key={orgId} orgId={orgId} />
 
       <TeamAdminAccessPanel
         accessRequests={accessRequests}
@@ -688,6 +690,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           ) : null}
         </EmptyState>
       ) : (
+        <>
+        {/* Who can change the team's money (0714) — the owner and the people they chose. */}
+        <MoneyManagersLine orgId={orgId} version={message} />
         <TeamAdminPeople
           members={members}
           actorUserId={actor.userId}
@@ -698,6 +703,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           onRemove={(member) => setRemoveTarget(member)}
           onStepDown={() => setStepDownOpen(true)}
         />
+        </>
       )}
 
       <TeamAdminProvidersPanel

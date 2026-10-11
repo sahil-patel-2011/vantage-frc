@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db/savepoint";
 import { assertScoutingLead, canManageScouting } from "@vantage/scouting/permissions";
 import { pairwiseNextActions, type PairwiseNextAction } from "./pairwise-next-actions";
 import { parseTeamNumber, rankPairwise, type PairwiseRank } from "./rank";
@@ -108,14 +109,22 @@ export async function computePairwiseView(
   if (!org) return setup("Choose your team to rank robots by qualitative taps.", null, seasonYear);
 
   try {
-    for (const criterion of DEFAULT_CRITERIA) {
-      await client.query(
-        `INSERT INTO qualitative_criteria (org_id, season_year, slug, name, sort_order, created_by)
-         VALUES ($1::uuid, $2, $3, $4, $5, $6::uuid)
-         ON CONFLICT (org_id, season_year, slug) DO NOTHING`,
-        [org.orgId, seasonYear, criterion.slug, criterion.name, criterion.sortOrder, input.userId],
-      );
-    }
+    // Seeding the defaults is a write on a read: a View only member is refused
+    // it (0715) and simply sees whatever criteria the team already has.
+    await withSavepoint(
+      client,
+      async () => {
+        for (const criterion of DEFAULT_CRITERIA) {
+          await client.query(
+            `INSERT INTO qualitative_criteria (org_id, season_year, slug, name, sort_order, created_by)
+             VALUES ($1::uuid, $2, $3, $4, $5, $6::uuid)
+             ON CONFLICT (org_id, season_year, slug) DO NOTHING`,
+            [org.orgId, seasonYear, criterion.slug, criterion.name, criterion.sortOrder, input.userId],
+          );
+        }
+      },
+      undefined,
+    );
 
     const criteriaResult = await client.query<{
       id: string;

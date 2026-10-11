@@ -1,11 +1,16 @@
 import pg from "pg";
 import { pathToFileURL } from "node:url";
+import { pgTlsOptions } from "./lib/database-ssl.mjs";
 
 export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0710_scouting_management_capability.sql",
   "0711_delegated_scouting_leads.sql",
   "0712_account_first_run_tour.sql",
   "0713_scouting_lead_notifications.sql",
+  "0714_finance_managers.sql",
+  // View only = read-only: request code calls is_org_viewer() (withRls, scouting sync).
+  "0715_view_only_read_only.sql",
+  "0716_github_pr_reviews.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */
@@ -18,8 +23,7 @@ export async function checkProductionSchema({ env = process.env, createPool = op
   catch { throw new Error("Production schema check has an invalid migration connection."); }
   const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(hostname);
   if (local && env.GITHUB_ACTIONS !== "true") throw new Error("Production schema checks cannot use a laptop database.");
-  const pool = createPool({ connectionString: url, max: 1, connectionTimeoutMillis: 10_000, statement_timeout: 10_000,
-    ssl: local || /(^|[?&])sslmode=disable\b/i.test(url) ? false : { rejectUnauthorized: true } });
+  const pool = createPool({ ...pgTlsOptions(url, env), max: 1, connectionTimeoutMillis: 10_000, statement_timeout: 10_000 });
   let client;
   try {
     client = await pool.connect();

@@ -12,8 +12,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { equipmentCategoryLabel, maintenanceActionLabel } from "../../lib/equipment-maintenance";
 import {
@@ -456,8 +455,8 @@ function AssetList({
                 size="sm"
                 disabled={busy}
                 aria-label={`Delete ${asset.name}`}
-                onClick={() => {
-                  if (window.confirm(`Delete "${asset.name}" and its maintenance history?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${asset.name}” and its maintenance history?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-asset", assetId: asset.id });
                   }
                 }}
@@ -511,7 +510,7 @@ function RecentLogs({
               size="sm"
               disabled={busy}
               aria-label={`Delete maintenance log for ${assetName(log.assetId)} on ${log.performedOn}`}
-              onClick={() => mutate({ action: "delete-log", logId: log.id })}
+              onClick={async () => { if (await askConfirm({ title: "Delete this log entry?", body: "The maintenance log entry is deleted.", confirmLabel: "Delete entry", tone: "destructive" })) void (mutate({ action: "delete-log", logId: log.id })); }}
             >
               Delete
             </Button>

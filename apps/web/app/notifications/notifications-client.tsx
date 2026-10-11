@@ -333,7 +333,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
     return (
       <main className="notif-page module-page">
         <PageHeader
-          breadcrumbs="Account / Inbox"
+          breadcrumbs="Account / Notifications"
           title="Notifications"
           description="Todos, duties, chat, and team news for your signed-in account."
         >
@@ -368,7 +368,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
   return (
     <main className="notif-page module-page">
       <PageHeader
-        breadcrumbs="Account / Inbox"
+        breadcrumbs="Account / Notifications"
         title="Notifications"
         description="Todos, duties, chat, and team news for your signed-in account."
       >

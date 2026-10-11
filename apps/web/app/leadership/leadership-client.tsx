@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { leadershipCategoryLabel, leadershipHandoffStatusLabel } from "../../lib/leadership";
 import {
   LEADERSHIP_CATEGORY_VALUES,
@@ -480,7 +480,7 @@ function RoleBoard({
         title="Add your first leadership role"
         description="Officer positions, subsystem leads, mentors — track who holds each role and who's next."
       >
-        <Button as="a" variant="primary" href="#add-role">
+        <Button as="a" variant="secondary" href="#add-role">
           Add a role
         </Button>
       </EmptyState>
@@ -529,8 +529,8 @@ function RoleBoard({
                 variant="secondary"
                 size="sm"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${role.roleTitle}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${role.roleTitle}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-role", roleId: role.id });
                   }
                 }}

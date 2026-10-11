@@ -20,7 +20,7 @@ export default async function TeamSlackPage({
           title="Slack"
           description="Connect Slack to Vantage team chat so both sides stay on this team only."
         />
-        <TeamOpsNav active="admin" />
+        <TeamOpsNav within="admin" />
         <EmptyState
           soft
           title="Choose your team"

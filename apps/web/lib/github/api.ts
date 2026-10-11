@@ -80,7 +80,7 @@ export function isGitHubCredentialRejected(error: unknown): error is GitHubCrede
  * Turn a non-OK GitHub response into the right error. Call sites keep their own
  * fallback message for everything that is not a credential problem.
  */
-function githubFailure(response: Response, providerMessage: string | undefined, fallback: string): Error {
+export function githubFailure(response: Response, providerMessage: string | undefined, fallback: string): Error {
   if (response.status === 401) return new GitHubCredentialRejectedError(401, providerMessage);
   // 403 from GitHub is either "you are rate limited" or "this token may not do
   // that". Only the second is a credential the user should replace, and the
@@ -193,7 +193,7 @@ export async function fetchGitHubMilestoneCalendarItems(
   return parseGitHubMilestoneCalendarItems(data);
 }
 
-function parseOwnerRepo(fullName: string): { owner: string; repo: string } {
+export function parseOwnerRepo(fullName: string): { owner: string; repo: string } {
   const [owner, repo] = fullName.split("/");
   if (!owner?.trim() || !repo?.trim() || fullName.includes("..")) {
     throw new Error("Invalid repository full name (expected owner/repo)");

@@ -2,6 +2,12 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  assertFinanceManager,
+  canManageFinances,
+  isFinanceAccessDenied,
+} from "../../../../lib/finance/finance-managers";
 
 async function session() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -9,7 +15,9 @@ async function session() {
   return value;
 }
 const fail = (error: unknown) =>
-  Response.json({ error: publicErrorMessage(error, "Budget request failed") }, { status: 400 });
+  isFinanceAccessDenied(error)
+    ? Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 })
+    : Response.json({ error: publicErrorMessage(error, "Budget request failed") }, { status: 400 });
 
 export async function GET(request: Request) {
   try {
@@ -18,7 +26,7 @@ export async function GET(request: Request) {
     const orgId = url.searchParams.get("orgId");
     const seasonYear = Number(url.searchParams.get("seasonYear") ?? new Date().getFullYear());
     if (!orgId) throw new Error("orgId is required");
-    const categories = await withRls({ userId: current.user.id, orgId }, async (client) => {
+    const { categories, canManage } = await withRls({ userId: current.user.id, orgId }, async (client) => {
       const result = await client.query(
         `SELECT c.id AS "categoryId", c.name, c.season_year AS "seasonYear",
                 p.id AS "planId", p.monthly_limit_usd AS "monthlyLimitUsd",
@@ -29,9 +37,9 @@ export async function GET(request: Request) {
          ORDER BY c.name`,
         [orgId, seasonYear],
       );
-      return result.rows;
+      return { categories: result.rows, canManage: await canManageFinances(client, orgId) };
     });
-    return Response.json({ seasonYear, categories });
+    return Response.json({ seasonYear, categories, canManageFinances: canManage });
   } catch (error) { return fail(error); }
 }
 
@@ -52,11 +60,8 @@ export async function POST(request: Request) {
     if (totalLimitUsd != null && (!Number.isFinite(totalLimitUsd) || totalLimitUsd < 0))
       throw new Error("Total limit must be zero or greater");
     const plan = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      const admin = await client.query(
-        `SELECT 1 FROM memberships WHERE org_id=$1 AND user_id=$2 AND role IN ('owner','admin')`,
-        [orgId, current.user.id],
-      );
-      if (!admin.rowCount) throw new Error("Organization administrator access required");
+      // Category budgets are money: finance managers only (0714). RLS agrees.
+      await assertFinanceManager(client, orgId);
       const category = await client.query(
         `INSERT INTO finance_categories(org_id, season_year, name) VALUES($1,$2,$3)
          ON CONFLICT(org_id, season_year, name) DO UPDATE SET name=excluded.name

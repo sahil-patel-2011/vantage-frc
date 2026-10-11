@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { SEASON_ROLLOVER_CATEGORIES, seasonRolloverCategoryLabel } from "../../lib/season-rollover";
 import type { SeasonRolloverView } from "../../lib/season-rollover/compute-season-rollover";
 import type { SeasonRolloverCategory } from "../../lib/season-rollover/types";
@@ -312,7 +312,7 @@ function PlanPanel({
           <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "complete-plan", planId: view.activePlan!.id })}>
             Mark rollover complete
           </Button>
-          <Button variant="secondary" type="button" disabled={busy} onClick={() => { if (window.confirm("Delete this rollover plan and its items?")) { mutate({ action: "delete-plan", planId: view.activePlan!.id }); } }}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Delete this rollover plan and its items?", body: null, confirmLabel: "Delete rollover plan", tone: "destructive" })) { mutate({ action: "delete-plan", planId: view.activePlan!.id }); } }}>
             Delete plan
           </Button>
         </div>
@@ -429,8 +429,8 @@ function ItemList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.label}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete “${item.label}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-item", itemId: item.id });
                 }
               }}

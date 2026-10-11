@@ -4,7 +4,7 @@ import { teamProseLabel } from "../../components/app-shell-model";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, useConfirm } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -91,15 +91,19 @@ function SubsystemCard({
   subsystem,
   priorities,
   orgId,
+  codeSuggestion,
   busyKey,
   run,
 }: {
   subsystem: EnrichedSubsystem;
   priorities: PriorityOption[];
   orgId: string;
+  /** A file from the team's mapped robot code that looks like this subsystem. */
+  codeSuggestion?: string;
   busyKey: string | null;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
+  const confirm = useConfirm();
   const busy = busyKey === `sub:${subsystem.id}`;
   const readiness = subsystemReadiness(subsystem);
   const patch = (fields: Record<string, unknown>) =>
@@ -168,6 +172,26 @@ function SubsystemCard({
                 clear
               </button>
             </span>
+          ) : codeSuggestion ? (
+            <span className="robot-domain-value">
+              <button
+                type="button"
+                className="robot-link"
+                disabled={busy}
+                title={codeSuggestion}
+                aria-label={`Use ${codeSuggestion} from the mapped robot code`}
+                onClick={() => void patch({ codeRef: codeSuggestion })}
+              >
+                Use {codeSuggestion.split("/").pop()}
+              </button>
+              <LinkEditor
+                value=""
+                placeholder="src/main/java/frc/robot/subsystems/Drivetrain.java"
+                buttonLabel="Other file…"
+                busy={busy}
+                onSave={(next) => void patch({ codeRef: next })}
+              />
+            </span>
           ) : (
             <LinkEditor
               value=""
@@ -231,10 +255,14 @@ function SubsystemCard({
           type="button"
           className="robot-link danger"
           disabled={busy}
-          onClick={() => {
-            if (confirm(`Delete subsystem "${subsystem.name}"?`)) {
-              void run({ action: "delete_subsystem", orgId, id: subsystem.id }, `sub:${subsystem.id}`);
-            }
+          onClick={async () => {
+            const ok = await confirm({
+              title: "Delete this subsystem?",
+              body: `“${subsystem.name}” is removed from the robot blueprint.`,
+              confirmLabel: "Delete subsystem",
+              tone: "destructive",
+            });
+            if (ok) void run({ action: "delete_subsystem", orgId, id: subsystem.id }, `sub:${subsystem.id}`);
           }}
         >
           Delete
@@ -242,6 +270,13 @@ function SubsystemCard({
       </footer>
     </article>
   );
+}
+
+/** "competition" is the stored label; people read "Competition robot". Custom labels show as typed. */
+function robotName(label: string): string {
+  if (label === "competition") return "Competition robot";
+  if (label === "practice") return "Practice robot";
+  return label;
 }
 
 export default function RobotClient() {
@@ -435,13 +470,16 @@ export default function RobotClient() {
           </p>
         </div>
         <div className="robot-header-actions">
-          <select value={robotLabel} aria-label="Robot" onChange={(event) => setRobotLabel(event.target.value)}>
-            {robotLabels.map((label) => (
-              <option key={label} value={label}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <label className="inline-field-label">
+            Robot
+            <select value={robotLabel} onChange={(event) => setRobotLabel(event.target.value)}>
+              {robotLabels.map((label) => (
+                <option key={label} value={label}>
+                  {robotName(label)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 
@@ -473,7 +511,7 @@ export default function RobotClient() {
       {robotSubsystems.length === 0 ? (
         <EmptyState
           className="robot-empty"
-          title={`No subsystems yet for “${robotLabel}”`}
+          title={`No subsystems yet for ${robotName(robotLabel) === robotLabel ? `“${robotLabel}”` : `the ${robotLabel} robot`}`}
           description="Seed the standard FRC set (drivetrain, intake, scorer…) and then link each to its CAD, code, and strategy."
         >
           <Button variant="primary" type="button" disabled={busy} onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}>
@@ -488,6 +526,7 @@ export default function RobotClient() {
               subsystem={subsystem}
               priorities={view.priorities}
               orgId={orgId}
+              codeSuggestion={view.codeSuggestions?.[subsystem.id]}
               busyKey={busyKey}
               run={run}
             />

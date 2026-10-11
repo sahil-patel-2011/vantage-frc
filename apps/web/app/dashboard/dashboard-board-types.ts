@@ -16,6 +16,7 @@ export type Me = {
   role?: string | null;
   teamRole?: string | null;
   tbaConfigured?: boolean;
+  platformAdmin?: boolean;
 };
 
 export type BoardMeta = {

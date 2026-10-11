@@ -5,7 +5,7 @@ import { BusinessRelated } from "../../../components/business-related";
 import { MeteredAiCutoffBanner } from "../../../components/metered-ai-cutoff-banner";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../../components/usage-cutoff-banner";
-import { EmptyState, Button } from "../../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { GRANTS_WRITING_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { grantsWritingNextActions } from "../../../lib/business/grants-writing-next-actions";
@@ -72,16 +72,6 @@ function moneyLabel(amount: number | null | undefined): string {
   }).format(amount);
 }
 
-function orgQuery(orgId: string | null | undefined): string {
-  return orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";
-}
-
-function businessGrantsHref(orgId: string | null | undefined): string {
-  const params = new URLSearchParams({ tab: "grants" });
-  if (orgId) params.set("orgId", orgId);
-  return `/business?${params.toString()}`;
-}
-
 export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
   const [view, setView] = useState<GrantWritingView | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -104,12 +94,6 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
   const viewRef = useRef<GrantWritingView | null>(null);
   viewRef.current = view;
 
-  const resolvedOrgId =
-    view && view.status === "live"
-      ? view.orgId
-      : view && view.orgId
-        ? view.orgId
-        : orgIdProp ?? null;
 
   const applyDraft = useCallback((draft: GrantWritingDraft) => {
     setSelectedDraftId(draft.id);
@@ -403,7 +387,6 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
       body={body}
       provenance={provenance}
       readyCount={readyCount}
-      resolvedOrgId={resolvedOrgId}
       fromCache={fromCache}
       cachedAt={cachedAt}
       onSeasonChange={(next) => {
@@ -441,7 +424,6 @@ function GrantWritingWorkspace({
   body,
   provenance,
   readyCount,
-  resolvedOrgId,
   fromCache,
   cachedAt,
   onSeasonChange,
@@ -468,7 +450,6 @@ function GrantWritingWorkspace({
   body: string;
   provenance: GrantWritingDraft["provenance"];
   readyCount: number;
-  resolvedOrgId: string | null;
   fromCache: boolean;
   cachedAt: string | null;
   onSeasonChange: (season: number) => void;
@@ -515,11 +496,7 @@ function GrantWritingWorkspace({
               ))}
             </select>
           </label>
-          <nav className="intel-actions" aria-label="Grant writing links">
-            <a href={businessGrantsHref(resolvedOrgId)}>Business · Grants</a>
-            <a href={`/impact${orgQuery(resolvedOrgId)}`}>Impact</a>
-            <a href={`/writer${orgQuery(resolvedOrgId)}`}>Writer</a>
-          </nav>
+          {/* Grants, Impact and Writer are in the related row just below. */}
         </div>
       </header>
 
@@ -691,7 +668,7 @@ function GrantWritingWorkspace({
                     </option>
                   ))}
                 </select>
-                <Button variant="secondary" type="button" disabled={busy} onClick={() => void onMutate({ action: "delete", draftId: selectedDraft.id }, "Draft deleted.") }>
+                <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Delete this draft?", body: "The grant draft is deleted.", confirmLabel: "Delete draft", tone: "destructive" })) void onMutate({ action: "delete", draftId: selectedDraft.id }, "Draft deleted."); }}>
                   Delete draft
                 </Button>
               </>

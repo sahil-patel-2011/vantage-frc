@@ -242,7 +242,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
         { id: "equipment-maintenance", label: "Equipment", legacyHref: "/equipment-maintenance" },
         { id: "safety-training", label: "Safety", legacyHref: "/safety-training" },
-        { id: "safety", label: "Safety log", legacyHref: "/safety" },
+        { id: "safety", label: "Tool certifications", legacyHref: "/safety" },
         { id: "checklist-library", label: "Checklists", legacyHref: "/checklist-library" },
         { id: "pit-map-planner", label: "Pit map", legacyHref: "/pit-map-planner" },
         { id: "field-reset-timer", label: "Field reset", legacyHref: "/field-reset-timer" },

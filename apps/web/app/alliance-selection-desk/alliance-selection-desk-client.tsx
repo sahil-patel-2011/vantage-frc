@@ -228,7 +228,7 @@ function SlotRow({
         <summary data-disclosure>{busy ? "View" : "Edit"} {slotName}</summary>
       <FormGrid>
         <FormRow label="Team #">
-          <input value={team} onChange={(e) => setTeam(e.target.value)} placeholder="Team #" aria-label={`Team number, ${slotName}`} disabled={busy} />
+          <input inputMode="numeric" value={team} onChange={(e) => setTeam(e.target.value)} placeholder="Team #" aria-label={`Team number, ${slotName}`} disabled={busy} />
         </FormRow>
         <FormRow label="Rationale">
           <input

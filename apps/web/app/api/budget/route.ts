@@ -1,11 +1,12 @@
 /**
- * /api/budget — the mentor-only season budget.
+ * /api/budget — the season budget, for finance managers only.
  *
  * Two layers, both real:
- *  1. RLS. `season_budgets` is behind
- *     `has_org_capability(org_id, 'manage_budget')` since 0621, so a student's
- *     SELECT returns zero rows and their INSERT is refused by the database.
- *     Deleting this file would not open the budget up.
+ *  1. RLS. `season_budgets` is behind `can_manage_finances(org_id)` since 0714
+ *     (the owner, plus the people the owner chose to "Manage money"), so anyone
+ *     else's SELECT returns zero rows and their INSERT is refused by the database.
+ *     Admins are not finance managers by role. Deleting this file would not open
+ *     the budget up.
  *  2. This route, which checks the same function FIRST so the answer is a
  *     sentence with a 403 instead of an empty page or a policy violation.
  *
@@ -37,8 +38,13 @@ import { addCost } from "../../../lib/costs/compute-costs";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const BUDGET_DENIED =
-  "The season budget is limited to mentors. In Vantage that means the team Owner and Admins, " +
-  "plus anyone an owner has explicitly given budget access. There is no separate mentor flag.";
+  "Only people your team owner chose to manage money can see the season budget. Ask an owner for access.";
+const OWNER_ONLY = "Only the team owner can choose who manages money.";
+
+/** Who may hand out "Manage money": the owner (0714). */
+function isOwner(role: string): boolean {
+  return role === "owner";
+}
 
 function seasonFrom(value: unknown): number {
   const n = Number(value);
@@ -95,19 +101,20 @@ export async function GET(request: Request) {
         orgId: membership.orgId,
         orgName: membership.orgName,
         teamNumber: membership.teamNumber,
-        accessVia:
-          membership.role === "owner" ? "owner" : membership.role === "admin" ? "admin" : "granted",
+        // Owners hold it by role; everyone else here was chosen by an owner.
+        accessVia: membership.role === "owner" ? "owner" : "granted",
         seasonYear,
       });
 
-      // Only leadership can see or change who else holds budget access.
-      const leadership = membership.role === "owner" || membership.role === "admin";
+      // Only the owner can see or change who else manages money.
+      const owner = isOwner(membership.role);
       return {
         view,
-        canGrantAccess: leadership,
-        grants: leadership ? await listCapabilityGrants(client, membership.orgId, "manage_budget") : [],
-        implicitHolders: leadership ? await implicitHolders(client, membership.orgId) : [],
-        candidates: leadership ? await grantableMembers(client, membership.orgId, "manage_budget") : [],
+        canManageFinances: true,
+        canGrantAccess: owner,
+        grants: owner ? await listCapabilityGrants(client, membership.orgId, "manage_budget") : [],
+        implicitHolders: owner ? await implicitHolders(client, membership.orgId, "manage_budget") : [],
+        candidates: owner ? await grantableMembers(client, membership.orgId, "manage_budget") : [],
       };
     });
 
@@ -187,15 +194,9 @@ export async function POST(request: Request) {
         }
 
         case "grant-budget-access": {
-          if (membership.role !== "owner" && membership.role !== "admin") {
-            throw new CapabilityError(
-              403,
-              "Only owners and admins can give someone budget access.",
-              "not_allowed",
-            );
-          }
+          if (!isOwner(membership.role)) throw new CapabilityError(403, OWNER_ONLY, "not_allowed");
           const targetUserId = trimmedOrNull(body.userId, 64);
-          if (!targetUserId) throw new Error("Choose who should get budget access.");
+          if (!targetUserId) throw new Error("Choose who should manage money.");
           await grantCapability(client, {
             orgId,
             actorUserId: userId,
@@ -206,13 +207,7 @@ export async function POST(request: Request) {
         }
 
         case "revoke-budget-access": {
-          if (membership.role !== "owner" && membership.role !== "admin") {
-            throw new CapabilityError(
-              403,
-              "Only owners and admins can remove budget access.",
-              "not_allowed",
-            );
-          }
+          if (!isOwner(membership.role)) throw new CapabilityError(403, OWNER_ONLY, "not_allowed");
           const targetUserId = trimmedOrNull(body.userId, 64);
           if (!targetUserId) throw new Error("Whose access are you removing?");
           await revokeCapability(client, { orgId, targetUserId, capability: "manage_budget" });
@@ -227,17 +222,17 @@ export async function POST(request: Request) {
         orgId,
         orgName: membership.orgName,
         teamNumber: membership.teamNumber,
-        accessVia:
-          membership.role === "owner" ? "owner" : membership.role === "admin" ? "admin" : "granted",
+        accessVia: membership.role === "owner" ? "owner" : "granted",
         seasonYear,
       });
-      const leadership = membership.role === "owner" || membership.role === "admin";
+      const owner = isOwner(membership.role);
       return {
         view,
-        canGrantAccess: leadership,
-        grants: leadership ? await listCapabilityGrants(client, orgId, "manage_budget") : [],
-        implicitHolders: leadership ? await implicitHolders(client, orgId) : [],
-        candidates: leadership ? await grantableMembers(client, orgId, "manage_budget") : [],
+        canManageFinances: true,
+        canGrantAccess: owner,
+        grants: owner ? await listCapabilityGrants(client, orgId, "manage_budget") : [],
+        implicitHolders: owner ? await implicitHolders(client, orgId, "manage_budget") : [],
+        candidates: owner ? await grantableMembers(client, orgId, "manage_budget") : [],
       };
     });
 

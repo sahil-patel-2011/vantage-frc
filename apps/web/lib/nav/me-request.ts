@@ -41,6 +41,40 @@ const inFlight = new Map<string, Promise<MeResult>>();
 const settled = new Map<string, { at: number; result: MeResult }>();
 let generation = 0;
 
+/**
+ * Offline, the shell and every offline cache asked again on each read: about 25 `/api/me`
+ * attempts in 20 seconds, each failing. A browser that says it is offline is not asked at all,
+ * and unanswered or 5xx reads space out the next attempt (2s, 4s, 8s … 30s). Coming back
+ * online clears the wait, so the next read goes straight through.
+ */
+const BACKOFF_MAX_MS = 30_000;
+const UNREACHABLE: MeResult = { ok: false, status: 0, data: null };
+let consecutiveFailures = 0;
+let retryAt = 0;
+let reconnectListening = false;
+
+/** Wait before the next attempt after `failures` unanswered reads in a row. */
+export function meRetryDelayMs(failures: number): number {
+  if (failures <= 0) return 0;
+  return Math.min(BACKOFF_MAX_MS, FRESH_MS * 2 ** (failures - 1));
+}
+
+function browserOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+function clearFailures(): void {
+  consecutiveFailures = 0;
+  retryAt = 0;
+  for (const [scope, entry] of settled) if (!entry.result.ok) settled.delete(scope);
+}
+
+function listenForReconnect(): void {
+  if (reconnectListening || typeof window === "undefined" || typeof window.addEventListener !== "function") return;
+  reconnectListening = true;
+  window.addEventListener("online", clearFailures);
+}
+
 /** Undefined follows the current page; explicit null requests the account default. */
 export function sessionOrgId(orgId?: string | null): string {
   if (orgId !== undefined) return orgId?.trim() ?? "";
@@ -52,15 +86,20 @@ export function forgetMe(): void {
   generation++;
   inFlight.clear();
   settled.clear();
+  consecutiveFailures = 0;
+  retryAt = 0;
 }
 
 /** One answer per selected team: a team switch never reuses another team's permissions. */
 export async function requestMe(orgId?: string | null): Promise<MeResult> {
+  listenForReconnect();
   const scope = sessionOrgId(orgId);
   const cached = settled.get(scope);
   if (cached && Date.now() - cached.at < FRESH_MS) return cached.result;
   const pending = inFlight.get(scope);
   if (pending) return pending;
+  if (browserOffline()) return UNREACHABLE;
+  if (Date.now() < retryAt) return cached?.result ?? UNREACHABLE;
   const started = generation;
 
   const request = (async () => {
@@ -81,6 +120,13 @@ export async function requestMe(orgId?: string | null): Promise<MeResult> {
     if (generation === started) {
       settled.set(scope, { at: Date.now(), result });
       inFlight.delete(scope);
+      if (result.status === 0 || result.status >= 500) {
+        consecutiveFailures += 1;
+        retryAt = Date.now() + meRetryDelayMs(consecutiveFailures);
+      } else {
+        consecutiveFailures = 0;
+        retryAt = 0;
+      }
     }
     return result;
   })();

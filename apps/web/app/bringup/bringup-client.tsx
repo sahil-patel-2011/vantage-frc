@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
 import {
   canDeleteBringupItem,
   BRINGUP_PHASES,
@@ -424,7 +424,7 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
                               size="sm"
                               variant="danger"
                               aria-label={`Remove ${item.label}`}
-                              onClick={() => void post({ action: "delete_item", id: item.id }, "Removed.")}
+                              onClick={async () => { if (await askConfirm({ title: "Remove this check?", body: `“${item.label}” is removed from bring-up.`, confirmLabel: "Remove check", tone: "destructive" })) void post({ action: "delete_item", id: item.id }, "Removed."); }}
                             >
                               Remove
                             </Button>

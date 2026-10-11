@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Badge, Button, EmptyState, FormGrid, FormRow, Panel } from "../../components/ui";
+import { Badge, Button, EmptyState, FormGrid, FormRow, Panel, askConfirm } from "../../components/ui";
 import {
   FAILURE_REASONS,
   JOB_PRIORITIES,
@@ -233,8 +233,8 @@ export function QueuePanel({ view, busy, mutate }: { view: LiveView; busy: boole
                 size="sm"
                 disabled={busy}
                 aria-label={`Cancel ${job.partName}`}
-                onClick={() => {
-                  if (window.confirm(`Cancel "${job.partName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Cancel “${job.partName}”?`, body: null, confirmLabel: "Cancel print", cancelLabel: "Keep it", tone: "destructive" })) {
                     mutate({ action: "cancel-job", jobId: job.id });
                   }
                 }}
@@ -305,11 +305,11 @@ function FinishJobForm({
         Grams used (optional — decrements the spool)
         <input type="number" min={1} value={actualGrams} onChange={(e) => setActualGrams(e.target.value)} />
       </label>
-      <Button type="submit" variant="primary" size="sm" disabled={busy}>
-        Confirm done
-      </Button>
       <Button variant="ghost" size="sm" onClick={onDismiss}>
         Back
+      </Button>
+      <Button type="submit" variant="primary" size="sm" disabled={busy}>
+        Confirm done
       </Button>
     </form>
   );
@@ -361,11 +361,11 @@ function FailJobForm({
         Grams wasted (optional — decrements the spool)
         <input type="number" min={1} value={wastedGrams} onChange={(e) => setWastedGrams(e.target.value)} />
       </label>
-      <Button type="submit" variant="danger" size="sm" disabled={busy}>
-        Confirm failed
-      </Button>
       <Button variant="ghost" size="sm" onClick={onDismiss}>
         Back
+      </Button>
+      <Button type="submit" variant="danger" size="sm" disabled={busy}>
+        Confirm failed
       </Button>
     </form>
   );

@@ -16,6 +16,7 @@ import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "..
 import { FundraisingGlance } from "./fundraising-glance";
 import { dollars, money, moneyWhenRecorded, percent, statusLabel, type Tab } from "./business-helpers";
 import { Field, ToneBadge } from "./business-ui";
+import { FINANCE_MANAGER_REQUIRED } from "../../lib/finance/finance-managers";
 
 /** True while this season has nothing recorded at all, so Overview shows one first step instead of a wall of dashes. */
 export function businessOverviewIsEmpty(view: BusinessView): boolean {
@@ -45,12 +46,12 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           badge="First step"
           title="Set your season budget"
           description={
-            view.canManageFinance
+            view.canManageFinances
               ? "Start with one number: what this season will cost. Money, orders, sponsors and grants all measure against it."
-              : "An owner or mentor sets the season budget. Once it is set, this page shows how the money is going."
+              : "A finance manager — the team owner or someone they chose — sets the season budget. Once it is set, this page shows how the money is going."
           }
         >
-          {view.canManageFinance ? (
+          {view.canManageFinances ? (
             <Button as="a" variant="primary" href={budgetHref}>
               Set your season budget
             </Button>
@@ -339,22 +340,30 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
               Set on the season budget page and used on every money screen.
             </p>
           </div>
-          {view.canManageFinance ? (
+          {view.canManageFinances ? (
             <Button as="a" variant="secondary" href={`/budget?orgId=${encodeURIComponent(view.orgId)}`}>
               {(view.budget.seasonBudgetCents ?? 0) > 0 ? "Change season budget" : "Set season budget"}
             </Button>
           ) : null}
         </header>
+        {/* Money changes are for finance managers (0714); everyone else reads. */}
+        {view.canManageFinances ? (
         <form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-budget", ["fundraisingGoal"])}>
-          <Field label="Fundraising goal" hint="How much you plan to raise from sponsors, grants and fundraisers."><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} disabled={!view.canManageFinance} /></Field>
-          <Field label="Notes" wide><textarea name="notes" rows={2} placeholder="Cash reserves, travel plans, school rules…" disabled={!view.canManageFinance} /></Field>
-          <Button type="submit" variant="secondary" disabled={busy || !view.canManageFinance}>Save goal</Button>
+          <Field label="Fundraising goal" hint="How much you plan to raise from sponsors, grants and fundraisers."><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} /></Field>
+          <Field label="Notes" wide><textarea name="notes" rows={2} placeholder="Cash reserves, travel plans, school rules…" /></Field>
+          <Button type="submit" variant="secondary" disabled={busy}>Save goal</Button>
         </form>
-        {view.canManageFinance ? <form className="biz-inline-form" onSubmit={(event) => void submit(event, "add-category", ["allocated"])}><input name="name" aria-label="Category name" placeholder="Category (Robot, Travel, Outreach…)" required /><input name="allocatedDollars" aria-label="Amount for this category" type="number" min="0" step="0.01" placeholder="Amount" required /><button disabled={busy}>Add or update category</button></form> : null}
+        ) : (
+          <p className="app-muted biz-money-note">
+            Fundraising goal: {view.budget.fundraisingGoalCents > 0 ? money(view.budget.fundraisingGoalCents) : "not set"}. {FINANCE_MANAGER_REQUIRED}
+          </p>
+        )}
+        {view.canManageFinances ? <form className="biz-inline-form" onSubmit={(event) => void submit(event, "add-category", ["allocated"])}><input name="name" aria-label="Category name" placeholder="Category (Robot, Travel, Outreach…)" required /><input name="allocatedDollars" aria-label="Amount for this category" type="number" min="0" step="0.01" placeholder="Amount" required /><button disabled={busy}>Add or update category</button></form> : null}
         <p className="app-muted" style={{ margin: "10px 0 0", fontSize: 12 }}>
           Event fees go in <a href={`/costs?orgId=${encodeURIComponent(view.orgId)}`}>Season costs</a>. Ask questions about money in <a href={financeAiHref}>Ask AI</a>.
         </p>
       </article>
+      {view.role !== "viewer" ? (
       <article className="app-card biz-order-form">
         {/* One way to ask for something: the buy sheet under Orders. Three forms with three
             vocabularies read as three processes; the category form stays for the one job only it
@@ -378,6 +387,7 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
         </form>
         </details>
       </article>
+      ) : null}
     </section>
 
     {budgetLines.length > 0 ? (
@@ -405,12 +415,12 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
 
     <section className="app-card">
       <header className="biz-card-head"><div><span className="biz-overline">Categories</span><h2>Planned vs approved</h2></div><strong>{money(view.categories.reduce((total, category) => total + category.allocatedCents, 0))} allocated</strong></header>
-      <div className="biz-category-grid">{view.categories.map((category) => { const spent = categorySpend.get(category.id) ?? 0; const used = percent(spent, category.allocatedCents); return <article key={category.id}><header><strong>{category.name}</strong><span>{used}%</span></header><div className="biz-progress"><i style={{ width: `${used}%` }} /></div><footer><span>{money(spent)} committed</span><span>{money(category.allocatedCents)} allocated</span></footer></article>; })}{!view.categories.length ? <p className="biz-empty-inline">Owners and mentors can add categories (robot, travel, outreach…) so requests add up by category.</p> : null}</div>
+      <div className="biz-category-grid">{view.categories.map((category) => { const spent = categorySpend.get(category.id) ?? 0; const used = percent(spent, category.allocatedCents); return <article key={category.id}><header><strong>{category.name}</strong><span>{used}%</span></header><div className="biz-progress"><i style={{ width: `${used}%` }} /></div><footer><span>{money(spent)} committed</span><span>{money(category.allocatedCents)} allocated</span></footer></article>; })}{!view.categories.length ? <p className="biz-empty-inline">Finance managers can add categories (robot, travel, outreach…) so requests add up by category.</p> : null}</div>
     </section>
 
     <section className="app-card">
       <header className="biz-card-head"><div><span className="biz-overline">Purchases</span><h2>Purchase requests</h2></div><span className="biz-count">{view.purchases.length}</span></header>
-      <div className="biz-table-wrap"><table className="biz-table"><thead><tr><th>Request</th><th>Category</th><th>Total</th><th>Needed</th><th>Status</th><th>Action</th></tr></thead><tbody>{view.purchases.map((purchase) => <PurchaseRow key={purchase.id} purchase={purchase} canManage={view.canManageFinance} busy={busy} mutate={mutate} />)}{!view.purchases.length ? <tr><td colSpan={6}>No purchase requests yet. Students can submit the first one above.</td></tr> : null}</tbody></table></div>
+      <div className="biz-table-wrap"><table className="biz-table"><thead><tr><th>Request</th><th>Category</th><th>Total</th><th>Needed</th><th>Status</th><th>Action</th></tr></thead><tbody>{view.purchases.map((purchase) => <PurchaseRow key={purchase.id} purchase={purchase} canManage={view.canManageFinances} busy={busy} mutate={mutate} />)}{!view.purchases.length ? <tr><td colSpan={6}>No purchase requests yet. Students can submit the first one above.</td></tr> : null}</tbody></table></div>
     </section>
   </div>;
 }
@@ -557,7 +567,7 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
               {view.grants
                 .filter((grant) => grant.status === status)
                 .map((grant) => (
-                  <GrantCard key={grant.id} grant={grant} canManage={view.canManageFinance} busy={busy} mutate={mutate} />
+                  <GrantCard key={grant.id} grant={grant} canManage={view.canManageFinances} busy={busy} mutate={mutate} />
                 ))}
             </div>
           ))}
@@ -631,7 +641,7 @@ function GrantCard({ grant, canManage, busy, mutate }: { grant: GrantApplication
   const index = GRANT_STATUSES.indexOf(grant.status);
   const next = GRANT_STATUSES[Math.min(index + 1, GRANT_STATUSES.length - 1)] ?? grant.status;
   const canAdvance = !["awarded", "declined"].includes(grant.status) && next !== grant.status;
-  return <article><strong>{grant.title}</strong><span>{grant.funder}</span><small>{grant.deadline ? `Due ${grant.deadline}` : "No deadline"} · {money(grant.requestedCents)}</small><p>{grant.purpose}</p>{grant.sourceUrl ? <a href={grant.sourceUrl} target="_blank" rel="noreferrer">Opportunity source ↗</a> : null}{canAdvance ? <button disabled={busy || (next === "awarded" && !canManage)} onClick={() => void mutate({ action: "set-grant-status", grantId: grant.id, status: next, awardedCents: next === "awarded" ? grant.requestedCents : 0 })}>Move to {statusLabel(next)}</button> : null}</article>;
+  return <article><strong>{grant.title}</strong><span>{grant.funder}</span><small>{grant.deadline ? `Due ${grant.deadline}` : "No deadline"} · {money(grant.requestedCents)}</small><p>{grant.purpose}</p>{grant.sourceUrl ? <a href={grant.sourceUrl} target="_blank" rel="noreferrer">Opportunity source ↗</a> : null}{canAdvance && (next !== "awarded" || canManage) ? <button disabled={busy} onClick={() => void mutate({ action: "set-grant-status", grantId: grant.id, status: next, awardedCents: next === "awarded" ? grant.requestedCents : 0 })}>Move to {statusLabel(next)}</button> : canAdvance ? <small className="app-muted">A finance manager records the award.</small> : null}</article>;
 }
 
 export function Evidence({ view, busy, submit }: { view: BusinessView; busy: boolean; submit: Submit }) {

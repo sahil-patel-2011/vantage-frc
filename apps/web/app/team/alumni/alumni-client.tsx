@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState } from "../../../components/ui";
+import { EmptyState, askConfirm } from "../../../components/ui";
 import { alumniShellCopy, classifyAlumniShell } from "../../../lib/alumni";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
@@ -190,7 +190,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
   }
 
   async function removeAlum(id: string) {
-    if (!confirm("Remove this alum from the network?")) return;
+    if (!(await askConfirm({ title: "Remove this alum from the network?", body: null, confirmLabel: "Remove alum", tone: "destructive" }))) return;
     const response = await fetch(`/api/team/alumni?orgId=${orgId}&id=${id}`, { method: "DELETE" });
     const data = await response.json();
     setMessage(response.ok ? "Removed." : data.error);

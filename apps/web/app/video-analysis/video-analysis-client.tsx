@@ -156,7 +156,7 @@ function VideoAnalysisLive({ orgId }: { orgId: string }) {
   }
 
   return (
-    <div className="app-page video-analysis-page">
+    <main className="module-page video-analysis-page">
       <PageHeader
         breadcrumbs="Competition / Video"
         title="Video"
@@ -189,6 +189,6 @@ function VideoAnalysisLive({ orgId }: { orgId: string }) {
       ) : (
         <VideoQueueList jobs={jobs} busy={busy} onConfirm={(id) => void confirm(id)} />
       )}
-    </div>
+    </main>
   );
 }

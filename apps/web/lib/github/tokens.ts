@@ -142,6 +142,15 @@ export async function encryptGitHubTokens(tokens: GitHubTokenSet): Promise<strin
   return JSON.stringify(encrypted);
 }
 
+/** The pull request webhook's HMAC secret, encrypted the same way as the token. */
+export async function encryptWebhookSecret(secret: string): Promise<string> {
+  return JSON.stringify(await encryptSecret(secret, createKms()));
+}
+
+export async function decryptWebhookSecret(encrypted: string): Promise<string> {
+  return decryptSecret(JSON.parse(encrypted) as EncryptedSecret, createKms());
+}
+
 export async function getGitHubAccessToken(client: PoolClient, orgId: string): Promise<{
   connection: GitHubConnectionRow;
   accessToken: string;

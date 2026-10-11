@@ -3,7 +3,7 @@ import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button } from "../../components/ui";
+import { Button, askConfirm } from "../../components/ui";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -96,8 +96,8 @@ function ReviewDetail({
           type="button"
           className="vid-link danger"
           disabled={busy}
-          onClick={() => {
-            if (confirm(`Delete review "${review.title}" and all of its notes?`)) {
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete review “${review.title}” and all of its notes?`, body: null, confirmLabel: "Delete review", tone: "destructive" })) {
               void run({ action: "delete_review", orgId, id: review.id }, "delete");
             }
           }}
@@ -464,30 +464,44 @@ export default function VideoClient() {
             }}
           >
             <strong>New review</strong>
-            <input
-              value={newTitle}
-              placeholder="Title (e.g. Q42 vs 254)"
-              disabled={busyKey === "create"}
-              onChange={(event) => setNewTitle(event.target.value)}
-            />
-            <input
-              value={newUrl}
-              placeholder="YouTube URL"
-              disabled={busyKey === "create"}
-              onChange={(event) => setNewUrl(event.target.value)}
-            />
-            <input
-              value={newMatchKey}
-              placeholder="Match key (optional)"
-              disabled={busyKey === "create"}
-              onChange={(event) => setNewMatchKey(event.target.value)}
-            />
-            <input
-              value={newTeamNumber}
-              placeholder="Team number (optional)"
-              disabled={busyKey === "create"}
-              onChange={(event) => setNewTeamNumber(event.target.value)}
-            />
+            {/* Each field keeps its name once something is typed in it. */}
+            <label className="inline-field-label">
+              Title
+              <input
+                value={newTitle}
+                placeholder="e.g. Q42 vs 254"
+                disabled={busyKey === "create"}
+                onChange={(event) => setNewTitle(event.target.value)}
+              />
+            </label>
+            <label className="inline-field-label">
+              YouTube link
+              <input
+                type="url"
+                value={newUrl}
+                placeholder="https://youtube.com/…"
+                disabled={busyKey === "create"}
+                onChange={(event) => setNewUrl(event.target.value)}
+              />
+            </label>
+            <label className="inline-field-label">
+              Match key (optional)
+              <input
+                value={newMatchKey}
+                placeholder="e.g. 2026gacmp_qm42"
+                disabled={busyKey === "create"}
+                onChange={(event) => setNewMatchKey(event.target.value)}
+              />
+            </label>
+            <label className="inline-field-label">
+              Team number (optional)
+              <input
+                inputMode="numeric"
+                value={newTeamNumber}
+                disabled={busyKey === "create"}
+                onChange={(event) => setNewTeamNumber(event.target.value)}
+              />
+            </label>
             <Button variant="primary" type="submit" disabled={busyKey === "create" || !newTitle.trim() || !newUrl.trim()}>
               New review
             </Button>

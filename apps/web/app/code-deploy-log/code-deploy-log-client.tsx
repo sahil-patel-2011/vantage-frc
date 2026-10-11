@@ -13,8 +13,7 @@ import {
   Panel,
   SoftBlockSkeleton,
   StatTile,
-  type BadgeTone,
-} from "../../components/ui";
+  type BadgeTone, askConfirm } from "../../components/ui";
 import { deployStatusLabel, deployTypeLabel } from "../../lib/code-deploy-log";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import {
@@ -169,7 +168,7 @@ function DeployShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#code-deploy-log-form">Log the first deploy</Button>
+            <Button as="a" variant="secondary" href="#code-deploy-log-form">Log the first deploy</Button>
           ) : null}
         </EmptyState>
       )}
@@ -452,7 +451,7 @@ function RecentDeploys({
         title="Log your first code deploy"
         description="Record the firmware version, commit, and match tied to each deploy so you can trace robot behavior back to code."
       >
-        <Button as="a" variant="primary" href="#code-deploy-log-form">
+        <Button as="a" variant="secondary" href="#code-deploy-log-form">
           Log deploy
         </Button>
       </EmptyState>
@@ -480,8 +479,8 @@ function RecentDeploys({
               size="sm"
               disabled={busy}
               aria-label={`Delete deploy ${item.firmwareVersion}`}
-              onClick={() => {
-                if (window.confirm(`Delete deploy "${item.firmwareVersion}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete deploy “${item.firmwareVersion}”?`, body: null, confirmLabel: "Delete deploy", tone: "destructive" })) {
                   mutate({ action: "delete-deploy", entryId: item.id });
                 }
               }}

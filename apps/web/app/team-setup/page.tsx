@@ -15,7 +15,7 @@ export default async function TeamSetupPage({ searchParams }: { searchParams: Pr
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect(`/signin?next=${encodeURIComponent(`/team-setup?orgId=${orgId}`)}`);
   const job = await withRls({ userId: session.user.id, orgId: orgId! }, async (client) =>
-    (await client.query<ProvisioningStatus>(`SELECT state,phase,completed_phases AS "completedPhases",error,verified_at::text AS "verifiedAt",retry_after_at::text AS "retryAfterAt"
+    (await client.query<ProvisioningStatus>(`SELECT state,phase,completed_phases AS "completedPhases",error,verified_at::text AS "verifiedAt",retry_after_at::text AS "retryAfterAt",resources->>'google' AS "googleWorkspace"
       FROM team_provisioning_jobs WHERE org_id=$1::uuid`, [orgId])).rows[0]);
   if (!job) {
     // Existing teams can predate the provisioning job. A member opening an old

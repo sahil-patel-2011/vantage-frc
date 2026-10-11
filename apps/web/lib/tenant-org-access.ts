@@ -1,6 +1,14 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { assertSponsorsAllowed, auth } from "@vantage/core";
 import { headers } from "next/headers";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  canManageFinances,
+  isFinanceGuardRefusal,
+} from "./finance/finance-managers";
+import { viewOnlyResponse } from "./security/public-error";
+
+export { FINANCE_MANAGER_REQUIRED, canManageFinances } from "./finance/finance-managers";
 
 /**
  * Shared tenancy guards for sponsor / grant / visit / outreach finance APIs.
@@ -62,6 +70,19 @@ export async function requireOrgAdmin(client: PoolClient, orgId: string, userId:
   return member;
 }
 
+/**
+ * Org member AND finance manager (0714): the team owner, or someone the owner
+ * granted "Manage money". Admins are not finance managers by role. RLS refuses
+ * the same writes underneath; this turns that into one plain sentence.
+ */
+export async function requireFinanceManager(client: PoolClient, orgId: string, userId: string) {
+  const member = await requireOrgMember(client, orgId, userId);
+  if (!(await canManageFinances(client, orgId))) {
+    throw new TenantHttpError(403, FINANCE_MANAGER_REQUIRED);
+  }
+  return { ...member, financeManager: true as const };
+}
+
 export async function requireSponsorsAdmin(client: PoolClient, orgId: string, userId: string) {
   const member = await requireSponsorsMember(client, orgId, userId);
   if (!member.admin) {
@@ -106,6 +127,13 @@ export async function requireGrantOpportunityInOrg(
 export function tenantErrorResponse(error: unknown, fallback = "Request failed") {
   if (error instanceof TenantHttpError) {
     return Response.json({ error: error.message }, { status: error.status });
+  }
+  // A View only member's write, refused by 0715 in Postgres.
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
+  // A money write refused by can_manage_finances() in RLS or a 0714 guard.
+  if (isFinanceGuardRefusal(error)) {
+    return Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 });
   }
   const message = error instanceof Error ? error.message : fallback;
   const status =

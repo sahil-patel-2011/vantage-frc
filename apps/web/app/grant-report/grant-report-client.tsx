@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { outreachKindLabel } from "../../lib/grant-report";
 import type { GrantReportView } from "../../lib/grant-report/compute-grant-report";
 import {
@@ -506,8 +506,8 @@ function Reports({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm("Delete this report?")) {
+                onClick={async () => {
+                  if (await askConfirm({ title: "Delete this report?", body: null, confirmLabel: "Delete report", tone: "destructive" })) {
                     mutate({ action: "delete-report", reportId: report.id });
                   }
                 }}

@@ -60,9 +60,11 @@ export async function GET(request: Request) {
         termsAcceptedAt: string | null;
         privacyAcceptedAt: string | null;
         ageConfirmed: boolean;
+        onboardingComplete: boolean;
       }>(
         `SELECT terms_accepted_at::text AS "termsAcceptedAt",
                 privacy_accepted_at::text AS "privacyAcceptedAt",
+                (onboarding_completed_at IS NOT NULL) AS "onboardingComplete",
                 (date_of_birth IS NOT NULL AND date_of_birth <= (CURRENT_DATE - interval '13 years')::date) AS "ageConfirmed"
          FROM profiles WHERE user_id = $1::uuid`,
         [session.user.id],
@@ -70,6 +72,9 @@ export async function GET(request: Request) {
       return {
         preview,
         profileRequired: consent.rows[0]?.ageConfirmed !== true,
+        // A new account goes to onboarding (which asks for the profile and the agreements once,
+        // then joins this team); a finished one that still is not eligible stays here.
+        onboardingComplete: consent.rows[0]?.onboardingComplete === true,
         legalRequired: inviteLegalRequired({
           termsAcceptedAt: consent.rows[0]?.termsAcceptedAt ?? null,
           privacyAcceptedAt: consent.rows[0]?.privacyAcceptedAt ?? null,
@@ -97,6 +102,7 @@ export async function GET(request: Request) {
       emailMismatch,
       legalRequired: result.legalRequired,
       profileRequired: result.profileRequired,
+      onboardingComplete: result.onboardingComplete,
       sessionEmail: session.user.email ?? null,
     });
   } catch (error) {

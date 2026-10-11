@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   RULE_CHANGE_CATEGORIES,
   RULE_CHANGE_SEVERITIES,
@@ -174,7 +174,7 @@ function RuleImpactShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#rule-impact-log-change">Log a rule change</Button>
+          <Button as="a" variant="secondary" href="#rule-impact-log-change">Log a rule change</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <RuleImpactNextActionsPanel actions={actions} /> : null}
@@ -426,7 +426,7 @@ export default function RuleImpactClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#rule-impact-log-change">
+          <Button as="a" variant="secondary" href="#rule-impact-log-change">
             Log a rule change
           </Button>
         </EmptyState>
@@ -447,7 +447,7 @@ export default function RuleImpactClient() {
             title="No prior-season subsystems on file"
             description="Log robot subsystems so Rule Impact can diff them against logged rule changes — empty means nothing on file."
           >
-            <Button as="a" variant="primary" href={subsystemsHref}>
+            <Button as="a" variant="secondary" href={subsystemsHref}>
               Open Subsystems
             </Button>
           </EmptyState>
@@ -639,8 +639,8 @@ function RuleChangeList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete rule "${rule.ruleCode}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete rule “${rule.ruleCode}”?`, body: null, confirmLabel: "Delete rule", tone: "destructive" })) {
                   mutate({ action: "delete-rule-change", ruleChangeId: rule.id });
                 }
               }}
@@ -772,8 +772,8 @@ function AssessmentList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete assessment for "${assessment.subsystemName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete assessment for “${assessment.subsystemName}”?`, body: null, confirmLabel: "Delete assessment", tone: "destructive" })) {
                     mutate({ action: "delete-assessment", assessmentId: assessment.id });
                   }
                 }}

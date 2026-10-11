@@ -30,8 +30,12 @@ export type ExpandedRedirect = {
 export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
   { source: "/knowledge", destination: "/team?tab=knowledge" },
   { source: "/knowledge/:path*", destination: "/team?tab=knowledge" },
-  { source: "/repairs", destination: "/incidents" },
-  { source: "/repairs/:path*", destination: "/incidents" },
+  { source: "/repairs", destination: "/pit-repair-triage" },
+  { source: "/repairs/:path*", destination: "/pit-repair-triage" },
+  // Incident reporting was removed; the safety surfaces that remain are training and tool
+  // certifications.
+  { source: "/incidents", destination: "/safety-training" },
+  { source: "/incidents/:path*", destination: "/safety-training" },
   { source: "/meetings", destination: "/team?tab=calendar" },
   { source: "/meetings/:path*", destination: "/team?tab=calendar" },
   { source: "/config", destination: "/robot" },

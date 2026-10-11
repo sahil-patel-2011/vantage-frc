@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { ViewOnlyNote } from "../../components/view-only-note";
 import { shopTimeLeft } from "../../lib/calendar/shop-time-left";
 import { restOfWeek } from "../../lib/calendar/rest-of-week";
 import { moveToDate } from "../../lib/calendar/move-entry";
@@ -11,7 +12,7 @@ import { CalendarHero } from "./calendar-hero";
 import { CalendarMonth } from "./calendar-month";
 import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
@@ -257,8 +258,8 @@ function MilestoneRow({
             className="cal-link danger"
             aria-label="Delete milestone"
             disabled={busy}
-            onClick={() => {
-              if (confirm(`Delete milestone "${milestone.title}"?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete milestone “${milestone.title}”?`, body: null, confirmLabel: "Delete milestone", tone: "destructive" })) {
                 void run({ action: "delete_milestone", orgId, id: milestone.id }, `delete:${milestone.id}`);
               }
             }}
@@ -281,11 +282,14 @@ function MilestoneRow({
             type="button"
             className="cal-link danger"
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               if (
-                confirm(
-                  `Delete all ${seriesCount} entries created with "${milestone.title}"? This cannot be undone.`,
-                )
+                await askConfirm({
+                  title: `Delete all ${seriesCount} entries?`,
+                  body: `Every entry created with “${milestone.title}” is deleted. This cannot be undone.`,
+                  confirmLabel: "Delete all",
+                  tone: "destructive",
+                })
               ) {
                 void run(
                   { action: "delete_series", orgId, seriesId: milestone.seriesId! },
@@ -786,13 +790,16 @@ function ReadyCalendar({
           </label>
           {selectedTemplate ? <p className="app-muted cal-template-desc">{selectedTemplate.description}</p> : null}
           <div className="cal-seed-row">
-            <input
-              type="date"
-              value={kickoff}
-              disabled={busy}
-              aria-label="Kickoff date"
-              onChange={(event) => setKickoff(event.target.value)}
-            />
+            {/* A visible name: the box alone said only "mm/dd/yyyy". */}
+            <label className="cal-seed-date">
+              Kickoff date
+              <input
+                type="date"
+                value={kickoff}
+                disabled={busy}
+                onChange={(event) => setKickoff(event.target.value)}
+              />
+            </label>
             <Button variant="primary" type="button" disabled={busy || !kickoff} onClick={() => void run({ action: "seed_season", orgId, kickoffDate: kickoff, templateId }, "seed") }>
               Use this template
             </Button>
@@ -898,6 +905,10 @@ function ReadyCalendar({
         ))
       )}
 
+      {/* View only (0715): the season, without the Add milestone form. */}
+      {view.context.role === "viewer" ? (
+        <ViewOnlyNote />
+      ) : (
       <Panel
         as="form"
         className="cal-add"
@@ -952,6 +963,7 @@ function ReadyCalendar({
           {repeat.dates.length > 1 ? `Add ${repeat.dates.length} entries` : "Add milestone"}
         </Button>
       </Panel>
+      )}
 
       <AiInsightPanel
         orgId={orgId}

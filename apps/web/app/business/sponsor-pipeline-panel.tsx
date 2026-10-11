@@ -23,6 +23,7 @@ import {
   type ContributionMoneyRow,
   type SponsorLifetimeRow,
 } from "../../lib/sponsors/totals";
+import { FINANCE_MANAGER_REQUIRED } from "../../lib/finance/finance-managers";
 
 type Mutate = (body: Record<string, unknown>) => Promise<void>;
 type Submit = (event: FormEvent<HTMLFormElement>, action: string, moneyFields?: string[]) => Promise<void>;
@@ -238,7 +239,7 @@ export function SponsorPipelinePanel({
         >
           {view.canManageFinance ? (
             <Button
-              variant="primary"
+              variant="secondary"
               type="button"
               onClick={() => {
                 const form = document.getElementById("biz-add-partner");
@@ -408,7 +409,7 @@ export function SponsorPipelinePanel({
             The research agent uses the team number, prior sponsor industries, and robotics/STEM fit. It stores the source and
             reasoning—never auto-contacts anyone.
           </p>
-          <Button variant="primary" type="button" disabled={busy} onClick={() => void research()}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void research()}>
             {busy ? "Researching…" : "Research sponsor prospects"}
           </Button>
           <div className="biz-prospect-list">
@@ -487,9 +488,11 @@ export function SponsorPipelinePanel({
           <article className="app-card">
             <span className="biz-overline">Contribution ledger</span>
             <h2>Add cash and in-kind support to the season.</h2>
+            {/* Recording what a sponsor gave is a money write: finance managers only (0714). */}
+            {view.canManageFinances ? (
             <form className="biz-form-grid" onSubmit={(event) => void submitAndRefresh(event, "add-contribution", ["amount"])}>
               <Field label="Sponsor">
-                <select name="sponsorId" required disabled={!view.canManageFinance}>
+                <select name="sponsorId" required>
                   {view.sponsors.map((sponsor) => (
                     <option key={sponsor.id} value={sponsor.id}>
                       {sponsor.name}
@@ -498,24 +501,27 @@ export function SponsorPipelinePanel({
                 </select>
               </Field>
               <Field label="Type">
-                <select name="contributionType" disabled={!view.canManageFinance}>
+                <select name="contributionType">
                   <option value="cash">Cash</option>
                   <option value="in_kind">In-kind value</option>
                 </select>
               </Field>
               <Field label="Value">
-                <input name="amountDollars" type="number" min="0" step="0.01" required disabled={!view.canManageFinance} />
+                <input name="amountDollars" type="number" min="0" step="0.01" required />
               </Field>
               <Field label="Received">
-                <input name="receivedOn" type="date" defaultValue={today()} required disabled={!view.canManageFinance} />
+                <input name="receivedOn" type="date" defaultValue={today()} required />
               </Field>
               <Field label="Description" wide>
-                <input name="description" placeholder="Check, machining time, materials…" disabled={!view.canManageFinance} />
+                <input name="description" placeholder="Check, machining time, materials…" />
               </Field>
-              <Button type="submit" variant="primary" disabled={busy || !view.canManageFinance}>
+              <Button type="submit" variant="primary" disabled={busy}>
                 Record contribution
               </Button>
             </form>
+            ) : (
+              <p className="app-muted">{FINANCE_MANAGER_REQUIRED}</p>
+            )}
           </article>
         </section>
       ) : null}

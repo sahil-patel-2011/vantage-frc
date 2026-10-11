@@ -291,16 +291,22 @@ export default function PartRequestsClient() {
       <PageHeader
         breadcrumbs="Business / Money"
         title="Part requests"
-        description={`Ask for what you need in ${view.orgName}. A mentor decides, and an approved request becomes real spend against the season budget.`}
+        description={`Ask for what you need in ${view.orgName}. A finance manager decides, and an approved request becomes real spend against the season budget.`}
       />
       <OfflineBanner feature="Part requests" fromCache={fromCache} cachedAt={cachedAt} />
 
+      {view.canAsk === false ? (
+        <Panel>
+          <h2>Ask for a part</h2>
+          <p className="app-muted">You have view-only access, so you can see requests but not ask for parts.</p>
+        </Panel>
+      ) : (
       <Panel>
         <h2>Ask for a part</h2>
         <p className="app-muted">
-          Anyone on the team can ask — you do not need budget access, and the vendor is optional. Your
+          Anyone on the team can ask — you do not need money access, and the vendor is optional. Your
           request is your own row; nobody else can file one in your name. It lands on the same list as the
-          purchases mentors log on Orders.
+          purchases on Orders.
         </p>
         <form
           id="pr-ask"
@@ -325,7 +331,7 @@ export default function PartRequestsClient() {
                 itemUrl,
                 neededBy: neededBy || undefined,
               },
-              "Request sent. A mentor will see it in their queue.",
+              "Request sent. A finance manager will see it in their queue.",
             ).then((ok) => {
               setConfirmSubmit(false);
               if (ok) {
@@ -424,11 +430,11 @@ export default function PartRequestsClient() {
           {confirmSubmit ? (
             <p className="pr-confirm">
               Send this request for about {money(totalPreview)}?{" "}
-              <Button variant="primary" type="submit" disabled={busy}>
-                Yes, send it
-              </Button>{" "}
               <Button variant="ghost" type="button" onClick={() => setConfirmSubmit(false)}>
                 Cancel
+              </Button>{" "}
+              <Button variant="primary" type="submit" disabled={busy}>
+                Yes, send it
               </Button>
             </p>
           ) : (
@@ -438,6 +444,7 @@ export default function PartRequestsClient() {
           )}
         </form>
       </Panel>
+      )}
 
       {view.canDecide ? (
         <Panel>
@@ -453,7 +460,7 @@ export default function PartRequestsClient() {
           ) : null}
           {view.queue.length === 0 ? (
             <EmptyState compact title="Nothing waiting" description="No part requests need a decision right now.">
-              <Button as="a" variant="primary" href="#pr-ask">
+              <Button as="a" variant="secondary" href="#pr-ask">
                 Ask for a part
               </Button>
             </EmptyState>
@@ -480,11 +487,11 @@ export default function PartRequestsClient() {
                           {decide?.kind === "approve"
                             ? `Approve ${money(request.totalCostUsd)}? This records the money as spent against the season budget straight away.`
                             : "Reject this request? Nothing is charged."}{" "}
-                          <Button variant="primary" type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
-                            Yes, {decide?.kind === "approve" ? "approve" : "reject"}
-                          </Button>{" "}
                           <Button variant="ghost" type="button" onClick={() => { setDecide(null); setReviewNotes(""); }}>
                             Cancel
+                          </Button>{" "}
+                          <Button variant="primary" type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
+                            Yes, {decide?.kind === "approve" ? "approve" : "reject"}
                           </Button>
                         </p>
                       </div>
@@ -510,7 +517,7 @@ export default function PartRequestsClient() {
         <h2>Your requests</h2>
         {view.mine.length === 0 ? (
           <EmptyState compact title="You have not asked for anything yet" description="Requests you send appear here with their decision.">
-            <Button as="a" variant="primary" href="#pr-ask">
+            <Button as="a" variant="secondary" href="#pr-ask">
               Ask for a part
             </Button>
           </EmptyState>

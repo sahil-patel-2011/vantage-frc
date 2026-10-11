@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -496,7 +496,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
                     type="button"
                     size="sm"
                     variant="danger"
-                    onClick={() => void post({ action: "delete_component", id: c.id }, "Removed.")}
+                    onClick={async () => { if (await askConfirm({ title: "Delete this component?", body: `“${c.component}” is deleted.`, confirmLabel: "Delete component", tone: "destructive" })) void post({ action: "delete_component", id: c.id }, "Removed."); }}
                   >
                     Delete
                   </Button>

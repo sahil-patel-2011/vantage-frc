@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
 import { AppTour } from "./app-tour";
+import { StatusEcho } from "./status-echo";
 import { LegalUpdateBanner } from "./legal-update-banner";
 import { useSheetsAutoSync } from "./use-sheets-auto-sync";
 import { AppShellTopbar } from "./app-shell-topbar";
@@ -23,11 +24,13 @@ import {
   pathAllowedBySponsors,
 } from "../lib/nav/hub-access-filter";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
-import { commandCatalog, searchCommands } from "../lib/nav/command-search";
+import { commandCatalogFor, searchCommands } from "../lib/nav/command-search";
 import { settingsRoleTier } from "../lib/nav/settings-nav";
 import { pushAppNavigation, softNavigationTarget } from "../lib/nav/soft-navigation";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { fetchProductSession } from "../lib/nav/product-session";
+import { pathnameIsEntryScreen } from "../lib/nav/product-route";
+import { probeSessionUser } from "../lib/nav/session-probe";
 import { Icon, type IconName } from "./icon";
 import { type MyDayView } from "../lib/my-day";
 import { buildEventFocus } from "../lib/event-focus";
@@ -61,6 +64,12 @@ const groups = PRODUCT_NAV_GROUPS;
 export default function AppShell() {
   const pathname = usePathname();
   const router = useRouter();
+  /**
+   * Sign-in, invites, join-by-code and onboarding: the person is signed out or has not finished
+   * their profile, so /api/me, /api/navigation/preferences and /api/legal answer 401/403 there.
+   * The account chip only needs who is signed in, which the auth route answers.
+   */
+  const entryScreen = pathnameIsEntryScreen(pathname);
   const [orgId, setOrgId] = useState("");
   // The team's spreadsheets follow the app on their own: no Sync button to remember.
   useSheetsAutoSync(orgId);
@@ -305,6 +314,19 @@ export default function AppShell() {
 
   useEffect(() => {
     let cancelled = false;
+    if (entryScreen) {
+      void probeSessionUser()
+        .then((user) => {
+          if (cancelled || !user) return;
+          setMe({ userId: user.id, name: user.name, email: user.email, image: user.image });
+        })
+        .finally(() => {
+          if (!cancelled) setTeamsLoaded(true);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
     const revision = notificationRevision.current;
     const globalInbox = pathname === "/notifications" && !new URLSearchParams(window.location.search).has("orgId");
     void fetchProductSession(globalInbox ? null : orgId || null)
@@ -328,7 +350,8 @@ export default function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [orgId, pathname]);
+    // `online`: an answer that never came while offline is asked for again on reconnecting.
+  }, [orgId, pathname, entryScreen, online]);
 
   useEffect(() => {
     const update = (event: Event) => {
@@ -352,6 +375,7 @@ export default function AppShell() {
   }), [me.userId, orgId]);
 
   useEffect(() => {
+    if (entryScreen) return;
     const controller = new AbortController();
     const revision = islandPreferenceRevision.current;
     const draftRevision = islandDraftRevision.current;
@@ -368,7 +392,7 @@ export default function AppShell() {
       })
       .catch(() => undefined);
     return () => controller.abort();
-  }, []);
+  }, [entryScreen]);
 
   useEffect(() => {
     if (islandQueryOpened.current) return;
@@ -442,7 +466,8 @@ export default function AppShell() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      // Onboarding has no menu or search to open (the topbar there is the logo and Sign out).
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && window.location.pathname !== "/onboarding") {
         event.preventDefault();
         openNav({ focusSearch: true });
       }
@@ -475,21 +500,7 @@ export default function AppShell() {
     [navHrefAllowed],
   );
 
-  const paletteCatalog = useMemo(() => {
-    const entries = commandCatalog();
-    if (!me.platformAdmin) return entries;
-    return [
-      ...entries,
-      {
-        id: "platform-admin",
-        label: "Platform admin",
-        context: "Platform admin",
-        href: "/admin",
-        kind: "destination" as const,
-        keywords: ["admin", "platform", "all teams", "provision"],
-      },
-    ];
-  }, [me.platformAdmin]);
+  const paletteCatalog = useMemo(() => commandCatalogFor({ platformAdmin: me.platformAdmin }), [me.platformAdmin]);
 
   const canManageTeam = useMemo(() => {
     const membershipRole = orgId ? memberships.find((row) => row.orgId === orgId)?.role : undefined;
@@ -708,6 +719,7 @@ export default function AppShell() {
         onOpenNav={toggleMenu}
         shortcutHint={shortcutHint}
         onOpenTeams={() => navigate(`/workspace?next=${encodeURIComponent(`${pathname}${pathSearch}`)}`)}
+        minimal={onboarding}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}
         onToggleAccount={() => setAccountMenuOpen((value) => !value)}
@@ -732,7 +744,7 @@ export default function AppShell() {
           onExpand={() => setFocusCollapsed(false)}
         />
       ) : null}
-      <LegalUpdateBanner />
+      {entryScreen ? null : <LegalUpdateBanner />}
       {accountMenuOpen ? (
         <button
           className="soft-account-scrim"
@@ -783,6 +795,7 @@ export default function AppShell() {
         onSignOut={() => void handleSignOut()}
       />
       <AppTour />
+      {entryScreen ? null : <StatusEcho />}
       {onboarding ? null : (
       <AppShellIsland
         orgId={orgId}

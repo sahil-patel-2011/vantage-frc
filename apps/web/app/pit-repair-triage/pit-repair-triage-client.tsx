@@ -11,7 +11,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
   TRIAGE_STATUSES,
@@ -172,7 +172,7 @@ function TriageShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#pit-repair-triage-log">Log a pit failure</Button>
+            <Button as="a" variant="secondary" href="#pit-repair-triage-log">Log a pit failure</Button>
           ) : null}
         </EmptyState>
       )}
@@ -568,8 +568,8 @@ function ReportsList({
                   className="text-button"
                   disabled={busy}
                   aria-label={`Delete ${report.title}`}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${report.title}"?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${report.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                       mutate({ action: "delete-report", reportId: report.id });
                     }
                   }}

@@ -309,6 +309,7 @@ export function useDashboardHomeState(initialOrgId = "") {
           role: data.role,
           teamRole: data.teamRole,
           tbaConfigured: data.tbaConfigured,
+          platformAdmin: data.platformAdmin === true,
         });
         setRole(data.role ?? null);
         if (typeof data.tbaConfigured === "boolean") {

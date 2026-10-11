@@ -105,6 +105,7 @@ export type OfflineFeature =
   | "scout-coverage-live"
   | "scout-field-budget"
   | "scouting-teams"
+  | "scouting-summary"
   | "scouting-heat-signals"
   | "scout-data-impact"
   | "scout-disagreements"

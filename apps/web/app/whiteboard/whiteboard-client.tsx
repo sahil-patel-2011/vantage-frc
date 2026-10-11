@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState } from "../../components/ui";
+import { Button, EmptyState, askConfirm } from "../../components/ui";
 import {
   canDeleteWhiteboardPlay,
   defaultRobots,
@@ -441,7 +441,7 @@ export default function WhiteboardClient() {
   };
 
   const deletePlay = async (play: WhiteboardPlay) => {
-    if (!confirm(`Delete play "${play.title}"?`)) return;
+    if (!(await askConfirm({ title: `Delete play “${play.title}”?`, body: null, confirmLabel: "Delete play", tone: "destructive" }))) return;
     const result = await run({ action: "delete_play", orgId, id: play.id });
     if (result) {
       if (selectedId === play.id) setSelectedId(null);

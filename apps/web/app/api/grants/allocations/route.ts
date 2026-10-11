@@ -5,8 +5,9 @@ import {
   parseGrantAllocationInput,
 } from "../../../../lib/grant-report/allocate";
 import {
+  canManageFinances,
+  requireFinanceManager,
   requireGrantApplicationInOrg,
-  requireOrgAdmin,
   requireOrgMember,
   requireTenantSession,
   tenantErrorResponse,
@@ -19,12 +20,15 @@ export async function GET(request: Request) {
     const orgId = url.searchParams.get("orgId");
     const grantApplicationId = url.searchParams.get("grantApplicationId");
     if (!orgId || !grantApplicationId) throw new Error("orgId and grantApplicationId are required");
-    const allocations = await withRls({ userId: current.user.id, orgId }, async (client) => {
+    const { allocations, canManage } = await withRls({ userId: current.user.id, orgId }, async (client) => {
       await requireOrgMember(client, orgId, current.user.id);
       await requireGrantApplicationInOrg(client, orgId, grantApplicationId);
-      return listGrantAllocations(client, { orgId, grantApplicationId });
+      return {
+        allocations: await listGrantAllocations(client, { orgId, grantApplicationId }),
+        canManage: await canManageFinances(client, orgId),
+      };
     });
-    return Response.json({ allocations });
+    return Response.json({ allocations, canManageFinances: canManage });
   } catch (error) {
     return tenantErrorResponse(error, "Grant allocation request failed");
   }
@@ -37,7 +41,8 @@ export async function POST(request: Request) {
     const parsed = parseGrantAllocationInput(body);
     if (!parsed.ok) throw new Error(parsed.error);
     const allocation = await withRls({ userId: current.user.id, orgId: parsed.value.orgId }, async (client) => {
-      await requireOrgAdmin(client, parsed.value.orgId, current.user.id);
+      // Attributing spend to a grant is a finance write (0714).
+      await requireFinanceManager(client, parsed.value.orgId, current.user.id);
       await requireGrantApplicationInOrg(client, parsed.value.orgId, parsed.value.grantApplicationId);
       return allocateGrantFinance(client, { ...parsed.value, createdBy: current.user.id });
     });

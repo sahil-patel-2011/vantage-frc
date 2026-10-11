@@ -1,0 +1,270 @@
+/* Pull requests and the robot code map in Code Coach. Tokens only, so both themes work. */
+.cpr,
+.cpr-map {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.cpr h2,
+.cpr-map h2 {
+  margin: 0;
+  font-size: var(--title-3, 17px);
+}
+.cpr-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cpr-head > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cpr-head p {
+  margin: 0;
+  font-size: 13px;
+}
+.cpr-switch {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 320px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+.cpr-switch input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+}
+.cpr-switch small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+.cpr-auto-note {
+  margin: 0;
+  font-size: 13px;
+}
+.cpr-manual {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  font-size: 13px;
+}
+.cpr-manual p {
+  margin: 0;
+}
+.cpr-manual dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.cpr-manual dl > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 8px;
+}
+.cpr-manual dt {
+  color: var(--muted);
+}
+.cpr-manual dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.cpr-error,
+.cpr-warn {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.cpr-error {
+  color: var(--critical);
+  background: color-mix(in srgb, var(--critical) 8%, var(--surface));
+}
+.cpr-warn {
+  color: var(--ink);
+  background: var(--warning-soft, color-mix(in srgb, var(--warning) 12%, var(--surface)));
+}
+.cpr-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cpr-list > li {
+  border-top: 1px solid var(--line-soft, var(--line));
+}
+.cpr-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 0;
+}
+.cpr-row-main {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 260px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.cpr-row-main:disabled {
+  cursor: default;
+}
+.cpr-row-main strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.cpr-row-main span {
+  font-size: 12px;
+}
+.cpr-draft {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.cpr-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cpr-chip.low {
+  color: var(--positive);
+  background: var(--positive-soft, color-mix(in srgb, var(--positive) 12%, var(--surface)));
+}
+.cpr-chip.medium,
+.cpr-chip.busy {
+  color: var(--warning);
+  background: var(--warning-soft, color-mix(in srgb, var(--warning) 12%, var(--surface)));
+}
+.cpr-chip.high,
+.cpr-chip.bad {
+  color: var(--critical);
+  background: color-mix(in srgb, var(--critical) 10%, var(--surface));
+}
+.cpr-review {
+  display: grid;
+  gap: 10px;
+  padding: 0 0 14px;
+}
+.cpr-summary {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.cpr-findings {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cpr-findings > li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.cpr-findings > li.sev-high {
+  border-left-color: var(--critical);
+}
+.cpr-findings > li.sev-medium {
+  border-left-color: var(--warning);
+}
+.cpr-findings p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.cpr-finding-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.cpr-sev {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.cpr-sev.high {
+  color: var(--critical);
+}
+.cpr-sev.medium {
+  color: var(--warning);
+}
+.cpr-where {
+  width: fit-content;
+  color: var(--accent);
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+.cpr-quote {
+  display: block;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: pre;
+}
+.cpr-meta {
+  margin: 0;
+  font-size: 12px;
+}
+.cpr-earlier > summary {
+  font-weight: 600;
+}
+.cpr-map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+.cpr-map-grid dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.cpr-map-grid dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 560px) {
+  .cpr-manual dl > div {
+    grid-template-columns: 1fr;
+  }
+}

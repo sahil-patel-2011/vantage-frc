@@ -13,8 +13,7 @@ import {
   Panel,
   SoftBlockSkeleton,
   StatTile,
-  type BadgeTone,
-} from "../../components/ui";
+  type BadgeTone, askConfirm, askText } from "../../components/ui";
 import type {
   EventCandidate,
   EventReadinessView,
@@ -641,10 +640,21 @@ function ItemRow({
           aria-label={`Status for ${item.title}`}
           value={item.status}
           disabled={busy}
-          onChange={(event) => {
+          onChange={async (event) => {
             const status = event.target.value;
-            const blockedReason =
-              status === "blocked" ? window.prompt("What is blocking this?", item.blockedReason) ?? "" : undefined;
+            let blockedReason: string | undefined;
+            if (status === "blocked") {
+              // Cancel leaves the status as it was.
+              const reason = await askText({
+                title: `What is blocking “${item.title}”?`,
+                body: null,
+                confirmLabel: "Mark blocked",
+                tone: "neutral",
+                input: { label: "Blocked by", initial: item.blockedReason ?? "" },
+              });
+              if (reason === null) return;
+              blockedReason = reason.trim();
+            }
             mutate({ action: "set-status", itemId: item.id, status, blockedReason });
           }}
         >
@@ -660,8 +670,8 @@ function ItemRow({
             size="sm"
             aria-label={`Delete item ${item.title}`}
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete "${item.title}"?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                 mutate({ action: "delete-item", itemId: item.id });
               }
             }}

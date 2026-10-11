@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, useConfirm } from "../../components/ui";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import type { TeamTagsView } from "../../lib/team-tags/compute-team-tags";
 import { hubHref } from "../../lib/nav/hubs";
@@ -33,6 +33,7 @@ async function persistTeamTagsSnapshot(orgHint: string, data: TeamTagsView): Pro
 }
 
 export default function TeamTagsClient() {
+  const confirm = useConfirm();
   const [view, setView] = useState<TeamTagsView | null>(null);
   const [error, setError] = useState("");
   // Kept so an expired session offers sign-in instead of a dead end.
@@ -133,6 +134,14 @@ export default function TeamTagsClient() {
 
   async function remove(assignmentId: string) {
     if (!live || busy) return;
+    const column = live.board.find((candidate) => candidate.teams.some((team) => team.assignmentId === assignmentId));
+    const team = column?.teams.find((candidate) => candidate.assignmentId === assignmentId);
+    const ok = await confirm({
+      title: team ? `Remove ${team.teamNumber} from ${column?.name}?` : "Remove this tag?",
+      body: "The tag comes off for everyone on your team. You can tag the team again any time.",
+      confirmLabel: "Remove tag",
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       const response = await fetch("/api/team-tags", {

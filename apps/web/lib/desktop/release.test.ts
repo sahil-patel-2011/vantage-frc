@@ -39,6 +39,19 @@ describe("normalizeDesktopRelease", () => {
     expect(release?.minimumVersion).toBe("0.2.0");
   });
 
+  it("reads one Mac zip per chip when there is no universal build", () => {
+    const arm = "https://github.com/sahil-patel-2011/vantage-frc/releases/download/desktop-v0.4.0/Vantage-0.4.0-mac-arm64.zip";
+    const intel = "https://github.com/sahil-patel-2011/vantage-frc/releases/download/desktop-v0.4.0/Vantage-0.4.0-mac-x64.zip";
+    const release = normalizeDesktopRelease({
+      version: "0.4.0",
+      sha256: "b".repeat(64),
+      downloads: { win_nsis: NSIS, mac_zip_arm64: arm, mac_zip_x64: intel },
+    });
+    expect(release?.downloads.mac_zip_arm64).toBe(arm);
+    expect(release?.downloads.mac_zip_x64).toBe(intel);
+    expect(release?.macNotarized).toBe(false);
+  });
+
   it("refuses an off-allowlist download host", () => {
     expect(
       normalizeDesktopRelease({

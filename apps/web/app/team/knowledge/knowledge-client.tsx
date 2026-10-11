@@ -15,7 +15,7 @@ import {
 } from "../../../lib/knowledge";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { MarkdownDocument } from "./markdown-document";
-import { EmptyState, Button } from "../../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../../components/ui";
 import { ActionMenu, type ActionSpec } from "../../../components/ui/action-menu";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
@@ -326,13 +326,13 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
     });
   }
 
-  function selectPage(pageId: string) {
-    if (dirty && !window.confirm("Discard unsaved changes?")) return;
+  async function selectPage(pageId: string) {
+    if (dirty && !(await askConfirm({ title: "Discard unsaved changes?", body: null, confirmLabel: "Discard changes", tone: "destructive" }))) return;
     void load({ pageId });
   }
 
-  function cancelCreate() {
-    if (dirty && !window.confirm("Discard this draft?")) return;
+  async function cancelCreate() {
+    if (dirty && !(await askConfirm({ title: "Discard this draft?", body: null, confirmLabel: "Discard draft", tone: "destructive" }))) return;
     setCreating(false);
     setEditing(false);
     if (ready?.selected) hydrateFromSelected(ready);

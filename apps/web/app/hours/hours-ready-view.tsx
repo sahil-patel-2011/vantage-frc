@@ -3,7 +3,7 @@ import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
-import { Button, PageHeader } from "../../components/ui";
+import { Button, PageHeader, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { HOUR_KIND_LABELS, HOUR_KINDS, memberLeaderboard, summarizeHours, type HourKind } from "../../lib/build-hours";
 import { HOURS_PAGE_TITLE } from "../../lib/hours/hours-related";
@@ -95,11 +95,14 @@ export function HoursReadyView({
               variant="secondary"
               type="button"
               disabled={busy}
-              onClick={() => {
+              onClick={async () => {
                 if (
-                  confirm(
-                    `Sign out all ${summary.hereNow} clocked-in member(s)? Sessions left open from an earlier day are capped at your team's auto-close credit instead of being signed out now.`,
-                  )
+                  await askConfirm({
+                    title: `Sign out all ${summary.hereNow} clocked-in member(s)?`,
+                    body: "Sessions left open from an earlier day are capped at your team's auto-close credit instead of being signed out now.",
+                    confirmLabel: "Sign out all",
+                    tone: "neutral",
+                  })
                 ) {
                   void run({ action: "close_all_open", orgId }, "close-all");
                 }
@@ -307,8 +310,8 @@ export function HoursReadyView({
                     className="hours-link danger"
                     aria-label="Delete entry"
                     disabled={busy}
-                    onClick={() => {
-                      if (confirm("Delete this hours entry?")) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: "Delete this hours entry?", body: null, confirmLabel: "Delete hours entry", tone: "destructive" })) {
                         void run({ action: "delete_record", orgId, id: record.id }, `del:${record.id}`);
                       }
                     }}

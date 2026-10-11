@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   EXIT_INTERVIEW_ROLES,
   EXIT_INTERVIEW_STATUSES,
@@ -452,7 +452,7 @@ function RecentResponses({
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               {item.status === "draft" ? (
-                <Button variant="secondary" type="button" disabled={busy} onClick={() => { if ( window.confirm( `Submit "${item.memberName}"'s exit interview? This publishes the handoff page to the team wiki and cannot be moved back to a draft.`, ) ) { mutate({ action: "submit-response", recordId: item.id }); } }}>
+                <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: `Submit ${item.memberName}'s exit interview?`, body: "This publishes the handoff page to the team wiki and cannot be moved back to a draft.", confirmLabel: "Submit & publish", tone: "neutral" })) { mutate({ action: "submit-response", recordId: item.id }); } }}>
                   Submit &amp; publish
                 </Button>
               ) : null}
@@ -461,8 +461,8 @@ function RecentResponses({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${item.memberName}"'s exit interview?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${item.memberName}”'s exit interview?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                       mutate({ action: "delete-response", recordId: item.id });
                     }
                   }}

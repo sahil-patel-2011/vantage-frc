@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { mentorHoursCategoryLabel, mentorHoursRoleLabel } from "../../lib/mentor-hours";
 import {
   MENTOR_HOURS_CATEGORIES,
@@ -346,7 +346,7 @@ export default function MentorHoursClient() {
             title={view.message}
             description="Adult volunteer time is a separate ledger from student shop hours. Totals stay empty until a mentor or parent logs minutes here — student clock-ins never fill this in."
           >
-            <Button as="a" variant="primary" href="#mentor-hours-log">
+            <Button as="a" variant="secondary" href="#mentor-hours-log">
               Log hours
             </Button>
           </EmptyState>
@@ -538,8 +538,8 @@ function RecentEntries({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete entry for "${item.mentorName}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete entry for “${item.mentorName}”?`, body: null, confirmLabel: "Delete entry", tone: "destructive" })) {
                   mutate({ action: "delete-entry", entryId: item.id });
                 }
               }}

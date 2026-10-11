@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const orgId = new URL(request.url).searchParams.get("orgId");
   if (!z.string().uuid().safeParse(orgId).success) return Response.json({ error: "Choose your team." }, { status: 400 });
   const job = await withRls({ userId: session.user.id, orgId: orgId! }, async (client) =>
-    (await client.query<ProvisioningStatus & { workflowRunId?: string; updatedAt: string }>(`SELECT state,phase,completed_phases AS "completedPhases",error,verified_at::text AS "verifiedAt",retry_after_at::text AS "retryAfterAt",updated_at::text AS "updatedAt",workflow_run_id AS "workflowRunId" FROM team_provisioning_jobs WHERE org_id=$1::uuid`, [orgId])).rows[0]);
+    (await client.query<ProvisioningStatus & { workflowRunId?: string; updatedAt: string }>(`SELECT state,phase,completed_phases AS "completedPhases",error,verified_at::text AS "verifiedAt",retry_after_at::text AS "retryAfterAt",resources->>'google' AS "googleWorkspace",updated_at::text AS "updatedAt",workflow_run_id AS "workflowRunId" FROM team_provisioning_jobs WHERE org_id=$1::uuid`, [orgId])).rows[0]);
   // A runtime failure before the first user step never reaches the workflow's
   // catch block. Reconcile the persisted run instead of leaving a spinner forever.
   if (job?.workflowRunId && (job.state === "queued" || (job.state === "running" && Date.now() - Date.parse(job.updatedAt) > 60_000))) {
@@ -38,8 +38,11 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ error: "Choose your team." }, { status: 400 });
   const orgId = parsed.data.orgId;
   const updated = await withRls({ userId: session.user.id, orgId }, async (client) => {
-    const updated = await client.query(`UPDATE team_provisioning_jobs SET state='queued',error=NULL,retry_after_at=NULL,updated_at=now()
-    WHERE org_id=$1::uuid AND (state='failed' OR (state IN ('queued','running') AND updated_at<now()-interval '10 minutes'))
+    // A job that skipped Google (no connection on this server) resumes here once Google is set up.
+    const updated = await client.query(`UPDATE team_provisioning_jobs SET state='queued',error=NULL,retry_after_at=NULL,
+    resources=resources-'google',updated_at=now()
+    WHERE org_id=$1::uuid AND (state='failed' OR (state='waiting' AND resources->>'google'='not_connected')
+      OR (state IN ('queued','running') AND updated_at<now()-interval '10 minutes'))
     AND has_org_role(org_id,ARRAY['owner','admin']::org_role[]) RETURNING org_id`, [orgId]);
     if (updated.rowCount) {
       await initializeTeamDefaults(client, orgId, { inTransaction: true });

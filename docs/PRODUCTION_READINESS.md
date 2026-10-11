@@ -1,7 +1,7 @@
 # Production readiness
 
 *The checklist Vantage is held to before and after every release. Each line says how it was checked.
-Last verified 2026-09-25 against `main` and the live deployment. Supersedes the go-live list in
+Last verified 2026-10-11 against branch `claude/quick-scout-production-pass` (gates 1–2 locally; the live deployment is unchanged until the owner deploys). Supersedes the go-live list in
 `GO_LIVE_CHECKLIST.md`, which describes the state before production existed.*
 
 Legend: **[x]** verified · **[~]** works with a known, accepted limit · **[ ]** open.
@@ -10,19 +10,20 @@ Legend: **[x]** verified · **[~]** works with a known, accepted limit · **[ ]*
 
 - [x] `npm run typecheck` — every workspace, 0 errors.
 - [x] `npm run lint` — 0 errors.
-- [x] `npm test` — ~10,900 unit tests, 0 failures, no credentials needed.
-- [x] Browser suite (`npm run test:browser` against the dev server with the local seed) — 373 passed, 0 failed.
-- [x] `npm run build` — clean production build.
-- [x] Vercel deploy status `success` for the pushed commit, and the live `/`, `/pricing`, `/signin` answer 200.
+- [x] `npm test` — 11,923 unit tests, 0 failures, no credentials needed.
+- [~] Browser suite (`npm run test:browser` against the dev server with the local seed) — 373 passed at the 2026-09-25 run; not re-run on this branch. This pass walked every product page in a real browser instead, as owner and scout at 390px and 1280px (no server errors; one primary per view fixed on 60+ pages).
+- [x] `npm run build` — clean production build (759 pages). Served with `next start`: public pages 200, product pages redirect to `/signin`, `/api/me` 401 signed out, security headers present, no failed requests or console errors on any public page.
+- [ ] Vercel deploy status `success` for the pushed commit, and the live `/`, `/pricing`, `/signin` answer 200 (owner deploys after the NAS is live).
 - [x] Pushes are batched (Vercel builds are metered); only `main` deploys (`vercel.json` → `git.deploymentEnabled`).
 
 ## 2. Data and tenancy
 
 - [x] Every request reads and writes through `withRls({ userId, orgId })`; the worker role is lint-blocked from request code.
 - [x] Every org-scoped table has `org_id … ON DELETE CASCADE`, RLS enabled and policies on `is_org_member` / `has_org_role`.
+- [x] Roles are enforced in Postgres: money only for the owner and chosen finance managers (0714); View only refused on every team-data write (0715, 507 tables guarded, 44 personal tables listed with reasons). See `docs/ROLES.md`.
 - [x] SQL is parameterised with explicit casts; no string-built queries.
-- [x] Production migrations applied through **0693**; a re-run prints only `SKIP`. Each production batch is applied only after the owner's explicit yes.
-- [~] Backups: Neon keeps point-in-time history for the project's retention window. A restore drill (branch from a past point, read a team's rows) is an operator task, done once per season.
+- [x] Migrations replay from empty through **0715** (446 files OK, re-run all `SKIP`), including over verified TLS to a NAS-style server. Each production batch is applied only after the owner's explicit yes.
+- [~] Backups: on the NAS, nightly encrypted `pg_dump` snapshots uploaded to Google plus NAS disk snapshots (`docs/NAS_DATABASE.md`). A restore drill is an operator task, done once per season.
 - [x] Team deletion cascades through `org_id`; exports are encrypted (`EXPORT_ENCRYPTION_KEY`, falling back to the auth secret).
 
 ## 3. Sign-in and access
@@ -72,3 +73,6 @@ Legend: **[x]** verified · **[~]** works with a known, accepted limit · **[ ]*
 - [ ] Decide on `CRON_SECRET` (daily event syncs) — currently off by choice.
 - [ ] Owner connects the team data copy from Admin → Integrations (script redeploy, then Connect).
 - [ ] Legal review of Terms and Privacy for a student audience before wide launch.
+- [ ] Move the database to the team NAS (`docs/NAS_DATABASE.md`): Postgres 17 with TLS from your own CA, migrations applied from home through **0715**, `DATABASE_SSL_CA` and the two login URLs set in Vercel, then the first encrypted snapshot uploaded to Google and a restore drill done. Until then nothing is deployed against Neon (no new database charges).
+- [ ] Publish desktop release `desktop-v0.1.0` (`docs/DESKTOP.md`): Windows setup + portable `.exe` and the ad-hoc signed Mac zips (or a universal DMG from a Mac), then `npm run desktop:release -- --publish`. The `/desktop` page lists them as soon as the release exists.
+- [ ] Deploy to Vercel once the NAS is live (owner's call; one intentional production deploy after the schema check passes).

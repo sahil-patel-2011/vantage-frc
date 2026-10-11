@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { RETRO_ITEM_KINDS, retroItemKindLabel } from "../../lib/retro";
 import type { RetroView } from "../../lib/retro/compute-retro";
 import {
@@ -161,7 +161,7 @@ function RetroShell({
             </Button>
           ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#retro-new-session">Start a session</Button>
+          <Button as="a" variant="secondary" href="#retro-new-session">Start a session</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <RetroNextActionsPanel actions={actions} /> : null}
@@ -442,7 +442,7 @@ export default function RetroClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href="#retro-new-session">
+          <Button as="a" variant="secondary" href="#retro-new-session">
             Start a session
           </Button>
         </EmptyState>
@@ -593,7 +593,7 @@ function ItemColumn({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-item", itemId: item.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this card?", body: "The retro card is deleted.", confirmLabel: "Delete card", tone: "destructive" })) void (mutate({ action: "delete-item", itemId: item.id })); }}
                 >
                   Delete
                 </button>
@@ -679,7 +679,7 @@ function ActionItems({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-action", actionId: item.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this action item?", body: `“${item.title}” is deleted.`, confirmLabel: "Delete action item", tone: "destructive" })) void (mutate({ action: "delete-action", actionId: item.id })); }}
                 >
                   Delete
                 </button>
@@ -750,7 +750,7 @@ function LearnedItems({
         </ul>
       )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Button variant="primary" type="button" disabled={busy || items.length === 0} onClick={() => send("season-report")}>
+        <Button variant={items.length === 0 ? "secondary" : "primary"} type="button" disabled={busy || items.length === 0} onClick={() => send("season-report")}>
           Send to Season report
         </Button>
         <Button variant="secondary" type="button" disabled={busy || items.length === 0} onClick={() => send("playbook")}>

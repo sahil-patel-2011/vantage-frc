@@ -43,6 +43,21 @@ jobs:
       - run: npm run typecheck --workspace=@vantage/desktop
       - run: npm test --workspace=@vantage/desktop
       - run: npm run dist:mac --workspace=@vantage/desktop
+        env:
+          # Optional repository secrets. Present: the app is signed with the Developer ID and
+          # notarized by Apple. Absent: an unsigned build that the release step leaves out.
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.MAC_CSC_LINK != '' && 'true' || 'false' }}
+          CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      - name: Keep only a notarized DMG
+        run: |
+          for dmg in apps/desktop/release/*.dmg; do
+            [ -e "$dmg" ] || continue
+            xcrun stapler validate "$dmg" || { echo "Not notarized, not publishing: $dmg"; rm -f "$dmg" apps/desktop/release/*mac*.zip; }
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: vantage-desktop-macos

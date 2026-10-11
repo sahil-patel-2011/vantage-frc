@@ -1,5 +1,5 @@
 import { auth } from "@vantage/core";
-import { withSavepoint } from "@vantage/db";
+import { assertNotViewOnly, withSavepoint } from "@vantage/db";
 import { ScoutingRepository } from "@vantage/scouting/repository";
 import type { SyncAcknowledgement } from "@vantage/scouting/repository";
 import type { SyncEntry } from "@vantage/scouting";
@@ -103,6 +103,8 @@ export async function POST(request: Request) {
       const { acknowledgements, mediaLinked } = await withScoutingRequest(
         body.orgId ?? null,
         async (client) => {
+          // View only: one 403 for the batch, not a refusal per entry (0715).
+          await assertNotViewOnly(client, body.orgId!);
           const repository = new ScoutingRepository(client);
           const results = [];
           for (const entry of body.entries!) {
@@ -124,6 +126,7 @@ export async function POST(request: Request) {
     const { acknowledgements, rejected, mediaLinked } = await withScoutingRequest(
       body.orgId ?? null,
       async (client) => {
+        await assertNotViewOnly(client, body.orgId!);
         const repository = new ScoutingRepository(client);
         const acks: SyncAcknowledgement[] = [];
         const failures: SyncRejection[] = [];

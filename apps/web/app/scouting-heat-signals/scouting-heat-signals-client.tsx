@@ -13,8 +13,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, askConfirm } from "../../components/ui";
 import { HEAT_DIRECTIONS, directionLabel } from "../../lib/scouting-heat-signals";
 import type { ScoutingHeatSignalsView } from "../../lib/scouting-heat-signals/compute-scouting-heat-signals";
 import type { HeatDirection } from "../../lib/scouting-heat-signals/types";
@@ -164,7 +163,7 @@ function HeatShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#scouting-heat-log">Log a heat signal</Button>
+            <Button as="a" variant="secondary" href="#scouting-heat-log">Log a heat signal</Button>
           ) : null}
         </EmptyState>
       )}
@@ -426,7 +425,7 @@ function TeamHeatList({
                     variant="ghost"
                     size="sm"
                     disabled={busy}
-                    onClick={() => mutate({ action: "delete-entry", entryId: entry.id })}
+                    onClick={async () => { if (await askConfirm({ title: "Delete this entry?", body: "The entry is deleted.", confirmLabel: "Delete entry", tone: "destructive" })) void (mutate({ action: "delete-entry", entryId: entry.id })); }}
                   >
                     Delete
                   </Button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Badge, EmptyState, StatTile, Button } from "../../components/ui";
+import { Badge, EmptyState, StatTile, Button, askConfirm } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { OfflineBanner } from "../../components/offline-banner";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -23,6 +23,7 @@ import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { formatSponsorUsd, sponsorPageTotals } from "../../lib/sponsors/totals";
+import { FINANCE_MANAGER_REQUIRED } from "../../lib/finance/finance-managers";
 import "./season-finance.css";
 
 type LiveView = Extract<SeasonFinanceView, { status: "live" }>;
@@ -554,7 +555,7 @@ function LiveDesk({
             </form>
             </details>
           ) : (
-            <p className="app-muted">Finance leads add school funds and other income. Members can still log receipts.</p>
+            <p className="app-muted">{FINANCE_MANAGER_REQUIRED}</p>
           )}
           <div className="biz-table-wrap">
             <table className="biz-table">
@@ -584,7 +585,7 @@ function LiveDesk({
                           type="button"
                           className="danger"
                           disabled={busy}
-                          onClick={() => void mutate({ action: "delete-funding", fundingId: row.id })}
+                          onClick={async () => { if (await askConfirm({ title: "Remove this funding source?", body: `“${row.name}” comes out of this season's funding.`, confirmLabel: "Remove funding", tone: "destructive" })) void mutate({ action: "delete-funding", fundingId: row.id }); }}
                         >
                           Remove
                         </button>
@@ -616,6 +617,9 @@ function LiveDesk({
           </div>
           <span className="biz-count">{view.purchases.length}</span>
         </header>
+        {/* Recording spend is a finance-manager job (0714). Everyone else asks for
+            what they need on Orders, where a finance manager approves it. */}
+        {view.canManageFinance ? (
         <details className="season-finance-add" id="log-receipt">
           <summary>Log a receipt</summary>
         <form className="biz-form-grid" onSubmit={(event) => void onPurchase(event)}>
@@ -669,6 +673,12 @@ function LiveDesk({
           </Button>
         </form>
         </details>
+        ) : (
+          <p className="app-muted">
+            Need something bought? <a href={hubHref("/business", "orders", view.orgId)}>Submit a purchase request</a>. A
+            finance manager approves it and records the spend.
+          </p>
+        )}
         <div className="biz-table-wrap">
           <table className="biz-table">
             <thead>
@@ -714,14 +724,16 @@ function LiveDesk({
                           Mark repaid
                         </button>
                       ) : null}
-                      <button
-                        type="button"
-                        className="danger"
-                        disabled={busy}
-                        onClick={() => void mutate({ action: "delete-purchase", purchaseId: row.id })}
-                      >
-                        Remove
-                      </button>
+                      {view.canManageFinance ? (
+                        <button
+                          type="button"
+                          className="danger"
+                          disabled={busy}
+                          onClick={async () => { if (await askConfirm({ title: "Remove this purchase?", body: `“${row.item}” comes out of this season's purchases.`, confirmLabel: "Remove purchase", tone: "destructive" })) void mutate({ action: "delete-purchase", purchaseId: row.id }); }}
+                        >
+                          Remove
+                        </button>
+                      ) : null}
                     </div>
                   </td>
                 </tr>

@@ -2,8 +2,12 @@
   "name": "@vantage/desktop",
   "private": true,
   "version": "0.1.0",
-  "description": "Vantage desktop shell for FRC teams — signed-in product in a native window.",
+  "description": "Vantage desktop shell for FRC teams \u2014 signed-in product in a native window.",
   "author": "Vantage",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sahil-patel-2011/vantage-frc.git"
+  },
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsc && electron .",
@@ -11,7 +15,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "dist": "tsc && electron-builder --win nsis msi portable",
+    "dist:win:cross": "tsc && electron-builder --win nsis portable --x64",
     "dist:mac": "tsc && electron-builder --mac dmg zip",
+    "dist:mac:free": "tsc && electron-builder --mac dmg -c.mac.identity=- -c.mac.hardenedRuntime=false",
     "dist:all": "tsc && electron-builder --win nsis msi portable --mac dmg zip"
   },
   "devDependencies": {
@@ -23,12 +29,20 @@
   "build": {
     "appId": "app.vantage.frc",
     "productName": "Vantage",
-    "copyright": "Copyright © Vantage",
+    "copyright": "Copyright \u00a9 Vantage",
     "asar": true,
     "npmRebuild": false,
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "sahil-patel-2011",
+        "repo": "vantage-frc",
+        "releaseType": "release"
+      }
+    ],
     "files": [
       "dist/**/*",
       "offline.html",
@@ -39,24 +53,31 @@
     "protocols": [
       {
         "name": "Vantage",
-        "schemes": ["vantage-frc"]
+        "schemes": [
+          "vantage-frc"
+        ]
       }
     ],
     "win": {
-      "signAndEditExecutable": false,
       "icon": "build/icon.png",
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "msi",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },
@@ -66,14 +87,22 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["universal"]
+          "arch": [
+            "universal"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["universal"]
+          "arch": [
+            "universal"
+          ]
         }
       ],
-      "artifactName": "Vantage-${version}-mac-${arch}.${ext}"
+      "artifactName": "Vantage-${version}-mac-${arch}.${ext}",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "msi": {
       "artifactName": "Vantage-${version}-win-${arch}.${ext}"

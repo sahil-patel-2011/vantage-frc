@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";
-import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button, askConfirm, askText } from "../../components/ui";
 import {
   classifyLoadFailure,
   loadFailureCopy,
@@ -654,7 +654,7 @@ export default function VideoRescoutClient() {
                   type="button"
                   className="vid-link danger"
                   disabled={busyKey === `note:${entry.id}`}
-                  onClick={() => void runVideo({ action: "delete_note", orgId, id: entry.id }, `note:${entry.id}`)}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this note?", body: "The video note is deleted.", confirmLabel: "Delete note", tone: "destructive" })) void runVideo({ action: "delete_note", orgId, id: entry.id }, `note:${entry.id}`); }}
                 >
                   Delete
                 </button>
@@ -785,8 +785,14 @@ export default function VideoRescoutClient() {
                   key={field.key}
                   type="button"
                   className="vid-score-btn"
-                  onClick={() => {
-                    const text = window.prompt(`${field.label} note`);
+                  onClick={async () => {
+                    const text = await askText({
+                      title: `${field.label} note`,
+                      body: null,
+                      confirmLabel: "Add note",
+                      tone: "neutral",
+                      input: { label: "Note", required: true, multiline: true },
+                    });
                     if (text?.trim()) addScore(field, text.trim());
                   }}
                 >
@@ -818,7 +824,7 @@ export default function VideoRescoutClient() {
                   type="button"
                   className="vid-link danger"
                   disabled={busyKey === `score:${entry.id}`}
-                  onClick={() => void runRescout({ action: "delete_score", orgId, id: entry.id }, `score:${entry.id}`)}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this score?", body: "The re-scout score is deleted.", confirmLabel: "Delete score", tone: "destructive" })) void runRescout({ action: "delete_score", orgId, id: entry.id }, `score:${entry.id}`); }}
                 >
                   Delete
                 </button>
@@ -913,8 +919,8 @@ export default function VideoRescoutClient() {
                 type="button"
                 className="vid-link danger"
                 disabled={busyKey != null}
-                onClick={() => {
-                  if (confirm(`Delete review "${selected.title}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete review “${selected.title}”?`, body: null, confirmLabel: "Delete review", tone: "destructive" })) {
                     void runVideo({ action: "delete_review", orgId, id: selected.id }, "delete");
                   }
                 }}

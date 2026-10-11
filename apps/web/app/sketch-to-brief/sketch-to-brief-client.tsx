@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { mechanismCategoryLabel } from "../../lib/sketch-to-brief";
 import type { SketchToBriefView } from "../../lib/sketch-to-brief/compute-sketch-to-brief";
 import {
@@ -154,7 +154,7 @@ function SketchShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#sketch-to-brief-log-sketch">Log a sketch</Button>
+          <Button as="a" variant="secondary" href="#sketch-to-brief-log-sketch">Log a sketch</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <SketchNextActionsPanel actions={actions} /> : null}
@@ -413,7 +413,7 @@ export default function SketchToBriefClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#sketch-to-brief-log-sketch">
+          <Button as="a" variant="secondary" href="#sketch-to-brief-log-sketch">
             Log a sketch
           </Button>
         </EmptyState>
@@ -533,7 +533,7 @@ function SketchList({
           title="Log your first kickoff sketch"
           description="Once logged, generate a grounded first-pass CAD brief from it."
         >
-          <Button as="a" variant="primary" href="#sketch-to-brief-log-sketch">
+          <Button as="a" variant="secondary" href="#sketch-to-brief-log-sketch">
             Log a sketch
           </Button>
         </EmptyState>
@@ -567,8 +567,8 @@ function SketchList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${sketch.title}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${sketch.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-sketch", sketchId: sketch.id });
                   }
                 }}
@@ -603,7 +603,7 @@ function BriefList({
           title="Generate a CAD brief from a logged sketch"
           description="Briefs stay blank until you generate one from a real sketch."
         >
-          <Button as="a" variant="primary" href="#sketch-to-brief-sketches">
+          <Button as="a" variant="secondary" href="#sketch-to-brief-sketches">
             View sketches
           </Button>
         </EmptyState>

@@ -9,6 +9,7 @@ import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { CodeBugbotPanel } from "./code-bugbot-panel";
 import { CodeCoachPanel } from "./code-coach-panel";
+import { CodePullRequests } from "./code-pr-panel";
 import type { CodeReadyViewProps } from "./code-view-props";
 
 export type { CodeReadyViewProps } from "./code-view-props";
@@ -43,11 +44,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
         </div>
         <div className="cdc-header-actions">
           <span className="app-badge good">Local · proposal-only</span>
-          {orgId ? (
-            <Button as="a" variant="secondary" href={withOrgHref("/editor/pair", orgId)}>
-              Pair VS Code
-            </Button>
-          ) : null}
+          {/* Pair VS Code is in the links row right under the header. */}
         </div>
       </header>
       ) : null}
@@ -192,6 +189,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
 
       <CodeCoachPanel {...props} />
       <CodeBugbotPanel {...props} />
+      {orgId ? <CodePullRequests orgId={orgId} /> : null}
     </main>
   );
 }

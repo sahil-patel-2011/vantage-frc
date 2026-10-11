@@ -505,25 +505,29 @@ export function QuickAddForm({
           </select>
         ) : null}
         {entry === "event" ? (
-          <input
-            type="datetime-local"
-            value={startsAt}
-            disabled={busy}
-            required
-            aria-label="Starts"
-            onChange={(e) => setStartsAt(e.target.value)}
-          />
+          <label className="inline-field-label">
+            Starts
+            <input
+              type="datetime-local"
+              value={startsAt}
+              disabled={busy}
+              required
+              onChange={(e) => setStartsAt(e.target.value)}
+            />
+          </label>
         ) : (
           // A task is due on a day, not at an hour. Asking for a time here would
           // invent precision the task does not have.
-          <input
-            type="date"
-            value={dueOn}
-            disabled={busy || savingTask}
-            required
-            aria-label="Due"
-            onChange={(e) => setStartsAt(e.target.value ? `${e.target.value}T09:00` : "")}
-          />
+          <label className="inline-field-label">
+            Due
+            <input
+              type="date"
+              value={dueOn}
+              disabled={busy || savingTask}
+              required
+              onChange={(e) => setStartsAt(e.target.value ? `${e.target.value}T09:00` : "")}
+            />
+          </label>
         )}
         <select
           value={subteamId}

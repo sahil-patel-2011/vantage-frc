@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, askConfirm } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UsageCutoffBanner, isCutoffError } from "../../components/usage-cutoff-banner";
@@ -499,7 +499,7 @@ export default function ScoutVoiceNotesPanel({
                     type="button"
                     disabled={busy}
                     aria-label={`Delete ${note.transcript}`}
-                    onClick={() => void mutate({ action: "delete-note", noteId: note.id })}
+                    onClick={async () => { if (await askConfirm({ title: "Delete this voice note?", body: "The voice note and its transcript are deleted.", confirmLabel: "Delete note", tone: "destructive" })) void mutate({ action: "delete-note", noteId: note.id }); }}
                   >
                     Delete
                   </Button>

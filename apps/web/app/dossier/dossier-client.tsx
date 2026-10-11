@@ -18,7 +18,6 @@ import {
   type DossierNextAction,
   type DossierShellKind,
 } from "../../lib/dossier/dossier-related";
-import { hubHref } from "../../lib/nav/hubs";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
@@ -351,9 +350,6 @@ export default function DossierClient() {
   }
 
   const resolvedOrgId = view?.orgId ?? orgId;
-  const strategyHref = hubHref("/competition", "strategy", resolvedOrgId);
-  const scoutingHref = hubHref("/competition", "scouting", resolvedOrgId);
-  const pickDeskHref = withOrgHref("/strategy?tab=picks", resolvedOrgId);
   const intelHref = withOrgHref("/intel", resolvedOrgId);
   const showTiles = shouldShowDossierSummaryTiles(cardCount);
   const readyActions = dossierNextActions({
@@ -392,13 +388,8 @@ export default function DossierClient() {
           label="Team number"
           hint={
             <>
-              <a href={intelHref}>Research</a>
-              {" · "}
-              <a href={strategyHref}>Strategy</a>
-              {" · "}
-              <a href={scoutingHref}>Scouting</a>
-              {" · "}
-              <a href={pickDeskHref}>Pick desk</a>
+              {/* Strategy, Scouting and Pick desk are in the header strip above. */}
+              Or browse every team in <a href={intelHref}>Research</a>.
             </>
           }
         >

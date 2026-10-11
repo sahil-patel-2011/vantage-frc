@@ -1,6 +1,7 @@
 import pg from "pg";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { pgTlsOptions } from "./lib/database-ssl.mjs";
 
 function parseEnvFile(path) {
   const out = {};
@@ -61,14 +62,8 @@ const files = readdirSync(dir)
   .filter((name) => name.endsWith(".sql"))
   .sort();
 
-const pool = new pg.Pool({
-  connectionString: url,
-  max: 1,
-  ssl: /(^|[?&])sslmode=disable\b/i.test(url) ||
-  ["localhost", "127.0.0.1", "::1"].includes(new URL(url).hostname)
-    ? false
-    : { rejectUnauthorized: true },
-});
+// A NAS with its own certificate authority: DATABASE_SSL_CA (scripts/lib/database-ssl.mjs).
+const pool = new pg.Pool({ ...pgTlsOptions(url, env), max: 1 });
 await pool.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
   id text PRIMARY KEY,
   applied_at timestamptz NOT NULL DEFAULT now()

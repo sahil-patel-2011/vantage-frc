@@ -1,6 +1,7 @@
 import { withRls } from "@vantage/db";
 import { assembleHonestFinanceSummary } from "../../../../lib/finance/summary-honesty";
 import {
+  canManageFinances,
   requireOrgMember,
   requireTenantSession,
   tenantErrorResponse,
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
         }[],
         totalLimitUsd: Number(plans.rows[0]?.totalLimitUsd ?? 0) || null,
         monthlyLimitUsd: Number(plans.rows[0]?.monthlyLimitUsd ?? 0) || null,
+        canManage: await canManageFinances(client, orgId),
       };
     });
     const summary = assembleHonestFinanceSummary({
@@ -42,7 +44,12 @@ export async function GET(request: Request) {
       monthlyLimitUsd: data.monthlyLimitUsd,
       totalLimitUsd: data.totalLimitUsd,
     });
-    return Response.json({ seasonYear, ...summary, transactions: data.transactions });
+    return Response.json({
+      seasonYear,
+      ...summary,
+      transactions: data.transactions,
+      canManageFinances: data.canManage,
+    });
   } catch (error) {
     return tenantErrorResponse(error, "Summary request failed");
   }

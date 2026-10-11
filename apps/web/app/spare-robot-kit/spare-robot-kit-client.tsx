@@ -10,7 +10,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { canDeleteSpareRobotKitChecklist, CHECKLIST_STATUSES, priorityLabel } from "../../lib/spare-robot-kit";
 import type { SpareRobotKitView } from "../../lib/spare-robot-kit/compute-spare-robot-kit";
 import type { ChecklistStatus, KitPriority } from "../../lib/spare-robot-kit/types";
@@ -488,8 +488,8 @@ function ChecklistsList({
                     className="text-button"
                     aria-label={`Delete checklist ${checklist.title}`}
                     disabled={busy}
-                    onClick={() => {
-                      if (window.confirm(`Delete "${checklist.title}"?`)) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete “${checklist.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                         mutate({ action: "delete-checklist", checklistId: checklist.id });
                       }
                     }}

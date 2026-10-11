@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClaudeConnectorWalkthrough } from "./claude-connector-walkthrough";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { Button, EmptyState, PageHeader, askConfirm } from "../../../components/ui";
 import {
   ONSHAPE_OAUTH_CTA,
   onshapeAccountLabel,
@@ -235,7 +235,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   }, [load]);
 
   async function revoke(deviceId: string) {
-    if (!confirm("Revoke this CAD desktop? It will immediately lose job access.")) return;
+    if (!(await askConfirm({ title: "Revoke this CAD desktop?", body: "It will immediately lose job access.", confirmLabel: "Revoke", tone: "destructive" }))) return;
     await fetch("/api/cad", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -264,7 +264,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   }
 
   async function disconnectOnshape() {
-    if (!confirm("Disconnect Onshape? Hosted CAD jobs stop until you reconnect.")) return;
+    if (!(await askConfirm({ title: "Disconnect Onshape?", body: "Hosted CAD jobs stop until you reconnect.", confirmLabel: "Disconnect", tone: "destructive" }))) return;
     setBusy(true);
     try {
       const response = await fetch("/api/cad/onshape", {

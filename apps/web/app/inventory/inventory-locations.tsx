@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, askConfirm } from "../../components/ui";
 import { canDeleteInventoryRow, LOCATION_KINDS } from "../../lib/inventory";
 import { type ReadyView, type RunFn } from "./inventory-model";
 
@@ -41,8 +41,8 @@ export function LocationsPanel({
               className="inventory-link danger"
               aria-label={`Delete location ${location.name}`}
               disabled={busyKey === `location:${location.id}`}
-              onClick={() => {
-                if (confirm(`Delete location "${location.name}"? Items keep their stock but lose this location.`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete location “${location.name}”?`, body: "Items keep their stock but lose this location.", confirmLabel: "Delete location", tone: "destructive" })) {
                   void run({ action: "delete_location", orgId, id: location.id }, `location:${location.id}`);
                 }
               }}

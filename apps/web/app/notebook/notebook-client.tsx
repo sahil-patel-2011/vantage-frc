@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
 import { BUILD_PHASE_LABEL, BUILD_PHASES, canDeleteNotebookEntry, type BuildPhase } from "../../lib/notebook";
 import type { NotebookImageAttachment } from "../../lib/notebook/attachments";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
@@ -679,7 +679,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
                         size="sm"
                         variant="danger"
                         aria-label={`Delete entry ${entry.title}`}
-                        onClick={() => void post({ action: "delete_entry", id: entry.id }, "Entry deleted.")}
+                        onClick={async () => { if (await askConfirm({ title: "Delete this entry?", body: "The notebook entry is deleted.", confirmLabel: "Delete entry", tone: "destructive" })) void post({ action: "delete_entry", id: entry.id }, "Entry deleted."); }}
                       >
                         Delete
                       </Button>

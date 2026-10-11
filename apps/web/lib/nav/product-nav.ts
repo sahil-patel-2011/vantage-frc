@@ -155,8 +155,10 @@ export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
  * Hub rows already open the default workbench (Competition → Scout).
  * Repeating that name here printed it twice. The other workbenches stay
  * here so All can open Scouting / Chat / CAD without a second hop through
- * the hub TabBar. Nested tools (Forms, Alliance desk, Bugbot) stay off
- * this list — they live on the workbench ToolStrip.
+ * the hub TabBar. Forms and Assignments are canonical Competition
+ * destinations (hub-navigation.ts), so they are listed too. Nested tools
+ * (Alliance desk, Bugbot) stay off this list — they live on the workbench
+ * ToolStrip.
  */
 export function panelSubLinks(group: ProductNavGroup): Array<{ href: string; label: string }> {
   const hub = NAV_HUBS.find((entry) => entry.label === group.label);

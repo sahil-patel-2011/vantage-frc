@@ -13,7 +13,7 @@ import {
   StatRowSkeleton,
   StatTile,
   TableSkeleton,
-  type BadgeTone, Button } from "../../components/ui";
+  type BadgeTone, Button, askConfirm } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   DRIVETRAIN_TYPES,
@@ -173,7 +173,7 @@ function DefenseShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#defense-planner-matchup">
+            <Button as="a" variant="secondary" href="#defense-planner-matchup">
               Log a matchup
             </Button>
           ) : null}
@@ -439,7 +439,7 @@ export default function DefensePlannerClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
+          <Button as="a" variant="secondary" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
             {hasProfile ? "Log a matchup" : "Save robot profile"}
           </Button>
         </EmptyState>
@@ -724,8 +724,8 @@ function MatchupsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete the matchup vs Team ${matchup.opponentTeamNumber}?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete the matchup vs Team ${matchup.opponentTeamNumber}?`, body: null, confirmLabel: "Delete matchup", tone: "destructive" })) {
                     mutate({ action: "delete-matchup", matchupId: matchup.id });
                   }
                 }}

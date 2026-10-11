@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { isToolAllowed, loadOrgAiPolicy } from "@vantage/billing";
+import { isViewOnlyRefusal, VIEW_ONLY_MESSAGE } from "@vantage/db/view-only";
 import type { AIToolRegistry, ToolDefinition, ToolExecutionContext } from "./orchestrator";
 
 /**
@@ -35,7 +36,7 @@ export function isAiWriteTool(name: string): name is AiWriteToolName {
 }
 
 export type ProposedActionOutput = {
-  status: "proposed" | "setup_required";
+  status: "proposed" | "setup_required" | "view_only";
   requiresConfirmation: true;
   proposalId: string | null;
   toolName: string;
@@ -96,7 +97,18 @@ export async function proposeAiAction(
       summary,
       message: `Proposed, not done yet: ${summary}. Nothing changes until you press Confirm on the proposal card.`,
     };
-  } catch {
+  } catch (error) {
+    // A View only member's assistant answers questions but never queues changes (0715).
+    if (isViewOnlyRefusal(error)) {
+      return {
+        status: "view_only",
+        requiresConfirmation: true,
+        proposalId: null,
+        toolName: proposal.toolName,
+        summary,
+        message: VIEW_ONLY_MESSAGE,
+      };
+    }
     return {
       status: "setup_required",
       requiresConfirmation: true,

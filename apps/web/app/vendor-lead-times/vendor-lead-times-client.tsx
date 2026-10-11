@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { reorderStatusLabel, reorderUrgencyLabel } from "../../lib/vendor-lead-times";
 import type { VendorLeadTimesView } from "../../lib/vendor-lead-times/compute-vendor-lead-times";
 import {
@@ -572,8 +572,8 @@ function VendorList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete vendor "${vendor.name}"? This removes its reorders too.`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete vendor “${vendor.name}”?`, body: "This removes its reorders too.", confirmLabel: "Delete vendor", tone: "destructive" })) {
                   mutate({ action: "delete-vendor", vendorId: vendor.id });
                 }
               }}
@@ -657,8 +657,8 @@ function ReorderList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete reorder "${reorder.itemName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete reorder “${reorder.itemName}”?`, body: null, confirmLabel: "Delete reorder", tone: "destructive" })) {
                     mutate({ action: "delete-reorder", reorderId: reorder.id });
                   }
                 }}

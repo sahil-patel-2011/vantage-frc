@@ -7,6 +7,7 @@ import {
   sponsorPageTotals,
   type ContributionMoneyRow,
 } from "../../../lib/sponsors/totals";
+import { askText } from "../../../components/ui";
 
 type Sponsor = {
   id: string; name: string; website: string | null; tier: SponsorTier; status: SponsorStatus; industry: string | null;
@@ -134,7 +135,15 @@ export default function SponsorsClient({ orgId }: { orgId: string }) {
 
   async function sendDraft() {
     if (!draft) return;
-    const to = window.prompt("Send to which email address?");
+    const to = (
+      await askText({
+        title: "Send this draft?",
+        body: null,
+        confirmLabel: "Send",
+        tone: "neutral",
+        input: { label: "To (email address)", type: "email", required: true },
+      })
+    )?.trim();
     if (!to) return;
     const response = await fetch("/api/outreach", {
       method: "PATCH", headers: { "content-type": "application/json" },

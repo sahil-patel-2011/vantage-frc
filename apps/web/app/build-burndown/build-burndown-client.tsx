@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { BUILD_TASK_CATEGORIES, buildTaskCategoryLabel, buildTaskStatusLabel } from "../../lib/build-burndown";
 import { type BuildBurndownView } from "../../lib/build-burndown/compute-build-burndown";
 import {
@@ -161,7 +161,7 @@ function BurndownShell({
             </Button>
           ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#build-burndown-plan">Set kickoff plan</Button>
+          <Button as="a" variant="secondary" href="#build-burndown-plan">Set kickoff plan</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <BurndownNextActionsPanel actions={actions} /> : null}
@@ -407,7 +407,7 @@ export default function BuildBurndownClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href={hasPlan ? "#build-burndown-tasks" : "#build-burndown-plan"}>
+          <Button as="a" variant="secondary" href={hasPlan ? "#build-burndown-tasks" : "#build-burndown-plan"}>
             {hasPlan ? "Add a build task" : "Set kickoff plan"}
           </Button>
         </EmptyState>
@@ -647,8 +647,8 @@ function TaskList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${task.title}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${task.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-task", taskId: task.id });
                   }
                 }}

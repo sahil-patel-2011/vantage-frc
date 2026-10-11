@@ -61,5 +61,5 @@ export { SystemHealthStrip, type HealthSignal } from "./system-health-strip";
 // Overlays / feedback (each Provider mounts once)
 export { ActionMenu, type ActionSpec } from "./action-menu";
 export { Modal, useDialog } from "./modal";
-export { ConfirmDialog, ConfirmProvider, useConfirm, type ConfirmOpts } from "./confirm-dialog";
+export { askConfirm, askText, ConfirmDialog, ConfirmProvider, useConfirm, type ConfirmOpts } from "./confirm-dialog";
 export { ToastProvider, useToast } from "./toast";

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   CHECKLIST_LIBRARY_CATEGORIES,
   checklistLibraryCategoryLabel,
@@ -421,7 +421,7 @@ function TemplatesPanel({
         title="Create your first checklist template"
         description="Pit setup, transport load-out, and competition load-in checklists all start as a named template with a list of items."
       >
-        <Button as="a" variant="primary" href="#checklist-library-new">
+        <Button as="a" variant="secondary" href="#checklist-library-new">
           Create template
         </Button>
       </EmptyState>
@@ -459,8 +459,8 @@ function TemplatesPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete template "${template.name}"?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete template “${template.name}”?`, body: null, confirmLabel: "Delete template", tone: "destructive" })) {
                       mutate({ action: "delete-template", templateId: template.id });
                     }
                   }}
@@ -575,8 +575,8 @@ function RunsPanel({
                     type="button"
                     className="text-button"
                     disabled={busy}
-                    onClick={() => {
-                      if (window.confirm(`Delete run "${run.label}"?`)) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete run “${run.label}”?`, body: null, confirmLabel: "Delete run", tone: "destructive" })) {
                         mutate({ action: "delete-run", runId: run.id });
                       }
                     }}

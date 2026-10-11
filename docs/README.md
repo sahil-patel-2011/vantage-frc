@@ -44,9 +44,11 @@ Start with the section that matches you. Each document says who it is for in its
 | [GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md) | Superseded pre-launch list, kept for history |
 | [CUSTOM_DOMAIN.md](CUSTOM_DOMAIN.md) | Putting the app on your own domain |
 | [SUPABASE_CUTOVER.md](SUPABASE_CUTOVER.md) | Running on a Supabase Postgres host instead of Neon |
+| [NAS_DATABASE.md](NAS_DATABASE.md) | Running the database on a team NAS, verified TLS with your own CA, backups to Google |
 | [RELEASING.md](RELEASING.md) | Cutting releases, including desktop builds |
 | [../SECURITY_OPERATIONS.md](../SECURITY_OPERATIONS.md) | The security model, admin access, secrets and how to report a problem |
 | [PRICING.md](PRICING.md) | Today: free for every team, bring your own AI key. Also the dormant plan and credit model |
+| [ROLES.md](ROLES.md) | Who can change what: owner, team admin, team member and View only (read-only, enforced in Postgres) |
 | [FINANCE_SECURITY.md](FINANCE_SECURITY.md) | How money-related data is protected |
 
 ## Contributing

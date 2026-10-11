@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import type { OpponentWatchlistView } from "../../lib/opponent-watchlist/compute-opponent-watchlist";
 import {
   OPPONENT_WATCHLIST_RELATED_INCLUDE,
@@ -157,7 +157,7 @@ function WatchlistShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#opponent-watchlist-watch">Watch a team</Button>
+          <Button as="a" variant="secondary" href="#opponent-watchlist-watch">Watch a team</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <WatchlistNextActionsPanel actions={actions} /> : null}
@@ -374,7 +374,7 @@ export default function OpponentWatchlistClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#opponent-watchlist-watch">
+          <Button as="a" variant="secondary" href="#opponent-watchlist-watch">
             Watch a team
           </Button>
         </EmptyState>
@@ -497,7 +497,7 @@ function WatchedTeams({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => mutate({ action: "remove-entry", entryId: entry.id })}
+              onClick={async () => { if (await askConfirm({ title: "Remove from the watchlist?", body: `Team ${entry.teamNumber} comes off the watchlist.`, confirmLabel: "Remove team", tone: "neutral" })) void (mutate({ action: "remove-entry", entryId: entry.id })); }}
             >
               Remove
             </button>

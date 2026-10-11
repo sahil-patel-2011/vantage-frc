@@ -82,6 +82,8 @@ export function ProfileForm({
               value={option.value}
               checked={draft.teamRole === option.value}
               onChange={() => pickRole(option.value)}
+              // Nothing is picked for you; Continue points here until a card is chosen.
+              aria-invalid={errorField === "teamRole" || undefined}
             />
             <strong>{option.label}</strong>
             <span>{option.detail}</span>

@@ -12,6 +12,8 @@ import {
   inviteCanAccept,
   inviteEmptyCopy,
   inviteNextActions,
+  inviteProfileHref,
+  inviteProfileRedirect,
   inviteSignInHref,
   type InviteFlowKind,
   type InvitePreview,
@@ -28,6 +30,7 @@ type PreviewResponse = {
   preview?: InvitePreview | null;
   legalRequired?: boolean;
   profileRequired?: boolean;
+  onboardingComplete?: boolean;
   signedIn?: boolean;
   emailMismatch?: boolean;
   sessionEmail?: string | null;
@@ -108,6 +111,7 @@ export default function InviteClient() {
   const [preview, setPreview] = useState<InvitePreview | null | undefined>(undefined);
   const [legalRequired, setLegalRequired] = useState(true);
   const [profileRequired, setProfileRequired] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"info" | "error">("info");
   const [busy, setBusy] = useState(false);
@@ -173,6 +177,7 @@ export default function InviteClient() {
         setSessionEmail(data.sessionEmail ?? null);
         setLegalRequired(data.legalRequired !== false);
         setProfileRequired(data.profileRequired === true);
+        setOnboardingComplete(typeof data.onboardingComplete === "boolean" ? data.onboardingComplete : null);
         if (response.status === 401) {
           setAuthRequired(true);
           setPreview(data.preview ?? null);
@@ -228,6 +233,12 @@ export default function InviteClient() {
     legalRequired,
     status: preview?.status,
   });
+  // A profile that was never finished goes to onboarding, which asks for it and the agreements
+  // once and joins this team when done. Not a page of disabled buttons and a small link.
+  const profileRedirect = inviteProfileRedirect({ kind, token, profileRequired, onboardingComplete });
+  useEffect(() => {
+    if (profileRedirect) window.location.replace(profileRedirect);
+  }, [profileRedirect]);
   const identityPreview =
     preview && (kind === "ready" || kind === "auth_required" || kind === "email_mismatch")
       ? preview
@@ -345,16 +356,22 @@ export default function InviteClient() {
           </p>
         ) : null}
 
-        {profileRequired ? (
-          <p><a className="invite-next-link" href={`/onboarding?next=${encodeURIComponent(`/invite?token=${token}`)}`}>
-            Finish your profile
-          </a> to confirm age eligibility. Your invitation stays available.</p>
+        {profileRequired && !profileRedirect && kind === "ready" ? (
+          <p className="invite-message" role="status">
+            Your profile does not confirm age eligibility yet. Your invitation stays available.
+          </p>
         ) : null}
 
         {identityPreview ? <InviteIdentity preview={identityPreview} /> : null}
         {!token ? <p><a className="invite-next-link" href="/join-team">Join with a team code</a></p> : null}
 
-        {showReady ? (
+        {showReady && profileRedirect ? (
+          <p className="onboarding-sub" role="status">Opening your profile. Finishing it joins the team…</p>
+        ) : showReady && profileRequired ? (
+          <div className="invite-actions" id="invite-accept">
+            <a className="signin-submit" href={inviteProfileHref(token)}>Review your profile</a>
+          </div>
+        ) : showReady ? (
           <>
             {legalRequired ? (
               <LegalAgreementCheckbox

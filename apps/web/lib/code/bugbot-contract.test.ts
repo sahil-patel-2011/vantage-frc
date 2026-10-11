@@ -35,6 +35,11 @@ describe("Bugbot never pushes", () => {
    * token at github.com/login/oauth/access_token. It touches no repository.
    */
   const OAUTH_TOKEN_EXCHANGE = "lib/github/oauth.ts";
+  /**
+   * The other one: registering (and removing) the repository webhook that tells Vantage a pull
+   * request opened. Repository settings, not code — and only ever the /hooks endpoint.
+   */
+  const WEBHOOK_REGISTRATION = "lib/github/pulls.ts";
 
   const sources = [
     ...sourceFiles("lib/github"),
@@ -53,14 +58,28 @@ describe("Bugbot never pushes", () => {
   it("has no write verb against any GitHub repo endpoint", () => {
     for (const relative of sources) {
       const text = read(relative);
-      if (relative !== OAUTH_TOKEN_EXCHANGE) {
+      if (relative !== OAUTH_TOKEN_EXCHANGE && relative !== WEBHOOK_REGISTRATION) {
         expect(text, relative).not.toMatch(/method:\s*["'](POST|PUT|PATCH|DELETE)["']/);
       }
       expect(text, relative).not.toMatch(/\/git\/(refs|commits|blobs|trees)\b[^\n]*method/);
-      expect(text, relative).not.toMatch(/\bpulls\b|createPullRequest|createOrUpdateFileContents/);
+      // Pull requests are read, never opened, merged, commented on or reviewed on GitHub.
+      expect(text, relative).not.toMatch(/createPullRequest|createOrUpdateFileContents|mergePullRequest/);
+      expect(text, relative).not.toMatch(/\/pulls\/[^\n"'`]*\/(merge|comments|reviews|requested_reviewers|update-branch)\b/);
+      expect(text, relative).not.toMatch(/\/issues\/[^\n"'`]*\/comments\b/);
       // No repo-scoped write endpoints, whatever the verb is spelled like.
       expect(text, relative).not.toMatch(/\/repos\/[^\n"'`]*\/(merges|releases|dispatches)\b/);
     }
+  });
+
+  it("keeps the webhook exception to the repository /hooks endpoint", () => {
+    const text = read(WEBHOOK_REGISTRATION);
+    const writes = text.match(/method:\s*["'](POST|PUT|PATCH|DELETE)["']/g) ?? [];
+    const targets = [...text.matchAll(/http\(`([^`]*)`,\s*\{\s*method:\s*["'](POST|PUT|PATCH|DELETE)["']/g)];
+    expect(writes).toHaveLength(2);
+    expect(targets.map((match) => `${match[2]} ${match[1].replace(/^\$\{repoPath\(fullName\)\}/, "")}`)).toEqual([
+      "POST /hooks",
+      "DELETE /hooks/${id}",
+    ]);
   });
 
   it("keeps the OAuth exception scoped to the token endpoint, not a repo", () => {

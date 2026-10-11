@@ -207,7 +207,7 @@ test.describe("with real sessions", () => {
       const type = await field.getAttribute("type");
       await field.fill(type === "number" ? "3" : type === "date" ? "2027-01-09" : type === "email" ? "dana@example.com" : "Dana");
     }
-    await answerPanel.getByRole("button", { name: "Submit" }).click();
+    await answerPanel.getByRole("button", { name: "Submit response" }).click();
 
     // The response summary reflects the saved answer, regardless of navigation chrome.
     await owner.page.goto(withOrg(`/forms/${formId}`));

@@ -634,6 +634,8 @@ export function canDeleteCalendarEvent(input: {
 }): boolean {
   const role = (input.role ?? "").toLowerCase();
   if (role === "owner" || role === "admin") return true;
+  // View only (0715): even an event they wrote before becoming View only.
+  if (role === "viewer") return false;
   const userId = input.userId ?? "";
   const authorId = input.authorId ?? "";
   return userId.length > 0 && userId === authorId;

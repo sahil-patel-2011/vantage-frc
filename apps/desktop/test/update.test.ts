@@ -3,6 +3,7 @@ import { PRODUCTION_APP_HOSTS } from "../src/allowlist";
 import {
   compareVersions,
   decideUpdate,
+  downloadKeysFor,
   IDLE_BEFORE_INSTALL_MS,
   IDLE_BEFORE_WEB_RELOAD_MS,
   installWindow,
@@ -455,3 +456,32 @@ describe("the platform a manifest is read for", () => {
     expect(parseManifest(multi, "freebsd")).toBeNull();
   });
 });
+
+describe("Mac downloads per chip", () => {
+  const sha = (c: string) => c.repeat(64);
+  const perChip = {
+    version: "9.0.0",
+    url: "https://github.com/o/r/releases/download/v9/Vantage-9.0.0-win-x64-setup.exe",
+    sha256: sha("a"),
+    downloads: {
+      win_nsis: "https://github.com/o/r/releases/download/v9/Vantage-9.0.0-win-x64-setup.exe",
+      mac_zip_arm64: "https://github.com/o/r/releases/download/v9/Vantage-9.0.0-mac-arm64.zip",
+      mac_zip_x64: "https://github.com/o/r/releases/download/v9/Vantage-9.0.0-mac-x64.zip",
+    },
+    sha256ByDownload: { win_nsis: sha("a"), mac_zip_arm64: sha("b"), mac_zip_x64: sha("c") },
+  };
+
+  it("gives each Mac the zip for its own chip, with that file's digest", () => {
+    expect(parseManifest(perChip, "darwin", "arm64")?.url).toContain("mac-arm64.zip");
+    expect(parseManifest(perChip, "darwin", "arm64")?.sha256).toBe(sha("b"));
+    expect(parseManifest(perChip, "darwin", "x64")?.url).toContain("mac-x64.zip");
+    expect(parseManifest(perChip, "darwin", "x64")?.sha256).toBe(sha("c"));
+    expect(parseManifest(perChip, "win32", "x64")?.url).toContain("setup.exe");
+  });
+
+  it("prefers a universal build when one is published", () => {
+    expect(downloadKeysFor("darwin", "arm64")).toEqual(["mac_dmg", "mac_zip", "mac_zip_arm64"]);
+    expect(downloadKeysFor("win32")).toEqual(["win_nsis", "win_msi", "win_portable"]);
+  });
+});
+

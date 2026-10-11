@@ -5,6 +5,12 @@ import { headers } from "next/headers";
 import { syncSponsorContributionMoney } from "../../../../lib/finance/source-mirrors";
 import { orgScopedPackageId } from "../../../../lib/partner-placements";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  assertFinanceManager,
+  canManageFinances,
+  isFinanceGuardRefusal,
+} from "../../../../lib/finance/finance-managers";
 
 type Body = Record<string, unknown>;
 const surfaces = ["business_wall", "dashboard_footer", "pit_footer"] as const;
@@ -32,7 +38,9 @@ async function load(client: PoolClient, orgId: string) {
     client.query(`SELECT id, sponsor_id AS "sponsorId", public_id AS "publicId", name AS filename, width, height, status, created_at::text AS "createdAt" FROM sponsor_assets WHERE org_id = $1 ORDER BY created_at DESC`, [orgId]),
     client.query(`SELECT sub.id, sub.package_id AS "packageId", p.name AS "packageName", sub.company_name AS "companyName", sub.contact_name AS "contactName", sub.contact_email AS "contactEmail", sub.website, sub.message, sub.external_logo_url AS "logoUrl", sub.status, sub.created_at::text AS "createdAt" FROM partner_storefront_submissions sub LEFT JOIN partner_placement_packages p ON p.id = sub.package_id WHERE sub.org_id = $1 ORDER BY sub.created_at DESC LIMIT 100`, [orgId]),
   ]);
-  return { settings: settings.rows[0] ?? null, packages: packages.rows, sponsors: sponsors.rows, campaigns: campaigns.rows, assets: assets.rows, submissions: submissions.rows };
+  // Recording or waiving a sponsor's payment is a money decision (0714).
+  const canManageMoney = await canManageFinances(client, orgId);
+  return { settings: settings.rows[0] ?? null, packages: packages.rows, sponsors: sponsors.rows, campaigns: campaigns.rows, assets: assets.rows, submissions: submissions.rows, canManageFinances: canManageMoney };
 }
 
 export async function GET(request: Request) {
@@ -117,11 +125,13 @@ export async function POST(request: Request) {
         await client.query("UPDATE partner_storefront_submissions SET status=$3, reviewed_by=$4, reviewed_at=now() WHERE id=$1 AND org_id=$2", [submissionId, orgId, decision, session.user.id]);
         await audit(client, orgId, session.user.id, action, "partner_submission", submissionId, { decision });
       } else if (action === "waive-payment") {
+        await assertFinanceManager(client, orgId);
         const campaignId = text(body.campaignId, 64); if (!campaignId) throw new Error("Campaign required");
         const waived = await client.query(`UPDATE partner_placement_campaigns SET payment_status='waived',updated_at=now() WHERE id=$1 AND org_id=$2 AND payment_status='pending' RETURNING id`, [campaignId, orgId]);
         if (!waived.rows[0]) throw new Error("Only a pending campaign payment can be waived");
         await audit(client, orgId, session.user.id, action, "partner_campaign", campaignId);
       } else if (action === "mark-paid") {
+        await assertFinanceManager(client, orgId);
         const campaignId = text(body.campaignId, 64); if (!campaignId) throw new Error("Campaign required");
         const campaign = await client.query<{ sponsorId: string; seasonYear: number; name: string; amount: string; paymentStatus: string; contributionId: string | null }>(`SELECT sponsor_id AS "sponsorId",season_year AS "seasonYear",name,amount_usd::text AS amount,payment_status AS "paymentStatus",contribution_id AS "contributionId" FROM partner_placement_campaigns WHERE id=$1 AND org_id=$2`, [campaignId, orgId]); const row = campaign.rows[0]; if (!row) throw new Error("Campaign not found");
         if (row.paymentStatus !== "paid") {
@@ -149,5 +159,8 @@ export async function POST(request: Request) {
       return load(client, orgId);
     });
     return Response.json(program);
-  } catch (error) { return Response.json({ error: publicErrorMessage(error, "Partner placement update failed") }, { status: 400 }); }
+  } catch (error) {
+    if (isFinanceGuardRefusal(error)) return Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 });
+    return Response.json({ error: publicErrorMessage(error, "Partner placement update failed") }, { status: 400 });
+  }
 }

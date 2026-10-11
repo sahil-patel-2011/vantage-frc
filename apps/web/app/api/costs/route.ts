@@ -19,6 +19,11 @@ import {
 } from "../../../lib/costs/compute-costs";
 import type { CostCategory, CostStatus, SubscriptionCadence } from "../../../lib/costs/types";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  canManageFinances,
+  isFinanceAccessDenied,
+} from "../../../lib/finance/finance-managers";
 
 export type { CostsView };
 
@@ -103,15 +108,14 @@ export async function POST(request: Request) {
       ]);
       if (!member.rowCount) throw new Error("forbidden");
 
+      // Every action here records or changes money — the budget, a cost, a
+      // subscription. Finance managers only (0714): the owner plus the people the
+      // owner chose. RLS refuses the same writes; this answers with a sentence.
+      // Everyone else asks for things through a purchase request.
+      if (!(await canManageFinances(client, orgId))) throw new Error("finance_forbidden");
+
       switch (action) {
         case "set-budget": {
-          // The season budget is mentor-only since 0621 — RLS refuses the write
-          // for anyone else, and this turns that refusal into a sentence.
-          const allowed = await client.query<{ allowed: boolean }>(
-            `SELECT has_org_capability($1::uuid, 'manage_budget'::org_capability) AS allowed`,
-            [orgId],
-          );
-          if (allowed.rows[0]?.allowed !== true) throw new Error("budget_forbidden");
           await setBudget(client, {
             orgId,
             userId,
@@ -216,15 +220,8 @@ export async function POST(request: Request) {
     return Response.json(view);
   } catch (error) {
     const message = publicErrorMessage(error, "Season costs request failed");
-    if (message === "budget_forbidden") {
-      return Response.json(
-        {
-          error:
-            "The season budget is limited to mentors — the team Owner and Admins, plus anyone an " +
-            "owner has granted budget access. Season costs stay open to everyone.",
-        },
-        { status: 403 },
-      );
+    if (message === "finance_forbidden" || isFinanceAccessDenied(error)) {
+      return Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 });
     }
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(

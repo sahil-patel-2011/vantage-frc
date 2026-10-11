@@ -1,6 +1,6 @@
 "use client";
 
-import { Panel } from "../../components/ui";
+import { Panel, askConfirm } from "../../components/ui";
 import { inspectionFlagSeverityLabel } from "../../lib/inspection-copilot";
 import type { InspectionCopilotView } from "../../lib/inspection-copilot/compute-inspection-copilot";
 import {
@@ -52,8 +52,8 @@ export function ChecksList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${check.robotName}" check?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${check.robotName}” check?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-check", checkId: check.id });
                   }
                 }}

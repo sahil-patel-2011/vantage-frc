@@ -11,7 +11,7 @@ import {
   PageHeader,
   Panel,
   StatRowSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, useConfirm, askConfirm } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -546,7 +546,7 @@ export default function VisitInvitesClient() {
             {/* One action out of an empty state. The related links live in the
                 header for every state of this page. */}
             {canManage ? (
-              <Button as="a" variant="primary" href="#visit-create">
+              <Button as="a" variant="secondary" href="#visit-create">
                 Jump to create
               </Button>
             ) : null}
@@ -595,6 +595,7 @@ function VisitCard({
   run: (body: ActionBody, key: string) => Promise<void>;
   onShareNote: (note: string) => void;
 }) {
+  const confirm = useConfirm();
   const counts = rsvpCounts(visit.rsvps);
   const tone = capacityTone(counts.partyGoing, visit.capacity);
   const [hostName, setHostName] = useState("");
@@ -692,7 +693,7 @@ function VisitCard({
                       className="visit-link danger"
                       aria-label={`Remove host ${host.hostName || "Host"}`}
                       disabled={busy}
-                      onClick={() => void run({ action: "remove_host", orgId, id: host.id }, `rh:${host.id}`)}
+                      onClick={async () => { if (await askConfirm({ title: "Remove this host?", body: `${host.hostName} comes off the visit.`, confirmLabel: "Remove host", tone: "destructive" })) void run({ action: "remove_host", orgId, id: host.id }, `rh:${host.id}`); }}
                     >
                       Remove
                     </button>
@@ -743,7 +744,7 @@ function VisitCard({
                         className="visit-link danger"
                         aria-label={`Remove demo ${demo.demoTitle}`}
                         disabled={busy}
-                        onClick={() => void run({ action: "remove_demo", orgId, id: demo.id }, `rd:${demo.id}`)}
+                        onClick={async () => { if (await askConfirm({ title: "Remove this demo?", body: `“${demo.demoTitle}” comes off the visit.`, confirmLabel: "Remove demo", tone: "destructive" })) void run({ action: "remove_demo", orgId, id: demo.id }, `rd:${demo.id}`); }}
                       >
                         Remove
                       </button>
@@ -860,7 +861,7 @@ function VisitCard({
                       className="visit-link danger"
                       aria-label={`Remove RSVP ${rsvp.guestName || "Member"}`}
                       disabled={busy}
-                      onClick={() => void run({ action: "remove_rsvp", orgId, id: rsvp.id }, `rr:${rsvp.id}`)}
+                      onClick={async () => { if (await askConfirm({ title: "Remove this response?", body: `${rsvp.guestName}'s response is removed.`, confirmLabel: "Remove response", tone: "destructive" })) void run({ action: "remove_rsvp", orgId, id: rsvp.id }, `rr:${rsvp.id}`); }}
                     >
                       Remove
                     </button>
@@ -875,10 +876,14 @@ function VisitCard({
               className="visit-link danger"
               aria-label={`Delete visit ${visit.title}`}
               disabled={busy}
-              onClick={() => {
-                if (confirm(`Delete "${visit.title}"?`)) {
-                  void run({ action: "delete_visit", orgId, id: visit.id }, `del:${visit.id}`);
-                }
+              onClick={async () => {
+                const ok = await confirm({
+                  title: "Delete this visit?",
+                  body: `“${visit.title}” and its invite responses are removed.`,
+                  confirmLabel: "Delete visit",
+                  tone: "destructive",
+                });
+                if (ok) void run({ action: "delete_visit", orgId, id: visit.id }, `del:${visit.id}`);
               }}
             >
               Delete visit

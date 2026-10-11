@@ -1,0 +1,43 @@
+/*
+ * /claim: the three fields share a grid (one column on a phone, three on a desktop); the
+ * agreements, the authorization statement and the one Create team button run full width
+ * below it. Everything used to sit in a single auto-fit grid, so on a phone the button was a
+ * 174×347 cell and on a desktop the inputs stretched to the height of the agreements.
+ */
+.claim-form {
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  margin-top: 8px;
+}
+
+.claim-form .claim-fields {
+  align-items: start;
+  gap: 14px;
+}
+
+.claim-form .claim-fields input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.claim-form .claim-consents {
+  display: grid;
+  gap: 4px;
+}
+
+.claim-form .claim-consents .legal-consent {
+  margin: 0;
+}
+
+.claim-form .claim-submit {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+}
+
+.claim-form > p {
+  margin: 0;
+}

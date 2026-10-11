@@ -10,6 +10,7 @@ import {
 import type { AgentConfigItem, AgentConfigRevision } from "../../../lib/agent-config/store";
 import type { AgentConfigView } from "../../api/agent-config/route";
 import "./agent-config.css";
+import { askConfirm } from "../../../components/ui";
 
 const KIND_LABEL: Record<AgentConfigKind, string> = {
   rules: "Rules",
@@ -397,8 +398,8 @@ export default function AgentConfigClient() {
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => {
-                      if (!window.confirm(`Delete ${editor.name}? History is removed with it.`)) return;
+                    onClick={async () => {
+                      if (!(await askConfirm({ title: `Delete ${editor.name}?`, body: "History is removed with it.", confirmLabel: "Delete", tone: "destructive" }))) return;
                       mutate({ action: "delete-item", itemId: editor.itemId }, () => setEditor(EMPTY_EDITOR));
                     }}
                   >

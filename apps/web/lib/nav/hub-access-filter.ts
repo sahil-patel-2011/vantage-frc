@@ -125,6 +125,16 @@ export function hubIdForPath(pathname: string): ClientHubId | null {
   if (pathname.startsWith("/competition") || pathname.startsWith("/scouting") || pathname === "/intel") {
     return "competition";
   }
+  // Money pages that live under /team/… belong to Business (hubs.ts files them
+  // there), so they must not fall through to the Team rule below.
+  if (
+    pathname === "/team/finance" ||
+    pathname === "/team/grants" ||
+    pathname.startsWith("/team/grants/") ||
+    pathname === "/team/sponsors"
+  ) {
+    return "business";
+  }
   if (pathname.startsWith("/team") || pathname === "/logistics") return "team";
   if (
     pathname.startsWith("/business") ||
@@ -135,11 +145,26 @@ export function hubIdForPath(pathname: string): ClientHubId | null {
     pathname.startsWith("/sponsorship") ||
     pathname.startsWith("/sponsor") ||
     pathname.startsWith("/matching-gift") ||
-    pathname.startsWith("/grant")
+    pathname.startsWith("/grant") ||
+    // The Money workbench's tools (hubs.ts → business → finance). /budget is
+    // matched exactly: /budget-reconciler is a Build tool.
+    pathname === "/budget" ||
+    pathname.startsWith("/reimbursements") ||
+    pathname.startsWith("/vendors") ||
+    pathname.startsWith("/vendor-lead-times") ||
+    pathname.startsWith("/part-requests") ||
+    pathname.startsWith("/parts-catalog")
   ) {
     return "business";
   }
-  if (pathname.startsWith("/build") || pathname.startsWith("/cad") || pathname.startsWith("/kickoff")) {
+  if (
+    pathname.startsWith("/build") ||
+    pathname.startsWith("/cad") ||
+    pathname.startsWith("/kickoff") ||
+    // Robot-side cost and budget tools live in Build (hubs.ts → build).
+    pathname.startsWith("/bom-cost-rollup") ||
+    pathname.startsWith("/budget-reconciler")
+  ) {
     return "build";
   }
   if (pathname.startsWith("/ai") || pathname.startsWith("/writer")) return "ai";

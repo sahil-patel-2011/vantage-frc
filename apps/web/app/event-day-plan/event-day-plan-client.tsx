@@ -13,8 +13,7 @@ import {
   Panel,
   SoftBlockSkeleton,
   StatTile,
-  type BadgeTone,
-} from "../../components/ui";
+  type BadgeTone, askConfirm } from "../../components/ui";
 import { eventDayPlanKindLabel, eventDayPlanStatusLabel, EVENT_DAY_PLAN_KINDS } from "../../lib/event-day-plan";
 import type { EventDayPlanView } from "../../lib/event-day-plan/compute-event-day-plan";
 import type { EventDayPlanKind, EventDayPlanStatus } from "../../lib/event-day-plan/types";
@@ -192,7 +191,7 @@ function PlanShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#event-day-plan-add">Add the first block</Button>
+            <Button as="a" variant="secondary" href="#event-day-plan-add">Add the first block</Button>
           ) : null}
         </EmptyState>
       )}
@@ -530,7 +529,7 @@ function HourlyOverlay({
         title="Add your first event-day block"
         description="Qual matches, battery charges, scout shifts, pit-repair windows, and logistics all overlay on one hourly plan."
       >
-        <Button as="a" variant="primary" href="#event-day-plan-add">
+        <Button as="a" variant="secondary" href="#event-day-plan-add">
           Add block
         </Button>
       </EmptyState>
@@ -572,8 +571,8 @@ function HourlyOverlay({
                       variant="ghost"
                       size="sm"
                       disabled={busy}
-                      onClick={() => {
-                        if (window.confirm(`Delete "${block.title}"?`)) {
+                      onClick={async () => {
+                        if (await askConfirm({ title: `Delete “${block.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                           mutate({ action: "delete-block", blockId: block.id });
                         }
                       }}

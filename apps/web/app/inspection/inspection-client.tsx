@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../components/ui";
 import {
   canDeleteAuthoredRow,
   groupByCategory,
@@ -472,8 +472,8 @@ export default function InspectionClient() {
                     type="button"
                     className="insp-link danger"
                     disabled={busy}
-                    onClick={() => {
-                      if (confirm("Reset every item on this robot to pending? (Keeps custom items.)")) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: "Reset every item on this robot to pending?", body: "(Keeps custom items.)", confirmLabel: "Reset items", tone: "destructive" })) {
                         void run({ action: "reset_checklist", orgId, robotLabel }, "reset");
                       }
                     }}

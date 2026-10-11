@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { forgetMe, requestMe } from "./me-request";
+import { forgetMe, meRetryDelayMs, requestMe } from "./me-request";
 
 /**
  * The point of this module is that five callers produce one request. If the
@@ -118,6 +118,59 @@ describe("requestMe", () => {
     expect((await requestMe()).ok).toBe(false);
     vi.advanceTimersByTime(2_001);
     expect((await requestMe()).ok).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not ask while the browser says it is offline", async () => {
+    vi.stubGlobal("navigator", { onLine: false });
+    const fetchSpy = stubFetch(async () => okResponse({ orgId: "org-1" }));
+    for (let i = 0; i < 25; i += 1) expect(await requestMe("org-1")).toEqual({ ok: false, status: 0, data: null });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("spaces out retries after unanswered reads, then asks at once when back online", async () => {
+    vi.useFakeTimers();
+    const listeners = new Map<string, () => void>();
+    vi.stubGlobal("window", {
+      location: { search: "" },
+      addEventListener: (type: string, listener: () => void) => listeners.set(type, listener),
+    });
+    const fetchSpy = stubFetch(async () => {
+      throw new Error("offline");
+    });
+    // Twenty seconds of a page asking every 800ms: 2s, 4s, 8s waits, not 25 requests.
+    for (let elapsed = 0; elapsed <= 20_000; elapsed += 800) {
+      await requestMe("org-1");
+      vi.advanceTimersByTime(800);
+    }
+    expect(fetchSpy.mock.calls.length).toBeLessThanOrEqual(5);
+    expect(fetchSpy.mock.calls.length).toBeGreaterThanOrEqual(3);
+
+    fetchSpy.mockImplementation(async () => okResponse({ orgId: "org-1" }));
+    listeners.get("online")?.();
+    expect(await requestMe("org-1")).toEqual({ ok: true, status: 200, data: { orgId: "org-1" } });
+  });
+
+  it("backs off after a server outage (5xx) but not after a definite answer", async () => {
+    vi.useFakeTimers();
+    let status = 503;
+    const fetchSpy = stubFetch(async () => ({ ok: status < 300, status, json: async () => ({}) }) as unknown as Response);
+    await requestMe("org-1");
+    vi.advanceTimersByTime(2_001);
+    await requestMe("org-1");
+    vi.advanceTimersByTime(2_001);
+    await requestMe("org-1");
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(meRetryDelayMs(1)).toBe(2_000);
+    expect(meRetryDelayMs(2)).toBe(4_000);
+    expect(meRetryDelayMs(10)).toBe(30_000);
+
+    forgetMe();
+    status = 401;
+    fetchSpy.mockClear();
+    await requestMe("org-1");
+    vi.advanceTimersByTime(2_001);
+    await requestMe("org-1");
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 

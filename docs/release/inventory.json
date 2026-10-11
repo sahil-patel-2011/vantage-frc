@@ -1,21 +1,33 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-09-26T21:54:30.875Z",
+  "generatedAt": "2026-10-11T17:59:36.914Z",
   "summary": {
-    "pages": 324,
-    "apis": 499,
+    "pages": 331,
+    "apis": 511,
     "manifests": 123,
     "coreWorkflows": 20,
-    "historicalTables": 615,
-    "scheduledJobs": 4,
+    "historicalTables": 624,
+    "scheduledJobs": 0,
     "cronRoutes": 11,
     "durableWorkflows": 3,
     "connectorRoots": 7
   },
   "routes": [
     {
+      "path": "apps/web/app/access-unavailable/page.tsx",
+      "route": "/access-unavailable",
+      "kind": "page",
+      "methods": []
+    },
+    {
       "path": "apps/web/app/account/page.tsx",
       "route": "/account",
+      "kind": "page",
+      "methods": []
+    },
+    {
+      "path": "apps/web/app/account/teams/page.tsx",
+      "route": "/account/teams",
       "kind": "page",
       "methods": []
     },
@@ -104,6 +116,12 @@
       "methods": []
     },
     {
+      "path": "apps/web/app/ai/connect/page.tsx",
+      "route": "/ai/connect",
+      "kind": "page",
+      "methods": []
+    },
+    {
       "path": "apps/web/app/ai/page.tsx",
       "route": "/ai",
       "kind": "page",
@@ -179,6 +197,14 @@
       "methods": [
         "GET",
         "PUT"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/account/tour/route.ts",
+      "route": "/api/account/tour",
+      "kind": "api",
+      "methods": [
+        "POST"
       ]
     },
     {
@@ -567,15 +593,6 @@
       ]
     },
     {
-      "path": "apps/web/app/api/assembly-manual/route.ts",
-      "route": "/api/assembly-manual",
-      "kind": "api",
-      "methods": [
-        "GET",
-        "POST"
-      ]
-    },
-    {
       "path": "apps/web/app/api/assembly-manual/[runId]/pdf/route.ts",
       "route": "/api/assembly-manual/[runId]/pdf",
       "kind": "api",
@@ -601,11 +618,28 @@
       ]
     },
     {
+      "path": "apps/web/app/api/assembly-manual/route.ts",
+      "route": "/api/assembly-manual",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
       "path": "apps/web/app/api/attendance/route.ts",
       "route": "/api/attendance",
       "kind": "api",
       "methods": [
         "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/auth/[...all]/route.ts",
+      "route": "/api/auth/[...all]",
+      "kind": "api",
+      "methods": [
         "POST"
       ]
     },
@@ -625,12 +659,6 @@
       "methods": [
         "GET"
       ]
-    },
-    {
-      "path": "apps/web/app/api/auth/[...all]/route.ts",
-      "route": "/api/auth/[...all]",
-      "kind": "api",
-      "methods": []
     },
     {
       "path": "apps/web/app/api/auto-routines/route.ts",
@@ -855,19 +883,19 @@
       ]
     },
     {
-      "path": "apps/web/app/api/business/assets/route.ts",
-      "route": "/api/business/assets",
-      "kind": "api",
-      "methods": [
-        "POST"
-      ]
-    },
-    {
       "path": "apps/web/app/api/business/assets/[assetId]/route.ts",
       "route": "/api/business/assets/[assetId]",
       "kind": "api",
       "methods": [
         "GET"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/business/assets/route.ts",
+      "route": "/api/business/assets",
+      "kind": "api",
+      "methods": [
+        "POST"
       ]
     },
     {
@@ -1066,6 +1094,14 @@
       ]
     },
     {
+      "path": "apps/web/app/api/cad-vault/[documentId]/versions/route.ts",
+      "route": "/api/cad-vault/[documentId]/versions",
+      "kind": "api",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
       "path": "apps/web/app/api/cad-vault/file/[publicId]/route.ts",
       "route": "/api/cad-vault/file/[publicId]",
       "kind": "api",
@@ -1089,14 +1125,6 @@
         "GET",
         "POST",
         "PATCH"
-      ]
-    },
-    {
-      "path": "apps/web/app/api/cad-vault/[documentId]/versions/route.ts",
-      "route": "/api/cad-vault/[documentId]/versions",
-      "kind": "api",
-      "methods": [
-        "POST"
       ]
     },
     {
@@ -1544,15 +1572,6 @@
       ]
     },
     {
-      "path": "apps/web/app/api/drive/files/route.ts",
-      "route": "/api/drive/files",
-      "kind": "api",
-      "methods": [
-        "PATCH",
-        "DELETE"
-      ]
-    },
-    {
       "path": "apps/web/app/api/drive/files/[fileId]/content/route.ts",
       "route": "/api/drive/files/[fileId]/content",
       "kind": "api",
@@ -1567,6 +1586,15 @@
       "kind": "api",
       "methods": [
         "GET"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/drive/files/route.ts",
+      "route": "/api/drive/files",
+      "kind": "api",
+      "methods": [
+        "PATCH",
+        "DELETE"
       ]
     },
     {
@@ -1855,6 +1883,15 @@
       ]
     },
     {
+      "path": "apps/web/app/api/finance/managers/route.ts",
+      "route": "/api/finance/managers",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
       "path": "apps/web/app/api/finance/purchase-requests/route.ts",
       "route": "/api/finance/purchase-requests",
       "kind": "api",
@@ -1933,6 +1970,15 @@
       ]
     },
     {
+      "path": "apps/web/app/api/github/pulls/route.ts",
+      "route": "/api/github/pulls",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
       "path": "apps/web/app/api/github/repos/route.ts",
       "route": "/api/github/repos",
       "kind": "api",
@@ -1946,6 +1992,14 @@
       "kind": "api",
       "methods": [
         "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/github/webhook/[token]/route.ts",
+      "route": "/api/github/webhook/[token]",
+      "kind": "api",
+      "methods": [
         "POST"
       ]
     },
@@ -2140,15 +2194,6 @@
     {
       "path": "apps/web/app/api/incident-heatmap/route.ts",
       "route": "/api/incident-heatmap",
-      "kind": "api",
-      "methods": [
-        "GET",
-        "POST"
-      ]
-    },
-    {
-      "path": "apps/web/app/api/incidents/route.ts",
-      "route": "/api/incidents",
       "kind": "api",
       "methods": [
         "GET",
@@ -2954,6 +2999,15 @@
       ]
     },
     {
+      "path": "apps/web/app/api/organizations/join-code/route.ts",
+      "route": "/api/organizations/join-code",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
       "path": "apps/web/app/api/organizations/members/route.ts",
       "route": "/api/organizations/members",
       "kind": "api",
@@ -3317,15 +3371,6 @@
       ]
     },
     {
-      "path": "apps/web/app/api/reimbursements/route.ts",
-      "route": "/api/reimbursements",
-      "kind": "api",
-      "methods": [
-        "GET",
-        "POST"
-      ]
-    },
-    {
       "path": "apps/web/app/api/reimbursements/[id]/receipt/route.ts",
       "route": "/api/reimbursements/[id]/receipt",
       "kind": "api",
@@ -3341,6 +3386,15 @@
       "methods": [
         "PATCH",
         "DELETE"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/reimbursements/route.ts",
+      "route": "/api/reimbursements",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
       ]
     },
     {
@@ -3610,12 +3664,30 @@
       ]
     },
     {
+      "path": "apps/web/app/api/scouting/form-responses/route.ts",
+      "route": "/api/scouting/form-responses",
+      "kind": "api",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
       "path": "apps/web/app/api/scouting/formulas/route.ts",
       "route": "/api/scouting/formulas",
       "kind": "api",
       "methods": [
         "GET",
         "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/scouting/free-reports/route.ts",
+      "route": "/api/scouting/free-reports",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
       ]
     },
     {
@@ -3628,6 +3700,15 @@
       ]
     },
     {
+      "path": "apps/web/app/api/scouting/media/[clientId]/route.ts",
+      "route": "/api/scouting/media/[clientId]",
+      "kind": "api",
+      "methods": [
+        "PUT",
+        "GET"
+      ]
+    },
+    {
       "path": "apps/web/app/api/scouting/media/route.ts",
       "route": "/api/scouting/media",
       "kind": "api",
@@ -3636,11 +3717,10 @@
       ]
     },
     {
-      "path": "apps/web/app/api/scouting/media/[clientId]/route.ts",
-      "route": "/api/scouting/media/[clientId]",
+      "path": "apps/web/app/api/scouting/quality-reports/route.ts",
+      "route": "/api/scouting/quality-reports",
       "kind": "api",
       "methods": [
-        "PUT",
         "GET"
       ]
     },
@@ -3667,6 +3747,31 @@
       "methods": [
         "GET",
         "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/scouting/shared/route.ts",
+      "route": "/api/scouting/shared",
+      "kind": "api",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/scouting/sharing/route.ts",
+      "route": "/api/scouting/sharing",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/scouting/summary/route.ts",
+      "route": "/api/scouting/summary",
+      "kind": "api",
+      "methods": [
+        "GET"
       ]
     },
     {
@@ -3881,20 +3986,20 @@
       ]
     },
     {
+      "path": "apps/web/app/api/sponsor-wall/[publicId]/route.ts",
+      "route": "/api/sponsor-wall/[publicId]",
+      "kind": "api",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
       "path": "apps/web/app/api/sponsor-wall/route.ts",
       "route": "/api/sponsor-wall",
       "kind": "api",
       "methods": [
         "GET",
         "POST"
-      ]
-    },
-    {
-      "path": "apps/web/app/api/sponsor-wall/[publicId]/route.ts",
-      "route": "/api/sponsor-wall/[publicId]",
-      "kind": "api",
-      "methods": [
-        "GET"
       ]
     },
     {
@@ -4028,6 +4133,14 @@
       "methods": [
         "GET",
         "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/strategy/evaluation/route.ts",
+      "route": "/api/strategy/evaluation",
+      "kind": "api",
+      "methods": [
+        "GET"
       ]
     },
     {
@@ -4263,6 +4376,14 @@
       "kind": "api",
       "methods": [
         "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/teams/join/route.ts",
+      "route": "/api/teams/join",
+      "kind": "api",
+      "methods": [
         "POST"
       ]
     },
@@ -4856,14 +4977,14 @@
       "methods": []
     },
     {
-      "path": "apps/web/app/docs/page.tsx",
-      "route": "/docs",
+      "path": "apps/web/app/docs/[slug]/page.tsx",
+      "route": "/docs/[slug]",
       "kind": "page",
       "methods": []
     },
     {
-      "path": "apps/web/app/docs/[slug]/page.tsx",
-      "route": "/docs/[slug]",
+      "path": "apps/web/app/docs/page.tsx",
+      "route": "/docs",
       "kind": "page",
       "methods": []
     },
@@ -4994,14 +5115,14 @@
       "methods": []
     },
     {
-      "path": "apps/web/app/forms/page.tsx",
-      "route": "/forms",
+      "path": "apps/web/app/forms/[formId]/page.tsx",
+      "route": "/forms/[formId]",
       "kind": "page",
       "methods": []
     },
     {
-      "path": "apps/web/app/forms/[formId]/page.tsx",
-      "route": "/forms/[formId]",
+      "path": "apps/web/app/forms/page.tsx",
+      "route": "/forms",
       "kind": "page",
       "methods": []
     },
@@ -5042,14 +5163,14 @@
       "methods": []
     },
     {
-      "path": "apps/web/app/help/page.tsx",
-      "route": "/help",
+      "path": "apps/web/app/help/[slug]/page.tsx",
+      "route": "/help/[slug]",
       "kind": "page",
       "methods": []
     },
     {
-      "path": "apps/web/app/help/[slug]/page.tsx",
-      "route": "/help/[slug]",
+      "path": "apps/web/app/help/page.tsx",
+      "route": "/help",
       "kind": "page",
       "methods": []
     },
@@ -5090,12 +5211,6 @@
       "methods": []
     },
     {
-      "path": "apps/web/app/incidents/page.tsx",
-      "route": "/incidents",
-      "kind": "page",
-      "methods": []
-    },
-    {
       "path": "apps/web/app/inspection/page.tsx",
       "route": "/inspection",
       "kind": "page",
@@ -5122,6 +5237,12 @@
     {
       "path": "apps/web/app/invite/page.tsx",
       "route": "/invite",
+      "kind": "page",
+      "methods": []
+    },
+    {
+      "path": "apps/web/app/join-team/page.tsx",
+      "route": "/join-team",
       "kind": "page",
       "methods": []
     },
@@ -5162,14 +5283,14 @@
       "methods": []
     },
     {
-      "path": "apps/web/app/learn/guided/page.tsx",
-      "route": "/learn/guided",
+      "path": "apps/web/app/learn/guided/[track]/page.tsx",
+      "route": "/learn/guided/[track]",
       "kind": "page",
       "methods": []
     },
     {
-      "path": "apps/web/app/learn/guided/[track]/page.tsx",
-      "route": "/learn/guided/[track]",
+      "path": "apps/web/app/learn/guided/page.tsx",
+      "route": "/learn/guided",
       "kind": "page",
       "methods": []
     },
@@ -5676,6 +5797,12 @@
       "methods": []
     },
     {
+      "path": "apps/web/app/scout/match/page.tsx",
+      "route": "/scout/match",
+      "kind": "page",
+      "methods": []
+    },
+    {
       "path": "apps/web/app/scout/page.tsx",
       "route": "/scout",
       "kind": "page",
@@ -5684,6 +5811,12 @@
     {
       "path": "apps/web/app/scout/picklist/page.tsx",
       "route": "/scout/picklist",
+      "kind": "page",
+      "methods": []
+    },
+    {
+      "path": "apps/web/app/scout/pit/page.tsx",
+      "route": "/scout/pit",
       "kind": "page",
       "methods": []
     },
@@ -5766,6 +5899,12 @@
       "methods": []
     },
     {
+      "path": "apps/web/app/scouting/lineup/assignment-page.tsx",
+      "route": "/scouting/lineup/assignment-page.tsx",
+      "kind": "page",
+      "methods": []
+    },
+    {
       "path": "apps/web/app/scouting/lineup/page.tsx",
       "route": "/scouting/lineup",
       "kind": "page",
@@ -5774,6 +5913,12 @@
     {
       "path": "apps/web/app/scouting/page.tsx",
       "route": "/scouting",
+      "kind": "page",
+      "methods": []
+    },
+    {
+      "path": "apps/web/app/scouting/quality/page.tsx",
+      "route": "/scouting/quality",
       "kind": "page",
       "methods": []
     },
@@ -5904,14 +6049,14 @@
       "methods": []
     },
     {
-      "path": "apps/web/app/sponsor-wall/page.tsx",
-      "route": "/sponsor-wall",
+      "path": "apps/web/app/sponsor-wall/[publicId]/page.tsx",
+      "route": "/sponsor-wall/[publicId]",
       "kind": "page",
       "methods": []
     },
     {
-      "path": "apps/web/app/sponsor-wall/[publicId]/page.tsx",
-      "route": "/sponsor-wall/[publicId]",
+      "path": "apps/web/app/sponsor-wall/page.tsx",
+      "route": "/sponsor-wall",
       "kind": "page",
       "methods": []
     },
@@ -5970,14 +6115,14 @@
       "methods": []
     },
     {
-      "path": "apps/web/app/support/page.tsx",
-      "route": "/support",
+      "path": "apps/web/app/support/[publicId]/page.tsx",
+      "route": "/support/[publicId]",
       "kind": "page",
       "methods": []
     },
     {
-      "path": "apps/web/app/support/[publicId]/page.tsx",
-      "route": "/support/[publicId]",
+      "path": "apps/web/app/support/page.tsx",
+      "route": "/support",
       "kind": "page",
       "methods": []
     },
@@ -6331,13 +6476,13 @@
       "slug": "alliance-selection-desk",
       "tables": [
         "alliance_selection_desk_sessions",
-        ",\r\n    ",
+        ",\n    ",
         "alliance_selection_desk_slots",
-        ",\r\n    ",
+        ",\n    ",
         "alliance_selection_desk_evidence",
-        ",\r\n    ",
+        ",\n    ",
         "alliance_selection_desk_exports",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -6442,13 +6587,13 @@
       "slug": "cad-change-radar",
       "tables": [
         "cad_change_radar_snapshots",
-        ",\r\n    ",
+        ",\n    ",
         "cad_change_radar_diffs",
-        ",\r\n    ",
+        ",\n    ",
         "cad_change_radar_subscriptions",
-        ",\r\n    ",
+        ",\n    ",
         "cad_change_radar_notifications",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -6570,11 +6715,11 @@
       "slug": "district-advancement",
       "tables": [
         "district_trajectory_sim_runs",
-        ",\r\n    ",
+        ",\n    ",
         "district_trajectory_sim_projections",
-        ",\r\n    ",
+        ",\n    ",
         "district_trajectory_sim_scenarios",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -6664,11 +6809,11 @@
       "slug": "grant-eligibility-matcher",
       "tables": [
         "grant_eligibility_matcher_catalog",
-        ",\r\n    ",
+        ",\n    ",
         "grant_eligibility_matcher_profile",
-        ",\r\n    ",
+        ",\n    ",
         "grant_eligibility_matcher_matches",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -6722,15 +6867,15 @@
       "slug": "knowledge-drafts",
       "tables": [
         "knowledge_capture_drafts",
-        ",\r\n    ",
+        ",\n    ",
         "knowledge_pages",
-        ",\r\n    ",
+        ",\n    ",
         "decision_records",
-        ",\r\n    ",
+        ",\n    ",
         "incident_reports",
-        ",\r\n    ",
+        ",\n    ",
         "pit_repair_triage_reports",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -6823,13 +6968,13 @@
       "slug": "matching-gift-finder",
       "tables": [
         "matching_gift_finder_contacts",
-        ",\r\n    ",
+        ",\n    ",
         "matching_gift_finder_programs",
-        ",\r\n    ",
+        ",\n    ",
         "matching_gift_finder_pledges",
-        ",\r\n    ",
+        ",\n    ",
         "matching_gift_finder_drafts",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -6848,19 +6993,19 @@
       "slug": "media",
       "tables": [
         "media_kit_profiles",
-        ",\r\n    ",
+        ",\n    ",
         "media_kit_assets",
-        ",\r\n    ",
+        ",\n    ",
         "media_kit_documents",
-        ",\r\n    ",
+        ",\n    ",
         "outreach_calendar_events",
-        ",\r\n    ",
+        ",\n    ",
         "impact_activities",
-        ",\r\n    ",
+        ",\n    ",
         "sponsor_wall_entries",
-        ",\r\n    ",
+        ",\n    ",
         "sponsor_wall_settings",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -7021,21 +7166,21 @@
       "slug": "presence",
       "tables": [
         "presence_records",
-        ",\r\n    ",
+        ",\n    ",
         "subteam_calendar_events",
-        ",\r\n    ",
+        ",\n    ",
         "subteam_calendar_rsvps",
-        ",\r\n    ",
+        ",\n    ",
         "calendar_event_exceptions",
-        ",\r\n    ",
+        ",\n    ",
         "attendance_events",
-        ",\r\n    ",
+        ",\n    ",
         "attendance_entries",
-        ",\r\n    ",
+        ",\n    ",
         "hour_logs",
-        ",\r\n    ",
+        ",\n    ",
         "hour_policies",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -7043,13 +7188,13 @@
       "slug": "print-farm",
       "tables": [
         "print_farm_printers",
-        ",\r\n    ",
+        ",\n    ",
         "print_farm_filaments",
-        ",\r\n    ",
+        ",\n    ",
         "print_farm_jobs",
-        ",\r\n    ",
+        ",\n    ",
         "print_farm_filament_usage",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -7249,11 +7394,11 @@
       "slug": "season-planning-workspace",
       "tables": [
         "season_planning_workspace_plans",
-        ",\r\n    ",
+        ",\n    ",
         "season_planning_workspace_goals",
-        ",\r\n    ",
+        ",\n    ",
         "season_planning_workspace_milestones",
-        ",\r\n  "
+        ",\n  "
       ]
     },
     {
@@ -7456,6 +7601,7 @@
     "media-removal"
   ],
   "historicalTables": [
+    "IF",
     "accounts",
     "admin_actions",
     "agent_config_item_grants",
@@ -7646,10 +7792,13 @@
     "forms",
     "foul_profiles",
     "free_relay_jobs",
+    "free_scout_reports",
     "fundraiser_events",
     "game_scoring_actions",
     "gearboxes",
+    "github_code_index",
     "github_connections",
+    "github_pr_reviews",
     "goals_tracker_checkins",
     "goals_tracker_goals",
     "grant_application_items",
@@ -7797,6 +7946,7 @@
     "org_plan_periods",
     "org_provider_configs",
     "org_role_profiles",
+    "org_scouting_sharing",
     "org_team_context_notes",
     "org_tool_keys",
     "org_usage_policies",
@@ -8014,6 +8164,9 @@
     "team_dream_runs",
     "team_event_metrics",
     "team_health_dashboard_pulses",
+    "team_join_attempts",
+    "team_join_code_invites",
+    "team_join_codes",
     "team_knowledge",
     "team_knowledge_revisions",
     "team_lookup_notes",
@@ -8056,6 +8209,7 @@
     "video_notes",
     "video_reviews",
     "video_timeline_scores",
+    "view_only_exempt_tables",
     "visit_invite_demos",
     "visit_invite_hosts",
     "visit_invite_rsvps",
@@ -8257,12 +8411,7 @@
       "methods": [
         "GET"
       ],
-      "schedules": [
-        {
-          "path": "/api/cron/readable-sheets",
-          "schedule": "* * * * *"
-        }
-      ]
+      "schedules": []
     },
     {
       "path": "apps/web/app/api/cron/recovery-journal/route.ts",
@@ -8271,12 +8420,7 @@
       "methods": [
         "GET"
       ],
-      "schedules": [
-        {
-          "path": "/api/cron/recovery-journal",
-          "schedule": "* * * * *"
-        }
-      ]
+      "schedules": []
     },
     {
       "path": "apps/web/app/api/cron/research-sweep/route.ts",
@@ -8306,16 +8450,7 @@
         "GET",
         "POST"
       ],
-      "schedules": [
-        {
-          "path": "/api/cron/tba-sync?mode=event-day",
-          "schedule": "0 14 * * *"
-        },
-        {
-          "path": "/api/cron/tba-sync?mode=season",
-          "schedule": "0 6 * * *"
-        }
-      ]
+      "schedules": []
     },
     {
       "path": "apps/web/app/api/cron/team-dream/route.ts",
@@ -8343,22 +8478,5 @@
     "apps/web/lib/provisioning/workflow.ts",
     "apps/web/lib/recovery/workflow.ts"
   ],
-  "scheduledJobs": [
-    {
-      "path": "/api/cron/readable-sheets",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/recovery-journal",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/tba-sync?mode=event-day",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/tba-sync?mode=season",
-      "schedule": "0 6 * * *"
-    }
-  ]
+  "scheduledJobs": []
 }

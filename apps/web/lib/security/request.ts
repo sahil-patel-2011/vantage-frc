@@ -1,4 +1,5 @@
 import { z, type ZodType } from "zod";
+import { isViewOnlyRefusal, VIEW_ONLY_MESSAGE, VIEW_ONLY_REASON } from "@vantage/db/view-only";
 
 export class RequestSecurityError extends Error {
   constructor(
@@ -70,6 +71,12 @@ export function securityErrorResponse(error: unknown, fallback: string) {
   };
   if (error instanceof RequestSecurityError) {
     return json(error.message, error.status);
+  }
+  // A View only member's write, refused by 0715 in Postgres.
+  if (isViewOnlyRefusal(error)) {
+    const response = Response.json({ error: VIEW_ONLY_MESSAGE, reason: VIEW_ONLY_REASON }, { status: 403 });
+    response.headers.set("cache-control", "private, no-store, max-age=0");
+    return response;
   }
   if (error instanceof z.ZodError) {
     return json("Request fields are invalid.", 400);

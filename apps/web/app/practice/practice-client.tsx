@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, askConfirm } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TeamHubRelated } from "../../components/team-hub-related";
@@ -243,8 +243,8 @@ function SessionDetail({
             type="button"
             className="practice-text-btn danger"
             disabled={busy}
-            onClick={() => {
-              if (confirm(`Delete "${session.title}" and all its reps?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete “${session.title}” and all its reps?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                 void run({ action: "delete_session", orgId, id: session.id }, "delete");
               }
             }}

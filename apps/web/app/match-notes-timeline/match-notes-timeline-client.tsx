@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { formatClock, matchNoteCategoryLabel, matchNotePhaseLabel, actionIntervalsFromNotes, actionTrackerStrip } from "../../lib/match-notes-timeline";
 import {
   MATCH_NOTE_CATEGORIES,
@@ -131,7 +131,7 @@ function MatchNotesShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#match-notes-timeline-log">Log a note</Button>
+          <Button as="a" variant="secondary" href="#match-notes-timeline-log">Log a note</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <MatchNotesNextActionsPanel actions={actions} /> : null}
@@ -342,7 +342,7 @@ export default function MatchNotesTimelineClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#match-notes-timeline-log">
+          <Button as="a" variant="secondary" href="#match-notes-timeline-log">
             Log a note
           </Button>
         </EmptyState>
@@ -435,8 +435,8 @@ function Timelines({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm("Delete this note?")) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: "Delete this note?", body: null, confirmLabel: "Delete note", tone: "destructive" })) {
                       mutate({ action: "delete-note", entryId: entry.id });
                     }
                   }}

@@ -147,3 +147,20 @@
     flex-direction: column;
   }
 }
+
+/* Record proceeds opens under its row: the amount, then Record deposit and Cancel. */
+.fr-event-list li:has(> .fr-proceeds-form) {
+  flex-wrap: wrap;
+}
+
+.fr-proceeds-form {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.fr-proceeds-form .inline-field-label {
+  flex: 1 1 180px;
+}

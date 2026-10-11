@@ -64,6 +64,13 @@ const PUBLIC_PREFIXES = [
   "/api/notifications/unsubscribe",
   // Vercel cron jobs authenticate via CRON_SECRET (Bearer / x-cron-secret).
   "/api/cron",
+  // Signed webhooks: no cookie ever comes with them, and each route verifies the sender's
+  // signature over the raw body before doing anything (Stripe-Signature, X-TBA-HMAC,
+  // X-Hub-Signature-256 against the team's own secret). Without these the proxy answered 401
+  // before the route ran, so billing events and TBA pushes never arrived.
+  "/api/stripe/webhook",
+  "/api/webhooks/tba",
+  "/api/github/webhook",
   // Calendar ICS subscribe URLs are allow-listed in isPublicCalendarFeed (token path only).
   "/api/parts-relay",
   "/api/integrations/slack",

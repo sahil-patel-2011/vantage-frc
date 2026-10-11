@@ -119,6 +119,16 @@ export const DOWNLOAD_KEYS_BY_PLATFORM: Record<string, readonly string[]> = {
 };
 
 /**
+ * A Mac build made without a Mac is one zip per chip (Apple silicon, Intel), not one universal
+ * app, so the chip's own zip comes first; a universal DMG or zip still wins when published.
+ */
+export function downloadKeysFor(platform: string, arch: string = process.arch): readonly string[] {
+  if (platform !== "darwin") return DOWNLOAD_KEYS_BY_PLATFORM[platform] ?? [];
+  const chip = arch === "arm64" ? "mac_zip_arm64" : arch === "x64" ? "mac_zip_x64" : null;
+  return ["mac_dmg", "mac_zip", ...(chip ? [chip] : [])];
+}
+
+/**
  * The digest belongs to the file, so it has to be read from the same entry the
  * URL came from. A single top-level `sha256` was only ever correct while there
  * was exactly one download — with a Mac build published alongside the Windows
@@ -229,6 +239,7 @@ function isAllowedDownloadUrl(raw: unknown): raw is string {
 export function parseManifest(
   raw: unknown,
   platform: string = process.platform,
+  arch: string = process.arch,
 ): ReleaseManifest | null {
   if (!raw || typeof raw !== "object") return null;
   const row = raw as Record<string, unknown>;
@@ -245,7 +256,7 @@ export function parseManifest(
   // on a download it can never install.
   let url: unknown = null;
   let digestKey: string | null = null;
-  for (const key of DOWNLOAD_KEYS_BY_PLATFORM[platform] ?? []) {
+  for (const key of downloadKeysFor(platform, arch)) {
     if (isAllowedDownloadUrl(downloads[key])) {
       url = downloads[key];
       digestKey = key;

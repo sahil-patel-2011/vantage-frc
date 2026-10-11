@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { alumniShellCopy } from "../../lib/alumni";
 import { alumniStatusLabel, mentorSlotStatusLabel } from "../../lib/alumni-network";
 import {
@@ -421,7 +421,8 @@ function ProfileList({
     const copy = alumniShellCopy("empty");
     return (
       <EmptyState badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description}>
-        <Button as="a" variant="primary" href="#alumni-add-profile">
+        {/* The form below owns the one primary action (Add profile); this only jumps to it. */}
+        <Button as="a" variant="secondary" href="#alumni-add-profile">
           Add an alumni profile
         </Button>
       </EmptyState>
@@ -466,8 +467,8 @@ function ProfileList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Remove "${item.fullName}" from the directory?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Remove “${item.fullName}” from the directory?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                     mutate({ action: "delete-profile", profileId: item.id });
                   }
                 }}
@@ -537,8 +538,8 @@ function MentorSlotList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${item.topic}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${item.topic}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-mentor-slot", slotId: item.id });
                   }
                 }}

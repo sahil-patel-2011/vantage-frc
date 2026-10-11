@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 type Program = {
+  /** Finance manager (0714): may record or waive a sponsor's payment. */
+  canManageFinances?: boolean;
   settings: { publicId: string; storefrontEnabled: boolean; paymentUrl: string | null; pitch: string } | null;
   packages: Array<{
     id: string;
@@ -392,7 +394,7 @@ export function PartnerPlacementsPanel({
           title="No placement packages yet"
           description="Add a priced package with surfaces below. Totals only reflect packages you configure for this team."
         >
-          <Button as="a" variant="primary" href="#pp-add-package">
+          <Button as="a" variant="secondary" href="#pp-add-package">
             Add a package
           </Button>
         </EmptyState>
@@ -557,8 +559,8 @@ export function PartnerPlacementsPanel({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => {
-                            if (window.confirm("Delete this archived artwork permanently?")) {
+                          onClick={async () => {
+                            if (await askConfirm({ title: "Delete this archived artwork permanently?", body: null, confirmLabel: "Delete archived artwork", tone: "destructive" })) {
                               void mutate({ action: "delete-asset", assetId: asset.id });
                             }
                           }}
@@ -665,7 +667,8 @@ export function PartnerPlacementsPanel({
                 </div>
                 {canManage ? (
                   <div className="placement-actions">
-                    {campaign.paymentStatus === "pending" ? (
+                    {/* Recording or waiving a payment is a money decision (0714). */}
+                    {campaign.paymentStatus === "pending" && program.canManageFinances ? (
                       <>
                         <button type="button" onClick={() => void mutate({ action: "mark-paid", campaignId: campaign.id })}>
                           Record payment

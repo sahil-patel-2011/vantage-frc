@@ -67,7 +67,9 @@ export type UpdateStatus = {
  * installer to re-run in place, so it is told, never restarted.
  */
 function isPortableBuild(): boolean {
-  return Boolean(process.env.PORTABLE_EXECUTABLE_FILE);
+  // A Mac build is not signed with an Apple Developer ID, so it is never replaced in place
+  // either: like the portable .exe it is told about the new version and opens the download.
+  return Boolean(process.env.PORTABLE_EXECUTABLE_FILE) || process.platform === "darwin";
 }
 
 export class UpdateService {

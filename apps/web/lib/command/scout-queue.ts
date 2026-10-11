@@ -112,6 +112,27 @@ export function buildScoutQueue(input: {
     }));
 }
 
+/**
+ * The Scout next card's heading, counted by the same rule each row uses for its reasons.
+ *
+ * It counted "need a pit visit" only for robots that had match reports already, while every
+ * row without a pit report says "Needs a pit visit": "2 need a pit visit" sat over five rows
+ * that all said it. Now a robot counts toward each gap its row names ("Needs match scouting",
+ * "Needs a pit visit"), so the two always agree. Our own robot is never in the queue
+ * (buildScoutQueue leaves it out), so it is never counted either.
+ */
+export function scoutQueueSummary(queue: readonly Pick<ScoutQueueCandidate, "hasMatchScout" | "hasPitScout">[]): string {
+  if (!queue.length) return "Nothing waiting";
+  const match = queue.filter((item) => !item.hasMatchScout).length;
+  const pit = queue.filter((item) => !item.hasPitScout).length;
+  const parts = [
+    match ? `${match} ${match === 1 ? "needs" : "need"} match scouting` : null,
+    pit ? `${pit} ${pit === 1 ? "needs" : "need"} a pit visit` : null,
+  ].filter(Boolean);
+  // Robots on the list for a second match report only ("Only 1 match report").
+  return parts.length ? parts.join(" · ") : `${queue.length} to check`;
+}
+
 export function withScoutFormHrefs(
   items: ScoutQueueCandidate[],
   orgId: string,

@@ -437,11 +437,11 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
                   {CAD_SETUP_ONSHAPE_READY}
                 </p>
                 <div className="cad-setup-actions">
-                  <Button variant="primary" type="button" disabled={busy} onClick={() => void connectOnshape()}>
-                    {view.onshapeConnected ? CAD_SETUP_RECONNECT : CAD_SETUP_CONNECT}
-                  </Button>
                   <Button variant="secondary" type="button" onClick={() => setStep(1)}>
                     Back
+                  </Button>
+                  <Button variant="primary" type="button" disabled={busy} onClick={() => void connectOnshape()}>
+                    {view.onshapeConnected ? CAD_SETUP_RECONNECT : CAD_SETUP_CONNECT}
                   </Button>
                   <Button variant="secondary" type="button" onClick={() => setStep(3)}>
                     Continue
@@ -454,11 +454,11 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
                   {CAD_SETUP_ASK_MENTOR}
                 </p>
                 <div className="cad-setup-actions">
-                  <Button variant="primary" type="button" onClick={() => setStep(3)}>
-                    Continue
-                  </Button>
                   <Button variant="secondary" type="button" onClick={() => setStep(1)}>
                     Back
+                  </Button>
+                  <Button variant="primary" type="button" onClick={() => setStep(3)}>
+                    Continue
                   </Button>
                 </div>
               </>
@@ -469,11 +469,11 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
                 {CAD_SETUP_FUSION}
               </p>
               <div className="cad-setup-actions">
-                <Button as="a" variant="primary" href={`/cad/pair${q}`}>
-                  Pair this computer
-                </Button>
                 <Button variant="secondary" type="button" onClick={() => setStep(1)}>
                   Back
+                </Button>
+                <Button as="a" variant="primary" href={`/cad/pair${q}`}>
+                  Pair this computer
                 </Button>
                 <Button variant="secondary" type="button" onClick={() => setStep(3)}>
                   Continue

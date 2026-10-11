@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TEST_OUTCOMES, decisionRecommendationLabel, testOutcomeLabel } from "../../lib/prototype-tracker";
@@ -431,7 +431,7 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
             title="Log your first prototype test"
             description="Outcomes, metrics, and decision confidence stay blank until you record a real test — nothing is pre-filled."
           >
-            <Button as="a" variant="primary" href="#ptk-log-test">
+            <Button as="a" variant="secondary" href="#ptk-log-test">
               Log a test
             </Button>
           </EmptyState>
@@ -482,8 +482,8 @@ function TestsList({
                     className="text-button"
                     disabled={busy}
                     aria-label={`Delete ${test.title}`}
-                    onClick={() => {
-                      if (window.confirm(`Delete "${test.title}"?`)) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete “${test.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                         void mutate({ action: "delete-test", testId: test.id });
                       }
                     }}
@@ -557,7 +557,7 @@ function DecisionsList({
         title="No decision records drafted yet"
         description="Draft a decision from any logged test above. Recommendation and confidence come only from that test’s recorded outcome and metric."
       >
-        <Button as="a" variant="primary" href="#ptk-log-test">
+        <Button as="a" variant="secondary" href="#ptk-log-test">
           Log a test
         </Button>
       </EmptyState>
@@ -603,8 +603,8 @@ function DecisionsList({
                     className="text-button"
                     disabled={busy}
                     aria-label={`Delete ${decision.decisionTitle}`}
-                    onClick={() => {
-                      if (window.confirm(`Delete "${decision.decisionTitle}"?`)) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete “${decision.decisionTitle}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                         void mutate({ action: "delete-decision", decisionId: decision.id });
                       }
                     }}

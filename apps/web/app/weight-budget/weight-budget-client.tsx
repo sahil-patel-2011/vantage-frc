@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, useConfirm } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -115,6 +115,7 @@ function WeightBudgetNextActions() {
 }
 
 export default function WeightBudgetClient({ orgId }: { orgId: string | null }) {
+  const confirm = useConfirm();
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
   const [message, setMessage] = useState("");
@@ -490,7 +491,19 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
                   </small>
                 </div>
                 {c.canDelete ? (
-                  <Button type="button" size="sm" variant="danger" onClick={() => void post({ action: "delete_component", id: c.id }, "Component removed.")}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="danger"
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `Delete ${c.name}?`,
+                        body: `${c.name}${c.quantity > 1 ? ` ×${c.quantity}` : ""} (${(c.weightLbs * c.quantity).toFixed(2)} lb) comes off the robot's weight budget for everyone on the team.`,
+                        confirmLabel: "Delete component",
+                      });
+                      if (ok) void post({ action: "delete_component", id: c.id }, "Component removed.");
+                    }}
+                  >
                     Delete
                   </Button>
                 ) : null}

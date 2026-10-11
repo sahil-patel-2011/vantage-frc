@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useBrowserValue, useReturnPath } from "../../lib/use-browser-value";
 import { CompetitionHubRelated } from "../../components/competition-hub-related";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -555,8 +555,8 @@ function RunCard({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete checklist for "${run.matchLabel}"?`)) {
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete checklist for “${run.matchLabel}”?`, body: null, confirmLabel: "Delete checklist", tone: "destructive" })) {
               mutate({ action: "delete-run", runId: run.id });
             }
           }}

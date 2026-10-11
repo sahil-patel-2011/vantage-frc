@@ -10,6 +10,7 @@
 import { auth } from "@vantage/core";
 import { headers } from "next/headers";
 import { resolveDriveMembership, type DriveMembership } from "./store";
+import { viewOnlyResponse } from "../security/public-error";
 import type { PoolClient } from "@neondatabase/serverless";
 
 export class DriveHttpError extends Error {
@@ -62,6 +63,8 @@ export function driveErrorResponse(error: unknown): Response {
   if (error instanceof DriveHttpError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
   if (isDatabaseUnavailable(error)) {
     return Response.json(
       {

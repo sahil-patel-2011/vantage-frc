@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -556,7 +556,7 @@ export default function WiringClient({ orgId }: { orgId: string | null }) {
                     size="sm"
                     variant="danger"
                     aria-label={`Delete device ${d.name}`}
-                    onClick={() => void post({ action: "delete_device", id: d.id }, "Device removed.")}
+                    onClick={async () => { if (await askConfirm({ title: "Delete this device?", body: `“${d.name}” is deleted from the wiring map.`, confirmLabel: "Delete device", tone: "destructive" })) void post({ action: "delete_device", id: d.id }, "Device removed."); }}
                   >
                     Delete
                   </Button>

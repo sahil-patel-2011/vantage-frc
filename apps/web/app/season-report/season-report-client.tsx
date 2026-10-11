@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { OfflineBanner } from "../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   AI_EXPAND_IDLE,
   expandedDisplay,
@@ -471,7 +471,7 @@ export default function SeasonReportClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#season-report-log">
+          <Button as="a" variant="secondary" href="#season-report-log">
             Log first entry
           </Button>
         </EmptyState>
@@ -479,7 +479,8 @@ export default function SeasonReportClient() {
 
       <div style={{ display: "grid", gap: 16 }}>
         <CompletenessPanel view={view} loaded />
-        <LogEntryForm busy={busy} mutate={mutate} />
+        {/* One primary: logging until there is an entry, then generating the retrospective. */}
+        <LogEntryForm busy={busy} mutate={mutate} primary={view.summary.totalEntries === 0} />
         {view.summary.totalEntries > 0 ? <CategoryBreakdown view={view} /> : null}
         <SnapshotsPanel view={view} busy={busy} mutate={mutate} />
         <RecentEntries view={view} busy={busy} mutate={mutate} />
@@ -598,7 +599,7 @@ function SnapshotsPanel({
     <Panel id="season-report-snapshots">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h2 style={{ margin: 0 }}>Generated snapshots</h2>
-        <Button variant="primary" type="button" disabled={busy || view.summary.totalEntries === 0} onClick={() => mutate({ action: "generate-snapshot" })}>
+        <Button variant={view.summary.totalEntries === 0 ? "secondary" : "primary"} type="button" disabled={busy || view.summary.totalEntries === 0} onClick={() => mutate({ action: "generate-snapshot" })}>
           Generate retrospective
         </Button>
       </header>
@@ -623,7 +624,7 @@ function SnapshotsPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-snapshot", snapshotId: snapshot.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this snapshot?", body: "The season report snapshot is deleted.", confirmLabel: "Delete snapshot", tone: "destructive" })) void (mutate({ action: "delete-snapshot", snapshotId: snapshot.id })); }}
                 >
                   Delete
                 </button>
@@ -729,8 +730,8 @@ function RecentEntries({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.title}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-entry", entryId: item.id });
                 }
               }}
@@ -747,9 +748,11 @@ function RecentEntries({
 function LogEntryForm({
   busy,
   mutate,
+  primary = true,
 }: {
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
+  primary?: boolean;
 }) {
   const empty = useMemo(
     () => ({
@@ -820,7 +823,7 @@ function LogEntryForm({
         <textarea value={form.detail} onChange={set("detail")} rows={2} />
       </FormRow>
       <div>
-        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
+        <Button variant={primary ? "primary" : "secondary"} type="submit" disabled={busy || !form.title.trim()}>
           Log entry
         </Button>
       </div>

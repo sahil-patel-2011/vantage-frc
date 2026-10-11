@@ -131,7 +131,7 @@ const KEYWORDS: Record<string, string[]> = {
   "team:fmea": ["fmea", "risk", "failure", "what could break", "rpn"],
   "team:tool-checkout": ["tools", "checkout", "borrow", "who has"],
   "team:equipment-maintenance": ["equipment", "maintenance", "machines", "service"],
-  "team:safety-training": ["safety", "training", "ppe", "certification", "incidents"],
+  "team:safety-training": ["safety", "training", "ppe", "certification", "shop rules"],
   "team:checklist-library": ["checklists", "library", "procedures", "sop"],
   "team:pit-map-planner": ["pit map", "pit layout", "pit setup", "floor plan"],
   "team:field-reset-timer": ["field reset", "timer"],
@@ -179,7 +179,7 @@ const KEYWORDS: Record<string, string[]> = {
   // The words a mentor types when they mean the one season total, not the
   // per-category panel: "can we afford this", "what is left".
   "business:season-budget": [
-    "season budget", "mentor budget", "budget access", "can we afford",
+    "season budget", "mentor budget", "budget access", "manage money", "who manages money", "can we afford",
     "what is left", "money left", "registration fee", "event fee",
   ],
   "business:part-requests": [
@@ -313,7 +313,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:pit": ["pit", "pit command", "pit crew", "turnaround"],
   "competition:pit-tv": ["pit tv", "tv", "display", "kiosk", "screen", "monitor", "pit display", "board", "event board"],
   "team:goals": ["goals", "objectives", "targets", "season goals"],
-  "team:safety": ["safety", "incident", "injury", "hazard", "report incident"],
+  "team:safety": ["tool certifications", "tool training", "certified", "cleared", "machine shop", "safety"],
   "team:notebook": ["notebook", "engineering notebook", "log", "journal", "documentation"],
   "team:risks": ["risks", "risk register", "what could go wrong", "likelihood impact"],
   "business:vendors": ["vendors", "suppliers", "where to buy", "andymark", "rev", "vex", "wcp"],
@@ -450,6 +450,28 @@ function tabContext(hub: ProductHubDef, tab: HubTabDef): string {
   if (!tab.group) return hub.label;
   const parent = hub.tabs.find((entry) => entry.id === tab.group && !entry.group);
   return parent ? `${hub.label} › ${parent.label}` : hub.label;
+}
+
+/**
+ * The platform console (/admin: add teams, owners, the waitlist). Never part of the member
+ * catalog: `commandCatalogFor` adds it only when /api/me says this person is a platform admin,
+ * and the page itself still checks a platform_admins row. "Admin console" leads with the word
+ * people type, so Ctrl-K "admin" finds it above the team's own admin pages.
+ */
+export const PLATFORM_ADMIN_COMMAND: CommandEntry = {
+  id: "platform-admin",
+  label: "Admin console",
+  context: "Platform admin",
+  href: "/admin",
+  kind: "destination",
+  keywords: ["admin", "admin console", "platform admin", "platform", "all teams", "add a team", "create team", "provision", "owners", "waitlist"],
+  featured: true,
+};
+
+/** This person's palette: the member catalog, plus the admin console for platform admins only. */
+export function commandCatalogFor(access: { platformAdmin?: boolean | null }): CommandEntry[] {
+  const entries = commandCatalog();
+  return access.platformAdmin === true ? [PLATFORM_ADMIN_COMMAND, ...entries] : entries;
 }
 
 /**

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Badge, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import type { DocRolesView } from "../../lib/doc-roles/compute-doc-roles";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -282,7 +282,7 @@ export default function DocRolesClient() {
                   </span>
                 </span>
                 {view.canGrant ? (
-                  <Button variant="ghost" type="button" disabled={busy} onClick={() => { void act( { action: "revoke", userId: grant.userId }, `${grant.name || grant.email} can no longer edit docs.`, ); }}>
+                  <Button variant="ghost" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Remove doc editing?", body: `${grant.name || grant.email} can no longer edit team docs. You can grant it again any time.`, confirmLabel: "Remove access", tone: "neutral" })) void act( { action: "revoke", userId: grant.userId }, `${grant.name || grant.email} can no longer edit docs.`, ); }}>
                     Remove
                   </Button>
                 ) : null}
@@ -341,11 +341,11 @@ export default function DocRolesClient() {
                     view.candidates.find((c) => c.userId === grantUserId)?.email ||
                     "this member"}{" "}
                   create and edit the team&rsquo;s docs?{" "}
-                  <Button variant="primary" type="submit" disabled={busy}>
-                    Yes, grant it
-                  </Button>{" "}
                   <Button variant="ghost" type="button" onClick={() => setConfirmGrant(false)}>
                     Cancel
+                  </Button>{" "}
+                  <Button variant="primary" type="submit" disabled={busy}>
+                    Yes, grant it
                   </Button>
                 </p>
               ) : (

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button, EmptyState } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState, askConfirm } from "../../components/ui";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
@@ -917,8 +917,8 @@ function DraftCard({ draft, busy, mutate }: { draft: WriterDraft; busy: boolean;
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${draft.title}"?`)) mutate({ action: "delete-draft", draftId: draft.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${draft.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-draft", draftId: draft.id });
           }}
           style={{ marginLeft: "auto" }}
         >

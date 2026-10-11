@@ -1,7 +1,7 @@
 import { assertOrgAuthentication,auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies,headers } from "next/headers";
-import { publicErrorMessage } from "./security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "./security/public-error";
 
 export async function withScoutingRequest<T>(
   orgId: string | null,
@@ -46,6 +46,8 @@ export function scoutingErrorResponse(error: unknown) {
   if (error instanceof ScoutingHttpError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
   const raw = error instanceof Error ? error.message : "";
   const status = /access denied|authentication policy|membership required|coach role|scouting lead/i.test(raw)
     ? 403

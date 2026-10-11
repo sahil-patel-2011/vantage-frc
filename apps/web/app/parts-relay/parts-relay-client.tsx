@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { partsRelayCategoryLabel, partsRelayConditionLabel, deriveLoanStatus } from "../../lib/parts-relay";
 import {
@@ -476,8 +476,8 @@ function Listings({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete listing "${item.partName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete listing “${item.partName}”?`, body: null, confirmLabel: "Delete listing", tone: "destructive" })) {
                     mutate({ action: "delete-listing", listingId: item.id });
                   }
                 }}
@@ -660,8 +660,8 @@ function Loans({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete this hand-off record with ${item.counterpartyTeam}?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete this hand-off record with ${item.counterpartyTeam}?`, body: null, confirmLabel: "Delete hand-off record", tone: "destructive" })) {
                       mutate({ action: "delete-loan", loanId: item.id });
                     }
                   }}

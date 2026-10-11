@@ -171,11 +171,10 @@ describe("role-aware landing", () => {
       "Set up your scouting form",
       "Add your first practice",
     ]);
-    // Inviting is step 1 of the list, not a second button beside it.
-    expect(view.primary.label).toBe("Open Home");
-    expect(view.primary.href).toContain("/dashboard");
-    expect(view.firstFiveMinutes[0]?.href).toContain("/team/admin?invite=1");
-    expect(view.secondary).toBeNull();
+    // The heading says "Start by inviting people": the primary is that first step, Home second.
+    expect(view.primary).toEqual({ href: `/team/admin?invite=1&orgId=${ORG}`, label: "Invite your team" });
+    expect(view.firstFiveMinutes[0]?.href).toBe(view.primary.href);
+    expect(view.secondary).toEqual({ href: `/dashboard?orgId=${ORG}`, label: "Open Home" });
     expect(view.summary).not.toMatch(/AI limits/);
   });
 });

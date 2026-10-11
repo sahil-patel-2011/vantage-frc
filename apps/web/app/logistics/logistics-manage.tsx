@@ -1,6 +1,6 @@
 "use client";
 
-import { Panel, Button } from "../../components/ui";
+import { Panel, Button, askConfirm } from "../../components/ui";
 import {
   AUDIENCE_LABEL,
   CHECKLIST_AUDIENCES,
@@ -90,7 +90,7 @@ export function LogisticsManagePanel({
               </option>
             ))}
           </select>
-          <input name="label" aria-label="Checklist item" placeholder="New checklist item" required />
+          <label className="inline-field-label">New checklist item<input name="label" required /></label>
           <button type="submit" disabled={!act || busy}>
             Add item
           </button>
@@ -107,8 +107,8 @@ export function LogisticsManagePanel({
                   type="button"
                   className="log-link danger"
                   disabled={!act || busy}
-                  onClick={() => {
-                    if (confirm(`Remove "${item.label}"?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Remove “${item.label}”?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                       void run({ action: "delete_checklist_item", orgId, id: item.id }, `del-chk:${item.id}`);
                     }
                   }}
@@ -146,15 +146,15 @@ export function LogisticsManagePanel({
             ).then((saved) => { if (saved !== false) form.reset(); });
           }}
         >
-          <input name="name" aria-label="Name" placeholder="Name" required />
-          <input name="roleLabel" aria-label="Contact role" placeholder="Role label" />
-          <input name="phone" aria-label="Phone" placeholder="Phone" />
-          <input name="email" aria-label="Email" placeholder="Email" />
-          <input name="sortOrder" aria-label="Display order" type="number" placeholder="Sort order" defaultValue={0} />
+          <label className="inline-field-label">Name<input name="name" required /></label>
+          <label className="inline-field-label">Contact role<input name="roleLabel" /></label>
+          <label className="inline-field-label">Phone<input name="phone" /></label>
+          <label className="inline-field-label">Email<input name="email" /></label>
+          <label className="inline-field-label">Display order<input name="sortOrder" type="number" defaultValue={0} /></label>
           <label className="log-check-inline">
             <input name="isPrimary" type="checkbox" /> Primary contact
           </label>
-          <textarea name="notes" aria-label="Notes" placeholder="Notes" rows={2} />
+          <label className="inline-field-label">Notes<textarea name="notes" rows={2} /></label>
           <button type="submit" disabled={!act || busy}>
             Save contact
           </button>
@@ -168,7 +168,7 @@ export function LogisticsManagePanel({
               type="button"
               className="log-link danger"
               disabled={!act || busy}
-              onClick={() => void run({ action: "delete_contact", orgId, id: contact.id }, `del-contact:${contact.id}`)}
+              onClick={async () => { if (await askConfirm({ title: "Delete this contact?", body: `“${contact.name}” is deleted from logistics contacts.`, confirmLabel: "Delete contact", tone: "destructive" })) void run({ action: "delete_contact", orgId, id: contact.id }, `del-contact:${contact.id}`); }}
             >
               Delete
             </button>
@@ -219,12 +219,12 @@ export function LogisticsManagePanel({
               </option>
             ))}
           </select>
-          <input name="mentorName" aria-label="Mentor display name" placeholder="Display name override" />
-          <input name="phone" aria-label="Phone" placeholder="Phone" />
-          <input name="startsAt" aria-label="Start time" type="datetime-local" required />
-          <input name="endsAt" aria-label="End time" type="datetime-local" />
-          <input name="locationNote" aria-label="Location" placeholder="Location (pit, hotel lobby…)" />
-          <textarea name="notes" aria-label="Notes" placeholder="Notes" rows={2} />
+          <label className="inline-field-label">Display name override<input name="mentorName" /></label>
+          <label className="inline-field-label">Phone<input name="phone" /></label>
+          <label className="inline-field-label">Start time<input name="startsAt" type="datetime-local" required /></label>
+          <label className="inline-field-label">End time<input name="endsAt" type="datetime-local" /></label>
+          <label className="inline-field-label">Location (pit, hotel lobby…)<input name="locationNote" /></label>
+          <label className="inline-field-label">Notes<textarea name="notes" rows={2} /></label>
           <button type="submit" disabled={!act || busy}>
             Save on-duty slot
           </button>
@@ -238,7 +238,7 @@ export function LogisticsManagePanel({
               type="button"
               className="log-link danger"
               disabled={!act || busy}
-              onClick={() => void run({ action: "delete_on_duty", orgId, id: activeOnDuty.id }, `del-od:${activeOnDuty.id}`)}
+              onClick={async () => { if (await askConfirm({ title: "Remove the on-duty slot?", body: `${activeOnDuty.mentorName} is no longer listed as on duty.`, confirmLabel: "Remove slot", tone: "destructive" })) void run({ action: "delete_on_duty", orgId, id: activeOnDuty.id }, `del-od:${activeOnDuty.id}`); }}
             >
               Remove active slot
             </button>

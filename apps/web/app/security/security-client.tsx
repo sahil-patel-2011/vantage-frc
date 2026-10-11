@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
+import { Button, EmptyState, PageHeader, Panel, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { safeAppPath } from "../../lib/security/safe-navigation";
@@ -174,11 +174,12 @@ export default function SecurityClient({
 
   async function revoke(body: Record<string, unknown>) {
     if (
-      !confirm(
-        body.revokeAll
-          ? "Disable 2FA and revoke remembered devices?"
-          : "Revoke this remembered device?",
-      )
+      !(await askConfirm({
+        title: body.revokeAll ? "Disable 2FA and revoke remembered devices?" : "Revoke this remembered device?",
+        body: null,
+        confirmLabel: body.revokeAll ? "Disable 2FA" : "Revoke device",
+        tone: "destructive",
+      }))
     ) {
       return;
     }

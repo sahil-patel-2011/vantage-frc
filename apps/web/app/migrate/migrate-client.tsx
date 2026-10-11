@@ -10,7 +10,7 @@ import {
   type ConnectorId,
 } from "@vantage/import/connectors";
 import type { ColumnSuggestion } from "@vantage/import/presets";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import type { MigrateView } from "../../lib/migrate/compute-migrate";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -630,7 +630,7 @@ export default function MigrateClient() {
                             <Button variant="secondary" type="button" disabled={busy || !csvPaste.trim()} onClick={() => void post({ action: "preview-csv-mapping", connector: "scout", content: csvPaste, presetId: item.id, }) }>
                               Apply “{item.name}”
                             </Button>
-                            <Button variant="secondary" type="button" disabled={busy} onClick={() => void post({ action: "delete-preset", presetId: item.id })}>
+                            <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Delete this preset?", body: `“${item.name}” is deleted.`, confirmLabel: "Delete preset", tone: "destructive" })) void post({ action: "delete-preset", presetId: item.id }); }}>
                               Delete
                             </Button>
                           </li>

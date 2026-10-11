@@ -14,6 +14,9 @@ describe("observed climb outcomes", () => {
     expect(climbOutcome("attempted_failed")).toBe("failed");
     expect(climbOutcome("fell")).toBe("failed");
     expect(climbOutcome(" L3 ")).toBe("successful");
+    // Climb / Park / None endgame choices record the outcome directly.
+    expect(climbOutcome("climb")).toBe("successful");
+    expect(climbOutcome("Climb")).toBe("successful");
   });
   it("retains unknown success ties and does not invent intent from conflicting negatives", () => {
     expect(combineClimbOutcomes(["successful", "failed"])).toBe("unseen");

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState } from "../../components/ui";
+import { Button, EmptyState, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
@@ -107,8 +107,8 @@ function ListDetail({
             type="button"
             className="pack-link"
             disabled={busy}
-            onClick={() => {
-              if (confirm("Unpack everything (reset for the next event)?")) {
+            onClick={async () => {
+              if (await askConfirm({ title: "Unpack everything (reset for the next event)?", body: null, confirmLabel: "Unpack all", tone: "destructive" })) {
                 void run({ action: "reset_list", orgId, id: list.id }, "reset");
               }
             }}
@@ -121,8 +121,8 @@ function ListDetail({
             type="button"
             className="pack-link danger"
             disabled={busy}
-            onClick={() => {
-              if (confirm(`Delete list "${list.title}"?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete list “${list.title}”?`, body: null, confirmLabel: "Delete list", tone: "destructive" })) {
                 void run({ action: "delete_list", orgId, id: list.id }, "delete");
               }
             }}
@@ -615,7 +615,7 @@ export default function PackingClient() {
               if (event.key === "Enter") createList();
             }}
           />
-          <Button variant="primary" type="button" disabled={busyKey === "create"} onClick={createList}>
+          <Button variant={lists.length === 0 ? "secondary" : "primary"} type="button" disabled={busyKey === "create"} onClick={createList}>
             New list
           </Button>
         </div>

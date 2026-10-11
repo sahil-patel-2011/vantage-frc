@@ -117,14 +117,16 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
     };
   }
 
+  // The field says "Optional", so a blank one is an answer: no team yet, same as the checkbox.
+  // It used to block Continue with "Enter your FRC team number".
   if (!trimmed) {
     return {
-      kind: "incomplete",
+      kind: "blank",
       tone: "neutral",
       teamNumber: null,
-      title: "Enter your FRC team number",
-      body: `A number between ${TEAM_NUMBER_MIN} and ${TEAM_NUMBER_MAX}. If you don't have one yet, tick the box below.`,
-      ok: false,
+      title: "No team number yet? That's fine",
+      body: `Leave it blank to finish without one, or enter your team's number (${TEAM_NUMBER_MIN}–${TEAM_NUMBER_MAX}) to ask that team to let you in. You can add it later in Account.`,
+      ok: true,
       action: null,
     };
   }
@@ -215,7 +217,8 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
       title: `Team ${parsed} isn't on Vantage yet`,
       body: "If you’re authorized by this team, create its workspace and invite your teammates. You can hand it over to your team lead after they join.",
       ok: true,
-      action: { href: "/claim", label: "Create this team" },
+      // The server just said this number has no workspace: /claim starts with it filled in.
+      action: { href: `/claim?teamNumber=${parsed}`, label: "Create this team" },
     };
   }
 

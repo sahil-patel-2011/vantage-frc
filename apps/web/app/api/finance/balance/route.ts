@@ -1,6 +1,7 @@
 import { withRls } from "@vantage/db";
 import { computeFinanceBalance, type FinanceBalanceView } from "../../../../lib/finance/balance";
 import {
+  canManageFinances,
   requireOrgMember,
   requireTenantSession,
   TenantHttpError,
@@ -28,7 +29,8 @@ export async function GET(request: Request) {
       // policies in 0035 and the convention in /api/finance/summary. RLS is
       // the backstop; this check turns wrong-org into an explicit 403.
       await requireOrgMember(client, orgId, session.user.id);
-      return computeFinanceBalance(client, orgId);
+      const balance = await computeFinanceBalance(client, orgId);
+      return { ...balance, canManageFinances: await canManageFinances(client, orgId) };
     });
     return Response.json(view);
   } catch (error) {

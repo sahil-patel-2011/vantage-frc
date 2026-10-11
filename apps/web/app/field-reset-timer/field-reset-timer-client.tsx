@@ -12,7 +12,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import type { FieldResetTimerView } from "../../lib/field-reset-timer/compute-field-reset-timer";
 import type { FieldResetTimerTier } from "../../lib/field-reset-timer/types";
 import {
@@ -157,7 +157,7 @@ function TimerShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#field-reset-new-session">
+            <Button as="a" variant="secondary" href="#field-reset-new-session">
               Create a practice session
             </Button>
           ) : null}
@@ -537,8 +537,8 @@ function SessionList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${sessionItem.label}" and its logged cycles?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${sessionItem.label}” and its logged cycles?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-session", sessionId: sessionItem.id });
                     if (sessionItem.id === selectedSessionId) onSelect("");
                   }
@@ -637,7 +637,7 @@ function CycleLog({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => mutate({ action: "delete-cycle", cycleId: cycle.id })}
+                onClick={async () => { if (await askConfirm({ title: "Delete this cycle?", body: `Cycle #${cycle.cycleNumber} is deleted.`, confirmLabel: "Delete cycle", tone: "destructive" })) void (mutate({ action: "delete-cycle", cycleId: cycle.id })); }}
               >
                 Delete
               </button>

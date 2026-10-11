@@ -14,7 +14,7 @@ describe("Safety last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"safety"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Safety"/);
+    expect(src).toMatch(/feature="Tool certifications"/);
     expect(src).toMatch(/AbortSignal\.timeout/);
     expect(src).toMatch(/if \(!view\)/);
     expect(src).toMatch(/response\.status === 401 \|\| response\.status === 403/);
@@ -24,7 +24,7 @@ describe("Safety last snapshot stays on the phone", () => {
     expect(src).toContain('href="/#waitlist"');
     expect(src).toMatch(/persistOrgIdInUrl/);
     expect(src).toMatch(/join the waitlist/i);
-    expect(src).toContain("Choose your team to track safety, or join the waitlist.");
-    expect(src).toContain("Choose your team to track safety.");
+    expect(src).toContain("Choose your team to track tool certifications, or join the waitlist.");
+    expect(src).toContain("Choose your team to track tool certifications.");
   });
 });

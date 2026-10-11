@@ -13,6 +13,7 @@ import {
   type WritingDraft,
 } from "./business-portal";
 import { buildOrdersPulse } from "./orders/business-pulse";
+import { canManageFinances } from "./finance/finance-managers";
 import {
   buildSponsorReminders,
   isPipelineStage,
@@ -378,6 +379,7 @@ export async function loadBusinessView(
     teamNumber: org.teamNumber,
     role: org.role,
     canManageFinance: org.role === "owner" || org.role === "admin",
+    canManageFinances: await canManageFinances(client, orgId),
     seasonYear,
     seasons,
     teamAffiliation: org.teamAffiliation ?? null,

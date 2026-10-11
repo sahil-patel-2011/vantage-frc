@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, askConfirm } from "../../components/ui";
 import { canDeleteGearbox, compoundReduction, describeStages, outputRpm, type Stage } from "../../lib/gearbox";
 import { CallYourShot } from "../../lib/learning/call-your-shot";
 import { buildGearboxCall } from "../../lib/learning/surfaces";
@@ -469,7 +469,7 @@ export default function GearboxClient({ orgId }: { orgId: string | null }) {
                         size="sm"
                         variant="danger"
                         aria-label={`Delete gearbox ${g.name}`}
-                        onClick={() => void post({ action: "delete_gearbox", id: g.id }, "Gearbox removed.")}
+                        onClick={async () => { if (await askConfirm({ title: "Delete this gearbox?", body: `“${g.name}” is deleted.`, confirmLabel: "Delete gearbox", tone: "destructive" })) void post({ action: "delete_gearbox", id: g.id }, "Gearbox removed."); }}
                       >
                         Delete
                       </Button>

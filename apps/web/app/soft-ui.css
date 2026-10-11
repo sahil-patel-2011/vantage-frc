@@ -466,6 +466,8 @@ body.soft-nav-panel-open .soft-island{
 .soft-toast{padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
 .soft-toast.ok strong{color:#166534}.soft-toast.bad{background:#dc2626;border-color:#dc2626;color:#fff}
 .soft-toast p{margin:4px 0 0;font-size:12px;opacity:.85}
+/* StatusEcho repeats an off-screen result; it never takes a tap from the page under it. */
+.status-echo{pointer-events:none}
 
 @media(max-width:640px){
   .soft-snapshot-grid strong{font-size:22px}
@@ -894,7 +896,15 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
    Cards match heights; what is inside them stacks from the top. */
 .soft-panel{display:grid;align-content:start;gap:12px;padding:18px;border-radius:var(--radius);background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 85%,transparent);box-shadow:var(--shadow)}
 .soft-panel label{display:grid;gap:6px;font:600 13px var(--font-source-sans),ui-sans-serif}
-.soft-panel input{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font:500 14px var(--font-source-sans),ui-sans-serif;background:var(--surface);color:inherit}
+/* A label around a checkbox or radio is a row, not a stack: as a one-column grid the box
+   stretched to the label's width (a 95px checkbox) with its text underneath. Same specificity
+   as the rule above, so a sheet that lays its toggle out on purpose still wins. */
+/* .choice-field-option is a whole-card radio whose real input is hidden over the card. */
+.soft-panel label:where(:not(.choice-field-option)):where(:has(> input[type="checkbox"], > input[type="radio"])){grid-template-columns:auto minmax(0,1fr);column-gap:8px;align-items:start}
+.soft-panel label:where(:not(.choice-field-option)) > input:where([type="checkbox"], [type="radio"]){grid-column:1;grid-row:1;justify-self:start;margin:2px 0 0}
+.soft-panel label:where(:not(.choice-field-option)):where(:has(> input[type="checkbox"], > input[type="radio"])) > :where(:not(input[type="checkbox"], input[type="radio"])){grid-column:2}
+/* Text fields only: on a checkbox or radio this padding drew a 95px-wide box. :where() keeps the old specificity. */
+.soft-panel input:where(:not([type="checkbox"], [type="radio"])){min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font:500 14px var(--font-source-sans),ui-sans-serif;background:var(--surface);color:inherit}
 .soft-panel small{color:var(--muted);font-weight:500;font-size:12px}
 /* The shell — padding, radius, dashed hairline, plate, rhythm and the action
    row — is the shared empty-state treatment in system.css, and applies to
@@ -1207,6 +1217,9 @@ body.has-app-shell .admin-grid .intel-panel{
   border-radius:var(--radius);
   box-shadow:var(--shadow);
 }
+/* Two forms side by side share a row height; the shorter one spread its fields over the gap
+   (a tall empty band under its heading). Fields pack at the top; the card keeps its height. */
+.admin-grid form{align-content:start}
 body.has-app-shell .app-badge{
   border-radius:var(--radius-pill);border-color:transparent;background:var(--accent-soft);color:var(--accent);
 }
@@ -3099,3 +3112,7 @@ details[open] > summary[data-disclosure]::before{transform:rotate(45deg)}
 .dash-checklist li>a>span{font-size:14px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
 .dash-checklist li>a:hover>span{color:var(--accent)}
 .dash-checklist li>a>small{color:var(--muted);font-size:12px;text-decoration:none}
+
+/* A date or time box shows only its format ("mm/dd/yyyy"), so it carries a small visible name. */
+.inline-field-label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
+.inline-field-label > :is(input,select,textarea){font-weight:400;color:var(--ink);width:100%;box-sizing:border-box}

@@ -315,6 +315,25 @@ html[data-theme="dark"] .marketing-lux {
     min-height: 44px;
   }
 }
+/* iPhone Safari zooms the page when a field under 16px takes focus, and the page stays zoomed
+   after. About 150 rules set fields to 13–15px for a mouse, so on a touch screen every text
+   field is 16px. The fields in :not() are larger on purpose (tap counters, the kiosk scanner,
+   code entry) and keep their own size; lib/ui/field-zoom.test.ts keeps that list complete. */
+@media (pointer: coarse) {
+  :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="button"], [type="submit"], [type="reset"], [type="image"]), select, textarea):not(
+    .desktop-link-entry input,
+    .kiosk-scan-input,
+    .pairwise-bout input,
+    .qs-byhand-form input,
+    .sfb-meta .soft-form-row:first-child input,
+    .sfb-question-document .sfb-question-grid .soft-form-row:first-child input,
+    .tap-counter input,
+    .scout-qr-manual input,
+    .ai-bridge-card input
+  ) {
+    font-size: 16px !important;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   :where(*, *::before, *::after) {
     animation-duration: 0.01ms !important;
@@ -418,6 +437,23 @@ html[data-theme="dark"] .marketing-lux {
   letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
+/* A crumb that links up a level ("Business / Season Costs") was the browser's blue underline. */
+.breadcrumbs a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+/* On touch the 12px line is too small to hit; the padding grows the target, the margin keeps the layout. */
+@media (pointer: coarse) {
+  .breadcrumbs a {
+    display: inline-block;
+    padding-block: 12px;
+    margin-block: -12px;
+  }
+}
 
 /* --- Type scale ------------------------------------------------------------
    Defaults for headings inside product surfaces. Before this, an <h2> with no
@@ -486,6 +522,16 @@ html[data-theme="dark"] .marketing-lux {
 /* Deliberately no font-size default for text fields: below 16px iOS Safari
    zooms the viewport on focus, and the fields that matter already set 16px. A
    14px blanket here would have been a house style that broke a phone. */
+/* Cards and forms lay out as grids, so a button placed straight in one stretched across it:
+   a 920px "Ask for a part". From tablet width up a card's button keeps its own width, as in
+   macOS and Material. :where() keeps this at zero specificity, so a sheet that wants a
+   full-width button (width: 100%, or its own justify-self) still gets one; phones keep the
+   full-width card button that is normal there. */
+@media (min-width: 721px) {
+  :where(.soft-panel, .app-card, .intel-panel, .soft-empty-compact) > :where(.app-button, .primary-action) {
+    justify-self: start;
+  }
+}
 .app-button:disabled,
 .app-button[aria-disabled="true"] {
   opacity: 0.55;

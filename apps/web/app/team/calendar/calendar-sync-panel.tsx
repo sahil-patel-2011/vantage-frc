@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "../../../components/ui";
+import { Button, askConfirm } from "../../../components/ui";
 import {
   googleCalendarSubscribeUrl,
   toWebcalUrl,
@@ -137,11 +137,14 @@ export function CalendarSyncPanel({
               type="button"
               className="tc-text-btn"
               disabled={busy || (scope === "subteam" && !subteamId)}
-              onClick={() => {
+              onClick={async () => {
                 if (
-                  confirm(
-                    "Generate a new link? Your current subscription will stop updating until you re-add the new one.",
-                  )
+                  await askConfirm({
+                    title: "Generate a new link?",
+                    body: "Your current subscription will stop updating until you re-add the new one.",
+                    confirmLabel: "Generate new link",
+                    tone: "destructive",
+                  })
                 ) {
                   void run({ action: "rotate_calendar_feed", ...feedBody() }, "cal-feed");
                 }
@@ -153,8 +156,8 @@ export function CalendarSyncPanel({
               type="button"
               className="tc-text-btn danger"
               disabled={busy}
-              onClick={() => {
-                if (confirm("Turn off this calendar subscription? The link will stop working.")) {
+              onClick={async () => {
+                if (await askConfirm({ title: "Turn off this calendar subscription?", body: "The link will stop working.", confirmLabel: "Turn off", tone: "destructive" })) {
                   void run({ action: "disable_calendar_feed", ...feedBody() }, "cal-feed");
                 }
               }}

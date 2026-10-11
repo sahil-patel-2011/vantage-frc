@@ -375,6 +375,6 @@ export async function setSeasonBudget(
     [input.orgId, input.seasonYear, input.totalBudgetUsd, input.notes, input.userId],
   );
   if (!updated.rowCount) {
-    throw new Error("The budget was not saved. You may no longer have budget access on this team.");
+    throw new Error("The budget was not saved. You may no longer manage money on this team.");
   }
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { flipMatchSimResult, matchSimHasNoData, phaseLabel } from "../../lib/match-sim";
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
@@ -554,8 +554,8 @@ function SavedRuns({
               style={{ minHeight: 44, minWidth: 44, padding: "0 10px", flex: "0 0 auto" }}
               aria-label={`Delete the simulation ${run.label}`}
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${run.label}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete “${run.label}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-run", runId: run.id });
                 }
               }}

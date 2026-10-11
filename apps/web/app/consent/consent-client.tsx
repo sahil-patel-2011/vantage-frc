@@ -1,5 +1,5 @@
 "use client";
-import { Button, EmptyState } from "../../components/ui";
+import { Button, EmptyState, askConfirm } from "../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { canDeleteConsentForm, FORM_TYPE_LABEL, FORM_TYPES, missingFormsFor, type FormType, type RecordStatus } from "../../lib/consent";
 import { persistOrgIdInUrl } from "../../lib/nav/resolve-org";
@@ -219,7 +219,7 @@ export default function ConsentClient({ orgId }: { orgId: string | null }) {
                 userId: view.context.userId,
                 authorId: f.createdBy,
               }) ? (
-                <Button variant="ghost" type="button" aria-label={`Delete form ${f.name}`} onClick={() => void post({ action: "delete_form", id: f.id }, "Form removed.")}>
+                <Button variant="ghost" type="button" aria-label={`Delete form ${f.name}`} onClick={async () => { if (await askConfirm({ title: "Delete this form?", body: `“${f.name}” is deleted.`, confirmLabel: "Delete form", tone: "destructive" })) void post({ action: "delete_form", id: f.id }, "Form removed."); }}>
                   Delete
                 </Button>
               ) : null}

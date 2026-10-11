@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { Badge, EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../../components/ui";
 import type { FormInsight, QuestionSummary } from "../../../lib/forms/results";
 import {
   optionsFor,
@@ -579,11 +579,14 @@ export default function FormDetailClient({ formId }: { formId: string }) {
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
+                onClick={async () => {
                   if (
-                    window.confirm(
-                      "Make a new link? Anyone still holding the old one will not be able to answer.",
-                    )
+                    await askConfirm({
+                      title: "Make a new link?",
+                      body: "Anyone still holding the old one will not be able to answer.",
+                      confirmLabel: "Make new link",
+                      tone: "destructive",
+                    })
                   ) {
                     void act({ action: "rotate_link", formId: form.id });
                   }
@@ -642,8 +645,8 @@ export default function FormDetailClient({ formId }: { formId: string }) {
                       Down
                     </button>
                     <button type="button" className="text-button" disabled={busy}
-                      onClick={() => {
-                        if (window.confirm(`Delete "${question.label}"? Answers to it are deleted too.`)) {
+                      onClick={async () => {
+                        if (await askConfirm({ title: `Delete “${question.label}”?`, body: "Answers to it are deleted too.", confirmLabel: "Delete", tone: "destructive" })) {
                           void act({ action: "delete_question", questionId: question.id });
                         }
                       }}>
@@ -778,7 +781,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
               );
             })}
             <Button variant="primary" type="submit" disabled={busy || form.status !== "open" || form.questions.length === 0}>
-              Submit
+              Submit response
             </Button>
             {error ? <p role="alert" className="forms-error">{error}</p> : null}
           </form>

@@ -21,11 +21,14 @@ describe("one shared Home setup prompt", () => {
       hotelName: null, roomLabel: null, mineOpenTodos: 0, kickoffReady: false });
     expect(strip.filter(item => item.tone !== "neutral")).toEqual([]);
   });
-  it("preserves every chosen card and size even without an event", () => {
+  it("consolidates missing-event placeholders and keeps real work at its chosen place and size", () => {
     const original = structuredClone(layout);
-    expect(homeViewLayout(layout, { ...input, editing: false })).toEqual(original);
+    // One shared setup prompt replaces the event cards; the pinned setup card and live tasks stay as saved.
+    expect(homeViewLayout(layout, { ...input, editing: false })).toEqual([original[0], original[3]]);
     expect(layout).toEqual(original);
-    expect(hiddenOnHome(layout, input).size).toBe(0);
+    expect(hiddenOnHome(layout, input)).toEqual(new Map([
+      ["match", "setup_shared"], ["coverage", "setup_shared"],
+    ]));
     expect(homeViewLayout(layout, { ...input, editing: true })).toEqual(original);
   });
 
@@ -42,8 +45,9 @@ describe("one shared Home setup prompt", () => {
     const widgets = { ...input.widgets, coverage: { status: "live" } };
     const original = structuredClone(layout);
     const viewed = homeViewLayout(layout, { editing: false, shell: "ready", widgets, homeOverview: true });
-    expect(viewed).toEqual(original);
-    expect(hiddenOnHome(layout, { shell: "ready", widgets, homeOverview: true }).size).toBe(0);
+    // Live coverage keeps its saved slot; only the match card still waiting for an event steps aside.
+    expect(viewed).toEqual(original.filter(item => item.i !== "match"));
+    expect(hiddenOnHome(layout, { shell: "ready", widgets, homeOverview: true })).toEqual(new Map([["match", "empty"]]));
     expect(layout).toEqual(original);
     expect(homeViewLayout(layout, { editing: true, shell: "ready", widgets, homeOverview: true })).toEqual(original);
   });

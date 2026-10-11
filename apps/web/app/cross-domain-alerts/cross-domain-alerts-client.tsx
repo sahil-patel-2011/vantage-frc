@@ -10,8 +10,7 @@ import {
   FormRow,
   PageHeader,
   Panel,
-  Button,
-} from "../../components/ui";
+  Button, askConfirm } from "../../components/ui";
 import { SUBSYSTEM_EVENT_DOMAINS, subsystemEventDomainLabel } from "../../lib/cross-domain-alerts";
 import type { CrossDomainAlertsView } from "../../lib/cross-domain-alerts/compute-cross-domain-alerts";
 import type { CrossDomainAlertSeverity, SubsystemEventDomain } from "../../lib/cross-domain-alerts/types";
@@ -405,8 +404,8 @@ function RecentEvents({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.title}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-event", eventId: item.id });
                 }
               }}

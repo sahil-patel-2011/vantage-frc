@@ -35,7 +35,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import type { RoleOnboardingView } from "../../lib/role-onboarding/types";
 import { DashboardGridItem } from "./dashboard-grid-item";
-import { LiveCountdown } from "./widgets";
+import { DashboardRoleStrip } from "./dashboard-role-strip";
 import { WIDGET_PICKER_ICON, greeting } from "./dashboard-canvas";
 import type { HomeStripItem } from "../../lib/home-workflows";
 import { Button, EmptyState } from "../../components/ui";
@@ -51,7 +51,7 @@ import type {
 import { DashboardSetupBanner } from "./dashboard-setup-banner";
 
 import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-venue-shortcuts";
-import { homeHeaderDetail, homeNowFromWidgets, showStandaloneSetupBanner } from "./dashboard-home-model";
+import { homeHeaderDetail, homeNowFromWidgets, homeSetupSurfaces, showStandaloneSetupBanner } from "./dashboard-home-model";
 import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
 import { DashboardHiddenRow } from "./dashboard-hidden-row";
@@ -519,12 +519,17 @@ export function DashboardHomeView(props: {
   const showRoleStrip = Boolean(
     orgId && homeStripItems.some((item) => item.tone !== "neutral") && !teamSetupCard,
   );
-  const showsFirstWeek = Boolean(firstWeek.view && !teamSetupCard && firstWeek.view.status === "live");
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
   const inlineError = !editing && !previewing && messageKind === "error" && message;
   const matchCardLeads = now.title === "Our next match" && displayLayout.some((item) => item.type === "next_match");
-  const showDailyBrief = Boolean(orgId && !matchCardLeads && (!now.quiet || (!sharedSetupPrompt && !teamSetupCard)));
+  const taskCardLeads = now.href === "/todos" && displayLayout.some((item) => item.type === "team_todos");
+  // Exactly one setup surface while the team's setup is unfinished: the hero when nothing more
+  // pressing is on, otherwise its own card under what leads (see homeSetupSurfaces).
+  const surfaces = homeSetupSurfaces({ orgId, setupOpen: teamSetupCard, nowQuiet: Boolean(now.quiet), matchCardLeads, taskCardLeads, sharedSetupPrompt });
+  const showDailyBrief = surfaces.nowCard;
+  const heroSetup = surfaces.setup === "now" ? setupHero : null;
+  const showsFirstWeek = Boolean(firstWeek.view && firstWeek.view.status === "live" && (!teamSetupCard || surfaces.setup === "card"));
 
   return (
     <main
@@ -558,56 +563,23 @@ export function DashboardHomeView(props: {
       />
       {orgId ? (
         <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
-          {showDailyBrief ? <DashboardNowCard now={now} setupHero={null} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
-          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas} primaryHref={showDailyBrief ? now.href : undefined} hasTaskCard={displayLayout.some(item => item.type === "team_todos")} />
+          {showDailyBrief ? <DashboardNowCard now={now} setupHero={heroSetup} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
+          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas}
+            primaryHref={heroSetup ? heroSetup.href : showDailyBrief ? now.href : undefined}
+            setupHrefs={surfaces.setup && setupHero ? setupHero.steps.filter((step) => !step.done).map((step) => step.href) : undefined}
+            hasTaskCard={displayLayout.some(item => item.type === "team_todos")} />
         </div>
       ) : null}
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice,
           so with a match coming up the Next match card leads. A setup step ("Add your first
-          practice") waits too: it sat above Qual 31 fourteen minutes before the match. It is
-          still on Your first week. */}
+          practice") waits too: it sat above Qual 31 fourteen minutes before the match. It moves
+          to its own card here, under what leads, until setup is done. */}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} error={firstWeek.error} retry={firstWeek.retry} /> : null}
+      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} error={firstWeek.error} retry={firstWeek.retry} setupHere={surfaces.setup === "card"} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      {showRoleStrip ? (
-        <section
-          className="dash-role-strip"
-          data-audience={homeAudience ?? "student"}
-          aria-label={homeAudience === "mentor" ? "Team logistics" : "This week"}
-          {...dim}
-        >
-          <header className="dash-role-strip-head">
-            <span>{homeAudience === "mentor" ? "Team logistics" : "This week"}</span>
-            <a href={withOrgHref("/logistics", orgId)}>
-              {homeAudience === "mentor" ? "Hotels & travel" : "My hotel & leave times"}
-            </a>
-          </header>
-          <ul>
-            {homeStripItems.filter((item) => item.tone !== "neutral").map((item) => (
-              <li key={item.key} data-tone={item.tone}>
-                <a href={item.href}>
-                  <span>{item.label}</span>
-                  <strong>
-                    {item.at ? (
-                      <>
-                        {item.detail}
-                        <em className="dash-strip-countdown">
-                          {" · "}
-                          <LiveCountdown iso={item.at} />
-                        </em>
-                      </>
-                    ) : (
-                      item.detail
-                    )}
-                  </strong>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      {showRoleStrip ? <DashboardRoleStrip orgId={orgId} audience={homeAudience} items={homeStripItems} dim={dim} /> : null}
 
       {inlineError ? (
         <p className="telemetry-status" role="status">
@@ -624,9 +596,9 @@ export function DashboardHomeView(props: {
         </p>
       ) : null}
 
-      {!showsOverview && (sharedSetupPrompt || (dashShell !== "ready" && dashShell !== "loading" && !teamSetupCard &&
+      {!showsOverview && surfaces.setupBannerAllowed && (sharedSetupPrompt || (dashShell !== "ready" && dashShell !== "loading" &&
       showStandaloneSetupBanner({ editing, displayLayout }))) ? (
-        <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} compact={sharedSetupPrompt} />
+        <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} compact={sharedSetupPrompt} platformAdmin={me.platformAdmin === true} />
       ) : null}
 
       {meLoaded && dashShell === "ready" && nextActions.length > 0 && !teamSetupCard && !showsOverview ? (

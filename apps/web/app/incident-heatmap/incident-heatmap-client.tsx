@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { incidentContextLabel } from "../../lib/incident-heatmap";
 import { INCIDENT_CONTEXTS, type IncidentHeatmapView } from "../../lib/incident-heatmap/compute-incident-heatmap";
 import type { IncidentContext } from "../../lib/incident-heatmap/types";
@@ -61,7 +61,6 @@ function IncidentHeatmapRelated({ orgId }: { orgId?: string | null }) {
     <nav className="product-hub-related" aria-label="Related robot tools">
       <a href={hubHref("/build", "failure-patterns", orgId)}>Failure patterns</a>
       <a href={hubHref("/build", "fmea", orgId)}>FMEA</a>
-      <a href={hubHref("/team", "safety", orgId)}>Safety log</a>
     </nav>
   );
 }
@@ -512,8 +511,8 @@ function RecentIncidents({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.title}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-incident", incidentId: item.id });
                 }
               }}

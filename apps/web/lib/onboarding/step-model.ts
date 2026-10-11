@@ -46,7 +46,8 @@ export type OnboardingDraft = {
   lastName: string;
   dateOfBirth: string;
   gender: OnboardingGender;
-  teamRole: OnboardingRole;
+  /** "" until the person picks a card: nobody is pre-filed as a Student. */
+  teamRole: OnboardingRole | "";
   crewRole: OnboardingCrew | "";
   roleDescription: string;
   teamNumber: string;
@@ -87,7 +88,7 @@ export function emptyOnboardingDraft(): OnboardingDraft {
     lastName: "",
     dateOfBirth: "",
     gender: "prefer_not_to_say",
-    teamRole: "student",
+    teamRole: "",
     crewRole: "",
     roleDescription: "",
     teamNumber: "",
@@ -114,7 +115,7 @@ export function emptyOnboardingDraft(): OnboardingDraft {
  * without being shown.
  */
 export function defaultFocusForRole(
-  teamRole: OnboardingRole | null | undefined,
+  teamRole: OnboardingRole | "" | null | undefined,
   crewRole: OnboardingCrew | "" | null | undefined,
 ): OnboardingFocus {
   switch (crewRole) {
@@ -326,14 +327,14 @@ export type PendingStage = {
 export type PendingMeanwhileLink = { href: string; label: string; detail: string };
 
 export type OnboardingPendingPlan = {
-  kind: "pending" | "invited" | "declined" | "no_workspace" | "no_team";
+  kind: "pending" | "invited" | "declined" | "no_workspace" | "no_team" | "platform_admin";
   eyebrow: string;
   headline: string;
   /** Who actually received a notification — empty string when nobody did. */
   notified: string;
   stages: PendingStage[];
   meanwhile: PendingMeanwhileLink[];
-  primaryAction: { kind: "check" | "edit" | "invite" | "claim" | "join"; label: string };
+  primaryAction: { kind: "check" | "edit" | "invite" | "claim" | "join" | "admin"; label: string };
 };
 
 const MEANWHILE_BASE: PendingMeanwhileLink[] = [
@@ -365,8 +366,36 @@ export function buildOnboardingPendingPlan(input: {
   orgName: string | null;
   adult: boolean;
   workspaceMissing?: boolean;
+  /** A platform admin on no team: their way on is the admin console, not "join a team". */
+  platformAdmin?: boolean;
 }): OnboardingPendingPlan {
   const teamLabel = input.orgName ?? (input.teamNumber ? `FRC Team ${input.teamNumber}` : "your team");
+
+  if (input.platformAdmin && input.accessStatus !== "invited" && input.accessStatus !== "pending") {
+    return {
+      kind: "platform_admin",
+      eyebrow: "PLATFORM ADMIN",
+      headline: "You're set up. Teams start in the admin console.",
+      notified: "",
+      stages: [
+        { key: "profile", title: "Profile saved", detail: "Your name and role are stored privately.", phase: "done" },
+        {
+          key: "admin",
+          title: "Add a team and its owner",
+          detail: "The admin console creates teams, invites their owners and works the waitlist.",
+          phase: "current",
+        },
+        {
+          key: "team",
+          title: "Join a team if you're on one",
+          detail: "An invite or a team code makes you a member, separately from admin access.",
+          phase: "upcoming",
+        },
+      ],
+      meanwhile: MEANWHILE_BASE,
+      primaryAction: { kind: "admin", label: "Open the admin console" },
+    };
+  }
 
   if (input.accessStatus === "invited") {
     return {

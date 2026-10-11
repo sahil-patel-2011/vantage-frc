@@ -110,7 +110,7 @@ for (const width of [1280, 390]) {
           await route.fulfill({ status: 503, json: { error: "Publish temporarily unavailable" } });
         } else await route.continue();
       });
-      const publish = builder.locator(".sfb-publish-actions").getByRole("button", { name: "Publish changes", exact: true });
+      const publish = builder.locator(".sfb-document-actions").getByRole("button", { name: "Publish changes", exact: true });
       await publish.click();
       await expect(builder.locator(".sfb-message")).toHaveText("Publish temporarily unavailable");
       await expect(builder.getByLabel("Form title", { exact: true })).toHaveValue(`${marker} Match`);
@@ -134,9 +134,9 @@ for (const width of [1280, 390]) {
           schemas.push(result.id);
           await expect.poll(() => refreshBlocked).toBe(true);
           await expect(types).toBeDisabled();
-          await expect(builder.locator(".sfb-published-card")).toHaveCount(0);
+          await expect(builder.locator(".sfb-action-status")).not.toContainText("Published");
           release();
-          await expect(builder.locator(".sfb-published-card")).toContainText("Published");
+          await expect(builder.locator(".sfb-action-status")).toContainText("Published");
           await expect(publish).toHaveCount(0);
           await expect(types).toBeEnabled();
           return result.id as string;

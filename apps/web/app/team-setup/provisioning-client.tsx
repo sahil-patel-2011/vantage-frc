@@ -2,7 +2,15 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "../../components/ui";
-import { PROVISIONING_FACTS, PROVISIONING_PHASES, workspaceReady, type ProvisioningStatus } from "../../lib/provisioning/model";
+import {
+  GOOGLE_NOT_CONNECTED_COPY,
+  PROVISIONING_FACTS,
+  PROVISIONING_PHASES,
+  googleWorkspaceDeferred,
+  provisioningHeadline,
+  workspaceReady,
+  type ProvisioningStatus,
+} from "../../lib/provisioning/model";
 
 export function ProvisioningClient({ orgId, initial }: { orgId: string; initial: ProvisioningStatus }) {
   const router = useRouter();
@@ -44,27 +52,34 @@ export function ProvisioningClient({ orgId, initial }: { orgId: string; initial:
       if (!response.ok) throw new Error("Could not resume setup. Refresh for the latest status or contact support.");
       const result = await response.json() as { workspaceReady?: boolean };
       if (result.workspaceReady) { router.replace(`/dashboard?orgId=${encodeURIComponent(orgId)}`); return; }
-      setJob((current) => ({ ...current, state: "queued", error: null, retryAfterAt: null }));
+      setJob((current) => ({ ...current, state: "queued", error: null, retryAfterAt: null, googleWorkspace: null }));
       setConnectionError(null);
     } catch (error) { setConnectionError((error as Error).message); }
     finally { setRetrying(false); }
   }
   const phase = PROVISIONING_PHASES.find((item) => item.id === job.phase);
+  // No Google connection on this server is a supported setup: an optional step, not a failure.
+  const googleLater = googleWorkspaceDeferred(job);
+  const stopped = job.state === "failed" || job.state === "waiting";
   return <main className="provisioning-page">
     <div className="provisioning-card">
-      <svg className={`provisioning-ring ${job.state === "failed" || job.state === "waiting" ? "is-stopped" : ""}`} viewBox="0 0 80 80" aria-hidden="true">
+      <svg className={`provisioning-ring ${stopped ? "is-stopped" : ""}`} viewBox="0 0 80 80" aria-hidden="true">
         <circle className="ring-track" cx="40" cy="40" r="32" />
         <circle className="ring-motion" cx="40" cy="40" r="32" />
       </svg>
-      <h1>{job.state === "failed" ? "Your setup needs attention" : job.state === "waiting" ? "Your setup is waiting" : "Setting up your team"}</h1>
+      <h1>{provisioningHeadline(job)}</h1>
       <p className="app-muted">You can refresh or leave this page; progress is saved.</p>
-      <p role="status" aria-live="polite">{job.state === "failed" || job.state === "waiting" ? job.error : phase?.label ?? "Checking your setup"}</p>
+      <p role="status" aria-live="polite">{googleLater ? GOOGLE_NOT_CONNECTED_COPY.detail : stopped ? job.error : phase?.label ?? "Checking your setup"}</p>
       {job.state === "waiting" && job.retryAfterAt ? <p>Next automatic attempt: <time dateTime={job.retryAfterAt}>{new Date(job.retryAfterAt).toISOString().replace("T", " ").replace(".000Z", " UTC")}</time></p> : null}
       <ol className="provisioning-phases" aria-label="Setup phases">
         {PROVISIONING_PHASES.filter(item => item.id === "team" || item.id === "tools").map((item) => <li key={item.id} aria-current={item.id === job.phase ? "step" : undefined}>
           <span aria-hidden="true">{job.completedPhases.includes(item.id) ? "✓" : "○"}</span>
           {item.label}<span className="app-muted">{job.completedPhases.includes(item.id) ? "Done" : item.id === job.phase ? job.state === "waiting" ? "Waiting" : job.state === "failed" ? "Needs attention" : "In progress" : "Waiting"}</span>
         </li>)}
+        {googleLater ? <li>
+          <span aria-hidden="true">○</span>
+          {GOOGLE_NOT_CONNECTED_COPY.label}<span className="app-muted">{GOOGLE_NOT_CONNECTED_COPY.status}</span>
+        </li> : null}
       </ol>
       {connectionError ? <p role="alert">{connectionError}</p> : null}
       {job.state === "failed" ? <Button variant="primary" disabled={retrying} onClick={() => void retry()}>{retrying ? "Resuming…" : "Retry setup"}</Button> : null}

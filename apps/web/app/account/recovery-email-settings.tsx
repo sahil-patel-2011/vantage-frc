@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, askConfirm } from "../../components/ui";
 
 type Recovery = { email: string; verified: boolean } | null;
 
@@ -100,7 +100,7 @@ export function RecoveryEmailSettings({ suggested }: { suggested?: string }) {
           <Button variant="ghost" size="sm" type="button" disabled={working} onClick={() => setEditing(true)}>
             Change
           </Button>
-          <Button variant="ghost" size="sm" type="button" disabled={working} onClick={() => void remove()}>
+          <Button variant="ghost" size="sm" type="button" disabled={working} onClick={async () => { if (await askConfirm({ title: "Remove your recovery email?", body: "Account recovery stops using this address. You can add one again any time.", confirmLabel: "Remove email", tone: "destructive" })) void remove(); }}>
             Remove
           </Button>
         </div>
@@ -126,11 +126,11 @@ export function RecoveryEmailSettings({ suggested }: { suggested?: string }) {
                 if (code.length === 6 && !working) void confirm();
               }}
             />
-            <Button variant="primary" size="sm" type="button" disabled={working || code.length !== 6} onClick={() => void confirm()}>
-              {working ? "Checking…" : "Confirm"}
-            </Button>
             <Button variant="ghost" size="sm" type="button" disabled={working} onClick={() => setSentTo(null)}>
               Back
+            </Button>
+            <Button variant="primary" size="sm" type="button" disabled={working || code.length !== 6} onClick={() => void confirm()}>
+              {working ? "Checking…" : "Confirm"}
             </Button>
           </div>
         ) : (

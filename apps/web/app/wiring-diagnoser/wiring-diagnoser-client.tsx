@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -393,7 +393,7 @@ export default function WiringDiagnoserClient() {
             title="Run your first wiring check"
             description="Enter the channels from your wiring diagram (expected) and what you see on the board (observed) to get a grounded fault diagnosis."
           >
-            <Button as="a" variant="primary" href="#wiring-diagnoser-form">
+            <Button as="a" variant="secondary" href="#wiring-diagnoser-form">
               Run a wiring check
             </Button>
           </EmptyState>
@@ -434,8 +434,8 @@ function ChecksList({
                   className="text-button"
                   disabled={busy}
                   aria-label={`Delete ${check.boardName}`}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${check.boardName}" check?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${check.boardName}” check?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                       mutate({ action: "delete-check", checkId: check.id });
                     }
                   }}

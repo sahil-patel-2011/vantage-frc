@@ -269,7 +269,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         <Panel className="auth-policy-form team-security-access-pointer">
           <h2>Who can open what</h2>
           <p>
-            Each person&apos;s role, the sections they can open, extra powers and budget access are set in one place:
+            Each person&apos;s role, the sections they can open, extra powers and who manages money are set in one place:
             their <strong>Access</strong> button on Team admin.
           </p>
           <Button as="a" variant="secondary" href={`${withOrgHref("/team/admin", orgId)}#people`}>

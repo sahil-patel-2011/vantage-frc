@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { askConfirm } from "../../../components/ui";
 
 /**
  * "Let the AI look things up" — a team's own free TinyFish key.
@@ -216,7 +217,7 @@ export function WebResearchCard({ orgId }: { orgId: string }) {
               {busy ? "Checking…" : status?.configured ? "Check & replace" : "Check & save"}
             </button>
             {status?.configured ? (
-              <button className="danger-action" type="button" disabled={busy} onClick={() => void remove()}>
+              <button className="danger-action" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Remove the search key?", body: "The saved web research key is deleted from Vantage.", confirmLabel: "Remove key", tone: "destructive" })) void remove(); }}>
                 Remove key
               </button>
             ) : null}

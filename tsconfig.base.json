@@ -18,6 +18,7 @@
     "paths": {
       "@vantage/db": ["packages/db/src/index.ts"],
       "@vantage/db/savepoint": ["packages/db/src/savepoint.ts"],
+      "@vantage/db/view-only": ["packages/db/src/view-only.ts"],
       "@vantage/db/billing": ["packages/db/src/billing.ts"],
       "@vantage/db/display": ["packages/db/src/display.ts"],
       "@vantage/db/cad-relay": ["packages/db/src/cad-relay.ts"],

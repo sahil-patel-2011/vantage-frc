@@ -6,7 +6,9 @@ const APP = join(__dirname, "../../../app");
 const SCAN = join(APP, "vantage-scan");
 // Public code entry deliberately uses the focused invitation shell, not a
 // product workspace overlay. Its layout is covered by team-join-code.spec.ts.
-const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known", "join-team"]);
+// The account-check recovery page (access-unavailable) reuses that same shell
+// (join-team.css) outside any product workspace.
+const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known", "join-team", "access-unavailable"]);
 
 describe("vantage scan hub overlays", () => {
   const hubs = readdirSync(APP).filter((name) => {

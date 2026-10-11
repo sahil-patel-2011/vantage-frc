@@ -53,6 +53,8 @@ export function DocumentCard({
   onUploadVersion: (documentId: string) => void;
 }) {
   const [showVersions, setShowVersions] = useState(false);
+  // An in-page rename field instead of the browser's prompt box.
+  const [rename, setRename] = useState<string | null>(null);
   const latest = doc.latest;
   const onshapeHref = onshapeEditHref(doc.externalUrl);
   const fusionHref = fusionEditHref(doc.externalUrl);
@@ -149,10 +151,8 @@ export function DocumentCard({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            const next = window.prompt("Rename document", doc.title);
-            if (next && next.trim() && next.trim() !== doc.title) onPatch(doc.id, { title: next.trim() });
-          }}
+          aria-expanded={rename !== null}
+          onClick={() => setRename(rename === null ? doc.title : null)}
         >
           Rename
         </button>
@@ -170,6 +170,37 @@ export function DocumentCard({
           </button>
         ) : null}
       </div>
+
+      {rename !== null ? (
+        <form
+          style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const next = rename.trim();
+            if (next && next !== doc.title) onPatch(doc.id, { title: next });
+            setRename(null);
+          }}
+        >
+          <label className="inline-field-label" style={{ flex: "1 1 220px" }}>
+            Document name
+            <input
+              autoFocus
+              value={rename}
+              maxLength={200}
+              onChange={(event) => setRename(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setRename(null);
+              }}
+            />
+          </label>
+          <Button type="submit" variant="primary" disabled={busy || !rename.trim()}>
+            Save name
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setRename(null)}>
+            Cancel
+          </Button>
+        </form>
+      ) : null}
 
       {showVersions ? (
         <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }} aria-label={`Versions of ${doc.title}`}>

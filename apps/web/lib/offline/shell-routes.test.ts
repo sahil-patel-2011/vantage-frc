@@ -169,7 +169,6 @@ describe("offline shell routes", () => {
     expect(pathnameIsOfflineShell("/equipment-maintenance")).toBe(true);
     expect(pathnameIsOfflineShell("/notifications")).toBe(true);
     expect(pathnameIsOfflineShell("/forms")).toBe(true);
-    expect(pathnameIsOfflineShell("/incidents")).toBe(true);
     expect(pathnameIsOfflineShell("/roles")).toBe(true);
     expect(pathnameIsOfflineShell("/parts-catalog")).toBe(true);
     expect(pathnameIsOfflineShell("/parts-relay")).toBe(true);
@@ -342,7 +341,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/budget")).toBe("Season budget");
     expect(offlineCapableLabel("/sponsorship")).toBe("Sponsorship");
     expect(offlineCapableLabel("/sponsor-suite")).toBe("Sponsor Suite");
-    expect(offlineCapableLabel("/safety")).toBe("Safety");
+    expect(offlineCapableLabel("/safety")).toBe("Tool certifications");
     expect(offlineCapableLabel("/writer")).toBe("Writer");
     expect(offlineCapableLabel("/learning")).toBe("Learning");
     expect(offlineCapableLabel("/training")).toBe("Training");
@@ -363,7 +362,6 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/equipment-maintenance")).toBe("Equipment Maintenance");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
     expect(offlineCapableLabel("/forms")).toBe("Forms");
-    expect(offlineCapableLabel("/incidents")).toBe("Safety Incident Log");
     expect(offlineCapableLabel("/roles")).toBe("Season roles");
     expect(offlineCapableLabel("/parts-catalog")).toBe("Parts catalog");
     expect(offlineCapableLabel("/parts-relay")).toBe("Parts Relay");
@@ -381,7 +379,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/meeting-autopilot")).toBe("Meeting agenda");
     expect(offlineCapableLabel("/goals")).toBe("Goals");
     expect(offlineCapableLabel("/safety-training")).toBe("Safety Training");
-    expect(offlineCapableLabel("/safety")).toBe("Safety");
+    expect(offlineCapableLabel("/safety")).toBe("Tool certifications");
     expect(offlineCapableLabel("/notifications/preferences")).toBe("Notification preferences");
     expect(offlineCapableLabel("/notifications")).toBe("Notifications");
     expect(offlineCapableLabel("/team/grants/calendar")).toBe("Grant calendar");

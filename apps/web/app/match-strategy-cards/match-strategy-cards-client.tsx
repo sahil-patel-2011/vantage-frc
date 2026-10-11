@@ -11,8 +11,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, askConfirm } from "../../components/ui";
 import { alliancePartners, autoCoordinationCue, autoFlexibilityCue, deploySafetyCue, dutyPlanFromTemplate, DUTY_STANCES, dutyStanceLabel, matchLabel, renderCardText } from "../../lib/match-strategy-cards";
 import type { MatchStrategyCardsView } from "../../lib/match-strategy-cards/compute-match-strategy-cards";
 import {
@@ -676,8 +675,8 @@ function StrategyCardPanel({
           <Button
             variant="ghost"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete the strategy card for ${matchLabel(card)}?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete the strategy card for ${matchLabel(card)}?`, body: null, confirmLabel: "Delete strategy card", tone: "destructive" })) {
                 mutate({ action: "delete-card", matchKey: card.matchKey });
               }
             }}

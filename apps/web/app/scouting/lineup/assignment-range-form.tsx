@@ -31,6 +31,8 @@ export function AssignmentRangeForm({
   const [lastMatchKey, setLast] = useState(keys[keys.length - 1] ?? "");
   const [teamKey, setTeamKey] = useState("");
   const [userId, setUserId] = useState(scouts.find((scout) => scout.isMe)?.userId ?? scouts[0]?.userId ?? "");
+  // A scout removed from the team since this form opened can no longer be assigned.
+  const scoutIsCurrent = scouts.some((scout) => scout.userId === userId);
 
   const preview = expandAssignmentRange({
     firstMatchKey,
@@ -80,7 +82,7 @@ export function AssignmentRangeForm({
         <label>
           Scout
           <select disabled={busy} value={userId} onChange={(event) => setUserId(event.target.value)}>
-            {!scouts.some(scout => scout.userId === userId) ? <option value={userId}>Choose a current scout</option> : null}
+            {!scoutIsCurrent ? <option value={userId}>Choose a current scout</option> : null}
             {scouts.map((scout) => (
               <option key={scout.userId} value={scout.userId}>
                 {scout.isMe ? `${scout.name} (me)` : scout.name}
@@ -94,11 +96,11 @@ export function AssignmentRangeForm({
           ? `${preview.slots.length} ${preview.slots.length === 1 ? "match" : "matches"} for this robot in this range`
           : preview.error}
       </p>
-      {!scouts.some(scout => scout.userId === userId) ? <p className="app-muted">Choose a current team scout before assigning this range.</p> : null}
+      {!scoutIsCurrent ? <p className="app-muted">Choose a current team scout before assigning this range.</p> : null}
       <Button
         variant="secondary"
         type="button"
-        disabled={busy || !preview.ok || !scouts.some(scout => scout.userId === userId)}
+        disabled={busy || !preview.ok || !scoutIsCurrent}
         onClick={() =>
           onAssign({
             action: "assign-range",

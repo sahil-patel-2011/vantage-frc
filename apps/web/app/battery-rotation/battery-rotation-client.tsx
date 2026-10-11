@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { batteryStatusLabel, irTrendLabel } from "../../lib/battery-rotation";
 import {
   BATTERY_STATUSES,
@@ -485,8 +485,8 @@ function FleetHealth({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Remove "${battery.label}" from rotation tracking?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Remove “${battery.label}” from rotation tracking?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                     mutate({ action: "delete-battery", batteryId: battery.batteryId });
                   }
                 }}
@@ -758,8 +758,8 @@ function RotationSchedule({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Remove the assignment for "${slot.matchLabel}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Remove the assignment for “${slot.matchLabel}”?`, body: null, confirmLabel: "Remove assignment", tone: "destructive" })) {
                   mutate({ action: "delete-assignment", assignmentId: slot.assignmentId });
                 }
               }}

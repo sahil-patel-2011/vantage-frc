@@ -47,7 +47,7 @@ import {
   githubItemsToIcsEvents,
   tbaMatchesToCalendarEvents,
 } from "../../../../lib/subteam-calendar";
-import { publicErrorMessage } from "../../../../lib/security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "../../../../lib/security/public-error";
 
 function newFeedToken() {
   return randomBytes(32).toString("base64url");
@@ -166,6 +166,8 @@ async function loadTbaMatchCalendar(client: PoolClient, orgId: string, teamNumbe
 }
 
 function fail(error: unknown) {
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
   const message = publicErrorMessage(error, "Calendar request failed");
   if (/team_subteams|subteam_calendar_events|relation .* does not exist/i.test(message)) {
     return Response.json(

@@ -44,11 +44,13 @@ describe("team number parsing", () => {
 });
 
 describe("live team-number feedback", () => {
-  it("asks for a number when the field is empty, and blocks Continue", () => {
+  it("lets an empty, optional field through as 'no team yet'", () => {
     const result = lookupTeamNumber(BASE);
-    expect(result.kind).toBe("incomplete");
-    expect(result.ok).toBe(false);
+    expect(result.kind).toBe("blank");
+    expect(result.ok).toBe(true);
     expect(result.teamNumber).toBeNull();
+    expect(result.tone).toBe("neutral");
+    expect(lookupTeamNumber({ ...BASE, raw: "   " }).ok).toBe(true);
   });
 
   it("names what was expected when the shape is wrong", () => {
@@ -110,7 +112,7 @@ describe("live team-number feedback", () => {
     const adult = lookupTeamNumber({ ...confirmed, adult: true });
     expect(adult.kind).toBe("no_workspace");
     expect(adult.tone).toBe("warn");
-    expect(adult.action).toEqual({ href: "/claim", label: "Create this team" });
+    expect(adult.action).toEqual({ href: "/claim?teamNumber=9999", label: "Create this team" });
 
     const student = lookupTeamNumber({ ...confirmed, adult: false });
     expect(student.kind).toBe("no_workspace");

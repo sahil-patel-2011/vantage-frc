@@ -78,7 +78,15 @@ export type OrdersView =
       teamNumber: number | null;
       seasonYear: number;
       currentUserId: string;
+      /** Owner/admin by role. Not a money permission — see canManageFinances. */
       isAdmin: boolean;
+      /**
+       * Finance manager (0714): the owner, or someone the owner chose to manage
+       * money. Approving, rejecting and assigning buyers are gated on this.
+       */
+      canManageFinances: boolean;
+      /** False for a view-only member: they can look at orders but not ask. */
+      canRequest: boolean;
       orders: OrderRequest[];
       members: OrderMember[];
       metrics: OrderMetrics;

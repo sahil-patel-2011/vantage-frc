@@ -33,6 +33,7 @@ const LINKS: Array<{ key: TeamOpsKey; href: string; label: string; match: (path:
  */
 const CONTEXT_KEYS: Partial<Record<TeamOpsKey, TeamOpsKey[]>> = {
   logistics: ["logistics", "attendance", "practice"],
+  todos: ["todos", "practice", "goals", "calendar", "messages"],
   calendar: ["calendar", "practice", "attendance", "messages", "logistics"],
   admin: ["admin", "start", "messages"],
 };
@@ -40,20 +41,26 @@ const CONTEXT_KEYS: Partial<Record<TeamOpsKey, TeamOpsKey[]>> = {
 type TeamOpsNavProps = {
   orgId?: string | null;
   active?: TeamOpsKey;
-  /** Limit which keys appear; defaults to a focused set when `active` has a context map. */
+  /**
+   * The section a sub-page belongs to (the task board is within Todos, Slack within Admin).
+   * Its chip is highlighted but stays a link, so one tap goes back up to the section.
+   */
+  within?: TeamOpsKey;
+  /** Limit which keys appear; defaults to a focused set when `active` or `within` has a context map. */
   keys?: TeamOpsKey[];
   className?: string;
 };
 
-export function TeamOpsNav({ orgId, active, keys, className }: TeamOpsNavProps) {
+export function TeamOpsNav({ orgId, active, within, keys, className }: TeamOpsNavProps) {
   const pathname = usePathname() || "";
-  const allow = keys ?? (active ? CONTEXT_KEYS[active] : undefined);
+  const section = active ?? within;
+  const allow = keys ?? (section ? CONTEXT_KEYS[section] : undefined);
   const links = allow ? LINKS.filter((link) => allow.includes(link.key)) : LINKS;
 
   return (
     <nav className={["team-ops-nav", className].filter(Boolean).join(" ")} aria-label="Team operations">
       {links.map((link) => {
-        const selected = active ? link.key === active : link.match(pathname);
+        const selected = active ? link.key === active : !within && link.match(pathname);
         // The strip's own page is a position marker, not a control. Rendering it
         // as an <a> to the URL already in the address bar put an inert link in
         // every tab order on ten routes (/logistics, /attendance, /practice,
@@ -66,8 +73,14 @@ export function TeamOpsNav({ orgId, active, keys, className }: TeamOpsNavProps) 
             </span>
           );
         }
+        const isSection = link.key === within;
         return (
-          <a key={link.key} href={withOrgHref(link.href, orgId)}>
+          <a
+            key={link.key}
+            href={withOrgHref(link.href, orgId)}
+            className={isSection ? "active" : undefined}
+            aria-current={isSection ? "true" : undefined}
+          >
             {link.label}
           </a>
         );

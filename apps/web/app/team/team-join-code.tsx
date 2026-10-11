@@ -59,11 +59,12 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
       setBusy(false);
     }
   }
+  const helpId = `team-code-help-${orgId}`;
   if (!code && !error) return null;
   return (
     <details className="team-code-panel">
-      <summary>Join with a team code</summary>
-      <p className="app-muted">
+      <summary data-disclosure>Share the team join code</summary>
+      <p className="app-muted" id={helpId}>
         Share the code with your team. People verify their email and join as
         team members.
       </p>
@@ -106,7 +107,16 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
           </Button>
         </div>
       ) : (
-        <Button variant="secondary" disabled={busy} onClick={() => void save()}>
+        // Named the same while busy, and described by the line above it, so the one control in
+        // an empty card always says what it is for.
+        <Button
+          variant="secondary"
+          disabled={busy}
+          aria-label="Generate join code"
+          aria-describedby={helpId}
+          aria-busy={busy || undefined}
+          onClick={() => void save()}
+        >
           {busy ? "Generating…" : "Generate join code"}
         </Button>
       )}

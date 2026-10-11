@@ -1,0 +1,84 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../offline/feature-cache";
+import { listPendingEntries } from "../scout-offline";
+import { FEATURE_API_TIMEOUT_MS } from "../nav/resolve-org";
+import type { LeadSummaryView } from "./lead-summary-load";
+import { useScoutQueueRefresh } from "./use-queue-refresh";
+
+export type ScoutingSummaryState = {
+  view: LeadSummaryView | null;
+  status: "loading" | "ready" | "failed";
+  /** The copy saved on this phone, shown because the live one could not load. */
+  cachedAt: string | null;
+  reload(): void;
+};
+
+/**
+ * The scouting summary, kept usable at a venue with no signal: the live numbers when they
+ * load, else this phone's last copy. Pit reports still waiting in this phone's outbox count
+ * as visited right away, so a scout never walks back to a pit they just saved.
+ */
+export function useScoutingSummary(orgId: string | null): ScoutingSummaryState {
+  const [view, setView] = useState<LeadSummaryView | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [cachedAt, setCachedAt] = useState<string | null>(null);
+  const [pendingPits, setPendingPits] = useState<string[]>([]);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (!orgId) return;
+    let cancelled = false;
+    setStatus((current) => (current === "ready" ? current : "loading"));
+    void (async () => {
+      try {
+        const response = await fetch(`/api/scouting/summary?orgId=${encodeURIComponent(orgId)}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
+        if (!response.ok) throw new Error(String(response.status));
+        const body = (await response.json()) as LeadSummaryView;
+        if (cancelled) return;
+        setView(body);
+        setCachedAt(null);
+        setStatus("ready");
+        void putFeatureSnapshot("scouting-summary", orgId, body).catch(() => undefined);
+      } catch {
+        const saved = await getFeatureSnapshot<LeadSummaryView>("scouting-summary", orgId).catch(() => null);
+        if (cancelled) return;
+        if (saved) {
+          setView(saved.data);
+          setCachedAt(saved.cachedAt);
+          setStatus("ready");
+        } else setStatus("failed");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId, attempt]);
+
+  const refreshPending = useCallback(async () => {
+    if (!orgId) return;
+    try {
+      const entries = await listPendingEntries(orgId);
+      setPendingPits(entries.filter((entry) => entry.type === "pit").map((entry) => entry.teamKey));
+    } catch {
+      setPendingPits([]);
+    }
+  }, [orgId]);
+  useScoutQueueRefresh(refreshPending);
+
+  const merged =
+    view?.status === "ready" && pendingPits.length
+      ? (() => {
+          const done = new Set(pendingPits);
+          const teams = view.pit.teams.map((team) => (done.has(team.teamKey) ? { ...team, visited: true } : team));
+          const notVisited = teams.filter((team) => !team.visited).map(({ visited: _visited, ...team }) => team);
+          return { ...view, pit: { ...view.pit, teams, notVisited, visited: view.pit.total - notVisited.length } };
+        })()
+      : view;
+
+  return { view: merged, status, cachedAt, reload: () => setAttempt((value) => value + 1) };
+}

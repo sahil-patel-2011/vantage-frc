@@ -78,3 +78,10 @@
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
 .aii-meta{color:var(--muted);font-size:10px}
+
+/* A submit placed straight in this grid form keeps its own width from tablet up (it was ~900px). */
+@media (min-width: 721px) {
+  .hours-manual > :is(.app-button, button[type="submit"]) {
+    justify-self: start;
+  }
+}

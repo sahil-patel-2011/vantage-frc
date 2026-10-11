@@ -37,6 +37,7 @@ import {
 import { Budget, Evidence, Grants, Overview } from "./business-panels";
 import "../product-hub.css";
 import { withWaitlistLink } from "../../components/waitlist-link";
+import { MoneyManagersLine } from "../team/admin/money-managers-line";
 
 const OrdersClient = dynamic(() => import("../orders/orders-client"), { ssr: false, loading: HubPanelSkeleton });
 const SeasonFinanceClient = dynamic(() => import("./season-finance-client"), { ssr: false, loading: HubPanelSkeleton });
@@ -396,6 +397,8 @@ export default function BusinessClient() {
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "finance" ? (
             <div className="product-hub-panel">
+              {/* Who can change money here (0714): the owner and the people they chose. */}
+              <MoneyManagersLine orgId={live.orgId} ownerHint="To change it, open a person’s Access on Team admin." />
               <SeasonFinanceClient embedded orgId={live.orgId} seasonYear={live.seasonYear} />
             </div>
           ) : null}

@@ -4,7 +4,7 @@ import { aiConnectionHref } from "../../lib/ai/connection";
 
 import { useCallback, useEffect, useState } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { canDeleteKickoffRow } from "../../lib/kickoff";
 import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
@@ -432,7 +432,7 @@ export function IntelligenceSection({
                 type="button"
                 className="kick-link danger"
                 disabled={busy}
-                onClick={() => void runIntel({ action: "delete", orgId, id: selected.id }, "intel-delete")}
+                onClick={async () => { if (await askConfirm({ title: "Delete this summary?", body: "The kickoff summary is deleted.", confirmLabel: "Delete summary", tone: "destructive" })) void runIntel({ action: "delete", orgId, id: selected.id }, "intel-delete"); }}
               >
                 Delete summary
               </button>

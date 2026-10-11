@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { budgetStatusLabel } from "../../lib/budget-reconciler";
 import type { BudgetReconcilerView } from "../../lib/budget-reconciler/compute-budget-reconciler";
 import type { BudgetStatus } from "../../lib/budget-reconciler/types";
@@ -491,7 +491,7 @@ function ReportHistory({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => mutate({ action: "delete-report", reportId: report.id })}
+              onClick={async () => { if (await askConfirm({ title: "Delete this report?", body: "The reconciliation report is deleted.", confirmLabel: "Delete report", tone: "destructive" })) void (mutate({ action: "delete-report", reportId: report.id })); }}
             >
               Delete
             </button>

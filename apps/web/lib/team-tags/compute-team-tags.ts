@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db/savepoint";
 import { assignmentsForBoard, assignmentsForEvent, groupTeamTags, type TagBoardColumn, type TeamTagAssignment } from "./group";
 import {
   pickReasonsForEvent,
@@ -172,14 +173,22 @@ export async function computeTeamTagsView(
   if (!org) return setup("Choose your team to tag robots for the drive team.", null, seasonYear);
 
   try {
-    for (const tag of DEFAULT_TEAM_TAGS) {
-      await client.query(
-        `INSERT INTO qualitative_tag_defs (org_id, season_year, slug, name, sort_order, created_by)
-         VALUES ($1::uuid, $2, $3, $4, $5, $6::uuid)
-         ON CONFLICT (org_id, season_year, slug) DO NOTHING`,
-        [org.orgId, seasonYear, tag.slug, tag.name, tag.sortOrder, input.userId],
-      );
-    }
+    // Seeding the defaults is a write on a read: a View only member is refused
+    // it (0715) and simply sees whatever tags the team already has.
+    await withSavepoint(
+      client,
+      async () => {
+        for (const tag of DEFAULT_TEAM_TAGS) {
+          await client.query(
+            `INSERT INTO qualitative_tag_defs (org_id, season_year, slug, name, sort_order, created_by)
+             VALUES ($1::uuid, $2, $3, $4, $5, $6::uuid)
+             ON CONFLICT (org_id, season_year, slug) DO NOTHING`,
+            [org.orgId, seasonYear, tag.slug, tag.name, tag.sortOrder, input.userId],
+          );
+        }
+      },
+      undefined,
+    );
 
     const [defs, assignments, context, eventTeams] = await Promise.all([
       client.query<TeamTagDef>(

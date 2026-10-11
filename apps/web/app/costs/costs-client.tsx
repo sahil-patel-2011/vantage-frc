@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { COSTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { costsNextActions } from "../../lib/business/costs-next-actions";
 import { costCategoryLabel, subscriptionCadenceLabel, usd } from "../../lib/costs";
@@ -27,6 +27,7 @@ import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { FINANCE_MANAGER_REQUIRED } from "../../lib/finance/finance-managers";
 import "./costs.css";
 import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
@@ -87,6 +88,7 @@ function NextActions({
   subscriptionCount,
   budgetUsd,
   overBudget,
+  canManageFinances,
 }: {
   orgId?: string | null;
   seasonYear?: number;
@@ -94,6 +96,7 @@ function NextActions({
   subscriptionCount: number;
   budgetUsd: number | null;
   overBudget: boolean;
+  canManageFinances: boolean;
 }) {
   const actions = costsNextActions({
     orgId,
@@ -102,6 +105,7 @@ function NextActions({
     subscriptionCount,
     budgetUsd,
     overBudget,
+    canManageFinances,
   });
   return (
     <section className="costs-next-actions app-card soft-panel" aria-label="Next actions">
@@ -383,15 +387,7 @@ export default function CostsClient() {
               </select>
             </label>
           ) : null}
-          <Button as="a" variant="secondary" href={hubHref("/business", "budget", orgId)}>
-            Business budget
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/business", "orders", orgId)}>
-            Orders
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/fundraisers", orgId)}>
-            Fundraisers
-          </Button>
+          {/* Orders, Fundraisers and the budget pages are in the related row just below. */}
         </div>
       </PageHeader>
       <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
@@ -411,13 +407,25 @@ export default function CostsClient() {
         subscriptionCount={view.subscriptions.items.length}
         budgetUsd={view.budget.totalBudgetUsd}
         overBudget={view.summary.overBudget}
+        canManageFinances={view.canManageFinances}
       />
 
       <AllInPanel view={view} hasSpend={hasSpend} />
       <BudgetPanel view={view} busy={busy} mutate={mutate} />
       {view.insight ? <AssistantPanel view={view} /> : null}
       <SubscriptionsSection view={view} busy={busy} mutate={mutate} />
-      <AddCostForm busy={busy} mutate={mutate} />
+      {/* Recording spend is a finance-manager job (0714); everyone else asks. */}
+      {view.canManageFinances ? (
+        <AddCostForm busy={busy} mutate={mutate} />
+      ) : (
+        <Panel className="costs-panel">
+          <h2>Add a cost</h2>
+          <p className="app-muted">
+            {FINANCE_MANAGER_REQUIRED} Need something bought?{" "}
+            <a href={hubHref("/business", "orders", orgId)}>Submit a purchase request</a>.
+          </p>
+        </Panel>
+      )}
       {view.summary.byCategory.length > 0 ? <CategoryBreakdown view={view} /> : null}
       {view.costs.length === 0 ? (
         <EmptyState
@@ -428,7 +436,7 @@ export default function CostsClient() {
           <div className="costs-row-links">
             <a href={hubHref("/business", "orders", orgId)}>Orders →</a>
             <a href={withOrgHref("/fundraisers", orgId)}>Fundraisers →</a>
-            <a href={hubHref("/business", "budget", orgId)}>Business budget →</a>
+            <a href={hubHref("/business", "budget", orgId)}>Spending plan →</a>
           </div>
         </EmptyState>
       ) : (
@@ -500,18 +508,19 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
     setAiAssist(budget.aiAssistEnabled);
   }, [budget.totalBudgetUsd, budget.aiAssistEnabled, view.computedAt]);
 
-  // The season budget moved behind the `manage_budget` capability in 0621, so for anyone
-  // below mentor level the row is not returned at all. Rendering the usual
-  // "no budget set / set one" card here would state something this session
-  // cannot know and offer a control the database would refuse.
+  // The season budget is finance-manager-only in RLS (0714: the owner, plus the
+  // people the owner chose to manage money), so for anyone else the row is not
+  // returned at all. Rendering the usual "no budget set / set one" card here
+  // would state something this session cannot know and offer a control the
+  // database would refuse.
   if (!view.canManageBudget) {
     return (
       <Panel className="costs-panel">
         <h2>Season budget</h2>
         <p className="app-muted">
-          The season budget is visible to mentors only — the team Owner and Admins, plus anyone an
-          owner has granted budget access. Whether one is set is not shown here either way. The
-          season costs below are the team&rsquo;s real recorded spend and stay open to everyone.
+          The season budget is visible to the people your team owner chose to manage money. Whether
+          one is set is not shown here either way. The season costs below are the team&rsquo;s real
+          recorded spend and stay open to everyone.
         </p>
         <p className="app-muted">
           Need a part? <a href="/part-requests">Send a part request</a> — that does not need budget
@@ -679,6 +688,7 @@ function SubscriptionsSection({ view, busy, mutate }: { view: LiveView; busy: bo
                   {usd(sub.amountUsd)} {subscriptionCadenceLabel(sub.cadence).toLowerCase()} · {usd(sub.annualUsd)}/yr
                 </small>
               </div>
+              {view.canManageFinances ? (
               <div className="costs-subs-actions">
                 <button
                   type="button"
@@ -693,13 +703,16 @@ function SubscriptionsSection({ view, busy, mutate }: { view: LiveView; busy: bo
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${sub.name}"?`)) mutate({ action: "delete-subscription", subscriptionId: sub.id });
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${sub.name}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-subscription", subscriptionId: sub.id });
                   }}
                 >
                   Delete
                 </button>
               </div>
+              ) : (
+                <span className={`costs-badge ${sub.active ? "good" : "inactive"}`}>{sub.active ? "Active" : "Inactive"}</span>
+              )}
             </li>
           ))}
         </ul>
@@ -709,7 +722,7 @@ function SubscriptionsSection({ view, busy, mutate }: { view: LiveView; busy: bo
         </p>
       )}
 
-      <AddSubscriptionForm busy={busy} mutate={mutate} />
+      {view.canManageFinances ? <AddSubscriptionForm busy={busy} mutate={mutate} /> : null}
     </section>
   );
 }
@@ -898,6 +911,7 @@ function CostLog({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate
               <td>{costCategoryLabel(cost.category)}</td>
               <td className="amount">{usd(cost.amountUsd)}</td>
               <td>
+                {view.canManageFinances ? (
                 <button
                   type="button"
                   className={`costs-badge ${cost.status === "paid" ? "paid" : "planned"}`}
@@ -909,18 +923,25 @@ function CostLog({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate
                 >
                   {cost.status === "paid" ? "Paid" : "Planned"}
                 </button>
+                ) : (
+                  <span className={`costs-badge ${cost.status === "paid" ? "paid" : "planned"}`}>
+                    {cost.status === "paid" ? "Paid" : "Planned"}
+                  </span>
+                )}
               </td>
               <td style={{ textAlign: "right" }}>
+                {view.canManageFinances ? (
                 <button
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${cost.label}"?`)) mutate({ action: "delete-cost", costId: cost.id });
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${cost.label}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-cost", costId: cost.id });
                   }}
                 >
                   Delete
                 </button>
+                ) : null}
               </td>
             </tr>
           ))}

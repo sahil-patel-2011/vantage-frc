@@ -6,7 +6,7 @@ import { ensureBatteryRetireFailure } from "../../../lib/battery-fmea";
 import { pitStatusToPack } from "../../../lib/battery-reliability";
 import { loadPitBoard } from "../../../lib/pit/load-board";
 import { parsePitAction } from "../../../lib/pit-operations";
-import { publicErrorMessage } from "../../../lib/security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
 
 export const dynamic = "force-dynamic";
 class PitHttpError extends Error {
@@ -18,6 +18,7 @@ class PitHttpError extends Error {
   }
 }
 const failure = (error: unknown) =>
+  viewOnlyResponse(error) ??
   Response.json(
     { error: publicErrorMessage(error, "Pit Command request failed") },
     { status: error instanceof PitHttpError ? error.status : 400 },

@@ -68,7 +68,7 @@ export function ScoutingLeadTools({
             {data && shouldShowScoutingRecentEntries(entries.length) ? (
               <>
                 {data.canManageSchemas && exportHref ? (
-                  <p className="scout-export-all" style={{ display: "grid", gap: 6, margin: "0 0 12px" }}>
+                  <p className="scout-export-all" style={{ display: "grid", justifyItems: "start", gap: 6, margin: "0 0 12px" }}>
                     <a className="app-button secondary" href={exportHref} download>
                       Export all match scouting
                     </a>

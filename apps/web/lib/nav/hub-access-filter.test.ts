@@ -70,4 +70,33 @@ describe("hub-access-filter", () => {
     expect(hubIdForPath("/matching-gift-finder")).toBe("business");
     expect(hubIdForPath("/media")).toBe("media");
   });
+
+  it("maps every money page to the hub it is filed under, so hub limits cover them", () => {
+    for (const path of [
+      "/budget",
+      "/reimbursements",
+      "/vendors",
+      "/vendor-lead-times",
+      "/part-requests",
+      "/parts-catalog",
+      "/costs",
+      "/orders",
+      "/team/finance",
+      "/team/grants",
+      "/team/grants/calendar",
+      "/team/sponsors",
+    ]) {
+      expect(hubIdForPath(path), path).toBe("business");
+    }
+    // Robot-side cost tools live in Build, and /budget must not swallow them.
+    expect(hubIdForPath("/bom-cost-rollup")).toBe("build");
+    expect(hubIdForPath("/budget-reconciler")).toBe("build");
+    // The rest of /team stays in Team.
+    expect(hubIdForPath("/team/admin")).toBe("team");
+    // Someone limited to Competition no longer sees the money tools in the drawer.
+    const competitionOnly: ClientHubAccessRow[] = [{ hubId: "competition", allowedTabIds: [] }];
+    for (const path of ["/budget", "/reimbursements", "/part-requests", "/vendors"]) {
+      expect(pathAllowedByHubAccess(path, competitionOnly), path).toBe(false);
+    }
+  });
 });

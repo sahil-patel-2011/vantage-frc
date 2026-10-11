@@ -3,17 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../components/ui";
-import {
-  CERT_TYPE_LABEL,
-  CERT_TYPES,
-  INCIDENT_SEVERITIES,
-  type CertExpiry,
-  type CertType,
-  type IncidentSeverity,
-  type IncidentStatus,
-  type Treatment,
-} from "../../lib/safety";
-import { canDeleteSafetyIncident } from "../../lib/safety/authorization";
+import { CERT_TYPE_LABEL, CERT_TYPES, type CertExpiry, type CertType } from "../../lib/safety";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -22,17 +12,11 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import "./safety.css";
 import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
 
-type Incident = {
-  id: string; title: string; severity: IncidentSeverity; occurredOn: string; location: string; description: string;
-  injuredPerson: string; treatment: Treatment; correctiveAction: string; status: IncidentStatus; byName: string | null;
-};
 type Cert = { id: string; personName: string; certType: CertType; completedOn: string; expiresOn: string | null; notes: string; byName: string | null; expiry: CertExpiry };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; incidents: Incident[]; certifications: Cert[]; summary: { openIncidents: number; seriousOpen: number; daysSinceLastIncident: number | null; expiringCerts: number; expiredCerts: number } };
+  | { status: "ready"; context: { orgId: string; role: string }; certifications: Cert[]; summary: { expiringCerts: number; expiredCerts: number } };
 
-const SEVERITY_LABEL: Record<IncidentSeverity, string> = { near_miss: "Near miss", minor: "Minor", moderate: "Moderate", serious: "Serious" };
-const NEXT_STATUS: Record<IncidentStatus, IncidentStatus | null> = { open: "reviewed", reviewed: "closed", closed: null };
 const EXPIRY_LABEL: Record<CertExpiry, string> = { valid: "valid", expiring: "expiring soon", expired: "EXPIRED", no_expiry: "no expiry" };
 
 function isSafetyView(value: unknown): value is View {
@@ -53,7 +37,7 @@ async function persistSafetySnapshot(orgHint: string, data: View): Promise<void>
     await putFeatureSnapshot("safety", cacheOrg, data);
     if (!orgHint) await putFeatureSnapshot("safety", "_", data);
   } catch {
-    // Live safety log already painted; IndexedDB is best-effort.
+    // Live certifications already painted; IndexedDB is best-effort.
   }
 }
 
@@ -64,8 +48,8 @@ function todayIso() {
 function SafetyRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related safety tools">
-      <a href={withOrgHref("/incidents", orgId)}>Safety Incident Log</a>
       <a href={hubHref("/team", "safety-training", orgId)}>Safety training</a>
+      <a href={withOrgHref("/tool-checkout", orgId)}>Tool checkout</a>
     </nav>
   );
 }
@@ -77,11 +61,11 @@ function SafetyHeader({ orgId, description }: { orgId?: string | null; descripti
       breadcrumbs={
         <>
           <a href={teamHref}>Team</a>
-          {" / Safety log"}
+          {" / Tool certifications"}
         </>
       }
-      title="Safety log"
-      description={description ?? "Incidents, near-misses, and who is cleared on which tools."}
+      title="Tool certifications"
+      description={description ?? "Who is cleared on which shop tools, and when each clearance runs out."}
     >
       <SafetyRelated orgId={orgId} />
     </PageHeader>
@@ -94,7 +78,6 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [failureStatus, setFailureStatus] = useState<number | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [incidentForm, setIncidentForm] = useState({ title: "", severity: "near_miss", occurredOn: todayIso(), location: "", injuredPerson: "", treatment: "none", description: "", correctiveAction: "" });
   const [certForm, setCertForm] = useState({ personName: "", certType: "general_safety", completedOn: todayIso(), expiresOn: "", notes: "" });
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -132,14 +115,14 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
         setMessage(
           data && typeof data === "object" && "error" in data && typeof data.error === "string"
             ? data.error
-            : "Failed to load safety data",
+            : "Failed to load tool certifications",
         );
         return;
       }
       if (!response.ok || !isSafetyView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Safety. Showing the last copy on this device.");
+          setMessage("Could not refresh tool certifications. Showing the last copy on this device.");
           setLoadFailed(false);
         } else {
           setFailureStatus(response.status);
@@ -147,7 +130,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
           setMessage(
             data && typeof data === "object" && "error" in data && typeof data.error === "string"
               ? data.error
-              : "Failed to load safety data",
+              : "Failed to load tool certifications",
           );
         }
         return;
@@ -160,7 +143,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Safety. Showing the last copy on this device.");
+        setMessage("Could not refresh tool certifications. Showing the last copy on this device.");
         setLoadFailed(false);
       } else {
         setLoadFailed(true);
@@ -183,12 +166,6 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
     } catch {
       setMessage("Network error — changes were not saved.");
     }
-  }
-
-  async function logIncident(event: FormEvent) {
-    event.preventDefault();
-    await post({ action: "log_incident", ...incidentForm }, "Incident logged.");
-    if (view?.status === "ready") setIncidentForm({ title: "", severity: "near_miss", occurredOn: todayIso(), location: "", injuredPerson: "", treatment: "none", description: "", correctiveAction: "" });
   }
 
   async function addCert(event: FormEvent) {
@@ -217,10 +194,10 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
     return (
       <main className="module-page">
         <SafetyHeader orgId={orgId} />
-        <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Tool certifications" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading safety…"}
+          title={failure ? failure.title : "Loading tool certifications…"}
           description={failure ? failure.description : "Checking your team."}
           aria-busy={!loadFailed}
         >
@@ -244,7 +221,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
             orgId={orgId}
             description={offerWaitlist ? withWaitlistLink(view.message) : undefined}
           />
-          <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Tool certifications" fromCache={fromCache} cachedAt={cachedAt} />
           <EmptyState
             badge="Needs setup"
             badgeTone="setup"
@@ -273,41 +250,23 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
     }
   }
 
-  const canDeleteIncidents = canDeleteSafetyIncident(view.context.role);
+  const certCount = view.certifications.length;
 
   return (
-    <main className="module-page">
+    <main className="module-page safety-page">
       <SafetyHeader orgId={view.context.orgId} />
-      <OfflineBanner feature="Safety" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Tool certifications" fromCache={fromCache} cachedAt={cachedAt} />
       {message ? <p className="telemetry-status" role="status">{message}</p> : null}
 
-      <section className="metric-grid">
-        <article><span>Days since last incident</span><strong>{view.summary.daysSinceLastIncident ?? "—"}</strong></article>
-        <article><span>Open incidents</span><strong>{view.summary.openIncidents}</strong></article>
-        <article><span>Serious &amp; open</span><strong>{view.summary.seriousOpen}</strong></article>
-        <article><span>Certs expiring / expired</span><strong>{view.summary.expiringCerts} / {view.summary.expiredCerts}</strong></article>
+      <section className="metric-grid safety-cert-metrics">
+        <article><span>Certifications</span><strong>{certCount}</strong></article>
+        <article><span>Expiring in 30 days</span><strong>{view.summary.expiringCerts}</strong></article>
+        <article><span>Expired</span><strong>{view.summary.expiredCerts}</strong></article>
       </section>
 
-      <section className="admin-grid">
-        <form className="intel-panel" onSubmit={logIncident}>
-          <span className="eyebrow">REPORT AN INCIDENT / NEAR MISS</span>
-          <label>What happened<input required value={incidentForm.title} onChange={(e) => setIncidentForm({ ...incidentForm, title: e.target.value })} placeholder="Finger pinched in gearbox" /></label>
-          <div className="budget-fields">
-            <label>Severity<select value={incidentForm.severity} onChange={(e) => setIncidentForm({ ...incidentForm, severity: e.target.value })}>{INCIDENT_SEVERITIES.map((s) => <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>)}</select></label>
-            <label>Date<input type="date" value={incidentForm.occurredOn} onChange={(e) => setIncidentForm({ ...incidentForm, occurredOn: e.target.value })} /></label>
-          </div>
-          <div className="budget-fields">
-            <label>Location<input value={incidentForm.location} onChange={(e) => setIncidentForm({ ...incidentForm, location: e.target.value })} placeholder="Machine shop" /></label>
-            <label>Treatment<select value={incidentForm.treatment} onChange={(e) => setIncidentForm({ ...incidentForm, treatment: e.target.value })}><option value="none">None</option><option value="first_aid">First aid</option><option value="professional">Professional</option></select></label>
-          </div>
-          <label>Person involved<input value={incidentForm.injuredPerson} onChange={(e) => setIncidentForm({ ...incidentForm, injuredPerson: e.target.value })} /></label>
-          <label>Description<input value={incidentForm.description} onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })} /></label>
-          <label>Corrective action<input value={incidentForm.correctiveAction} onChange={(e) => setIncidentForm({ ...incidentForm, correctiveAction: e.target.value })} placeholder="Added guard, retrained team" /></label>
-          <Button variant="primary" type="submit">Log incident</Button>
-        </form>
-
+      <section className="admin-grid safety-grid">
         <form className="intel-panel" onSubmit={addCert}>
-          <span className="eyebrow">RECORD A TOOL CERTIFICATION</span>
+          <h2 className="safety-card-title">Record a certification</h2>
           <label>Person<input required value={certForm.personName} onChange={(e) => setCertForm({ ...certForm, personName: e.target.value })} /></label>
           <label>Tool / certification<select value={certForm.certType} onChange={(e) => setCertForm({ ...certForm, certType: e.target.value })}>{CERT_TYPES.map((t) => <option key={t} value={t}>{CERT_TYPE_LABEL[t]}</option>)}</select></label>
           <div className="budget-fields">
@@ -317,49 +276,10 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
           <label>Notes<input value={certForm.notes} onChange={(e) => setCertForm({ ...certForm, notes: e.target.value })} /></label>
           <Button variant="primary" type="submit">Record certification</Button>
         </form>
-      </section>
 
-      <section className="intel-panel invite-list">
-        <span className="eyebrow">INCIDENT LOG</span>
-        {view.incidents.length === 0 && <p>No incidents logged — keep it that way.</p>}
-        {view.incidents.map((i) => (
-          <article key={i.id}>
-            <div>
-              <strong>{SEVERITY_LABEL[i.severity]} · {i.title}</strong>
-              <small>{new Date(i.occurredOn).toLocaleDateString()}{i.location ? ` · ${i.location}` : ""}{i.injuredPerson ? ` · ${i.injuredPerson}` : ""} · treatment: {i.treatment} · {i.status}</small>
-              {i.correctiveAction && <small>Action: {i.correctiveAction}</small>}
-            </div>
-            <div>
-              {NEXT_STATUS[i.status] ? (
-                <Button
-                  variant="secondary"
-                  type="button"
-                  onClick={() => void post({ action: "set_incident_status", id: i.id, status: NEXT_STATUS[i.status] }, "Incident updated.")}
-                >
-                  Mark {NEXT_STATUS[i.status]}
-                </Button>
-              ) : null}
-              {canDeleteIncidents ? (
-                <Button
-                  variant="danger"
-                  type="button"
-                  onClick={() => {
-                    if (!window.confirm("Delete this incident? The log entry cannot be recovered.")) return;
-                    void post({ action: "delete_incident", id: i.id }, "Incident deleted.");
-                  }}
-                >
-                  Delete
-                </Button>
-              ) : null}
-              {(i.severity === "serious" || i.severity === "moderate") && i.status !== "closed" && <b>REVIEW</b>}
-            </div>
-          </article>
-        ))}
-      </section>
-
-      <section className="intel-panel invite-list">
-        <span className="eyebrow">TOOL CERTIFICATIONS</span>
-        {view.certifications.length === 0 && <p>No certifications recorded yet.</p>}
+        <section className="intel-panel invite-list">
+          <h2 className="safety-card-title">Who is cleared</h2>
+          {certCount === 0 && <p>No certifications recorded yet. Record each person once they are trained on a tool.</p>}
         {view.certifications.map((c) => (
           <article key={c.id}>
             <div>
@@ -369,6 +289,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
             {(c.expiry === "expired" || c.expiry === "expiring") && <b>{c.expiry === "expired" ? "EXPIRED" : "RENEW"}</b>}
           </article>
         ))}
+        </section>
       </section>
     </main>
   );

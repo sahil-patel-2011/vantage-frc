@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { riskCategoryLabel, riskLevelLabel, riskStatusLabel } from "../../lib/risks";
 import { RISK_CATEGORIES, RISK_STATUSES, type RisksView } from "../../lib/risks/compute-risks";
@@ -18,7 +18,6 @@ import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import "./risks.css";
 
 type LiveView = Extract<RisksView, { status: "live" }>;
@@ -50,7 +49,8 @@ async function persistRisksSnapshot(orgHint: string, seasonHint: string, data: R
 }
 
 function RisksRelated({ orgId }: { orgId: string }) {
-  const primary = risksRelatedLinks(orgId, { include: ["fmea", "knowledge", "batteries"] });
+  // FMEA, Knowledge and Batteries come from the Team row beside it; this row adds Subsystems.
+  const primary = risksRelatedLinks(orgId, { include: ["subsystems"] });
   return (
     <div className="risks-related">
       <nav className="product-hub-related risks-hub-related" aria-label="Related reliability tools">
@@ -332,15 +332,7 @@ export default function RisksClient() {
               </select>
             </label>
           ) : null}
-          <Button as="a" variant="secondary" href={hubHref("/team", "fmea", orgId)}>
-            FMEA
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/team", "knowledge", orgId)}>
-            Knowledge
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/subsystems", orgId)}>
-            Subsystems
-          </Button>
+          {/* FMEA, Knowledge, Batteries and Subsystems are in the related rows just below. */}
         </div>
       </PageHeader>
 
@@ -719,8 +711,8 @@ function RiskCard({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${risk.title}"?`)) mutate({ action: "delete-risk", riskId: risk.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${risk.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-risk", riskId: risk.id });
           }}
           style={{ marginLeft: "auto" }}
         >

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, PageHeader } from "../../components/ui";
+import { Button, EmptyState, PageHeader, askConfirm } from "../../components/ui";
 import { isFilled, subteamLabel } from "../../lib/roles";
 import { SUBTEAMS, type RolesView } from "../../lib/roles/compute-roles";
 import type { Subteam, TeamRole } from "../../lib/roles/types";
@@ -579,8 +579,8 @@ function RoleCard({
             type="button"
             className="text-button"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete "${role.title}"?`)) mutate({ action: "delete-role", roleId: role.id });
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete “${role.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-role", roleId: role.id });
             }}
           >
             Delete

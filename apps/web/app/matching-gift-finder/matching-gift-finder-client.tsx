@@ -10,7 +10,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   MATCHING_GIFT_PLEDGE_STATUSES,
@@ -150,7 +150,7 @@ function GiftShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#matching-gift-contacts">Add a household contact</Button>
+            <Button as="a" variant="secondary" href="#matching-gift-contacts">Add a household contact</Button>
           ) : null}
         </EmptyState>
       )}
@@ -552,7 +552,7 @@ function ContactsPanel({
       <h2 style={{ marginTop: 0 }}>Household contacts</h2>
       {view.contacts.length === 0 ? (
         <EmptyState soft title="No contacts recorded yet">
-          <Button as="a" variant="primary" href="#matching-gift-contacts">
+          <Button as="a" variant="secondary" href="#matching-gift-contacts">
             Add a household contact
           </Button>
         </EmptyState>
@@ -571,8 +571,8 @@ function ContactsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete contact "${contact.fullName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete contact “${contact.fullName}”?`, body: null, confirmLabel: "Delete contact", tone: "destructive" })) {
                     mutate({ action: "delete-contact", contactId: contact.id });
                   }
                 }}
@@ -614,7 +614,7 @@ function ProgramsPanel({
       </p>
       {view.programs.length === 0 ? (
         <EmptyState soft title="No programs tracked yet">
-          <Button as="a" variant="primary" href="#matching-gift-programs">
+          <Button as="a" variant="secondary" href="#matching-gift-programs">
             Add a program
           </Button>
         </EmptyState>
@@ -637,8 +637,8 @@ function ProgramsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete program "${program.employerName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete program “${program.employerName}”?`, body: null, confirmLabel: "Delete program", tone: "destructive" })) {
                     mutate({ action: "delete-program", programId: program.id });
                   }
                 }}
@@ -755,7 +755,7 @@ function PledgesPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-pledge", pledgeId: pledge.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Remove this pledge?", body: `${pledge.contactName}'s pledge is removed.`, confirmLabel: "Remove pledge", tone: "destructive" })) void (mutate({ action: "delete-pledge", pledgeId: pledge.id })); }}
                 >
                   Remove
                 </button>
@@ -802,7 +802,7 @@ function DraftsPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-draft", draftId: draft.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this draft?", body: `“${draft.subject}” is deleted.`, confirmLabel: "Delete draft", tone: "destructive" })) void (mutate({ action: "delete-draft", draftId: draft.id })); }}
                 >
                   Delete
                 </button>

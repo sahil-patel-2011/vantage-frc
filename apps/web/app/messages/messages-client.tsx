@@ -13,6 +13,7 @@ import {
   type MessageObjectLink,
 } from "../../lib/messages/object-links";
 import { earliestCursor, prependEarlier } from "../../lib/messages/history";
+import { useViewOnly } from "../../lib/nav/use-view-only";
 import {
   LONG_POLL_MAX_MS,
   mergeMessages,
@@ -32,6 +33,7 @@ import { isArchived, type Conversation, type LinkTarget, type Member, type Messa
 import { MessagesReadyView } from "./messages-ready-view";
 import "./youth-protection.css";
 import "./channels.css";
+import { askConfirm } from "../../components/ui";
 
 function waitUntilVisible(signal: AbortSignal) {
   if (!document.hidden) return Promise.resolve();
@@ -82,6 +84,8 @@ export default function MessagesClient({
   initialConversationId?: string | null;
   initialObjectLink?: MessageObjectLink | null;
 }) {
+  // View only (0715) members read chat; posting is a team write the database refuses.
+  const viewOnly = useViewOnly(orgId);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(initialConversationId);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -679,7 +683,7 @@ export default function MessagesClient({
   }
 
   async function softDelete(messageId: string) {
-    if (!confirm("Delete this message for everyone in the conversation?")) return;
+    if (!(await askConfirm({ title: "Delete this message for everyone in the conversation?", body: null, confirmLabel: "Delete message", tone: "destructive" }))) return;
     const response = await fetch("/api/messages", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -779,6 +783,7 @@ export default function MessagesClient({
 
   return (
     <MessagesReadyView
+      viewOnly={viewOnly}
       orgId={orgId}
       embedded={embedded}
       live={live}

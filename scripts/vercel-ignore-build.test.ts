@@ -15,9 +15,14 @@ function ignoreExit(ref: string | undefined) {
   return spawnSync(process.execPath, [script], { env, encoding: "utf8" }).status;
 }
 
+/**
+ * Automatic Git builds are off on purpose (AGENTS.md, "Hosting and compute
+ * policy"): every push, main included, only stores code. A release is a
+ * manual deployment made after the operator checks the remaining allowance.
+ */
 describe("vercel ignore build", () => {
-  it("exits 1 so Vercel builds main", () => {
-    expect(ignoreExit("main")).toBe(1);
+  it("exits 0 so a push to main does not start a build", () => {
+    expect(ignoreExit("main")).toBe(0);
   });
 
   it("exits 0 so non-main branches skip", () => {
@@ -34,9 +39,8 @@ describe("vercel.json skip config", () => {
     ignoreCommand?: string;
   };
 
-  it("disables git deploys for every branch except main before a build slot is claimed", () => {
-    expect(config.git?.deploymentEnabled?.["**"]).toBe(false);
-    expect(config.git?.deploymentEnabled?.main).toBe(true);
+  it("disables git deploys for every branch, main included, before a build slot is claimed", () => {
+    expect(config.git?.deploymentEnabled).toEqual({ "**": false });
   });
 
   it("points ignoreCommand at the quote-free script", () => {

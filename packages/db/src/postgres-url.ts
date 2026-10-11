@@ -47,10 +47,47 @@ export function shouldUseNodePostgres(connectionString: string): boolean {
   return postgresHostKind(connectionString) !== "neon";
 }
 
-export function sslOptionForUrl(connectionString: string): boolean | { rejectUnauthorized: boolean } {
+/**
+ * A self-hosted Postgres (a team NAS) usually has its own certificate authority rather than a
+ * public one. DATABASE_SSL_CA holds that CA's PEM (the text, or base64 of it, so it fits in one
+ * env var): the connection stays encrypted AND verified, against that CA instead of the public
+ * roots. Verification is never switched off.
+ */
+export function databaseSslCa(raw = process.env.DATABASE_SSL_CA): string | null {
+  const value = raw?.trim();
+  if (!value || value === "[SENSITIVE]") return null;
+  if (value.includes("-----BEGIN CERTIFICATE-----")) return value.replace(/\\n/g, "\n");
+  try {
+    const decoded = Buffer.from(value, "base64").toString("utf8");
+    return decoded.includes("-----BEGIN CERTIFICATE-----") ? decoded : null;
+  } catch {
+    return null;
+  }
+}
+
+export function sslOptionForUrl(connectionString: string): boolean | { rejectUnauthorized: boolean; ca?: string } {
   if (postgresHostKind(connectionString) === "local") return false;
   if (/(^|[?&])sslmode=disable\b/i.test(connectionString)) return false;
-  return { rejectUnauthorized: true };
+  const ca = databaseSslCa();
+  return ca ? { rejectUnauthorized: true, ca } : { rejectUnauthorized: true };
+}
+
+/**
+ * node-postgres lets `sslmode` / `sslrootcert` in the URL replace the `ssl` object, and
+ * `sslmode=require` becomes `{}`: verification against the public roots, the NAS's own CA dropped,
+ * every connection refused. With DATABASE_SSL_CA set, the TLS settings come from the object alone.
+ */
+export function connectionStringForSsl(connectionString: string): string {
+  if (!databaseSslCa()) return connectionString;
+  if (postgresHostKind(connectionString) === "local") return connectionString;
+  if (/(^|[?&])sslmode=disable\b/i.test(connectionString)) return connectionString;
+  try {
+    const url = new URL(connectionString);
+    for (const key of ["sslmode", "sslrootcert", "sslcert", "sslkey", "ssl", "uselibpqcompat"]) url.searchParams.delete(key);
+    return url.toString();
+  } catch {
+    return connectionString;
+  }
 }
 
 export function firstConfiguredEnv(...names: string[]): string {
@@ -173,6 +210,14 @@ export function poolLimitsForUrl(connectionString: string): {
   // some IPv6 localhost paths. Fail fast so a missing DB cannot hang a route.
   if (postgresHostKind(connectionString) === "local") {
     return { max: 8, idleTimeoutMillis: 30_000, connectionTimeoutMillis: 3_000 };
+  }
+  // A self-hosted server (a team NAS) has no pooler in front of it and a default
+  // max_connections of 100, shared by every warm serverless instance and every pool in it,
+  // so each pool stays small and gives idle sockets back quickly. And when the NAS is off
+  // or its connection drops, a request fails in seconds with the setup state instead of
+  // waiting out the whole function timeout.
+  if (postgresHostKind(connectionString) === "generic") {
+    return { max: 4, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 10_000 };
   }
   return { max: 8, idleTimeoutMillis: 30_000 };
 }

@@ -14,7 +14,7 @@ import {
   type LocationPatch,
 } from "../../../lib/inventory";
 import { adjustStock as adjustUnifiedStock } from "../../../lib/parts/store";
-import { publicErrorMessage } from "../../../lib/security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -41,6 +41,8 @@ async function membershipRole(client: PoolClient, orgId: string, userId: string)
 }
 
 function fail(error: unknown) {
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: publicErrorMessage(error, "Inventory request failed") }, { status });
 }

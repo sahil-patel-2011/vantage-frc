@@ -7,6 +7,7 @@ import {
   dashboardSetupBannerLabel,
   dashboardSetupBannerPrimary,
   dashboardSetupBlurb,
+  platformAdminNoTeamSetup,
   dashboardSetupSteps,
 } from "./dashboard-related";
 
@@ -76,6 +77,13 @@ describe("dashboard Soft-UI related", () => {
     expect(dashboardSetupBlurb("no_org")).toBe(
       "Open the invite sent to your email, or join the waitlist.",
     );
+  });
+
+  it("sends a platform admin with no team to the admin console, not the invite page", () => {
+    const admin = platformAdminNoTeamSetup();
+    expect(admin.href).toBe("/admin");
+    expect(admin.label).toBe("Open the admin console");
+    expect(admin.blurb).not.toMatch(/waitlist/i);
   });
 
   it("does not put optional AI keys on Home, even for owners", () => {

@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { ViewOnlyNote } from "../../components/view-only-note";
+import { useViewOnly } from "../../lib/nav/use-view-only";
 import { priorityLabel, statusLabel } from "../../lib/tasks";
 import {
   SUBSYSTEM_SUGGESTIONS,
@@ -56,6 +58,8 @@ export default function TasksClient() {
   const [season, setSeason] = useState<number | null>(null);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  // View only (0715): the board, without the Add task form.
+  const viewOnly = useViewOnly(orgId);
 
   const load = useCallback((seasonOverride?: number) => {
     setFetchFailed(false);
@@ -166,7 +170,7 @@ export default function TasksClient() {
         title="Build-season task board"
         description={
           <>
-            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Separate from Team Todos; this board only shows tasks your team adds.
+            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Todos lists all team work in one place; this board holds the build tasks your team adds here.
           </>
         }
       >
@@ -190,7 +194,7 @@ export default function TasksClient() {
           </label>
         ) : null}
       </PageHeader>
-      <TeamOpsNav orgId={orgId} active="todos" />
+      <TeamOpsNav orgId={orgId} within="todos" />
       <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
@@ -243,7 +247,7 @@ export default function TasksClient() {
           <NormsBenchmark view={view} busy={busy} mutate={mutate} />
           <AvailableNow view={view} />
           {view.board.focus.length > 0 ? <FocusList view={view} /> : null}
-          <CreateTaskForm view={view} busy={busy} mutate={mutate} />
+          {viewOnly ? <ViewOnlyNote /> : <CreateTaskForm view={view} busy={busy} mutate={mutate} />}
           <Board view={view} busy={busy} mutate={mutate} />
         </div>
       )}
@@ -484,8 +488,8 @@ function TaskCard({ task, busy, mutate }: { task: TaskWithFlags; busy: boolean; 
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${task.title}"?`)) mutate({ action: "delete-task", taskId: task.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${task.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-task", taskId: task.id });
           }}
           style={{ marginLeft: "auto", fontSize: "0.8rem" }}
         >

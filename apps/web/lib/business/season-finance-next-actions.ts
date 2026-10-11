@@ -49,7 +49,7 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
   if (fundingCount === 0) {
     actions.push({
       id: "first-funding",
-      label: ctx.canManageFinance ? "Add school funds, fees or other money in" : "Ask a finance lead to add school funds and fees",
+      label: ctx.canManageFinance ? "Add school funds, fees or other money in" : "Ask a finance manager to add school funds and fees",
       detail: "Planned vs received stays blank until someone logs a real source.",
       href: ctx.canManageFinance ? `${financeHref}#add-funding` : financeHref,
       primary: true,
@@ -64,7 +64,16 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
     });
   }
 
-  if (purchaseCount === 0) {
+  if (purchaseCount === 0 && ctx.canManageFinance === false) {
+    // Recording spend is a finance-manager job (0714); everyone else asks.
+    actions.push({
+      id: "first-purchase",
+      label: "Ask for something to be bought",
+      detail: "Submit a purchase request. A finance manager approves it and records the spend.",
+      href: withSeason(hubHref("/business", "orders", orgId)),
+      primary: actions.length === 0,
+    });
+  } else if (purchaseCount === 0) {
     actions.push({
       id: "first-purchase",
       label: "Log a receipt or reimbursement",
@@ -76,7 +85,7 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
     actions.push({
       id: "reimburse",
       label: "Clear open reimbursements",
-      detail: "Receipts marked reimbursement stay open until a finance lead records the repay date.",
+      detail: "Receipts marked reimbursement stay open until a finance manager records the repay date.",
       href: financeHref,
       primary: actions.length === 0,
     });

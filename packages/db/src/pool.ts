@@ -5,6 +5,7 @@ import {
   poolLimitsForUrl,
   shouldUseNodePostgres,
   sslOptionForUrl,
+  connectionStringForSsl,
 } from "./postgres-url";
 
 export type SqlPoolOptions = {
@@ -28,7 +29,7 @@ export function createRawSqlPool(
   const connectionTimeoutMillis = options?.connectionTimeoutMillis ?? limits.connectionTimeoutMillis;
   if (shouldUseNodePostgres(connectionString)) {
     return new pg.Pool({
-      connectionString,
+      connectionString: connectionStringForSsl(connectionString),
       max,
       idleTimeoutMillis,
       ...(connectionTimeoutMillis != null ? { connectionTimeoutMillis } : {}),

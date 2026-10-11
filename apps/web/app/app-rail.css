@@ -1,6 +1,8 @@
 /* Search uses the drawer; the desktop workspace sidebar is in macos-product.css.
-   Phones and tablets need space for the bottom shortcuts. */
-@media (min-width: 1024px) {
+   Phones and tablets need space for the bottom shortcuts. The island and Ask AI hand over
+   at the same width the sidebar (and its Ask AI row) appears, 1100px: hiding them at 1024px
+   left a 10.2" iPad held sideways (1080px) with neither bottom tabs nor a sidebar. */
+@media (min-width: 1100px) {
   body:is(.has-app-shell, :has(.soft-topbar)) {
     padding-bottom: calc(28px + var(--safe-bottom)) !important;
   }
@@ -108,3 +110,23 @@
 html[data-motion="reduced"] :is(.main-menu-app, .main-menu-section > summary > svg:last-child, .soft-navigation-scrim) { transition: none; }
 @media (prefers-reduced-motion: reduce) { .soft-burger i { transition: none; } }
 html[data-motion="reduced"] :is(.soft-burger i, .soft-drawer) { transition: none; }
+
+/* Touch floors the shell's own small controls missed: 44px is the smallest target Apple and
+   Material both ask for. The event rail keeps its compact look; its links and collapse button
+   grow their hit area, not their drawing. */
+@media (pointer: coarse) {
+  .soft-nav-items > a {
+    min-height: 44px !important;
+  }
+  .soft-focus-collapse {
+    min-width: 44px;
+  }
+  .soft-focus-rail nav a {
+    position: relative;
+  }
+  .soft-focus-rail nav a::after {
+    content: "";
+    position: absolute;
+    inset: -5px 0;
+  }
+}

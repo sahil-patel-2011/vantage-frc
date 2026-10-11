@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   OBJECT_CHAT_BRIDGE_OBJECT_TYPES,
   OBJECT_CHAT_BRIDGE_STATUSES,
@@ -374,8 +374,8 @@ function LinkRowItem({
             type="button"
             className="text-button"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete link for "${link.objectRef}"?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete link for “${link.objectRef}”?`, body: null, confirmLabel: "Delete link", tone: "destructive" })) {
                 mutate({ action: "delete-link", linkId: link.id });
               }
             }}

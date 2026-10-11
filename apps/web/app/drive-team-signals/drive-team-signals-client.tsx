@@ -12,7 +12,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { SIGNAL_KINDS, SIGNAL_PRIORITIES, SIGNAL_ROLES, signalKindLabel, signalRoleLabel } from "../../lib/drive-team-signals";
 import type { DriveTeamSignalsView } from "../../lib/drive-team-signals/compute-drive-team-signals";
 import type {
@@ -155,7 +155,7 @@ function SignalsShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#drive-team-signals-new">
+            <Button as="a" variant="secondary" href="#drive-team-signals-new">
               Create a signal sheet
             </Button>
           ) : null}
@@ -485,8 +485,8 @@ function SheetCard({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete sheet "${sheet.title}"?`)) {
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete sheet “${sheet.title}”?`, body: null, confirmLabel: "Delete sheet", tone: "destructive" })) {
               mutate({ action: "delete-sheet", sheetId: sheet.id });
             }
           }}
@@ -511,7 +511,7 @@ function SheetCard({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => mutate({ action: "remove-signal", sheetId: sheet.id, signalId: signal.id })}
+                onClick={async () => { if (await askConfirm({ title: "Remove this signal?", body: `It comes off “${sheet.title}”.`, confirmLabel: "Remove signal", tone: "destructive" })) void (mutate({ action: "remove-signal", sheetId: sheet.id, signalId: signal.id })); }}
               >
                 Remove
               </button>

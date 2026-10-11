@@ -23,7 +23,8 @@ signing in again.
 - **One deployment.** Both products are served by the same Next.js app (`apps/web`). The Scouting
   pages live under `/scout` and reuse the same feature components that Vantage uses: `/scout/teams`
   is the Research team lookup, `/scout/predict` is the Match Simulator, `/scout/picklist` is the
-  collaborative pick list and `/scout/entry` is offline scouting. Every feature has one
+  collaborative pick list, `/scout/match` is Quick scout (one robot, one match stage at a time) and
+  `/scout/entry` is the full offline scouting form. Every feature has one
   implementation. A fix in one product is a fix in both.
 - **One database.** The same Postgres rows under the same row-level security. A scout entry saved in
   Scouting is in Vantage's command center, briefing and pick list on the next read. There is no
@@ -100,7 +101,7 @@ for real. `allowedDevOrigins` lets the dev server serve its scripts to `127.0.0.
 ## What a scout sees first
 
 - **Your next robot.** Scouting's home names the person's next primary assignment ("148 · Q34 ·
-  Red 2") and its one primary button is "Scout 148 in Q34", which opens the entry form with that
+  Red 2") and its one primary button is "Scout 148 in Q34", which opens Quick scout with that
   match and robot already selected. Backups, robots somebody already filed, and matches that ran
   more than 15 minutes ago are skipped (`lib/scouting/next-duty.ts`). Vantage's Home says the same
   thing ("You're scouting next") right after the team's own next match.
