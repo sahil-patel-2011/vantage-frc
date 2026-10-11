@@ -3,8 +3,10 @@ import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 let pool: ReturnType<typeof createSqlPool> | undefined;
 export function provisioningPool() {
   if (!pool) {
+    // firstConfiguredEnv returns "" when unset, so the fallback needs ||, not ??: with ?? a dev
+    // server without DATABASE_WORKER_URL never reached DATABASE_ADMIN_URL.
     const url = firstConfiguredEnv("DATABASE_WORKER_URL")
-      ?? (process.env.NODE_ENV !== "production" ? firstConfiguredEnv("DATABASE_ADMIN_URL") : undefined);
+      || (process.env.NODE_ENV !== "production" ? firstConfiguredEnv("DATABASE_ADMIN_URL") : undefined);
     if (!url || url.includes("[SENSITIVE]")) throw new Error("Background database access is not configured.");
     pool = createSqlPool(url, { max: 2 });
   }

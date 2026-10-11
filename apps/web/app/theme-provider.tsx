@@ -5,6 +5,7 @@ import { ChoiceField } from "../components/ui/choice-field";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import PaidSessionSplash from "../components/paid-session-splash";
+import { ConfirmProvider } from "../components/ui/confirm-dialog";
 import AppearanceRuntime from "../lib/branding/appearance-runtime";
 import { pathnameUsesAppShell } from "../lib/nav/product-route";
 
@@ -248,7 +249,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
           shell is fixed-position with explicit z-index, so source order does not
           change what paints on top. */}
       {productRoute && <AppShell />}
-      <div id="main-content">{children}</div>
+      {/* One in-app confirm dialog for every page (useConfirm), instead of the browser's own
+          window.confirm box. Pages that mount their own provider still get theirs. */}
+      <ConfirmProvider>
+        <div id="main-content">{children}</div>
+      </ConfirmProvider>
       {productRoute && <PaidSessionSplash />}
     </>
   );
