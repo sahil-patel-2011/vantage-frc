@@ -17,11 +17,18 @@ const GROUPS = [
     tracks: ONSHAPE,
   },
   {
+    id: "code",
+    title: "Code and GitHub",
+    intro: "For any team's programmers. Steps read what your terminal printed or ask GitHub about your pull request.",
+    numbered: false,
+    tracks: GUIDED_TRACKS.filter((track) => track.id.startsWith("git-")),
+  },
+  {
     id: "team",
     title: "Team tracks",
     intro: "Programming and shop weeks. Code steps read your build output or GitHub; shop steps are signed off by an owner or admin on Team progress.",
     numbered: false,
-    tracks: GUIDED_TRACKS.filter((track) => !track.id.startsWith("onshape-")),
+    tracks: GUIDED_TRACKS.filter((track) => !track.id.startsWith("onshape-") && !track.id.startsWith("git-")),
   },
 ];
 

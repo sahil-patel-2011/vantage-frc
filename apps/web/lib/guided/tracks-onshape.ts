@@ -145,7 +145,7 @@ const ONSHAPE_FIRST_PART: GuidedTrack = {
       id: "practice-bearing-plate",
       practice: true,
       title: "Practice on your own: a bearing plate",
-      why: "Real drawings don't come with click-by-click steps. This part uses everything in this track; look back at the steps above if you get stuck.",
+      why: "A bearing plate holds the bearing a hex shaft spins in. This is the kind of drawing a mentor hands you, and it uses every tool in this track.",
       do: [
         "Make a new Part Studio called “Bearing plate” (in this document or a new one).",
         "Model a 5 × 2 in plate, 0.125 in thick, centered on the origin, in Aluminum 6061.",
