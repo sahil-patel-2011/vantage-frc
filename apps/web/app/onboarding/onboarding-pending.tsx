@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { buildOnboardingPendingPlan } from "../../lib/onboarding";
 import type { OnboardingState } from "./onboarding-model";
+import { RemovedFromTeamNotice } from "./removed-notice";
 
 export function PendingPanel({
   state,
@@ -32,6 +33,8 @@ export function PendingPanel({
 
   return (
     <div className="onboarding-pending-panel">
+      {/* Taken off a team: say which, first (QA A3-15). Renders nothing otherwise. */}
+      {state.accessStatus === "invited" || state.accessStatus === "pending" ? null : <RemovedFromTeamNotice />}
       <div className={`onboarding-request-status ${state.accessStatus}`}>
         <i aria-hidden="true" />
         <div>

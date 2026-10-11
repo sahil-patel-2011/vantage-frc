@@ -417,7 +417,9 @@ export async function proxy(request: NextRequest) {
     // Profile is saved. Docs, account, and two-factor stay open so the
     // "while you wait" links are real pages, not a bounce back here.
     if (isPendingWorkspacePath(pathname)) return NextResponse.next();
-    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Team approval is required", code: "workspace_approval_required" }, { status: 403 });
+    // A page left open after its owner took this person off the team lands here on every save;
+    // "Team approval is required" read as a fault (QA A3-15). Reloading shows why.
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "You're not on this team any more, or not yet. Reload the page to see why and what to do next.", code: "workspace_approval_required" }, { status: 403 });
     return approvalPendingRedirect(request);
   }
 
