@@ -188,6 +188,14 @@
 .admin-owner-link-row { display: flex; gap: 8px; align-items: center; width: 100%; }
 .admin-owner-link-row input { flex: 1; min-width: 0; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
 .admin-owner-link-btn { white-space: nowrap; }
+/* A row's actions: a new owner link when one is waiting, and Delete for a team made by mistake. */
+.admin-org-actions { display: flex; flex: none; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.admin-org-delete { color: var(--critical, var(--muted)); }
+.admin-list-status { margin: 0 0 8px; font-size: 13px; }
+@media (max-width: 640px) {
+  body.has-app-shell article.admin-org { flex-wrap: wrap; }
+  .admin-org-actions { flex-basis: 100%; justify-content: flex-start; }
+}
 
 /* Teams list: the count in the heading and a search once the list is long. */
 .admin-teams-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -202,12 +210,18 @@ body.has-app-shell article.admin-org > div,
 article.admin-org > div { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 
 
-/* "Outage contact list: N people, refreshed X ago - Refresh now" under the page header. */
+/* "Outage contact list: N people, refreshed X ago - Refresh now", under the team list. A row, not
+   a sentence: the 44px button inside a paragraph gave every line of it a 44px line height. */
 .admin-outage-contacts {
-  margin: 0 0 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  margin: 16px 0 0;
   font-size: 13px;
   line-height: 1.5;
 }
+.admin-outage-contacts small { flex-basis: 100%; }
 .admin-outage-contacts-refresh {
   padding: 0;
   border: 0;

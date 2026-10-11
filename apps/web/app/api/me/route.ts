@@ -203,7 +203,12 @@ export async function GET(request: Request) {
     });
 
     if (requestedOrg && !profile.membership) {
-      return Response.json({ error: "You do not have access to this team." }, { status: 403 });
+      // Says which kind of "no" this is, and which teams the person is on, so a client can offer
+      // the way back (pages opened for another team already land on the chooser via proxy.ts).
+      return Response.json(
+        { error: "You're not on this team.", code: "not_a_member", memberships: profile.memberships },
+        { status: 403 },
+      );
     }
 
     // While a platform admin is signed in and the database is healthy, keep the outage

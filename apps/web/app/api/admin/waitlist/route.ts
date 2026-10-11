@@ -48,7 +48,23 @@ export async function GET(request: Request) {
       );
     }
     const q = new URL(request.url).searchParams.get("q") ?? undefined;
-    const entries = await runAdmin(async () => createWaitlistStore().list({ q }));
+    const entries = await runAdmin(async ({ client }) => {
+      const rows = await createWaitlistStore().list({ q });
+      // Which requested numbers already have a team, so the page stops offering "Provision team"
+      // for them (a second click only hit "already has a team"; QA A2-09).
+      const numbers = [...new Set(rows.map((row) => row.teamNumber).filter((n) => Number.isInteger(n)))];
+      const taken = numbers.length
+        ? new Set(
+            (
+              await client.query<{ teamNumber: number }>(
+                `SELECT team_number AS "teamNumber" FROM organizations WHERE team_number = ANY($1::int[])`,
+                [numbers],
+              )
+            ).rows.map((row) => row.teamNumber),
+          )
+        : new Set<number>();
+      return rows.map((row) => ({ ...row, teamExists: taken.has(row.teamNumber) }));
+    });
     return Response.json({ entries, signup });
   } catch (error) {
     // Whether the doors are open does not depend on the waitlist store being

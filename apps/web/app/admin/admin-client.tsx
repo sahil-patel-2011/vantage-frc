@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   adminEmptyCopy,
   adminNextActions,
@@ -13,6 +13,7 @@ import {
 import {
   confirmationDetails,
   confirmationLines,
+  ownerInviteExpired,
   type ProvisionConfirmation,
 } from "../../lib/admin-analytics/provisioning";
 import { OutageContactsLine } from "./outage-contacts";
@@ -24,9 +25,40 @@ type Organization = {
   slug: string;
   teamNumber: number;
   ownerEmail: string | null;
+  /** The latest owner invite's address, live or expired. */
   pendingOwnerEmail: string | null;
   pendingOwnerInviteExpiresAt: string | null;
+  ownerInviteExpired?: boolean;
+  memberCount?: number;
 };
+
+function shortDate(value: string | null | undefined): string {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/** Whether the owner is in, and if not, where their invite stands: what an admin checks here. */
+function ownerLine(org: Organization): string {
+  if (org.ownerEmail) return `Owner joined · ${org.ownerEmail}`;
+  if (!org.pendingOwnerEmail) return "No owner yet";
+  const expired = org.ownerInviteExpired || ownerInviteExpired(org.pendingOwnerInviteExpiresAt);
+  const when = shortDate(org.pendingOwnerInviteExpiresAt);
+  return expired
+    ? `Owner invite expired${when ? ` ${when}` : ""} · ${org.pendingOwnerEmail}`
+    : `Owner invite pending${when ? `, until ${when}` : ""} · ${org.pendingOwnerEmail}`;
+}
+
+/** The form's name and web address follow the team number until someone types their own. */
+function followNumber(form: { name: string; slug: string; teamNumber: string }, teamNumber: string) {
+  const autoName = !form.name || form.name === `Team ${form.teamNumber}`;
+  const autoSlug = !form.slug || form.slug === `team-${form.teamNumber}`;
+  return {
+    teamNumber,
+    name: autoName ? (teamNumber ? `Team ${teamNumber}` : "") : form.name,
+    slug: autoSlug ? (teamNumber ? `team-${teamNumber}` : "") : form.slug,
+  };
+}
 
 function AdminNextActions({ kind }: { kind: AdminShellKind }) {
   const actions = adminNextActions(kind);
@@ -62,6 +94,7 @@ function AdminClientInner() {
   const [ownerLinks, setOwnerLinks] = useState<Record<string, { url?: string; note: string }>>({});
   const [confirmOwnerLink, setConfirmOwnerLink] = useState<string | null>(null);
   const [teamQuery, setTeamQuery] = useState("");
+  const [listMessage, setListMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -69,11 +102,16 @@ function AdminClientInner() {
   useEffect(() => {
     const ownerEmail = searchParams.get("ownerEmail")?.trim() ?? "";
     const teamNumber = searchParams.get("teamNumber")?.trim() ?? "";
+    // From the waitlist's "Find team": the list opens filtered to that number.
+    const find = searchParams.get("find")?.trim() ?? "";
+    if (find) setTeamQuery(find);
     if (ownerEmail || teamNumber) {
+      // From the waitlist's "Provision team": the name and web address follow the number exactly
+      // as they do when the number is typed (QA A2-09: the name stayed empty).
       setForm((current) => ({
         ...current,
+        ...(teamNumber ? followNumber(current, teamNumber) : {}),
         ownerEmail: ownerEmail || current.ownerEmail,
-        teamNumber: teamNumber || current.teamNumber,
       }));
     }
   }, [searchParams]);
@@ -126,6 +164,8 @@ function AdminClientInner() {
     const data = (await response.json()) as ProvisionConfirmation & { error?: string };
     if (!response.ok) {
       setMessage(data.error ?? "Create failed.");
+      // "Team 6925 already has a team. Find it in the list": find it for them.
+      if (response.status === 409 && form.teamNumber) setTeamQuery(form.teamNumber);
       return;
     }
     setMessage("");
@@ -161,6 +201,35 @@ function AdminClientInner() {
         note: `${copiedNow ? "Copied a new owner link." : "New owner link below."} The earlier one no longer works.${data.emailSent ? " We emailed it too." : ""}`,
       },
     }));
+  }
+
+  /** A team made by mistake, or one whose owner never joined: nobody else can delete it. */
+  async function deleteOrg(org: Organization) {
+    const members = org.memberCount ?? 0;
+    const ok = await askConfirm({
+      title: `Delete ${org.name} (#${org.teamNumber})?`,
+      body:
+        members > 0
+          ? `This deletes the team and everything in it for its ${members} ${members === 1 ? "member" : "members"}, who each get a note that it's gone. Their accounts stay. It can't be undone.`
+          : "This team has nobody on it yet. Deleting it removes the team, its owner invite and its starter settings. It can't be undone.",
+      confirmLabel: "Delete team",
+      tone: "critical",
+      confirmPhrase: String(org.teamNumber),
+    });
+    if (!ok) return;
+    const response = await fetch("/api/admin/organizations", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ orgId: org.id, confirm: String(org.teamNumber) }),
+    }).catch(() => null);
+    const data = response ? ((await response.json().catch(() => ({}))) as { error?: string }) : {};
+    if (!response?.ok) {
+      setListMessage(data.error ?? "The team wasn't deleted. Try again.");
+      return;
+    }
+    setListMessage(`${org.name} (#${org.teamNumber}) is deleted.`);
+    if (confirmation?.id === org.id) setConfirmation(null);
+    await load();
   }
 
   async function copyInviteLink(url: string) {
@@ -214,57 +283,48 @@ function AdminClientInner() {
         title="Platform admin"
         description="Create each team and invite its owner by email. The owner then invites everyone else."
       />
-      <OutageContactsLine />
-
-      {/* One card, three numbers, each in its own colour. People come back to
-          this page for the count and read the captions once, ever — so the
-          number is the large thing and the caption is the small one. */}
-      {/* One number. "Closed / Membership" and "Admin only / Provisioning" never changed and
-          pushed the Create a team form to the fold. */}
       {/* The count lives in the list heading ("Teams (27)"); alone in a full-width card it pushed
-          Create a team down. */}
-
-      {confirmation ? (
-        <Panel className="admin-provision-confirmation" aria-label="Team created">
-          <span className="eyebrow">Team created</span>
-          <h2>
-            {confirmation.name} (#{confirmation.teamNumber}) is ready.
-          </h2>
-          {confirmationLines(confirmation).map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-          {confirmation.owner.mode === "invited" && confirmation.owner.inviteUrl ? (
-            <div className="admin-invite-link">
-              <label>
-                Owner invite link
-                <input readOnly value={confirmation.owner.inviteUrl} onFocus={(event) => event.target.select()} />
-              </label>
-              <Button variant="primary" type="button" onClick={() => void copyInviteLink(confirmation.owner.inviteUrl!)}>
-                {copied ? "Copied" : "Copy invite link"}
-              </Button>
-              <small className="app-muted">Lost it later? Make a new one from the team&rsquo;s row below.</small>
-            </div>
-          ) : null}
-          <details className="admin-confirmation-details">
-            <summary data-disclosure>Details</summary>
-            <ul>
-              {confirmationDetails(confirmation).map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </details>
-          <div className="admin-confirmation-actions">
-            <Button variant="secondary" type="button" onClick={() => setConfirmation(null)}>
-              Create another team
-            </Button>
-            <Button as="a" variant="secondary" href="/admin/analytics">
-              Open platform analytics
-            </Button>
-          </div>
-        </Panel>
-      ) : null}
+          Create a team down. The outage contact line sits under the list for the same reason. */}
 
       <section className="admin-grid">
+        {confirmation ? (
+          // In the form's place: one next step at a time, and one blue button on the page (the
+          // form's "Create team" sat below this one's "Copy invite link"; QA A2-18).
+          <Panel className="admin-provision-confirmation" aria-label="Team created">
+            <span className="eyebrow">Team created</span>
+            <h2>
+              {confirmation.name} (#{confirmation.teamNumber}) is ready.
+            </h2>
+            {confirmationLines(confirmation).map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+            {confirmation.owner.mode === "invited" && confirmation.owner.inviteUrl ? (
+              <div className="admin-invite-link">
+                <label>
+                  Owner invite link
+                  <input readOnly value={confirmation.owner.inviteUrl} onFocus={(event) => event.target.select()} />
+                </label>
+                <Button variant="primary" type="button" onClick={() => void copyInviteLink(confirmation.owner.inviteUrl!)}>
+                  {copied ? "Copied" : "Copy invite link"}
+                </Button>
+                <small className="app-muted">Lost it later? Make a new one from the team&rsquo;s row in the list.</small>
+              </div>
+            ) : null}
+            <details className="admin-confirmation-details">
+              <summary data-disclosure>Details</summary>
+              <ul>
+                {confirmationDetails(confirmation).map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </details>
+            <div className="admin-confirmation-actions">
+              <Button variant="secondary" type="button" onClick={() => setConfirmation(null)}>
+                Create another team
+              </Button>
+            </div>
+          </Panel>
+        ) : (
         <Panel as="form" onSubmit={create}>
           <span className="eyebrow">Create a team</span>
           <label>
@@ -275,18 +335,7 @@ function AdminClientInner() {
               min={1}
               max={99999}
               value={form.teamNumber}
-              onChange={(event) => {
-                const teamNumber = event.target.value;
-                // Name and web address follow the number until someone types their own.
-                const autoName = !form.name || form.name === `Team ${form.teamNumber}`;
-                const autoSlug = !form.slug || form.slug === `team-${form.teamNumber}`;
-                setForm({
-                  ...form,
-                  teamNumber,
-                  name: autoName ? (teamNumber ? `Team ${teamNumber}` : "") : form.name,
-                  slug: autoSlug ? (teamNumber ? `team-${teamNumber}` : "") : form.slug,
-                });
-              }}
+              onChange={(event) => setForm({ ...form, ...followNumber(form, event.target.value) })}
             />
           </label>
           <label>
@@ -319,10 +368,12 @@ function AdminClientInner() {
           </button>
           {message ? <p className="auth-message">{message}</p> : null}
         </Panel>
+        )}
         <Panel>
           <div className="admin-teams-head">
             <h2>Teams ({organizations.length})</h2>
-            {organizations.length > 6 ? (
+            {/* Also shown while a search is in effect, so a filter set for the admin can be cleared. */}
+            {organizations.length > 6 || teamQuery ? (
               <input
                 type="search"
                 value={teamQuery}
@@ -332,6 +383,7 @@ function AdminClientInner() {
               />
             ) : null}
           </div>
+          {listMessage ? <p role="status" className="admin-list-status">{listMessage}</p> : null}
           {shell === "empty" ? (
             <EmptyState soft title={copy.title} description={copy.description}>
               <Button as="a" variant="secondary" href="/admin/waitlist">
@@ -357,13 +409,7 @@ function AdminClientInner() {
                 <div>
                   <strong>{org.name}</strong>
                   {/* Whether the owner is in, not the web address: that is what an admin checks here. */}
-                  <small>
-                    {org.ownerEmail
-                      ? `Owner joined · ${org.ownerEmail}`
-                      : org.pendingOwnerEmail
-                        ? `Owner invite pending · ${org.pendingOwnerEmail}`
-                        : "No owner yet"}
-                  </small>
+                  <small>{ownerLine(org)}</small>
                   {ownerLinks[org.id] ? (
                     <small role="status" className="admin-owner-link">
                       {ownerLinks[org.id]!.note}
@@ -380,25 +426,33 @@ function AdminClientInner() {
                     </small>
                   ) : null}
                 </div>
-                {org.pendingOwnerEmail && !org.ownerEmail ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    type="button"
-                    className="admin-owner-link-btn"
-                    onClick={() => {
-                      // A new link stops the one already sent working: a second tap says so first.
-                      if (confirmOwnerLink !== org.id) return setConfirmOwnerLink(org.id);
-                      setConfirmOwnerLink(null);
-                      void newOwnerLink(org.id);
-                    }}
-                  >
-                    {confirmOwnerLink === org.id ? "Tap again to replace the old link" : "Get a new owner link"}
+                <span className="admin-org-actions">
+                  {org.pendingOwnerEmail && !org.ownerEmail ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      type="button"
+                      className="admin-owner-link-btn"
+                      onClick={() => {
+                        // A new link stops a live one already sent working: a second tap says so
+                        // first. An expired link already doesn't work, so one tap is enough.
+                        const expired = org.ownerInviteExpired || ownerInviteExpired(org.pendingOwnerInviteExpiresAt);
+                        if (!expired && confirmOwnerLink !== org.id) return setConfirmOwnerLink(org.id);
+                        setConfirmOwnerLink(null);
+                        void newOwnerLink(org.id);
+                      }}
+                    >
+                      {confirmOwnerLink === org.id ? "Tap again to replace the old link" : "Get a new owner link"}
+                    </Button>
+                  ) : null}
+                  <Button variant="ghost" size="sm" type="button" className="admin-org-delete" onClick={() => void deleteOrg(org)}>
+                    Delete…
                   </Button>
-                ) : null}
+                </span>
               </article>
             ))
           )}
+          <OutageContactsLine />
         </Panel>
       </section>
     </main>
