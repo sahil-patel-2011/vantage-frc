@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  describeSessionRange,
   memberLeaderboard,
+  overlapMessage,
+  overlappingRecord,
   parseBuildHoursAction,
   recordHours,
   summarizeHours,
@@ -83,9 +86,49 @@ describe("summarizeHours", () => {
 
 describe("validateManualRange", () => {
   it("rejects out-before-in and >24h marathons", () => {
-    expect(() => validateManualRange("2026-02-01T19:00:00Z", "2026-02-01T18:00:00Z")).toThrow(/after clock-in/);
-    expect(() => validateManualRange("2026-02-01T00:00:00Z", "2026-02-02T01:00:00Z")).toThrow(/24 hours/);
-    expect(() => validateManualRange("2026-02-01T17:00:00Z", "2026-02-01T20:00:00Z")).not.toThrow();
+    expect(() => validateManualRange("2026-02-01T19:00:00Z", "2026-02-01T18:00:00Z", NOW)).toThrow(/after the start/);
+    expect(() => validateManualRange("2026-01-30T00:00:00Z", "2026-01-31T01:00:00Z", NOW)).toThrow(/24 hours/);
+    expect(() => validateManualRange("2026-02-01T17:00:00Z", "2026-02-01T20:00:00Z", NOW)).not.toThrow();
+  });
+
+  it("refuses hours that have not happened yet (A5-03: Jan 5 2027 was accepted)", () => {
+    expect(() => validateManualRange("2027-01-05T10:00:00Z", "2027-01-05T14:00:00Z", NOW)).toThrow(/haven't happened yet/);
+    // Ending a little after "now" on a phone whose clock runs fast is still fine.
+    expect(() => validateManualRange("2026-02-01T18:00:00Z", "2026-02-01T20:03:00Z", NOW)).not.toThrow();
+  });
+
+  it("refuses a session too short to be real (A5-03: a 30-second entry)", () => {
+    expect(() => validateManualRange("2026-02-01T17:00:00Z", "2026-02-01T17:00:30Z", NOW)).toThrow(/at least 5 minutes/);
+  });
+});
+
+describe("overlappingRecord", () => {
+  const logged = [
+    record({ id: "a", clockIn: "2026-01-30T17:00:00.000Z", clockOut: "2026-01-30T21:00:00.000Z" }),
+    record({ id: "open", clockIn: "2026-02-01T19:00:00.000Z", clockOut: null }),
+  ];
+
+  it("finds a typed-in session that lands on hours already logged", () => {
+    expect(overlappingRecord(logged, { clockIn: "2026-01-30T19:00:00Z", clockOut: "2026-01-30T23:00:00Z" }, NOW)?.id).toBe("a");
+  });
+
+  it("treats an open session as running until now", () => {
+    expect(overlappingRecord(logged, { clockIn: "2026-02-01T19:30:00Z", clockOut: "2026-02-01T19:45:00Z" }, NOW)?.id).toBe("open");
+  });
+
+  it("allows back-to-back sessions and ignores the entry being corrected", () => {
+    expect(overlappingRecord(logged, { clockIn: "2026-01-30T21:00:00Z", clockOut: "2026-01-30T22:00:00Z" }, NOW)).toBeNull();
+    expect(
+      overlappingRecord(logged, { clockIn: "2026-01-30T18:00:00Z", clockOut: "2026-01-30T20:00:00Z", excludeId: "a" }, NOW),
+    ).toBeNull();
+  });
+
+  it("names the other session in the refusal, in the sender's time zone", () => {
+    const message = overlapMessage(logged[0]!, "America/New_York");
+    expect(message).toBe(
+      "Those hours overlap an entry already logged (Jan 30, 2026, 12:00 PM – 4:00 PM). Change the times, or ask a mentor to correct the other entry.",
+    );
+    expect(describeSessionRange("2026-02-01T19:00:00.000Z", null, "UTC")).toBe("Feb 1, 2026, 7:00 PM – still clocked in");
   });
 });
 
@@ -112,7 +155,26 @@ describe("parseBuildHoursAction", () => {
     expect(action).toMatchObject({ action: "add_manual", userId: null, kind: "build" });
     expect(() =>
       parseBuildHoursAction({ action: "add_manual", orgId: ORG, clockIn: "2026-02-01T19:00:00Z", clockOut: "2026-02-01T17:00:00Z" }),
-    ).toThrow(/after clock-in/);
+    ).toThrow(/after the start/);
+    expect(
+      parseBuildHoursAction({ action: "add_manual", orgId: ORG, clockIn: "2026-02-01T17:00:00Z", clockOut: "2026-02-01T19:00:00Z", timeZone: "Not/AZone" }),
+    ).toMatchObject({ timeZone: undefined });
+  });
+  it("correct_record needs a reason and a real range", () => {
+    expect(
+      parseBuildHoursAction({
+        action: "correct_record",
+        orgId: ORG,
+        id: U1,
+        clockIn: "2026-02-01T17:00:00Z",
+        clockOut: "2026-02-01T19:00:00Z",
+        note: "Forgot to clock out",
+        timeZone: "America/Chicago",
+      }),
+    ).toMatchObject({ action: "correct_record", id: U1, note: "Forgot to clock out", timeZone: "America/Chicago" });
+    expect(() =>
+      parseBuildHoursAction({ action: "correct_record", orgId: ORG, id: U1, clockIn: "2026-02-01T17:00:00Z", clockOut: "2026-02-01T19:00:00Z", note: " " }),
+    ).toThrow(/why you are changing/);
   });
   it("set_policy validates the goal and normalizes the date", () => {
     expect(parseBuildHoursAction({ action: "set_policy", orgId: ORG, seasonGoalHours: 100, seasonStart: "2026-01-10" })).toMatchObject({

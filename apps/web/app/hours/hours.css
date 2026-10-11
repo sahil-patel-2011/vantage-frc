@@ -52,6 +52,15 @@
 .hours-manual,.hours-policy{display:grid;gap:10px;padding:14px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm)}
 .hours-manual h3,.hours-policy h3{margin:0;font-size:var(--title-4)}
 .hours-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+/* Entry labels and mentor tools (A5-03): "Added by hand", corrections, Edit times in place. */
+.hours-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.hours-manual-tag{color:var(--ink);background:color-mix(in srgb,var(--warning) 14%,var(--surface))}
+.hours-log .session .hours-correction{color:var(--ink)}
+.hours-row-actions{display:flex;align-items:center;gap:10px}
+.hours-row-actions .hours-link{min-height:44px;min-width:44px}
+.hours-log li>.hours-edit{grid-column:1/-1;margin-top:4px}
+.hours-field-wide{grid-column:1/-1}
+.hours-edit-actions{display:flex;justify-content:flex-end;gap:8px}
 .hours-field{display:grid;gap:4px;min-width:0;color:var(--muted)}
 .hours-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 @media(max-width:900px){.hours-layout{grid-template-columns:1fr}.hours-summary{grid-template-columns:1fr 1fr}}
