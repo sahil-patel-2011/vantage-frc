@@ -46,10 +46,11 @@ describe("ensureFirstOwnerTeamDefaults", () => {
     Object.assign(fake, { firstOwner: "owner-1", existingCode: false, defaultsFail: false, codeFail: false, sql: [] });
   });
 
-  it("gives an admin-provisioned team the /claim defaults and a join code once its first owner is in", async () => {
+  it("gives an admin-provisioned team the /claim defaults and a join code, turned off, once its first owner is in", async () => {
     await expect(ensureFirstOwnerTeamDefaults(client(), "org-1", "owner-1")).resolves.toEqual({ defaults: true, joinCode: true });
     expect(initializeTeamDefaults).toHaveBeenCalledWith(expect.anything(), "org-1", { inTransaction: true });
-    expect(setTeamJoinCode).toHaveBeenCalledWith(expect.anything(), "org-1");
+    // Off until the owner turns it on: a code on by default let anyone in (QA A3-01).
+    expect(setTeamJoinCode).toHaveBeenCalledWith(expect.anything(), "org-1", undefined, { enable: false });
     // Each part is isolated so a failure never aborts the caller's join.
     expect(fake.sql.filter((sql) => sql.startsWith("SAVEPOINT"))).toHaveLength(2);
   });

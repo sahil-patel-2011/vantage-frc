@@ -58,6 +58,12 @@ const TYPE_PREF: Record<string, InAppPrefKey | null> = {
   team_access_request: null,
   team_access_approved: null,
   team_access_declined: null,
+  // Your own access changing, being taken off a team, being handed one, and a teammate asking
+  // you to invite someone (0721): membership-critical, never gated by prefs.
+  team_role_changed: null,
+  team_removed: null,
+  team_ownership_given: null,
+  invite_suggestion: null,
 };
 
 export function prefKeyForNotificationType(type: string): InAppPrefKey | null {

@@ -18,6 +18,10 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0718_service_notice_recipients.sql",
   // Guided-track lead sign-offs: /api/guided and /api/guided/team read guided_signoffs.
   "0719_guided_signoffs.sql",
+  // Invites and roles: /api/teams/join calls team_code_join_retry_at(), invite acceptance calls
+  // my_invite_join_context(), /api/invites/preview calls peek_replaced_invite(), suggestions call
+  // suggest_team_invite(), and Team admin reads team_join_codes.join_role.
+  "0721_invites_and_roles.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */

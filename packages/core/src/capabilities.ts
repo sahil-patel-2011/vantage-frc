@@ -3,6 +3,7 @@ import { assertAdminTenureAllowsRoleChange } from "./admin-tenure";
 import { hashEmail } from "./email";
 import { lockTeamAdministration } from "./team-handover";
 import { listMemberHubAccess, setMemberHubAccess } from "./hub-access";
+import { notifyRemovedFromTeam, notifyRoleChanged } from "./membership-notices";
 
 type OrgRole = "owner" | "admin" | "scout" | "viewer";
 
@@ -222,7 +223,7 @@ export async function setMemberRole(
   input: { orgId: string; userId: string; role: OrgRole },
 ) {
   if (!["admin", "scout", "viewer"].includes(input.role)) {
-    throw new Error("Role must be admin, scout, or viewer");
+    throw new Error("Choose Mentor or coach, Student, or Parent or guest.");
   }
   await lockTeamAdministration(client, input.orgId);
 
@@ -241,12 +242,24 @@ export async function setMemberRole(
     [input.orgId, input.userId],
   );
   if (!target.rows[0]) throw new Error("Member not found");
-  if (target.rows[0].role === "owner") {
-    throw new Error("Owner role cannot be changed here");
-  }
   const self = input.userId === actorUserId;
+  // A second owner could be changed by nobody (QA A3-26). An owner may now change another
+  // owner; the team keeps at least one owner, the person making the change. Your own owner
+  // access changes only by handing the team over.
+  if (target.rows[0].role === "owner" && (self || actor.rows[0].role !== "owner")) {
+    throw new Error(
+      self
+        ? "To give up being owner, hand the team over to someone else first."
+        : "Only another owner can change an owner's access.",
+    );
+  }
   if (target.rows[0].role === "admin" && actor.rows[0].role !== "owner" && !self) {
-    throw new Error("Only an owner may change another admin's role");
+    throw new Error("Only the team owner can change another mentor or coach's access.");
+  }
+  // Only an owner makes someone a mentor or coach: a mentor promoting a parent to mentor, whom
+  // other mentors then could not change back, made a second tier nobody chose (QA A3-26).
+  if (input.role === "admin" && target.rows[0].role !== "admin" && actor.rows[0].role !== "owner") {
+    throw new Error("Only the team owner can make someone a mentor or coach.");
   }
 
   await assertAdminTenureAllowsRoleChange(client, {
@@ -288,6 +301,14 @@ export async function setMemberRole(
     email: target.rows[0].email,
     metadata: { userId: input.userId, before: previousRole, after: input.role },
   });
+  // They hear about it: a student lowered to Parent or guest only met "View only" refusals.
+  await notifyRoleChanged(client, {
+    orgId: input.orgId,
+    actorUserId,
+    userId: input.userId,
+    role: input.role,
+    previousRole,
+  });
 }
 
 /**
@@ -308,7 +329,7 @@ export async function removeMember(
   if (!actor.rows[0] || !["owner", "admin"].includes(actor.rows[0].role)) {
     throw new Error("Organization administrator access required");
   }
-  if (input.userId === actorUserId) throw new Error("You can't remove yourself from the team here");
+  if (input.userId === actorUserId) throw new Error("You can't remove yourself from the team here.");
 
   const target = await client.query<{ role: OrgRole; email: string }>(
     `SELECT m.role, u.email
@@ -317,9 +338,12 @@ export async function removeMember(
     [input.orgId, input.userId],
   );
   if (!target.rows[0]) throw new Error("Member not found");
-  if (target.rows[0].role === "owner") throw new Error("An owner can't be removed from the team");
+  // Another owner can be taken off by an owner (the one doing it stays); nobody else removes an owner.
+  if (target.rows[0].role === "owner" && actor.rows[0].role !== "owner") {
+    throw new Error("Only another owner can remove an owner from the team.");
+  }
   if (target.rows[0].role === "admin" && actor.rows[0].role !== "owner") {
-    throw new Error("Only an owner may remove an admin");
+    throw new Error("Only the team owner can remove a mentor or coach.");
   }
   await assertAdminTenureAllowsRoleChange(client, { orgId: input.orgId, targetCurrentRole: target.rows[0].role, nextRole: "viewer" });
 
@@ -332,4 +356,7 @@ export async function removeMember(
     email: target.rows[0].email,
     metadata: { userId: input.userId, role: target.rows[0].role },
   });
+  // After the audit row: the 0721 policy accepts the notice only right after this lead's removal.
+  // No org_id on it, so the person still sees it once they can't open the team.
+  await notifyRemovedFromTeam(client, { orgId: input.orgId, actorUserId, userId: input.userId });
 }

@@ -11,10 +11,11 @@
  * (client-bundle-boundary.test.ts). view-only.test.ts keeps the two identical.
  */
 export const VIEW_ONLY_MESSAGE =
-  "View only — you can look but not change this. Ask a team owner or admin for Team member access.";
+  "View only — you can look but not change this. Ask the team owner or a mentor or coach for Student access.";
 
+/** "Team member access" named a role no screen uses; the role words are in @vantage/core/role-words. */
 export const VIEW_ONLY_CHIP_TITLE =
-  "You can look but not change anything on this team. Ask a team owner or admin for Team member access.";
+  "Parent or guest: you can look but not change anything on this team. Ask the team owner or a mentor or coach for Student access.";
 
 type MembershipLike = { orgId: string; role?: string | null };
 

@@ -6,7 +6,9 @@
     "./first-run-tour": "./src/first-run-tour.ts",
     ".": "./src/index.ts",
     "./public-signup": "./src/public-signup.ts",
-    "./legal": "./src/legal.ts"
+    "./legal": "./src/legal.ts",
+    "./role-words": "./src/role-words.ts",
+    "./invite-policy": "./src/invite-policy.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

@@ -141,7 +141,7 @@ describe("POST /api/organizations/claim — authorization statement", () => {
     expect(attestationInserts()[0]!.params[5]).toBeNull();
   });
 
-  it("creates a random encrypted join code when blank and preserves a chosen leading zero", async () => {
+  it("creates a random encrypted join code, off, when blank and keeps a chosen one (leading zero too) on", async () => {
     const { decryptTeamPin } = await import("../team/join-code");
     for (const joinPin of [undefined, "001234"]) {
       state.queries = [];
@@ -149,10 +149,12 @@ describe("POST /api/organizations/claim — authorization statement", () => {
       expect(response.status).toBe(201);
       const insert = state.queries.find((query) => query.sql.includes("INSERT INTO team_join_codes"));
       expect(insert).toBeDefined();
-      const [orgId, pin, encrypted] = insert!.params;
+      const [orgId, pin, encrypted, enabled] = insert!.params;
       expect(orgId).toBe(ORG);
       expect(pin).toMatch(/^\d{6}$/);
       expect(decryptTeamPin(String(encrypted))).toBe(pin);
+      // A blank code is made but stays off until the owner turns it on (QA A3-01).
+      expect(enabled).toBe(Boolean(joinPin));
       if (joinPin) expect(pin).toBe(joinPin);
       expect(await response.text()).not.toContain(String(pin));
     }

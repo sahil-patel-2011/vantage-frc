@@ -10,6 +10,8 @@ import { assertOrgCapability } from "./capabilities";
 import { emitPreferredNotification } from "./in-app-notifications";
 import { assertAccountAgeConfirmed } from "./eligibility";
 import { organizationInviteExpiresAt } from "./invite-policy";
+import { inviteAcceptedNotice } from "./membership-notices";
+import { roleLabel, rolePhrase } from "./role-words";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
@@ -89,7 +91,27 @@ export type CreatedOrganizationInvite = {
   organization: string;
   /** Raw token — never persist; only used to build a one-time copy link / email. */
   token: string;
+  /** The person who sent it, for the email ("Quinn Owner invited you"). */
+  inviterName?: string | null;
 };
+
+/**
+ * "This email is already a member" did not say who, with what access, or how to change it.
+ * The invites route turns this into a 400 with the member's id so Team admin can open Access.
+ */
+export class AlreadyTeamMemberError extends Error {
+  readonly code = "already_member";
+  constructor(
+    readonly userId: string,
+    readonly name: string,
+    readonly role: OrgRole,
+  ) {
+    super(
+      `${name} is already on the team as ${roleLabel(role)}. To change what they can do, use Access on their row under People.`,
+    );
+    this.name = "AlreadyTeamMemberError";
+  }
+}
 
 export function inviteEmailDeliveryMode(
   provider: EmailProvider = createEmailProvider(),
@@ -106,6 +128,7 @@ export async function deliverInviteEmail(
     role: OrgRole | string;
     token: string;
     expiresAt: Date;
+    inviterName?: string | null;
   },
   provider: EmailProvider = createEmailProvider(),
 ): Promise<{ emailSent: boolean; delivery: InviteDeliveryMode; error?: string }> {
@@ -120,6 +143,7 @@ export async function deliverInviteEmail(
       role: invite.role,
       token: invite.token,
       expiresAt: invite.expiresAt,
+      inviterName: invite.inviterName ?? null,
     });
     return { emailSent: true, delivery: mode };
   } catch (error) {
@@ -153,22 +177,26 @@ export async function createOrganizationInvite(
 ): Promise<CreatedOrganizationInvite> {
   const email = normalizeEmail(input.email);
   await assertOrgCapability(client, input.orgId, "manage_members");
-  if (input.role === "owner" || input.role === "admin") {
-    const actor = await client.query<{ role: OrgRole }>(
-      `SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2`,
-      [input.orgId, actorUserId],
-    );
-    if (input.role === "owner" && actor.rows[0]?.role !== "owner")
-      throw new Error("Only an owner may invite another owner");
-    if (input.role === "admin" && !["owner", "admin"].includes(actor.rows[0]?.role ?? ""))
-      throw new Error("Only an owner or admin may invite another admin");
-  }
-  const existing = await client.query(
-    `SELECT 1 FROM memberships m JOIN users u ON u.id=m.user_id
-     WHERE m.org_id=$1 AND lower(u.email)=lower($2)`,
+  const actor = await client.query<{ role: OrgRole; name: string | null }>(
+    `SELECT m.role, NULLIF(btrim(u.name), '') AS name
+       FROM memberships m JOIN users u ON u.id = m.user_id
+      WHERE m.org_id=$1 AND m.user_id=$2`,
+    [input.orgId, actorUserId],
+  );
+  // The owner decides who leads the team: inviting, promoting and approving a mentor or coach
+  // are owner-only (setMemberRole and review_workspace_access say the same).
+  if (input.role === "owner" && actor.rows[0]?.role !== "owner")
+    throw new Error("Only an owner can invite another owner.");
+  if (input.role === "admin" && actor.rows[0]?.role !== "owner")
+    throw new Error("Only the team owner can invite a mentor or coach. Invite them as a student or a parent or guest, or ask the owner.");
+  const existing = await client.query<{ userId: string; name: string | null; role: OrgRole }>(
+    `SELECT m.user_id AS "userId", COALESCE(NULLIF(btrim(u.name), ''), u.email) AS name, m.role
+       FROM memberships m JOIN users u ON u.id=m.user_id
+      WHERE m.org_id=$1 AND lower(u.email)=lower($2)`,
     [input.orgId, email],
   );
-  if (existing.rowCount) throw new Error("This email is already a member");
+  const member = existing.rows[0];
+  if (member) throw new AlreadyTeamMemberError(member.userId, member.name ?? email, member.role);
   const { token, tokenHash } = createInviteToken();
   const expiresAt = organizationInviteExpiresAt(input.expiresInHours);
 
@@ -222,6 +250,7 @@ export async function createOrganizationInvite(
     role: input.role,
     organization: invite.organization,
     token,
+    inviterName: actor.rows[0]?.name ?? null,
   };
 }
 
@@ -238,8 +267,12 @@ export async function resendOrganizationInvite(
     role: OrgRole;
     organization: string;
     expiresAt: Date;
+    inviterName: string | null;
   }>(
-    `UPDATE invites i SET token_hash=$1,expires_at=now()+interval '24 hours',
+    // A new link lives as long as the invite was first given (a day to a week; never less than
+    // a day, so a 30-minute team-code invite resent by an owner becomes a normal one).
+    `UPDATE invites i SET token_hash=$1,
+       expires_at=now()+LEAST(interval '168 hours', GREATEST(interval '24 hours', i.expires_at - i.last_sent_at)),
        last_sent_at=now()
      FROM organizations o WHERE i.id=$2 AND i.org_id=$3 AND i.org_id=o.id
        AND i.status='pending' AND has_org_capability(i.org_id,'manage_members'::org_capability)
@@ -247,11 +280,12 @@ export async function resendOrganizationInvite(
          SELECT 1 FROM memberships m WHERE m.org_id=i.org_id AND m.user_id=$4::uuid
            AND (m.role='owner' OR (i.role='admin' AND m.role='admin'))
        ))
-     RETURNING i.id,i.email,i.role,o.name AS organization,i.expires_at AS "expiresAt"`,
+     RETURNING i.id,i.email,i.role,o.name AS organization,i.expires_at AS "expiresAt",
+       (SELECT NULLIF(btrim(u.name), '') FROM users u WHERE u.id=$4::uuid) AS "inviterName"`,
     [tokenHash, inviteId, orgId, actorUserId],
   );
   const invite = result.rows[0];
-  if (!invite) throw new Error("Pending invite not found");
+  if (!invite) throw new Error("That invite was already used, cancelled or has expired. Refresh the list.");
   await audit(client, {
     orgId,
     inviteId,
@@ -266,6 +300,7 @@ export async function resendOrganizationInvite(
     role: invite.role,
     organization: invite.organization,
     token,
+    inviterName: invite.inviterName,
   };
 }
 
@@ -358,16 +393,33 @@ export async function acceptMyOrganizationInvite(client: PoolClient, actorUserId
   return joined;
 }
 
-const JOINED_ROLE_WORDS: Record<string, string> = {
-  owner: "Owner",
-  admin: "Mentor or coach",
-  scout: "Student",
-  viewer: "Parent or guest",
-};
+type JoinContext = { viaCode: boolean; joinedNow: boolean; selfRole: string | null };
+
+/** How the joiner came in (0721's my_invite_join_context), or null on a database without it. */
+async function inviteJoinContext(client: PoolClient, orgId: string): Promise<JoinContext | null> {
+  await client.query("SAVEPOINT invite_join_context");
+  try {
+    const row = (
+      await client.query<{ viaCode: boolean; joinedNow: boolean; selfRole: string | null }>(
+        `SELECT via_code AS "viaCode", joined_now AS "joinedNow", self_role AS "selfRole"
+           FROM my_invite_join_context($1::uuid)`,
+        [orgId],
+      )
+    ).rows[0];
+    await client.query("RELEASE SAVEPOINT invite_join_context");
+    return row ?? null;
+  } catch {
+    await client.query("ROLLBACK TO SAVEPOINT invite_join_context");
+    return null;
+  }
+}
 
 /**
  * Tell the team's owners and admins that someone they invited has joined ("Sam Student joined
  * as Student"). A new owner invited a student and a mentor and heard nothing when they came in.
+ * A team-code joiner's notice says so, and says what they told us they are when that suggests
+ * other access ("They said they're a parent"): a parent who joined by code was announced as a
+ * Student. Someone who was already on the team is not announced as joining.
  * Written by the joiner under migration 0693's narrow policy; inside a savepoint, so joining
  * never fails because the notice could not be written (before 0693, or with prefs off).
  */
@@ -383,20 +435,30 @@ export async function notifyInviteAccepted(client: PoolClient, orgId: string, us
       [orgId, userId],
     );
     const row = joiner.rows[0];
+    const context = await inviteJoinContext(client, orgId);
+    if (context && !context.joinedNow) {
+      await client.query("RELEASE SAVEPOINT invite_accepted_notify");
+      return 0;
+    }
     const leads = await client.query<{ userId: string }>(
       `SELECT user_id::text AS "userId" FROM memberships
         WHERE org_id = $1::uuid AND role = ANY('{owner,admin}'::org_role[]) AND user_id <> $2::uuid`,
       [orgId, userId],
     );
-    const who = row?.name?.trim() || "Someone you invited";
-    const as = row?.role ? JOINED_ROLE_WORDS[row.role] ?? row.role : null;
+    const notice = inviteAcceptedNotice({
+      userId,
+      who: row?.name?.trim() || "Someone you invited",
+      role: row?.role ?? null,
+      viaCode: context?.viaCode ?? false,
+      selfRole: context?.selfRole ?? null,
+    });
     let sent = 0;
     for (const lead of leads.rows) {
       const { emitted } = await emitPreferredNotification(client, {
         userId: lead.userId,
         orgId,
-        type: "invite_accepted",
-        payload: { userId, title: `${who} joined${as ? ` as ${as}` : ""}`, body: "They're on the team now." },
+        type: notice.type,
+        payload: notice.payload,
       });
       if (emitted) sent += 1;
     }
@@ -482,8 +544,9 @@ export function accessRequestCreatedNotification(input: {
     type: ACCESS_REQUEST_NOTIFICATION_TYPES.created,
     payload: {
       title: `${requester} asked to join ${teamLabel(input.teamNumber)}`,
-      body: "Review the request in Team admin — approve as scout or view-only, or decline.",
-      href: `/team?orgId=${encodeURIComponent(input.orgId)}#team-access-title`,
+      body: "Review it in Team admin: allow them as a student, a parent or guest, or a mentor or coach, or decline.",
+      // The inbox is on Team admin; /team was the calendar hub, with no request on it.
+      href: `/team/admin?orgId=${encodeURIComponent(input.orgId)}#team-access-title`,
       requestId: input.requestId,
       requesterName: requester,
     },
@@ -504,7 +567,7 @@ export function accessRequestDecisionNotification(input: {
       type: ACCESS_REQUEST_NOTIFICATION_TYPES.approved,
       payload: {
         title: `You're in — welcome to ${team}`,
-        body: `A team leader approved your request${input.grantedRole ? ` as ${input.grantedRole}` : ""}. Open the team workspace to get started.`,
+        body: `A team leader approved your request${input.grantedRole ? ` as ${rolePhrase(input.grantedRole)}` : ""}. Open the team workspace to get started.`,
         href: `/workspace?orgId=${encodeURIComponent(input.orgId)}`,
         requestId: input.requestId,
         grantedRole: input.grantedRole ?? null,
@@ -618,12 +681,13 @@ export async function reviewWorkspaceAccessRequest(
     orgId: string;
     requestId: string;
     decision: "approved" | "declined";
-    role?: "scout" | "viewer";
+    role?: "admin" | "scout" | "viewer";
   },
   provider: EmailProvider = createEmailProvider(),
 ) {
   await assertOrgCapability(client, input.orgId, "manage_members");
-  const role = input.role === "scout" ? "scout" : "viewer";
+  // A mentor who asked to join can be let in as a mentor or coach (owners only; 0721 checks).
+  const role = input.role === "scout" || input.role === "admin" ? input.role : "viewer";
   const result = await client.query<{
     requestId: string;
     applicantUserId: string;
@@ -632,7 +696,7 @@ export async function reviewWorkspaceAccessRequest(
     organizationId: string;
     organizationName: string;
     decision: "approved" | "declined";
-    grantedRole: "scout" | "viewer" | null;
+    grantedRole: "admin" | "scout" | "viewer" | null;
   }>(
     `SELECT request_id AS "requestId",applicant_user_id AS "applicantUserId",
             applicant_email AS "applicantEmail",applicant_name AS "applicantName",
@@ -668,7 +732,7 @@ export async function reviewWorkspaceAccessRequest(
       email: reviewed.applicantEmail,
       subject: `You are approved to join ${reviewed.organizationName} on Vantage`,
       message:
-        `Your team leader approved your Vantage workspace request as ${reviewed.grantedRole}. ` +
+        `Your team leader approved your request to join ${reviewed.organizationName} as ${rolePhrase(reviewed.grantedRole)}. ` +
         `Sign in with this verified email to enter the team workspace: ${signInUrl}\n\n` +
         "If you did not request this access, contact the team administrator.",
     });
@@ -741,4 +805,22 @@ export async function auditMemberPasswordReset(
     email: input.email,
     metadata: { targetUserId: input.targetUserId, delivered: input.delivered },
   });
+}
+
+/**
+ * Someone on the team who can't invite (a student) asks the owners and mentors to invite a
+ * person: "Mr. Lee, lee@school.org, as a mentor or coach". Before, the Team admin page only
+ * said "Team administrator access required" and the request reached nobody.
+ * suggest_team_invite (0721) writes one notice per owner and admin and nothing else, five
+ * suggestions per person per hour.
+ */
+export async function suggestTeamInvite(
+  client: PoolClient,
+  input: { orgId: string; email: string; role: "admin" | "scout" | "viewer"; note?: string | null },
+): Promise<{ notified: number }> {
+  const result = await client.query<{ notified: number | null }>(
+    `SELECT suggest_team_invite($1::uuid, $2, $3, $4) AS notified`,
+    [input.orgId, normalizeEmail(input.email), input.role, input.note?.trim() || null],
+  );
+  return { notified: Number(result.rows[0]?.notified ?? 0) };
 }
