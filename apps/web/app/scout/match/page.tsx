@@ -1,3 +1,4 @@
+import { OfflineBanner } from "../../../components/offline-banner";
 import { Button, EmptyState } from "../../../components/ui";
 import { QuickScoutClient } from "./quick-scout-client";
 import "../../scouting/scouting.css";
@@ -23,6 +24,7 @@ export default async function QuickScoutPage({ searchParams }: { searchParams: P
   // The page's one <main> landmark: the client draws several shells (loading, picker, match).
   return (
     <main className="qs-page">
+      <OfflineBanner feature="Match scouting" detail="Matches you save stay on this device and send when you are back online." />
       <QuickScoutClient key={orgId} orgId={orgId} />
     </main>
   );
