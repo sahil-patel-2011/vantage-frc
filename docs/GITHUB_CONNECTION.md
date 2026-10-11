@@ -3,7 +3,10 @@
 *For team admins linking the robot-code repository, and operators configuring GitHub OAuth. Last updated 2026-10-11.*
 
 Org-scoped robot-code bridge so FRC Assistant / code assist can pull **size-capped, read-only** file
-snippets from one linked GitHub account. Never pushes. Never requests the `workflow` scope.
+snippets from one linked GitHub account. Never pushes, opens, merges or comments on a pull request.
+Never requests the `workflow` scope. The one write is optional: registering the repository webhook
+for automatic pull request reviews (repo settings, `/hooks` only; `lib/code/bugbot-contract.test.ts`
+enforces both).
 
 UI: **Team admin** → `#github-connection`  
 Route: `/team?orgId=<uuid>#github-connection`  

@@ -246,7 +246,8 @@ export function CodePullRequests({ orgId }: { orgId: string }) {
             ? "Connect the team's GitHub so every pull request on the robot code gets an AI review, and Ask AI knows the code."
             : "Pick the robot code repository so its pull requests can be reviewed."}
         </p>
-        <Button as="a" variant="primary" href={withOrgHref("/connectors/github", orgId)}>
+        {/* Secondary: the page's primary actions are the code review above; this is setup. */}
+        <Button as="a" variant="secondary" href={withOrgHref("/connectors/github", orgId)}>
           {view.reason === "not_connected" ? "Connect GitHub" : "Pick the repository"}
         </Button>
       </section>

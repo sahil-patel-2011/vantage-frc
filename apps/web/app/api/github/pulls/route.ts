@@ -61,6 +61,15 @@ async function memberRole(client: Parameters<Parameters<typeof withRls>[1]>[0], 
   return role;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function requireOrgId(value: unknown): string {
+  const orgId = typeof value === "string" ? value.trim() : "";
+  if (!orgId) throw new HttpError(400, "orgId is required");
+  if (!UUID_RE.test(orgId)) throw new HttpError(400, "orgId is not a team id");
+  return orgId;
+}
+
 function webhookUrl(request: Request, token: string): string {
   const base = (process.env.BETTER_AUTH_URL ?? new URL(request.url).origin).replace(/\/$/, "");
   return `${base}/api/github/webhook/${token}`;
@@ -70,8 +79,7 @@ function webhookUrl(request: Request, token: string): string {
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
-    const orgId = new URL(request.url).searchParams.get("orgId")?.trim();
-    if (!orgId) throw new HttpError(400, "orgId is required");
+    const orgId = requireOrgId(new URL(request.url).searchParams.get("orgId"));
     const view = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const role = await memberRole(client, orgId, session.user.id);
       const settings = await client.query<{
@@ -159,14 +167,13 @@ export async function GET(request: Request) {
   }
 }
 
-type Body = { orgId?: string; action?: string; number?: number; enabled?: boolean };
+type Body = { orgId?: unknown; action?: string; number?: number; enabled?: boolean };
 
 export async function POST(request: Request) {
   try {
     const session = await requireSession();
     const body = (await request.json().catch(() => ({}))) as Body;
-    const orgId = body.orgId?.trim();
-    if (!orgId) throw new HttpError(400, "orgId is required");
+    const orgId = requireOrgId(body.orgId);
     const userId = session.user.id;
 
     if (body.action === "review") {

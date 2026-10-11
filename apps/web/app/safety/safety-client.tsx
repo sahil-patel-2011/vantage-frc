@@ -264,7 +264,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
         <article><span>Expired</span><strong>{view.summary.expiredCerts}</strong></article>
       </section>
 
-      <section className="admin-grid">
+      <section className="admin-grid safety-grid">
         <form className="intel-panel" onSubmit={addCert}>
           <h2 className="safety-card-title">Record a certification</h2>
           <label>Person<input required value={certForm.personName} onChange={(e) => setCertForm({ ...certForm, personName: e.target.value })} /></label>
