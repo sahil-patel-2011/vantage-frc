@@ -125,6 +125,28 @@ body.has-app-shell :is(.app-button, .app-button.primary, .app-button.is-primary)
   box-shadow: none;
 }
 
+/* ── One filled button per view (A6-13) ─────────────────────────────────────────────────── */
+
+/* A segmented choice is a selection, not an action: the selected "Event" in Add event was filled
+   with the accent and read as a second primary next to Save. It takes the raised-segment look. */
+body.has-app-shell .tc-entry-switch button.active {
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 0 0 1px var(--line);
+}
+body.has-app-shell .tc-entry-switch button { font-size: 12px; min-height: 32px; }
+@media (pointer: coarse) {
+  body.has-app-shell .tc-entry-switch button { min-height: 44px; }
+}
+/* Money's "Add ▾" steps down while the empty state offers the first step ("Set your season
+   budget"), the same rule soft-ui.css applies to header primaries. */
+body.has-app-shell main:has(.scan-empty :is(.is-primary, .app-button.primary)) .money-add > .app-button {
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
 /* ── Small type in the frame (A6-24) ─────────────────────────────────────────────────────── */
 
 /* 10px section labels and captions in the sidebar, menu panel and account menu: 11px minimum. */

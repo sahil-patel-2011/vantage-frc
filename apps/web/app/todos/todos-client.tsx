@@ -696,8 +696,10 @@ function TodoCard({
             </Button>
           </div>
         </details>
+        {/* A row action, so secondary: a filled Mark done on every row outranked the page's own
+            Add (A6-13). */}
         {todo.status !== "done" ? (
-          <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}>
             Mark done
           </Button>
         ) : (
