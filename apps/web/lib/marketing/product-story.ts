@@ -36,7 +36,7 @@ export const MARKETING_HUBS = [
     href: "/features#team",
     route: "/team",
     promise: "Plan the week, assign work and keep decisions with the people who need them.",
-    modules: ["Calendar", "Chat", "People", "Work", "Playbook"],
+    modules: ["Calendar", "Chat", "People", "Tasks", "Playbook"],
     tools: [
       "Calendar, tasks, ownership, due dates and dependencies",
       "Team documents and member spaces, subject to access permissions",

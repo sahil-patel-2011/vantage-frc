@@ -41,20 +41,37 @@ export function isReimbursementStatus(value: unknown): value is ReimbursementSta
 
 export const REIMBURSEMENT_STATUS_LABELS: Record<ReimbursementStatus, string> = {
   draft: "Draft",
-  submitted: "Waiting on treasurer",
+  submitted: "Waiting for approval",
   approved: "Approved — not paid yet",
   denied: "Denied",
   paid: "Paid",
 };
 
-/** One line telling the member what actually happens next, per status. */
+/**
+ * One line telling the filer what actually happens next, per status. Someone who manages money
+ * looking at another person's claim reads REIMBURSEMENT_REVIEWER_HINTS instead: "only you can see
+ * this" is true on your own draft and false on a row in the approval queue.
+ */
 export const REIMBURSEMENT_STATUS_HINTS: Record<ReimbursementStatus, string> = {
-  draft: "Only you can see this. Submit it when the receipt is attached.",
-  submitted: "Your treasurer sees it in the approval queue.",
+  draft: "Only you and the people who manage money can see this. Submit it when the PDF receipt is attached.",
+  submitted: "The people who manage your team's money see it in their approval queue.",
   approved: "Approved. It counts against the team balance once it is marked paid.",
-  denied: "Not approved. Check the note, fix it, and submit again.",
+  denied: "Not approved. Read the note, fix the claim, and submit it again.",
   paid: "Paid out and recorded in the team ledger.",
 };
+
+/** The same statuses as read by someone who manages money, on another person's claim. */
+export const REIMBURSEMENT_REVIEWER_HINTS: Record<ReimbursementStatus, string> = {
+  draft: "Still a draft. The person who filed it submits it once the receipt is attached.",
+  submitted: "Waiting for a decision.",
+  approved: "Approved. Mark it paid once the money has gone back to them.",
+  denied: "Denied. The person who filed it can fix it and submit it again.",
+  paid: "Paid out and recorded in the team ledger.",
+};
+
+export function reimbursementHint(status: ReimbursementStatus, viewer: { isOwnClaim: boolean }): string {
+  return viewer.isOwnClaim ? REIMBURSEMENT_STATUS_HINTS[status] : REIMBURSEMENT_REVIEWER_HINTS[status];
+}
 
 /**
  * Who may drive each transition. 'member' is the claim's own filer; 'admin' is
@@ -62,6 +79,11 @@ export const REIMBURSEMENT_STATUS_HINTS: Record<ReimbursementStatus, string> = {
  * chose to manage money), NOT every org admin. Anything not listed here is
  * impossible — the API refuses it before touching the database, and RLS
  * (can_manage_finances) refuses it again.
+ *
+ * Two people, always (0723): a finance manager never approves, denies or pays a
+ * claim they filed, and only the filer submits, withdraws or reopens their own
+ * claim. When the owner is the team's only finance manager, the owner's own
+ * claims wait until the owner gives a second person "Manage money".
  */
 export type ReimbursementActor = "member" | "admin";
 
@@ -78,19 +100,57 @@ type Transition = {
   from: readonly ReimbursementStatus[];
   to: ReimbursementStatus;
   actors: readonly ReimbursementActor[];
+  /** The filer's own move. Nobody submits, withdraws or reopens a claim for them. */
+  filerOnly?: true;
+  /** A decision about the money. Never made by the person who filed the claim. */
+  decision?: true;
   /** Audit-log action string. Members may only append 'reimbursement.*' rows. */
   audit: string;
 };
 
 export const REIMBURSEMENT_TRANSITIONS: Record<ReimbursementAction, Transition> = {
-  submit: { from: ["draft", "denied"], to: "submitted", actors: ["member", "admin"], audit: "reimbursement.submitted" },
-  withdraw: { from: ["submitted"], to: "draft", actors: ["member", "admin"], audit: "reimbursement.withdrawn" },
-  approve: { from: ["submitted", "denied"], to: "approved", actors: ["admin"], audit: "reimbursement.approved" },
-  deny: { from: ["submitted", "approved"], to: "denied", actors: ["admin"], audit: "reimbursement.denied" },
-  mark_paid: { from: ["approved"], to: "paid", actors: ["admin"], audit: "reimbursement.paid" },
-  unmark_paid: { from: ["paid"], to: "approved", actors: ["admin"], audit: "reimbursement.payment_undone" },
-  reopen: { from: ["denied"], to: "draft", actors: ["member", "admin"], audit: "reimbursement.reopened" },
+  submit: { from: ["draft", "denied"], to: "submitted", actors: ["member", "admin"], filerOnly: true, audit: "reimbursement.submitted" },
+  withdraw: { from: ["submitted"], to: "draft", actors: ["member", "admin"], filerOnly: true, audit: "reimbursement.withdrawn" },
+  approve: { from: ["submitted", "denied"], to: "approved", actors: ["admin"], decision: true, audit: "reimbursement.approved" },
+  deny: { from: ["submitted", "approved"], to: "denied", actors: ["admin"], decision: true, audit: "reimbursement.denied" },
+  mark_paid: { from: ["approved"], to: "paid", actors: ["admin"], decision: true, audit: "reimbursement.paid" },
+  unmark_paid: { from: ["paid"], to: "approved", actors: ["admin"], decision: true, audit: "reimbursement.payment_undone" },
+  reopen: { from: ["denied"], to: "draft", actors: ["member", "admin"], filerOnly: true, audit: "reimbursement.reopened" },
 };
+
+/** Where a claim is, in words, for "This claim is …, so it can't be …". */
+const STATUS_PHRASES: Record<ReimbursementStatus, string> = {
+  draft: "still a draft",
+  submitted: "waiting for a decision",
+  approved: "approved but not paid yet",
+  denied: "denied",
+  paid: "already paid",
+};
+
+const ACTION_PHRASES: Record<ReimbursementAction, string> = {
+  submit: "submitted",
+  withdraw: "withdrawn",
+  approve: "approved",
+  deny: "denied",
+  mark_paid: "marked paid",
+  unmark_paid: "marked unpaid",
+  reopen: "reopened",
+};
+
+/** Said when a finance manager tries to decide or pay a claim they filed. */
+export const OWN_CLAIM_DECISION =
+  "Someone else who manages money has to decide on a claim you filed. If you are the only one, the team owner can give a second person Manage money in Team admin.";
+
+/** A denial needs a reason the filer can act on; shorter notes are refused. */
+export const MIN_DENIAL_NOTE_LENGTH = 3;
+
+/** Null when the note is a usable reason for a denial, otherwise the sentence to show. */
+export function denialNoteProblem(note: unknown): string | null {
+  const text = typeof note === "string" ? note.trim() : "";
+  return text.length >= MIN_DENIAL_NOTE_LENGTH
+    ? null
+    : "Say why the claim is denied, so the person who filed it knows what to fix.";
+}
 
 export function isReimbursementAction(value: unknown): value is ReimbursementAction {
   return typeof value === "string" && Object.hasOwn(REIMBURSEMENT_TRANSITIONS, value);
@@ -120,16 +180,21 @@ export function evaluateTransition(input: {
   if (!transition.actors.includes(input.actor)) {
     return { ok: false, reason: FINANCE_MANAGER_REQUIRED };
   }
+  // The two-person rule. RLS (0723) refuses the same write if this is bypassed.
+  if (transition.decision && input.isOwnClaim) return { ok: false, reason: OWN_CLAIM_DECISION };
+  if (transition.filerOnly && !input.isOwnClaim) {
+    return { ok: false, reason: "Only the person who filed this claim can do that." };
+  }
   if (!transition.from.includes(input.from)) {
     return {
       ok: false,
-      reason: `A ${REIMBURSEMENT_STATUS_LABELS[input.from].toLowerCase()} reimbursement cannot be ${input.action.replace(/_/g, " ")}.`,
+      reason: `This claim is ${STATUS_PHRASES[input.from]}, so it can't be ${ACTION_PHRASES[input.action]}.`,
     };
   }
   // Submitting without a receipt is the single most common cause of a claim
   // bouncing back, so it is blocked at the source instead of denied later.
   if (input.action === "submit" && !input.hasReceipt) {
-    return { ok: false, reason: "Attach a photo of the receipt before submitting." };
+    return { ok: false, reason: "Attach the receipt as a PDF before submitting." };
   }
   return { ok: true, to: transition.to, audit: transition.audit };
 }
@@ -164,8 +229,16 @@ export function availableActions(input: {
  */
 export const MAX_RECEIPT_BYTES = 3 * 1024 * 1024;
 
-/** Receipt documents remain supported after photo/video storage retirement. */
+/**
+ * Receipt documents remain supported after photo/video storage retirement (0700: the database
+ * refuses new image receipts), so every sentence about receipts says PDF, and RECEIPT_PDF_HELP
+ * tells a student holding a phone photo how to make one.
+ */
 export const RECEIPT_MEDIA_TYPES = ["application/pdf"] as const;
+
+/** How to turn a paper receipt into a PDF with the phone already in hand. */
+export const RECEIPT_PDF_HELP =
+  "Only have a photo? Scan the receipt to a PDF with your phone: Notes or Files › Scan Documents on an iPhone, Google Drive › Scan on Android.";
 
 export type ReceiptMediaType = (typeof RECEIPT_MEDIA_TYPES)[number];
 
@@ -180,7 +253,7 @@ export function evaluateReceiptUpload(input: {
   byteSize: number;
 }): ReceiptVerdict {
   if (!isReceiptMediaType(input.mediaType)) {
-    return { ok: false, reason: "Attach a PDF receipt. Photo and video uploads are not supported." };
+    return { ok: false, reason: "Attach the receipt as a PDF. Photos can't be uploaded: scan the receipt to a PDF with your phone instead." };
   }
   if (!Number.isFinite(input.byteSize) || input.byteSize <= 0) {
     return { ok: false, reason: "That file is empty. Choose the receipt PDF and try again." };
@@ -227,7 +300,11 @@ export function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID.test(value);
 }
 
-/** Validate a member-typed claim. Amounts round to whole cents; money is never invented. */
+/**
+ * Validate a member-typed claim. The amount is dollars and cents exactly: a third decimal is
+ * refused rather than rounded, so the amount on file is the amount typed. A purchase can't be in
+ * the future (one day of slack for time zones). Money is never invented.
+ */
 export function normalizeClaimDraft(input: {
   amountUsd: unknown;
   description: unknown;
@@ -243,6 +320,7 @@ export function normalizeClaimDraft(input: {
   const cents = Math.round(amountRaw * 100);
   if (cents <= 0) return { ok: false, reason: "The amount must be more than $0." };
   if (cents > 100_000_000) return { ok: false, reason: "That amount is too large to record here." };
+  if (Math.abs(amountRaw * 100 - cents) > 1e-6) return { ok: false, reason: "Use dollars and cents, like 12.34." };
 
   const description = typeof input.description === "string" ? input.description.trim() : "";
   if (!description) return { ok: false, reason: "Say what the money was spent on." };
@@ -250,16 +328,18 @@ export function normalizeClaimDraft(input: {
 
   const categoryId = isUuid(input.categoryId) ? input.categoryId : null;
 
+  const now = input.now ?? new Date();
   let purchasedOn: string | null = null;
   if (typeof input.purchasedOn === "string" && input.purchasedOn.trim()) {
     const value = input.purchasedOn.trim();
     if (!ISO_DATE.test(value) || Number.isNaN(Date.parse(value))) {
       return { ok: false, reason: "Use a real purchase date (YYYY-MM-DD)." };
     }
+    const latest = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    if (value > latest) return { ok: false, reason: "The purchase date can't be in the future." };
     purchasedOn = value;
   }
 
-  const now = input.now ?? new Date();
   const seasonRaw = Number(input.seasonYear);
   const seasonYear =
     Number.isFinite(seasonRaw) && seasonRaw >= 1992 && seasonRaw <= 3000

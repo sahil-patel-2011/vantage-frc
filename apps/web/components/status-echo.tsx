@@ -17,11 +17,34 @@ const ARMED_MS = 8000;
 
 type Echo = { id: number; text: string; error: boolean };
 
+/** The edge of a fixed bar, or null when that bar is not showing (no bottom bar on a computer). */
+function shownRect(selector: string): DOMRect | null {
+  const bar = document.querySelector<HTMLElement>(selector);
+  if (!bar) return null;
+  const style = getComputedStyle(bar);
+  if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return null;
+  const rect = bar.getBoundingClientRect();
+  return rect.width && rect.height ? rect : null;
+}
+
 function offScreen(el: Element): boolean {
   const rect = el.getBoundingClientRect();
   if (!rect.width && !rect.height) return false; // hidden, not scrolled away
-  // The top bar and the bottom tab island cover about 64px and 96px.
-  return rect.bottom < 64 || rect.top > window.innerHeight - 96;
+  // What the top bar and the bottom tab island actually cover. A fixed 96px at the bottom
+  // counted a visible "Added …" line on a 1280px screen (no island there) as covered, and
+  // echoed it as a toast over the form it was already showing in.
+  const top = shownRect(".soft-topbar")?.bottom ?? 0;
+  const bottom = shownRect(".soft-island")?.top ?? window.innerHeight;
+  return rect.bottom < top || rect.top > bottom;
+}
+
+/** The region's own tone. Only an alert, or a line styled as an error, is an error toast. */
+export function isErrorRegion(region: Element): boolean {
+  if (region.getAttribute("role") === "alert") return true;
+  // Class *words*, not substrings: a guided step's amber `guided-result is-fail` is a "not yet",
+  // and turned red as a toast because its class contained "fail".
+  const tokens = String((region as HTMLElement).className ?? "").split(/\s+/);
+  return tokens.some((token) => /^(?:is-)?(?:error|bad|danger|critical)$/.test(token));
 }
 
 export function StatusEcho() {
@@ -47,12 +70,14 @@ export function StatusEcho() {
       pending = new Set();
       for (const region of regions) {
         if (!region.isConnected || !region.closest("main") || region.closest('[role="dialog"], .status-echo')) continue;
+        // A loading card is a status too (EmptyState with aria-busy); it is not an answer.
+        if (region.closest('[aria-busy="true"]')) continue;
         const text = (region as HTMLElement).innerText?.replace(/\s+/g, " ").trim() ?? "";
         if (!text || text.length > 220 || /(…|\.\.\.)$/.test(text)) continue;
         if (text === last.text && Date.now() - last.at < 3000) continue;
         if (!offScreen(region)) continue;
         last = { text, at: Date.now() };
-        const error = region.getAttribute("role") === "alert" || /error|bad|danger|fail/i.test(String((region as HTMLElement).className));
+        const error = isErrorRegion(region);
         const id = ++seq.current;
         setEcho({ id, text, error });
         if (hide) window.clearTimeout(hide);

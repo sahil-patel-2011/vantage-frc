@@ -486,18 +486,59 @@ export function isAllDayCalendarEvent(event: CalendarEvent): boolean {
   return false;
 }
 
-export function layoutTimedEventsForDay(events: CalendarEvent[]): TimedCalendarBlock[] {
-  const span = (CALENDAR_GRID_END_HOUR - CALENDAR_GRID_START_HOUR) * 60;
-  const origin = CALENDAR_GRID_START_HOUR * 60;
+export type CalendarGridRange = { start: number; end: number };
+
+/** Minutes after local midnight of the start's day; an end on a later day is the day's end. */
+function eventMinutes(event: CalendarEvent): { start: number; end: number } | null {
+  const start = new Date(event.startsAt);
+  if (Number.isNaN(start.getTime())) return null;
+  const startMin = start.getHours() * 60 + start.getMinutes();
+  const end = event.endsAt ? new Date(event.endsAt) : new Date(start.getTime() + 60 * 60 * 1000);
+  if (Number.isNaN(end.getTime())) return { start: startMin, end: Math.min(24 * 60, startMin + 60) };
+  const sameDay = end.toDateString() === start.toDateString();
+  const endMin = sameDay ? end.getHours() * 60 + end.getMinutes() : 24 * 60;
+  return { start: startMin, end: Math.max(startMin, endMin) };
+}
+
+/**
+ * The hours the week or day grid draws: 7 AM to 10 PM, widened to the earliest start and latest
+ * end of the timed events in view. An early bus call at 5 AM was drawn in the 7 AM row and an
+ * 11:30 PM match was not drawn at all; the grid now grows to hold them.
+ */
+export function calendarGridRange(days: ReadonlyArray<{ items: readonly CalendarEvent[] }>): CalendarGridRange {
+  let start = CALENDAR_GRID_START_HOUR;
+  let end = CALENDAR_GRID_END_HOUR;
+  for (const day of days) {
+    for (const event of day.items) {
+      if (isAllDayCalendarEvent(event)) continue;
+      const minutes = eventMinutes(event);
+      if (!minutes) continue;
+      start = Math.min(start, Math.floor(minutes.start / 60));
+      // An event shorter than the 30-minute minimum block still needs room below its start.
+      end = Math.max(end, Math.ceil(Math.max(minutes.end, minutes.start + 30) / 60));
+    }
+  }
+  return { start: Math.max(0, start), end: Math.min(24, end) };
+}
+
+export function calendarGridHours(range: CalendarGridRange): number[] {
+  return Array.from({ length: Math.max(1, range.end - range.start) }, (_, index) => range.start + index);
+}
+
+export function layoutTimedEventsForDay(
+  events: CalendarEvent[],
+  range: CalendarGridRange = { start: CALENDAR_GRID_START_HOUR, end: CALENDAR_GRID_END_HOUR },
+): TimedCalendarBlock[] {
+  const span = Math.max(1, range.end - range.start) * 60;
+  const origin = range.start * 60;
   const timed = events.filter((event) => !isAllDayCalendarEvent(event));
   const blocks: TimedCalendarBlock[] = timed
     .map((event) => {
-      const start = new Date(event.startsAt);
-      const end = event.endsAt ? new Date(event.endsAt) : new Date(start.getTime() + 60 * 60 * 1000);
-      const startMin = Math.max(0, start.getHours() * 60 + start.getMinutes() - origin);
-      const rawEnd = Number.isNaN(end.getTime())
-        ? startMin + 60
-        : end.getHours() * 60 + end.getMinutes() - origin;
+      const minutes = eventMinutes(event) ?? { start: origin, end: origin + 60 };
+      // Clamped into the range, so an event outside it (a caller passing the default range)
+      // still lands on the grid's edge rather than off it.
+      const startMin = Math.min(Math.max(0, minutes.start - origin), Math.max(0, span - 30));
+      const rawEnd = minutes.end - origin;
       const endMin = Math.min(span, Math.max(startMin + 30, rawEnd));
       return {
         event,

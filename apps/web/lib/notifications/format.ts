@@ -44,6 +44,9 @@ export function notificationTypeLabel(type: string): string {
     case "team_access_approved":
     case "team_access_declined":
       return "Team";
+    case "guided_signoff_requested":
+    case "guided_signoff_decided":
+      return "Learning";
     case "billing":
     case "credit_low":
       return "AI limits";

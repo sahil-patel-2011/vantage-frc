@@ -6,7 +6,7 @@ import {
 } from "@vantage/core";
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
-import { asOfUtcDate, computeMetrics, sortTodos, withFlags } from "./evaluate";
+import { computeMetrics, resolveAsOf, sortTodos, withFlags } from "./evaluate";
 import type {
   TeamTodo,
   TodoMember,
@@ -116,7 +116,13 @@ async function loadTodos(client: PoolClient, orgId: string, asOf: string): Promi
 
 export async function computeTodosView(
   client: PoolClient,
-  input: { userId: string; requestedOrg: string | null; focusTodoId?: string | null },
+  input: {
+    userId: string;
+    requestedOrg: string | null;
+    focusTodoId?: string | null;
+    /** The viewer's own calendar date (resolveAsOf); UTC's when absent or implausible. */
+    today?: string | null;
+  },
 ): Promise<TodosView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   if (!org) {
@@ -132,7 +138,7 @@ export async function computeTodosView(
     };
   }
 
-  const asOf = asOfUtcDate();
+  const asOf = resolveAsOf(input.today);
   // The POST handler calls this to render the page *after* its write. A failure
   // caught here left the transaction aborted, so the todo the student had just
   // created was discarded at COMMIT and the answer was "setup_required" —
@@ -188,11 +194,33 @@ async function assertMember(client: PoolClient, orgId: string, userId: string): 
 
 async function assertAssignee(client: PoolClient, orgId: string, assigneeUserId: string | null): Promise<void> {
   if (!assigneeUserId) return;
-  const member = await client.query(`SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2`, [
-    orgId,
-    assigneeUserId,
-  ]);
+  const member = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+    [orgId, assigneeUserId],
+  );
   if (!member.rowCount) throw new Error("Assignee must be an organization member");
+  // A View only member (a parent, a guest) can never complete a task, so it can't be theirs.
+  if (member.rows[0]?.role === "viewer") {
+    throw new Error("View-only members can't be given tasks. Choose a team member, or leave it unassigned.");
+  }
+}
+
+/** Only these people may delete a task; the sentence when anyone else tries. */
+export const TODO_DELETE_REFUSED =
+  "Only the person who added this task, the person it is assigned to, or an owner or admin can delete it.";
+
+export function canDeleteTodo(input: {
+  role: string | null | undefined;
+  userId: string;
+  createdBy: string | null;
+  assigneeUserId: string | null;
+}): boolean {
+  return (
+    input.role === "owner" ||
+    input.role === "admin" ||
+    (input.createdBy != null && input.createdBy === input.userId) ||
+    (input.assigneeUserId != null && input.assigneeUserId === input.userId)
+  );
 }
 
 async function assertSubteam(client: PoolClient, orgId: string, subteamId: string | null): Promise<void> {
@@ -358,7 +386,7 @@ export async function updateTodo(
     [input.todoId, input.orgId],
   );
   const prev = existing.rows[0];
-  if (!prev) throw new Error("Todo not found");
+  if (!prev) throw new Error("That task was deleted. The list is up to date now.");
 
   if (input.assigneeUserId !== undefined) {
     await assertAssignee(client, input.orgId, input.assigneeUserId);
@@ -439,9 +467,22 @@ export async function deleteTodo(
   input: { orgId: string; userId: string; todoId: string },
 ): Promise<void> {
   await assertMember(client, input.orgId, input.userId);
+  const found = await client.query<{ createdBy: string | null; assigneeUserId: string | null; role: string | null }>(
+    `SELECT t.created_by::text AS "createdBy", t.assignee_user_id::text AS "assigneeUserId",
+            (SELECT m.role::text FROM memberships m WHERE m.org_id = t.org_id AND m.user_id = $3::uuid) AS role
+       FROM team_todos t
+      WHERE t.id = $1::uuid AND t.org_id = $2::uuid`,
+    [input.todoId, input.orgId, input.userId],
+  );
+  const row = found.rows[0];
+  // Someone else deleted it first: say so instead of "Todo not found"; the list reloads after.
+  if (!row) throw new Error("That task was already deleted. The list is up to date now.");
+  if (!canDeleteTodo({ role: row.role, userId: input.userId, createdBy: row.createdBy, assigneeUserId: row.assigneeUserId })) {
+    throw new Error(TODO_DELETE_REFUSED);
+  }
   const result = await client.query(`DELETE FROM team_todos WHERE id = $1::uuid AND org_id = $2::uuid`, [
     input.todoId,
     input.orgId,
   ]);
-  if (!result.rowCount) throw new Error("Todo not found");
+  if (!result.rowCount) throw new Error("That task was already deleted. The list is up to date now.");
 }

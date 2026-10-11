@@ -1,5 +1,6 @@
 import type { OrderAiSummary, OrderMetrics, OrderRequest, OrderStatus } from "./types";
 import { ORDER_STATUSES } from "./types";
+import { formatUsd } from "../finance/format-usd";
 
 export { ORDER_STATUSES };
 export type { OrderStatus };
@@ -40,9 +41,8 @@ function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function usd(value: number): string {
-  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
-}
+/** The shared money format (A5-07): "$12.50", never "$12.5". */
+const usd = formatUsd;
 
 export type OrderSubmitInput = {
   title: string;

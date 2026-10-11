@@ -169,6 +169,11 @@ export async function outstandingAcks(
           SELECT 1 FROM announcement_acks k
            WHERE k.announcement_id = $2::uuid AND k.user_id = m.user_id
         )
+        -- The person who posted it has read it: they were listed as outstanding on their own post.
+        AND NOT EXISTS (
+          SELECT 1 FROM team_announcements a
+           WHERE a.id = $2::uuid AND a.org_id = $1::uuid AND a.created_by = m.user_id
+        )
       ORDER BY name`,
     [orgId, announcementId],
   );

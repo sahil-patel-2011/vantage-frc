@@ -215,6 +215,7 @@
 .scout-card .app-button{width:100%;min-height:48px}
 .scout-card-note{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
 .scout-card-link{color:var(--accent);font-weight:600;font-size:14px;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+button.scout-card-link{background:none;border:0;padding:0;cursor:pointer;font:inherit;font-weight:600;font-size:14px}
 .scout-chip-row{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
 .scout-chip-row a{display:inline-flex;align-items:baseline;gap:6px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-decoration:none;align-items:center}
 .scout-chip-row strong{font-variant-numeric:tabular-nums}

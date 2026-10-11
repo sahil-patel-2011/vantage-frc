@@ -294,7 +294,7 @@ function EmptyDigest({ view }: { view: EmptyView }) {
       title={view.message}
       description={
         view.standingBlockers > 0
-          ? `${view.standingBlockers} blocked task${view.standingBlockers === 1 ? "" : "s"} are still open on Work — they are not yesterday's digest.`
+          ? `${view.standingBlockers} blocked task${view.standingBlockers === 1 ? "" : "s"} are still open on Tasks — they are not yesterday's digest.`
           : "Clock hours or finish a task, then this page will compile that day. Nothing is invented while the logs are empty."
       }
     >

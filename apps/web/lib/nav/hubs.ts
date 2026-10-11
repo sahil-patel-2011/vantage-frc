@@ -182,7 +182,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // on first visit and refreshed weekly. Under People because the one thing
         // it cannot know — who is on the team — is answered right next to it.
         { id: "profile", label: "Team profile", legacyHref: "/team/profile", featured: true },
-        { id: "hours", label: "Hours kiosk", legacyHref: "/hours", featured: true },
+        { id: "hours", label: "Shop hours", legacyHref: "/hours", featured: true },
         // Subteams and Forms are people operations, so they live under People
         // rather than as their own drawer pillar — the drawer keeps one link
         // per pillar, and a tool nobody can click to might as well not exist.
@@ -220,7 +220,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // the token-scoped read-only view a guardian opens without an account.
         { id: "parents", label: "Parents", legacyHref: "/parents" },
       ]),
-      { id: "todos", label: "Work", legacyHref: "/todos" },
+      { id: "todos", label: "Tasks", legacyHref: "/todos" },
       ...nest("todos", [
         { id: "practice", label: "Practice", legacyHref: "/practice" },
         {
@@ -241,7 +241,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "fmea", label: "Failure notes", legacyHref: "/fmea" },
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
         { id: "equipment-maintenance", label: "Equipment", legacyHref: "/equipment-maintenance" },
-        { id: "safety-training", label: "Safety", legacyHref: "/safety-training" },
+        { id: "safety-training", label: "Safety training", legacyHref: "/safety-training" },
         { id: "safety", label: "Tool certifications", legacyHref: "/safety" },
         { id: "checklist-library", label: "Checklists", legacyHref: "/checklist-library" },
         { id: "pit-map-planner", label: "Pit map", legacyHref: "/pit-map-planner" },
@@ -376,7 +376,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // Nested under CAD rather than added as a workbench: hubs.test.ts pins
         // Build's four workbenches, and a training surface is not one of them.
         { id: "cad-learn", label: "Learn CAD", legacyHref: "/cad-learn", featured: true },
-        { id: "learn-resources", label: "Code & CAD", legacyHref: "/learn", featured: true },
+        { id: "learn-resources", label: "Learn", legacyHref: "/learn", featured: true },
         // Lessons a team writes itself (or uploads as a PDF), ending in checked practice.
         { id: "team-lessons", label: "Team lessons", legacyHref: "/learn/team" },
       ]),

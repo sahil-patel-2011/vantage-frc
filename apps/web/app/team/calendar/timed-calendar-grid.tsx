@@ -4,7 +4,8 @@ import { DayTasks } from "./task-chip";
 import { WEEKDAYS, dayNum, fmtTime } from "./calendar-model";
 import type { TaskOnCalendar } from "../../../lib/calendar/tasks-on-calendar";
 import {
-  CALENDAR_GRID_HOURS,
+  calendarGridHours,
+  calendarGridRange,
   formatHourLabel,
   isAllDayCalendarEvent,
   layoutTimedEventsForDay,
@@ -12,6 +13,18 @@ import {
   type CalendarGridCell,
   type CalendarOverlayItem,
 } from "../../../lib/subteam-calendar";
+
+/** "PDT", "EST": the zone every time on the grid is in, from this device's settings. */
+export function timeZoneAbbreviation(at: Date = new Date()): { short: string; long: string } {
+  try {
+    const long = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+    const short =
+      new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(at).find((part) => part.type === "timeZoneName")?.value ?? "";
+    return { short, long: long.replace(/_/g, " ") };
+  } catch {
+    return { short: "", long: "" };
+  }
+}
 
 export function TimedCalendarGrid({
   cells,
@@ -40,17 +53,23 @@ export function TimedCalendarGrid({
   onPickSlot: (day: string, hour: number | null) => void;
   onOpenDay: (day: string) => void;
 }) {
+  // The rows grow to the earliest and latest event in view (A5-04).
+  const range = calendarGridRange(cells);
+  const hours = calendarGridHours(range);
+  const zone = timeZoneAbbreviation();
   return (
     <div className="tc-timed-wrap">
       <div
         className={`tc-timed${cells.length === 1 ? " is-day" : ""}`}
         style={{
           ["--tc-cols" as string]: String(cells.length),
-          ["--tc-hours" as string]: String(CALENDAR_GRID_HOURS.length),
+          ["--tc-hours" as string]: String(hours.length),
         }}
       >
         <div className="tc-timed-head">
-          <span className="tc-timed-corner" />
+          <span className="tc-timed-corner" title={zone.long ? `Times are in ${zone.long}` : undefined}>
+            {zone.short ? <span className="tc-timed-zone">{zone.short}</span> : null}
+          </span>
           {cells.map((cell) => (
             <button
               key={`h-${cell.day}`}
@@ -105,12 +124,12 @@ export function TimedCalendarGrid({
         </div>
         <div className="tc-timed-body">
           <div className="tc-timed-gutter" aria-hidden="true">
-            {CALENDAR_GRID_HOURS.map((hour) => (
+            {hours.map((hour) => (
               <span key={hour}>{formatHourLabel(hour)}</span>
             ))}
           </div>
           {cells.map((cell) => {
-            const blocks = layoutTimedEventsForDay(cell.items);
+            const blocks = layoutTimedEventsForDay(cell.items, range);
             return (
               <div key={`c-${cell.day}`} className="tc-timed-col">
                 {/*
@@ -143,11 +162,8 @@ export function TimedCalendarGrid({
                     }
                     const box = event.currentTarget.getBoundingClientRect();
                     const share = box.height > 0 ? (event.clientY - box.top) / box.height : 0;
-                    const index = Math.min(
-                      CALENDAR_GRID_HOURS.length - 1,
-                      Math.max(0, Math.floor(share * CALENDAR_GRID_HOURS.length)),
-                    );
-                    onPickSlot(cell.day, CALENDAR_GRID_HOURS[index]!);
+                    const index = Math.min(hours.length - 1, Math.max(0, Math.floor(share * hours.length)));
+                    onPickSlot(cell.day, hours[index]!);
                   }}
                 />
                 {blocks.map((block) => (

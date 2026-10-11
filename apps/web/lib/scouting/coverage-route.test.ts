@@ -79,6 +79,7 @@ const state = vi.hoisted(() => ({
   compute: vi.fn(),
   assign: vi.fn(),
   swap: vi.fn(),
+  unassign: vi.fn(),
   applyAuto: vi.fn(),
   loadWatchlist: vi.fn(),
 }));
@@ -110,6 +111,7 @@ vi.mock("./coverage", async () => {
     computeScoutingCoverageView: (...args: unknown[]) => state.compute(...args),
     assignCoverageSlot: (...args: unknown[]) => state.assign(...args),
     swapCoverageSlot: (...args: unknown[]) => state.swap(...args),
+    unassignCoverageSlot: (...args: unknown[]) => state.unassign(...args),
     applyAutoAssignments: (...args: unknown[]) => state.applyAuto(...args),
   };
 });
@@ -150,6 +152,7 @@ beforeEach(() => {
   state.compute.mockReset();
   state.assign.mockReset();
   state.swap.mockReset();
+  state.unassign.mockReset();
   state.applyAuto.mockReset();
   state.loadWatchlist.mockReset();
   state.loadWatchlist.mockImplementation(async () => state.priorityTeamKeys);
@@ -392,5 +395,45 @@ describe("POST /api/scouting/coverage", () => {
       fromUserId: USER,
       toUserId: SCOUT,
     });
+  });
+
+  it("takes a scout off a robot, and says so when someone already did", async () => {
+    state.unassign.mockResolvedValue({ removed: true });
+    const response = await POST(postRequest({ orgId: ORG, action: "unassign", matchKey: `${EVENT}_qm1`, teamKey: "frc118", userId: SCOUT }));
+    expect(response.status).toBe(200);
+    expect(state.unassign).toHaveBeenCalledWith(expect.anything(), { orgId: ORG, eventKey: EVENT, matchKey: `${EVENT}_qm1`, teamKey: "frc118", userId: SCOUT });
+    expect((await response.json()).assignmentResult).toMatchObject({ action: "unassign", removed: 1 });
+
+    state.unassign.mockResolvedValue({ removed: false });
+    const stale = await POST(postRequest({ orgId: ORG, action: "unassign", matchKey: `${EVENT}_qm1`, teamKey: "frc118", userId: SCOUT }));
+    expect(stale.status).toBe(409);
+  });
+
+  it("refuses an un-assign from a scout and for a robot not on the schedule", async () => {
+    state.role = "scout";
+    expect((await POST(postRequest({ orgId: ORG, action: "unassign", matchKey: `${EVENT}_qm1`, teamKey: "frc118", userId: SCOUT }))).status).toBe(403);
+    state.role = "admin";
+    expect((await POST(postRequest({ orgId: ORG, action: "unassign", matchKey: `${EVENT}_qm9`, teamKey: "frc118", userId: SCOUT }))).status).toBe(400);
+    expect(state.unassign).not.toHaveBeenCalled();
+  });
+
+  it("names the scout and the match in a conflict", async () => {
+    state.view = emptyLive({
+      slots: ["frc254", "frc118"].map(teamKey => ({ matchKey: `${EVENT}_qm1`, teamKey, teamNumber: Number(teamKey.slice(3)), matchNumber: 1, compLevel: "qm", status: "unscouted", entryCount: 0, assignmentCount: 0 })),
+      scouts: [{ userId: SCOUT, name: "Riley Scout", role: "scout", assignedCount: 1, isMe: false }],
+    });
+    state.conflicts.mockResolvedValue({ ourTeamKey: null, standingDriveTeam: new Set(), driveDuties: [], matches: new Map(), assignments: [{ userId: SCOUT, matchKey: `${EVENT}_qm1`, teamKey: "frc118" }] });
+    const response = await POST(postRequest({ orgId: ORG, action: "assign", matchKey: `${EVENT}_qm1`, teamKey: "frc254", userId: SCOUT }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toBe("Riley Scout is already scouting 118 in Qual 1 — one scout, one robot.");
+  });
+});
+
+describe("assignmentNotice", () => {
+  it("counts in the singular and the plural", async () => {
+    const { assignmentNotice } = await import("./coverage-request");
+    expect(assignmentNotice({ action: "assign-range", assigned: 1, unchanged: 0, refused: ["x", "y", "z"] })).toBe("1 new assignment saved. 3 items need a look below.");
+    expect(assignmentNotice({ action: "assign-range", assigned: 2, unchanged: 1, refused: [] })).toBe("2 new assignments saved. 1 was already assigned.");
+    expect(assignmentNotice({ action: "unassign", assigned: 0, unchanged: 0, refused: [], removed: 1 })).toBe("Scout taken off the robot.");
   });
 });

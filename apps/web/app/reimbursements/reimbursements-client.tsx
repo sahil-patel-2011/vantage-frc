@@ -25,13 +25,16 @@ import {
   type BudgetLine,
   type BudgetVsActualView,
 } from "../../lib/finance/budget-vs-actual";
+import { formatUsd } from "../../lib/finance/format-usd";
 import {
   MAX_RECEIPT_BYTES,
-  REIMBURSEMENT_STATUS_HINTS,
+  MIN_DENIAL_NOTE_LENGTH,
+  RECEIPT_PDF_HELP,
   REIMBURSEMENT_STATUS_LABELS,
   availableActions,
   evaluateReceiptUpload,
   formatBytes,
+  reimbursementHint,
   type ReimbursementAction,
   type ReimbursementSummary,
   type ReimbursementsView,
@@ -39,6 +42,7 @@ import {
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { actionFailureMessage } from "../../lib/ui/action-failure";
 import "./reimbursements.css";
 
 const ACTION_LABELS: Record<ReimbursementAction, string> = {
@@ -51,12 +55,21 @@ const ACTION_LABELS: Record<ReimbursementAction, string> = {
   reopen: "Reopen as draft",
 };
 
+/** What happened, in the words of the person who pressed the button. */
+const ACTION_DONE: Record<ReimbursementAction, string> = {
+  submit: "Submitted. It waits for someone who manages money to approve it.",
+  withdraw: "Withdrawn. It is a draft again.",
+  approve: "Approved. Mark it paid once the money has gone back.",
+  deny: "Denied. The person who filed it sees your reason.",
+  mark_paid: "Marked paid and recorded in the team ledger.",
+  unmark_paid: "Payment undone. It is approved and not paid again.",
+  reopen: "Reopened as a draft. The denial note stays on it so you can see what to fix.",
+};
+
 /** Actions that read as the obvious next step get the filled treatment. */
 const PRIMARY_ACTIONS = new Set<ReimbursementAction>(["submit", "approve", "mark_paid"]);
 
-function money(value: number): string {
-  return value.toLocaleString(undefined, { style: "currency", currency: "USD" });
-}
+const money = formatUsd;
 
 function shortDate(value: string | null): string | null {
   if (!value) return null;
@@ -263,7 +276,7 @@ export default function ReimbursementsClient() {
       );
       load();
     } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : "Could not file that reimbursement.");
+      setError(actionFailureMessage(cause, "Could not file that reimbursement."));
     } finally {
       setBusy(false);
     }
@@ -274,16 +287,26 @@ export default function ReimbursementsClient() {
       if (!orgId || busy) return;
       let note: string | null = null;
       if (action === "deny") {
-        // Asked before anything is sent; Cancel keeps the claim as it is.
+        // Asked before anything is sent; Cancel keeps the claim as it is. A denial always
+        // carries a reason (the API refuses one without), so the filer knows what to fix.
         const reason = await askText({
           title: "Deny this claim?",
-          body: "The filer sees your note.",
+          body: "The person who filed it sees your reason and can fix the claim and send it again.",
           confirmLabel: "Deny claim",
           tone: "destructive",
-          input: { label: "Why it is denied (optional)", multiline: true },
+          input: {
+            label: "Why it is denied",
+            placeholder: "The receipt doesn't show the total. Attach the full receipt.",
+            required: true,
+            multiline: true,
+          },
         });
         if (reason === null) return;
-        note = reason.trim() || null;
+        note = reason.trim();
+        if (note.length < MIN_DENIAL_NOTE_LENGTH) {
+          setError("Say why the claim is denied, so the person who filed it knows what to fix.");
+          return;
+        }
       }
       setBusy(true);
       setError(null);
@@ -296,14 +319,10 @@ export default function ReimbursementsClient() {
         });
         const body = (await response.json()) as { error?: string };
         if (!response.ok) throw new Error(body.error ?? "Could not update that reimbursement.");
-        setNotice(
-          action === "mark_paid"
-            ? "Marked paid and recorded in the team ledger."
-            : `${ACTION_LABELS[action]} — done.`,
-        );
+        setNotice(ACTION_DONE[action]);
         load();
       } catch (cause: unknown) {
-        setError(cause instanceof Error ? cause.message : "Could not update that reimbursement.");
+        setError(actionFailureMessage(cause, "Could not update that reimbursement."));
       } finally {
         setBusy(false);
       }
@@ -331,7 +350,7 @@ export default function ReimbursementsClient() {
         setNotice("Receipt attached.");
         load();
       } catch (cause: unknown) {
-        setError(cause instanceof Error ? cause.message : "Could not attach that receipt.");
+        setError(actionFailureMessage(cause, "Could not attach that receipt."));
       } finally {
         setBusy(false);
       }
@@ -345,6 +364,123 @@ export default function ReimbursementsClient() {
   const budgetLines = useMemo<BudgetLine[]>(
     () => (budget && budget.status === "ready" ? budget.lines : []),
     [budget],
+  );
+
+  const filePanel = !ready ? null : ready.canFile === false ? (
+    <Panel>
+      <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>File a claim</h2>
+      <p className="rb-meta">You have view-only access, so you can&rsquo;t file a reimbursement claim.</p>
+    </Panel>
+  ) : (
+    <Panel>
+      <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>{ready.isTreasurer ? "File your own claim" : "File a claim"}</h2>
+      <div className="rb-form">
+        <div className="rb-form-grid">
+          <label className="rb-field">
+            <span>Amount you paid</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              placeholder="180.00"
+            />
+          </label>
+          <label className="rb-field">
+            <span>Date of purchase</span>
+            <input
+              type="date"
+              value={purchasedOn}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(event) => setPurchasedOn(event.target.value)}
+            />
+          </label>
+          <label className="rb-field">
+            <span>Budget category</span>
+            <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+              <option value="">Uncategorized</option>
+              {ready.categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <label className="rb-field">
+          <span>What was it for?</span>
+          <textarea
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Replacement gearbox for the west drivetrain, bought at the venue"
+            maxLength={500}
+          />
+        </label>
+        <div className="rb-form-actions">
+          <label className="rb-receipt-pick">
+            {receipt ? `Receipt: ${receipt.name} (${formatBytes(receipt.size)})` : "Add PDF receipt"}
+            <input
+              ref={receiptInput}
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(event) => pickReceipt(event.target.files?.[0] ?? null)}
+            />
+          </label>
+          <button
+            type="button"
+            className="rb-receipt-pick"
+            style={{ borderStyle: "solid" }}
+            disabled={!canFile}
+            onClick={() => void fileClaim()}
+          >
+            {busy ? "Saving…" : "Save draft"}
+          </button>
+        </div>
+        <p className="rb-meta">
+          {`Attach the receipt as a PDF, up to ${formatBytes(MAX_RECEIPT_BYTES)}, to submit. Without one the claim stays a draft.`}
+        </p>
+        <p className="rb-meta">{RECEIPT_PDF_HELP}</p>
+        {ready.isTreasurer ? (
+          <p className="rb-meta">Someone else who manages money approves and pays a claim you file.</p>
+        ) : null}
+      </div>
+    </Panel>
+  );
+
+  const claimsPanel = !ready ? null : (
+    <Panel>
+      <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>
+        {ready.isTreasurer ? "Claims to review" : "Your claims"}
+      </h2>
+      {ready.requests.length === 0 ? (
+        <EmptyState
+          soft
+          title="No reimbursements yet"
+          description={
+            ready.isTreasurer
+              ? "When someone on the team pays out of pocket and files a claim, it lands here for you to approve."
+              : "Filed a claim above? It will show here as a draft until you submit it."
+          }
+        />
+      ) : (
+        <ul className="rb-list">
+          {ready.requests.map((request) => (
+            <ClaimRow
+              key={request.id}
+              request={request}
+              orgId={ready.orgId}
+              isTreasurer={ready.isTreasurer}
+              viewerUserId={ready.viewerUserId}
+              busy={busy}
+              onAct={act}
+              onAttach={attachReceipt}
+            />
+          ))}
+        </ul>
+      )}
+    </Panel>
   );
 
   return (
@@ -377,7 +513,7 @@ export default function ReimbursementsClient() {
       {status === "error" && !view ? (
         <EmptyState
           title="Could not load reimbursements"
-          description={error ?? "Something went wrong."}
+          description={error ?? "That didn't go through. Check your connection and try again."}
         >
           <button type="button" className="rb-receipt-pick" onClick={() => void load()}>
             Retry
@@ -402,7 +538,7 @@ export default function ReimbursementsClient() {
         <>
           <dl className="rb-totals">
             <div className="rb-total">
-              <dt>Waiting on the treasurer</dt>
+              <dt>Waiting for approval</dt>
               <dd>{money(ready.totals.awaitingDecisionUsd)}</dd>
               <small>
                 {ready.totals.awaitingDecisionCount} claim
@@ -412,7 +548,7 @@ export default function ReimbursementsClient() {
             <div className="rb-total">
               <dt>Approved, not paid yet</dt>
               <dd>{money(ready.totals.approvedUnpaidUsd)}</dd>
-              <small>Owed to families — not counted against the balance until paid</small>
+              <small>Owed back to the people who paid. It counts against the balance once it is paid.</small>
             </div>
             <div className="rb-total">
               <dt>Paid back this season</dt>
@@ -423,115 +559,10 @@ export default function ReimbursementsClient() {
             </div>
           </dl>
 
-          {ready.canFile === false ? (
-            <Panel>
-              <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>File a claim</h2>
-              <p className="rb-meta">You have view-only access, so you can&rsquo;t file a reimbursement claim.</p>
-            </Panel>
-          ) : (
-          <Panel>
-            <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>File a claim</h2>
-            <div className="rb-form">
-              <div className="rb-form-grid">
-                <label className="rb-field">
-                  <span>Amount you paid</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.01"
-                    value={amount}
-                    onChange={(event) => setAmount(event.target.value)}
-                    placeholder="180.00"
-                  />
-                </label>
-                <label className="rb-field">
-                  <span>Date of purchase</span>
-                  <input
-                    type="date"
-                    value={purchasedOn}
-                    onChange={(event) => setPurchasedOn(event.target.value)}
-                  />
-                </label>
-                <label className="rb-field">
-                  <span>Budget category</span>
-                  <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
-                    <option value="">Uncategorized</option>
-                    {ready.categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <label className="rb-field">
-                <span>What was it for?</span>
-                <textarea
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Replacement gearbox for the west drivetrain, bought at the venue"
-                  maxLength={500}
-                />
-              </label>
-              <div className="rb-form-actions">
-                {<label className="rb-receipt-pick">
-                  {receipt ? `Receipt: ${receipt.name} (${formatBytes(receipt.size)})` : "Add PDF receipt"}
-                  <input
-                    ref={receiptInput}
-                    type="file"
-                    accept="application/pdf,.pdf"
-                    onChange={(event) => pickReceipt(event.target.files?.[0] ?? null)}
-                  />
-                </label>}
-                <button
-                  type="button"
-                  className="rb-receipt-pick"
-                  style={{ borderStyle: "solid" }}
-                  disabled={!canFile}
-                  onClick={() => void fileClaim()}
-                >
-                  {busy ? "Saving…" : "Save draft"}
-                </button>
-              </div>
-              <p className="rb-meta">
-                {`Attach a PDF receipt up to ${formatBytes(MAX_RECEIPT_BYTES)} to submit. Without one the claim stays a draft.`}
-              </p>
-            </div>
-          </Panel>
-          )}
-
-          <Panel>
-            <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>
-              {ready.isTreasurer ? "Every claim on the team" : "Your claims"}
-            </h2>
-            {ready.requests.length === 0 ? (
-              <EmptyState
-                soft
-                title="No reimbursements yet"
-                description={
-                  ready.isTreasurer
-                    ? "When someone on the team pays out of pocket and files a claim, it lands here for you to approve."
-                    : "Filed a claim above? It will show here as a draft until you submit it."
-                }
-              />
-            ) : (
-              <ul className="rb-list">
-                {ready.requests.map((request) => (
-                  <ClaimRow
-                    key={request.id}
-                    request={request}
-                    orgId={ready.orgId}
-                    isTreasurer={ready.isTreasurer}
-                    viewerUserId={ready.viewerUserId}
-                    busy={busy}
-                    onAct={act}
-                    onAttach={attachReceipt}
-                  />
-                ))}
-              </ul>
-            )}
-          </Panel>
+          {/* Someone who manages money opens this page to decide claims, so their queue comes
+              first; everyone else came to file one. */}
+          {ready.isTreasurer ? claimsPanel : filePanel}
+          {ready.isTreasurer ? filePanel : claimsPanel}
 
           <Panel>
             <h2 style={{ margin: "0 0 4px", fontSize: 16 }}>Season money at a glance</h2>
@@ -661,14 +692,22 @@ function ClaimRow({
       </div>
       <span className={`rb-chip ${request.status}`}>{REIMBURSEMENT_STATUS_LABELS[request.status]}</span>
       <p className="rb-meta">
-        {REIMBURSEMENT_STATUS_HINTS[request.status]}
-        {isTreasurer && request.memberName ? ` · Filed by ${request.memberName}` : ""}
+        {reimbursementHint(request.status, { isOwnClaim })}
+        {!isOwnClaim && request.memberName ? ` · Filed by ${request.memberName}` : ""}
         {purchased ? ` · Purchased ${purchased}` : ""}
         {request.categoryName ? ` · ${request.categoryName}` : ""}
         {decided && request.approverName ? ` · Decided ${decided} by ${request.approverName}` : ""}
         {paid ? ` · Paid ${paid}` : ""}
       </p>
-      {request.decisionNote ? <p className="rb-meta">Note: {request.decisionNote}</p> : null}
+      {request.decisionNote ? (
+        <p className="rb-meta rb-decision-note">
+          {/* A reopened or resubmitted claim keeps the reason it was denied (the API no longer
+              clears it), so both the filer and the next reviewer see what was wrong. */}
+          {request.status === "denied" || ((request.status === "draft" || request.status === "submitted") && request.decidedAt)
+            ? `Denied${decided ? ` ${decided}` : ""}: ${request.decisionNote}`
+            : `Note: ${request.decisionNote}`}
+        </p>
+      ) : null}
       <p className="rb-meta">
         {request.hasReceipt ? (
           <a

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useOnline } from "../lib/offline/use-online";
 import "./offline-banner.css";
 
@@ -34,6 +35,13 @@ function formatCachedAt(iso: string | null | undefined): string | null {
   });
 }
 
+function formatTime(iso: string | null): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
 /**
  * Soft-UI banner for venue Wi-Fi drops and flaky sync.
  * Hidden while online unless `force` (retry/backoff / degraded).
@@ -50,10 +58,19 @@ export function OfflineBanner({
   variant = "offline",
 }: OfflineBannerProps) {
   const online = useOnline();
+  // When this page last had a connection. A page that loaded fine and then lost signal is not a
+  // cold start, and was given the cold-start advice (visit once online first) while everything
+  // was on screen.
+  const [loadedOnlineAt, setLoadedOnlineAt] = useState<string | null>(null);
+  useEffect(() => {
+    // navigator.onLine too: useOnline starts true for the server render.
+    if (online && navigator.onLine) setLoadedOnlineAt(new Date().toISOString());
+  }, [online]);
   const tone = force && variant !== "offline" ? variant : "offline";
   if (online && !force) return null;
 
   const when = formatCachedAt(cachedAt);
+  const loadedAt = formatTime(loadedOnlineAt);
   let title: string;
   let body: string;
 
@@ -68,10 +85,12 @@ export function OfflineBanner({
       detail ??
       "Venue Wi-Fi is unstable. Entries stay in the on-device outbox; sync retries automatically, or use QR handoff.";
   } else {
-    title = feature ? `${feature} · offline` : "You're offline";
+    title = "You're offline";
     body = fromCache
-      ? `Showing the last copy saved on this device${when ? ` (${when})` : ""}. Edits that need the server stay paused until you reconnect.`
-      : "This page needs a prior online visit to load from cache. Open it once on venue Wi-Fi, then it will work without signal.";
+      ? `Showing the last copy saved on this device${when ? ` (${when})` : ""}. Changes that need the internet wait until you reconnect.`
+      : loadedAt
+        ? `Showing what was loaded at ${loadedAt}. Changes that need the internet wait until you reconnect.`
+        : `${feature ?? "This page"} hasn't been saved on this device yet. Open it once while you have signal, and it will work without it next time.`;
   }
 
   return (

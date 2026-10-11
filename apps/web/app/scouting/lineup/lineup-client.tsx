@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../../components/ui";
+import { askConfirm, EmptyState, PageHeader, Button } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { CopyShareLink } from "../../../components/copy-share-link";
 import type { CoverageGapSlot } from "@vantage/scouting/coverage";
@@ -42,6 +42,14 @@ function statusLabel(status: CoverageGapSlot["status"]): string {
 
 function slotMatchLabel(slot: Pick<CoverageGapSlot, "matchKey">): string {
   return matchLabelFromKey(slot.matchKey);
+}
+
+/** Scouts first, then the leads and mentors who can also take a robot. */
+function scoutGroups<T extends { role: string }>(members: readonly T[]): Array<{ label: string; members: T[] }> {
+  return [
+    { label: "Scouts", members: members.filter((member) => member.role === "scout") },
+    { label: "Leads and mentors", members: members.filter((member) => member.role !== "scout") },
+  ];
 }
 
 function LineupRelatedStrip({ orgId }: { orgId?: string | null }) {
@@ -434,6 +442,24 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
                                 </select>
                               </label>
                             ) : null}
+                            {view.canAssign ? (
+                              <button
+                                type="button"
+                                className="text-button lineup-unassign"
+                                disabled={controlsDisabled}
+                                onClick={async () => {
+                                  const ok = await askConfirm({
+                                    title: `Take ${scout.name} off ${teamLabel(slot)} in ${slotMatchLabel(slot)}?`,
+                                    body: "The robot leaves their list and shows as needing a scout. Any report they already filed for it stays.",
+                                    confirmLabel: "Take off robot",
+                                    tone: "destructive",
+                                  });
+                                  if (ok) void mutate({ action: "unassign", matchKey: slot.matchKey, teamKey: slot.teamKey, userId: scout.userId });
+                                }}
+                              >
+                                Take off robot
+                              </button>
+                            ) : null}
                           </li>
                         ))}
                       </ul>
@@ -441,7 +467,12 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
                       <label className="lineup-assign">Assign a scout
                         <select value="" disabled={controlsDisabled} onChange={event => { if (event.target.value) void mutate({ action: "assign", matchKey: slot.matchKey, teamKey: slot.teamKey, userId: event.target.value }); }}>
                           <option value="">Choose a scout…</option>
-                          {view.scouts.map(scout => <option key={scout.userId} value={scout.userId}>{scout.name}{scout.isMe ? " (me)" : ""} · {scout.assignedCount}</option>)}
+                          {/* Scouts first; owners, admins and leads can scout too but are listed apart. */}
+                          {scoutGroups(view.scouts).map(group => group.members.length ? (
+                            <optgroup key={group.label} label={group.label}>
+                              {group.members.map(scout => <option key={scout.userId} value={scout.userId}>{scout.name}{scout.isMe ? " (me)" : ""} · {scout.assignedCount} assigned</option>)}
+                            </optgroup>
+                          ) : null)}
                         </select>
                       </label>
                     ) : <p className="app-muted">No scout assigned</p>}

@@ -22,6 +22,15 @@ export type HourLog = {
   clockOut: string | null;
   note: string;
   closedByName: string | null;
+  /**
+   * How the entry was made (0723): "manual" was typed in after the fact, "clock" was clocked.
+   * Absent before 0723 is applied, and on entries from before it, which read as clocked.
+   */
+  entrySource?: "clock" | "manual" | null;
+  /** A mentor's correction of the times, with why (0723). */
+  correctionNote?: string | null;
+  correctedByName?: string | null;
+  correctedAt?: string | null;
 };
 
 export type HourPolicy = {
@@ -165,6 +174,17 @@ function timestamp(value: unknown, label: string) {
   return parsed.toISOString();
 }
 
+/** A real IANA zone name, or undefined (the server then writes times in UTC). */
+function timeZoneValue(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value || value.length > 64) return undefined;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return value;
+  } catch {
+    return undefined;
+  }
+}
+
 function kindValue(value: unknown): HourKind {
   if (value == null || value === "") return "build";
   const text = String(value).trim();
@@ -173,16 +193,67 @@ function kindValue(value: unknown): HourKind {
 }
 
 const MAX_SESSION_HOURS = 24;
+/** Shorter than this is a slip of the finger, not a session (QA logged a 30-second one). */
+export const MIN_SESSION_MINUTES = 5;
+/** Clocks on a phone and a server disagree by a little; a few minutes ahead is still "now". */
+const FUTURE_SLACK_MS = 5 * 60_000;
 
-/** Validate a manual in/out pair: out after in, and no marathon > 24h. */
-export function validateManualRange(clockIn: string, clockOut: string) {
+/**
+ * Validate a typed-in session: it has ended (nobody adds hours they have not worked yet), runs
+ * at least MIN_SESSION_MINUTES and at most a day, and ends after it starts. Each refusal says
+ * what to change.
+ */
+export function validateManualRange(clockIn: string, clockOut: string, now: number = Date.now()) {
   const start = new Date(clockIn).getTime();
   const end = new Date(clockOut).getTime();
-  if (end <= start) throw new Error("Clock-out must be after clock-in");
+  if (end <= start) throw new Error("The end time must be after the start time.");
+  if (start > now + FUTURE_SLACK_MS || end > now + FUTURE_SLACK_MS) {
+    throw new Error("Those hours haven't happened yet. Add hours after the session, or clock in now.");
+  }
+  if (end - start < MIN_SESSION_MINUTES * 60_000) {
+    throw new Error(`A session needs to be at least ${MIN_SESSION_MINUTES} minutes long.`);
+  }
   if (end - start > MAX_SESSION_HOURS * 3_600_000) {
-    throw new Error(`A single session cannot exceed ${MAX_SESSION_HOURS} hours`);
+    throw new Error(`A single session can't be longer than ${MAX_SESSION_HOURS} hours. Split it into separate days.`);
   }
 }
+
+/** A record that overlaps [clockIn, clockOut) for the same member; open sessions run until now. */
+export function overlappingRecord<T extends Pick<HourLog, "id" | "clockIn" | "clockOut">>(
+  records: readonly T[],
+  range: { clockIn: string; clockOut: string; excludeId?: string | null },
+  now: number = Date.now(),
+): T | null {
+  const start = new Date(range.clockIn).getTime();
+  const end = new Date(range.clockOut).getTime();
+  for (const record of records) {
+    if (record.id === range.excludeId) continue;
+    const otherStart = new Date(record.clockIn).getTime();
+    const otherEnd = record.clockOut ? new Date(record.clockOut).getTime() : now;
+    if (otherStart < end && otherEnd > start) return record;
+  }
+  return null;
+}
+
+/** "Oct 10, 10:00 AM – 2:00 PM": the session a refusal or a correction note is about. */
+export function describeSessionRange(clockIn: string, clockOut: string | null, timeZone?: string): string {
+  const start = new Date(clockIn);
+  const day: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric", timeZone };
+  const time: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit", timeZone };
+  const startText = `${start.toLocaleDateString("en-US", day)}, ${start.toLocaleTimeString("en-US", time)}`;
+  if (!clockOut) return `${startText} – still clocked in`;
+  const end = new Date(clockOut);
+  const sameDay = start.toLocaleDateString("en-US", day) === end.toLocaleDateString("en-US", day);
+  return `${startText} – ${sameDay ? "" : `${end.toLocaleDateString("en-US", day)}, `}${end.toLocaleTimeString("en-US", time)}`;
+}
+
+/** The sentence for a typed-in session that lands on top of another one. */
+export function overlapMessage(other: Pick<HourLog, "clockIn" | "clockOut">, timeZone?: string): string {
+  return `Those hours overlap an entry already logged (${describeSessionRange(other.clockIn, other.clockOut, timeZone)}). Change the times, or ask a mentor to correct the other entry.`;
+}
+
+/** A mentor's correction always says why; shorter notes are refused. */
+export const MIN_CORRECTION_NOTE_LENGTH = 3;
 
 export type BuildHoursAction =
   | { action: "clock_in"; orgId: string; kind: HourKind; note: string; userId: string | null }
@@ -195,6 +266,18 @@ export type BuildHoursAction =
       clockIn: string;
       clockOut: string;
       note: string;
+      /** The sender's IANA time zone, so a refusal names times the way they typed them. */
+      timeZone: string | undefined;
+    }
+  | {
+      /** An owner/admin fixes a session's times (a forgotten clock-out), with a note saying why. */
+      action: "correct_record";
+      orgId: string;
+      id: string;
+      clockIn: string;
+      clockOut: string;
+      note: string;
+      timeZone: string | undefined;
     }
   | { action: "delete_record"; orgId: string; id: string }
   | { action: "close_all_open"; orgId: string }
@@ -237,7 +320,19 @@ export function parseBuildHoursAction(input: unknown): BuildHoursAction {
         clockIn,
         clockOut,
         note: optionalText(body.note, 300) ?? "",
+        timeZone: timeZoneValue(body.timeZone),
       };
+    }
+
+    case "correct_record": {
+      const clockIn = timestamp(body.clockIn, "Start time");
+      const clockOut = timestamp(body.clockOut, "End time");
+      validateManualRange(clockIn, clockOut);
+      const note = optionalText(body.note, 300) ?? "";
+      if (note.length < MIN_CORRECTION_NOTE_LENGTH) {
+        throw new Error("Say why you are changing these times, like \"Forgot to clock out at 6 PM\".");
+      }
+      return { action, orgId, id: uuid(body.id, "Record"), clockIn, clockOut, note, timeZone: timeZoneValue(body.timeZone) };
     }
 
     case "delete_record":

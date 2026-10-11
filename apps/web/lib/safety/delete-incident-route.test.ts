@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CERTIFICATION_LEADS_ONLY } from "./authorization";
 
 /**
  * Contract for POST /api/safety after incident reporting was removed. The parser runs for
@@ -114,5 +115,47 @@ describe("POST /api/safety refuses the removed incident actions", () => {
     expect(state.withRlsContext).toEqual({ userId: USER, orgId: ORG });
     expect(state.queries.some((q) => q.sql.includes("INSERT INTO safety_certifications"))).toBe(true);
     expect(response.status).not.toBe(410);
+  });
+});
+
+/** A certification is a lead's attestation (A5-15, migration 0723), never a student's own entry. */
+describe("POST /api/safety: only an owner or admin records or removes a certification", () => {
+  for (const role of ["scout", "viewer"]) {
+    it(`refuses a ${role} recording one, for themselves or anyone, before any write`, async () => {
+      state.session = { user: { id: USER } };
+      state.role = role;
+      const response = await post({
+        action: "add_certification",
+        orgId: ORG,
+        personName: "QA5 Self Certified",
+        certType: "bandsaw",
+        completedOn: "2026-10-01",
+      });
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ error: CERTIFICATION_LEADS_ONLY });
+      expect(state.queries.some((q) => /INSERT|DELETE/.test(q.sql))).toBe(false);
+    });
+  }
+
+  it("refuses a scout deleting one", async () => {
+    state.session = { user: { id: USER } };
+    state.role = "scout";
+    const response = await post({ action: "delete_certification", orgId: ORG, id: INCIDENT });
+    expect(response.status).toBe(403);
+    expect(state.queries.some((q) => q.sql.includes("DELETE FROM safety_certifications"))).toBe(false);
+  });
+
+  it("lets an admin record one", async () => {
+    state.session = { user: { id: USER } };
+    state.role = "admin";
+    const response = await post({
+      action: "add_certification",
+      orgId: ORG,
+      personName: "Riley",
+      certType: "bandsaw",
+      completedOn: "2026-10-01",
+    });
+    expect(response.status).toBe(200);
+    expect(state.queries.some((q) => q.sql.includes("INSERT INTO safety_certifications"))).toBe(true);
   });
 });

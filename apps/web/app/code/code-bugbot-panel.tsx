@@ -141,6 +141,8 @@ export function CodeBugbotPanel({
                 ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} scan · ${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} fix · $
                 {BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} recheck
               </span>
+              {/* Say who pays (A5-26): a student saw prices with no word on whose money it is. */}
+              <span>Charged to your team&apos;s Vantage credits, within the limits your team set.</span>
             </button>
           </div>
 
@@ -210,7 +212,11 @@ export function CodeBugbotPanel({
               badge="GitHub"
               badgeTone="setup"
               title="Connect a GitHub repo to scan"
-              description="Owners and admins link a PAT or OAuth app under Team admin. You can still paste a file below without GitHub."
+              description={
+                canConnect
+                  ? "Connect the team's GitHub to scan files from the robot code. You can still paste a file below without it."
+                  : "Ask your team's owner or an admin to connect GitHub. Until then, paste a file below to scan it."
+              }
             >
               {canConnect ? (
                 <Button as="a" variant="secondary" href={githubHref}>
@@ -365,9 +371,10 @@ export function CodeBugbotPanel({
           ) : null}
 
           <footer className="cdc-bugbot-actions">
+            {/* Secondary: the page's one filled button is Run risk review, above (A6-13). */}
             <button
               type="button"
-              className="primary-action"
+              className="app-button secondary"
               disabled={busy || !orgId || !hasSource}
               onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: false })}
             >

@@ -1,12 +1,13 @@
 // Server half of lead-summary.ts. Request path only: the PoolClient comes from the caller's
 // withRls, every query is org-scoped and parameterized, and they run in parallel. "Played"
-// means both scores are posted, the rule the schedule and missed-assignment list use.
+// is scouting's one rule (play-state.ts), the same the Assignments board and Quick scout use.
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { canManageScouting } from "@vantage/scouting/permissions";
 import { allianceScore, allianceTeamKeys, type TbaAllianceJson } from "../schedule/tba-cache";
 import type { AccountabilityAssignment } from "./assignment-accountability";
 import { summarizeScouting, type LeadSummary, type SummaryEntry, type SummaryMember, type SummaryRosterTeam } from "./lead-summary";
+import { playedMatchKeys } from "./play-state";
 
 export type LeadSummaryView =
   | { status: "no_event"; canLead: boolean }
@@ -41,22 +42,36 @@ export async function loadLeadSummary(
   const params = [input.orgId, eventKey];
 
   const [roster, matches, matchEntries, pitEntries, assignments, members, disagreements] = await Promise.all([
+    // The event's teams come from the event (its schedule and its team list). A pit report
+    // for a typed team number no longer adds that team to the event: summarizeScouting lists
+    // it apart, under otherVisited.
     client.query<SummaryRosterTeam>(
       `WITH roster AS (
-         SELECT jsonb_array_elements_text(m.red_alliance->'teamKeys') AS team_key FROM matches_ref m WHERE m.event_key = $2::text
-         UNION SELECT jsonb_array_elements_text(m.blue_alliance->'teamKeys') FROM matches_ref m WHERE m.event_key = $2::text
-         UNION SELECT tm.team_key FROM team_event_metrics tm WHERE tm.event_key = $2::text
-         UNION SELECT p.team_key FROM pit_scout_entries p WHERE p.org_id = $1::uuid AND p.event_key = $2::text
+         SELECT jsonb_array_elements_text(m.red_alliance->'teamKeys') AS team_key FROM matches_ref m WHERE m.event_key = $1::text
+         UNION SELECT jsonb_array_elements_text(m.blue_alliance->'teamKeys') FROM matches_ref m WHERE m.event_key = $1::text
+         UNION SELECT tm.team_key FROM team_event_metrics tm WHERE tm.event_key = $1::text
        )
        SELECT r.team_key AS "teamKey",
               COALESCE(t.team_number, NULLIF(regexp_replace(r.team_key, '\\D', '', 'g'), '')::int) AS "teamNumber",
               t.nickname
          FROM roster r LEFT JOIN teams_ref t ON t.team_key = r.team_key
         WHERE r.team_key ~ '^frc[0-9]+$'`,
-      params,
+      [eventKey],
     ),
-    client.query<{ matchKey: string; redAlliance: TbaAllianceJson; blueAlliance: TbaAllianceJson }>(
-      `SELECT m.match_key AS "matchKey", m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
+    client.query<{
+      matchKey: string;
+      compLevel: string | null;
+      matchNumber: number;
+      redAlliance: TbaAllianceJson;
+      blueAlliance: TbaAllianceJson;
+      winningAlliance: string | null;
+      postResultTime: string | null;
+      actualTime: string | null;
+    }>(
+      `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
+              m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
+              NULLIF(m.winning_alliance, '') AS "winningAlliance",
+              m.post_result_time::text AS "postResultTime", m.actual_time::text AS "actualTime"
          FROM matches_ref m WHERE m.event_key = $1::text`,
       [eventKey],
     ),
@@ -97,13 +112,21 @@ export async function loadLeadSummary(
       : Promise.resolve(null),
   ]);
 
+  const played = playedMatchKeys(
+    matches.rows.map((match) => ({
+      ...match,
+      matchNumber: Number(match.matchNumber),
+      redScore: allianceScore(match.redAlliance),
+      blueScore: allianceScore(match.blueAlliance),
+    })),
+  );
   const summary = summarizeScouting({
     roster: roster.rows,
     ownTeamNumber: context.rows[0]?.teamNumber ?? null,
     matches: matches.rows.map((match) => ({
       matchKey: match.matchKey,
       teamKeys: [...allianceTeamKeys(match.redAlliance), ...allianceTeamKeys(match.blueAlliance)],
-      played: allianceScore(match.redAlliance) != null && allianceScore(match.blueAlliance) != null,
+      played: played.has(match.matchKey),
     })),
     entries: [...matchEntries.rows, ...pitEntries.rows],
     assignments: assignments.rows,

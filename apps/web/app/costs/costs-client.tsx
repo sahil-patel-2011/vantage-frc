@@ -242,7 +242,7 @@ export default function CostsClient() {
             setError(
               data && typeof data === "object" && "error" in data && typeof data.error === "string"
                 ? data.error
-                : "Something went wrong.",
+                : "That didn't go through. Check your connection and try again.",
             );
             return;
           }
@@ -547,7 +547,7 @@ function BudgetPanel({ view, busy, mutate }: { view: LiveView; busy: boolean; mu
       tone: "",
     },
     {
-      label: "Committed (real-world)",
+      label: "Paid and planned",
       value: usd(summary.totalCommitted),
       tone: "",
     },

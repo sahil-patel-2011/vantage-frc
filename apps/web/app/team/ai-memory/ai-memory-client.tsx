@@ -1,5 +1,5 @@
 "use client";
-import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { Button, EmptyState, PageHeader, PageMain } from "../../../components/ui";
 import { PersonalMemories } from "./personal-memories";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -317,7 +317,7 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
   const budgetsHref = hubHref("/ai", "budgets", orgId);
 
   return (
-    <main className="intel-app ai-memory-page">
+    <PageMain className="intel-app ai-memory-page">
       <PageHeader
         breadcrumbs="Ask AI / Memory"
         title="What the assistant remembers"
@@ -562,6 +562,6 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
           </form>
         </>
       ) : null}
-    </main>
+    </PageMain>
   );
 }

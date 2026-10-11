@@ -1,11 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   MAX_RECEIPT_BYTES,
+  OWN_CLAIM_DECISION,
   REIMBURSEMENT_LIST_SQL,
   REIMBURSEMENT_STATUSES,
   auditPayload,
   availableActions,
   currentSeasonYear,
+  denialNoteProblem,
+  reimbursementHint,
   evaluateReceiptUpload,
   evaluateTransition,
   formatBytes,
@@ -147,12 +150,71 @@ describe("evaluateTransition", () => {
     expect(availableActions({ status: "paid", actor: "member", isOwnClaim: true, hasReceipt: true })).toEqual([]);
   });
 
-  it("orders the treasurer's queue actions decision-first", () => {
+  it("orders the treasurer's queue actions decision-first, and never offers the filer's Withdraw", () => {
     expect(availableActions({ status: "submitted", actor: "admin", isOwnClaim: false, hasReceipt: true })).toEqual([
       "approve",
       "deny",
+    ]);
+  });
+
+  it("never lets a finance manager decide or pay a claim they filed (A5-14)", () => {
+    for (const [action, from] of [
+      ["approve", "submitted"],
+      ["deny", "submitted"],
+      ["mark_paid", "approved"],
+      ["unmark_paid", "paid"],
+    ] as const) {
+      const verdict = evaluateTransition({ action, from, actor: "admin", isOwnClaim: true, hasReceipt: true });
+      expect(verdict).toEqual({ ok: false, reason: OWN_CLAIM_DECISION });
+    }
+    // Their own claim still moves the way any filer's does.
+    expect(availableActions({ status: "submitted", actor: "admin", isOwnClaim: true, hasReceipt: true })).toEqual([
       "withdraw",
     ]);
+    expect(availableActions({ status: "draft", actor: "admin", isOwnClaim: true, hasReceipt: true })).toEqual(["submit"]);
+  });
+
+  it("leaves submit, withdraw and reopen to the person who filed the claim", () => {
+    for (const [action, from] of [
+      ["submit", "draft"],
+      ["withdraw", "submitted"],
+      ["reopen", "denied"],
+    ] as const) {
+      const verdict = evaluateTransition({ action, from, actor: "admin", isOwnClaim: false, hasReceipt: true });
+      expect(verdict.ok).toBe(false);
+      expect(verdict.ok === false && verdict.reason).toBe("Only the person who filed this claim can do that.");
+    }
+  });
+
+  it("explains a wrong-state move in a whole sentence, not a broken template", () => {
+    const verdict = evaluateTransition({ ...base, action: "approve", from: "approved" });
+    expect(verdict).toEqual({ ok: false, reason: "This claim is approved but not paid yet, so it can't be approved." });
+  });
+
+  it("says PDF when the receipt is missing, like every other receipt sentence", () => {
+    const verdict = evaluateTransition({ action: "submit", from: "draft", actor: "member", isOwnClaim: true, hasReceipt: false });
+    expect(verdict.ok === false && verdict.reason).toBe("Attach the receipt as a PDF before submitting.");
+    expect(verdict.ok === false && verdict.reason).not.toMatch(/photo/i);
+  });
+});
+
+describe("denialNoteProblem", () => {
+  it("refuses a denial with no reason the filer can act on", () => {
+    expect(denialNoteProblem(null)).toMatch(/say why/i);
+    expect(denialNoteProblem("   ")).toMatch(/say why/i);
+    expect(denialNoteProblem("no")).toMatch(/say why/i);
+  });
+
+  it("accepts a real reason", () => {
+    expect(denialNoteProblem("The receipt is cut off.")).toBeNull();
+  });
+});
+
+describe("reimbursementHint", () => {
+  it("tells the filer who can see a draft, and a reviewer what it waits on", () => {
+    expect(reimbursementHint("draft", { isOwnClaim: true })).toMatch(/only you and the people who manage money/i);
+    expect(reimbursementHint("draft", { isOwnClaim: false })).not.toMatch(/only you/i);
+    expect(reimbursementHint("submitted", { isOwnClaim: false })).toBe("Waiting for a decision.");
   });
 });
 
@@ -193,12 +255,28 @@ describe("evaluateReceiptUpload", () => {
 });
 
 describe("normalizeClaimDraft", () => {
-  it("rounds to whole cents and keeps the trimmed description", () => {
-    const result = normalizeClaimDraft({ amountUsd: "180.005", description: "  Gearbox  ", seasonYear: 2026 });
+  it("keeps dollars and cents exactly and the trimmed description", () => {
+    const result = normalizeClaimDraft({ amountUsd: "180.05", description: "  Gearbox  ", seasonYear: 2026 });
     expect(result).toEqual({
       ok: true,
-      value: { amountUsd: 180.01, description: "Gearbox", categoryId: null, purchasedOn: null, seasonYear: 2026 },
+      value: { amountUsd: 180.05, description: "Gearbox", categoryId: null, purchasedOn: null, seasonYear: 2026 },
     });
+  });
+
+  it("refuses a third decimal instead of silently rounding it", () => {
+    const verdict = normalizeClaimDraft({ amountUsd: "12.345", description: "x" });
+    expect(verdict).toEqual({ ok: false, reason: "Use dollars and cents, like 12.34." });
+    expect(normalizeClaimDraft({ amountUsd: "12.34", description: "x" }).ok).toBe(true);
+  });
+
+  it("refuses a purchase date in the future", () => {
+    const now = new Date("2026-10-11T18:00:00Z");
+    expect(normalizeClaimDraft({ amountUsd: 10, description: "x", purchasedOn: "2030-01-01", now })).toEqual({
+      ok: false,
+      reason: "The purchase date can't be in the future.",
+    });
+    // Tomorrow in UTC is still today somewhere on the team's side of the world.
+    expect(normalizeClaimDraft({ amountUsd: 10, description: "x", purchasedOn: "2026-10-12", now }).ok).toBe(true);
   });
 
   it("refuses zero, negative, and non-numeric amounts", () => {

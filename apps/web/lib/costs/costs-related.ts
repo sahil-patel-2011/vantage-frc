@@ -1,5 +1,6 @@
 import type { BusinessRelatedId } from "../business/business-related";
 import { COSTS_RELATED_INCLUDE } from "../business/business-related";
+import { formatUsd } from "../finance/format-usd";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
@@ -46,11 +47,8 @@ export function costsRelatedLinks(
 /** All-in / budget dollars — blank until there is real logged spend or a set budget. */
 export function formatCostUsdDisplay(amount: number | null | undefined, hasEvidence: boolean): string {
   if (!hasEvidence || amount == null) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  // Cents when there are cents: "All-in $2,135" sat beside "Committed $2,134.75" (A5-07).
+  return formatUsd(amount);
 }
 
 /** Budget % used — blank until a season budget exists (never a DEMO 0%). */

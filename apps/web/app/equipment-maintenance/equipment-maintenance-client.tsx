@@ -299,7 +299,7 @@ export default function EquipmentMaintenanceClient() {
         });
         const data = (await response.json()) as EquipmentMaintenanceView | { error?: string };
         if (!response.ok || !isEquipmentMaintenanceView(data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

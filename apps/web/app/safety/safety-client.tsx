@@ -15,7 +15,13 @@ import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-li
 type Cert = { id: string; personName: string; certType: CertType; completedOn: string; expiresOn: string | null; notes: string; byName: string | null; expiry: CertExpiry };
 type View =
   | { status: "setup_required"; message: string }
-  | { status: "ready"; context: { orgId: string; role: string }; certifications: Cert[]; summary: { expiringCerts: number; expiredCerts: number } };
+  | {
+      status: "ready";
+      /** canRecord: an owner or admin (0723). Absent in a snapshot cached before it existed. */
+      context: { orgId: string; role: string; canRecord?: boolean };
+      certifications: Cert[];
+      summary: { expiringCerts: number; expiredCerts: number };
+    };
 
 const EXPIRY_LABEL: Record<CertExpiry, string> = { valid: "valid", expiring: "expiring soon", expired: "EXPIRED", no_expiry: "no expiry" };
 
@@ -41,8 +47,10 @@ async function persistSafetySnapshot(orgHint: string, data: View): Promise<void>
   }
 }
 
+/** Today on this device's calendar, not in UTC (an evening entry was dated tomorrow). */
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 function SafetyRelated({ orgId }: { orgId?: string | null }) {
@@ -251,6 +259,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
   }
 
   const certCount = view.certifications.length;
+  const canRecord = view.context.canRecord ?? (view.context.role === "owner" || view.context.role === "admin");
 
   return (
     <main className="module-page safety-page">
@@ -265,26 +274,45 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
       </section>
 
       <section className="admin-grid safety-grid">
-        <form className="intel-panel" onSubmit={addCert}>
-          <h2 className="safety-card-title">Record a certification</h2>
-          <label>Person<input required value={certForm.personName} onChange={(e) => setCertForm({ ...certForm, personName: e.target.value })} /></label>
-          <label>Tool / certification<select value={certForm.certType} onChange={(e) => setCertForm({ ...certForm, certType: e.target.value })}>{CERT_TYPES.map((t) => <option key={t} value={t}>{CERT_TYPE_LABEL[t]}</option>)}</select></label>
-          <div className="budget-fields">
-            <label>Completed<input type="date" value={certForm.completedOn} onChange={(e) => setCertForm({ ...certForm, completedOn: e.target.value })} /></label>
-            <label>Expires (optional)<input type="date" value={certForm.expiresOn} onChange={(e) => setCertForm({ ...certForm, expiresOn: e.target.value })} /></label>
-          </div>
-          <label>Notes<input value={certForm.notes} onChange={(e) => setCertForm({ ...certForm, notes: e.target.value })} /></label>
-          <Button variant="primary" type="submit">Record certification</Button>
-        </form>
+        {canRecord ? (
+          <form className="intel-panel" onSubmit={addCert}>
+            <h2 className="safety-card-title">Record a certification</h2>
+            <p className="safety-card-hint">Record someone after you have watched them use the tool safely. Your name is saved with the row.</p>
+            <label>Person<input required value={certForm.personName} onChange={(e) => setCertForm({ ...certForm, personName: e.target.value })} /></label>
+            <label>Tool / certification<select value={certForm.certType} onChange={(e) => setCertForm({ ...certForm, certType: e.target.value })}>{CERT_TYPES.map((t) => <option key={t} value={t}>{CERT_TYPE_LABEL[t]}</option>)}</select></label>
+            <div className="budget-fields">
+              <label>Completed<input type="date" max={todayIso()} value={certForm.completedOn} onChange={(e) => setCertForm({ ...certForm, completedOn: e.target.value })} /></label>
+              <label>Expires (optional)<input type="date" value={certForm.expiresOn} onChange={(e) => setCertForm({ ...certForm, expiresOn: e.target.value })} /></label>
+            </div>
+            <label>Notes<input value={certForm.notes} onChange={(e) => setCertForm({ ...certForm, notes: e.target.value })} /></label>
+            <Button variant="primary" type="submit">Record certification</Button>
+          </form>
+        ) : (
+          <section className="intel-panel">
+            <h2 className="safety-card-title">Getting cleared on a tool</h2>
+            <p className="safety-card-hint">
+              An owner or admin watches you use the tool safely, then records it here. Ask one when you are ready to be checked.
+            </p>
+          </section>
+        )}
 
         <section className="intel-panel invite-list">
           <h2 className="safety-card-title">Who is cleared</h2>
-          {certCount === 0 && <p>No certifications recorded yet. Record each person once they are trained on a tool.</p>}
+          {certCount === 0 && (
+            <p>
+              {canRecord
+                ? "No certifications recorded yet. Record each person once you have checked them on a tool."
+                : "No certifications recorded yet. An owner or admin records each person once they are checked on a tool."}
+            </p>
+          )}
         {view.certifications.map((c) => (
           <article key={c.id}>
             <div>
               <strong>{c.personName} · {CERT_TYPE_LABEL[c.certType]}</strong>
-              <small>completed {new Date(c.completedOn).toLocaleDateString()}{c.expiresOn ? ` · expires ${new Date(c.expiresOn).toLocaleDateString()}` : ""} · {EXPIRY_LABEL[c.expiry]}{c.byName ? ` · by ${c.byName}` : ""}</small>
+              <small>
+                {c.byName ? `Recorded by ${c.byName} · ` : ""}completed {new Date(`${c.completedOn}T12:00:00`).toLocaleDateString()}
+                {c.expiresOn ? ` · expires ${new Date(`${c.expiresOn}T12:00:00`).toLocaleDateString()}` : ""} · {EXPIRY_LABEL[c.expiry]}
+              </small>
             </div>
             {(c.expiry === "expired" || c.expiry === "expiring") && <b>{c.expiry === "expired" ? "EXPIRED" : "RENEW"}</b>}
           </article>

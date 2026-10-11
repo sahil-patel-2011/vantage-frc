@@ -1,3 +1,4 @@
+import { OfflineBanner } from "../../../components/offline-banner";
 import { Button, EmptyState } from "../../../components/ui";
 import { QuickPitClient } from "./quick-pit-client";
 import "../../scouting/scouting.css";
@@ -20,5 +21,11 @@ export default async function QuickPitPage({ searchParams }: { searchParams: Pro
       </main>
     );
   }
-  return <QuickPitClient key={orgId} orgId={orgId} />;
+  // The page's one <main> landmark: the client draws several shells (loading, picker, form).
+  return (
+    <main className="qs-page">
+      <OfflineBanner feature="Pit scouting" detail="Pit reports you save stay on this device and send when you are back online." />
+      <QuickPitClient key={orgId} orgId={orgId} />
+    </main>
+  );
 }

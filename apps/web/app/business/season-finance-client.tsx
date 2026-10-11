@@ -411,12 +411,7 @@ function LiveDesk({
             tone={rollup.plannedSpendCents - rollup.committedSpendCents < 0 ? "danger" : "blue"}
           />
         ) : (
-          <Kpi
-            label="Money on hand"
-            value={money(rollup.cashPositionCents)}
-            detail="Received minus spent. Set a season budget to track what is left."
-            tone={rollup.cashPositionCents < 0 ? "danger" : "blue"}
-          />
+          <CashKpi rollup={rollup} />
         )}
       </section>
       <details className="season-finance-more">
@@ -429,7 +424,7 @@ function LiveDesk({
             detail={rollup.plannedSpendCents > 0 ? "Season budget minus money received" : "Set a season budget to see this"}
             tone={rollup.remainingToRaiseCents > 0 ? "warn" : "neutral"}
           />
-          <Kpi label="Money on hand" value={money(rollup.cashPositionCents)} detail="Received minus spent" tone={rollup.cashPositionCents < 0 ? "danger" : "blue"} />
+          <CashKpi rollup={rollup} />
         </section>
       </details>
 
@@ -673,7 +668,8 @@ function LiveDesk({
           </Button>
         </form>
         </details>
-        ) : (
+        ) : view.role === "viewer" ? null : (
+          // View only can't ask for purchases (0715), so it isn't offered the link.
           <p className="app-muted">
             Need something bought? <a href={hubHref("/business", "orders", view.orgId)}>Submit a purchase request</a>. A
             finance manager approves it and records the spend.
@@ -789,10 +785,14 @@ function BalancePanel({ orgId, refreshKey }: { orgId: string; refreshKey: LiveVi
   useEffect(() => {
     let cancelled = false;
     setFailed(false);
-    setBalance(null);
+    // The last balance stays up while a refresh runs; "Computing balance…" is for the first
+    // load only. A request with no time limit could leave that line under finished tiles forever.
     (async () => {
       try {
-        const response = await fetch(`/api/finance/balance?${new URLSearchParams({ orgId }).toString()}`);
+        const response = await fetch(`/api/finance/balance?${new URLSearchParams({ orgId }).toString()}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        });
         const data = (await response.json()) as FinanceBalanceView | { error?: string };
         if (cancelled) return;
         if (!response.ok || !("status" in data)) {
@@ -829,7 +829,7 @@ function BalancePanel({ orgId, refreshKey }: { orgId: string; refreshKey: LiveVi
         </div>
       </header>
 
-      {failed ? (
+      {failed && !balance ? (
         <p className="app-muted">Balance could not load right now. The season figures below are unaffected.</p>
       ) : null}
       {!failed && !balance ? <p className="app-muted">Computing balance…</p> : null}
@@ -935,6 +935,31 @@ function BalancePanel({ orgId, refreshKey }: { orgId: string; refreshKey: LiveVi
         </>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * "Recorded in minus recorded out". A new team logs costs before income, and the headline read
+ * "Money on hand −$1,241.76" in amber as if the team were overdrawn (A5-24). Until any money in is
+ * recorded it says so instead of showing a negative balance.
+ */
+function CashKpi({ rollup }: { rollup: LiveView["rollup"] }) {
+  if (rollup.receivedIncomeCents <= 0) {
+    return (
+      <Kpi
+        label="Recorded in minus out"
+        value="—"
+        detail="Shows once money received is recorded. Spending is counted under Committed."
+      />
+    );
+  }
+  return (
+    <Kpi
+      label="Recorded in minus out"
+      value={money(rollup.cashPositionCents)}
+      detail={rollup.cashPositionCents < 0 ? "More recorded out than in so far" : "Money received minus money spent"}
+      tone={rollup.cashPositionCents < 0 ? "warn" : "blue"}
+    />
   );
 }
 

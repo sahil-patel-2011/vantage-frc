@@ -201,6 +201,8 @@ describe("combineAllCosts", () => {
 describe("helpers", () => {
   it("labels categories and formats usd", () => {
     expect(costCategoryLabel("event_fee")).toBe("Event fees");
-    expect(usd(1234.5)).toBe("$1,234.5");
+    // A5-07: never "$1,234.5" — cents whenever there are cents.
+    expect(usd(1234.5)).toBe("$1,234.50");
+    expect(usd(2134.75)).toBe("$2,134.75");
   });
 });

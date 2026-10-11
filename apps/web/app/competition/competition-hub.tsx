@@ -31,9 +31,9 @@ const ChemistryClient = dynamic(() => import("../chemistry/chemistry-client"), {
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
 const EMBEDDED_TABS = ["command", "my-day", "teams", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms", "picks"] as const;
 
-export default function CompetitionHub() {
+export default function CompetitionHub({ initialTab }: { initialTab?: string | null }) {
   return (
-    <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS}>
+    <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab}>
       {({ tab, orgId }) => {
         if (tab === "teams") {
           return <HubOrgGate orgId={orgId} label="Teams">{id => <CompetitionTeams orgId={id} />}</HubOrgGate>;

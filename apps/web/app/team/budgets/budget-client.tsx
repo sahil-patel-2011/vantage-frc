@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader, Button, EmptyState } from "../../../components/ui";
+import { PageHeader, PageMain, Button, EmptyState } from "../../../components/ui";
 import {
   aiBudgetsNextActions,
   aiBudgetsShellCopy,
@@ -179,7 +179,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     void save({ scope: "org", ...policy, warningThresholds: policy.warningThresholds.split(",").map(Number) });
 
   return (
-    <main className="module-page budget-page ai-budgets-page">
+    <PageMain className="module-page budget-page ai-budgets-page">
       <PageHeader
         breadcrumbs="AI / Limits"
         title="AI limits"
@@ -434,6 +434,6 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
           ) : null}
         </>
       ) : null}
-    </main>
+    </PageMain>
   );
 }

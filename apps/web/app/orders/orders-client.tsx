@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../components/ui";
+import { Button, PageMain } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
@@ -19,6 +19,7 @@ import {
 } from "../../lib/orders";
 import { SubmitForm } from "./orders-submit-form";
 import { formatInviteRole } from "../../lib/invite/invite-flow";
+import { formatUsd } from "../../lib/finance/format-usd";
 import "./orders.css";
 
 
@@ -55,13 +56,7 @@ export type OrdersClientProps = {
   orgId?: string | null;
 };
 
-function usd(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(value);
-}
+const usd = formatUsd;
 
 function formatWhen(iso: string): string {
   // A date alone, an ISO time, or Postgres's text form ("2026-09-24 22:00:07.39-04"), which the
@@ -208,7 +203,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
         .then(async (response) => {
           const data = (await response.json()) as OrdersView & { error?: string };
           if (!response.ok || !isOrdersView(data)) {
-            setError("error" in data && data.error ? data.error : "Something went wrong.");
+            setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
             return;
           }
           setView(data);
@@ -385,14 +380,14 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
   }
 
   return (
-    <main className="module-page orders-page">
+    <PageMain className="module-page orders-page">
       <PageHeader
         navPath="/orders"
         title="Buy sheet"
         description="What we bought, why, when, and what it cost. Mentors approve, then pay on the vendor site. Vantage never stores card details."
       />
       {body}
-    </main>
+    </PageMain>
   );
 }
 

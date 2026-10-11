@@ -95,7 +95,7 @@ describe("product-nav", () => {
       "/competition?tab=teams", "/competition?tab=strategy", "/competition?tab=picks",
       "/competition?tab=command", "/competition?tab=match-checklist",
     ]);
-    expect(byLabel.Team?.map((entry) => entry.label)).toEqual(["Chat", "People", "Work", "Playbook"]);
+    expect(byLabel.Team?.map((entry) => entry.label)).toEqual(["Chat", "People", "Tasks", "Playbook"]);
     expect(byLabel.Business?.map((entry) => entry.label)).toEqual([
       "Money",
       "Sponsors",
@@ -133,7 +133,7 @@ describe("product-nav", () => {
   it("resolves breadcrumbs by hub roots and PRODUCT_HUBS legacy paths", () => {
     expect(breadcrumbForPath("/team")).toBe("Team");
     expect(breadcrumbForPath("/team/calendar")).toBe("Team / Calendar");
-    expect(breadcrumbForPath("/todos")).toBe("Team / Work");
+    expect(breadcrumbForPath("/todos")).toBe("Team / Tasks");
     expect(breadcrumbForPath("/command")).toBe("Competition / Event day");
     expect(breadcrumbForPath("/my-day")).toBe("Competition / My Day");
     expect(breadcrumbForPath("/business")).toBe("Business");

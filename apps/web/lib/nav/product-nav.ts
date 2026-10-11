@@ -202,7 +202,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   { href: "/team", label: "Team", icon: "users" },
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/business", label: "Business", icon: "clipboard" },
-  { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
+  { href: "/ai?tab=chat", label: "Ask AI", icon: "sparkles" },
   { href: "/files", label: "Files", icon: "grid" },
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
@@ -218,7 +218,7 @@ export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: Prod
   { href: "/team", label: "Team", icon: "users" },
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/business", label: "Business", icon: "clipboard" },
-  { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
+  { href: "/ai?tab=chat", label: "Ask AI", icon: "sparkles" },
 ];
 
 /**

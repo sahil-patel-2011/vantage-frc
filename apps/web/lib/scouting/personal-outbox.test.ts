@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SyncEntry } from "@vantage/scouting";
 import { ACTION_HISTORY_KEY, recordScoutAction } from "@vantage/scouting";
 import { decodeScoutQrContent } from "@vantage/scouting/qr-handoff";
-import { cacheEvent, discardQuarantined, encodePendingQrPayload, getCachedEvent, getLastOrgId, listPendingEntries, listQuarantine, mergeRecordsIntoOutbox, pendingCounts, quarantineEntry, queueEntry, retryQuarantined, syncOutbox } from "../scout-offline";
+import { cacheEvent, discardQuarantined, encodePendingQrPayload, getCachedEvent, getLastOrgId, listPendingEntries, listQuarantine, mergeRecordsIntoOutbox, outboxEntryState, pendingCounts, quarantineEntry, queueEntry, retryQuarantined, syncOutbox } from "../scout-offline";
 import { idbValue, scoutTransaction } from "./personal-store";
 
 const identity = vi.hoisted(() => ({ user: "a" as string | null }));
@@ -142,6 +142,37 @@ describe("personal scouting on shared devices", () => {
     await expect(syncOutbox(ORG, { maxAttempts: 1 })).rejects.toThrow("account changed");
     identity.user = "a";
     expect(await listPendingEntries()).toHaveLength(1);
+  });
+
+  it("reports where a saved entry ended up: sent, set aside with the reason, or still waiting", async () => {
+    await queueEntry(entry("viewer-report"));
+    const viewOnly = "View only — you can look but not change this. Ask a team owner or admin for Team member access.";
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 403, json: async () => ({ error: viewOnly, reason: "view_only" }) })));
+    const refused = await syncOutbox(ORG, { maxAttempts: 1 });
+    // A 403 used to leave the row queued (and the receipt said "Sent to your team.").
+    expect(refused.sent).toEqual([]);
+    expect(refused.setAside).toEqual([{ clientId: "viewer-report", reason: viewOnly }]);
+    expect(await outboxEntryState(ORG, "viewer-report")).toEqual({ state: "set-aside", reason: viewOnly });
+
+    await queueEntry(entry("signed-out-report"));
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 401, json: async () => ({ error: "Your session ended. Sign in again." }) })));
+    const signedOut = await syncOutbox(ORG, { maxAttempts: 1 });
+    expect(signedOut.failure).toBe("signed-out");
+    expect(await outboxEntryState(ORG, "signed-out-report")).toEqual({ state: "queued" });
+
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new DOMException("The operation timed out.", "TimeoutError"); }));
+    const timedOut = await syncOutbox(ORG, { maxAttempts: 1 });
+    expect(timedOut.failure).toBe("unreachable");
+    expect(await outboxEntryState(ORG, "signed-out-report")).toEqual({ state: "queued" });
+
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      return { ok: true, json: async () => ({ acknowledgements: body.entries.map((row: SyncEntry) => ({ clientId: row.clientId })) }) };
+    }));
+    const delivered = await syncOutbox(ORG, { maxAttempts: 1 });
+    expect(delivered.sent).toEqual(["signed-out-report"]);
+    expect(delivered.failure).toBeNull();
+    expect(await outboxEntryState(ORG, "signed-out-report")).toEqual({ state: "gone" });
   });
 
   it("rolls back interrupted transactions instead of claiming an offline save", async () => {

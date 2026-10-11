@@ -58,14 +58,14 @@ for (const width of [390, 1440]) {
     expect(identity.orgId).toBeTruthy();
     // Warm the chunk before measuring: development compilation is not product latency.
     await page.goto(`/team?tab=todos&orgId=${identity.orgId}`);
-    await expect(page.locator(".product-hub-panel")).toContainText("One work view", { timeout: 30_000 });
+    await expect(page.locator(".product-hub-panel")).toContainText("All trackers", { timeout: 30_000 });
     await page.goto(`/team?orgId=${identity.orgId}`);
     await expect(page.locator(".tc-toolbar")).toBeVisible({ timeout: 30_000 });
     const request = page.waitForRequest(r => new URL(r.url()).pathname === "/api/todos", { timeout: 5_000 });
-    await page.getByRole("tab", { name: "Work", exact: true }).click();
+    await page.getByRole("tab", { name: "Tasks", exact: true }).click();
     await request;
     await expect(page.locator(".product-hub-panel")).toHaveAttribute("data-hub-tab", "todos");
-    await expect(page.locator(".product-hub-panel")).toContainText("One work view", { timeout: 30_000 });
+    await expect(page.locator(".product-hub-panel")).toContainText("All trackers", { timeout: 30_000 });
   });
 }
 

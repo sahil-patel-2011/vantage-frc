@@ -25,8 +25,12 @@ export const ONSHAPE_LOCAL_PLAYWRIGHT_HINT =
 export const ONSHAPE_NO_INVENTED_EXPORTS =
   "Onshape documents and STL, STEP, or GLTF exports appear only after a real connected run. Empty CAD stays empty until then.";
 
+/**
+ * Says whose move it is (A5-20): Vantage switches Onshape sign-in on, not the team, so nobody on
+ * the team is sent looking for a setting they don't have.
+ */
 export const ONSHAPE_PLATFORM_HINT_UNCONFIGURED =
-  "Onshape sign-in isn't switched on for Vantage yet. You can still paste an Onshape link to keep it in CAD.";
+  "Vantage hasn't switched on Onshape sign-in yet. Nothing for your team to do: paste an Onshape link to keep it in CAD meanwhile.";
 
 export const ONSHAPE_PLATFORM_HINT_CONFIGURED =
   "Connect Onshape in CAD Connections. Hosted jobs run after you authorize in the browser.";
@@ -42,7 +46,7 @@ export const ONSHAPE_OAUTH_CTA = {
   reconnect: "Reconnect Onshape",
   disabledTitle: "Onshape isn't ready yet",
   disabledDetail:
-    "Onshape sign-in isn't switched on for Vantage yet. You can still paste an Onshape link to keep it in CAD.",
+    "Vantage hasn't switched on Onshape sign-in yet. Nothing for your team to do: paste an Onshape link to keep it in CAD meanwhile.",
 } as const;
 
 export type OnshapeHostedReason = "missing_env" | "missing_session" | "oauth_ready" | "connected";

@@ -87,12 +87,16 @@ describe("conflict copy", () => {
     expect(labelFromMatchKey("custom")).toBe("custom");
   });
 
-  it("says who, which match and why", () => {
+  it("says who, which match and why, naming the match the way the scouting screens do", () => {
     expect(describeAssignmentConflict({ kind: "drive_team", userId: "d", matchKey: Q(3) }, "Dee")).toBe(
-      "Dee is on drive team for Q3 — our robot is on the field, so they cannot scout it.",
+      "Dee is on drive team for Qual 3 — our robot is on the field, so they cannot scout it.",
     );
     expect(
+      describeAssignmentConflict({ kind: "same_match", userId: "a", matchKey: Q(2), otherTeamKey: "frc254" }, "Riley Scout"),
+    ).toBe("Riley Scout is already scouting 254 in Qual 2 — one scout, one robot.");
+    // Only when the name is unknown does it fall back to "That scout".
+    expect(
       describeAssignmentConflict({ kind: "same_match", userId: "a", matchKey: Q(2), otherTeamKey: "frc254" }, null),
-    ).toBe("That scout is already scouting 254 in Q2 — one scout, one robot.");
+    ).toBe("That scout is already scouting 254 in Qual 2 — one scout, one robot.");
   });
 });

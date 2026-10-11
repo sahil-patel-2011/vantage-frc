@@ -6,8 +6,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { crossProductHref, isScoutingPath, isSharedPath, productForHost, scoutingTwin } from "../../lib/products/products";
 import { ShellOutboxStatus } from "../../components/shell-outbox-status";
+import { requestMe } from "../../lib/nav/me-request";
+import { VIEW_ONLY_CHIP_TITLE, viewOnlyFromMe } from "../../lib/nav/view-only";
+import "../../components/view-only.css";
 
-type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null; authenticated?: boolean };
+type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null; authenticated?: boolean; role?: string | null };
 
 export const SCOUTING_NAV = [
   { href: "/scout", label: "Home", match: (path: string) => path === "/scout" },
@@ -41,8 +44,10 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(`/api/me${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`)
-      .then((response) => (response.ok ? (response.json() as Promise<Me>) : null))
+    // The page's one shared `/api/me` (with its timeout), not a second request of our own that
+    // could leave "Opening your team…" up for as long as venue Wi-Fi takes to give up.
+    void requestMe(orgId ?? null)
+      .then((result) => (result.ok ? (result.data as Me | null) : null))
       .then((data) => {
         if (cancelled) return;
         setMeSettled(true);
@@ -89,6 +94,9 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
   }, [orgId]);
 
   const team = me?.teamNumber ? `Team ${me.teamNumber}` : me?.orgName ?? null;
+  // The same "View only" chip as Vantage's top bar (0715), so a parent or guest knows before
+  // opening a form that their reports will not be kept.
+  const viewOnly = Boolean(me && orgId && viewOnlyFromMe(me, orgId));
   // Without ?orgId the pages would render "Choose your team" for the moment it takes to
   // look the team up, then swap to the real page. Hold them until the answer is in: a
   // team fills the URL (and this clears), no team lets the page ask, a failure lets it try.
@@ -123,6 +131,11 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <div className="scouting-bar-end">
+          {viewOnly ? (
+            <span className="view-only-chip" title={VIEW_ONLY_CHIP_TITLE} aria-label={`View only. ${VIEW_ONLY_CHIP_TITLE}`}>
+              View only
+            </span>
+          ) : null}
           {/* Queued entries go when the signal is back, from any Scouting page — not only
               from the Scout tab. The pill shows only while something is waiting. */}
           <ShellOutboxStatus orgId={orgId} scoutPath="/scout/entry" />

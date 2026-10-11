@@ -48,7 +48,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).locator(".soft-account-org").first()).toContainText(marker);
-    await page.getByRole("menuitem", { name: "Account and settings" }).click();
+    await page.getByRole("menuitem", { name: "Account", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/account\\?orgId=${orgId}`));
     await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Account menu" }).click();

@@ -123,7 +123,7 @@ export default function AgentConfigClient() {
         .then(async (response) => {
           const data = (await response.json()) as Record<string, unknown>;
           if (!response.ok) {
-            setError(typeof data.error === "string" ? data.error : "Something went wrong.");
+            setError(typeof data.error === "string" ? data.error : "That didn't go through. Check your connection and try again.");
             return;
           }
           if (data.view && typeof data.view === "object") setView(data.view as AgentConfigView);

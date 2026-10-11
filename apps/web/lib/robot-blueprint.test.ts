@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cadProvider,
   optionalCadUrl,
+  optionalCodeRef,
   parseBlueprintAction,
   robotRollup,
   SEED_SUBSYSTEMS,
@@ -42,7 +43,8 @@ describe("cadProvider / optionalCadUrl", () => {
     expect(cadProvider("https://cad.onshape.com/documents/x")).toBe("Onshape");
     expect(cadProvider("https://myhub.autodesk360.com/x")).toBe("Fusion 360");
     expect(cadProvider("https://grabcad.com/library/x")).toBe("GrabCAD");
-    expect(cadProvider("https://example.com/model")).toBe("CAD");
+    // An unknown host is named, so "Open CAD" never hides where a link goes (A5-25).
+    expect(cadProvider("https://www.example.com/model")).toBe("example.com");
     expect(cadProvider(null)).toBeNull();
   });
   it("validates https-only CAD links", () => {
@@ -50,6 +52,19 @@ describe("cadProvider / optionalCadUrl", () => {
     expect(optionalCadUrl("")).toBeNull();
     expect(() => optionalCadUrl("http://cad.onshape.com/d/1")).toThrow(/https/);
     expect(() => optionalCadUrl("garbage")).toThrow(/https/);
+  });
+});
+
+describe("optionalCodeRef (A5-25)", () => {
+  it("takes a repository path and clears on empty", () => {
+    expect(optionalCodeRef(" src/main/java/frc/robot/subsystems/Drivetrain.java ")).toBe(
+      "src/main/java/frc/robot/subsystems/Drivetrain.java",
+    );
+    expect(optionalCodeRef("")).toBe("");
+  });
+  it("refuses text that isn't a file path", () => {
+    expect(() => optionalCodeRef("Drive 🚀.java")).toThrow(/path in the robot code/);
+    expect(() => optionalCodeRef("../../etc/passwd")).toThrow(/path in the robot code/);
   });
 });
 

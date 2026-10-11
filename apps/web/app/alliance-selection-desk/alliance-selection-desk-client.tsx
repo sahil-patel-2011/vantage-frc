@@ -454,7 +454,7 @@ export default function AllianceSelectionDeskClient() {
           | AllianceSelectionDeskView;
         if (sequence !== generation.current) return null;
         if (!response.ok) {
-          setError("error" in data && data.error ? String(data.error) : "Something went wrong.");
+          setError("error" in data && data.error ? String(data.error) : "That didn't go through. Check your connection and try again.");
           return null;
         }
         if ("view" in data && data.view && isAllianceSelectionDeskView(data.view) && data.view.status === "live" && data.view.orgId === orgId

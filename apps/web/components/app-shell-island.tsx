@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
 import { defaultIslandLabelList } from "../lib/nav/island-preferences";
@@ -81,6 +81,8 @@ export function AppShellIsland({
   activeIslandTabHref,
   unreadMessages,
   onOpenEditor,
+  onOpenMore,
+  navOpen,
   islandPressTimer,
   islandPressOrigin,
   islandLongPressed,
@@ -90,10 +92,32 @@ export function AppShellIsland({
   activeIslandTabHref: string | undefined;
   unreadMessages: number;
   onOpenEditor: () => void;
+  /** Opens the menu of every page (the same panel as the top-left button). */
+  onOpenMore: () => void;
+  navOpen: boolean;
   islandPressTimer: { current: number | null };
   islandPressOrigin: { current: { x: number; y: number } | null };
   islandLongPressed: { current: boolean };
 }) {
+  const pathname = usePathname() ?? "";
+  /**
+   * The tab just tapped, until the page it opens arrives. On venue Wi-Fi a tap used to change
+   * nothing for seconds (same URL, same highlighted tab), so people tapped again or gave up.
+   */
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname, activeIslandTabHref]);
+  useEffect(() => {
+    if (!pendingHref) return;
+    // A navigation that never lands (offline, an error page) must not leave the tab pulsing.
+    const timer = window.setTimeout(() => setPendingHref(null), 12_000);
+    return () => window.clearTimeout(timer);
+  }, [pendingHref]);
+  // Team, Build, Business, Account… are not among the four apps by default. On those pages
+  // nothing in the bar was current, so the bar said nothing about where you were; More is.
+  const moreCurrent = !activeIslandTabHref;
+
   function clearIslandPress() {
     if (islandPressTimer.current !== null) {
       window.clearTimeout(islandPressTimer.current);
@@ -145,31 +169,57 @@ export function AppShellIsland({
         event.stopPropagation();
       }}
     >
-      {islandTabs.map((tab) => (
-        <a
-          key={tab.href}
-          aria-label={tab.href.includes("tab=messages") && unreadMessages >= 1 ? `${tab.label}, ${unreadMessages} unread` : tab.label}
-          aria-current={activeIslandTabHref === tab.href ? "page" : undefined}
-          href={withOrgHref(tab.href, orgId)}
-        >
-          <Icon name={tab.icon} />
-          <span>{tab.label}</span>
-          {tab.href.includes("tab=messages") && unreadMessages >= 1 ? (
-            <b className="soft-island-badge">{unreadMessages > 99 ? "99+" : unreadMessages}</b>
-          ) : null}
-        </a>
-      ))}
+      {islandTabs.map((tab) => {
+        const current = activeIslandTabHref === tab.href;
+        return (
+          <a
+            key={tab.href}
+            aria-label={tab.href.includes("tab=messages") && unreadMessages >= 1 ? `${tab.label}, ${unreadMessages} unread` : tab.label}
+            aria-current={current ? "page" : undefined}
+            aria-busy={pendingHref === tab.href && !current ? true : undefined}
+            data-pending={pendingHref === tab.href && !current ? "true" : undefined}
+            href={withOrgHref(tab.href, orgId)}
+            onClick={(event) => {
+              if (current || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+              setPendingHref(tab.href);
+            }}
+          >
+            <Icon name={tab.icon} />
+            <span>{tab.label}</span>
+            {tab.href.includes("tab=messages") && unreadMessages >= 1 ? (
+              <b className="soft-island-badge">{unreadMessages > 99 ? "99+" : unreadMessages}</b>
+            ) : null}
+          </a>
+        );
+      })}
       {/* No "Apps" gear: it took a fifth of the bar to repeat Account → Appearance. Press and
-          hold the bar (or right-click it) to change the four apps. */}
-      {/*
-        No fifth "All" button.
+          hold the bar (or right-click it) to change the four apps.
 
-        It opened the same drawer the hamburger at the top-left already opens,
-        so the island spent a fifth of itself on a duplicate — and a duplicate
-        that read like a peer of Team, Compete, Scout and Build when it is not
-        one of your apps at all. Four apps you chose, and one way to see the
-        rest of them.
-      */}
+          More opens the same panel as the top-left menu button. That button is the hardest
+          place on a phone to reach with a thumb, and without More the bar had no answer to
+          "where am I" on any page outside the four apps. Styled as the tabs are (an <a>), it
+          acts as a button: it opens the panel and goes nowhere. */}
+      <a
+        className="soft-island-more"
+        href="#vantage-navigation-panel"
+        role="button"
+        aria-label="More: every page and search"
+        aria-controls="vantage-navigation-panel"
+        aria-expanded={navOpen}
+        aria-current={moreCurrent ? "location" : undefined}
+        onClick={(event) => {
+          event.preventDefault();
+          onOpenMore();
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== " ") return;
+          event.preventDefault();
+          onOpenMore();
+        }}
+      >
+        <Icon name="menu" />
+        <span>More</span>
+      </a>
     </nav>
   );
 }

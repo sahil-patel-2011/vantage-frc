@@ -63,9 +63,23 @@ function storedPreference(): ThemePreference | null {
   return readCookiePreference();
 }
 
-/** Same lookup, collapsed to what the UI should render when nothing is stored. */
+/**
+ * Same lookup, collapsed to what the UI should render when nothing is stored: System, so a
+ * device in dark mode gets dark (the boot script in lib/theme/theme-bootstrap.ts agrees).
+ */
 function readStoredPreference(): ThemePreference {
-  return storedPreference() ?? "light";
+  return storedPreference() ?? "system";
+}
+
+/**
+ * Follow the device without recording anything. With no choice stored, writing the resolved theme
+ * would turn today's OS setting into a "choice" that outranks the OS tomorrow.
+ */
+function followDevice(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+  syncBrowserColor();
+  window.dispatchEvent(new CustomEvent("vantage-theme", { detail: theme }));
 }
 
 /** Keep the OS browser chrome on the same colour as --bg. */
@@ -113,7 +127,7 @@ function showDocumentTheme(theme: Theme) {
 }
 
 export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
-  const [preference, setPreference] = useState<ThemePreference>("light");
+  const [preference, setPreference] = useState<ThemePreference>("system");
   const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
@@ -130,17 +144,12 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
     };
     window.addEventListener("vantage-theme", syncTheme);
     window.addEventListener("vantage-theme-pref", syncPref);
-
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onSystem = () => {
-      if (readStoredPreference() === "system") applyResolvedTheme(systemTheme());
-    };
-    mq.addEventListener("change", onSystem);
+    // The device switching light/dark is followed by ThemeProvider, which is on every page; this
+    // control hears it through the "vantage-theme" event above.
 
     return () => {
       window.removeEventListener("vantage-theme", syncTheme);
       window.removeEventListener("vantage-theme-pref", syncPref);
-      mq.removeEventListener("change", onSystem);
     };
   }, []);
 
@@ -214,6 +223,21 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
   }, [productRoute]);
+
+  useEffect(() => {
+    // System (chosen, or nothing chosen yet) follows the device when it switches while the app is
+    // open, on every page, not only while Account → Appearance is showing. The public site stays
+    // light (its own effect above).
+    if (marketingPage) return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onDeviceChange = () => {
+      const pref = storedPreference();
+      if (pref === "system") applyResolvedTheme(systemTheme());
+      else if (pref === null) followDevice(systemTheme());
+    };
+    mq.addEventListener("change", onDeviceChange);
+    return () => mq.removeEventListener("change", onDeviceChange);
+  }, [marketingPage]);
 
   useEffect(() => {
     if (!productRoute) return;

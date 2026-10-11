@@ -35,7 +35,7 @@
 .hours-board .rank{color:var(--muted);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
 .hours-board .who{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px}
 .hours-board .who strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hours-board .who em{font-style:normal;color:var(--positive);font-size:10px;font-weight:800}
+.hours-board .who em{font-style:normal;color:var(--positive);font-size:11px;font-weight:800}
 .hours-board .total{font-variant-numeric:tabular-nums;font-weight:800;font-size:13px}
 .hours-board .goal-track{grid-column:2/4;height:5px;background:var(--surface-2);border-radius:var(--radius-pill);overflow:hidden}
 .hours-board .goal-track i{display:block;height:100%;background:var(--accent)}
@@ -47,13 +47,22 @@
 .hours-log .session strong{font-size:13px}
 .hours-log .session small{color:var(--muted)}
 .hours-log .dur{font-variant-numeric:tabular-nums;font-weight:700}
-.hours-kind{padding:2px 7px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:10px;font-weight:700;color:var(--muted);white-space:nowrap}
+.hours-kind{padding:2px 7px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
 .hours-forms{display:grid;gap:12px}
 .hours-manual,.hours-policy{display:grid;gap:10px;padding:14px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm)}
-.hours-manual h3,.hours-policy h3{margin:0;font-size:var(--title-4)}
+.hours-manual :is(h2,h3),.hours-policy h3{margin:0;font-size:var(--title-4)}
 .hours-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+/* Entry labels and mentor tools (A5-03): "Added by hand", corrections, Edit times in place. */
+.hours-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+.hours-manual-tag{color:var(--ink);background:color-mix(in srgb,var(--warning) 14%,var(--surface))}
+.hours-log .session .hours-correction{color:var(--ink)}
+.hours-row-actions{display:flex;align-items:center;gap:10px}
+.hours-row-actions .hours-link{min-height:44px;min-width:44px}
+.hours-log li>.hours-edit{grid-column:1/-1;margin-top:4px}
+.hours-field-wide{grid-column:1/-1}
+.hours-edit-actions{display:flex;justify-content:flex-end;gap:8px}
 .hours-field{display:grid;gap:4px;min-width:0;color:var(--muted)}
-.hours-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.hours-field>span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 @media(max-width:900px){.hours-layout{grid-template-columns:1fr}.hours-summary{grid-template-columns:1fr 1fr}}
 @media(max-width:560px){.hours-clock-card{flex-direction:column;align-items:stretch}.hours-big-btn{width:100%}}
 
@@ -77,7 +86,7 @@
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
-.aii-meta{color:var(--muted);font-size:10px}
+.aii-meta{color:var(--muted);font-size:11px}
 
 /* A submit placed straight in this grid form keeps its own width from tablet up (it was ~900px). */
 @media (min-width: 721px) {

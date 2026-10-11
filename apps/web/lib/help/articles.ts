@@ -837,7 +837,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "checked-step-by-step",
     slug: "checked-step-by-step",
-    title: "Checked step by step — tracks where each step is verified",
+    title: "Guided tracks — every step is checked",
     summary:
       "Your first Onshape part, and Team 6925's programming and mechanical weeks, one step at a time. A step counts only when Vantage has checked it: your Part Studio in Onshape, your build output, your pull request on GitHub, or a lead's check.",
     category: "build",

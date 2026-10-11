@@ -420,6 +420,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       onToggleQuietWidgets={() => setQuietView({ scope: quietScope, expanded: !showQuietWidgets })}
       refreshing={refreshing}
       onRefresh={() => void refreshBoard()}
+      onRetryHome={() => {
+        if (home.orgId) void home.loadHome(home.orgId);
+      }}
       // Whether the widgets (and the onboarding steps) have arrived, so the "what to do
       // now" card waits as a blank shape rather than saying there is nothing.
       widgetsLoaded={home.widgetsLoaded && firstWeek.loaded}

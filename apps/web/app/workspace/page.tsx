@@ -93,9 +93,19 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     }
 
     const notMember = notOnTeam === "1";
-    const copy = notMember ? workspaceNotOnTeamCopy(options) : workspaceShellCopy("select");
-    const actions = workspaceJoinNextActions("select");
-    const only = notMember && options.length === 1 ? options[0] : null;
+    // "Switch team" from any page lands here with ?next=. With one team, this said "You belong to
+    // more than one team" over a list of one; it is one clear button instead.
+    const only = options.length === 1 ? options[0] : null;
+    const copy = notMember
+      ? workspaceNotOnTeamCopy(options)
+      : only
+        ? { title: "Your team", description: "You're on one team. Open it, or join another team with an invite." }
+        : workspaceShellCopy("select");
+    // Leaving or renaming a team lives in Account → Your teams; say where, from the team picker.
+    const actions = [
+      ...workspaceJoinNextActions("select"),
+      { id: "manage", label: "Manage your teams", detail: "Leave a team, or see your role on each.", href: "/account/teams" },
+    ];
     return (
       <main className="onboarding-page invite-flow-page">
         <section className="onboarding-card invite-flow-card workspace-chooser" aria-labelledby="workspace-select-title">

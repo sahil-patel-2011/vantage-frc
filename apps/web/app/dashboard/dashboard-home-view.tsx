@@ -60,6 +60,7 @@ import { DashboardBoardSwitcher } from "./dashboard-board-bar";
 import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
 import { DashboardWorkspaceActions } from "./dashboard-workspace-actions";
 import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
+import { useHydrated } from "../../lib/ui/use-hydrated";
 import "./dashboard-edit.css";
 import "./dashboard-home.css";
 
@@ -108,6 +109,8 @@ export function DashboardHomeView(props: {
   widgetsLoaded?: boolean;
   refreshing: boolean;
   onRefresh: () => void;
+  /** Load Home again after it failed; the one Retry on the failure banner (A5-21). */
+  onRetryHome?: () => void;
   showQuietWidgets: boolean;
   quietWidgetCount: number;
   onToggleQuietWidgets: () => void;
@@ -315,8 +318,11 @@ export function DashboardHomeView(props: {
     onDragPointerCancel,
   } = props;
 
+  const hydrated = useHydrated();
   const knownName = meLoaded ? (me.firstName || me.name || "").trim().split(/\s+/)[0] : "";
-  const hello = mounted ? greeting() : "Welcome";
+  // The local time of day is unknown on the server ("Welcome"); on a client navigation back to
+  // Home it is known on the first render, so there is no "Welcome" frame before it.
+  const hello = hydrated ? greeting() : "Welcome";
   const greetingText = knownName ? `${hello}, ${knownName}` : hello;
   const boardIsEmpty = layout.length === 0;
   const now = homeNowFromWidgets({ orgId, nextMatchData, widgets, loaded: widgetsLoaded, role });
@@ -522,6 +528,8 @@ export function DashboardHomeView(props: {
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
   const inlineError = !editing && !previewing && messageKind === "error" && message;
+  // Home itself did not load (no copy on this device): one banner, one Retry.
+  const homeFailed = Boolean(inlineError && message === "Could not load Home." && props.onRetryHome);
   const matchCardLeads = now.title === "Our next match" && displayLayout.some((item) => item.type === "next_match");
   const taskCardLeads = now.href === "/todos" && displayLayout.some((item) => item.type === "team_todos");
   // Exactly one setup surface while the team's setup is unfinished: the hero when nothing more
@@ -576,12 +584,28 @@ export function DashboardHomeView(props: {
           to its own card here, under what leads, until setup is done. */}
       {/* Left unwrapped (product-motion.css animates it as a direct child);
           the edit-mode effect above makes it inert instead. */}
-      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} error={firstWeek.error} retry={firstWeek.retry} setupHere={surfaces.setup === "card"} /> : null}
+      {/* When Home itself failed, the banner below is the one message with the one Retry; the
+          checklist does not add its own "could not load" card on top (A5-21). */}
+      {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} error={homeFailed ? "" : firstWeek.error} retry={firstWeek.retry} setupHere={surfaces.setup === "card"} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
       {showRoleStrip ? <DashboardRoleStrip orgId={orgId} audience={homeAudience} items={homeStripItems} dim={dim} /> : null}
 
-      {inlineError ? (
+      {homeFailed ? (
+        <p className="telemetry-status dash-home-failed" role="alert">
+          Home couldn&rsquo;t load just now. Nothing you saved is lost.{" "}
+          <button
+            type="button"
+            className="app-button secondary"
+            onClick={() => {
+              props.onRetryHome?.();
+              firstWeek.retry?.();
+            }}
+          >
+            Retry
+          </button>
+        </p>
+      ) : inlineError ? (
         <p className="telemetry-status" role="status">
           {message}
         </p>

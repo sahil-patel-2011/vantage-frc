@@ -57,6 +57,14 @@ export type OutboxDrainRejected<T extends OutboxChunkId> = {
   reason: string;
 };
 
+/**
+ * Why rows stayed queued, so the page can say what happened instead of "Sent":
+ * - `signed-out`: the server answered 401. Retrying cannot help until the scout signs in again.
+ * - `server`: the server answered with an error it may not repeat (5xx, 429, 408).
+ * - `unreachable`: no answer at all (timeout, dropped connection, captive portal).
+ */
+export type OutboxFailureKind = "signed-out" | "server" | "unreachable";
+
 export type OutboxDrainResult<T extends OutboxChunkId> = {
   accepted: OutboxDrainAccepted<T>[];
   rejected: OutboxDrainRejected<T>[];
@@ -64,7 +72,31 @@ export type OutboxDrainResult<T extends OutboxChunkId> = {
   isolated: OutboxDrainRejected<T>[];
   /** Transient / unanswered — stay queued. Never fabricated. */
   remaining: T[];
+  /** Why `remaining` is not empty, from the last failed POST; null when nothing failed. */
+  failure: OutboxFailureKind | null;
 };
+
+/**
+ * A sync POST the server answered with an error status. The status, not the wording, decides
+ * whether the rows are set aside or kept: it used to be read back out of the message with a
+ * `(4xx)` pattern the route never sent, so a 403 counted as "try again later" forever.
+ */
+export class OutboxPushError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+    /** The server's machine reason (`view_only`), when it sent one. */
+    readonly reason: string | null = null,
+  ) {
+    super(message);
+    this.name = "OutboxPushError";
+  }
+}
+
+function statusOf(error: unknown): number | null {
+  const status = (error as { status?: unknown } | null)?.status;
+  return typeof status === "number" && Number.isInteger(status) && status > 0 ? status : null;
+}
 
 /**
  * Slice queued rows into POST-sized batches. Preserves order. Last slice may
@@ -96,20 +128,45 @@ export function isolateFailedChunk<T>(chunk: readonly T[]): T[][] {
   return [chunk.slice(0, mid), chunk.slice(mid)];
 }
 
-/** 4xx except retryable timeouts / rate limits — bisect or quarantine, don't loop the weekend. */
+/**
+ * 4xx except retryable timeouts / rate limits — bisect or quarantine, don't loop the weekend.
+ * 401 is not the entry's fault either: the session ended, and the same rows go through once the
+ * scout signs in again.
+ */
 export function isPermanentOutboxStatus(status: number): boolean {
-  return status >= 400 && status < 500 && status !== 408 && status !== 429;
+  return status >= 400 && status < 500 && status !== 401 && status !== 408 && status !== 429;
 }
 
 export function isPermanentOutboxFailure(error: unknown): boolean {
+  const status = statusOf(error);
+  if (status !== null) return isPermanentOutboxStatus(status);
   const message = error instanceof Error ? error.message : String(error ?? "");
   const statusMatch = message.match(/\((\d{3})\)/);
   if (statusMatch) {
-    const status = Number(statusMatch[1]);
-    if (Number.isInteger(status)) return isPermanentOutboxStatus(status);
+    const parsed = Number(statusMatch[1]);
+    if (Number.isInteger(parsed)) return isPermanentOutboxStatus(parsed);
   }
   if (/at most \d+ items/i.test(message)) return true;
   return false;
+}
+
+/**
+ * A refusal that is about the person, not about any one row: View only (403 `view_only`) or
+ * a session that ended (401). Splitting the batch to find a "poisoned" row would only send the
+ * same refusal once per row.
+ */
+export function isWholeBatchRefusal(error: unknown): boolean {
+  const status = statusOf(error);
+  if (status === 401) return true;
+  return status === 403 && (error as { reason?: unknown } | null)?.reason === "view_only";
+}
+
+/** What to tell the scout about rows that stayed queued after this error. */
+export function outboxFailureKind(error: unknown): OutboxFailureKind {
+  const status = statusOf(error);
+  if (status === 401) return "signed-out";
+  if (status !== null) return "server";
+  return "unreachable";
 }
 
 /**
@@ -210,9 +267,16 @@ export async function drainOutboxChunks<T extends OutboxChunkId>(
   const rejected: OutboxDrainRejected<T>[] = [];
   const isolated: OutboxDrainRejected<T>[] = [];
   const remaining: T[] = [];
+  let failure: OutboxFailureKind | null = null;
+  // Signed out: every later chunk would get the same 401, so they wait without being sent.
+  let halted = false;
 
   const drainSlice = async (slice: readonly T[]): Promise<void> => {
     if (slice.length === 0) return;
+    if (halted) {
+      remaining.push(...slice);
+      return;
+    }
     try {
       const outcome = await push(slice.slice());
       const classified = classifyChunkEntries(slice, outcome);
@@ -220,6 +284,19 @@ export async function drainOutboxChunks<T extends OutboxChunkId>(
       rejected.push(...classified.rejected);
       remaining.push(...classified.unresolved);
     } catch (error) {
+      if (isWholeBatchRefusal(error)) {
+        if (statusOf(error) === 401) {
+          failure = "signed-out";
+          halted = true;
+          remaining.push(...slice);
+        } else {
+          // View only: the same answer for every row. Set them aside with the server's
+          // sentence, once, so the phone stops sending them every 45 seconds.
+          for (const entry of slice) isolated.push({ entry, reason: failureReason(error) });
+        }
+        return;
+      }
+      if (!isPermanentOutboxFailure(error)) failure = outboxFailureKind(error);
       if (slice.length === 1) {
         const entry = slice[0]!;
         if (isPermanentOutboxFailure(error)) {
@@ -243,5 +320,5 @@ export async function drainOutboxChunks<T extends OutboxChunkId>(
     await drainSlice(batch);
   }
 
-  return { accepted, rejected, isolated, remaining };
+  return { accepted, rejected, isolated, remaining, failure };
 }

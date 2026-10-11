@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../../components/ui";
+import { Button, PageMain } from "../../../components/ui";
 
 import { useEffect, useState } from "react";
 import { AiHubRelated } from "../../../components/ai-hub-related";
@@ -320,7 +320,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
   const metricsLoaded = !loading && !blocked;
 
   return (
-    <main className="intel-app ai-governance-page">
+    <PageMain className="intel-app ai-governance-page">
       <header className="intel-header">
         <div>
           <span className="eyebrow">Chat limits</span>
@@ -755,6 +755,6 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
           </div>
         </div>
       ) : null}
-    </main>
+    </PageMain>
   );
 }

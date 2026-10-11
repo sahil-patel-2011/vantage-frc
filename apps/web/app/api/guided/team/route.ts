@@ -1,9 +1,14 @@
-import { auth } from "@vantage/core";
-import { withRls } from "@vantage/db";
+import { auth, emitNotification } from "@vantage/core";
+import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { HttpError, isLead, resolveMembership } from "../../../../lib/cad-learn/store";
-import { decideSignoff, readPendingSignoffs, readTeamGuidedProgress } from "../../../../lib/guided/signoffs";
-import { GUIDED_TRACKS } from "../../../../lib/guided/tracks";
+import {
+  decideSignoff,
+  notifyStudentOfDecision,
+  readPendingSignoffs,
+  readTeamGuidedProgress,
+} from "../../../../lib/guided/signoffs";
+import { GUIDED_TRACKS, guidedTrackShortTitle } from "../../../../lib/guided/tracks";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +47,12 @@ export async function GET(request: Request) {
         status: "ready" as const,
         orgId: membership.orgId,
         orgName: membership.orgName,
-        tracks: GUIDED_TRACKS.map((track) => ({ id: track.id, title: track.title, steps: track.steps.length })),
+        tracks: GUIDED_TRACKS.map((track) => ({
+          id: track.id,
+          title: track.title,
+          shortTitle: guidedTrackShortTitle(track),
+          steps: track.steps.length,
+        })),
         pending: pending.filter((row) => row.userId !== session.user.id),
         ownPending: pending.filter((row) => row.userId === session.user.id).length,
         members,
@@ -64,19 +74,27 @@ export async function POST(request: Request) {
     if (body.action !== "approve" && body.action !== "decline") throw new HttpError(400, "action must be approve or decline");
     const id = orgParam(body.id);
     if (!id) throw new HttpError(400, "id is required");
-    const decided = await withRls({ userId: session.user.id }, async (client) => {
+    const result = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await resolveMembership(client, session.user.id, orgParam(body.orgId));
       if (!isLead(membership)) throw new HttpError(403, "Only owners and admins sign steps off.");
-      return decideSignoff(client, {
+      const decided = await decideSignoff(client, {
         orgId: membership.orgId,
         leadId: session.user.id,
         id,
         approve: body.action === "approve",
         note: typeof body.note === "string" ? body.note : null,
       });
+      if (!decided) return { decided: false, told: false };
+      // The student hears the decision and the note (A5-16). A failed notice never undoes it.
+      const told = await withSavepoint(
+        client,
+        () => notifyStudentOfDecision(client, emitNotification, { orgId: membership.orgId, decided }),
+        false,
+      );
+      return { decided: true, told };
     });
-    if (!decided) throw new HttpError(409, "That request was already decided, withdrawn, or is your own.");
-    return Response.json({ ok: true });
+    if (!result.decided) throw new HttpError(409, "That request was already decided, withdrawn, or is your own.");
+    return Response.json({ ok: true, told: result.told });
   } catch (error) {
     return fail(error);
   }

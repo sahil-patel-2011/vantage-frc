@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button, EmptyState, askConfirm } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState, PageMain, askConfirm } from "../../components/ui";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
@@ -227,7 +227,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
             setError(
               data && typeof data === "object" && "error" in data && typeof data.error === "string"
                 ? data.error
-                : "Something went wrong.",
+                : "That didn't go through. Check your connection and try again.",
             );
             return;
           }
@@ -251,7 +251,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
   const setupPrimary = writerNextActions({ orgId: setupOrg, draftCount: 0 })[0] ?? null;
 
   return (
-    <main className="module-page writer-page">
+    <PageMain className="module-page writer-page">
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">AI / Writing Assistant</span>
@@ -337,7 +337,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           canManageProfile={canManageProfile}
         />
       )}
-    </main>
+    </PageMain>
   );
 }
 

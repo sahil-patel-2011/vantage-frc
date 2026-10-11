@@ -1,23 +1,35 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, EmptyState, Skeleton } from "../../../components/ui";
-import { syncOutbox } from "../../../lib/scout-offline";
 import { useOnline } from "../../../lib/offline/use-online";
+import { useViewOnly } from "../../../lib/nav/use-view-only";
 import { hubHref } from "../../../lib/nav/hubs";
+import { readScoutDraft, scoutDraftStorageKey } from "../../../lib/scouting/draft-autosave";
+import { loadFailedCopy } from "../../../lib/scouting/load-state";
 import { useScoutingSummary } from "../../../lib/scouting/use-scouting-summary";
 import { share } from "../../../lib/scouting/lead-summary";
-import { replaceQuery, useScoutingBootstrap } from "../use-scouting-bootstrap";
+import { signInHref } from "../../../lib/ui/load-failure";
+import { myReports } from "../../scouting/scouting-model";
+import { closeQuery, pushQuery, useQueryPopState, useScoutingBootstrap } from "../use-scouting-bootstrap";
+import { SaveReceipt } from "../save-receipt";
+import { SavedCopyBanner } from "../saved-copy-banner";
+import { ScoutViewOnly } from "../scout-view-only";
+import { useRobotForm } from "../use-robot-form";
+import { useSaveReceipt } from "../use-save-receipt";
 import { QuickPitForm } from "./quick-pit-form";
 import { QuickPitPicker } from "./quick-pit-picker";
-
-type Receipt = { teamNumber: string; sync: "sending" | "sent" | "waiting" | "failed" };
 
 /** " · Citrus Circuits", or nothing when the name is only the placeholder "Team 1678". */
 function nameSuffix(team: { teamNumber: number; nickname: string | null }): string {
   const name = team.nickname?.trim() ?? "";
   return name && name.toLowerCase() !== `team ${team.teamNumber}` ? ` · ${name}` : "";
+}
+
+/** How many questions a saved-on-this-phone draft answers. */
+function answeredCount(payload: Record<string, unknown>): number {
+  return Object.entries(payload).filter(([key, value]) => !key.startsWith("_") && value !== undefined && value !== null && value !== "").length;
 }
 
 /**
@@ -29,60 +41,84 @@ export function QuickPitClient({ orgId }: { orgId: string }) {
   const pathname = usePathname() ?? "/scout/pit";
   const requestedEventKey = params.get("eventKey");
   const online = useOnline();
-  const { data, status, fromCache, retry } = useScoutingBootstrap(orgId, requestedEventKey);
+  // View only (0715): no form to fill. The server refuses their reports anyway.
+  const viewOnly = useViewOnly(orgId);
+  const { data, status, fromCache, cachedAt, failure, retry } = useScoutingBootstrap(orgId, requestedEventKey);
   const summary = useScoutingSummary(orgId);
   const [team, setTeam] = useState<{ teamKey: string; nickname: string | null } | null>(() => {
     const teamKey = params.get("teamKey");
     return teamKey && /^frc\d+$/.test(teamKey) ? { teamKey, nickname: null } : null;
   });
-  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const { receipt, show: showReceipt, retry: retrySend, clear: clearReceipt } = useSaveReceipt<{ teamNumber: string }>(orgId);
   // Saved on this phone a moment ago: visited, even before the outbox or the server says so.
   const [savedHere, setSavedHere] = useState<string[]>([]);
-  const mounted = useRef(true);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
 
   const view = summary.view?.status === "ready" ? summary.view : null;
   const teams = (view?.pit.teams ?? []).map((candidate) =>
     savedHere.includes(candidate.teamKey) ? { ...candidate, visited: true } : candidate,
   );
   const nicknameFor = (teamKey: string) => teams.find((candidate) => candidate.teamKey === teamKey)?.nickname ?? null;
+  const ownTeamNumber = data?.teamNumber ?? null;
 
   const open = useCallback(
-    (next: { teamKey: string; nickname: string | null } | null) => {
+    (next: { teamKey: string; nickname: string | null }) => {
+      clearReceipt();
       setTeam(next);
-      if (next) setReceipt(null);
-      replaceQuery(pathname, { teamKey: next?.teamKey ?? null });
+      pushQuery(pathname, { teamKey: next.teamKey });
     },
-    [pathname],
+    [pathname, clearReceipt],
+  );
+  const closeTeam = useCallback(() => {
+    setTeam(null);
+    closeQuery(pathname, { teamKey: null });
+  }, [pathname]);
+  // The phone's Back (and Forward) between the list and a pit.
+  useQueryPopState(
+    useCallback((query: URLSearchParams) => {
+      const teamKey = query.get("teamKey");
+      setTeam(teamKey && /^frc\d+$/.test(teamKey) ? { teamKey, nickname: null } : null);
+    }, []),
   );
 
-  async function sendNow() {
-    if (!navigator.onLine) {
-      setReceipt((current) => (current ? { ...current, sync: "waiting" } : current));
-      return;
-    }
-    try {
-      const result = await syncOutbox(orgId, { maxAttempts: 3 });
-      if (!mounted.current) return;
-      setReceipt((current) => (current ? { ...current, sync: result.quarantined > 0 ? "failed" : "sent" } : current));
-      summary.reload();
-    } catch {
-      if (mounted.current) setReceipt((current) => (current ? { ...current, sync: "waiting" } : current));
-    }
-  }
-
+  // The pit meter moves once the server has the visit.
+  const sent = receipt?.status.sync === "sent";
+  const reloadSummary = summary.reload;
   useEffect(() => {
-    if (online && receipt?.sync === "waiting") void sendNow();
-  }, [online]);
+    if (sent) reloadSummary();
+  }, [sent, reloadSummary]);
 
   const schema = data?.schemas.find((candidate) => candidate.type === "pit") ?? null;
+  const userId = data?.scoutIdentity?.userId ?? null;
+  const draftKeyFor = useCallback(
+    (teamKey: string) => scoutDraftStorageKey({ userId, orgId, eventKey: data?.eventKey ?? "", entryType: "pit", teamKey }),
+    [userId, orgId, data?.eventKey],
+  );
+  const earlier = useMemo(
+    () => (team && data ? myReports(data).find((entry) => entry.type === "pit" && entry.teamKey === team.teamKey) ?? null : null),
+    [data, team],
+  );
+  // The form this visit was started on (or filed under), not always the newest one.
+  const form = useRobotForm({ orgId, live: schema, draftKey: team ? draftKeyFor(team.teamKey) : null, earlier, target: team?.teamKey ?? null });
+
+  // "Draft · 6 answered, not saved yet" on the rows of pits started on this phone.
+  const teamKeysOnList = teams.map((candidate) => candidate.teamKey).join(",");
+  const drafts = useMemo(() => {
+    const marks = new Map<string, string>();
+    if (team) return marks;
+    for (const teamKey of teamKeysOnList ? teamKeysOnList.split(",") : []) {
+      const draft = readScoutDraft(draftKeyFor(teamKey));
+      if (!draft) continue;
+      const count = answeredCount(draft.payload);
+      if (count) marks.set(teamKey, `Draft · ${count} answered, not saved yet`);
+    }
+    return marks;
+  }, [team, teamKeysOnList, draftKeyFor]);
+
   const entryHref = (extra: Record<string, string> = {}) =>
     `/scout/entry?${new URLSearchParams({ orgId, scoutTab: "pit", ...extra }).toString()}`;
+  const homeHref = `/scout?${new URLSearchParams({ orgId }).toString()}`;
+
+  if (viewOnly) return <ScoutViewOnly what="pit visits" homeHref={homeHref} />;
 
   if (status === "loading" && !data) {
     return (
@@ -94,15 +130,19 @@ export function QuickPitClient({ orgId }: { orgId: string }) {
     );
   }
   if (status === "failed" || !data) {
+    const copy = loadFailedCopy(failure ?? (online ? "server" : "offline"));
     return (
       <div className="qs-shell">
-        <EmptyState
-          title="Pit scouting didn’t load"
-          description={online ? "Your team’s event could not be loaded. Try again in a moment." : "This phone has no saved copy of your event yet. Open Scouting once with a signal, then it works offline."}
-        >
-          <Button variant="primary" type="button" onClick={retry}>
-            Try again
-          </Button>
+        <EmptyState title="Pit scouting didn’t load" description={copy.description}>
+          {copy.action === "retry" ? (
+            <Button variant="primary" type="button" onClick={retry}>
+              Try again
+            </Button>
+          ) : copy.action === "sign-in" ? (
+            <Button as="a" variant="primary" href={signInHref(`${pathname}?${params.toString()}`)}>
+              Sign in again
+            </Button>
+          ) : null}
         </EmptyState>
       </div>
     );
@@ -147,23 +187,30 @@ export function QuickPitClient({ orgId }: { orgId: string }) {
   if (team) {
     return (
       <div className="qs-shell is-live">
-        {fromCache ? <p className="qs-offline">Offline · using this phone’s saved copy. Saves send when the signal is back.</p> : null}
-        <QuickPitForm
-          key={`${team.teamKey}|${schema.id}`}
-          orgId={orgId}
-          data={data}
-          schema={schema}
-          teamKey={team.teamKey}
-          nickname={team.nickname ?? nicknameFor(team.teamKey)}
-          fullFormHref={entryHref({ teamKey: team.teamKey })}
-          onChangeTeam={() => open(null)}
-          onSaved={(teamKey) => {
-            setSavedHere((current) => [...current, teamKey]);
-            open(null);
-            setReceipt({ teamNumber: teamKey.replace(/^frc/, ""), sync: navigator.onLine ? "sending" : "waiting" });
-            void sendNow();
-          }}
-        />
+        {fromCache ? <SavedCopyBanner failure={failure} cachedAt={cachedAt} onRetry={retry} /> : null}
+        {form?.kind === "ready" ? (
+          <QuickPitForm
+            key={`${team.teamKey}|${form.schema.id}`}
+            orgId={orgId}
+            data={data}
+            form={form}
+            teamKey={team.teamKey}
+            nickname={team.nickname ?? nicknameFor(team.teamKey)}
+            ownTeam={ownTeamNumber !== null && team.teamKey === `frc${ownTeamNumber}`}
+            fullFormHref={entryHref({ teamKey: team.teamKey })}
+            onChangeTeam={closeTeam}
+            onSaved={(saved) => {
+              setSavedHere((current) => [...current, saved.teamKey]);
+              showReceipt({ clientId: saved.clientId, teamNumber: saved.teamKey.replace(/^frc/, "") });
+              closeTeam();
+            }}
+          />
+        ) : (
+          <div aria-busy="true">
+            <p className="qs-message" role="status">Opening the form this visit was started on…</p>
+            <Skeleton height={220} />
+          </div>
+        )}
       </div>
     );
   }
@@ -171,6 +218,7 @@ export function QuickPitClient({ orgId }: { orgId: string }) {
   const next = teams.find((candidate) => !candidate.visited) ?? null;
   const visitedCount = teams.filter((candidate) => candidate.visited).length;
   const percent = view ? share(visitedCount, view.pit.total) : null;
+  const otherVisited = view?.pit.otherVisited ?? [];
   return (
     <div className="qs-shell">
       <header className="qs-head">
@@ -186,31 +234,27 @@ export function QuickPitClient({ orgId }: { orgId: string }) {
             </span>
           </div>
         ) : null}
-        {fromCache || summary.cachedAt ? <p className="qs-offline">Offline · using this phone’s saved copy.</p> : null}
+        {fromCache ? (
+          <SavedCopyBanner failure={failure} cachedAt={cachedAt} onRetry={retry} />
+        ) : summary.cachedAt ? (
+          <SavedCopyBanner failure={online ? "server" : "offline"} cachedAt={summary.cachedAt} onRetry={summary.reload} />
+        ) : null}
       </header>
 
       {receipt ? (
-        <section className="qs-receipt" role="status" aria-live="polite">
-          <span className="qs-receipt-check" aria-hidden="true">✓</span>
-          <div>
-            <strong>Saved pit visit for {receipt.teamNumber}</strong>
-            <span>
-              {receipt.sync === "sent"
-                ? "Sent to your team."
-                : receipt.sync === "sending"
-                  ? "Sending to your team…"
-                  : receipt.sync === "failed"
-                    ? "Saved here, but your team’s server refused it. Open the full form to see why."
-                    : "Saved on this phone. It sends itself when the signal is back."}
-            </span>
-          </div>
+        <SaveReceipt
+          title={`Saved pit visit for ${receipt.teamNumber}`}
+          status={receipt.status}
+          needsALookHref={`${entryHref()}#needs-a-look`}
+          onRetry={retrySend}
+        >
           {next ? (
             <Button variant="primary" type="button" className="qs-next" onClick={() => open({ teamKey: next.teamKey, nickname: next.nickname })}>
               Next pit: {next.teamNumber}
               {nameSuffix(next)}
             </Button>
           ) : null}
-        </section>
+        </SaveReceipt>
       ) : next ? (
         <Button variant="primary" type="button" className="qs-next qs-next-pit" onClick={() => open({ teamKey: next.teamKey, nickname: next.nickname })}>
           Visit {next.teamNumber}
@@ -218,7 +262,31 @@ export function QuickPitClient({ orgId }: { orgId: string }) {
         </Button>
       ) : null}
 
-      {summary.status === "loading" && !view ? <Skeleton height={220} /> : <QuickPitPicker teams={teams} onPick={open} />}
+      {summary.status === "loading" && !view ? (
+        <Skeleton height={220} />
+      ) : (
+        <QuickPitPicker teams={teams} drafts={drafts} ownTeamNumber={ownTeamNumber} eventName={data.eventName ?? null} onPick={open} />
+      )}
+
+      {otherVisited.length ? (
+        <details className="qs-section qs-visited">
+          <summary>Not on the event’s list · {otherVisited.length}</summary>
+          <p className="qs-fineprint">Pit visits for team numbers this event does not list. They do not count toward the event’s pits.</p>
+          <ul className="qs-list">
+            {otherVisited.map((other) => (
+              <li key={other.teamKey}>
+                <button type="button" className="qs-row is-done" onClick={() => open({ teamKey: other.teamKey, nickname: null })}>
+                  <span className="qs-dot is-visited" aria-hidden="true" />
+                  <span className="qs-row-main">
+                    <strong>{other.teamNumber}</strong>
+                  </span>
+                  <span className="qs-row-end">Visited</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
 
       <footer className="qs-foot">
         <a href={`/scout/match?orgId=${encodeURIComponent(orgId)}`}>Match scouting</a>

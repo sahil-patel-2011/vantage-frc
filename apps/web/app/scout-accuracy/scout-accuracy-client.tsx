@@ -318,7 +318,7 @@ export default function ScoutAccuracyClient({ orgId: initialOrgId }: { orgId?: s
         });
         const data = (await response.json()) as ScoutAccuracyView | { error?: string };
         if (!response.ok || !isScoutAccuracyView(data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

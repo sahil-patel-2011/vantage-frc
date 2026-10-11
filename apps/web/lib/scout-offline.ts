@@ -16,8 +16,10 @@ import {
 } from "@vantage/scouting/qr-handoff";
 import {
   drainOutboxChunks,
+  OutboxPushError,
   parseOutboxChunkBody,
   type OutboxChunkOutcome,
+  type OutboxFailureKind,
 } from "./scouting/outbox-chunk";
 import { withSyncBackoff } from "./scouting/sync-backoff";
 import { assertScoutStorageUser, idbValue, requireScoutStorageUser, scoutStorageUser, scoutTransaction } from "./scouting/personal-store";
@@ -35,7 +37,27 @@ const CACHE = "event-cache";
 const META = "meta";
 const LAST_ORG_KEY = "lastOrgId";
 
+/** How long one sync POST may take before its rows are counted as "not sent yet". */
+export const SYNC_REQUEST_TIMEOUT_MS = 20_000;
+
 export function stableClientId(): string { return crypto.randomUUID(); }
+
+/** Fired on this window whenever the scouting outbox gains, loses or sets aside an entry. */
+export const SCOUT_OUTBOX_CHANGED_EVENT = "vantage:scout-outbox-changed";
+
+/**
+ * Tell the frame's "Sync pending" pill (and anything else counting the queue) to look again
+ * now, not at its next 12-second check: right after an offline save the pill used to be
+ * missing for up to 12 seconds, and a scout read that as "nothing waiting".
+ */
+function notifyOutboxChanged(detail: { sent?: number } = {}): void {
+  if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") return;
+  try {
+    window.dispatchEvent(new CustomEvent(SCOUT_OUTBOX_CHANGED_EVENT, { detail }));
+  } catch {
+    // An old browser without CustomEvent still syncs; the pill catches up on its timer.
+  }
+}
 
 export async function queueEntry(entry: SyncEntry): Promise<void> {
   if (!entry.orgId) throw new Error("Choose your team before saving scouting.");
@@ -45,6 +67,28 @@ export async function queueEntry(entry: SyncEntry): Promise<void> {
   await scoutTransaction(user, OUTBOX, "readwrite", async tx => {
     await idbValue(tx.objectStore(OUTBOX).put(locked));
   });
+  notifyOutboxChanged();
+}
+
+/**
+ * Where one saved entry is now: still waiting in this phone's outbox, set aside because the
+ * server refused it (with the server's reason), or gone, which only an acknowledgement does.
+ * The receipt after Save reads this rather than trusting that a sync "finished".
+ */
+export async function outboxEntryState(
+  orgId: string,
+  clientId: string,
+): Promise<{ state: "queued" } | { state: "set-aside"; reason: string } | { state: "gone" }> {
+  const user = await requireScoutStorageUser(orgId);
+  const [queued, rejected] = await scoutTransaction(user, [OUTBOX, ENTRY_QUARANTINE], "readonly", tx =>
+    Promise.all([
+      idbValue<SyncEntry | undefined>(tx.objectStore(OUTBOX).get(clientId)),
+      idbValue<QuarantinedEntry | undefined>(tx.objectStore(ENTRY_QUARANTINE).get(clientId)),
+    ]));
+  await assertScoutStorageUser(user, orgId);
+  if (queued && queued.orgId === orgId) return { state: "queued" };
+  if (rejected && rejected.orgId === orgId) return { state: "set-aside", reason: rejected.reason };
+  return { state: "gone" };
 }
 
 // Archived media remains in the legacy database; removed uploads cannot be restarted.
@@ -85,12 +129,17 @@ export async function cacheEvent(orgId: string, data: unknown): Promise<void> {
 }
 
 export async function getCachedEvent<T>(orgId: string): Promise<T | null> {
+  return (await getCachedEventRecord<T>(orgId))?.data ?? null;
+}
+
+/** The saved copy and when it was saved, so a page can say "the copy from 3 minutes ago". */
+export async function getCachedEventRecord<T>(orgId: string): Promise<{ data: T; cachedAt: string | null } | null> {
   const user = await scoutStorageUser(orgId);
   if (!user) return null;
   const row = await scoutTransaction(user, CACHE, "readonly", tx =>
-    idbValue<{ data: T } | undefined>(tx.objectStore(CACHE).get(orgId)));
+    idbValue<{ data: T; cachedAt?: string } | undefined>(tx.objectStore(CACHE).get(orgId)));
   await assertScoutStorageUser(user, orgId);
-  return row?.data ?? null;
+  return row?.data ? { data: row.data, cachedAt: typeof row.cachedAt === "string" ? row.cachedAt : null } : null;
 }
 
 async function entriesFor(user: string, orgId?: string): Promise<SyncEntry[]> {
@@ -256,6 +305,12 @@ export type SyncOutboxResult = {
   attempts: number;
   /** Entries the server permanently rejected this pass — moved to quarantine. */
   quarantined: number;
+  /** Client ids the server acknowledged and this phone removed from its outbox. */
+  sent: string[];
+  /** Client ids set aside this pass, with the server's reason. */
+  setAside: Array<{ clientId: string; reason: string }>;
+  /** Why anything stayed queued (signed out, server error, no answer); null when nothing failed. */
+  failure: OutboxFailureKind | null;
 };
 
 export type QuarantinedEntry = {
@@ -369,11 +424,17 @@ async function pushEntryBatch(user: string, orgId: string, batch: SyncEntry[]): 
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ orgId, entries: batch, resultsMode: "per-entry" }),
-    signal: AbortSignal.timeout(15_000),
+    // A slow venue network still gets most answers inside 15 seconds; an entry that misses
+    // stays queued and the page says it was not sent (never "Sent" on a timeout).
+    signal: AbortSignal.timeout(SYNC_REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? "Couldn't sync yet. It will retry when you're back online.");
+    const body = (await response.json().catch(() => ({}))) as { error?: unknown; reason?: unknown };
+    throw new OutboxPushError(
+      response.status,
+      typeof body.error === "string" && body.error.trim() ? body.error : "Couldn't sync yet. It will retry when you're back online.",
+      typeof body.reason === "string" ? body.reason : null,
+    );
   }
   return parseOutboxChunkBody(await response.json().catch(() => ({})));
 }
@@ -402,28 +463,39 @@ async function drainOutboxNow(user: string, orgId: string): Promise<Omit<SyncOut
   const validations: SyncValidation[] = [];
   let count = 0;
   let quarantined = 0;
+  const sent: string[] = [];
+  const setAside: Array<{ clientId: string; reason: string }> = [];
+  let failure: OutboxFailureKind | null = null;
   for (let pass = 0; pass < 3; pass += 1) {
     await assertScoutStorageUser(user, orgId);
     const all = await entriesFor(user, orgId);
     const { allowed: entries } = partitionByOrgId(all, orgId);
     if (!entries.length) break;
     const drain = await drainOutboxChunks(entries, batch => pushEntryBatch(user, orgId, batch));
+    failure = drain.failure;
     let changedDuringUpload = false;
     for (const { entry, acknowledgement } of drain.accepted) {
       validations.push(...((acknowledgement.validations ?? []) as SyncValidation[]));
-      if (await removeIfUnchanged(user, entry)) count += 1;
-      else changedDuringUpload = true;
+      if (await removeIfUnchanged(user, entry)) {
+        count += 1;
+        sent.push(entry.clientId);
+      } else changedDuringUpload = true;
     }
     for (const { entry, reason } of [...drain.rejected, ...drain.isolated]) {
-      if (await quarantinePersonalEntry(user, entry, reason)) quarantined += 1;
-      else changedDuringUpload = true;
+      if (await quarantinePersonalEntry(user, entry, reason)) {
+        quarantined += 1;
+        setAside.push({ clientId: entry.clientId, reason });
+      } else changedDuringUpload = true;
     }
+    if (count || quarantined) notifyOutboxChanged({ sent: count });
+    // Signed out: the next pass would get the same 401.
+    if (failure === "signed-out") break;
     // A different robot may have been saved while this batch was in flight.
     // Re-read after progress, not just after a correction to the same ID.
     // Keep the three-pass limit; unacknowledged rows remain queued for retry.
     if (!changedDuringUpload && !drain.accepted.length && !drain.rejected.length && !drain.isolated.length) break;
   }
-  return { count, validations, quarantined };
+  return { count, validations, quarantined, sent, setAside, failure };
 }
 
 /**
@@ -434,7 +506,7 @@ export async function syncOutbox(
   orgId: string,
   options?: { signal?: AbortSignal; maxAttempts?: number; onRetry?: (n: number, delayMs: number) => void },
 ): Promise<SyncOutboxResult> {
-  if (!navigator.onLine) return { count: 0, validations: [], attempts: 0, quarantined: 0 };
+  if (!navigator.onLine) return { count: 0, validations: [], attempts: 0, quarantined: 0, sent: [], setAside: [], failure: null };
   let attempts = 0;
   const result = await withSyncBackoff(
     async () => {
