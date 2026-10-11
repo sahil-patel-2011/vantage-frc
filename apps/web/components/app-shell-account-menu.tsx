@@ -105,8 +105,8 @@ export function AppShellAccountMenu({
           <Icon name="book" /><span>Help</span>
         </a>
         {me.platformAdmin ? (
-          <a role="menuitem" href="/admin" onClick={onClose}>
-            Platform admin
+          <a className="soft-account-destination" role="menuitem" href="/admin" onClick={onClose}>
+            <Icon name="shield" /><span>Platform admin</span>
           </a>
         ) : null}
         <button

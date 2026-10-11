@@ -23,7 +23,8 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`/competition?tab=scouting&mode=free&orgId=${homeOrg}&reportId=previous-team-record`);
     await expect(page.getByRole("heading", { name: "Practice scouting", exact: true })).toBeVisible();
-    await page.getByRole("button", { name: /^Switch team —/ }).filter({ visible: true }).click();
+    // The top bar's team button on narrow screens, the sidebar's team card on wide ones.
+    await page.locator('[aria-label^="Switch team —"]').filter({ visible: true }).first().click();
     await expect(page.getByRole("heading", { name: "Choose your team", exact: true })).toBeVisible();
     await page.locator(".workspace-org-pick a").filter({ hasText: marker }).click();
     await expect(page).toHaveURL(new RegExp(orgId));

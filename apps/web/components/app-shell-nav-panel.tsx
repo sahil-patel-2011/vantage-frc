@@ -40,11 +40,9 @@ export function AppShellNavPanel({
   closeNav,
   panelCloseRef,
   searchInputRef,
-  me,
   orgLabel,
   rolePlanCue,
   orgId,
-  memberships,
   navQuery,
   setNavQuery,
   resultRows,
@@ -64,8 +62,6 @@ export function AppShellNavPanel({
   pathSearch,
   navHrefAllowed,
   openIslandEditor,
-  signingOut,
-  onSignOut,
 }: {
   navOpen: boolean;
   closeNav: () => void;
@@ -111,9 +107,6 @@ export function AppShellNavPanel({
     if (!navOpen || !queryActive || activeRowIndex < 0) return;
     document.getElementById(`soft-nav-row-${activeRowIndex}`)?.scrollIntoView({ block: "nearest" });
   }, [navOpen, queryActive, activeRowIndex]);
-  const activeMembershipRole = orgId
-    ? (memberships.find((row) => row.orgId === orgId)?.role ?? null)
-    : null;
   return (
     <>
       <button className={`soft-scrim soft-navigation-scrim${navOpen ? " open" : ""}`} type="button" aria-label="Close navigation" aria-hidden={!navOpen} inert={!navOpen} tabIndex={-1} onClick={closeNav} />
@@ -298,30 +291,15 @@ export function AppShellNavPanel({
               pathname={pathname} pathSearch={pathSearch} orgId={orgId}
               navHrefAllowed={navHrefAllowed} closeNav={closeNav}
             />
-            {/* Settings scroll with destinations, so short screens still have room
-                to browse. Sign-out alone stays in the fixed footer. */}
-            <div className="soft-drawer-settings" aria-label="Settings">
-              <p className="main-menu-heading">Manage</p>
-              {me.platformAdmin ? (
-                <a href="/admin" onClick={closeNav}><Icon name="shield" /><span><strong>Platform admin</strong></span></a>
-              ) : null}
-              <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
-                <Icon name="gear" /><span><strong>Account</strong></span>
-              </a>
-              {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
-                <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
-                  <Icon name="users" /><span><strong>Team admin</strong></span>
-                </a>
-              ) : null}
-              <button type="button" className="soft-drawer-shortcut-edit" onClick={openIslandEditor}>
-                <Icon name="grid" /><span><strong>Edit shortcuts</strong></span>
-              </button>
-            </div>
           </nav>
         )}
-        {!queryActive ? <footer className="soft-drawer-foot">
-          <button type="button" disabled={signingOut} onClick={onSignOut}>
-            <Icon name="logout" />{signingOut ? "Signing out…" : "Sign out"}
+        {/* The menu is for going places. Who you are (Team admin, Platform admin, Sign out) lives
+            in the avatar menu at the top right, on every screen size, so neither repeats the other. */}
+        {!queryActive ? <footer className="soft-drawer-foot soft-drawer-toolbar" aria-label="Help and settings">
+          <a href={withOrgHref("/account", orgId)} onClick={closeNav}><Icon name="gear" /><span>Account</span></a>
+          <a href={withOrgHref("/help", orgId)} onClick={closeNav}><Icon name="book" /><span>Help</span></a>
+          <button type="button" className="soft-drawer-shortcut-edit" aria-label="Edit shortcuts" onClick={openIslandEditor}>
+            <Icon name="grid" /><span>Shortcuts</span>
           </button>
         </footer> : null}
       </aside>

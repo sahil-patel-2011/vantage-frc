@@ -23,6 +23,8 @@ import "./macos-product.css";
 import "./motion-polish.css";
 // Last: the design and accessibility pass (field boundaries, contrast, touch targets, bottom bar).
 import "./shell-clarity.css";
+// After everything: the menus (four-place dock, workspace list, bottom toolbar).
+import "./menu-polish.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

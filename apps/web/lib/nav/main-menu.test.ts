@@ -25,7 +25,7 @@ describe("one main menu", () => {
     expect(new Set(items.map(item => item.href)).size).toBe(items.length);
     expect(items.some(item => item.label === "Pit display")).toBe(true);
     expect(items.some(item => item.href === "/competition?tab=scouting")).toBe(false);
-    expect(sections.map(section => section.label)).toEqual(["Competition tools", "Team", "Build", "Business", "AI"]);
+    expect(sections.map(section => section.label)).toEqual(["Competition", "Team", "Build", "Business", "AI"]);
   });
   it("never grants workspace, section, or sponsor access through the menu", () => {
     const access = [{ hubId: "competition" as const, allowedTabIds: ["scouting"] }];

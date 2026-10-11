@@ -722,7 +722,7 @@ export default function AppShell() {
       </a>
       <NextActionsDedupe routeKey={`${pathname}:${locationTick}`} />
       {!onboarding ? <AppShellSidebar groups={visibleNavGroups} pathname={pathname} pathSearch={pathSearch}
-        orgId={orgId} orgLabel={orgLabel} collapsed={sidebarCollapsed} onCollapse={toggleSidebar} allowed={navHrefAllowed} /> : null}
+        orgId={orgId} orgLabel={orgLabel} roleCue={rolePlanCue} collapsed={sidebarCollapsed} onCollapse={toggleSidebar} allowed={navHrefAllowed} /> : null}
       <AppShellTopbar
         showBack={showBack}
         onBack={() => navigate(backHref)}

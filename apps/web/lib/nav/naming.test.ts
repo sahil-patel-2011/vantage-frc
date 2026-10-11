@@ -19,7 +19,7 @@ describe("one name per destination", () => {
   it("Account, everywhere it is linked", () => {
     expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/account", label: "Account"/);
     expect(read("components/app-shell-account-menu.tsx")).toMatch(/<span>Account<\/span>/);
-    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/<strong>Account<\/strong>/);
+    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/<Icon name="gear" \/><span>Account<\/span>/);
     for (const file of ["components/app-shell-sidebar.tsx", "components/app-shell-account-menu.tsx", "components/app-shell-nav-panel.tsx"]) {
       expect(read(file)).not.toMatch(/Personal settings|Account and settings|label: "Settings"/);
     }
@@ -51,13 +51,32 @@ describe("one name per destination", () => {
   });
 });
 
+describe("two menus, no repeats", () => {
+  it("the hamburger menu goes places; who you are (Sign out, Team admin, Platform admin) is the avatar menu's", () => {
+    const panel = read("components/app-shell-nav-panel.tsx");
+    const account = read("components/app-shell-account-menu.tsx");
+    for (const label of ["Sign out", "Team admin", "Platform admin"]) {
+      expect(panel).not.toMatch(new RegExp(`>${label}<`));
+    }
+    expect(account).toMatch(/"Signing out…" : "Sign out"/);
+    expect(account).toMatch(/<span>Team admin<\/span>/);
+  });
+
+  it("the menu's dock row has the four everyday places, the same ones the sidebar lists", () => {
+    const groups = read("components/app-shell-nav-groups.tsx");
+    for (const href of ["/dashboard", "/competition?tab=scouting", "/my-day", "/todos"]) {
+      expect(groups).toContain(`href: "${href}"`);
+    }
+  });
+});
+
 describe("one icon per meaning (A6-23)", () => {
   it("Ask AI is sparkles everywhere, Help is a book, Security and Platform admin a shield", () => {
     expect(read("lib/nav/product-nav.ts")).not.toMatch(/label: "Ask AI", icon: "bolt"/);
     expect(read("components/app-shell-topbar.tsx")).toMatch(/aria-label="Ask AI"[\s\S]{0,200}<Icon name="sparkles" \/>/);
     expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/help", label: "Help", icon: "book"/);
     expect(read("lib/nav/settings-nav.ts")).toMatch(/label: "Security", href: "\/security", icon: "shield"/);
-    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/<Icon name="shield" \/><span><strong>Platform admin<\/strong>/);
+    expect(read("components/app-shell-account-menu.tsx")).toMatch(/<Icon name="shield" \/><span>Platform admin<\/span>/);
   });
 });
 

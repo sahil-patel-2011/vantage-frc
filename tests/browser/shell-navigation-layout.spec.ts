@@ -47,7 +47,7 @@ test("desktop destinations have one menu without repeating saved shortcuts", asy
   await expect(panel).toBeHidden();
   await openNav(page);
   await expect(panel.locator(".soft-drawer-shortcuts")).toHaveCount(0);
-  await expect(panel.locator(".main-menu-launch a")).toHaveCount(2);
+  await expect(panel.locator(".main-menu-launch a")).toHaveCount(4);
   await panel.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) }).click();
   await panel.getByRole("navigation", { name: "AI", exact: true }).getByRole("link", { name: "Chat", exact: true }).click();
   await expect(page).toHaveURL(/\/ai/);

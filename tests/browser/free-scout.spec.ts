@@ -97,8 +97,8 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     const opener = navigationOpener(page);
     await openNav(page);
     const drawer = page.getByRole("complementary", { name: "Product navigation" });
-    for (const name of ["Home", "Scouting"]) await expect(drawer.getByRole("link", { name: new RegExp(`^${name} `) })).toBeVisible();
-    for (const name of ["Competition tools", "Team", "Build", "Business", "AI"]) {
+    for (const name of ["Home", "Scouting"]) await expect(drawer.getByRole("link", { name, exact: true })).toBeVisible();
+    for (const name of ["Competition", "Team", "Build", "Business", "AI"]) {
       const section = drawer.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ has: page.getByText(name, { exact: true }) }) });
       await section.locator("summary").click();
       await expect(section.getByRole("navigation", { name, exact: true }).getByRole("link").first()).toBeVisible();
@@ -106,7 +106,7 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     }
     await expect(drawer.getByRole("link", { name: "Logistics", exact: true })).toHaveCount(0);
     await expect(drawer.getByRole("button", { name: /Show .* tools/ })).toHaveCount(0);
-    const workspace = drawer.getByRole("link", { name: /^Scouting / });
+    const workspace = drawer.getByRole("link", { name: "Scouting", exact: true });
     await drawer.evaluate(async (node) => {
       await Promise.all(node.getAnimations().map((animation) => animation.finished.catch(() => {})));
     });

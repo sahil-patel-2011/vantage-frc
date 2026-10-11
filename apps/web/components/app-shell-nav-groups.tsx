@@ -5,6 +5,13 @@ import { islandTabIsActive } from "./app-shell-model";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import { mainMenuSearch, mainMenuSections } from "../lib/nav/main-menu";
 
+export const MENU_LAUNCH = [
+  { href: "/dashboard", label: "Home", icon: "home" },
+  { href: "/competition?tab=scouting", label: "Scouting", icon: "scout" },
+  { href: "/my-day", label: "My Day", icon: "calendar" },
+  { href: "/todos", label: "Tasks", icon: "assignment" },
+] as const;
+
 /** One menu owns destinations; each disclosure has one column of real links. */
 export function AppShellNavGroups({ groups, pathname, pathSearch, orgId, navHrefAllowed, closeNav }: {
   groups: ProductNavGroup[];
@@ -18,13 +25,13 @@ export function AppShellNavGroups({ groups, pathname, pathSearch, orgId, navHref
   const sections = mainMenuSections(groups, navHrefAllowed);
   const activeSearch = mainMenuSearch(pathname, pathSearch, navHrefAllowed);
   return <>
+    {/* The four places people go every day, one tap each, like a phone's dock. The desktop sidebar
+        lists the same four (Home under Workspace; My Day and Tasks under Your day). */}
     <div className="main-menu-launch">
-      {[{ href: "/dashboard", label: "Home", hint: "Your overview", icon: "home" as const },
-        { href: "/competition?tab=scouting", label: "Scouting", hint: "Collect reports", icon: "scout" as const }]
-        .filter(item => navHrefAllowed(item.href)).map(item => <a key={item.href}
+      {MENU_LAUNCH.filter(item => navHrefAllowed(item.href)).map(item => <a key={item.href}
           className="main-menu-app" href={withOrgHref(item.href, orgId)} onClick={closeNav}
-          aria-current={islandTabIsActive(pathname, activeSearch, item.href) ? "page" : undefined}>
-          <i className="main-menu-symbol"><Icon name={item.icon} /></i><span><strong>{item.label}</strong><small>{item.hint}</small></span>
+          aria-current={islandTabIsActive(pathname, activeSearch, item.href) || pathname === item.href ? "page" : undefined}>
+          <i className="main-menu-symbol"><Icon name={item.icon} /></i><span><strong>{item.label}</strong></span>
         </a>)}
     </div>
     {sections.length > 0 ? <p className="main-menu-heading">Workspaces</p> : null}

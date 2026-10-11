@@ -119,14 +119,16 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(drawer.getByRole("combobox", { name: /Search pages, tools/ })).toBeVisible();
   // The island lists four of these same apps, so it steps aside while the panel is up.
   await expect(island).toBeHidden();
-  await expect(drawer.locator(".main-menu-launch a")).toHaveCount(2);
+  // The four everyday places, as a dock row: Home, Scouting, My Day, Tasks.
+  await expect(drawer.locator(".main-menu-launch a")).toHaveCount(4);
   await expect(drawer.getByRole("link", { name: /^Home/ })).toBeVisible();
   await expect(drawer.getByRole("link", { name: /^Scouting/ })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Competition", exact: true })).toHaveCount(0);
   await expect(drawer.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Forms", exact: true })).toHaveCount(0);
   await expect(drawer.getByRole("link", { name: "Account", exact: true })).toHaveCount(1);
-  await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
+  // Sign out lives in the avatar menu only; the menu is for going places.
+  await expect(drawer.getByRole("button", { name: "Sign out" })).toHaveCount(0);
   await drawer.getByRole("combobox").fill("scout");
   await drawer.getByRole("option").filter({ hasText: /Scout/ }).first().click();
   await expect(page).toHaveURL(/\/competition\?tab=scouting/);

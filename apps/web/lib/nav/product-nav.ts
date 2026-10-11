@@ -42,6 +42,8 @@ export type ProductNavGroup = {
 };
 
 export type ProductNavIcon =
+  // The desktop sidebar's show/hide control: a panel with its left column, as on macOS.
+  | "sidebar"
   // Added for the shared row/tile kit: the shapes a settings or admin screen
   // needs, which the navigation set never had because navigation never needed
   // a bin or a sign-out arrow.

@@ -36,7 +36,7 @@ const DESTINATION_ICONS: Record<string, ProductNavIcon> = {
 /** Shared menu destinations keep the same team and tab permission checks as pages. */
 export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (href: string) => boolean, includeScout = false) {
   const definitions: { id: ProductHubDef["id"]; label: string; icon: ProductNavIcon }[] = [
-    { id: "competition", label: "Competition tools", icon: "swords" },
+    { id: "competition", label: "Competition", icon: "swords" },
     { id: "team", label: "Team", icon: "users" },
     { id: "build", label: "Build", icon: "cube" },
     { id: "business", label: "Business", icon: "clipboard" },
