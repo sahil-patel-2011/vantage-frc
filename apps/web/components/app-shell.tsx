@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
 import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
 import { AppTour } from "./app-tour";
+import { StatusEcho } from "./status-echo";
 import { LegalUpdateBanner } from "./legal-update-banner";
 import { useSheetsAutoSync } from "./use-sheets-auto-sync";
 import { AppShellTopbar } from "./app-shell-topbar";
@@ -794,6 +795,7 @@ export default function AppShell() {
         onSignOut={() => void handleSignOut()}
       />
       <AppTour />
+      {entryScreen ? null : <StatusEcho />}
       {onboarding ? null : (
       <AppShellIsland
         orgId={orgId}

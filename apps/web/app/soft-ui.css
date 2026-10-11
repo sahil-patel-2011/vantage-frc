@@ -466,6 +466,8 @@ body.soft-nav-panel-open .soft-island{
 .soft-toast{padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
 .soft-toast.ok strong{color:#166534}.soft-toast.bad{background:#dc2626;border-color:#dc2626;color:#fff}
 .soft-toast p{margin:4px 0 0;font-size:12px;opacity:.85}
+/* StatusEcho repeats an off-screen result; it never takes a tap from the page under it. */
+.status-echo{pointer-events:none}
 
 @media(max-width:640px){
   .soft-snapshot-grid strong{font-size:22px}
