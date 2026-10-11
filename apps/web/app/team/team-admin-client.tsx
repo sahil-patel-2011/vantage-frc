@@ -639,8 +639,6 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     <main className="module-page team-admin-page">
       {header}
       <OfflineBanner feature="Team admin" fromCache={fromCache} cachedAt={cachedAt} />
-      <TeamJoinCode key={orgId} orgId={orgId} />
-
       <TeamAdminInvitesPanel
         deliveryBanner={deliveryBanner}
         emailOff={inviteEmailIsOff(deliveryMode)}
@@ -660,6 +658,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         onCopyLink={(id, url) => void copyInviteLink(id, url)}
         onAct={(inviteId, action) => void act(inviteId, action)}
       />
+
+      {/* Inviting is this page's main job, so it comes first; the team code is the other way in. */}
+      <TeamJoinCode key={orgId} orgId={orgId} />
 
       <TeamAdminAccessPanel
         accessRequests={accessRequests}

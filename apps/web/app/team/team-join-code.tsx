@@ -63,7 +63,7 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
   if (!code && !error) return null;
   return (
     <details className="team-code-panel">
-      <summary>Join with a team code</summary>
+      <summary data-disclosure>Share the team join code</summary>
       <p className="app-muted" id={helpId}>
         Share the code with your team. People verify their email and join as
         team members.

@@ -89,7 +89,7 @@ for (const width of [1440, 390])
       const manager = await owner.newPage();
       await manager.setViewportSize({ width, height: 900 });
       await manager.goto(`/team/admin?orgId=${orgId}`);
-      await manager.getByText("Join with a team code", { exact: true }).click();
+      await manager.getByText("Share the team join code", { exact: true }).click();
       await manager
         .getByRole("button", { name: "Generate join code", exact: true })
         .click();
@@ -117,7 +117,7 @@ for (const width of [1440, 390])
         await manager.evaluate(() => navigator.clipboard.readText()),
       ).toContain("001234");
       await manager.reload();
-      await manager.getByText("Join with a team code", { exact: true }).click();
+      await manager.getByText("Share the team join code", { exact: true }).click();
       await expect(
         manager.getByLabel("Team join code", { exact: true }),
       ).toHaveText("001234");

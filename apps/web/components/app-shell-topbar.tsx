@@ -126,7 +126,10 @@ export function AppShellTopbar({
             </button>
           ) : null}
           <div className="soft-page-head-copy">
-            {isHubRoot ? (
+            {/* A page with no title of its own showed "Vantage" over the team ("Vantage /
+                Team 6925" on Calendar); without a title the team switcher stands alone, as on a
+                hub's front page. */}
+            {isHubRoot || (!showBack && (!title || title.trim() === "Vantage")) ? (
               <TeamChip
                 label={orgLabel}
                 onOpen={onOpenTeams}

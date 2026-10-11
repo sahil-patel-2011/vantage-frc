@@ -70,7 +70,7 @@ export function TeamAdminInvitesPanel({
       <form className="team-invite-form" id="invite-form" onSubmit={onSend}>
         <h2 id="invite-title">Invite someone</h2>
         <p className="app-muted">
-          They join when they verify this email. You can also share your team’s join code above.
+          They join when they verify this email. You can also share your team’s join code below.
         </p>
         <div className="team-invite-fields">
           <label>

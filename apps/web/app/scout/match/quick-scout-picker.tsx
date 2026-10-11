@@ -160,7 +160,7 @@ export function QuickScoutPicker({
       ) : null}
 
       <details className="qs-section qs-byhand" open={!card && mine.length === 0}>
-        <summary>Not on the schedule?</summary>
+        <summary data-disclosure>Not on the schedule?</summary>
         <form
           className="qs-byhand-form"
           onSubmit={(event) => {
