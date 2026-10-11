@@ -1,6 +1,6 @@
 /* Privacy Policy / Terms of Service layout.
-   Tokens only (--m-*), which flip under html[data-theme="dark"] .marketing-lux.
-   Tokens that exist only in the dark block carry a light fallback here. */
+   Tokens only (--m-*). The public pages stay light in every theme (see the .marketing-lux
+   block in system.css). */
 
 .legal-doc {
   --legal-gap: clamp(24px, 4vw, 56px);
@@ -195,10 +195,6 @@
   color: var(--legal-link);
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-
-html[data-theme="dark"] .legal-doc {
-  --legal-link: #9ec5ff;
 }
 
 .legal-back-to-top {
