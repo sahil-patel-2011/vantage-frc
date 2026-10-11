@@ -1,27 +1,28 @@
 import type { Metadata } from "next";
 import { PUBLIC_SIGNUP_DATE_LABEL } from "@vantage/core/public-signup";
 import { WaitlistSection } from "../components/marketing/waitlist-section";
-import {
-  MarketingHeroActions,
-  SiteFooter,
-  SiteHeader,
-} from "../components/marketing/site-header";
+import { MarketingHeroActions, SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import { FAQ } from "../components/marketing/faq";
-import { HomeShowcase } from "../components/marketing/home-showcase";
-import { HeroProductPanel } from "../components/marketing/hero-product";
+import { HeroStage } from "../components/marketing/illustrations";
+import { DepthSections, SeasonOverview, TrustSection } from "../components/marketing/home-sections";
 import { LaunchAvailability } from "../components/marketing/launch-availability";
+import { ScrollReveal } from "../components/marketing/scroll-reveal";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
-import "./marketing-showcase.css";
 
 export const revalidate = 86_400;
 
 export const metadata: Metadata = marketingPageMetadata({
   title: "Vantage — your FRC team, connected",
   description:
-    `An FRC team workspace for scouting, strategy, team coordination, robot development and business. Free to use, with optional personal AI connections. Teams are set up from ${PUBLIC_SIGNUP_DATE_LABEL}; contact us for early access.`,
+    `Plan, scout, build and learn in one place: pit-first scouting that works offline, team tasks, hours and money, GitHub pull request reviews and guided lessons for FRC teams. Free to use. Teams are set up from ${PUBLIC_SIGNUP_DATE_LABEL}.`,
   path: "/",
 });
 
+/**
+ * The home page, one idea per section: what Vantage is (hero) → the season in four parts →
+ * each part in depth → trust and data → questions → the waitlist. Cost is in the trust section
+ * and the FAQ, and the Cost page has the detail.
+ */
 export default function Home() {
   const entityLd = organizationSoftwareJsonLd();
   return (
@@ -30,36 +31,32 @@ export default function Home() {
       <main>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(entityLd) }} />
 
-        <section className="lux-hero" aria-labelledby="lux-hero-title">
-          <div className="lux-hero-backdrop" aria-hidden="true" />
-          <div className="lux-hero-inner">
-            <div className="lux-hero-copy">
-              <p className="lux-kicker">Built for FIRST Robotics Competition</p>
-              <h1 id="lux-hero-title">One team.<br /><span>A clearer season.</span></h1>
-              <p>
-                Plan the work. Scout the match. Build the robot. Bring your people, observations
-                and decisions together, from kickoff to competition.
+        <section className="mx-hero" aria-labelledby="mx-hero-title">
+          <div className="mx-wrap">
+            <div className="mx-hero-copy">
+              <p className="mx-eyebrow">For FIRST Robotics Competition teams</p>
+              <h1 className="mx-display" id="mx-hero-title">
+                <span>One team.</span> <span>A clearer season.</span>
+              </h1>
+              <p className="mx-lead">
+                Plan the week, scout every match, build the robot and teach new members, in one place your whole
+                team shares. Free for FRC teams.
               </p>
               <MarketingHeroActions />
-              <ul className="mk-hero-proof">
-                <li>Scouting that saves on your device</li>
-                <li>Connected tools for the whole team</li>
-                <li>Free to use. AI connections are optional.</li>
-              </ul>
               <LaunchAvailability />
             </div>
-            <HeroProductPanel />
+            <HeroStage />
           </div>
         </section>
 
-        <HomeShowcase />
-        {/* No separate cost section here: free Vantage and optional personal AI are in the hero and the
-            FAQ, and the Cost page has the detail. It was said four times on this page. */}
+        <SeasonOverview />
+        <DepthSections />
+        <TrustSection />
         <FAQ />
-
         <WaitlistSection />
       </main>
       <SiteFooter />
+      <ScrollReveal />
     </div>
   );
 }

@@ -3,14 +3,15 @@
 import { useEffect } from "react";
 
 /**
- * Fade/rise-on-scroll for elements marked with [data-reveal].
- * Progressive enhancement: nothing is hidden until this mounts
- * (CSS is gated on html.reveal-armed), and prefers-reduced-motion
- * short-circuits to fully visible content.
+ * Fade-and-rise for elements marked with [data-mx-reveal] as they scroll into view
+ * (marketing-site.css). Progressive enhancement: nothing is hidden until this mounts (the CSS is
+ * gated on html.reveal-armed), anything already on screen at that moment stays shown, and under
+ * prefers-reduced-motion everything is simply visible. Opacity and transform only, so a reveal
+ * never moves the layout.
  */
 export function ScrollReveal() {
   useEffect(() => {
-    const els = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+    const els = Array.from(document.querySelectorAll<HTMLElement>("[data-mx-reveal]"));
     if (els.length === 0) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -18,6 +19,17 @@ export function ScrollReveal() {
       els.forEach((el) => el.classList.add("is-in"));
       return;
     }
+
+    // Anything already in view (or above it, after a reload partway down) shows at once.
+    const pending = els.filter((el) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 40) {
+        el.classList.add("is-in");
+        return false;
+      }
+      return true;
+    });
+    if (pending.length === 0) return;
 
     document.documentElement.classList.add("reveal-armed");
     const io = new IntersectionObserver(
@@ -29,17 +41,9 @@ export function ScrollReveal() {
           }
         }
       },
-      { rootMargin: "80px 0px 0px 0px", threshold: 0.01 },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.01 },
     );
-    els.forEach((el) => {
-      // Anything already in view on mount shows immediately (no pop-in).
-      const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight + 40 && rect.bottom > 0) {
-        el.classList.add("is-in");
-      } else {
-        io.observe(el);
-      }
-    });
+    pending.forEach((el) => io.observe(el));
 
     return () => {
       io.disconnect();

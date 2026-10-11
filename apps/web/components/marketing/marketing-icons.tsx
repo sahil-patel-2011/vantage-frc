@@ -18,7 +18,8 @@ export type MIconName =
   | "flag"
   | "wrench"
   | "calendar"
-  | "coins";
+  | "coins"
+  | "monitor";
 
 const paths: Record<MIconName, React.ReactNode> = {
   chat: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />,
@@ -102,6 +103,12 @@ const paths: Record<MIconName, React.ReactNode> = {
       <circle cx="12" cy="12" r="8.5" />
       <path d="M15 9.3c-.6-1-1.7-1.5-3-1.5-1.8 0-3 .9-3 2.2 0 2.9 6 1.5 6 4.3 0 1.3-1.3 2.2-3 2.2-1.4 0-2.6-.6-3.2-1.6" />
       <path d="M12 6v1.8M12 16.2V18" />
+    </>
+  ),
+  monitor: (
+    <>
+      <rect x="2.5" y="4" width="19" height="13" rx="2" />
+      <path d="M8.5 21h7M12 17v4" />
     </>
   ),
 };
