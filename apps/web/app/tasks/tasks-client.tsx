@@ -170,7 +170,7 @@ export default function TasksClient() {
         title="Build-season task board"
         description={
           <>
-            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Separate from Team Todos; this board only shows tasks your team adds.
+            Plan build-season work by subsystem — priorities, owners, due dates, and progress. Todos lists all team work in one place; this board holds the build tasks your team adds here.
           </>
         }
       >
@@ -194,7 +194,7 @@ export default function TasksClient() {
           </label>
         ) : null}
       </PageHeader>
-      <TeamOpsNav orgId={orgId} active="todos" />
+      <TeamOpsNav orgId={orgId} within="todos" />
       <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (

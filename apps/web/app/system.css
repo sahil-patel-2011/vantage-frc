@@ -437,6 +437,23 @@ html[data-theme="dark"] .marketing-lux {
   letter-spacing: var(--tracking-kicker);
   text-transform: uppercase;
 }
+/* A crumb that links up a level ("Business / Season Costs") was the browser's blue underline. */
+.breadcrumbs a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+/* On touch the 12px line is too small to hit; the padding grows the target, the margin keeps the layout. */
+@media (pointer: coarse) {
+  .breadcrumbs a {
+    display: inline-block;
+    padding-block: 12px;
+    margin-block: -12px;
+  }
+}
 
 /* --- Type scale ------------------------------------------------------------
    Defaults for headings inside product surfaces. Before this, an <h2> with no

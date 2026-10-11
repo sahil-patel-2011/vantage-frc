@@ -302,7 +302,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       >
         <TeamBackgroundRelated orgId={orgId} canEdit={view?.canEdit === true} />
       </PageHeader>
-      <TeamOpsNav orgId={orgId} active="admin" />
+      <TeamOpsNav orgId={orgId} within="admin" />
       <OfflineBanner feature="Team background" fromCache={fromCache} cachedAt={cachedAt} />
 
       <FundingProfileClient orgId={orgId} />

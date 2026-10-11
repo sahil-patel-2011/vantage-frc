@@ -387,15 +387,7 @@ export default function CostsClient() {
               </select>
             </label>
           ) : null}
-          <Button as="a" variant="secondary" href={hubHref("/business", "budget", orgId)}>
-            Business budget
-          </Button>
-          <Button as="a" variant="secondary" href={hubHref("/business", "orders", orgId)}>
-            Orders
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/fundraisers", orgId)}>
-            Fundraisers
-          </Button>
+          {/* Orders, Fundraisers and the budget pages are in the related row just below. */}
         </div>
       </PageHeader>
       <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
@@ -444,7 +436,7 @@ export default function CostsClient() {
           <div className="costs-row-links">
             <a href={hubHref("/business", "orders", orgId)}>Orders →</a>
             <a href={withOrgHref("/fundraisers", orgId)}>Fundraisers →</a>
-            <a href={hubHref("/business", "budget", orgId)}>Business budget →</a>
+            <a href={hubHref("/business", "budget", orgId)}>Spending plan →</a>
           </div>
         </EmptyState>
       ) : (

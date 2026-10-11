@@ -20,7 +20,7 @@ export default async function TeamBackgroundPage({
           title="Team background"
           description="Mission, history, demographics, and achievements for sponsorship and grant drafts — scoped to your team only."
         />
-        <TeamOpsNav active="admin" />
+        <TeamOpsNav within="admin" />
         <EmptyState
           soft
           badge="Needs setup"
