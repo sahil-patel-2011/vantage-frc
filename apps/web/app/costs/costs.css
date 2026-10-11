@@ -54,6 +54,10 @@
 .costs-budget-form label{display:grid;gap:4px}
 .costs-budget-form label>span{color:var(--muted);font-size:12px}
 .costs-ai-toggle{display:flex;gap:8px;align-items:center;margin-left:auto;max-width:340px}
+/* The form's labels are grids (name over field); this one is a checkbox beside its text. */
+.costs-budget-form .costs-ai-toggle{display:flex;align-items:flex-start;gap:10px}
+.costs-budget-form .costs-ai-toggle input[type="checkbox"]{flex:none;width:20px;height:20px;min-height:0;margin:2px 0 0;padding:0}
+.costs-budget-form .costs-ai-toggle > span{color:var(--ink);font-size:13px}
 .costs-ai-toggle small{display:block;color:var(--muted)}
 
 .costs-assistant{display:grid;gap:8px;margin:0 0 16px;padding:16px 18px}
