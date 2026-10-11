@@ -35,7 +35,7 @@ describe("production schema deployment gate", () => {
   });
   it("checks the complete migration set in a read-only transaction and releases it", async () => {
     const db = database();
-    expect(await checkProductionSchema({ env: production, createPool: db.createPool })).toEqual({ checked: true, migrations: 4 });
+    expect(await checkProductionSchema({ env: production, createPool: db.createPool })).toEqual({ checked: true, migrations: REQUIRED_PRODUCTION_MIGRATIONS.length });
     expect(db.client.query.mock.calls).toEqual([["BEGIN READ ONLY"], ["SELECT id FROM public.schema_migrations WHERE id = ANY($1::text[])", [REQUIRED_PRODUCTION_MIGRATIONS]], ["ROLLBACK"]]);
     expect(db.client.release).toHaveBeenCalledOnce();
     expect(db.pool.end).toHaveBeenCalledOnce();
