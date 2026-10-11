@@ -244,6 +244,12 @@ export async function GET(request: Request) {
       sponsorsAllowed: profile.sponsorsAllowed,
     });
   } catch {
-    return Response.json({ authenticated: false }, { status: 401 });
+    // Only a missing session is 401. A database or auth outage is not "signed out": answering
+    // 401 here made clients drop the person's team and offer the waitlist. 503 lets them keep
+    // what they had (lib/nav/product-session treats 5xx as unreachable) and try again.
+    return Response.json(
+      { error: "Your account could not be loaded right now. Try again in a moment." },
+      { status: 503, headers: { "cache-control": "private, no-store", "retry-after": "5" } },
+    );
   }
 }
