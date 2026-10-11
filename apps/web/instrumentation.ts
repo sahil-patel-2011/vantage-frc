@@ -42,3 +42,17 @@ export const onRequestError: Instrumentation.onRequestError = async (err, reques
     // Reporting must never turn one error into two.
   }
 };
+
+/**
+ * Once per server process: the email that follows an AI credit gift's 80% and used-up inbox
+ * notices (lib/ai-credit/gift-mail.ts). Node only; a failure here only means no email.
+ */
+export async function register() {
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  try {
+    const { registerCreditGiftMailer } = await import("./lib/ai-credit/gift-mail");
+    registerCreditGiftMailer();
+  } catch {
+    // The inbox notice is written by the database either way.
+  }
+}

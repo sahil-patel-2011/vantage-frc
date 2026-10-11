@@ -19,7 +19,9 @@ import {
 
 export { readOrgAllowance } from "./allowance";
 export * from "./credit-gifts";
+export * from "./served-key";
 import { CREDIT_GIFT_PROVIDER } from "./credit-gifts";
+import { withServedKeyScope } from "./served-key";
 export type { AllowanceFeatureSpend, OrgAllowance } from "./allowance";
 
 export {
@@ -887,7 +889,8 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     }
   }
 
-  const receipt = await input.invoke(keySource);
+  // Which of several keys answered is known only inside the call (key failover).
+  const { value: receipt, servedKey } = await withServedKeyScope(() => input.invoke(keySource));
   if (receipt.costUsd < 0) throw new Error("Provider returned a negative cost");
   // The bridge adapter falls through to the resolved key chain whenever the paired
   // subscription cannot serve the turn, and receipt.provider names who actually did.
@@ -936,6 +939,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       JSON.stringify({
         ...(input.metadata ?? {}),
         ...(serialized ? {} : { meteringSerialized: false }),
+        ...(servedKey ? { servedKey } : {}),
         ...(settledKeySource === keySource ? {} : { settledFrom: keySource }),
         ...(settlement && settlement.shortfallUsd > 0
           ? { creditShortfallUsd: settlement.shortfallUsd }
