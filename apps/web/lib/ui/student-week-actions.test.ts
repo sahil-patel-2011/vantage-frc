@@ -61,7 +61,10 @@ describe("student-week action path", () => {
     expect(ready).toContain("Save on this phone");
     expect(ready).not.toMatch(/The Blue Alliance|Connect TBA/);
     const client = readFileSync(join(WEB, "app/scouting/scouting-client.tsx"), "utf8");
-    expect(client).toMatch(/persistScoutingSnapshot\(orgId, (?:fresh|data)\)/);
+    // Every live load goes through cacheLiveScouting, which writes the offline event and the snapshot.
+    expect(client).toMatch(/cacheLiveScouting\(orgId, (?:fresh|data|body)\)/);
+    const liveCache = readFileSync(join(WEB, "lib/scouting/live-cache.ts"), "utf8");
+    expect(liveCache).toMatch(/persistScoutingSnapshot\(orgId, data\)/);
     const persistence = readFileSync(join(WEB, "lib/scouting/snapshot.ts"), "utf8");
     expect(persistence).toMatch(/putFeatureSnapshot\("scouting"/);
     expect(client).toMatch(/AbortSignal\.timeout\(FEATURE_API_TIMEOUT_MS\)/);

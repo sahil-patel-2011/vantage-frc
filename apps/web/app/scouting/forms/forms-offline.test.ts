@@ -13,7 +13,9 @@ describe("Scout forms last snapshot stays on the phone", () => {
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
     expect(src).toMatch(/feature="Scout forms"/);
     expect(src).toMatch(/AbortSignal\.timeout/);
-    expect(src).toMatch(/if \(loadError && !payload\)/);
+    // The error shell shows only when this team's load failed with nothing cached; a stale
+    // error from the previously selected team must not replace the new team's forms.
+    expect(src).toMatch(/if \(loadedOrg === orgId && loadError && !payload\)/);
     expect(src).not.toMatch(/fetchFailed \|\| !view/);
     expect(src).not.toMatch(/fetchFailed \|\| view == null/);
   });
