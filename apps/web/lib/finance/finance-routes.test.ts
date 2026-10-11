@@ -211,7 +211,8 @@ describe("/api/finance/managers — only the owner chooses", () => {
     const response = await managers.POST(post({ orgId: ORG, action: "grant", userId: TARGET }));
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
-      error: "View-only people can't manage money. Change their access to Team member or Team admin first.",
+      // In the role words (QA A3-06): never "Team member or Team admin".
+      error: "A parent or guest can't manage money. Change their access to Student or Mentor or coach first.",
     });
     expect(writes()).toEqual([]);
   });

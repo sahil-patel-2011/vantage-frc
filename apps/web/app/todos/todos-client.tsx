@@ -362,7 +362,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
             mineOpen={view.metrics.mineOpen}
             overdue={view.metrics.overdue}
           />
-          <Board view={view} filter={filter} setFilter={setFilter} busy={busy} mutate={mutate} />
+          <Board view={view} filter={filter} setFilter={setFilter} busy={busy} mutate={mutate} viewOnly={viewOnly} />
           {view.todos.length === 0 || view.metrics.overdue > 0 || view.metrics.mineOpen > 0 ? (
             <NextActions
               orgId={view.orgId}
@@ -507,12 +507,15 @@ function Board({
   setFilter,
   busy,
   mutate,
+  viewOnly = false,
 }: {
   view: LiveView;
   filter: TodoListFilter;
   setFilter: (value: TodoListFilter) => void;
   busy: boolean;
   mutate: Mutate;
+  /** A parent or guest: no Mark done, Reopen or edit controls that the database refuses anyway. */
+  viewOnly?: boolean;
 }) {
   const filtered = filterTodos(view.todos, filter, view.currentUserId);
 
@@ -564,6 +567,7 @@ function Board({
           busy={busy}
           mutate={mutate}
           focused={todo.id === view.focusTodoId}
+          viewOnly={viewOnly}
         />
       ))}
     </div>
@@ -576,12 +580,14 @@ function TodoCard({
   busy,
   mutate,
   focused,
+  viewOnly = false,
 }: {
   todo: TeamTodo;
   view: LiveView;
   busy: boolean;
   mutate: Mutate;
   focused: boolean;
+  viewOnly?: boolean;
 }) {
   const due = dueLabel(todo);
   const deepLink = todoDeepLink(view.orgId, todo.id);
@@ -612,6 +618,8 @@ function TodoCard({
 
       {todo.notes ? <p style={{ margin: 0 }}>{todo.notes}</p> : null}
 
+      {/* A parent or guest saw "Mark done" on every task, and the tap was refused (QA A3-18). */}
+      {viewOnly ? null : (
       <div className="todos-card-controls">
         <details className="todos-card-details">
           <summary>Details</summary>
@@ -705,6 +713,7 @@ function TodoCard({
           </Button>
         )}
       </div>
+      )}
     </article>
   );
 }

@@ -1,3 +1,4 @@
+import { isAccessRole, roleLabel } from "@vantage/core/role-words";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
@@ -66,16 +67,17 @@ export type AccountOrgContext = {
   planCode: string | null;
 };
 
-/** Soft-UI label for an org role — blank-safe, never a DEMO title. */
+/**
+ * Soft-UI label for an org role — blank-safe, never a DEMO title. In the role words every
+ * screen uses (@vantage/core/role-words); this said "Scout" and "Admin" where the menu said
+ * "Student" and "Mentor or coach" (QA A6-09).
+ */
 export function formatAccountRole(role: string | null | undefined): string | null {
   if (!role?.trim()) return null;
   const normalized = role.trim().toLowerCase();
-  if (normalized === "owner") return "Owner";
-  if (normalized === "admin") return "Admin";
+  if (isAccessRole(normalized)) return roleLabel(normalized);
   if (normalized === "mentor") return "Mentor";
   if (normalized === "member") return "Member";
-  if (normalized === "viewer") return "Viewer";
-  if (normalized === "scout") return "Scout";
   return role.trim();
 }
 

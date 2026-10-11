@@ -19,7 +19,7 @@ import {
   parseEnrollScanAction,
 } from "../../../lib/hours/enroll";
 import { sweepOpenSessions } from "../../../lib/hours/sweep";
-import { publicErrorMessage } from "../../../lib/security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
   constructor(
@@ -48,6 +48,9 @@ async function membershipRole(client: PoolClient, orgId: string, userId: string)
 const isAdmin = (role: string) => role === "owner" || role === "admin";
 
 function fail(error: unknown) {
+  // View only refusals are 403 + reason, everywhere (QA A3-18).
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
   const status = error instanceof HttpError ? error.status : 400;
   return Response.json({ error: publicErrorMessage(error, "Hours request failed") }, { status });
 }

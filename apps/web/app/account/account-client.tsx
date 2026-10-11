@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { roleLabel } from "@vantage/core/role-words";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, TabBar, Button } from "../../components/ui";
@@ -380,8 +381,9 @@ export default function AccountClient() {
           <dl className="acct-facts">
             {org.role ? (
               <div>
-                <dt>Role</dt>
-                <dd>{org.role}</dd>
+                {/* The role words every screen uses; this said "Scout" where the menu said "Student" (QA A6-09). */}
+                <dt>Access</dt>
+                <dd>{roleLabel(org.role)}</dd>
               </div>
             ) : null}
             {org.orgName ? (

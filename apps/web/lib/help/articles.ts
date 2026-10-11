@@ -1221,7 +1221,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "The team owner always manages money, and chooses anyone else who does: open Team admin, pick a person, then Access → Money → Manage money. Admins don't get it automatically.",
           "People who manage money set budgets and categories, record spending, sponsor money and fundraiser proceeds, approve purchase and part requests, pay reimbursements, and link grant spend.",
-          "Everyone else can see the team's money and still ask: submit a purchase or part request, or file their own reimbursement. View-only people can look but not change anything — the owner switches them to Team member first if they should manage money.",
+          "Everyone else can see the team's money and still ask: submit a purchase or part request, or file their own reimbursement. A parent or guest can look but not change anything — the owner switches them to Student first if they should manage money.",
           "Team admin and the Money tab both show who manages money right now.",
         ],
       },

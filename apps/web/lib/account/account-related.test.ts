@@ -54,8 +54,11 @@ describe("formatAccountOrgLabel", () => {
         role: "admin",
         planCode: "pro",
       }),
-    ).toBe("Team 254 · Vantage Robotics · Admin");
+    ).toBe("Team 254 · Vantage Robotics · Mentor or coach");
     expect(formatAccountRole("owner")).toBe("Owner");
+    // The same words as the menu and Team admin (QA A6-09), never "Scout" or "Viewer".
+    expect(formatAccountRole("scout")).toBe("Student");
+    expect(formatAccountRole("viewer")).toBe("Parent or guest");
     expect(formatAccountRole(null)).toBeNull();
   });
 });
@@ -100,7 +103,7 @@ describe("accountNextActions", () => {
 
   it("prints a team named after its number once", () => {
     expect(formatAccountOrgLabel({ orgId: "o", orgName: "Team 6925", teamNumber: 6925, role: "scout" })).toBe(
-      "Team 6925 · Scout",
+      "Team 6925 · Student",
     );
   });
 

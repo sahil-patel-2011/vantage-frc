@@ -12,7 +12,7 @@ import {
   type RisksView,
 } from "../../../lib/risks/compute-risks";
 import type { RiskCategory, RiskStatus } from "../../../lib/risks/types";
-import { publicErrorMessage } from "../../../lib/security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
 
 export type { RisksView };
 
@@ -154,6 +154,9 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    // View only refusals are 403 + reason, everywhere (QA A3-18).
+    const viewOnly = viewOnlyResponse(error);
+    if (viewOnly) return viewOnly;
     const message = publicErrorMessage(error, "Risk register request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(

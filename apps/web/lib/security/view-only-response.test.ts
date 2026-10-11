@@ -2,6 +2,9 @@
  * A View only member's refused write answers 403 with one sentence on every shared
  * error path (0715), and the page never sees a database error for it.
  */
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { VIEW_ONLY_MESSAGE, ViewOnlyError } from "@vantage/db/view-only";
 import { publicErrorMessage, viewOnlyResponse } from "./public-error";
@@ -48,5 +51,13 @@ describe("View only answers", () => {
 
   it("security responses stay private", () => {
     expect(securityErrorResponse(new ViewOnlyError(), "x").headers.get("cache-control")).toContain("no-store");
+  });
+
+  // Goals, risks, decisions and hours answered a parent or guest's write with 400 and no
+  // reason while tasks, todos and inventory said 403 + "view_only" (QA A3-18). Each of these
+  // routes has its own catch, so each must ask viewOnlyResponse first.
+  it.each(["goals", "risks", "decisions", "hours"])("/api/%s answers a viewer's refusal with 403 + reason", (route) => {
+    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), `../../app/api/${route}/route.ts`), "utf8");
+    expect(source).toMatch(/viewOnlyResponse\(error\)/);
   });
 });

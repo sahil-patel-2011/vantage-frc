@@ -4,8 +4,11 @@
  * Kept in the web app rather than imported from @vantage/core so the editor stays
  * a client component: core's capability module reaches for the database driver,
  * and the labels are presentation anyway. The ids are the contract — they must
- * match ORG_CAPABILITIES and HUB_ACCESS_HUB_IDS.
+ * match ORG_CAPABILITIES and HUB_ACCESS_HUB_IDS. The base-role words come from the
+ * client-safe `@vantage/core/role-words` subpath (no database driver).
  */
+
+import { ROLE_LABELS } from "@vantage/core/role-words";
 
 export const PROFILE_CAPABILITIES = [
   { id: "manage_scouting", label: "Scouting lead", hint: "Full scouting data, forms, assignments, report review, sharing and formulas. Does not grant team-wide admin access." },
@@ -41,16 +44,17 @@ export const PROFILE_HUBS = [
   { id: "media", label: "Media", hint: "Content calendar, drafts, kit, impact" },
 ] as const;
 
+// Labels from the one role table (@vantage/core/role-words); the hints here are this editor's.
 export const BASE_ROLE_COPY = {
   scout: {
-    label: "Student",
+    label: ROLE_LABELS.scout,
     hint: "Works in the app: scouting, build, the calendar. You can limit the sections below.",
   },
   admin: {
-    label: "Mentor or coach",
+    label: ROLE_LABELS.admin,
     hint: "Can open everything and manage the team, including settings.",
   },
-  viewer: { label: "Parent or guest", hint: "Can look, can't change. Good for parents, judges and alumni." },
+  viewer: { label: ROLE_LABELS.viewer, hint: "Can look, can't change. Good for parents, judges and alumni." },
 } as const;
 
 export type ProfileBaseRole = keyof typeof BASE_ROLE_COPY;
