@@ -36,15 +36,17 @@ describe("business-related Soft-UI helpers", () => {
     ]);
   });
 
-  it("builds grant writing cross-links to sponsors, fundraisers, and writer", () => {
+  it("builds grant writing cross-links to sponsors, fundraisers, writer, and impact", () => {
     const links = businessRelatedLinks("org-1", { include: GRANTS_WRITING_RELATED_INCLUDE });
     expect(links.map((l) => l.id)).toEqual([
       "sponsors",
       "grants",
       "fundraisers",
+      "impact",
       "writer",
       "finance-ai",
     ]);
+    expect(links.find((l) => l.id === "impact")?.href).toBe("/impact?orgId=org-1");
     expect(links.find((l) => l.id === "sponsors")?.href).toBe("/business?tab=sponsors&orgId=org-1");
     expect(links.find((l) => l.id === "fundraisers")?.href).toBe("/fundraisers?orgId=org-1");
     expect(links.find((l) => l.id === "writer")?.href).toBe("/writer?orgId=org-1");

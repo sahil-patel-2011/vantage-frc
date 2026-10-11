@@ -53,6 +53,7 @@ export const GRANTS_WRITING_RELATED_INCLUDE: BusinessRelatedId[] = [
   "fundraisers",
   "writer",
   "grants",
+  "impact",
   "finance-ai",
 ];
 
