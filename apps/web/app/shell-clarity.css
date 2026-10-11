@@ -32,3 +32,31 @@ body.has-app-shell .soft-island a[data-pending="true"]::after {
   from { opacity: 0.25; }
   to { opacity: 1; }
 }
+
+/* ── Layout shift while a page loads (A6-02) ────────────────────────────────────────────── */
+
+/* A hub's panel holds its place while the tab's data arrives, so the actions under it start
+   below the fold instead of riding down the screen as cards land. */
+body.has-app-shell .product-hub-panel {
+  min-height: min(60vh, 640px);
+}
+
+/* Account: the side column (team, help, sign out) stayed in the page while the profile loaded,
+   then the form arrived above it on a phone and threw it 1,000px down in one jump (0.30 of CLS).
+   It now appears once the profile has, under it, where nothing else moves. */
+.account-workspace:has(> .account-personal > [aria-busy="true"]) > .account-directory {
+  display: none;
+}
+/* One entrance, not three (A6-25). The whole page rose 6-8px (module-page, dash-home), then each
+   card played card-arrive as its data landed, then list rows eased in: on a slow link the screen
+   kept moving for seconds. Cards and rows keep theirs; the page itself just appears. The page
+   rise also used fill-mode `both`, which left a transform on <main> for good. */
+body.has-app-shell :is(.module-page, .dash-home) {
+  animation: none;
+}
+
+/* The header keeps room for the email and the role/team line that arrive with the profile. */
+body.has-app-shell .account-personal:has(> [aria-busy="true"]) > .acct-hero {
+  min-height: 132px;
+  box-sizing: border-box;
+}

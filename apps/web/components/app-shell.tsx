@@ -51,7 +51,10 @@ import {
   formatRolePlanCue,
   isHubRootPath,
   navResultRows,
-  orgLabelFor,
+  readRememberedTeamLabel,
+  rememberTeamLabel,
+  shellOrgLabel,
+  teamLabelFor,
   shellTitleForPath,
   showBackForPath,
   switchWorkspaceHrefFor,
@@ -61,6 +64,15 @@ import {
 } from "./app-shell-model";
 
 const groups = PRODUCT_NAV_GROUPS;
+
+/** localStorage, or null where the browser blocks it (private mode, blocked site data). */
+function safeLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 export default function AppShell() {
   const pathname = usePathname();
@@ -95,6 +107,12 @@ export default function AppShell() {
     try { localStorage.setItem("vantage.sidebar.collapsed", String(next)); } catch { /* Still works for this visit. */ }
   };
   const [me, setMe] = useState<Me>({});
+  const [rememberedTeamLabel, setRememberedTeamLabel] = useState<string | null>(null);
+  useEffect(() => {
+    const label = teamLabelFor(me.teamNumber, me.orgName);
+    const id = me.orgId ?? "";
+    if (label && id) rememberTeamLabel(safeLocalStorage(), id, label);
+  }, [me.orgId, me.orgName, me.teamNumber]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const notificationRevision = useRef(0);
@@ -209,6 +227,9 @@ export default function AppShell() {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
     setOrgId(id);
+    // Same render as the team id, so the label goes straight from the placeholder to the name
+    // this device last showed for the team.
+    setRememberedTeamLabel(readRememberedTeamLabel(safeLocalStorage(), id));
     // has-app-shell, shell-bare and shell-onboarding are on <body> in the server HTML
     // (components/app-body.tsx), so the first paint is already this frame.
   }, [pathname, locationTick]);
@@ -549,14 +570,8 @@ export default function AppShell() {
   const showBack = showBackForPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
   const title = shellTitleForPath(pathname);
-  // During onboarding the person is joining a team, so "No team selected" contradicts the page.
-  const orgLabel =
-    !orgId && pathname === "/onboarding"
-      ? "Getting set up"
-      : !orgId && !teamsLoaded
-        ? // Until /api/me answers, "No team selected" is a guess, and usually a wrong one.
-          "Your team"
-        : orgLabelFor(me, orgId);
+  // One placeholder, then the real team: never "Your team" → "This team" → "Team 6925".
+  const orgLabel = shellOrgLabel({ pathname, orgId, me, teamsLoaded, remembered: rememberedTeamLabel });
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
   const crumbHint = breadcrumbForPath(pathname);
   // Not on Home: Home leads with its own next-match card, and the strip made it three times.
