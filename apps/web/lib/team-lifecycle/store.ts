@@ -55,9 +55,12 @@ const VIEW_SQL = `SELECT o.id::text AS "orgId", o.name, o.team_number AS "teamNu
     FROM memberships m JOIN organizations o ON o.id = m.org_id
    WHERE m.user_id = $1::uuid`;
 
-/** Every team the person is on, in the order the chooser lists them (number, then name). */
+/** Every team the person is on, in the order /api/me and the chooser list them. */
 export async function listTeamLifecycle(client: Client, userId: string): Promise<TeamLifecycleView[]> {
-  const result = await client.query<ViewRow>(`${VIEW_SQL} ORDER BY o.team_number NULLS LAST, o.name`, [userId]);
+  const result = await client.query<ViewRow>(
+    `${VIEW_SQL} ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number NULLS LAST, o.name`,
+    [userId],
+  );
   return result.rows.map(toView);
 }
 

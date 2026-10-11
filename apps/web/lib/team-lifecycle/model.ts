@@ -103,6 +103,21 @@ export function normalizeTeamName(value: unknown): string | null {
   return name;
 }
 
+/**
+ * The access level under each team in the chooser and on Your teams, in Team admin's words.
+ * (One app-wide role vocabulary is being settled separately; switch to it when it lands.)
+ */
+export const ACCESS_ROLE_LABEL: Record<string, string> = {
+  owner: "Owner",
+  admin: "Team admin",
+  scout: "Team member",
+  viewer: "View only",
+};
+
+export function accessRoleLabel(role: string | null | undefined): string {
+  return (role && ACCESS_ROLE_LABEL[role]) || "Team member";
+}
+
 /** What someone types to delete a team: its number, or its name for a team without one. */
 export function teamConfirmPhrase(team: { teamNumber: number | null; name: string }): string {
   return team.teamNumber != null ? String(team.teamNumber) : team.name.trim();
