@@ -226,7 +226,9 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     // System (chosen, or nothing chosen yet) follows the device when it switches while the app is
-    // open, on every page, not only while Account → Appearance is showing.
+    // open, on every page, not only while Account → Appearance is showing. The public site stays
+    // light (its own effect above).
+    if (marketingPage) return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onDeviceChange = () => {
       const pref = storedPreference();
@@ -235,7 +237,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     };
     mq.addEventListener("change", onDeviceChange);
     return () => mq.removeEventListener("change", onDeviceChange);
-  }, []);
+  }, [marketingPage]);
 
   useEffect(() => {
     if (!productRoute) return;

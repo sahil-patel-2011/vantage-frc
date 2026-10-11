@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { marketingPagePaths } from "../marketing/public-theme";
 import { THEME_BOOTSTRAP_SCRIPT } from "./theme-bootstrap";
 
 type Boot = {
@@ -6,10 +7,11 @@ type Boot = {
   storage?: Record<string, string>;
   osDark?: boolean;
   storageThrows?: boolean;
+  pathname?: string;
 };
 
 /** Runs the real script string against a stand-in document, the way the browser runs it in <head>. */
-function boot({ cookie = "", storage = {}, osDark = false, storageThrows = false }: Boot) {
+function boot({ cookie = "", storage = {}, osDark = false, storageThrows = false, pathname = "/dashboard" }: Boot) {
   const root = { dataset: {} as Record<string, string>, style: {} as Record<string, string> };
   const document = { cookie, documentElement: root };
   const localStorage = {
@@ -18,7 +20,10 @@ function boot({ cookie = "", storage = {}, osDark = false, storageThrows = false
       return storage[key] ?? null;
     },
   };
-  const window = { matchMedia: (query: string) => ({ matches: osDark && query.includes("dark") }) };
+  const window = {
+    location: { pathname },
+    matchMedia: (query: string) => ({ matches: osDark && query.includes("dark") }),
+  };
   new Function("document", "localStorage", "window", THEME_BOOTSTRAP_SCRIPT)(document, localStorage, window);
   return { theme: root.dataset.theme, colorScheme: root.style.colorScheme };
 }
@@ -47,5 +52,14 @@ describe("theme before the first frame", () => {
 
   it("falls back to the device when storage is blocked", () => {
     expect(boot({ osDark: true, storageThrows: true }).theme).toBe("dark");
+  });
+
+  it("paints the public site light from the first frame, whatever this device chose", () => {
+    for (const pathname of marketingPagePaths()) {
+      expect(boot({ pathname, osDark: true, cookie: "vantage-theme-pref=dark" }).theme).toBe("light");
+    }
+    expect(boot({ pathname: "/pricing/", osDark: true }).theme).toBe("light");
+    // Sign-in has a working dark theme, so it follows the device like the product.
+    expect(boot({ pathname: "/signin", osDark: true }).theme).toBe("dark");
   });
 });
