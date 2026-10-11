@@ -18,6 +18,8 @@ import {
 } from "./ai-governance";
 
 export { readOrgAllowance } from "./allowance";
+export * from "./credit-gifts";
+import { CREDIT_GIFT_PROVIDER } from "./credit-gifts";
 export type { AllowanceFeatureSpend, OrgAllowance } from "./allowance";
 
 export {
@@ -236,7 +238,9 @@ export type MeterKeySource =
   /** A paired member's Claude/ChatGPT subscription served the turn (AI bridge, 0486). */
   | "subscription_bridge"
   /** Petals volunteer swarm last resort — $0 Vantage charge, prompts leave the org. */
-  | "public_swarm";
+  | "public_swarm"
+  /** AI credit a platform admin gifted the team (0727): the operator's key pays, capped by the gift. */
+  | "gift";
 
 export type MeteredAIInput<T> = {
   client: PoolClient;
@@ -325,7 +329,8 @@ function isExternalKeySource(source: MeterKeySource): boolean {
     source === "local" ||
     source === "local_cli" ||
     source === "sponsored" ||
-    source === "subscription_bridge"
+    source === "subscription_bridge" ||
+    source === "gift"
   );
 }
 const ORG_BILLING_LOCK_NAMESPACE = "vantage:org_billing:";
@@ -740,8 +745,19 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   let keySource: MeterKeySource;
   if (input.keySource === "platform") {
     keySource = "platform";
-  } else if (input.keySource === "byo" || input.keySource === "local" || input.keySource === "sponsored") {
+  } else if (
+    input.keySource === "byo" ||
+    input.keySource === "local" ||
+    input.keySource === "sponsored" ||
+    input.keySource === "gift"
+  ) {
     keySource = input.keySource;
+  } else if (input.provider === CREDIT_GIFT_PROVIDER) {
+    // A gift-funded adapter (credit-gift-adapter.ts in @vantage/agent). The adapter itself
+    // reserves each call's worst case against the gift's ledger before the provider is called
+    // and settles it afterwards, so the cap holds even when another path (a bridge fallback)
+    // reaches it. Here the call is only metered: $0 to the team, never a credit debit.
+    keySource = "gift";
   } else if (input.provider === "subscription-bridge") {
     // The resolved adapter is a paired member's subscription (AI bridge). External
     // path: the subscription pays, no credit caps, and — crucially — an org whose ONLY
@@ -896,7 +912,9 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
       ? settleCreditDebit({ ...settledWallet, providerCostUsd: receipt.costUsd })
       : null;
   const ledgerCostUsd =
-    settledKeySource === "local" || settledKeySource === "sponsored" ? 0 : receipt.costUsd;
+    settledKeySource === "local" || settledKeySource === "sponsored" || settledKeySource === "gift"
+      ? 0
+      : receipt.costUsd;
   await input.client.query(
     `INSERT INTO ai_usage_events
       (org_id, user_id, feature, model, provider, key_source, prompt_tokens,
@@ -932,6 +950,9 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
                     providerCostUsd: receipt.costUsd,
                     promoEndsAt: sponsoredPromoEndsAtIso(),
                   }
+                : {}),
+              ...(settledKeySource === "gift"
+                ? { fundingMode: "gift", providerCostUsd: receipt.costUsd }
                 : {}),
             }
           : {}),

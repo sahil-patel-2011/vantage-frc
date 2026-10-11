@@ -32,6 +32,8 @@ import {
   tryCreateOpenRouterFreeAdapter,
 } from "./hosted-platform-keys";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
+import { resolveCreditGiftAdapter, type CreditGiftRouting } from "./credit-gift-adapter";
+import type { CreditGiftLedger } from "@vantage/billing";
 import { PetalsPublicPoolAdapter, tryCreatePetalsPublicAdapter } from "./petals-public-pool";
 import { isAiHordeModel, tryCreateAiHordeAdapter } from "./ai-horde-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
@@ -60,7 +62,9 @@ export type ResolvedModelSource =
   | "local-connector"
   | "local-fallback"
   | "subscription-bridge"
-  | "public-swarm";
+  | "public-swarm"
+  /** AI credit a platform admin gifted the team, paid from the operator's key (0727). */
+  | "gift";
 
 /**
  * Provenance of a resolved chat adapter. Additive metadata alongside the
@@ -185,6 +189,8 @@ export type ResolveOrgChatAdapterInput = {
     kmsKeyId: string;
   }) => Promise<string>;
   fetchImpl?: typeof fetch;
+  /** Injected for tests: where gift reservations go. Defaults to committed withRls transactions. */
+  creditGiftLedger?: CreditGiftLedger;
 };
 
 type EncryptedRow = {
@@ -1134,11 +1140,44 @@ export async function resolveOrgChatAdapterWithProvenance(
     );
   }
 
-  const billing = await client.query<{ tier: string }>(
-    `SELECT tier FROM org_billing WHERE org_id = $1`,
+  const billing = await client.query<{ tier: string; giftsReady?: boolean }>(
+    `SELECT tier, to_regprocedure('public.ai_credit_gift_for_org(uuid)') IS NOT NULL AS "giftsReady"
+       FROM org_billing WHERE org_id = $1`,
     [input.orgId],
   );
   const tier = billing.rows[0]?.tier ?? "free";
+
+  // AI credit a platform admin gifted this team (0727), paid from the operator's own key: after
+  // the team's own keys, before hosted keys and the free pools. On a database without 0727
+  // `giftsReady` is false and the chain is exactly what it was.
+  const giftsReady = billing.rows[0]?.giftsReady === true;
+  const giftAdapter = async (usableOnly: boolean): Promise<ResolvedOrgChatAdapter | null> => {
+    if (!giftsReady) return null;
+    const routing = await resolveCreditGiftAdapter(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      feature: input.feature,
+      difficulty: input.taskText ? classifyTaskDifficulty(input.taskText, input.feature) : undefined,
+      promptCachingEnabled: input.promptCachingEnabled,
+      fetchImpl: input.fetchImpl,
+      decryptVault: (vault) => decryptRow(vault, input.decrypt),
+      ledger: input.creditGiftLedger,
+      usableOnly,
+    });
+    return routing ? resolvedGift(routing) : null;
+  };
+  const resolvedGift = (routing: CreditGiftRouting): ResolvedOrgChatAdapter => ({
+    adapter: routing.adapter,
+    provenance: {
+      provider: routing.adapter.upstreamProvider,
+      modelId: routing.adapter.model,
+      baseUrlOrigin: originOnly(routing.adapter.baseUrl),
+      source: "gift",
+    },
+    ...(bridgeDegraded ? { degraded: bridgeDegraded } : {}),
+  });
+  const usableGift = await giftAdapter(true);
+  if (usableGift) return usableGift;
 
   if (tier !== "free") {
     const managed = await client.query<ManagedRow>(
@@ -1233,6 +1272,10 @@ export async function resolveOrgChatAdapterWithProvenance(
       capability: input.feature,
     });
     if (petals) return resolved(petals, "public-swarm");
+    // Nothing else can answer: a used-up gift refuses with "Your free AI credit from Vantage is
+    // used up", which says more than "no key is configured".
+    const spentGift = await giftAdapter(false);
+    if (spentGift) return spentGift;
     if (!promo.eligible && promo.reason === "promo_expired") {
       await maybeNotifySponsoredPromoExpired(client, input.orgId, promo);
       throw new ChatProviderResolutionError(sponsoredPromoExpiredMessage(promo.teamNumber ?? 1111));
@@ -1242,6 +1285,8 @@ export async function resolveOrgChatAdapterWithProvenance(
     );
   }
 
+  const spentGift = await giftAdapter(false);
+  if (spentGift) return spentGift;
   throw new ChatProviderResolutionError(
     "No AI provider key is available. Add OpenAI / Anthropic / Google / OpenRouter under Team → AI API keys, configure a local OpenAI-compatible connector, or set ANTHROPIC_API_KEY for paid hosted Sonnet/Opus.",
   );

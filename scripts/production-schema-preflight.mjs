@@ -30,6 +30,10 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // Operations trust: /api/hours reads hour_logs.entry_source and correction columns; the
   // two-person reimbursement rule, lead-only certifications and sign-off notices live in RLS.
   "0723_operations_trust.sql",
+  // Platform admin: /api/admin/platform-admins calls platform_admin_list/add/remove/transfer();
+  // AI credit gifts (/api/admin/ai-credits, /api/ai-credit, every Ask AI call via
+  // ai_credit_gift_for_org / reserve / settle) and /api/admin/health (platform_job_health).
+  "0727_platform_admin_credits.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */

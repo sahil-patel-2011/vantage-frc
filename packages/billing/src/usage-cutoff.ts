@@ -12,6 +12,8 @@ export type UsageCutoffReason =
   | "managed_allowance_exhausted"
   | "sponsored_allowance_exhausted"
   | "sponsored_promo_expired"
+  | "gift_credit_exhausted"
+  | "gift_credit_ended"
   | "budget_limit"
   | "billing_disabled"
   | "policy_denied"
@@ -87,6 +89,10 @@ export function cutoffMessage(reason: string): string {
       return "Sponsored AI is exhausted for this period.";
     case "sponsored_promo_expired":
       return "Promotional sponsored AI for team 1111 has ended (2026-10-18). Add your own AI keys under Team → AI API keys, or upgrade for hosted AI. The rest of the workspace keeps working.";
+    case "gift_credit_exhausted":
+      return "Your free AI credit from Vantage is used up.";
+    case "gift_credit_ended":
+      return "Your free AI credit from Vantage has ended.";
     case "budget_limit":
       return "An API budget limit was reached for this organization.";
     case "policy_denied":
@@ -106,7 +112,13 @@ function ctaFor(reason: string): UsageCutoffCta {
   if (reason.includes("daily_") || reason.includes("monthly_") || reason === "budget_limit") {
     return CTA_BUDGETS;
   }
-  if (reason === "sponsored_promo_expired") return CTA_AI_KEYS;
+  if (
+    reason === "sponsored_promo_expired" ||
+    reason === "gift_credit_exhausted" ||
+    reason === "gift_credit_ended"
+  ) {
+    return CTA_AI_KEYS;
+  }
   if (reason === "managed_allowance_exhausted" || reason === "sponsored_allowance_exhausted") {
     return CTA_UPGRADE;
   }
@@ -196,12 +208,12 @@ export function classifyMeteredAiError(error: unknown): ClassifiedMeteredAiError
   }
 
   if (
-    /payg_not_enabled|insufficient_prepaid_balance|spend_cap|managed_allowance_exhausted|sponsored_allowance_exhausted|sponsored_promo_expired/i.test(
+    /payg_not_enabled|insufficient_prepaid_balance|spend_cap|managed_allowance_exhausted|sponsored_allowance_exhausted|sponsored_promo_expired|gift_credit_exhausted|gift_credit_ended/i.test(
       message,
     )
   ) {
     const reason = message.match(
-      /payg_not_enabled|insufficient_prepaid_balance|spend_cap|managed_allowance_exhausted|sponsored_allowance_exhausted|sponsored_promo_expired/i,
+      /payg_not_enabled|insufficient_prepaid_balance|spend_cap|managed_allowance_exhausted|sponsored_allowance_exhausted|sponsored_promo_expired|gift_credit_exhausted|gift_credit_ended/i,
     )?.[0]?.toLowerCase() ?? "payg_not_enabled";
     return {
       status: 402,
