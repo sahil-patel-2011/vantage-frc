@@ -4,6 +4,9 @@ import { headers } from "next/headers";
 import { isPayingOrgEntitlement } from "../../../lib/paid-plan";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
 import { unreadNotificationCount } from "../../../lib/notifications/inbox-store";
+import { deferOutageWork } from "../../../lib/outage/defer";
+import { noteDatabaseFailure } from "../../../lib/outage/note";
+import { refreshRecipientSnapshotIfStale } from "../../../lib/outage/recipient-refresh";
 
 export async function GET(request: Request) {
   try {
@@ -203,6 +206,10 @@ export async function GET(request: Request) {
       return Response.json({ error: "You do not have access to this team." }, { status: 403 });
     }
 
+    // While a platform admin is signed in and the database is healthy, keep the outage
+    // contact list fresh (lib/outage/recipients.ts): it is what the outage console emails.
+    if (profile.platformAdmin) deferOutageWork(() => refreshRecipientSnapshotIfStale(session.user.id));
+
     const displayName =
       profile.profile?.displayName?.trim() ||
       session.user.name?.trim() ||
@@ -243,7 +250,10 @@ export async function GET(request: Request) {
       outsideGrants: profile.outsideGrants,
       sponsorsAllowed: profile.sponsorsAllowed,
     });
-  } catch {
+  } catch (error) {
+    // A database that can't be reached (not a bug in a query) opens or extends an outage
+    // incident, which emails the owner once. After the response; never delays it.
+    noteDatabaseFailure(error, "api/me");
     // Only a missing session is 401. A database or auth outage is not "signed out": answering
     // 401 here made clients drop the person's team and offer the waitlist. 503 lets them keep
     // what they had (lib/nav/product-session treats 5xx as unreachable) and try again.

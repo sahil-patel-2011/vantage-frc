@@ -7,8 +7,9 @@ const SCAN = join(APP, "vantage-scan");
 // Public code entry deliberately uses the focused invitation shell, not a
 // product workspace overlay. Its layout is covered by team-join-code.spec.ts.
 // The account-check recovery page (access-unavailable) reuses that same shell
-// (join-team.css) outside any product workspace.
-const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known", "join-team", "access-unavailable"]);
+// (join-team.css) outside any product workspace. The outage console (status/outage) is
+// opened while the database is down and brings its own small stylesheet, no product shell.
+const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known", "join-team", "access-unavailable", "status"]);
 
 describe("vantage scan hub overlays", () => {
   const hubs = readdirSync(APP).filter((name) => {

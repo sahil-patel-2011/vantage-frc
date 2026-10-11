@@ -200,3 +200,21 @@ body.has-app-shell article.admin-org > b,
 article.admin-org > b { flex: none; white-space: nowrap; }
 body.has-app-shell article.admin-org > div,
 article.admin-org > div { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+
+
+/* "Outage contact list: N people, refreshed X ago - Refresh now" under the page header. */
+.admin-outage-contacts {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.admin-outage-contacts-refresh {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.admin-outage-contacts-refresh:disabled { color: var(--muted); cursor: default; }

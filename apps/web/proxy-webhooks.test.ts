@@ -43,3 +43,35 @@ describe("signed webhooks reach their routes without a session", () => {
     expect(response.status).toBe(401);
   });
 });
+
+/**
+ * Outage handling has to work while the database — and so every session — is down: the public
+ * "limited" flag reads no database, and the outage console is authorized by the signed link in
+ * the owner's alert email, which its routes verify themselves.
+ */
+describe("outage status and console reach their routes without a session", () => {
+  for (const [method, path] of [
+    ["GET", "/api/status"],
+    ["GET", "/api/status/outage"],
+    ["POST", "/api/status/outage/broadcast"],
+    ["POST", "/api/status/outage/banner"],
+    ["GET", "/status/outage?t=abc.def"],
+  ] as const) {
+    it(`${method} ${path.split("?")[0]}`, async () => {
+      const request = method === "GET" ? new NextRequest(`https://vantage.example${path}`) : post(path);
+      const response = await proxy(request);
+      expect(response.status).not.toBe(401);
+      expect(response.headers.get("x-middleware-next")).toBe("1");
+    });
+  }
+
+  it("keeps a lookalike API path gated", async () => {
+    const response = await proxy(new NextRequest("https://vantage.example/api/statusboard"));
+    expect(response.status).toBe(401);
+  });
+
+  it("keeps the rest of /status gated", async () => {
+    const response = await proxy(new NextRequest("https://vantage.example/status/other"));
+    expect(response.headers.get("x-middleware-next")).not.toBe("1");
+  });
+});

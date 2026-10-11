@@ -10,6 +10,7 @@ import { isGoogleSheetsState } from "./lib/google-sheets/oauth-state";
 import { isKnownAppPath } from "./lib/nav/app-route-roots";
 import { REMEMBERED_TEAM_COOKIE, TEAM_SCOPED_PAGES, isTeamId, teamPageRedirect } from "./lib/nav/remembered-team";
 import { pendingProvisioningTeam, requestedProvisioningTeam } from "./lib/provisioning/request-gate";
+import { noteDatabaseFailure } from "./lib/outage/note";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -51,6 +52,11 @@ const PUBLIC_PREFIXES = [
   "/api/waitlist",
   // Uptime monitor: says only whether the database answers.
   "/api/health",
+  // Outage handling works while the database (and so every session) is down: the public
+  // "limited" flag reads no database, and the outage console and its API (/api/status/outage)
+  // are authorized by the HMAC-signed link in the owner's alert email, checked in each route.
+  "/api/status",
+  "/status/outage",
   "/api/admin/bootstrap-owner",
   "/api/showcase/public",
   "/api/display/snapshot",
@@ -331,7 +337,10 @@ export async function proxy(request: NextRequest) {
     try {
       session = await auth.api.getSession({ headers: request.headers });
       authenticated = Boolean(session);
-    } catch {
+    } catch (error) {
+      // Sessions live in the database: while it is down, every signed-in request ends here, so
+      // this is where an outage is first seen (lib/outage; deferred, never throws).
+      noteDatabaseFailure(error, "sign-in check");
       return accessUnavailable(request);
     }
   }
@@ -369,7 +378,10 @@ export async function proxy(request: NextRequest) {
 
   const onboardingGate = await withRls({ userId: session.user.id }, (client) =>
     getOnboardingGate(client, session.user.id),
-  ).catch(() => null);
+  ).catch((error: unknown) => {
+    noteDatabaseFailure(error, "sign-in check");
+    return null;
+  });
   if (!onboardingGate) return accessUnavailable(request);
 
   if (!onboardingGate.onboardingComplete) {

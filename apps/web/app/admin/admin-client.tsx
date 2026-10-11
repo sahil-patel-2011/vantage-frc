@@ -15,6 +15,7 @@ import {
   confirmationLines,
   type ProvisionConfirmation,
 } from "../../lib/admin-analytics/provisioning";
+import { OutageContactsLine } from "./outage-contacts";
 import "./admin-flow.css";
 
 type Organization = {
@@ -213,6 +214,7 @@ function AdminClientInner() {
         title="Platform admin"
         description="Create each team and invite its owner by email. The owner then invites everyone else."
       />
+      <OutageContactsLine />
 
       {/* One card, three numbers, each in its own colour. People come back to
           this page for the count and read the captions once, ever — so the

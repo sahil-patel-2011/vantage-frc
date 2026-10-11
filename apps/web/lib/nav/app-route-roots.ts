@@ -232,6 +232,7 @@ export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   "sponsorship",
   "standup-digest",
   "start",
+  "status",
   "strategy",
   "subsystem-signoff",
   "subsystems",
