@@ -371,7 +371,8 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
             );
           })()
         ) : (
-          <EmptyState soft title="Opening business…" description="Loading this season’s money, grants, and awards." aria-busy />
+          // One loading pattern across the hubs: the card-shaped skeleton (A6-20).
+          <HubPanelSkeleton />
         )
       ) : null}
 

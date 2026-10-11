@@ -24,6 +24,11 @@ describe("loading does not push the page around", () => {
     expect(personal).toMatch(/title="Loading account"[\s\S]*?aria-busy/);
   });
 
+  it("hubs show one loading pattern, the card-shaped skeleton (A6-20)", () => {
+    expect(read("components/product-hub.tsx")).toMatch(/if \(!orgReady\) return <HubPanelSkeleton \/>;/);
+    expect(read("app/business/business-client.tsx")).not.toMatch(/Opening business…/);
+  });
+
   it("the page itself does not rise in under the cards that already ease in", () => {
     expect(css).toMatch(/body\.has-app-shell :is\(\.module-page, \.dash-home\) \{\n {2}animation: none;/);
   });

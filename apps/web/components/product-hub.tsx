@@ -302,17 +302,9 @@ export function ProductHubShell({
         data-hub-tab={tab}
       >
         {(() => {
-          if (!orgReady) {
-            return (
-              <EmptyState
-                soft
-                aria-busy
-                badge="Loading"
-                title="Opening your team"
-                description="This only takes a moment."
-              />
-            );
-          }
+          // One loading pattern: the same card-shaped skeleton the tab shows while its own data
+          // loads, not a centred "Opening your team" card that then turned into it (A6-20).
+          if (!orgReady) return <HubPanelSkeleton />;
           if (access.ready && !tabAllowed) {
             const active = hub.tabs.find((entry) => entry.id === tab);
             return <HubTabForbidden hubLabel={hub.label} tabLabel={active?.label} />;
