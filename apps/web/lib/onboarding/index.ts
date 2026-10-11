@@ -34,8 +34,15 @@ export {
 } from "./team-lookup";
 
 export {
+  ageOnDate,
+  birthDateProblem,
   buildOnboardingPendingPlan,
   defaultFocusForRole,
+  onboardingErrorTarget,
+  resumeOnboardingStep,
+  resumedFocus,
+  roleAgeQuestion,
+  skipsTeamStep,
   emptyOnboardingDraft,
   nextOnboardingStep,
   onboardingAdvance,

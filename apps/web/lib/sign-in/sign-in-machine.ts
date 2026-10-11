@@ -12,6 +12,7 @@
 import {
   DEFAULT_CODE_TTL_SECONDS,
   DEFAULT_RESEND_COOLDOWN_SECONDS,
+  OTP_ALLOWED_ATTEMPTS,
   normalizeSignInEmail,
   sanitizeCodeInput,
   secondsUntil,
@@ -83,6 +84,7 @@ export type SignInFlowEvent =
   | { type: "send_failed"; failure: OtpFailure; now: number }
   | { type: "code_changed"; code: string }
   | { type: "code_failed"; failure: OtpFailure; now: number }
+  | { type: "code_restored"; email: string; codeExpiresAt: number; resendAvailableAt: number | null }
   | { type: "verified"; destination: string };
 
 export function initialSignInState(input?: {
@@ -204,22 +206,43 @@ export function signInFlowReducer(
       };
     }
 
-    case "code_failed":
+    case "code_failed": {
+      // Only a wrong code counts against the code on the server; a dropped connection does not.
+      const failedAttempts = event.failure.kind === "wrong_code" ? state.failedAttempts + 1 : state.failedAttempts;
+      const failure = state.channel === "email-otp" ? withTriesLeft(event.failure, failedAttempts) : event.failure;
       return {
         ...state,
-        failedAttempts: state.failedAttempts + 1,
-        failure: event.failure,
+        failedAttempts,
+        failure,
         notice: null,
-        code: event.failure.keepDigits ? state.code : "",
-        codeExpiresAt: event.failure.needsNewCode ? event.now : state.codeExpiresAt,
-        verifyAvailableAt: event.failure.kind === "rate_limited" ? cooldownDeadline(event.now, event.failure.retryAfterSeconds) : state.verifyAvailableAt,
+        code: failure.keepDigits ? state.code : "",
+        codeExpiresAt: failure.needsNewCode ? event.now : state.codeExpiresAt,
+        verifyAvailableAt: failure.kind === "rate_limited" ? cooldownDeadline(event.now, failure.retryAfterSeconds) : state.verifyAvailableAt,
         resendAvailableAt:
-          event.failure.retryAfterSeconds != null
-            ? cooldownDeadline(event.now, event.failure.retryAfterSeconds)
+          failure.retryAfterSeconds != null
+            ? cooldownDeadline(event.now, failure.retryAfterSeconds)
             : // A dead code should be replaceable immediately.
-              event.failure.needsNewCode
+              failure.needsNewCode
               ? null
               : state.resendAvailableAt,
+      };
+    }
+
+    case "code_restored":
+      // A reload (or the trip to the mail app, which often reloads a phone's tab) used to drop
+      // back to the email step with the sent code still valid and no way to type it.
+      return {
+        ...state,
+        step: "code",
+        channel: "email-otp",
+        email: normalizeSignInEmail(event.email),
+        code: "",
+        failure: null,
+        notice: null,
+        codeExpiresAt: event.codeExpiresAt,
+        resendAvailableAt: event.resendAvailableAt,
+        verifyAvailableAt: null,
+        failedAttempts: 0,
       };
 
     case "verified":
@@ -326,6 +349,24 @@ type FailureInput = {
 const WRONG_CODE_MESSAGE = "That code doesn’t match. Type the six digits from your newest email again.";
 const EXPIRED_MESSAGE = "That code expired. Send a new one to continue.";
 const LOCKED_MESSAGE = "That code is used up after too many tries. Send a new one.";
+
+/**
+ * Say how many tries a code has left once it gets close, and treat the last wrong try as the end
+ * of the code. The server refuses the try after the fifth wrong one even when it is right, and
+ * nobody was told: a student pasting an old code four times lost the right one without warning.
+ */
+function withTriesLeft(failure: OtpFailure, failedAttempts: number): OtpFailure {
+  if (failure.kind !== "wrong_code") return failure;
+  const left = OTP_ALLOWED_ATTEMPTS - failedAttempts;
+  if (left <= 0) return { kind: "too_many_attempts", message: LOCKED_MESSAGE, keepDigits: false, needsNewCode: true };
+  if (left <= 2) {
+    return {
+      ...failure,
+      message: `That code doesn’t match. ${left === 1 ? "1 try" : `${left} tries`} left on this code. Check you’re using the newest email.`,
+    };
+  }
+  return failure;
+}
 const NETWORK_MESSAGE =
   "Couldn’t reach Vantage. Check your connection — your code is still here when you retry.";
 
@@ -428,18 +469,23 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
 }
 
 /**
- * Why a correct-looking email never receives a code.
+ * When the code step explains where codes come from ("No code yet? Codes only go to emails a team
+ * has invited").
  *
- * `send-verification-otp` answers 200 for every address (it refuses to leak who
- * has an account), and `disableSignUp` then makes sign-in reject the code as
- * `INVALID_OTP`. After a couple of failures on the first factor that silence is
- * the likeliest explanation, so say it plainly instead of repeating "wrong code".
+ * Nearly everyone on this screen was invited and is waiting a few seconds for an email. The note
+ * used to be open from the first second, telling them they were "probably not invited", and a
+ * second copy appeared after two typos, blaming the invitation for a mistyped digit. Now it waits
+ * until a new code could be sent (the resend cooldown has run out) or one was sent again, which
+ * is when an address that gets nothing starts to look like an address nobody invited.
  */
-export function invitedOnlyHint(state: SignInFlowState): string | null {
-  if (state.channel !== "email-otp") return null;
-  if (state.failedAttempts < 2) return null;
-  if (state.failure?.kind !== "wrong_code" && state.failure?.kind !== "expired") return null;
-  return "No code in your inbox? Vantage access is invite-only — codes are sent only to addresses a team owner has already invited. Join the waitlist and a team can add you.";
+export function showCodeHelp(
+  state: Pick<SignInFlowState, "step" | "channel" | "failure" | "resendAvailableAt">,
+  now: number,
+  options: { resentOnce: boolean },
+): boolean {
+  if (state.step !== "code" || state.channel !== "email-otp") return false;
+  if (state.failure?.kind === "not_authorized") return false;
+  return options.resentOnce || (state.resendAvailableAt != null && resendSecondsRemaining(state as SignInFlowState, now) === 0);
 }
 
 /* -------------------------------- destinations -------------------------------- */

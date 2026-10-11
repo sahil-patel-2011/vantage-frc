@@ -5,6 +5,15 @@ const SHARED_USER = "vantage-session-user";
 let signedOut = false;
 let listening = false;
 
+/**
+ * Sign-in, coming back to the page this tab was on. A sign-out in another tab used to send this
+ * one to a bare /signin, so the person lost their place (QA A1-26); /signin checks `next` itself.
+ */
+export function signInAgainPath(location: { pathname?: string; search?: string } | null | undefined): string {
+  const here = `${location?.pathname ?? ""}${location?.search ?? ""}`;
+  return here && here !== "/" && !here.startsWith("/signin") ? `/signin?next=${encodeURIComponent(here)}` : "/signin";
+}
+
 export function watchSessionBoundary(): void {
   if (typeof window === "undefined" || listening) return;
   listening = true;
@@ -15,7 +24,7 @@ export function watchSessionBoundary(): void {
       signedOut = true;
       window.sessionStorage.removeItem(TAB_USER);
       invalidateProductSession();
-      window.location.replace("/signin");
+      window.location.replace(signInAgainPath(window.location));
     }
   });
 }

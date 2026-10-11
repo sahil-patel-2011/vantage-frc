@@ -70,9 +70,17 @@ export function onboardingStepPhase(
   return "upcoming";
 }
 
-/** Soft-UI stepper metadata for the 3 setup steps. */
-export function buildOnboardingStepMeta(current: OnboardingFlowStep): OnboardingStepMeta[] {
-  return ONBOARDING_SETUP_STEPS.map((id, index) => ({
+/**
+ * The steps this person actually sees. Someone an invite already put on a team skips "Your team"
+ * (step-model `skipsTeamStep`); the stepper used to tick it as done although it was never shown.
+ */
+function visibleSetupSteps(options?: { skipTeam?: boolean }): OnboardingSetupStep[] {
+  return options?.skipTeam ? ONBOARDING_SETUP_STEPS.filter((id) => id !== "team") : [...ONBOARDING_SETUP_STEPS];
+}
+
+/** Soft-UI stepper metadata for the setup steps (two when the team step is skipped). */
+export function buildOnboardingStepMeta(current: OnboardingFlowStep, options?: { skipTeam?: boolean }): OnboardingStepMeta[] {
+  return visibleSetupSteps(options).map((id, index) => ({
     id,
     index,
     ...ONBOARDING_STEP_COPY[id],
@@ -81,17 +89,17 @@ export function buildOnboardingStepMeta(current: OnboardingFlowStep): Onboarding
 }
 
 /** One-line progress for screen readers and Soft-UI clarity. */
-export function onboardingProgressLabel(current: OnboardingFlowStep): string {
+export function onboardingProgressLabel(current: OnboardingFlowStep, options?: { skipTeam?: boolean }): string {
   if (current === "done") {
-    return "All three steps done — your team is open";
+    return "All steps done — your team is open";
   }
   if (current === "pending") {
     return "Profile submitted — waiting for team approval";
   }
-  const index = onboardingStepIndex(current);
-  const total = ONBOARDING_SETUP_STEPS.length;
-  const label = ONBOARDING_STEP_COPY[ONBOARDING_SETUP_STEPS[index]!]?.label ?? "Setup";
-  return `Step ${index + 1} of ${total} · ${label}`;
+  const steps = visibleSetupSteps(options);
+  const index = Math.max(0, steps.indexOf(current));
+  const label = ONBOARDING_STEP_COPY[steps[index]!]?.label ?? "Setup";
+  return `Step ${index + 1} of ${steps.length} · ${label}`;
 }
 
 /**

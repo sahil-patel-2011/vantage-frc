@@ -20,8 +20,9 @@ const links = [
   ["/features", "Features"],
   ["/workflow", "How it works"],
   ["/for-teams", "For teams"],
-  // Named "Free", not "Pricing": a "Pricing" tab tells a mentor the opposite of the answer,
-  // but the cost question still needs a place in the nav (it was only in the footer).
+  // Named "Cost", not "Pricing": a "Pricing" tab tells a mentor the opposite of the answer,
+  // but the cost question still needs a place in the nav (it was only in the footer). The page
+  // is "Cost" in the menu, the footer and its title; /cost reaches it too (proxy.ts).
   ["/pricing", "Cost"],
 ] as const;
 
@@ -283,17 +284,19 @@ export function SiteFooter() {
       <div className="marketing-footer-cols">
         <nav className="marketing-footer-col" aria-label="Product">
           <b>Product</b>
-          {/* The same names as the top menu: "Product", "How it works", "For teams", "Free". */}
+          {/* The same names as the top menu: "Features", "How it works", "For teams", "Cost". */}
           <a href="/features">Features</a>
           <a href="/workflow">How it works</a>
           <a href="/for-teams">For teams</a>
           <a href="/pricing">Cost</a>
         </nav>
-        <nav className="marketing-footer-col" aria-label="Company">
+        {/* /contact lands here (proxy.ts). The address is written out, so a laptop with no mail
+            app still shows where to write; /contact used to open a mailto: link and nothing else. */}
+        <nav className="marketing-footer-col" aria-label="Company" id="contact">
           <b>Company</b>
           <a href={account.href}>{account.label}</a>
           <a href="/#waitlist">Waitlist</a>
-          <a href="mailto:vantagefrc@gmail.com">Contact</a>
+          <a href="mailto:vantagefrc@gmail.com">Email vantagefrc@gmail.com</a>
         </nav>
         <nav className="marketing-footer-col" aria-label="Legal">
           <b>Legal</b>

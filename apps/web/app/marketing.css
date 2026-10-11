@@ -1082,29 +1082,6 @@
   .marketing-lux .lux-loop-steps{grid-template-columns:1fr}
 }
 
-/* ── Dark theme. Marketing renders light by default; an explicit dark
-      preference is honoured through the same --m-* tokens. ── */
-html[data-theme="dark"] .marketing-lux{
-  /* The light copper (#a34a07) is 3.6:1 on this paper. Lift it for dark so the
-     warm accent keeps carrying text, not just decoration. */
-  color-scheme:dark;
-}
-html[data-theme="dark"] .marketing-lux .nav nav a,
-html[data-theme="dark"] .marketing-lux .marketing-footer a{color:var(--m-muted)}
-html[data-theme="dark"] .marketing-lux .button.primary,
-html[data-theme="dark"] .marketing-lux .button.compact{background:var(--m-ink);color:var(--m-on-accent)}
-html[data-theme="dark"] .marketing-lux .button.primary:hover,
-html[data-theme="dark"] .marketing-lux .button.compact:hover{background:#ffffff;color:var(--m-on-accent)}
-/* The wordmark SVG is navy-on-transparent; flip lightness, keep the hue. */
-html[data-theme="dark"] .marketing-lux .wordmark img{filter:invert(1) hue-rotate(180deg) brightness(1.08)}
-html[data-theme="dark"] .marketing-lux .button.secondary:hover{
-  background:color-mix(in srgb,var(--m-ink) 12%,transparent);
-}
-html[data-theme="dark"] .marketing-lux .soft-waitlist-form,
-html[data-theme="dark"] .marketing-lux .waitlist-form{box-shadow:none}
-html[data-theme="dark"] .marketing-lux .field input:focus{
-  box-shadow:0 0 0 3px rgba(255,255,255,.14);
-}
 
 /* Landing cards carry more copy than the compact hub strips do. */
 .marketing-lux .lux-problem .lux-feature-grid li,
@@ -1322,15 +1299,6 @@ html[data-theme="dark"] .marketing-lux .field input:focus{
   box-shadow:0 0 0 1px var(--m-warm),var(--m-card-shadow-lg);
 }
 .marketing-lux .pricing-grid .plan-flag{background:var(--m-warm);color:#fff}
-html[data-theme="dark"] .marketing-lux .pricing-grid .plan-flag{color:#1a1206}
-/* Pricing surfaces that carry hardcoded light inks/backgrounds */
-html[data-theme="dark"] .marketing-lux .pricing-grid ul{color:var(--m-muted)}
-html[data-theme="dark"] .marketing-lux .pricing-note{
-  background:var(--m-surface-2);color:var(--m-ink);border-left-color:var(--m-warm);
-}
-html[data-theme="dark"] .marketing-lux .pricing-footnote{color:var(--m-muted)}
-html[data-theme="dark"] .marketing-lux .payg{background:var(--m-paper)}
-html[data-theme="dark"] .marketing-lux .payg>div:last-child{color:var(--m-muted)}
 
 /* ── Footer: brand + three clean columns ── */
 .marketing-lux .marketing-footer{

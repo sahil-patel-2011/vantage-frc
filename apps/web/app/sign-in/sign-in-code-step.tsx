@@ -97,13 +97,14 @@ export function SignInCodeStep({
       ) : null}
 
       {/* Right under the boxes, not below the timer: an uninvited visitor otherwise waited out
-          the five-minute clock before reading why nothing came. Always open, and still there after a wrong code: an address no team invited never gets
-          a code, and a folded note left a new mentor waiting on a timer for one. */}
+          the five-minute clock before reading why nothing came. It appears once a new code could
+          be sent (showCodeHelp), not from the first second: nearly everyone here was invited, and
+          "you're probably not invited" alarmed them while their email was on its way. */}
       {inviteHelp ? (
         <div className="signin-invite-help">
           <p>
-            <strong>No code after a minute? You&rsquo;re probably not invited yet.</strong> Codes only go to
-            emails a team has invited. If you were invited, check spam.
+            <strong>Still no code?</strong> Check your spam folder first. Codes only go to emails a team has
+            invited, so if your team hasn&rsquo;t invited this address yet, ask them to.
           </p>
           <a
             className="signin-invite-help-cta"
@@ -201,7 +202,7 @@ export function SignInNotInvited({
         <a className="signin-submit" href="/">
           Back to the home page
         </a>
-        <a className="signin-submit is-secondary" href="/join-team">
+        <a className="signin-link signin-link-block" href="/join-team">
           Join with a team code
         </a>
         <button type="button" className="signin-link" onClick={onUseAnotherEmail}>
@@ -213,21 +214,23 @@ export function SignInNotInvited({
   // The server never says who is on the waitlist, so this browser cannot tell. Lead with what
   // is true either way, and offer the waitlist second: someone who already joined was told, with
   // a big blue button, to join again.
+  // The heading already says "You're not on a team yet"; the body says why and what to do, and
+  // only one of the two ways on is a filled button.
   return (
     <div className="signin-not-invited" role="status">
       <p>
-        <strong>{email}</strong> isn&rsquo;t on a team yet. Vantage is invite-only: a team&rsquo;s owner or mentor
-        invites each person.
+        Vantage is invite-only: a team&rsquo;s owner or a mentor invites each person by email, and no team has
+        invited <strong>{email}</strong> yet.
       </p>
       <p className="app-muted">
         Already joined the waitlist? You&rsquo;re set. We&rsquo;ll email you when your team is ready.
       </p>
-      <a className="signin-submit is-secondary" href={waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
-        Join the waitlist
-      </a>
       {/* A student whose team shared its six-number code joins with it, no invite email needed. */}
-      <a className="signin-submit is-secondary" href="/join-team">
+      <a className="signin-submit" href="/join-team">
         Join with a team code
+      </a>
+      <a className="signin-link signin-link-block" href={waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
+        New team? Join the waitlist
       </a>
       <button type="button" className="signin-link" onClick={onUseAnotherEmail}>
         Use a different email

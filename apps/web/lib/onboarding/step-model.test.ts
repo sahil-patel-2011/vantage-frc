@@ -53,7 +53,8 @@ describe("onboarding step gates", () => {
     const noDob = filledProfile({ dateOfBirth: "" });
     const result = validateOnboardingStep("profile", noDob, BASE_CONTEXT);
     expect(result).toMatchObject({ ok: false, field: "dateOfBirth" });
-    expect(result.ok === false && result.message).toMatch(/youth-safe/i);
+    expect(result.ok === false && result.message).toMatch(/student accounts safe/i);
+    expect(result.ok === false && result.message).toMatch(/teammates never see it/i);
 
     expect(validateOnboardingStep("profile", filledProfile(), BASE_CONTEXT)).toEqual({ ok: true });
 

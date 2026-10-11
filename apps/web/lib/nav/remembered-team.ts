@@ -6,6 +6,13 @@
  *
  * The cookie is only a hint: every page still checks membership through RLS, so a stale or
  * edited value shows that page's normal "not on this team" state, never another team's data.
+ *
+ * It only ever holds a team the person is on. It used to be written for any `?orgId=` that looked
+ * like an id, so one click on another team's link (an old email, a link pasted in chat) pinned the
+ * person to that team for a year and every bare team page redirected there and failed. The proxy
+ * now reads the person's own teams first: a team they're not on is never remembered, a stale
+ * cookie falls back to their own team, and a link to another team lands on the team chooser,
+ * which says so (notOnTeamRedirect).
  */
 
 export const REMEMBERED_TEAM_COOKIE = "vantage-team";
@@ -87,6 +94,35 @@ export const TEAM_SCOPED_PAGES: ReadonlySet<string> = new Set([
   "/weight-budget",
   "/wiring",
 ]);
+
+/**
+ * The first candidate that is one of the person's teams, else their first team (the list comes
+ * owner-first from memberTeamIds), else null for someone on no team.
+ */
+export function chooseMemberTeam(memberTeams: readonly string[], ...candidates: Array<string | null | undefined>): string | null {
+  for (const candidate of candidates) {
+    if (isTeamId(candidate) && memberTeams.includes(candidate)) return candidate;
+  }
+  return memberTeams[0] ?? null;
+}
+
+/** Marks the team chooser as reached from a link to a team the person is not on. */
+export const NOT_ON_TEAM_PARAM = "notOnTeam";
+
+/**
+ * A page opened for another team goes to the chooser instead, which says "You're not on that
+ * team" and links the same page for each of the person's own teams. The other team's id is
+ * dropped: nothing about that team is shown or kept.
+ */
+export function notOnTeamRedirect(url: URL): URL {
+  const page = new URL(url.toString());
+  page.searchParams.delete("orgId");
+  const target = new URL("/workspace", url);
+  // The chooser itself is not a destination: its own team's Home is.
+  target.searchParams.set("next", page.pathname === "/workspace" ? "/dashboard" : `${page.pathname}${page.search}`);
+  target.searchParams.set(NOT_ON_TEAM_PARAM, "1");
+  return target;
+}
 
 /** Where to send a team page that arrived without `?orgId=`, or null to render it as is. */
 export function teamPageRedirect(url: URL, teamId: string | null): URL | null {

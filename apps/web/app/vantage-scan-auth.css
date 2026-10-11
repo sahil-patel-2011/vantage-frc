@@ -30,12 +30,13 @@
   color: var(--muted, #5a6578);
 }
 
-/* The same blue as the marketing site's primary buttons: one product, one primary colour. */
+/* The product's teal accent, the colour of the marketing site's and the app's primary buttons: one
+   product, one primary colour (it was a separate blue here). Light and dark both come from tokens. */
 .signin-submit,
 .signin-page .signin-submit {
-  background: #2563eb;
-  color: #fff;
-  border-color: #2563eb;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
 }
 
 .signin-submit:disabled,
@@ -62,6 +63,6 @@
 
 .onboarding-steps-simple li.current b {
   background: var(--scan-navy, #0d3560);
-  color: #fff;
+  color: var(--accent-ink);
   box-shadow: none;
 }

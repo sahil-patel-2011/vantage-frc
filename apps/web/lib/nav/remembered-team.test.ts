@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { teamPageRedirect } from "./remembered-team";
+import { chooseMemberTeam, notOnTeamRedirect, teamPageRedirect } from "./remembered-team";
 
 const TEAM = "6925a000-0000-4000-8000-000000000001";
 
@@ -16,5 +16,28 @@ describe("teamPageRedirect", () => {
     expect(teamPageRedirect(new URL("https://x.test/dashboard"), TEAM)).toBeNull();
     expect(teamPageRedirect(new URL("https://x.test/team/admin"), "not-a-uuid")).toBeNull();
     expect(teamPageRedirect(new URL("https://x.test/team/admin"), null)).toBeNull();
+  });
+});
+
+describe("chooseMemberTeam", () => {
+  const OTHER = "6c6a13e8-8672-4a9c-9be6-960c1298334c";
+  it("takes the first candidate the person is on, else their first team", () => {
+    expect(chooseMemberTeam([OTHER, TEAM], TEAM)).toBe(TEAM);
+    expect(chooseMemberTeam([OTHER], TEAM)).toBe(OTHER);
+    expect(chooseMemberTeam([], TEAM)).toBeNull();
+    expect(chooseMemberTeam([OTHER], "not-a-uuid", null)).toBe(OTHER);
+  });
+});
+
+describe("notOnTeamRedirect", () => {
+  it("keeps the page and its tab, drops the other team's id", () => {
+    const target = notOnTeamRedirect(new URL(`https://x.test/competition?tab=command&orgId=${TEAM}`));
+    expect(target.pathname).toBe("/workspace");
+    expect(target.searchParams.get("next")).toBe("/competition?tab=command");
+    expect(target.searchParams.get("notOnTeam")).toBe("1");
+  });
+
+  it("sends the chooser itself to Home", () => {
+    expect(notOnTeamRedirect(new URL(`https://x.test/workspace?orgId=${TEAM}`)).searchParams.get("next")).toBe("/dashboard");
   });
 });

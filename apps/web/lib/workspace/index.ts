@@ -12,6 +12,7 @@ export {
   workspaceRelatedLinks,
   workspaceSetupSteps,
   workspaceShellCopy,
+  workspaceNotOnTeamCopy,
   type WorkspaceJoinCopy,
   type WorkspaceJoinKind,
   type WorkspaceJoinNextAction,

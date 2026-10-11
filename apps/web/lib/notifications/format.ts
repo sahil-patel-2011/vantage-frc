@@ -26,7 +26,12 @@ export function notificationTypeLabel(type: string): string {
       return "What’s new";
     case "export_ready":
       return "Export";
+    // Joins, and the team lifecycle (migration 0720, platform provisioning): someone left, the
+    // team was deleted, or a new team was set up with you as its owner.
     case "invite_accepted":
+    case "member_left":
+    case "team_deleted":
+    case "team_owner_added":
       return "Team";
     case "guided_signoff_requested":
     case "guided_signoff_decided":

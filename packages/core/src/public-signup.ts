@@ -1,5 +1,7 @@
 /** December 1, 2026 at midnight in America/New_York; readiness is still required. */
 export const PUBLIC_SIGNUP_EARLIEST = "2026-12-01T05:00:00.000Z";
+/** The same day in words, for every public sentence about when signup opens (test pins the match). */
+export const PUBLIC_SIGNUP_DATE_LABEL = "December 1, 2026";
 export const PUBLIC_SIGNUP_ENV_VALUE = "open";
 
 export function publicSignupDateReached(now: Date = new Date()): boolean {
