@@ -5,6 +5,7 @@ import { askText, Button, EmptyState } from "../../../../components/ui";
 
 type Pending = {
   id: string;
+  userId: string;
   displayName: string;
   requestedAt: string;
   trackId: string;
@@ -18,7 +19,7 @@ type View =
       status: "ready";
       orgId: string;
       orgName: string;
-      tracks: Array<{ id: string; title: string; steps: number }>;
+      tracks: Array<{ id: string; title: string; shortTitle?: string; steps: number }>;
       pending: Pending[];
       ownPending: number;
       members: Member[];
@@ -152,38 +153,51 @@ export function TeamProgressClient() {
           <section className="guided-group" aria-labelledby="guided-members">
             <h2 id="guided-members">Steps done, by member</h2>
             {view.members.length === 0 ? (
-              <p>No one has finished a checked step yet. Share a track from Checked step by step to get started.</p>
+              <p>No members to show yet. Invite your team, then share a track from Checked step by step.</p>
             ) : (
-              <div className="guided-table-wrap" role="region" aria-labelledby="guided-members" tabIndex={0}>
-                <table className="guided-table">
-                  <thead>
-                    <tr>
-                      <th scope="col">Member</th>
-                      {view.tracks.map((track) => (
-                        <th key={track.id} scope="col">
-                          <a href={`/learn/guided/${track.id}`}>{track.title}</a>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {view.members.map((member) => (
-                      <tr key={member.userId}>
-                        <th scope="row">{member.displayName}</th>
-                        {view.tracks.map((track) => {
-                          const done = Math.min(member.tracks[track.id] ?? 0, track.steps);
-                          return (
-                            <td key={track.id} data-done={done === track.steps ? "all" : done ? "some" : "none"}>
-                              <span>{done ? `${done}/${track.steps}` : "–"}</span>
-                              <i aria-hidden="true" style={{ width: `${(done / Math.max(1, track.steps)) * 100}%` }} />
-                            </td>
-                          );
-                        })}
+              <>
+                {view.members.every((member) => Object.keys(member.tracks).length === 0) ? (
+                  <p className="guided-meta">No one has finished a checked step yet. Share a track from Checked step by step to get started.</p>
+                ) : null}
+                <div className="guided-table-wrap" role="region" aria-labelledby="guided-members" tabIndex={0}>
+                  <table className="guided-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Member</th>
+                        {view.tracks.map((track) => (
+                          <th key={track.id} scope="col">
+                            <a href={`/learn/guided/${track.id}`} title={track.title} aria-label={track.title}>
+                              {track.shortTitle ?? track.title}
+                            </a>
+                          </th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {view.members.map((member) => (
+                        <tr key={member.userId}>
+                          <th scope="row">{member.displayName}</th>
+                          {view.tracks.map((track) => {
+                            const done = Math.min(member.tracks[track.id] ?? 0, track.steps);
+                            const waiting = view.pending.filter((item) => item.userId === member.userId && item.trackId === track.id).length;
+                            return (
+                              <td key={track.id} data-done={done === track.steps ? "all" : done ? "some" : "none"}>
+                                <span>{done ? `${done}/${track.steps}` : "Not started"}</span>
+                                {waiting ? (
+                                  <em className="guided-cell-pending">
+                                    {waiting} waiting for you
+                                  </em>
+                                ) : null}
+                                <i aria-hidden="true" style={{ width: `${(done / Math.max(1, track.steps)) * 100}%` }} />
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </section>
         </>

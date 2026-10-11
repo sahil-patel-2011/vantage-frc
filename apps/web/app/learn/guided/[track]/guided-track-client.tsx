@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Button } from "../../../../components/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Button, askConfirm } from "../../../../components/ui";
 import { isOnshapeApiCheck, onshapeInputLabel } from "../../../../lib/guided/checks-onshape";
 import type { CheckResult, GuidedStep, GuidedTrack } from "../../../../lib/guided/types";
 
@@ -151,10 +151,26 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
     void load();
   }, [load]);
 
+  // A sign-off notice links to "#step-<id>": open that step so the lead's note is in view.
+  useEffect(() => {
+    const id = window.location.hash.startsWith("#step-") ? decodeURIComponent(window.location.hash.slice(6)) : "";
+    if (id && track.steps.some((step) => step.id === id)) setOpenId(id);
+  }, [track.steps]);
+
   const doneCount = track.steps.filter((step) => done[step.id]).length;
   // The first step not yet done is the one that opens: that is where the student is.
   const current = track.steps.find((step) => !done[step.id])?.id ?? null;
   const open = openId ?? current;
+
+  // A result appears under the Check button, which on a phone sits behind the bottom bar; scroll
+  // it into view so it is read where it is written (and the shell does not repeat it as a toast).
+  const resultRef = useRef<HTMLDivElement | null>(null);
+  const lastResult = open ? states[open]?.result : null;
+  useEffect(() => {
+    if (!lastResult) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    resultRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }, [lastResult]);
 
   async function runCheck(step: GuidedStep, extra?: Record<string, unknown>) {
     const input = inputFor(step);
@@ -187,11 +203,37 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
   }
 
   async function reopen(step: GuidedStep, action: "reopen" | "withdraw" = "reopen") {
-    await fetch("/api/guided", {
+    const signedOff = step.check.kind === "lead-signoff";
+    if (action === "reopen") {
+      // Doing a finished step again throws away its check, and for a lead's step the lead's
+      // sign-off too: say so before it happens.
+      const ok = await askConfirm({
+        title: `Do “${step.title}” again?`,
+        body: signedOff
+          ? "This clears the lead's sign-off. The step won't count until a lead signs it off again."
+          : "This clears the check. The step won't count until you check it again.",
+        confirmLabel: signedOff ? "Clear sign-off" : "Do it again",
+        tone: "destructive",
+      });
+      if (!ok) return;
+    }
+    const response = await fetch("/api/guided", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ trackId: track.id, stepId: step.id, action, orgId: orgFromUrl() }),
     }).catch(() => null);
+    if (!response?.ok) {
+      // Nothing changed on the server, so nothing changes here either.
+      setStates((prev) => ({
+        ...prev,
+        [step.id]: {
+          busy: false,
+          result: { passed: false, message: response?.status === 401 ? "Sign in again, then try that." : "That didn't save. Check your connection and try again." },
+        },
+      }));
+      setOpenId(step.id);
+      return;
+    }
     setSignoffs((prev) => {
       const next = { ...prev };
       delete next[step.id];
@@ -241,6 +283,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
           return (
             <li
               key={step.id}
+              id={`step-${step.id}`}
               className={`guided-step${isDone ? " is-done" : ""}${isOpen ? " is-open" : ""}${practice ? " is-practice" : ""}`}
               data-testid="guided-step"
             >
@@ -318,7 +361,8 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
                     ) : signoff && signoffs[step.id]?.status === "requested" ? (
                       <div className="guided-actions">
                         <span className="guided-waiting" role="status">
-                          Waiting for a lead. Any owner or admin can sign it off on Team progress.
+                          Waiting for a lead. Your team&apos;s owners and admins got a notice; find one to check it with you.
+                          You&apos;ll get a notice when it is signed off or sent back.
                         </span>
                         <Button variant="secondary" onClick={() => void reopen(step, "withdraw")}>
                           Withdraw request
@@ -350,7 +394,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
                       </>
                     )}
                     {state?.result && !isDone && !(signoff && signoffs[step.id]?.status === "requested") ? (
-                      <div className={`guided-result${state.result.passed ? " is-pass" : " is-fail"}`} role="status">
+                      <div ref={isOpen ? resultRef : undefined} className={`guided-result${state.result.passed ? " is-pass" : " is-fail"}`} role="status">
                         <p>{state.result.message}</p>
                         {state.result.evidence?.length ? (
                           <details>

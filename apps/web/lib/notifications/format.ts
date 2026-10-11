@@ -28,6 +28,9 @@ export function notificationTypeLabel(type: string): string {
       return "Export";
     case "invite_accepted":
       return "Team";
+    case "guided_signoff_requested":
+    case "guided_signoff_decided":
+      return "Learning";
     case "billing":
     case "credit_low":
       return "AI limits";

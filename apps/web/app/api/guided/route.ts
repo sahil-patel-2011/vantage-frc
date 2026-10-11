@@ -1,9 +1,15 @@
-import { auth } from "@vantage/core";
+import { auth, emitNotification } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { HttpError, failResponse, markProgress, resolveMembership } from "../../../lib/cad-learn/store";
 import { runGuidedCheck, type CheckInput } from "../../../lib/guided/run-check";
-import { clearMySignoff, needsLeadSignoff, readMySignoffs, requestSignoff } from "../../../lib/guided/signoffs";
+import {
+  clearMySignoff,
+  needsLeadSignoff,
+  notifyLeadsOfRequest,
+  readMySignoffs,
+  requestSignoff,
+} from "../../../lib/guided/signoffs";
 import { guidedStep, guidedTrack } from "../../../lib/guided/tracks";
 import { GUIDED_PREFIX, guidedLessonId } from "../../../lib/guided/types";
 
@@ -65,10 +71,32 @@ export async function POST(request: Request) {
           : { passed: false, message: "Reopened. Check it again when you are ready." };
       }
       if (step.check.kind === "lead-signoff") {
-        const status = await requestSignoff(client, signoffKey);
-        return status === "approved"
-          ? { passed: true, message: "A lead signed this off." }
-          : { passed: false, pending: true, message: "Asked a lead. It counts as done once an owner or admin signs it off on Team progress." };
+        const request = await requestSignoff(client, signoffKey);
+        if (request.status === "approved") return { passed: true, message: "A lead signed this off." };
+        // Tell the leads (A5-16). A failed notice never undoes the request: the step still waits
+        // on Team progress, where every lead sees it.
+        const told =
+          request.fresh && request.id
+            ? await withSavepoint(
+                client,
+                () =>
+                  notifyLeadsOfRequest(client, emitNotification, {
+                    ...who,
+                    signoffId: request.id!,
+                    trackId: String(body.trackId),
+                    stepId: step.id,
+                  }),
+                0,
+              )
+            : null;
+        return {
+          passed: false,
+          pending: true,
+          message:
+            told === 0
+              ? "Asked for a sign-off. Your team has no owner or admin to check it yet; it waits on Team progress."
+              : "Sent to your team's owners and admins. They get a notice and check it with you; the step counts once one of them signs it off.",
+        };
       }
       const outcome = await runGuidedCheck(client, who, step.check, body.input ?? {});
       if (outcome.passed) await markProgress(client, { ...who, lessonId, completed: true });

@@ -192,6 +192,8 @@ export function homeNowAction(input: {
   mineTodos?: number;
   /** The next thing on today's calendar, already formatted. */
   nextEventToday?: { title: string; whenLabel: string } | null;
+  /** Guided-track steps a student asked this owner or admin to sign off (A5-16). */
+  signoffsWaiting?: number;
 }): HomeNowAction {
   if (!input.orgId) {
     return {
@@ -235,6 +237,17 @@ export function homeNowAction(input: {
       detail: "Your hours are still running.",
       href: "/hours-self-view",
       cta: "Open My Hours",
+    };
+  }
+  // A student is waiting on a lead: until someone signs the step off it doesn't count, and the
+  // request used to sit unseen on a page leads had no reason to open.
+  const signoffs = input.signoffsWaiting ?? 0;
+  if (Number.isInteger(signoffs) && signoffs > 0) {
+    return {
+      title: signoffs === 1 ? "A step is waiting for your sign-off" : `${signoffs} steps are waiting for your sign-off`,
+      detail: "Check each step with them, then sign it off or send it back with a note.",
+      href: "/learn/guided/team",
+      cta: "Review sign-offs",
     };
   }
   /*
@@ -360,6 +373,8 @@ export function homeNowFromWidgets(input: {
     openTodos,
     mineTodos,
     nextEventToday: nextEventToday(byType("calendar_today"), input.now ?? new Date()),
+    signoffsWaiting:
+      typeof myDay?.signoffsWaiting === "number" && Number.isFinite(myDay.signoffsWaiting) ? Number(myDay.signoffsWaiting) : 0,
   });
 }
 

@@ -108,6 +108,21 @@ describe("homeNowAction", () => {
     expect(homeNowAction({ orgId: "org-1" }).quiet).toBe(true);
   });
 
+  it("tells a lead when a student is waiting for a sign-off (A5-16)", () => {
+    expect(homeNowAction({ orgId: "org-1", signoffsWaiting: 2, openTodos: 3 })).toEqual({
+      title: "2 steps are waiting for your sign-off",
+      detail: "Check each step with them, then sign it off or send it back with a note.",
+      href: "/learn/guided/team",
+      cta: "Review sign-offs",
+    });
+    expect(homeNowAction({ orgId: "org-1", signoffsWaiting: 1 }).title).toBe("A step is waiting for your sign-off");
+    // A match still comes first.
+    expect(homeNowAction({ orgId: "org-1", nextMatchLabel: "Qual 3", signoffsWaiting: 1 }).title).toBe("Our next match");
+    expect(
+      homeNowFromWidgets({ orgId: "org-1", widgets: { a: { type: "my_day", data: { signoffsWaiting: 1 } } } }).cta,
+    ).toBe("Review sign-offs");
+  });
+
   it("reads next match, duties, and todos from widget payloads without inventing counts", () => {
     const now = homeNowFromWidgets({
       orgId: "org-1",
