@@ -3,7 +3,7 @@ import "./robot.css";
 
 export const metadata = {
   title: "Robot Blueprint",
-  description: "The robot's digital twin — every subsystem linked to its CAD, code, strategy priority, and live ops data.",
+  description: "Every part of the robot, each linked to its CAD, code, strategy priority, and live shop data.",
 };
 
 export default function RobotPage() {

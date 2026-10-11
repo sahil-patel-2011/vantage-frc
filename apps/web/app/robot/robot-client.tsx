@@ -54,10 +54,12 @@ function LinkEditor({
   placeholder: string;
   buttonLabel: string;
   busy: boolean;
-  onSave: (next: string) => void;
+  /** Resolves to null when saved, or the sentence saying why not. */
+  onSave: (next: string) => Promise<string | null>;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
+  const [problem, setProblem] = useState("");
   useEffect(() => setDraft(value), [value]);
 
   if (!editing) {
@@ -70,19 +72,48 @@ function LinkEditor({
   return (
     <form
       className="robot-inline-form"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
-        onSave(draft.trim());
+        // A refused save keeps the editor open with what was typed and says why right here;
+        // it used to close and put the reason at the top of the page, off screen (A5-25).
+        const failure = await onSave(draft.trim());
+        if (failure) {
+          setProblem(failure);
+          return;
+        }
+        setProblem("");
         setEditing(false);
       }}
     >
-      <input aria-label={placeholder} value={draft} placeholder={placeholder} disabled={busy} onChange={(event) => setDraft(event.target.value)} />
+      <input
+        aria-label={placeholder}
+        aria-invalid={problem ? true : undefined}
+        value={draft}
+        placeholder={placeholder}
+        disabled={busy}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      {/* Cancel left, the confirming action right. */}
+      <button
+        type="button"
+        className="robot-link"
+        disabled={busy}
+        onClick={() => {
+          setProblem("");
+          setDraft(value);
+          setEditing(false);
+        }}
+      >
+        Cancel
+      </button>
       <Button variant="secondary" size="sm" type="submit" disabled={busy}>
         Save
       </Button>
-      <button type="button" className="robot-link" disabled={busy} onClick={() => setEditing(false)}>
-        Cancel
-      </button>
+      {problem ? (
+        <p className="robot-inline-error" role="alert">
+          {problem}
+        </p>
+      ) : null}
     </form>
   );
 }
@@ -101,7 +132,7 @@ function SubsystemCard({
   /** A file from the team's mapped robot code that looks like this subsystem. */
   codeSuggestion?: string;
   busyKey: string | null;
-  run: (body: ActionBody, key: string) => Promise<void>;
+  run: (body: ActionBody, key: string) => Promise<string | null>;
 }) {
   const confirm = useConfirm();
   const busy = busyKey === `sub:${subsystem.id}`;
@@ -159,7 +190,7 @@ function SubsystemCard({
               </a>
             </span>
           ) : (
-            <LinkEditor value="" placeholder="https://cad.onshape.com/…" buttonLabel="+ Link CAD model" busy={busy} onSave={(next) => void patch({ cadUrl: next || null })} />
+            <LinkEditor value="" placeholder="https://cad.onshape.com/…" buttonLabel="+ Link CAD model" busy={busy} onSave={(next) => patch({ cadUrl: next || null })} />
           )}
         </div>
 
@@ -189,7 +220,7 @@ function SubsystemCard({
                 placeholder="src/main/java/frc/robot/subsystems/Drivetrain.java"
                 buttonLabel="Other file…"
                 busy={busy}
-                onSave={(next) => void patch({ codeRef: next })}
+                onSave={(next) => patch({ codeRef: next })}
               />
             </span>
           ) : (
@@ -198,7 +229,7 @@ function SubsystemCard({
               placeholder="src/main/java/frc/robot/subsystems/Drivetrain.java"
               buttonLabel="+ Set code ref"
               busy={busy}
-              onSave={(next) => void patch({ codeRef: next })}
+              onSave={(next) => patch({ codeRef: next })}
             />
           )}
         </div>
@@ -228,7 +259,7 @@ function SubsystemCard({
               placeholder='driver_cycles action, e.g. "Full cycle"'
               buttonLabel={subsystem.practiceAction ? `“${subsystem.practiceAction}”` : "+ Map practice action"}
               busy={busy}
-              onSave={(next) => void patch({ practiceAction: next || null })}
+              onSave={(next) => patch({ practiceAction: next || null })}
             />
             {subsystem.ops.practice ? (
               <small className="app-muted">
@@ -361,12 +392,16 @@ export default function RobotClient() {
         });
         const data = (await response.json()) as { error?: string };
         if (!response.ok) {
-          setError(data.error ?? "Action failed.");
-          return;
+          const failure = data.error ?? "That didn't save. Try again.";
+          setError(failure);
+          return failure;
         }
         await load();
+        return null;
       } catch {
-        setError("Network error — changes were not saved.");
+        const failure = "The connection dropped, so that wasn't saved. Try again.";
+        setError(failure);
+        return failure;
       } finally {
         setBusyKey(null);
       }
@@ -465,7 +500,7 @@ export default function RobotClient() {
           <span className="breadcrumbs">Build / Robot</span>
           <h1>Robot Blueprint</h1>
           <p>
-            The digital twin for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — CAD, code, strategy, and ops per
+            Every part of the robot for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — CAD, code, strategy, and ops per
             subsystem, {view.context.seasonYear} season.
           </p>
         </div>
@@ -539,7 +574,7 @@ export default function RobotClient() {
         onSubmit={(event) => {
           event.preventDefault();
           if (!newName.trim()) return;
-          void run({ action: "add_subsystem", orgId, robotLabel, name: newName.trim() }, "add").then(() => setNewName(""));
+          void run({ action: "add_subsystem", orgId, robotLabel, name: newName.trim() }, "add").then((failure) => { if (!failure) setNewName(""); });
         }}
       >
         <input aria-label="New subsystem name" value={newName} disabled={busy} placeholder="Add a subsystem (e.g. Turret)" onChange={(event) => setNewName(event.target.value)} />
@@ -566,7 +601,7 @@ export default function RobotClient() {
         kind="robot_blueprint"
         robotLabel={robotLabel}
         title="Blueprint review"
-        description="AI read of the digital twin — weakest subsystems with their blockers, missing CAD/code/strategy links, and what to close before the next event."
+        description="AI read of the robot blueprint — weakest subsystems with their blockers, missing CAD/code/strategy links, and what to close before the next event."
       />
     </main>
   );
