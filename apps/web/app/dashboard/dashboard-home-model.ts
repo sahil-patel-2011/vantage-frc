@@ -287,7 +287,9 @@ export function homeNowAction(input: {
     };
   }
   return {
-    title: "Nothing you have to do right now",
+    // "Assigned", not "to do": a new member's first-week steps are listed below the card, and
+    // "Nothing you have to do" above "2 steps left" read as a contradiction (A5-21).
+    title: "Nothing assigned to you right now",
     detail: "When a match, duty, or task is assigned, it shows up here.",
     href: "/my-day",
     cta: "Open My Day",
