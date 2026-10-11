@@ -16,6 +16,12 @@ const NOT_FOUND = {
   pattern: String.raw`is not recognized as (the name of )?a cmdlet|command not found`,
   found: "Your terminal couldn't find that command. Close it, open a new one so it sees the new install, and run it again.",
 };
+/** The commonest first-commit failure: Git has no name or email for this computer yet. */
+const WHO_ARE_YOU = {
+  pattern: String.raw`Author identity unknown|unable to auto-detect email address|Please tell me who you are`,
+  found:
+    "Git doesn't know who you are yet. Run git config --global user.name \"Your Name\" and git config --global user.email \"you@example.com\" (the email on your GitHub account), then commit again.",
+};
 
 const GIT_FIRST_PR: GuidedTrack = {
   id: "git-first-pr",
@@ -48,6 +54,44 @@ const GIT_FIRST_PR: GuidedTrack = {
         verify: { reads: "output", mustNot: [NOT_FOUND] },
       },
       links: [GIT_HELP("Install Git", "https://git-scm.com/downloads"), GIT_HELP("Install the GitHub CLI", "https://cli.github.com/")],
+    },
+    {
+      id: "identity",
+      title: "Tell Git who you are",
+      why: "Every commit carries a name and an email. Git won't commit until it has both, and GitHub uses the email to show the commit as yours.",
+      whenToUse: "Once per computer, right after installing Git. Use your own name and the email on your GitHub account, never a teammate's.",
+      example: 'git config --global user.name "Riley Chen", then git config --global user.email "riley@example.com" (or the private noreply address from GitHub Settings › Emails).',
+      do: [
+        'Run git config --global user.name "Your Name" with your own name in the quotes.',
+        'Run git config --global user.email "you@example.com" with the email on your GitHub account.',
+        "Run git config user.name, then git config user.email, and paste what they printed.",
+      ],
+      checkedBy: "Vantage looks for your name and an email address in what git config printed.",
+      check: {
+        kind: "paste",
+        prompt: "What git config user.name and git config user.email printed",
+        must: [
+          {
+            pattern: String.raw`^\s*(?:user\.email\s*=\s*)?[^\s@="']+@[^\s@="']+\.[A-Za-z]{2,}\s*$`,
+            flags: "m",
+            missing: 'no email address. Run git config --global user.email "you@example.com" with the email on your GitHub account, then git config user.email.',
+          },
+          {
+            pattern: String.raw`^\s*(?:user\.name\s*=\s*)?\p{L}[\p{L}\p{M}' .-]{0,60}$`,
+            flags: "imu",
+            missing: 'no name. Run git config --global user.name "Your Name" with your own name, then git config user.name.',
+          },
+        ],
+        verify: {
+          reads: "output",
+          mustNot: [
+            NOT_FOUND,
+            { pattern: String.raw`you@example\.com`, found: "that's the example email. Use the email on your GitHub account instead." },
+            { pattern: String.raw`^\s*(?:user\.name\s*=\s*)?your name\s*$`, flags: "im", found: "that's the example name. Put your own name in the quotes." },
+          ],
+        },
+      },
+      links: [GIT_HELP("First-time Git setup", "https://git-scm.com/book/en/v2/Getting-Started-First-Time-Git-Setup")],
     },
     {
       id: "clone",
@@ -121,7 +165,12 @@ const GIT_FIRST_PR: GuidedTrack = {
         ],
         verify: {
           reads: "output",
-          mustNot: [FATAL, { pattern: String.raw`nothing to commit`, found: "Git says there was nothing to commit. Save your change in VS Code first, then git add -A." }],
+          // WHO_ARE_YOU first: its output also has a "fatal:" line, and this one says what to do.
+          mustNot: [
+            WHO_ARE_YOU,
+            FATAL,
+            { pattern: String.raw`nothing to commit`, found: "Git says there was nothing to commit. Save your change in VS Code first, then git add -A." },
+          ],
         },
       },
     },

@@ -182,6 +182,15 @@ export function evaluatePaste(check: PasteCheck, raw: string): CheckResult {
     return { passed: false, message: "Not yet: everything pasted is a comment. Paste the code itself." };
   }
 
+  const refusal = (verify.mustNot ?? []).find((rule) => new RegExp(rule.pattern, rule.flags ?? "i").test(body));
+  // In terminal output a refusal explains the failure ("Git doesn't know who you are", "the
+  // merge stopped on a conflict", BUILD FAILED): a failed command never prints the success line
+  // either, so checked after the `must` rules it could never show, and the generic "no “1 file
+  // changed” line" won. In code, the `must` rules name what is missing and keep going first.
+  if (refusal && verify.reads === "output") {
+    return { passed: false, message: `Not yet: ${refusal.found}`, evidence: [refusal.found] };
+  }
+
   const found = checkPaste(check, body);
   if (!found.passed) {
     if (verify.reads === "java" && checkPaste(check, text).passed) {
@@ -194,11 +203,7 @@ export function evaluatePaste(check: PasteCheck, raw: string): CheckResult {
     return found;
   }
 
-  for (const rule of verify.mustNot ?? []) {
-    if (new RegExp(rule.pattern, rule.flags ?? "i").test(body)) {
-      return { passed: false, message: `Not yet: ${rule.found}`, evidence: [rule.found] };
-    }
-  }
+  if (refusal) return { passed: false, message: `Not yet: ${refusal.found}`, evidence: [refusal.found] };
 
   for (const rule of verify.order ?? []) {
     const flags = rule.flags ?? "i";
