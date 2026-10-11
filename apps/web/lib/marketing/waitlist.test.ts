@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MemoryWaitlistStore, WaitlistUnavailableError, createWaitlistStore, waitlistSchema } from "./waitlist";
 import { waitlistUnavailableCopy } from "./waitlist-copy";
@@ -66,16 +68,33 @@ describe("duplicate-safe persistence", () => {
     expect(emails).toEqual(["a@example.com", "b@example.com"]);
   });
 
-  it("updates an existing email without disclosing a duplicate", async () => {
-    await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "a@example.com", teamNumber: 1 }));
+  it("keeps the first answers for an address, without disclosing a duplicate (QA A1-07)", async () => {
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "a@example.com", teamNumber: 1,
+      phone: "+12025550100", smsConsent: true }));
+    const first = store.get("a@example.com")!;
+    const firstUpdated = first.updatedAt;
+    await new Promise((resolve) => setTimeout(resolve, 2));
+    // Someone else types the same address: they cannot change the team, the phone or the consent.
     await expect(store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true,
       email: "A@example.com",
       teamNumber: 999,
       phone: "+12025550123",
       smsConsent: true,
     }))).resolves.toBeUndefined();
-    expect(store.get("a@example.com")?.teamNumber).toBe(999);
+    const kept = store.get("a@example.com")!;
+    expect(kept.teamNumber).toBe(1);
+    expect(kept.phone).toBe("+12025550100");
+    await store.upsert(waitlistSchema.parse({ termsAccepted: true, privacyAccepted: true, email: "a@example.com", teamNumber: 2 }));
+    expect(store.get("a@example.com")?.phone).toBe("+12025550100");
     expect(store.get("a@example.com")?.smsConsent).toBe(true);
+    // The renewed interest is still noted.
+    expect(store.get("a@example.com")!.updatedAt.getTime()).toBeGreaterThan(firstUpdated.getTime());
+  });
+
+  it("does the same in Postgres: a conflict only touches updated_at", () => {
+    const source = readFileSync(join(__dirname, "waitlist.ts"), "utf8");
+    const conflict = /ON CONFLICT \(email_normalized\) DO UPDATE SET([^`]*)`/.exec(source)?.[1] ?? "";
+    expect(conflict.trim()).toBe("updated_at = now()");
   });
 });
 

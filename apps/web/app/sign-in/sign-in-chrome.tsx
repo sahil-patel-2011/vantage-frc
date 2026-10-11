@@ -14,6 +14,7 @@ import {
 import type { InvitePreview } from "../../lib/invite";
 import { inviteBannerBody } from "./sign-in-model";
 import { EARLY_ACCESS_HREF } from "../../components/marketing/launch-availability";
+import { PUBLIC_SIGNUP_DATE_LABEL } from "@vantage/core/public-signup";
 
 export function SignInCard({
   titleId,
@@ -59,7 +60,7 @@ export function AccessFooter({ publicSignup = false }: { publicSignup?: boolean 
   if (publicSignup) return <p className="signin-waitlist">After email verification, you can create your team or join through an invitation or approved request.</p>;
   return (
     <p className="signin-waitlist">
-      <span>Team signup is planned for December 1, 2026. Until then, use your invitation or <a href={EARLY_ACCESS_HREF}>contact us for early access</a>.</span>
+      <span>Teams are set up from {PUBLIC_SIGNUP_DATE_LABEL}. Until then, use your invitation or <a href={EARLY_ACCESS_HREF}>contact us for early access</a>.</span>
       <a className="signin-waitlist-btn" href={waitlistHref}>
         Join the waitlist
       </a>
@@ -67,20 +68,18 @@ export function AccessFooter({ publicSignup = false }: { publicSignup?: boolean 
   );
 }
 
+/** What the invitation asks of this sign-in. The card's heading already names the team. */
 export function InviteBanner({
   token,
-  headline,
   preview,
 }: {
   token: string | null;
-  headline: string | null;
   preview: InvitePreview | null;
 }) {
   if (!token) return null;
   return (
     <div className="signin-invite" role="note">
       <span>INVITATION</span>
-      <strong>{headline}</strong>
       <p>{inviteBannerBody(preview?.email)}</p>
     </div>
   );
@@ -160,12 +159,10 @@ export function SignInStatusBlock({
   failure,
   notice,
   oauthMessage,
-  inviteHint,
 }: {
   failure: string | null;
   notice: string | null;
   oauthMessage: string;
-  inviteHint: string | null;
 }) {
   return (
     <>
@@ -184,14 +181,7 @@ export function SignInStatusBlock({
           {oauthMessage}
         </p>
       ) : null}
-
-      {inviteHint ? (
-        <div className="signin-setup-shell" role="status">
-          <span>invite only</span>
-          <strong>No code in your inbox?</strong>
-          <p>{inviteHint}</p>
-        </div>
-      ) : null}
+      {/* "No code in your inbox?" lives in one place now: the code step's own help. */}
     </>
   );
 }

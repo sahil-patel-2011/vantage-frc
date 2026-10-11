@@ -28,10 +28,13 @@ export {
 export {
   DEFAULT_CODE_TTL_SECONDS,
   DEFAULT_RESEND_COOLDOWN_SECONDS,
+  MAX_EMAIL_LENGTH,
+  OTP_ALLOWED_ATTEMPTS,
   OTP_LENGTH,
   activeDigitIndex,
   codeDigits,
   codeFromPastedText,
+  emailEntryHint,
   formatCooldown,
   formatCountdown,
   isCodeComplete,
@@ -50,13 +53,13 @@ export {
   classifyOtpFailure,
   codeSecondsRemaining,
   initialSignInState,
-  invitedOnlyHint,
   inviteReturnPath,
   inviteTokenFromNext,
   isCodeExpired,
   postAuthDestination,
   resendSecondsRemaining,
   restoreInviteNextPath,
+  showCodeHelp,
   signInFlowReducer,
   signInStepCopy,
   type OnboardingGateSnapshot,
@@ -67,6 +70,15 @@ export {
   type SignInFlowState,
   type SignInStep,
 } from "./sign-in-machine";
+
+export {
+  PENDING_CODE_STORAGE_KEY,
+  clearPendingCode,
+  readPendingCode,
+  tabStorage,
+  writePendingCode,
+  type PendingCode,
+} from "./pending-code";
 
 export {
   EMPTY_REMEMBERED_ACCOUNT,
