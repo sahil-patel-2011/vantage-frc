@@ -141,6 +141,8 @@ export function CodeBugbotPanel({
                 ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} scan · ${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} fix · $
                 {BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} recheck
               </span>
+              {/* Say who pays (A5-26): a student saw prices with no word on whose money it is. */}
+              <span>Charged to your team&apos;s Vantage credits, within the limits your team set.</span>
             </button>
           </div>
 
