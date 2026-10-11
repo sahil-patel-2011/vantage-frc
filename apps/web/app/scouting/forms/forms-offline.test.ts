@@ -10,7 +10,11 @@ describe("Scout forms last snapshot stays on the phone", () => {
     expect(src).toMatch(/getFeatureSnapshot/);
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"scout-forms"/);
-    expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
+    // Reads get scouting's 20-second wait; a publish (a write) gets 30 seconds and a read-back
+    // when no answer comes (lib/scouting/publish-confirm.ts).
+    expect(src).toMatch(/AbortSignal\.timeout\(SCOUTING_LOAD_TIMEOUT_MS\)/);
+    expect(src).toMatch(/AbortSignal\.timeout\(PUBLISH_TIMEOUT_MS\)/);
+    expect(src).toMatch(/publishOutcomeAfterTimeout/);
     expect(src).toMatch(/feature="Scout forms"/);
     expect(src).toMatch(/AbortSignal\.timeout/);
     // The error shell shows only when this team's load failed with nothing cached; a stale

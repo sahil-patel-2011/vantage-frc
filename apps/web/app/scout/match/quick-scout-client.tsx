@@ -8,7 +8,7 @@ import { nextScoutTarget, scoutContext, describeScoutContext, type NextScoutTarg
 import { loadFailedCopy } from "../../../lib/scouting/load-state";
 import { useOnline } from "../../../lib/offline/use-online";
 import { useViewOnly } from "../../../lib/nav/use-view-only";
-import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { PUBLISH_TIMEOUT_MS } from "../../../lib/scouting/publish-confirm";
 import { hubHref } from "../../../lib/nav/hubs";
 import { signInHref } from "../../../lib/ui/load-failure";
 import { myReports, type Bootstrap } from "../../scouting/scouting-model";
@@ -133,7 +133,7 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, action: "ensure_defaults", ...(requestedEventKey ? { eventKey: requestedEventKey } : {}) }),
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        signal: AbortSignal.timeout(PUBLISH_TIMEOUT_MS),
       });
       const body = (await response.json().catch(() => null)) as (Bootstrap & { error?: string }) | null;
       if (!response.ok || !body || !Array.isArray(body.schemas)) throw new Error(body?.error ?? "The starter form could not be created.");
