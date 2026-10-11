@@ -3,8 +3,14 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { VantageLogo } from "../../components/brand";
 import { Button, FormRow } from "../../components/ui";
 import { teamJoinInvitePath } from "../../lib/onboarding/entry-journey";
-import { teamJoinNextStep, type TeamJoinMember } from "../../lib/team/join-code-flow";
-import { apiErrorMessage } from "../../lib/ui/load-failure";
+import {
+  joinCodeDigits,
+  joinCodeHint,
+  joinFailureMessage,
+  teamJoinNextStep,
+  teamNumberDigits,
+  type TeamJoinMember,
+} from "../../lib/team/join-code-flow";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { probeSessionUser } from "../../lib/nav/session-probe";
 import "./join-team.css";
@@ -46,7 +52,8 @@ export default function JoinTeamClient() {
         body: JSON.stringify({ teamNumber: Number(team), pin, email: sessionEmail ?? email.trim() }),
       });
       if (!response.ok) {
-        setError((await apiErrorMessage(response)) ?? "Could not join. Check the details and try again.");
+        const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+        setError(joinFailureMessage(response.status, body));
         return;
       }
       const data = (await response.json()) as Record<string, unknown>;
@@ -90,36 +97,39 @@ export default function JoinTeamClient() {
         <VantageLogo />
         <h1 id="join-team-title">Join your team</h1>
         <p className="app-muted">
-          Enter your team’s code, then verify your email to join.
+          Enter your team’s code, then verify your email to join. Your team’s owner and mentors
+          see who joined and choose what you can do.
         </p>
         <form onSubmit={(event) => void submit(event)}>
+          {/* No maxLength on either field: the browser cut a pasted "206 436" to "206 43" before
+              the spaces were dropped. Digits are kept from whatever is pasted, then trimmed. */}
           <FormRow label="FRC team number">
             <input
               required
               inputMode="numeric"
               autoComplete="off"
-              pattern="[0-9]{1,5}"
-              maxLength={5}
               disabled={busy}
               value={team}
-              onChange={(event) =>
-                setTeam(event.target.value.replace(/\D/g, "").slice(0, 5))
-              }
+              onChange={(event) => setTeam(teamNumberDigits(event.target.value))}
               placeholder="e.g. 6925"
             />
           </FormRow>
-          <FormRow label="Team join code">
+          <FormRow
+            label="Team join code"
+            hint={
+              <span id="join-team-code-hint" aria-live="polite">
+                {joinCodeHint(pin) ?? "Spaces and dashes are fine. Your team admin can tell you the code."}
+              </span>
+            }
+          >
             <input
               required
               inputMode="numeric"
               autoComplete="off"
-              pattern="[0-9]{6}"
-              maxLength={6}
               disabled={busy}
               value={pin}
-              onChange={(event) =>
-                setPin(event.target.value.replace(/\D/g, "").slice(0, 6))
-              }
+              aria-describedby="join-team-code-hint"
+              onChange={(event) => setPin(joinCodeDigits(event.target.value))}
               placeholder="Six numbers"
             />
           </FormRow>

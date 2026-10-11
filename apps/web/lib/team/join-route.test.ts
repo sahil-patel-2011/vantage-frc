@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
   session: null as null | { user: { id: string } },
   member: null as null | { orgId: string; orgName: string; teamNumber: number },
   inviteId: "invite-1" as string | null,
+  retryAt: null as string | null,
   calls: [] as string[],
 }));
 
@@ -30,6 +31,7 @@ vi.mock("@vantage/db", () => ({
   requestPool: {
     query: async (sql: string) => {
       state.calls.push(sql);
+      if (sql.includes("team_code_join_retry_at")) return { rows: [{ retryAt: state.retryAt }], rowCount: 1 };
       return { rows: [{ id: state.inviteId }], rowCount: 1 };
     },
     connect: async () => ({ query: async () => ({ rows: [] }), release: () => undefined }),
@@ -51,7 +53,22 @@ describe("POST /api/teams/join", () => {
     state.session = null;
     state.member = null;
     state.inviteId = "invite-1";
+    state.retryAt = null;
     state.calls = [];
+  });
+
+  it("tells a wrong code apart from a lockout, and never says to wait on a first mistake (QA A3-14)", async () => {
+    state.inviteId = null;
+    const wrong = await join();
+    expect(wrong.status).toBe(400);
+    const wrongBody = (await wrong.json()) as { error: string; code: string };
+    expect(wrongBody.code).toBe("join_code_wrong");
+    expect(wrongBody.error).not.toMatch(/fifteen|wait/i);
+
+    state.retryAt = "2026-10-11T20:42:00.000Z";
+    const locked = await join();
+    expect(locked.status).toBe(429);
+    expect(await locked.json()).toMatchObject({ code: "join_code_locked", retryAt: "2026-10-11T20:42:00.000Z" });
   });
 
   it("issues a code invitation and names the team for the sign-in copy", async () => {
