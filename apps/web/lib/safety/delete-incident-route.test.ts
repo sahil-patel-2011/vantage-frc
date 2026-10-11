@@ -1,10 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * Privilege-gate contract for POST /api/safety `delete_incident`. The parser and
- * `deleteSafetyIncident` run for real. Only the session and the `withRls` client are
- * stubbed, so this proves the route actually asks withRls for the caller's org and
- * never issues DELETE for a student.
+ * Contract for POST /api/safety after incident reporting was removed. The parser runs for
+ * real; only the session and the `withRls` client are stubbed.
  */
 
 const ORG = "11111111-1111-4111-8111-111111111111";
@@ -37,8 +35,8 @@ vi.mock("@vantage/db", () => ({
     return work({
       query: async (sql: string, params: unknown[] = []) => {
         state.queries.push({ sql, params });
-        if (sql.includes("DELETE FROM safety_incidents")) {
-          return { rows: [], rowCount: 1 };
+        if (sql.includes("INSERT INTO safety_certifications")) {
+          return { rows: [{ id: "cccccccc-3333-4333-8333-333333333333" }], rowCount: 1 };
         }
         if (sql.includes("FROM memberships")) {
           if (!state.role) return { rows: [], rowCount: 0 };
@@ -63,7 +61,11 @@ function post(body: unknown) {
   );
 }
 
-const deleteBody = { action: "delete_incident", orgId: ORG, id: INCIDENT };
+const INCIDENT_ACTIONS = [
+  { action: "delete_incident", orgId: ORG, id: INCIDENT },
+  { action: "set_incident_status", orgId: ORG, id: INCIDENT, status: "closed" },
+  { action: "log_incident", orgId: ORG, title: "Pinched finger", severity: "minor", occurredOn: "2026-10-01" },
+] as const;
 
 beforeEach(() => {
   state.session = null;
@@ -72,61 +74,45 @@ beforeEach(() => {
   state.queries = [];
 });
 
-describe("POST /api/safety delete_incident privilege gate", () => {
+/**
+ * Incident reporting was removed from Vantage; Safety keeps tool training and tool
+ * certifications. The incident actions still parse (old clients may send them) but the route
+ * answers 410 and never opens a database transaction for them.
+ */
+describe("POST /api/safety refuses the removed incident actions", () => {
   it("returns 401 when there is no session", async () => {
-    const response = await post(deleteBody);
+    const response = await post(INCIDENT_ACTIONS[0]);
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "Authentication required" });
     expect(state.withRlsContext).toBeNull();
   });
 
-  it("scopes the write through withRls with the caller's user and org", async () => {
-    state.session = { user: { id: USER } };
-    state.role = "owner";
-    const response = await post(deleteBody);
-    expect(response.status).toBe(200);
-    expect(state.withRlsContext).toEqual({ userId: USER, orgId: ORG });
-  });
-
-  it("lets an owner delete and parameterizes the incident and org ids", async () => {
-    state.session = { user: { id: USER } };
-    state.role = "owner";
-    const response = await post(deleteBody);
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true });
-
-    const deleted = state.queries.filter((q) => q.sql.includes("DELETE FROM safety_incidents"));
-    expect(deleted).toHaveLength(1);
-    expect(deleted[0]!.sql).toMatch(/\$1::uuid/);
-    expect(deleted[0]!.sql).toMatch(/\$2::uuid/);
-    expect(deleted[0]!.params).toEqual([INCIDENT, ORG]);
-    expect(JSON.stringify(state.queries)).not.toMatch(/DEMO/i);
-  });
-
-  it("lets an admin delete", async () => {
-    state.session = { user: { id: USER } };
-    state.role = "admin";
-    const response = await post(deleteBody);
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true });
-  });
-
-  it("returns 403 and never issues DELETE for a scout", async () => {
-    state.session = { user: { id: USER } };
-    state.role = "scout";
-    const response = await post(deleteBody);
-    expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({
-      error: "Only an owner or admin can delete a safety incident.",
+  for (const body of INCIDENT_ACTIONS) {
+    it(`answers 410 for ${body.action} and touches no table`, async () => {
+      state.session = { user: { id: USER } };
+      state.role = "owner";
+      const response = await post(body);
+      expect(response.status).toBe(410);
+      expect(await response.json()).toEqual({
+        error: "Incident reporting was removed. Tool certifications are still here.",
+      });
+      expect(state.withRlsContext).toBeNull();
+      expect(state.queries).toHaveLength(0);
     });
-    expect(state.queries.some((q) => q.sql.includes("DELETE FROM safety_incidents"))).toBe(false);
-  });
+  }
 
-  it("returns 403 and never issues DELETE for a viewer", async () => {
+  it("still records a tool certification through withRls", async () => {
     state.session = { user: { id: USER } };
-    state.role = "viewer";
-    const response = await post(deleteBody);
-    expect(response.status).toBe(403);
-    expect(state.queries.some((q) => q.sql.includes("DELETE FROM safety_incidents"))).toBe(false);
+    state.role = "owner";
+    const response = await post({
+      action: "add_certification",
+      orgId: ORG,
+      personName: "Riley",
+      certType: "general_safety",
+      completedOn: "2026-10-01",
+    });
+    expect(state.withRlsContext).toEqual({ userId: USER, orgId: ORG });
+    expect(state.queries.some((q) => q.sql.includes("INSERT INTO safety_certifications"))).toBe(true);
+    expect(response.status).not.toBe(410);
   });
 });

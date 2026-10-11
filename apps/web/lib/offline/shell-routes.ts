@@ -159,7 +159,6 @@ export const OFFLINE_SHELL_ROUTES = [
   "/equipment-maintenance",
   "/notifications",
   "/forms",
-  "/incidents",
   "/roles",
   "/parts-catalog",
   "/parts-relay",
@@ -428,7 +427,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/budget")) return "Season budget";
   if (bare.startsWith("/subteams")) return "Subteam progress";
   if (bare.startsWith("/safety-training")) return "Safety Training";
-  if (bare.startsWith("/safety")) return "Safety";
+  if (bare.startsWith("/safety")) return "Tool certifications";
   if (bare.startsWith("/writer")) return "Writer";
   if (bare.startsWith("/learning")) return "Learning";
   if (bare.startsWith("/training")) return "Training";
@@ -449,7 +448,6 @@ export function offlineCapableLabel(pathname: string): string | null {
   if (bare.startsWith("/notifications")) return "Notifications";
   if (bare.startsWith("/forms/") && bare !== "/forms") return "Form";
   if (bare.startsWith("/forms")) return "Forms";
-  if (bare.startsWith("/incidents")) return "Safety Incident Log";
   if (bare.startsWith("/roles")) return "Season roles";
   if (bare.startsWith("/parts-catalog")) return "Parts catalog";
   if (bare.startsWith("/parts-relay")) return "Parts Relay";

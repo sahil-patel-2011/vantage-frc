@@ -141,11 +141,11 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
   {
     key: "safety",
     title: "Safety path",
-    summary: "Shop rules, incidents, and competition safety culture.",
+    summary: "Shop rules, tool training, and competition safety culture.",
     source: "subteam",
     checks: checks([
       ["knowledge_safety", "Read shop safety notes", "PPE, tooling, and mentor coverage expectations.", "/team/knowledge"],
-      ["incidents", "Know how to log an incident", "Report early — no blame culture.", "/incidents"],
+      ["tool_training", "Get cleared on the tools you use", "A mentor records each tool you are trained on.", "/safety"],
       ["batteries_safety", "Battery handling rules", "Never leave a swelling pack unattended.", "/batteries"],
       ["inspection_safety", "Inspection readiness", "Bumpers, labels, and mechanical safety.", "/inspection"],
     ]),

@@ -107,7 +107,6 @@ export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   "impact",
   "impact-essay",
   "incident-heatmap",
-  "incidents",
   "inspection",
   "inspection-copilot",
   "intel",

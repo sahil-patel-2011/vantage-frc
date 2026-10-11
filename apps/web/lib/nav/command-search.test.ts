@@ -242,7 +242,7 @@ describe("newly surfaced tools are findable by their real-world words", () => {
     ["how heavy", "/build?tab=weight-budget"],
     ["first power", "/build?tab=bringup"],
     ["when do we play", "/competition?tab=schedule"],
-    ["injury", "/team?tab=safety"],
+    ["tool training", "/team?tab=safety"],
     ["engineering notebook", "/team?tab=notebook"],
     ["where to buy", "/business?tab=vendors"],
     // The rookie-survival roadmap, found by the words a first-year coach types.

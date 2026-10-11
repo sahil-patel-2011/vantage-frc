@@ -331,8 +331,7 @@ const FOCUS_LINKS: Record<MyKitFocus, MyKitQuickLink[]> = {
   ],
   safety: [
     { id: "safety-training", label: "Safety training", href: "/safety-training" },
-    { id: "safety", label: "Safety log", href: "/safety" },
-    { id: "incidents", label: "Incidents", href: "/incidents" },
+    { id: "safety", label: "Tool certifications", href: "/safety" },
   ],
   general: [
     { id: "team", label: "Team hub", href: "/team" },

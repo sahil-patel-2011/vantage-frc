@@ -230,7 +230,7 @@ safety culture into the pit.
 | Safety training modules and completions | `/safety-training` (`safety_training_modules`, `safety_training_completions`) |
 | Machine qualification matrix | `/training` (`training_skills`, `training_records`) |
 | Certifications | `safety_certifications` (surfaced via `/safety-training`) |
-| Incident log | `/safety`, `/incidents`, `/incident-heatmap` |
+| Tool certifications, robot incidents | `/safety` (tool certifications), `/safety-training`, `/incident-heatmap` (robot breakage) |
 | Consent and medical forms | `/consent` |
 | Competition safety | `/inspection`, `/pit`, `/batteries` |
 

@@ -2,8 +2,8 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { certExpiryStatus, parseSafetyAction, summarizeSafety, type CertType, type IncidentSeverity, type IncidentStatus, type Treatment } from "../../../lib/safety";
-import { deleteSafetyIncident, SafetyAuthError } from "../../../lib/safety/authorization";
+import { certExpiryStatus, parseSafetyAction, summarizeSafety, type CertType } from "../../../lib/safety";
+import { SafetyAuthError } from "../../../lib/safety/authorization";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
@@ -29,10 +29,6 @@ function fail(error: unknown) {
   return Response.json({ error: publicErrorMessage(error, "Safety request failed") }, { status });
 }
 
-type IncidentRow = {
-  id: string; title: string; severity: IncidentSeverity; occurredOn: string; location: string; description: string;
-  injuredPerson: string; treatment: Treatment; correctiveAction: string; status: IncidentStatus; byName: string | null;
-};
 type CertRow = { id: string; personName: string; certType: CertType; completedOn: string; expiresOn: string | null; notes: string; byName: string | null };
 
 export async function GET(request: Request) {
@@ -54,46 +50,34 @@ export async function GET(request: Request) {
         return {
           status: "setup_required" as const,
           message: requestedOrg
-            ? "Choose your team to track safety."
-            : "Choose your team to track safety, or join the waitlist.",
+            ? "Choose your team to track tool certifications."
+            : "Choose your team to track tool certifications, or join the waitlist.",
         };
       }
 
-      const [incidents, certs] = await Promise.all([
-        client.query<IncidentRow>(
-          `SELECT i.id, i.title, i.severity, i.occurred_on::text AS "occurredOn", i.location, i.description,
-                  i.injured_person AS "injuredPerson", i.treatment, i.corrective_action AS "correctiveAction",
-                  i.status, u.name AS "byName"
-           FROM safety_incidents i LEFT JOIN users u ON u.id = i.reported_by
-           WHERE i.org_id = $1 ORDER BY i.occurred_on DESC, i.created_at DESC`,
-          [row.orgId],
-        ),
-        client.query<CertRow>(
-          `SELECT c.id, c.person_name AS "personName", c.cert_type AS "certType", c.completed_on::text AS "completedOn",
-                  c.expires_on::text AS "expiresOn", c.notes, u.name AS "byName"
-           FROM safety_certifications c LEFT JOIN users u ON u.id = c.recorded_by
-           WHERE c.org_id = $1 ORDER BY c.person_name, c.cert_type`,
-          [row.orgId],
-        ),
-      ]);
-
+      // Tool certifications only: incident reporting was removed from Vantage. The incident
+      // tables stay (migrations are append-only) but nothing reads or writes them here.
+      const certs = await client.query<CertRow>(
+        `SELECT c.id, c.person_name AS "personName", c.cert_type AS "certType", c.completed_on::text AS "completedOn",
+                c.expires_on::text AS "expiresOn", c.notes, u.name AS "byName"
+         FROM safety_certifications c LEFT JOIN users u ON u.id = c.recorded_by
+         WHERE c.org_id = $1 ORDER BY c.person_name, c.cert_type`,
+        [row.orgId],
+      );
       const now = new Date();
       const certsWithStatus = certs.rows.map((c) => ({ ...c, expiry: certExpiryStatus(c.expiresOn, now) }));
-      const summary = summarizeSafety({
-        incidents: incidents.rows.map((i) => ({ severity: i.severity, status: i.status, occurredOn: i.occurredOn })),
+      const { expiringCerts, expiredCerts } = summarizeSafety({
+        incidents: [],
         certifications: certs.rows.map((c) => ({ expiresOn: c.expiresOn })),
         now,
       });
-
       return {
         status: "ready" as const,
         context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
-        incidents: incidents.rows,
         certifications: certsWithStatus,
-        summary,
+        summary: { expiringCerts, expiredCerts },
       };
     });
-
     return Response.json(view);
   } catch (error) {
     return fail(error);
@@ -104,38 +88,15 @@ export async function POST(request: Request) {
   try {
     const session = await requireSession();
     const action = parseSafetyAction(await request.json());
+    if (action.action === "log_incident" || action.action === "set_incident_status" || action.action === "delete_incident") {
+      throw new HttpError(410, "Incident reporting was removed. Tool certifications are still here.");
+    }
     const userId = session.user.id;
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
       await requireMembership(client, action.orgId, userId);
 
       switch (action.action) {
-        case "log_incident": {
-          const inserted = await client.query<{ id: string }>(
-            `INSERT INTO safety_incidents (org_id, title, severity, occurred_on, location, description, injured_person, treatment, corrective_action, reported_by)
-             VALUES ($1, $2, $3, $4::date, $5, $6, $7, $8, $9, $10) RETURNING id`,
-            [action.orgId, action.title, action.severity, action.occurredOn, action.location, action.description, action.injuredPerson, action.treatment, action.correctiveAction, userId],
-          );
-          return { id: inserted.rows[0]!.id };
-        }
-        case "set_incident_status": {
-          const updated = await client.query(
-            `UPDATE safety_incidents SET status = $1,
-               corrective_action = COALESCE($2, corrective_action), updated_at = now()
-             WHERE id = $3 AND org_id = $4`,
-            [action.status, action.correctiveAction, action.id, action.orgId],
-          );
-          if (!updated.rowCount) throw new HttpError(404, "Incident not found");
-          return { ok: true };
-        }
-        case "delete_incident": {
-          await deleteSafetyIncident(client, {
-            orgId: action.orgId,
-            incidentId: action.id,
-            userId,
-          });
-          return { ok: true };
-        }
         case "add_certification": {
           const inserted = await client.query<{ id: string }>(
             `INSERT INTO safety_certifications (org_id, person_name, cert_type, completed_on, expires_on, notes, recorded_by)

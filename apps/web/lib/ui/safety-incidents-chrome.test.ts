@@ -11,12 +11,11 @@ const WEB = join(__dirname, "..", "..");
  */
 const FILES = [
   "app/safety/safety-client.tsx",
-  "app/incidents/incidents-client.tsx",
   "app/safety-training/safety-training-client.tsx",
   "app/incident-heatmap/incident-heatmap-client.tsx",
 ] as const;
 
-describe("safety / incidents student chrome", () => {
+describe("safety training, tool certifications and the robot incident heatmap chrome", () => {
   it("does not print Setup required / VANTAGE / primary-action on this family", () => {
     for (const rel of FILES) {
       const src = readFileSync(join(WEB, rel), "utf8");
@@ -31,20 +30,15 @@ describe("safety / incidents student chrome", () => {
     expect(safety).toMatch(/badge="Needs setup"/);
     expect(safety).toMatch(/title="Choose your team"/);
     expect(safety).toMatch(/href="\/workspace"/);
-    expect(safety).toMatch(/Safety Incident Log/);
     expect(safety).toMatch(/Safety training/);
-    expectPlainCopy("Incidents, near-misses, and who is cleared on which tools.");
-
-    const incidents = readFileSync(join(WEB, "app/incidents/incidents-client.tsx"), "utf8");
-    expect(incidents).toMatch(/badge="Needs setup"/);
-    expect(incidents).toMatch(/title="Choose your team"/);
-    expect(incidents).toMatch(/view\.steps\[0\]/);
-    expect(incidents).toMatch(/Safety training/);
+    expect(safety).not.toMatch(/incident/i);
+    expectPlainCopy("Who is cleared on which shop tools, and when each clearance runs out.");
 
     const training = readFileSync(join(WEB, "app/safety-training/safety-training-client.tsx"), "utf8");
     expect(training).toMatch(/badge="Needs setup"/);
     expect(training).toMatch(/title="Choose your team"/);
-    expect(training).toMatch(/Safety Incident Log/);
+    expect(training).toMatch(/Tool certifications/);
+    expect(training).not.toMatch(/Safety Incident Log|"\/incidents"/);
     expect(training).toMatch(/view\.steps\[0\]/);
 
     const heatmap = readFileSync(join(WEB, "app/incident-heatmap/incident-heatmap-client.tsx"), "utf8");
@@ -61,12 +55,6 @@ describe("safety / incidents student chrome", () => {
     expect(safety).toMatch(/response\.status === 401 \|\| response\.status === 403/);
     expect(safety).toMatch(/if \(!view\)/);
     expect(safety).not.toMatch(/fetchFailed \|\| !view/);
-
-    const incidents = readFileSync(join(WEB, "app/incidents/incidents-client.tsx"), "utf8");
-    expect(incidents).toMatch(/getFeatureSnapshot/);
-    expect(incidents).toMatch(/"incidents"/);
-    expect(incidents).toMatch(/if \(!view\)/);
-    expect(incidents).toMatch(/response\.status === 401 \|\| response\.status === 403/);
 
     const training = readFileSync(join(WEB, "app/safety-training/safety-training-client.tsx"), "utf8");
     expect(training).toMatch(/getFeatureSnapshot/);

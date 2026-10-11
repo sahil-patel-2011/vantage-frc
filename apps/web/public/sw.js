@@ -175,7 +175,6 @@ const SHELL_ROUTES = [
   "/equipment-maintenance",
   "/notifications",
   "/forms",
-  "/incidents",
   "/roles",
   "/parts-catalog",
   "/parts-relay",

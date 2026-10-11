@@ -30,7 +30,7 @@ export const TEAM_6925_MECHANICAL_WEEKS: PacedWeek[] = [
         href: "https://www.firstinspires.org/resources/library/frc/season-materials",
         primary: true,
       },
-      { label: "Safety log", href: "/safety" },
+      { label: "Tool certifications", href: "/safety" },
     ],
     tasks: [
       {
@@ -58,14 +58,14 @@ export const TEAM_6925_MECHANICAL_WEEKS: PacedWeek[] = [
       {
         id: "mech-1",
         title: "Know where the safety gear is",
-        why: "In an emergency there is no time to look for the first-aid kit. Logging near misses the same day is how the team fixes a danger before someone gets hurt.",
+        why: "In an emergency there is no time to look for the first-aid kit. Telling a mentor about a near miss the same day is how the team fixes a danger before someone gets hurt.",
         do: [
           "Find the first-aid kit, fire extinguisher and eyewash in the shop.",
-          "Open the safety log in Vantage and read how a near miss is recorded.",
-          "Log any near miss or injury the same day, even a small one.",
+          "Tell a mentor about any near miss or injury the same day, even a small one.",
+          "Check which shop tools you are cleared on in Tool certifications.",
         ],
-        ...leadSignoff("You can point to the first-aid kit, extinguisher and eyewash without looking, and know how to log a near miss."),
-        links: [{ label: "Safety log", href: "/safety" }],
+        ...leadSignoff("You can point to the first-aid kit, extinguisher and eyewash without looking, and know to tell a mentor about a near miss the same day."),
+        links: [{ label: "Tool certifications", href: "/safety" }],
       },
     ],
   },

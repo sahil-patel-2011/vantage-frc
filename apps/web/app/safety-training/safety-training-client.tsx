@@ -77,8 +77,8 @@ export default function SafetyTrainingClient() {
 
   const related = (
     <nav className="product-hub-related" aria-label="Related safety tools">
-      <a href={withOrgHref("/safety", orgId)}>Safety log</a>
-      <a href={withOrgHref("/incidents", orgId)}>Safety Incident Log</a>
+      <a href={withOrgHref("/safety", orgId)}>Tool certifications</a>
+      <a href={withOrgHref("/tool-checkout", orgId)}>Tool checkout</a>
     </nav>
   );
 

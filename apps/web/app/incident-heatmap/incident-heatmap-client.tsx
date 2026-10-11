@@ -61,7 +61,6 @@ function IncidentHeatmapRelated({ orgId }: { orgId?: string | null }) {
     <nav className="product-hub-related" aria-label="Related robot tools">
       <a href={hubHref("/build", "failure-patterns", orgId)}>Failure patterns</a>
       <a href={hubHref("/build", "fmea", orgId)}>FMEA</a>
-      <a href={hubHref("/team", "safety", orgId)}>Safety log</a>
     </nav>
   );
 }

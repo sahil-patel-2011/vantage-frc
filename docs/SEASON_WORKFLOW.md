@@ -42,7 +42,7 @@ Read the rules, score the game, pick a strategy — the classic kickoff-workshee
 | Parts: request, approve, order | `/part-requests`, `/inventory` |
 | Robot code: repository, deploy log, Bugbot | Build › Code |
 | Engineering notebook | `/notebook` |
-| Safety incidents | `/safety` |
+| Tool certifications | `/safety` |
 | Files: drawings, photos, documents, shared with the team or a person | `/files` |
 | Team chat | `/messages` |
 
