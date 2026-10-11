@@ -29,13 +29,13 @@ export function notificationTypeLabel(type: string): string {
     case "export_ready":
       return "Export";
     // Joins, and the team lifecycle (migration 0720, platform provisioning): someone left, the
-    // team was deleted, or a new team was set up with you as its owner.
+    // team was deleted, or a new team was set up with you as its owner. Then your own access
+    // (0721): changed, removed, handed the team; a teammate asking you to invite someone; and
+    // the asking-to-join lifecycle.
     case "invite_accepted":
     case "member_left":
     case "team_deleted":
     case "team_owner_added":
-    // Your own access (0721): changed, removed, handed the team; a teammate asking you to invite
-    // someone; and the asking-to-join lifecycle.
     case "team_role_changed":
     case "team_removed":
     case "team_ownership_given":
