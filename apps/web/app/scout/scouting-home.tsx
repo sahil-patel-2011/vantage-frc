@@ -8,10 +8,16 @@ import { putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { useOnline } from "../../lib/offline/use-online";
 import { warmOfflineRoutes } from "../../lib/offline/warm-routes";
 import { loadRoster, saveRoster, prefetchEventTeams, type OfflineRosterTeam } from "../../lib/intel/offline-teams";
-import { cacheEvent, getCachedEvent, listPendingEntries, pendingCounts } from "../../lib/scout-offline";
+import { cacheEvent, getCachedEvent, pendingCounts } from "../../lib/scout-offline";
 import { useScoutQueueRefresh } from "../../lib/scouting/use-queue-refresh";
 import type { Bootstrap } from "../scouting/scouting-model";
 import { SCOUTING_NAV } from "./scouting-shell";
+import { hubHref } from "../../lib/nav/hubs";
+import { ScoutHomeLead, ScoutHomeMatch, ScoutHomeMe, ScoutHomePit } from "./scout-home-sections";
+import { useScoutingSummary } from "../../lib/scouting/use-scouting-summary";
+import { readActiveScoutDraft } from "../../lib/scouting/draft-autosave";
+import { scoutContext, describeScoutContext } from "../../lib/scouting/scout-context";
+import type { ScheduleMatch } from "../../lib/scouting/next-match";
 import { deviceStorageSummary, formatBytes, type DeviceStorage } from "../../lib/scouting/device-storage";
 import {
   type DutyAssignment,
@@ -25,12 +31,6 @@ type Roster = {
   activeEvent?: { eventKey?: string | null; eventName?: string | null } | null;
   roster?: OfflineRosterTeam[];
 };
-
-/** The number is already on the chip; a placeholder name ("Team 6925") would say it twice. */
-function chipName(team: { teamNumber: number; nickname: string | null }): string {
-  const name = team.nickname?.trim() ?? "";
-  return name && name.toLowerCase() !== `team ${team.teamNumber}` ? name : "";
-}
 
 function formatDutyTime(iso: string): string {
   const at = new Date(iso);
@@ -60,10 +60,11 @@ export function ScoutingHome() {
   const [preparing, setPreparing] = useState(false);
   const [readyNote, setReadyNote] = useState<string | null>(null);
   const [duty, setDuty] = useState<NextDuty | null>(null);
-  const [ownTeamNumber, setOwnTeamNumber] = useState<number | null>(null);
   const [savedEventName, setSavedEventName] = useState<string | null>(null);
   const [savedEventKey, setSavedEventKey] = useState<string | null>(null);
-  const [queuedPits, setQueuedPits] = useState<Array<{ eventKey: string; teamKey: string }>>([]);
+  const [scoutUserId, setScoutUserId] = useState<string | null>(null);
+  const [scheduleMatches, setScheduleMatches] = useState<ScheduleMatch[]>([]);
+  const summary = useScoutingSummary(orgId);
   const activeOrg = useRef(orgId);
   activeOrg.current = orgId;
 
@@ -74,7 +75,6 @@ export function ScoutingHome() {
     if (!orgId) return;
     let cancelled = false;
     setDuty(null);
-    setOwnTeamNumber(null);
     setSavedEventName(null);
     setSavedEventKey(null);
     void fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" })
@@ -88,14 +88,16 @@ export function ScoutingHome() {
             recentEntries?: DutyEntry[];
             scouted?: Array<{ matchKey: string; teamKey: string }>;
             teamNumber?: number | null;
+            scoutIdentity?: { userId?: string } | null;
             eventKey?: string | null;
             eventName?: string | null;
           } | null,
         ) => {
           if (cancelled || !data) return;
-          setOwnTeamNumber(typeof data.teamNumber === "number" ? data.teamNumber : null);
           setSavedEventName(data.eventName ?? data.eventKey ?? null);
           setSavedEventKey(data.eventKey ?? null);
+          setScoutUserId(data.scoutIdentity?.userId ?? null);
+          setScheduleMatches((data.matches ?? []).filter((match): match is ScheduleMatch => typeof match.matchNumber === "number"));
           if (online) void cacheEvent(orgId, data).catch(() => undefined);
           setDuty(
             nextScoutingDuty({
@@ -145,10 +147,9 @@ export function ScoutingHome() {
 
   const refreshDevice = useCallback(async () => {
     try {
-      const [counts, entries, device] = await Promise.all([pendingCounts(orgId ?? undefined), orgId ? listPendingEntries(orgId) : [], deviceStorageSummary()]);
+      const [counts, device] = await Promise.all([pendingCounts(orgId ?? undefined), deviceStorageSummary()]);
       if (activeOrg.current !== orgId) return;
       setQueue(counts);
-      setQueuedPits(entries.filter(entry => entry.type === "pit").map(({eventKey, teamKey}) => ({eventKey, teamKey})));
       setStorage(device);
     } catch {
       if (activeOrg.current !== orgId) return;
@@ -191,6 +192,11 @@ export function ScoutingHome() {
         recordingReady = Boolean(bootstrap.eventKey && bootstrap.schemas?.length);
         saved.push(recordingReady ? "forms and assignments" : "the event setup");
       }
+      const coverage = await read(`/api/scouting/summary?orgId=${org}`);
+      if (coverage) {
+        await putFeatureSnapshot("scouting-summary", orgId, coverage);
+        saved.push("pit and match coverage");
+      }
       const predictions = await read(`/api/match-sim?orgId=${org}`);
       if (predictions) {
         await putFeatureSnapshot("match-sim", orgId, predictions);
@@ -219,7 +225,7 @@ export function ScoutingHome() {
         saved.push(teams.saved === 1 ? "one team's page" : `${teams.saved} teams' pages`);
       }
       // The full form too: pit scouting and corrections live there.
-      const warmed = await warmOfflineRoutes([...SCOUTING_NAV.map((item) => withOrg(item.href)), withOrg("/scout/entry")]);
+      const warmed = await warmOfflineRoutes([...SCOUTING_NAV.map((item) => withOrg(item.href)), withOrg("/scout/entry"), withOrg("/scout/predict")]);
       const data =
         saved.length > 1 ? `${saved.slice(0, -1).join(", ")} and ${saved[saved.length - 1]}` : (saved[0] ?? null);
       if (warmed && warmed.pages > 0) {
@@ -244,26 +250,32 @@ export function ScoutingHome() {
   const withOrg = (href: string) => (orgId ? `${href}?orgId=${encodeURIComponent(orgId)}` : href);
   const rosterLoading = Boolean(orgId) && rosterState === "loading";
   const eventKey = roster?.activeEvent?.eventKey ?? savedEventKey;
-  const teams = (roster?.roster ?? []).map(team => queuedPits.some(entry => entry.eventKey === eventKey && entry.teamKey === team.teamKey) ? { ...team, pitScouted: Math.max(1, team.pitScouted ?? 0) } : team);
-  const unscouted = teams.filter((team) => team.scouted === 0);
   const eventName = roster?.activeEvent?.eventName ?? roster?.activeEvent?.eventKey ?? savedEventName;
-  // Count actual visits to other teams; our own unvisited robot must not inflate coverage.
-  const pitKnown = teams.some((team) => typeof team.pitScouted === "number");
-  const isOurs = (team: { teamNumber: number }) => ownTeamNumber != null && team.teamNumber === ownTeamNumber;
-  const pitMissing = teams.filter((team) => (team.pitScouted ?? 0) === 0 && !isOurs(team));
-  const pitTeams = teams.filter(team => !isOurs(team));
-  const PIT_CHIPS = 16;
-  const pitHref = (teamNumber: number) =>
-    `${withOrg("/scout/entry")}${orgId ? "&" : "?"}scoutTab=pit&teamKey=frc${teamNumber}`;
+
+  const view = summary.view?.status === "ready" ? summary.view : null;
+  const pitPageHref = (teamKey?: string) =>
+    `${withOrg("/scout/pit")}${teamKey ? `${orgId ? "&" : "?"}teamKey=${encodeURIComponent(teamKey)}` : ""}`;
+  const matchHref = duty
+    ? `${withOrg("/scout/match")}${orgId ? "&" : "?"}matchKey=${encodeURIComponent(duty.matchKey)}&teamKey=${encodeURIComponent(duty.teamKey)}`
+    : withOrg("/scout/match");
+  const draft = orgId && scoutUserId && eventKey ? readActiveScoutDraft({ userId: scoutUserId, orgId, eventKey }) : null;
+  const resume = draft
+    ? draft.type === "pit"
+      ? { href: pitPageHref(draft.teamKey), label: `pit visit for ${draft.teamKey.replace(/^frc/, "")}` }
+      : (() => {
+          const context = scoutContext({ matches: scheduleMatches, matchKey: draft.matchKey, teamKey: draft.teamKey });
+          return {
+            href: `${withOrg("/scout/match")}${orgId ? "&" : "?"}matchKey=${encodeURIComponent(draft.matchKey)}&teamKey=${encodeURIComponent(draft.teamKey)}`,
+            label: context ? describeScoutContext(context) : draft.teamKey.replace(/^frc/, ""),
+          };
+        })()
+    : null;
+  const summaryLoading = Boolean(orgId) && summary.status === "loading" && !summary.view;
 
   return (
     <main className="scout-home">
-      <section
-        className="scout-home-hero"
-        aria-labelledby="scout-home-title"
-        aria-busy={rosterLoading || undefined}
-      >
-        {rosterLoading ? (
+      <section className="scout-home-hero" aria-labelledby="scout-home-title" aria-busy={rosterLoading || summaryLoading || undefined}>
+        {rosterLoading && !eventName ? (
           <p className="scout-home-eyebrow" aria-hidden="true">
             <Skeleton width={180} height={12} />
           </p>
@@ -271,52 +283,60 @@ export function ScoutingHome() {
           <p className="scout-home-eyebrow">{eventName ?? (orgId ? rosterState === "failed" ? "Event unavailable" : "No event set" : "No team chosen")}</p>
         )}
         <h1 id="scout-home-title">Scouting</h1>
-        {rosterLoading ? (
+        {!orgId ? (
+          <p className="scout-home-lede">Choose your team in Vantage, then come back here to scout.</p>
+        ) : summary.view?.status === "no_event" ? (
           <p className="scout-home-lede">
-            <span className="sr-only">Loading this event’s teams…</span>
-            <Skeleton width="85%" height={16} />
+            {summary.view.canLead ? "Set the event you are at, and its pits and matches show up here." : "A scouting lead sets the event. Once they do, its pits and matches show up here."}
           </p>
-        ) : (
-          <p className="scout-home-lede">
-            {teams.length > 0
-              ? unscouted.length > 0
-                ? `${teams.length} teams at this event · ${unscouted.length} with no match scouting yet.`
-                : `${teams.length} teams at this event · every one has match scouting.`
-              : !orgId
-                ? "Choose your team in Vantage, then come back here to scout."
-                : rosterState === "failed"
-                  ? "Could not load this event’s teams. Check the connection and reload."
-                  : eventName
-                    ? "The team list for this event has not synced yet."
-                    : "Set the event you are at in Vantage and the team list appears here."}
-          </p>
-        )}
-        {duty ? (
-          <p className="scout-home-duty">
-            <span>Your next robot</span>
-            <strong>
-              {duty.teamNumber} · {duty.matchLabel}
-              {duty.station ? ` · ${duty.station}` : ""}
-            </strong>
-            {duty.startsAt ? <small>{formatDutyTime(duty.startsAt)}</small> : null}
-          </p>
+        ) : summary.cachedAt ? (
+          <p className="scout-home-lede">Offline · these numbers are this phone’s last copy.</p>
         ) : null}
-        <div className="scout-home-actions">
-          <Button
-            as="a"
-            variant="primary"
-            className="scout-home-start"
-            href={
-              duty
-                ? `${withOrg("/scout/match")}${orgId ? "&" : "?"}matchKey=${encodeURIComponent(duty.matchKey)}&teamKey=${encodeURIComponent(duty.teamKey)}`
-                : withOrg("/scout/match")
-            }
-          >
-            {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Start scouting"}
-          </Button>
-          <Button as="a" variant="secondary" href={`${withOrg("/scout/entry")}${orgId ? "&" : "?"}scoutTab=pit`}>Visit pits</Button>
-        </div>
+        {summary.view?.status === "no_event" && summary.view.canLead && orgId ? (
+          <div className="scout-home-actions">
+            <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
+              Set the event
+            </Button>
+          </div>
+        ) : null}
       </section>
+
+      {summaryLoading ? (
+        <div className="scout-home-cards" aria-hidden="true">
+          <Skeleton height={190} />
+          <Skeleton height={190} />
+        </div>
+      ) : view ? (
+        <>
+          <div className="scout-home-cards">
+            <ScoutHomePit view={view} pitHref={pitPageHref} />
+            <ScoutHomeMatch
+              view={view}
+              matchHref={matchHref}
+              duty={duty ? { teamNumber: duty.teamNumber, matchLabel: duty.matchLabel, station: duty.station, when: duty.startsAt ? formatDutyTime(duty.startsAt) : null } : null}
+            />
+          </div>
+          <ScoutHomeMe view={view} resume={resume} />
+          {view.canLead && orgId ? <ScoutHomeLead view={view} orgId={orgId} withOrg={withOrg} /> : null}
+        </>
+      ) : orgId && summary.status === "failed" ? (
+        <div className="scout-home-cards">
+          <section className="scout-card">
+            <header>
+              <h2>Scouting numbers didn’t load</h2>
+            </header>
+            <p className="scout-card-note">You can still scout; this summary comes back when the connection does.</p>
+            <div className="scout-home-actions">
+              <Button as="a" variant="primary" href={pitPageHref()}>
+                Pit scouting
+              </Button>
+              <Button as="a" variant="secondary" href={withOrg("/scout/match")}>
+                Match scouting
+              </Button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       <section className="scout-home-device" aria-label="This device">
         <div className={`scout-home-status ${online ? "is-online" : "is-offline"}`}>
@@ -382,61 +402,6 @@ export function ScoutingHome() {
           </Button>
         </div>
       </section>
-
-      {unscouted.length > 0 ? (
-        <section className="scout-home-gaps" aria-label="Not scouted yet">
-          <h2>Not scouted yet</h2>
-          <ul>
-            {unscouted.slice(0, 12).map((team) => (
-              <li key={team.teamNumber}>
-                <a href={`${withOrg("/scout/teams")}${orgId ? "&" : "?"}team=${team.teamNumber}`}>
-                  <strong>{team.teamNumber}</strong>
-                  <span>{chipName(team)}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {pitKnown && pitTeams.length > 0 ? (
-        <section className="scout-home-pit" aria-label="Pit scouting">
-          <header>
-            <h2>Pit scouting</h2>
-            <span>
-              {pitTeams.length - pitMissing.length} of {pitTeams.length} other teams visited
-            </span>
-          </header>
-          <span className="scout-home-meter" aria-hidden="true">
-            <i style={{ width: `${Math.round(((pitTeams.length - pitMissing.length) / pitTeams.length) * 100)}%` }} />
-          </span>
-          {pitMissing.length > 0 ? (
-            <ul>
-              {pitMissing.slice(0, PIT_CHIPS).map((team) => (
-                <li key={team.teamNumber}>
-                  <a href={pitHref(team.teamNumber)} aria-label={`Pit scout team ${team.teamNumber}`}>
-                    <strong>{team.teamNumber}</strong>
-                    <span>{chipName(team)}</span>
-                  </a>
-                </li>
-              ))}
-              {pitMissing.length > PIT_CHIPS ? (
-                <li>
-                  <a
-                    href={`${withOrg("/scout/entry")}${orgId ? "&" : "?"}scoutTab=pit`}
-                    aria-label={`${pitMissing.length - PIT_CHIPS} more teams to visit: open Pit scouting`}
-                  >
-                    <strong>+{pitMissing.length - PIT_CHIPS}</strong>
-                    <span>more</span>
-                  </a>
-                </li>
-              ) : null}
-            </ul>
-          ) : (
-            <p className="scout-home-kept">Every other team at this event has a pit report.</p>
-          )}
-        </section>
-      ) : null}
 
       <section className="scout-home-tools" aria-label="Scouting tools">
         <a href={withOrg("/scout/teams")}>

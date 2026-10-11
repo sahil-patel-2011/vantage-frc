@@ -84,7 +84,7 @@ function ToggleTile({ field, value, invalid, onChange }: TileProps) {
         {on ? "✓" : ""}
       </span>
       <span className="qs-tile-label">{field.label}</span>
-      <small>{on ? "Yes" : value === false ? "No" : "Tap if it happened"}</small>
+      <small>{on ? "Yes · tap to undo" : "Tap for yes"}</small>
     </button>
   );
 }
@@ -97,7 +97,8 @@ function ChoiceTile({ field, value, invalid, onChange }: TileProps) {
         {field.label}
         {field.required ? <span className="qs-required"> · required</span> : null}
       </legend>
-      <div className="qs-choice-row" style={{ ["--qs-choices" as string]: String(Math.min(options.length, 4)) }}>
+      {/* Up to four in a row; five or six split 3 + 2 or 3 + 3 instead of leaving one alone. */}
+      <div className="qs-choice-row" style={{ ["--qs-choices" as string]: String(options.length <= 4 ? options.length : 3) }}>
         {options.map((option) => (
           <button
             key={option}

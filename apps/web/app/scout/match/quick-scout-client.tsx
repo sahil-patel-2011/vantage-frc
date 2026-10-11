@@ -4,15 +4,15 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, EmptyState, Skeleton } from "../../../components/ui";
 import { readActiveScoutDraft } from "../../../lib/scouting/draft-autosave";
-import { bootstrapForEvent, scoutingBootstrapUrl } from "../../../lib/scouting/bootstrap-event";
 import { nextScoutTarget, scoutContext, describeScoutContext, type NextScoutTarget } from "../../../lib/scouting/scout-context";
-import { cacheEvent, getCachedEvent, syncOutbox } from "../../../lib/scout-offline";
+import { syncOutbox } from "../../../lib/scout-offline";
 import { useOnline } from "../../../lib/offline/use-online";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { hubHref } from "../../../lib/nav/hubs";
 import { myReports, type Bootstrap } from "../../scouting/scouting-model";
 import { QuickScoutMatch, type QuickSaved } from "./quick-scout-match";
 import { QuickScoutPicker, type QuickTarget } from "./quick-scout-picker";
+import { replaceQuery, useScoutingBootstrap } from "../use-scouting-bootstrap";
 
 type Receipt = {
   label: string;
@@ -41,10 +41,7 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
   const matchKey = target?.matchKey ?? "";
   const teamKey = target?.teamKey ?? "";
   const online = useOnline();
-  const [data, setData] = useState<Bootstrap | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
-  const [fromCache, setFromCache] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  const { data, status, fromCache, retry, replace } = useScoutingBootstrap(orgId, requestedEventKey);
   const [savedHere, setSavedHere] = useState<QuickTarget[]>([]);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [creatingForms, setCreatingForms] = useState(false);
@@ -58,54 +55,10 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    setStatus((current) => (current === "ready" ? current : "loading"));
-    void (async () => {
-      try {
-        const response = await fetch(scoutingBootstrapUrl(orgId, requestedEventKey), {
-          cache: "no-store",
-          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-        });
-        if (!response.ok) throw new Error(String(response.status));
-        const body = bootstrapForEvent((await response.json()) as Bootstrap, requestedEventKey);
-        if (!body) throw new Error("event");
-        if (cancelled) return;
-        setData(body);
-        setFromCache(false);
-        setStatus("ready");
-        void cacheEvent(orgId, body).catch(() => undefined);
-      } catch {
-        // No signal at the venue: the copy this phone saved the last time it was online.
-        const cached = bootstrapForEvent(await getCachedEvent<Bootstrap>(orgId).catch(() => null), requestedEventKey);
-        if (cancelled) return;
-        if (cached) {
-          setData(cached);
-          setFromCache(true);
-          setStatus("ready");
-        } else {
-          setStatus("failed");
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [orgId, requestedEventKey, attempt]);
-
   const show = useCallback(
     (next: QuickTarget | null) => {
       setTarget(next);
-      const query = new URLSearchParams(window.location.search);
-      if (next) {
-        query.set("matchKey", next.matchKey);
-        query.set("teamKey", next.teamKey);
-      } else {
-        query.delete("matchKey");
-        query.delete("teamKey");
-      }
-      window.history.replaceState(window.history.state, "", `${pathname}?${query.toString()}`);
-      window.scrollTo({ top: 0 });
+      replaceQuery(pathname, { matchKey: next?.matchKey ?? null, teamKey: next?.teamKey ?? null });
     },
     [pathname],
   );
@@ -184,8 +137,7 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
       });
       const body = (await response.json().catch(() => null)) as (Bootstrap & { error?: string }) | null;
       if (!response.ok || !body || !Array.isArray(body.schemas)) throw new Error(body?.error ?? "The starter form could not be created.");
-      setData(body);
-      setFromCache(false);
+      replace(body);
     } catch (error) {
       setFormsNote(error instanceof Error ? error.message : "The starter form could not be created. Try again.");
     } finally {
@@ -214,7 +166,7 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
           title="Scouting didn’t load"
           description={online ? "Your team’s matches could not be loaded. Try again in a moment." : "This phone has no saved copy of your event yet. Open Scouting once with a signal, then it works offline."}
         >
-          <Button variant="primary" type="button" onClick={() => setAttempt((value) => value + 1)}>
+          <Button variant="primary" type="button" onClick={retry}>
             Try again
           </Button>
         </EmptyState>

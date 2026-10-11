@@ -397,6 +397,9 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     if (searchParams.get("handoff") || searchParams.get("code")) setTab("handoff");
     else if (deepTab) {
       setTab(deepTab);
+    } else if (deepMatch) {
+      // A link to one robot in one match (a push, Home's "your next robot") is match scouting.
+      setTab("match");
     }
   }, [orgId, searchParams]);
 

@@ -245,3 +245,21 @@
 @media (prefers-reduced-motion:reduce){
   .qs-primary,.qs-secondary,.qs-robot,.qs-start,.qs-hold,.qs-counter-add{transition:none}
 }
+
+/* --- Pit scouting ----------------------------------------------------------- */
+.qs-progress{display:grid;gap:6px;margin-top:6px;color:var(--muted);font-size:14px}
+.qs-progress strong{color:var(--ink);font-variant-numeric:tabular-nums}
+.qs-meter{display:block;height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.qs-meter i{display:block;height:100%;border-radius:inherit;background:var(--positive);transition:width var(--dur-move,260ms) var(--ease-out,ease)}
+.qs-next.qs-next-pit{width:100%;min-height:56px;font-size:17px}
+.qs-search input{
+  width:100%;min-height:48px;padding:0 16px;border-radius:14px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);font-size:16px;
+}
+.qs-dot.is-visited{background:var(--positive)}
+.qs-visited summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.qs-pit{--qs-team:var(--accent)}
+.qs-pit-hint{padding:0 4px}
+.qs-section.qs-pit-group{background:none;border:0;padding:0}
+.qs-pit-group h2{font-size:15px;color:var(--muted);text-transform:none;padding:4px 4px 0}
+@media (prefers-reduced-motion:reduce){.qs-meter i{transition:none}}

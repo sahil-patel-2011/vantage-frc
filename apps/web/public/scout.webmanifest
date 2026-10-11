@@ -18,7 +18,8 @@
     }
   ],
   "shortcuts": [
-    { "name": "Scout a match", "short_name": "Scout", "url": "/scout/match" },
+    { "name": "Pit scouting", "short_name": "Pit", "url": "/scout/pit" },
+    { "name": "Scout a match", "short_name": "Match", "url": "/scout/match" },
     { "name": "Look up a team", "short_name": "Teams", "url": "/scout/teams" },
     { "name": "Pick list", "short_name": "Pick list", "url": "/scout/picklist" }
   ]
