@@ -781,7 +781,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
               );
             })}
             <Button variant="primary" type="submit" disabled={busy || form.status !== "open" || form.questions.length === 0}>
-              Submit
+              Submit response
             </Button>
             {error ? <p role="alert" className="forms-error">{error}</p> : null}
           </form>
