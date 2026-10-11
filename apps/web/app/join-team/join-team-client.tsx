@@ -6,6 +6,7 @@ import { teamJoinInvitePath } from "../../lib/onboarding/entry-journey";
 import { teamJoinNextStep, type TeamJoinMember } from "../../lib/team/join-code-flow";
 import { apiErrorMessage } from "../../lib/ui/load-failure";
 import { signOutAndRedirect } from "../../lib/sign-out";
+import { probeSessionUser } from "../../lib/nav/session-probe";
 import "./join-team.css";
 
 export default function JoinTeamClient() {
@@ -19,17 +20,16 @@ export default function JoinTeamClient() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [alreadyOn, setAlreadyOn] = useState<TeamJoinMember | null>(null);
   useEffect(() => {
-    const controller = new AbortController();
-    void fetch("/api/auth/get-session", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]) })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((session) => {
-        if (typeof session?.user?.email === "string" && !controller.signal.aborted) {
-          setEmail(session.user.email);
-          setSessionEmail(session.user.email);
-        }
-      })
-      .catch(() => {});
-    return () => controller.abort();
+    let cancelled = false;
+    // Shared with the consent banner: one session check per page.
+    void probeSessionUser().then((user) => {
+      if (cancelled || !user?.email) return;
+      setEmail(user.email);
+      setSessionEmail(user.email);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   async function submit(event: FormEvent) {

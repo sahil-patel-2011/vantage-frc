@@ -112,6 +112,10 @@ export function SignInCodeStep({
           >
             New team? Join the waitlist
           </a>
+          {/* A student whose team shared its join code needs no invite email. */}
+          <a className="signin-invite-help-cta" href="/join-team">
+            Join with a team code
+          </a>
         </div>
       ) : null}
       {showClock && failureKind !== "too_many_attempts" && failureKind !== "expired" ? (

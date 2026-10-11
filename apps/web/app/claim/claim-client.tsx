@@ -14,6 +14,7 @@ import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 import {
   EMPTY_CLAIM_FIELDS,
   claimPrefill,
+  claimNameToSubmit,
   claimSlugToSubmit,
   withClaimTeamNumber,
   type ClaimFields,
@@ -67,7 +68,7 @@ export default function ClaimWorkspaceClient() {
     authorized &&
     /^\d{1,5}$/.test(typedTeam) &&
     Number(typedTeam) >= 1 &&
-    name.trim().length >= 2 &&
+    claimNameToSubmit(fields).length >= 2 &&
     (!joinPin || joinPin.length === 6);
 
   async function submit() {
@@ -94,7 +95,7 @@ export default function ClaimWorkspaceClient() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          name: name.trim(),
+          name: claimNameToSubmit(fields),
           slug: claimSlugToSubmit(fields),
           teamNumber: Number(teamNumber),
           joinPin: joinPin || undefined,

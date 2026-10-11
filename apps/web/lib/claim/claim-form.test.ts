@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_CLAIM_FIELDS, claimPrefill, claimSlugToSubmit, withClaimTeamNumber } from "./claim-form";
+import { EMPTY_CLAIM_FIELDS, claimNameToSubmit, claimPrefill, claimSlugToSubmit, withClaimTeamNumber } from "./claim-form";
 
 describe("/claim form fields", () => {
   it("starts blank without an explicit team number", () => {
@@ -26,6 +26,11 @@ describe("/claim form fields", () => {
     // Clearing the name hands it back to the number.
     expect(withClaimTeamNumber({ ...named, name: "" }, "254").name).toBe("Team 254");
     expect(withClaimTeamNumber(EMPTY_CLAIM_FIELDS, "12ab34567").teamNumber).toBe("12345");
+  });
+
+  it("sends Team NNNN when the name is left blank, as its placeholder says", () => {
+    expect(claimNameToSubmit({ teamNumber: "118", name: "  ", slug: "team-118" })).toBe("Team 118");
+    expect(claimNameToSubmit({ teamNumber: "118", name: " Robonauts ", slug: "team-118" })).toBe("Robonauts");
   });
 
   it("uses the same team-NNNN address as teams a platform admin adds", () => {

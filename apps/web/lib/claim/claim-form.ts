@@ -38,6 +38,11 @@ export function withClaimTeamNumber(current: ClaimFields, raw: string): ClaimFie
   };
 }
 
+/** The name sent with the claim: what was typed, or "Team NNNN" (the field's placeholder). */
+export function claimNameToSubmit(fields: ClaimFields): string {
+  return fields.name.trim() || claimNameFor(fields.teamNumber);
+}
+
 /** The slug sent with the claim: the followed one, or the number's, never blank. */
 export function claimSlugToSubmit(fields: ClaimFields): string {
   return fields.slug || claimSlugFor(fields.teamNumber);

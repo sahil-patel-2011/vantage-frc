@@ -164,7 +164,9 @@ export function AppShellTopbar({
       </div>
       <div className="soft-topbar-actions">
         {minimal ? null : <button hidden={navOpen} className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
-        <ShellOutboxStatus orgId={orgId || null} />
+        {/* Nothing is queued before someone is on a team, and its 12-second check read /api/me,
+            which answers 403 during onboarding. */}
+        {minimal ? null : <ShellOutboxStatus orgId={orgId || null} />}
         <a
           className="soft-icon-btn soft-ask-ai"
           data-tour="ask-ai"
