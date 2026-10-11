@@ -1207,6 +1207,9 @@ body.has-app-shell .admin-grid .intel-panel{
   border-radius:var(--radius);
   box-shadow:var(--shadow);
 }
+/* Two forms side by side share a row height; the shorter one spread its fields over the gap
+   (a tall empty band under its heading). Fields pack at the top; the card keeps its height. */
+.admin-grid form{align-content:start}
 body.has-app-shell .app-badge{
   border-radius:var(--radius-pill);border-color:transparent;background:var(--accent-soft);color:var(--accent);
 }

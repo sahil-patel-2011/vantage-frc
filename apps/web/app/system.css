@@ -522,6 +522,16 @@ html[data-theme="dark"] .marketing-lux {
 /* Deliberately no font-size default for text fields: below 16px iOS Safari
    zooms the viewport on focus, and the fields that matter already set 16px. A
    14px blanket here would have been a house style that broke a phone. */
+/* Cards and forms lay out as grids, so a button placed straight in one stretched across it:
+   a 920px "Ask for a part". From tablet width up a card's button keeps its own width, as in
+   macOS and Material. :where() keeps this at zero specificity, so a sheet that wants a
+   full-width button (width: 100%, or its own justify-self) still gets one; phones keep the
+   full-width card button that is normal there. */
+@media (min-width: 721px) {
+  :where(.soft-panel, .app-card, .intel-panel, .soft-empty-compact) > :where(.app-button, .primary-action) {
+    justify-self: start;
+  }
+}
 .app-button:disabled,
 .app-button[aria-disabled="true"] {
   opacity: 0.55;
