@@ -23,6 +23,14 @@ Money-bearing tables and the code that reads/writes them:
 | `vendors` | `0126_vendors.sql` | none, but see Finding F2 |
 | `finance_funding_sources`, `finance_purchase_log` | `0434_season_finance_desk.sql` | `planned_usd`, `received_usd`, `amount_usd` |
 
+## Who can change what (all team data)
+
+Money is one row of a wider rule. Since `0715_view_only_read_only.sql` a **View only** member
+cannot change any team data at all — scouting, tasks, calendar, chat posts, inventory, CAD — only
+their own settings, inbox and Ask AI threads; the database refuses everything else with one
+sentence. The full role × action table, the exempt personal tables and how a new table stays
+covered are in [ROLES.md](ROLES.md).
+
 ## Who can manage money (since `0714_finance_managers.sql`)
 
 Some teams are privately funded, some are sponsored, some are school-run — every one of them needs to
