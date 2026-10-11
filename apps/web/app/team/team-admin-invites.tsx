@@ -2,7 +2,7 @@
 
 import { type FormEvent, type RefObject, useState } from "react";
 import { Panel, Button } from "../../components/ui";
-import { formatInviteRowMeta, inviteDeliveryBanner } from "../../lib/team/team-invites";
+import { formatInviteRowMeta, inviteDeliveryBanner, inviteLinkButtonLabels } from "../../lib/team/team-invites";
 import type { Invite, InviteNotice } from "./team-admin-model";
 
 function expiryWords(expiresAt: string): string {
@@ -181,6 +181,12 @@ export function TeamAdminInvitesPanel({
           {pending.map((inviteRow) => {
             const link = inviteLinks[inviteRow.id];
             const acting = actingInviteId === inviteRow.id;
+            const linkButton = inviteLinkButtonLabels({
+              email: inviteRow.email,
+              hasLink: Boolean(link),
+              copied: copiedInviteId === inviteRow.id,
+              confirmingNewLink: confirmNewLink === inviteRow.id,
+            });
             return (
               <article key={inviteRow.id}>
                 <div>
@@ -193,7 +199,7 @@ export function TeamAdminInvitesPanel({
                 <div className="team-invite-row-actions">
                   <button
                     type="button"
-                    aria-label={link ? `Copy the invite link for ${inviteRow.email}` : `Make a new invite link for ${inviteRow.email}`}
+                    aria-label={linkButton.accessibleName}
                     title={
                       link
                         ? undefined
@@ -209,18 +215,12 @@ export function TeamAdminInvitesPanel({
                   >
                     {/* Links are kept only as long as this page is open (never stored in plain text), so
                         after a reload the button makes a new one, and asks first. */}
-                    {copiedInviteId === inviteRow.id
-                      ? "Copied"
-                      : link
-                        ? "Copy link"
-                        : confirmNewLink === inviteRow.id
-                          ? "Tap again to replace the old link"
-                          : "Get a new link"}
+                    {linkButton.label}
                   </button>
                   {emailOff ? null : (
                     <button
                       type="button"
-                      aria-label={`Resend the invite to ${inviteRow.email}`}
+                      aria-label={acting ? `Working… on the invite to ${inviteRow.email}` : `Resend the invite to ${inviteRow.email}`}
                       disabled={acting}
                       onClick={() => onAct(inviteRow.id, "resend")}
                     >

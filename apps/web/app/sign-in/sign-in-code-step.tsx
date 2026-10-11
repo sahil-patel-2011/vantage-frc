@@ -112,6 +112,10 @@ export function SignInCodeStep({
           >
             New team? Join the waitlist
           </a>
+          {/* A student whose team shared its join code needs no invite email. */}
+          <a className="signin-invite-help-cta" href="/join-team">
+            Join with a team code
+          </a>
         </div>
       ) : null}
       {showClock && failureKind !== "too_many_attempts" && failureKind !== "expired" ? (
@@ -193,9 +197,12 @@ export function SignInNotInvited({
           You&rsquo;re on the waitlist{joined.team ? ` for team ${joined.team}` : ""}. We&rsquo;ll email{" "}
           <strong>{email}</strong> when your team is set up; there&rsquo;s nothing else to do until then.
         </p>
-        <p className="app-muted">Already on a team that uses Vantage? Ask its owner or a mentor to invite this address.</p>
+        <p className="app-muted">Already on a team that uses Vantage? Ask its owner or a mentor to invite this address, or for the team&rsquo;s join code.</p>
         <a className="signin-submit" href="/">
           Back to the home page
+        </a>
+        <a className="signin-submit is-secondary" href="/join-team">
+          Join with a team code
         </a>
         <button type="button" className="signin-link" onClick={onUseAnotherEmail}>
           Use a different email
@@ -217,6 +224,10 @@ export function SignInNotInvited({
       </p>
       <a className="signin-submit is-secondary" href={waitlistHref} onClick={() => rememberWaitlistEmail(email)}>
         Join the waitlist
+      </a>
+      {/* A student whose team shared its six-number code joins with it, no invite email needed. */}
+      <a className="signin-submit is-secondary" href="/join-team">
+        Join with a team code
       </a>
       <button type="button" className="signin-link" onClick={onUseAnotherEmail}>
         Use a different email

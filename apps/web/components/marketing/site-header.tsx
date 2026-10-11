@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { fetchProductSession } from "../../lib/nav/product-session";
+import { probeSessionUser } from "../../lib/nav/session-probe";
 import {
   marketingDesktopWebLink,
   marketingFooterAccountLink,
@@ -37,15 +38,9 @@ export function BrandLink({ href = "/" }: { href?: string }) {
  * `/api/me` answers a signed-out visitor with 401, and the browser printed that as a
  * console error on every public page. One request per page load, shared by every link.
  */
-let sessionCheck: Promise<boolean> | null = null;
 function hasSession(): Promise<boolean> {
-  if (!sessionCheck) {
-    sessionCheck = fetch("/api/auth/get-session", { cache: "no-store" })
-      .then((response) => (response.ok ? (response.json() as Promise<{ user?: unknown } | null>) : null))
-      .then((data) => Boolean(data?.user))
-      .catch(() => false);
-  }
-  return sessionCheck;
+  // Shared with the consent banner, so a public page asks once.
+  return probeSessionUser().then((user) => Boolean(user));
 }
 
 function useSignedIn(): boolean {

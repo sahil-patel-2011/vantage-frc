@@ -84,3 +84,24 @@ export function inviteDeliveryBanner(mode: InviteDeliveryMode | null | undefined
   }
   return null;
 }
+
+/**
+ * The link button on a waiting invite: its visible words, and an accessible name that starts with
+ * them (WCAG 2.5.3, label in name). It read "Get a new link" on screen while a screen reader or
+ * voice control heard "Make a new invite link for …", so saying what was on the button did nothing.
+ */
+export function inviteLinkButtonLabels(input: {
+  email: string;
+  hasLink: boolean;
+  copied: boolean;
+  confirmingNewLink: boolean;
+}): { label: string; accessibleName: string } {
+  const label = input.copied
+    ? "Copied"
+    : input.hasLink
+      ? "Copy link"
+      : input.confirmingNewLink
+        ? "Tap again to replace the old link"
+        : "Get a new link";
+  return { label, accessibleName: `${label} for ${input.email}` };
+}

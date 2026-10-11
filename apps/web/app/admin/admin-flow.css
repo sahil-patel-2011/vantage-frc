@@ -193,3 +193,10 @@
 .admin-teams-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .admin-teams-head h2 { margin: 0; font-size: 17px; }
 .admin-teams-head input { flex: 1 1 220px; max-width: 320px; min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+
+/* The team number badge never breaks ("#167" over "8"): it keeps its width and the name column
+   takes what is left. */
+body.has-app-shell article.admin-org > b,
+article.admin-org > b { flex: none; white-space: nowrap; }
+body.has-app-shell article.admin-org > div,
+article.admin-org > div { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }

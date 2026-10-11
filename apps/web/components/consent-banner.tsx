@@ -1,6 +1,6 @@
 "use client";
 
-import { requestMe } from "../lib/nav/me-request";
+import { probeSessionUser } from "../lib/nav/session-probe";
 import { useExitPresence } from "./ui/use-exit-presence";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -84,11 +84,12 @@ export function ConsentBanner() {
   useEffect(() => {
     let cancelled = false;
     setAuthenticated(null);
-    void requestMe(null).then(me => {
+    // The auth route, not /api/me: a signed-out visitor got a 401 (a console error) on every
+    // public page, and someone mid-onboarding a 403, just to learn whether anyone is signed in.
+    void probeSessionUser().then(user => {
       if (cancelled) return;
-      const signedIn = me.ok && (me.data as { authenticated?: boolean } | null)?.authenticated === true;
-      setAuthenticated(signedIn ? true : me.status === 401 ? false : null);
-      if (signedIn) markConsentAsked();
+      setAuthenticated(user ? true : user === null ? false : null);
+      if (user) markConsentAsked();
     });
     return () => { cancelled = true; };
   }, [pathname]);

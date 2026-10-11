@@ -56,6 +56,14 @@ describe("onboarding step gates", () => {
     expect(result.ok === false && result.message).toMatch(/youth-safe/i);
 
     expect(validateOnboardingStep("profile", filledProfile(), BASE_CONTEXT)).toEqual({ ok: true });
+
+    // Nobody is pre-filed as a Student: the role is a choice, and Continue asks for it.
+    expect(emptyOnboardingDraft().teamRole).toBe("");
+    expect(validateOnboardingStep("profile", filledProfile({ teamRole: "" }), BASE_CONTEXT)).toMatchObject({
+      ok: false,
+      field: "teamRole",
+    });
+    expect(defaultFocusForRole("", "")).toBe(defaultFocusForRole(null, null));
   });
 
   it("rejects a malformed date of birth rather than passing it to the server", () => {
@@ -68,11 +76,10 @@ describe("onboarding step gates", () => {
     const noTeam = filledProfile({ noTeam: true });
     expect(validateOnboardingStep("team", noTeam, BASE_CONTEXT)).toEqual({ ok: true });
 
+    // The field is labelled Optional: blank means no team yet, like the checkbox.
     const blank = filledProfile({ teamNumber: "" });
-    expect(validateOnboardingStep("team", blank, BASE_CONTEXT)).toMatchObject({
-      ok: false,
-      field: "teamNumber",
-    });
+    expect(validateOnboardingStep("team", blank, BASE_CONTEXT)).toEqual({ ok: true });
+    expect(submittedTeamNumber(blank, { locked: false, lockedTeamNumber: null, isTeamHead: false })).toBeNull();
 
     const bad = filledProfile({ teamNumber: "0" });
     expect(validateOnboardingStep("team", bad, BASE_CONTEXT)).toMatchObject({
@@ -326,6 +333,17 @@ describe("pending-approval plan", () => {
     expect(plan.kind).toBe("no_team");
     expect(plan.notified).toBe("");
     expect(plan.primaryAction.kind).toBe("edit");
+  });
+
+  it("sends a platform admin on no team to the admin console, not 'join a team'", () => {
+    const plan = buildOnboardingPendingPlan({ accessStatus: "none", teamNumber: null, orgName: null, adult: true, platformAdmin: true });
+    expect(plan.kind).toBe("platform_admin");
+    expect(plan.primaryAction).toEqual({ kind: "admin", label: "Open the admin console" });
+    expect(plan.headline).not.toMatch(/haven't joined/);
+    // An invite or a pending request still leads with that team.
+    expect(buildOnboardingPendingPlan({ accessStatus: "invited", teamNumber: 1, orgName: "T", adult: true, platformAdmin: true }).kind).toBe("invited");
+    expect(buildOnboardingPendingPlan({ accessStatus: "pending", teamNumber: 1, orgName: "T", adult: true, platformAdmin: true }).kind).toBe("pending");
+    expect(buildOnboardingPendingPlan({ accessStatus: "none", teamNumber: null, orgName: null, adult: true }).kind).toBe("no_team");
   });
 
   it("lets an invited person join in one tap instead of hunting for the email", () => {

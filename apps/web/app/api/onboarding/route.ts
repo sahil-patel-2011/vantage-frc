@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../lib/security/request";
+import { ensureFirstOwnerTeamDefaults } from "../../../lib/provisioning/owner-defaults";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 const mutationLimiter = createRateLimiter({ limit: 30, windowMs: 10 * 60_000, namespace: "onboarding" });
@@ -97,9 +98,15 @@ export async function POST(request: Request) {
     const key = `${current.user.id}:${anonymizeIp(clientIp(request))}`;
     if (!(await mutationLimiter.allow(key))) return rateLimitedResponse("Too many onboarding changes. Wait a moment and try again.");
     const body = await parseSecureJson(request, completeSchema);
-    const state = await withRls({ userId: current.user.id }, (client) =>
-      completeOnboarding(client, current.user.id, body),
-    );
+    const state = await withRls({ userId: current.user.id }, async (client) => {
+      const completed = await completeOnboarding(client, current.user.id, body);
+      // Finishing onboarding joins the team that invited this email (0686). For an owner invite
+      // from /admin that is the moment the team gets its starter forms, Home and join code.
+      if (completed.accessStatus === "approved" && completed.workspaceOrgId && completed.workspaceRole === "owner") {
+        await ensureFirstOwnerTeamDefaults(client, completed.workspaceOrgId, current.user.id);
+      }
+      return completed;
+    });
     return privateJson({ ok: true, ...state, userId: current.user.id });
   } catch (error) {
     return securityErrorResponse(error, "Could not complete onboarding.");

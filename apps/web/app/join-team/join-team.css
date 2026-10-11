@@ -82,3 +82,21 @@
     padding: 20px 14px;
   }
 }
+/* "You're already on <team>": the way Home, and a quiet way back to the form. */
+.join-team-card > .app-button,
+.join-team-card > a.app-button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  margin-top: 20px;
+}
+.join-team-link {
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

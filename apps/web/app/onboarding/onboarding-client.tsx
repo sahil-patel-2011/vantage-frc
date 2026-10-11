@@ -331,12 +331,12 @@ export default function OnboardingClient() {
             dateOfBirth: draft.dateOfBirth,
             gender: draft.gender,
             // Picked on this screen; saved with it so another tab still has it.
-            teamRole: draft.teamRole,
+            teamRole: draft.teamRole || null,
           }
         : {
             step: "team" as const,
             preferredTeamNumber: submittedTeamNumber(draft, context),
-            teamRole: draft.teamRole,
+            teamRole: draft.teamRole || null,
             crewRole: draft.crewRole || null,
             roleDescription: draft.roleDescription.trim() || null,
             primaryFocus: draft.primaryFocus,
@@ -394,7 +394,7 @@ export default function OnboardingClient() {
           dateOfBirth: draft.dateOfBirth,
           gender: draft.gender,
           preferredTeamNumber: submittedTeamNumber(draft, context),
-          teamRole: draft.teamRole,
+          teamRole: draft.teamRole || null,
           crewRole: draft.crewRole || null,
           roleDescription: draft.roleDescription.trim() || null,
           primaryFocus: draft.primaryFocus,
@@ -505,6 +505,7 @@ export default function OnboardingClient() {
     orgName: teamName,
     workspaceMissing: state?.workspaceMissing,
     adult,
+    platformAdmin: state?.platformAdmin,
   });
   const headerCopy =
     step === "done"
@@ -519,6 +520,8 @@ export default function OnboardingClient() {
             title: pendingPlan.headline,
             sub: pendingPlan.primaryAction.kind === "claim"
               ? "Create the team workspace if you are authorized to represent this team."
+              : pendingPlan.kind === "platform_admin"
+                ? "Your profile is saved. Add teams and their owners from the admin console."
               : pendingPlan.kind === "invited"
                 ? "Your profile is saved. Join with the invitation sent to your verified email."
                 : "Your profile is saved. Join by invitation or request access to an existing team.",

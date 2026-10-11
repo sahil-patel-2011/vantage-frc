@@ -1,6 +1,7 @@
+import type { PoolClient } from "@neondatabase/serverless";
 import { provisioningPool } from "./pool";
-import { PROVISIONING_PHASES, WORKSPACE_WORKBOOK_NAMES, type ProvisioningPhase, type WorkspaceWorkbookName } from "./model";
-import { RetryableError } from "workflow";
+import { GOOGLE_NOT_CONNECTED, GOOGLE_PROVISIONING_PHASES, PROVISIONING_PHASES, WORKSPACE_WORKBOOK_NAMES, type ProvisioningPhase, type WorkspaceWorkbookName } from "./model";
+import { FatalError, RetryableError } from "workflow";
 import { loadSheetsHubBridge, readHubTeam } from "../google-sheets/sheets-hub";
 import { APPS_SCRIPT_WORKSPACE_VERSION } from "../google-sheets/apps-script-source";
 import { provisionWorkbooks, verifyWorkbookLayout, verifyWorkbookTables, workspaceWorkbooks } from "./workbooks";
@@ -10,7 +11,18 @@ import { initializeTeamDefaults } from "./defaults";
 import { ensureRecoveryBoundary } from "./recovery-boundary";
 import { recordProviderWait } from "./provider-wait";
 
-async function provisionPhase(orgId: string, phase: ProvisioningPhase, workbook?: WorkspaceWorkbookName) {
+/**
+ * No operator Google connection is a supported setup, not a failure: retrying cannot connect it,
+ * so the job waits without an automatic retry, marked so /team-setup shows an optional step.
+ * The team already works (team and tools are done); Retry setup resumes once Google is set up.
+ */
+async function deferGoogleWorkspace(client: PoolClient, orgId: string) {
+  await client.query(`UPDATE team_provisioning_jobs SET state='waiting',error=NULL,retry_after_at=NULL,
+    resources=resources||jsonb_build_object('google','not_connected'),updated_at=now()
+    WHERE org_id=$1::uuid AND state<>'ready'`, [orgId]);
+}
+
+async function provisionPhase(orgId: string, phase: ProvisioningPhase, workbook?: WorkspaceWorkbookName): Promise<typeof GOOGLE_NOT_CONNECTED | undefined> {
   "use step";
   const client = await provisioningPool().connect();
   let locked = false;
@@ -18,8 +30,12 @@ async function provisionPhase(orgId: string, phase: ProvisioningPhase, workbook?
     locked = (await client.query<{ locked: boolean }>("SELECT pg_try_advisory_lock(hashtextextended($1,0)) AS locked", [`provision:${orgId}`])).rows[0]?.locked ?? false;
     if (!locked) throw new RetryableError("Another setup step is running.", { retryAfter: "10s" });
     const job = (await client.query<{ completed: string[] }>("SELECT completed_phases AS completed FROM team_provisioning_jobs WHERE org_id=$1::uuid", [orgId])).rows[0];
-    if (!job) throw new Error("Team setup job not found.");
+    if (!job) throw new FatalError("Team setup job not found.");
     if (job.completed.includes(phase)) return;
+    if (GOOGLE_PROVISIONING_PHASES.includes(phase) && !(await loadSheetsHubBridge(client))) {
+      await deferGoogleWorkspace(client, orgId);
+      return GOOGLE_NOT_CONNECTED;
+    }
     const recoveryBoundary = phase === "recovery" ? await ensureRecoveryBoundary(client, orgId) : null;
     await client.query("UPDATE team_provisioning_jobs SET state='running',phase=$2,error=NULL,retry_after_at=NULL,attempts=attempts+1,updated_at=now() WHERE org_id=$1::uuid", [orgId, phase]);
     const team = await readHubTeam(client, orgId);
@@ -28,7 +44,8 @@ async function provisionPhase(orgId: string, phase: ProvisioningPhase, workbook?
       const bridge = await loadSheetsHubBridge(client);
       if (!bridge) throw new Error("Google workspace setup is unavailable. Contact Vantage support.");
       const status = await bridge.ping({ hub: true });
-      if (status.version < APPS_SCRIPT_WORKSPACE_VERSION) throw new Error("The operator Google bridge needs an update.");
+      // Retrying cannot update the operator's deployed bridge; fail once, with the reason.
+      if (status.version < APPS_SCRIPT_WORKSPACE_VERSION) throw new FatalError("The operator Google bridge needs an update.");
       const folder = await bridge.call<{ ok: boolean; folderId: string }>("workspace.ensure", { team });
       await client.query("UPDATE team_provisioning_jobs SET resources=resources||$2::jsonb WHERE org_id=$1::uuid", [orgId, JSON.stringify({ folderId: folder.folderId })]);
     }
@@ -97,8 +114,12 @@ export async function teamProvisioningWorkflow(orgId: string) {
   "use workflow";
   try {
     for (const phase of PROVISIONING_PHASES) {
-      if (phase.id === "sheets") for (const workbook of WORKSPACE_WORKBOOK_NAMES) await provisionPhase(orgId, "sheets", workbook);
-      await provisionPhase(orgId, phase.id);
+      if (phase.id === "sheets") {
+        for (const workbook of WORKSPACE_WORKBOOK_NAMES) {
+          if ((await provisionPhase(orgId, "sheets", workbook)) === GOOGLE_NOT_CONNECTED) return;
+        }
+      }
+      if ((await provisionPhase(orgId, phase.id)) === GOOGLE_NOT_CONNECTED) return;
     }
   } catch (error) {
     await recordProvisioningFailure(orgId);

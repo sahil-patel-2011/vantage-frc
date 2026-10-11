@@ -14,6 +14,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import { ensureHubSheetForNewTeam, loadSheetsHubBridge, teamSheetTitle } from "../../../../lib/google-sheets/sheets-hub";
+import { ensureFirstOwnerTeamDefaults } from "../../../../lib/provisioning/owner-defaults";
 import {
   OWNER_INVITE_HOURS,
   ownerProvisionMode,
@@ -102,7 +103,13 @@ export async function POST(request: Request) {
           targetUserId: ownerLookup.rows[0]!.id,
           payload: { teamNumber: input.teamNumber, slug: input.slug, ownerMode: mode },
         });
-        return { orgId, mode, inviteToken: null as string | null, inviteExpiresAt: null as Date | null };
+        return {
+          orgId,
+          mode,
+          ownerUserId: ownerLookup.rows[0]!.id as string | null,
+          inviteToken: null as string | null,
+          inviteExpiresAt: null as Date | null,
+        };
       }
 
       // Invited path: create the team now; the owner claims it via a
@@ -144,8 +151,21 @@ export async function POST(request: Request) {
         targetOrgId: orgId,
         payload: { teamNumber: input.teamNumber, slug: input.slug, ownerMode: mode },
       });
-      return { orgId, mode, inviteToken: token, inviteExpiresAt: expiresAt };
+      return { orgId, mode, ownerUserId: null as string | null, inviteToken: token, inviteExpiresAt: expiresAt };
     });
+
+    // The same start a /claim team gets (published scout forms, finance categories, the owner's
+    // Home, a join code). Row security lets only the team's owner create those, so it runs as the
+    // owner just seeded, after the team is committed. An invited owner's team gets them when the
+    // owner accepts (invite routes and onboarding). Never undoes the team if it fails.
+    let teamDefaults: ProvisionConfirmation["teamDefaults"] = "on_owner_join";
+    if (created.mode === "seeded" && created.ownerUserId) {
+      const ownerUserId = created.ownerUserId;
+      const outcome = await withRls({ userId: ownerUserId, orgId: created.orgId }, (client) =>
+        ensureFirstOwnerTeamDefaults(client, created.orgId, ownerUserId),
+      ).catch(() => null);
+      teamDefaults = outcome?.defaults ? "ready" : "pending";
+    }
 
     const confirmation: ProvisionConfirmation = {
       id: created.orgId,
@@ -153,6 +173,7 @@ export async function POST(request: Request) {
       slug: input.slug,
       teamNumber: input.teamNumber,
       owner: { email: input.ownerEmail, mode: created.mode },
+      teamDefaults,
     };
     if (created.mode === "invited" && created.inviteToken && created.inviteExpiresAt) {
       // Deliver AFTER commit so a slow/failed email never rolls back the org.

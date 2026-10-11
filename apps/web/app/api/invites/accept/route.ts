@@ -10,6 +10,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { inviteLegalRequired } from "../../../../lib/invite";
+import { ensureFirstOwnerTeamDefaults } from "../../../../lib/provisioning/owner-defaults";
 import {
   anonymizeIp,
   clientIp,
@@ -89,7 +90,10 @@ export async function POST(request: Request) {
         await recordLegalAcceptance(client, session.user.id);
       }
 
-      return acceptOrganizationInvite(client, session.user.id, body.token);
+      const joined = await acceptOrganizationInvite(client, session.user.id, body.token);
+      // An owner invite from /admin: the team gets its starter forms, Home and join code now.
+      await ensureFirstOwnerTeamDefaults(client, joined, session.user.id);
+      return joined;
     });
     return privateJson({ orgId });
   } catch (error) {
