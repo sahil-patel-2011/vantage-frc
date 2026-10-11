@@ -77,7 +77,7 @@ export function ConfirmDialog({
       <div className={styles.dialogBody}>
         {visibleOpts.body ? <p style={{ margin: 0 }}>{visibleOpts.body}</p> : null}
         {input ? (
-          <label className={styles.stackKey} style={{ display: "grid", gap: 6, marginTop: visibleOpts.body ? 14 : 0 }}>
+          <label style={{ display: "grid", gap: 6, marginTop: visibleOpts.body ? 14 : 0, color: "var(--muted)", font: "600 13px/1.3 var(--font-sans)" }}>
             {input.label}
             {input.multiline ? (
               <textarea
