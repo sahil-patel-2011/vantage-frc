@@ -32,8 +32,30 @@ describe("scouting summary", () => {
         { ...roster[1], visited: true },
         { ...roster[2], visited: false },
       ],
+      otherVisited: [],
     });
     expect(summary.me.pitReports).toBe(1);
+  });
+
+  it("keeps a pit visit to a team that is not at the event out of the event's pit count", () => {
+    const summary = summarizeScouting({
+      roster,
+      ownTeamNumber: 6925,
+      matches: [],
+      entries: [
+        { type: "pit", matchKey: null, teamKey: "frc254", scoutUserId: "a", updatedAt: "2026-10-01T10:00:00Z" },
+        // A typo: 9401 is not at the event. It used to become a 24th roster team, "4/24 visited".
+        { type: "pit", matchKey: null, teamKey: "frc9401", scoutUserId: "a", updatedAt: "2026-10-01T10:05:00Z" },
+      ],
+      assignments: [],
+      members: [],
+      userId: "a",
+    });
+    expect(summary.pit.total).toBe(3);
+    expect(summary.pit.visited).toBe(1);
+    expect(summary.pit.otherVisited).toEqual([{ teamKey: "frc9401", teamNumber: 9401, nickname: null }]);
+    // Still the scout's own work.
+    expect(summary.me.pitReports).toBe(2);
   });
 
   it("splits match coverage into lost robots and fixable ones", () => {

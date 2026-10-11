@@ -34,6 +34,38 @@ export function phaseRemainingSeconds(elapsedMs: number, timing: MatchTiming = D
   return Math.max(0, Math.ceil((boundary - elapsedMs) / 1000));
 }
 
+const PHASE_NAMES: Record<MatchPhase, string> = {
+  pre: "Before match",
+  auto: "Auto",
+  transition: "Scoring pause",
+  teleop: "Teleop",
+  endgame: "Endgame",
+  done: "Match over",
+};
+
+/**
+ * What the live header shows, so a scout can read it in half a second.
+ *
+ * It used to print the seconds to the next *phase* boundary ("109s", the endgame) under a
+ * 2026 shift label ("Transition shift · hub active") that ended 80 seconds sooner, so the big
+ * number never hit zero when the hub flipped. Now the big number always counts down the thing
+ * named under it (the 2026 shift when there is one, else the phase), and the small line is the
+ * time left in the whole match.
+ */
+export function liveClockReadout(
+  elapsedMs: number,
+  timing: MatchTiming = DEFAULT_TIMING,
+  shift: { label: string; secondsLeft: number; hub: "active" | "inactive" | "unknown" } | null = null,
+): { big: string; label: string; left: string | null } {
+  const end = timing.autoMs + (timing.transitionMs ?? 0) + timing.teleopMs;
+  if (elapsedMs >= end) return { big: "Done", label: "Match over", left: null };
+  const left = `${clockLabel(end - elapsedMs + 999)} left`;
+  if (shift && shift.secondsLeft > 0) {
+    return { big: `${shift.secondsLeft}s`, label: `${shift.label}${shift.hub !== "unknown" ? ` · hub ${shift.hub}` : ""}`, left };
+  }
+  return { big: `${phaseRemainingSeconds(elapsedMs, timing)}s`, label: PHASE_NAMES[phaseAt(elapsedMs, timing)], left };
+}
+
 export function clockLabel(elapsedMs: number): string {
   const seconds = Math.max(0, Math.floor(elapsedMs / 1000));
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;

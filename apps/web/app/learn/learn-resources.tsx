@@ -26,7 +26,8 @@ export function LearnResources() {
           <li key={card.id} className="learn-resource-card" id={card.id}>
             <h2>{card.title}</h2>
             <p>{card.description}</p>
-            <Button as="a" variant="secondary" href={withOrgHref(card.href, null)}>
+            {/* The checked tracks are where to start (A5-27): the page's one primary. */}
+            <Button as="a" variant={card.id === "guided" ? "primary" : "secondary"} href={withOrgHref(card.href, null)}>
               {card.primary}
             </Button>
           </li>

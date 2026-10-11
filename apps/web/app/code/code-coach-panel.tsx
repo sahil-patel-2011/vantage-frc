@@ -4,6 +4,7 @@ import { EmptyState, Button } from "../../components/ui";
 import { WhyPanel } from "../../components/why-panel";
 import { CODE_RULE_LESSONS } from "../../lib/agent-narration/narration";
 import { CODE_COACH_SAMPLE } from "../../lib/code/code-related";
+import { looksLikeJava } from "../../lib/code/looks-like-java";
 import type { CodeReadyViewProps } from "./code-view-props";
 
 /** Teach-not-do lessons live in the shared narration catalog so the WhyPanel and this list agree. */
@@ -117,7 +118,15 @@ export function CodeCoachPanel({
             </header>
 
             {review ? (
-              review.risks.length === 0 ? (
+              review.risks.length === 0 && !looksLikeJava(content) ? (
+                <EmptyState
+                  soft
+                  badge="Check the paste"
+                  badgeTone="setup"
+                  title="This doesn't look like Java"
+                  description="The coach reads Java robot code, so nothing it checks was in what you pasted. Paste a .java file, or load the teaching sample, and run the review again."
+                />
+              ) : review.risks.length === 0 ? (
                 <EmptyState
                   soft
                   badge="Clear"

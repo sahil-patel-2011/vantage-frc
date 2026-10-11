@@ -95,7 +95,8 @@ describe("computeScoutCoverageLiveView", () => {
               matchNumber: 1,
               redAlliance: { team_keys: ["frc254", "frc118"] },
               blueAlliance: { team_keys: ["frc1323", "frc4414"] },
-              played: true,
+              // Played by scouting's one rule (lib/scouting/play-state.ts): the field ran it.
+              actualTime: "2026-03-01 15:00:00+00",
             },
           ],
         };

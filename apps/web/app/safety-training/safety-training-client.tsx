@@ -276,9 +276,20 @@ export default function SafetyTrainingClient() {
               return (
                 <div style={{ display: "grid", gap: 16 }}>
                   <SummaryPanel view={view} />
-                  <CreateModuleForm busy={busy} mutate={mutate} />
+                  {/* Modules and completions are a lead's record of who is cleared (0723).
+                      `canManage` is missing from a snapshot cached before it existed: hide the forms. */}
+                  {view.canManage ? (
+                    <CreateModuleForm busy={busy} mutate={mutate} />
+                  ) : (
+                    <Panel>
+                      <h2 style={{ margin: 0 }}>Getting a module signed off</h2>
+                      <p className="app-muted" style={{ margin: "6px 0 0" }}>
+                        An owner or admin checks you on each module and records it here. Ask one when you are ready.
+                      </p>
+                    </Panel>
+                  )}
                   <ModulesList view={view} busy={busy} mutate={mutate} />
-                  <RecordCompletionForm view={view} busy={busy} mutate={mutate} />
+                  {view.canManage ? <RecordCompletionForm view={view} busy={busy} mutate={mutate} /> : null}
                   <CoverageTable view={view} />
                   <CompletionsList view={view} busy={busy} mutate={mutate} />
                 </div>
@@ -428,8 +439,12 @@ function ModulesList({
       <EmptyState
         badge="No modules yet"
         badgeTone="setup"
-        title="Add your first safety module"
-        description="Table saw, mill, drill press, electrical, PPE — anything that requires sign-off before use."
+        title={view.canManage ? "Add your first safety module" : "No safety modules yet"}
+        description={
+          view.canManage
+            ? "Table saw, mill, drill press, electrical, PPE — anything that requires sign-off before use."
+            : "An owner or admin adds the modules your team signs people off on."
+        }
       />
     );
   }
@@ -448,7 +463,7 @@ function ModulesList({
               </small>
               {mod.description ? <small className="app-muted">{mod.description}</small> : null}
             </div>
-            <button
+            {view.canManage ? <button
               type="button"
               className="text-button"
               disabled={busy}
@@ -459,7 +474,7 @@ function ModulesList({
               }}
             >
               Delete
-            </button>
+            </button> : null}
           </li>
         ))}
       </ul>
@@ -595,7 +610,11 @@ function CompletionsList({
         badge="No completions yet"
         badgeTone="setup"
         title="No completions recorded"
-        description="Record a member's completion above once modules are set up."
+        description={
+          view.canManage
+            ? "Record a member's completion above once modules are set up."
+            : "An owner or admin records each completion after checking the person."
+        }
       />
     );
   }
@@ -623,18 +642,18 @@ function CompletionsList({
                 </small>
               ) : null}
             </div>
-            <button
+            {view.canManage ? <button
               type="button"
               className="text-button"
               disabled={busy}
               onClick={async () => {
-                if (await askConfirm({ title: `Delete this completion for ${item.memberName}?`, body: null, confirmLabel: "Delete completion", tone: "destructive" })) {
+                if (await askConfirm({ title: `Delete this completion for ${item.memberName}?`, body: `${item.moduleTitle}, completed ${item.completedOn}. ${item.memberName} is no longer counted as cleared for it.`, confirmLabel: "Delete completion", tone: "destructive" })) {
                   mutate({ action: "delete-completion", completionId: item.id });
                 }
               }}
             >
               Delete
-            </button>
+            </button> : null}
           </li>
         ))}
       </ul>

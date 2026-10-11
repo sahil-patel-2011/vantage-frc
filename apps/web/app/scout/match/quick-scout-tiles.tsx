@@ -36,8 +36,9 @@ export function QuickTile(props: TileProps) {
 }
 
 /**
- * The whole tile is the +1 button, so a scout can tap without looking. The minus sits in
- * the corner, away from the thumb. Blank shows a dash: "not counted" is not zero.
+ * The top of the tile is the +1 button, so a scout can tap without looking. The minus is a
+ * separate strip under it, so a near miss on "−" never adds one. Blank shows a dash: "not
+ * counted" is not zero.
  */
 function CounterTile({ field, value, invalid, onStep }: TileProps) {
   const count = typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -64,7 +65,7 @@ function CounterTile({ field, value, invalid, onStep }: TileProps) {
         disabled={count === null}
         aria-label={`${field.label}: take one away`}
       >
-        −
+        <span aria-hidden="true">− 1</span>
       </button>
     </div>
   );

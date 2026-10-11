@@ -32,6 +32,30 @@ export function assertCanDeleteSafetyIncident(role: string | null | undefined): 
 }
 
 /**
+ * Who may record or remove a tool certification or a shop-training completion (0723).
+ *
+ * The list is what a mentor reads before letting a freshman use the band saw, so a row in it is
+ * an owner's or admin's attestation, the same rule as a guided-track lead sign-off (0719). A
+ * student asks a lead to check them on the tool; the lead records it.
+ */
+export const CERTIFICATION_LEADS_ONLY =
+  "Only an owner or admin can record or remove a certification. Ask one to check you on the tool and record it.";
+
+export function canRecordCertification(role: string | null | undefined): boolean {
+  return isOrgManager(role);
+}
+
+/** Throws 403 with the sentence above unless the caller leads the team. */
+export async function assertCanRecordCertification(
+  client: PoolClient,
+  input: { orgId: string; userId: string },
+): Promise<void> {
+  const role = await orgRole(client, input.orgId, input.userId);
+  if (!role) throw new SafetyAuthError("Organization membership required");
+  if (!canRecordCertification(role)) throw new SafetyAuthError(CERTIFICATION_LEADS_ONLY);
+}
+
+/**
  * Look up the caller's org role, refuse anyone who is not an owner/admin, then delete
  * the incident scoped to that org. The DELETE never runs for a student — including the
  * member who reported the row. RLS 0502 matches that gate, so a reporter cannot

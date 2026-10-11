@@ -7,7 +7,7 @@ import { Button, PageHeader, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { HOUR_KIND_LABELS, HOUR_KINDS, memberLeaderboard, summarizeHours, type HourKind } from "../../lib/build-hours";
 import { HOURS_PAGE_TITLE } from "../../lib/hours/hours-related";
-import { EnrollScanForm, ManualEntryForm, PolicyForm, ScanClockForm } from "./hours-forms";
+import { EditTimesForm, EnrollScanForm, ManualEntryForm, PolicyForm, ScanClockForm } from "./hours-forms";
 import { HoursRelatedStrip } from "./hours-chrome";
 import {
   elapsedLabel,
@@ -54,6 +54,7 @@ export function HoursReadyView({
   refreshPending: () => Promise<void>;
 }) {
   const [showMyLog, setShowMyLog] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const { context, records, policy, members } = view;
   const orgId = context.orgId ?? "";
   const selfId = context.userId ?? "";
@@ -122,31 +123,7 @@ export function HoursReadyView({
         </p>
       ) : null}
 
-      <section className="app-card hours-clock-card" aria-label="Scan a card or clock in" id="hours-clock">
-        <ScanClockForm
-          orgId={orgId}
-          kind={kind}
-          setKind={setKind}
-          busy={busy}
-          onBusy={(next) => setBusyKey(next ? "scan" : null)}
-          onMessage={(message) => {
-            setError(message);
-            void refreshPending();
-          }}
-          onSynced={async () => {
-            await load();
-            await refreshPending();
-          }}
-        />
-      </section>
-      {!online ? (
-        <p className="hours-kiosk-hint app-muted" role="status">
-          Offline — scans are queued on this device with the time they happened. Totals below stay at the last
-          loaded records; they are not guessed while the queue drains.
-        </p>
-      ) : null}
-
-      <section className="app-card hours-clock-card" aria-label="Clock in or out">
+      <section className="app-card hours-clock-card" aria-label="Clock in or out" id="hours-clock">
         <div className="hours-clock-state">
           {myOpen ? (
             <>
@@ -203,6 +180,32 @@ export function HoursReadyView({
         </div>
       </section>
 
+      {/* Clock in is what most people came for; the card scanner is for a shop kiosk or a USB
+          reader, so it comes second. */}
+      <section className="app-card hours-clock-card" aria-label="Scan a card">
+        <ScanClockForm
+          orgId={orgId}
+          kind={kind}
+          setKind={setKind}
+          busy={busy}
+          onBusy={(next) => setBusyKey(next ? "scan" : null)}
+          onMessage={(message) => {
+            setError(message);
+            void refreshPending();
+          }}
+          onSynced={async () => {
+            await load();
+            await refreshPending();
+          }}
+        />
+      </section>
+      {!online ? (
+        <p className="hours-kiosk-hint app-muted" role="status">
+          Offline — scans are queued on this device with the time they happened. Totals below stay at the last
+          loaded records; they are not guessed while the queue drains.
+        </p>
+      ) : null}
+
       <div className="hours-summary">
         <div className="hours-summary-tile live">
           <strong>{summary.hereNow}</strong>
@@ -218,7 +221,7 @@ export function HoursReadyView({
         </div>
         <div className="hours-summary-tile">
           <strong>{summary.avgHours == null ? "—" : fmtHours(summary.avgHours)}</strong>
-          <span>avg / member</span>
+          <span>average per member logging</span>
         </div>
       </div>
 
@@ -293,36 +296,82 @@ export function HoursReadyView({
             </Button>
           </h2>
           <ul className="hours-log">
-            {(showMyLog ? myRecords : records).slice(0, 25).map((record) => (
+            {(showMyLog ? myRecords : records).slice(0, 25).map((record) => {
+              const who = record.userId === selfId ? "your" : `${record.userName ?? "this member"}'s`;
+              const length = hoursRecordLineHours(record, now);
+              return (
               <li key={record.id} className={record.clockOut == null ? "open" : undefined}>
                 <span className="session">
                   <strong>
                     {!showMyLog ? `${record.userName ?? "Member"} · ` : ""}
-                    {fmtClock(record.clockIn)}
-                    {record.clockOut ? ` → ${fmtClock(record.clockOut)}` : " → now"}
+                    {fmtClock(record.clockIn, now)}
+                    {record.clockOut ? ` → ${fmtClock(record.clockOut, now)}` : " → now"}
                   </strong>
                   {record.note ? <small>{record.note}</small> : null}
+                  {record.correctionNote ? (
+                    <small className="hours-correction">
+                      Corrected{record.correctedByName ? ` by ${record.correctedByName}` : ""}: {record.correctionNote}
+                    </small>
+                  ) : null}
                 </span>
-                <span className="hours-kind">{HOUR_KIND_LABELS[record.kind]}</span>
-                <b className="dur">{hoursRecordLineHours(record, now)}</b>
-                {canAdmin || record.userId === selfId ? (
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    className="hours-link danger"
-                    aria-label="Delete entry"
-                    disabled={busy}
-                    onClick={async () => {
-                      if (await askConfirm({ title: "Delete this hours entry?", body: null, confirmLabel: "Delete hours entry", tone: "destructive" })) {
-                        void run({ action: "delete_record", orgId, id: record.id }, `del:${record.id}`);
-                      }
-                    }}
-                  >
-                    ✕
-                  </Button>
+                <span className="hours-tags">
+                  <span className="hours-kind">{HOUR_KIND_LABELS[record.kind]}</span>
+                  {record.entrySource === "manual" ? (
+                    <span className="hours-kind hours-manual-tag" title="Typed in after the session, not clocked">
+                      Added by hand
+                    </span>
+                  ) : null}
+                </span>
+                <b className="dur">{length}</b>
+                <span className="hours-row-actions">
+                  {canAdmin && record.clockOut ? (
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      className="hours-link"
+                      aria-expanded={editingId === record.id}
+                      disabled={busy}
+                      onClick={() => setEditingId((current) => (current === record.id ? null : record.id))}
+                    >
+                      Edit times
+                    </Button>
+                  ) : null}
+                  {canAdmin || record.userId === selfId ? (
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      className="hours-link danger"
+                      aria-label={`Delete ${who} entry from ${fmtClock(record.clockIn, now)}`}
+                      disabled={busy}
+                      onClick={async () => {
+                        if (
+                          await askConfirm({
+                            title: `Delete ${who} hours entry?`,
+                            body: `${fmtClock(record.clockIn, now)}${record.clockOut ? ` → ${fmtClock(record.clockOut, now)}` : " → still clocked in"} (${length}, ${HOUR_KIND_LABELS[record.kind]}). It comes off the season total.${canAdmin && record.clockOut ? " To fix the times instead, use Edit times." : ""}`,
+                            confirmLabel: "Delete hours entry",
+                            tone: "destructive",
+                          })
+                        ) {
+                          void run({ action: "delete_record", orgId, id: record.id }, `del:${record.id}`);
+                        }
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  ) : null}
+                </span>
+                {editingId === record.id ? (
+                  <EditTimesForm
+                    orgId={orgId}
+                    record={record}
+                    busy={busyKey === `edit:${record.id}`}
+                    run={run}
+                    onDone={() => setEditingId(null)}
+                  />
                 ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
           {(showMyLog ? myRecords : records).length === 0 ? (
             <p className="app-muted">No entries yet — clock in or add hours manually.</p>

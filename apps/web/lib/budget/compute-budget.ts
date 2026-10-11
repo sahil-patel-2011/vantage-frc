@@ -29,6 +29,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { MONEY_SOURCE_LABELS, isMoneySource, type MoneySource } from "../finance/ledger";
+import { formatUsd } from "../finance/format-usd";
 
 export type BudgetState =
   /** No budget, nothing recorded. The team has not started. */
@@ -166,8 +167,7 @@ export function summarizeBudget(input: {
 
 /** The sentence the page prints under the headline. Never a fabricated number. */
 export function describeBudget(summary: BudgetSummary): string {
-  const money = (value: number) =>
-    value.toLocaleString(undefined, { style: "currency", currency: "USD" });
+  const money = formatUsd;
 
   switch (summary.state) {
     case "no_budget_no_spend":

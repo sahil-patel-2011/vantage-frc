@@ -69,7 +69,24 @@ import { DutiesPanel, SubteamsPanel, TripPanel } from "./calendar-side-panels";
 import { CalendarSyncPanel } from "./calendar-sync-panel";
 import { GitHubCalendarHint } from "./github-calendar-hint";
 import { DayTasks } from "./task-chip";
-import { TimedCalendarGrid } from "./timed-calendar-grid";
+import { TimedCalendarGrid, timeZoneAbbreviation } from "./timed-calendar-grid";
+
+/**
+ * Every time on the calendar is shown in this device's time zone; say which (A5-04). A team
+ * travelling to an event in another zone sees the times move, and now knows why. Rendered after
+ * mount so the server's zone never shows.
+ */
+function ZoneNote() {
+  const [zone, setZone] = useState<{ short: string; long: string } | null>(null);
+  useEffect(() => setZone(timeZoneAbbreviation()), []);
+  if (!zone?.long) return null;
+  return (
+    <p className="tc-muted tc-zone-note">
+      Times are in {zone.long}
+      {zone.short ? ` (${zone.short})` : ""}, this device&apos;s time zone.
+    </p>
+  );
+}
 
 function isSubteamCalendarView(value: unknown): value is SubteamCalendarView {
   if (!value || typeof value !== "object") return false;
@@ -907,6 +924,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
               </div>
 
               <h2>Coming up</h2>
+              <ZoneNote />
               {upcoming.length === 0 ? (
                 <p className="tc-muted">Nothing scheduled yet.</p>
               ) : (

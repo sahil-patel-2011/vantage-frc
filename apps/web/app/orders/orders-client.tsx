@@ -19,6 +19,7 @@ import {
 } from "../../lib/orders";
 import { SubmitForm } from "./orders-submit-form";
 import { formatInviteRole } from "../../lib/invite/invite-flow";
+import { formatUsd } from "../../lib/finance/format-usd";
 import "./orders.css";
 
 
@@ -55,13 +56,7 @@ export type OrdersClientProps = {
   orgId?: string | null;
 };
 
-function usd(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(value);
-}
+const usd = formatUsd;
 
 function formatWhen(iso: string): string {
   // A date alone, an ISO time, or Postgres's text form ("2026-09-24 22:00:07.39-04"), which the

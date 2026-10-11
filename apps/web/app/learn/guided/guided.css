@@ -67,7 +67,10 @@
 .guided-ok { color: var(--success, #15803d); font-weight: 600; }
 .guided-waiting { color: var(--muted); font-size: 14px; }
 .guided-declined { margin: 0; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, #f59e0b 14%, transparent); font-size: 14px; }
-.guided-result { padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.45; }
+/* A real touch target for the leads' link (it was 17px tall on a phone). */
+.guided-lead-note .guided-team-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 650; }
+/* Scrolled into view after a check: clear of the top bar and the phone's bottom bar. */
+.guided-result { padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.45; scroll-margin: 80px 0 112px; }
 .guided-result p { margin: 0; }
 .guided-result.is-pass { background: color-mix(in srgb, #16a34a 12%, transparent); }
 .guided-result.is-fail { background: color-mix(in srgb, #f59e0b 14%, transparent); }
@@ -93,10 +96,13 @@
 .guided-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
 .guided-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .guided-table th, .guided-table td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft, var(--line)); text-align: left; vertical-align: middle; }
-.guided-table thead th { font-weight: 600; color: var(--muted); min-width: 130px; }
+.guided-table thead th { font-weight: 600; color: var(--muted); min-width: 84px; white-space: nowrap; }
 .guided-table thead th a { color: inherit; }
 .guided-table tbody th { font-weight: 600; white-space: nowrap; }
-.guided-table td { position: relative; min-width: 110px; font-variant-numeric: tabular-nums; }
+/* The member's name stays in view while the tracks scroll sideways on a phone. */
+.guided-table th:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--line); }
+.guided-table td { position: relative; min-width: 84px; font-variant-numeric: tabular-nums; }
+.guided-table td .guided-cell-pending { display: block; font-style: normal; font-size: 11px; font-weight: 650; color: var(--accent); }
 .guided-table td i { position: absolute; left: 12px; bottom: 6px; display: block; max-width: calc(100% - 24px); height: 3px; border-radius: 3px; background: var(--accent); }
 .guided-table td[data-done="all"] span { color: var(--success, #15803d); font-weight: 650; }
 .guided-table td[data-done="none"] span { color: var(--muted); }

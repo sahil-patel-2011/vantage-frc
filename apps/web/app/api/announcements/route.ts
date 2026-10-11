@@ -68,11 +68,15 @@ async function resolveMembership(
  * alerts. Here we can tell a person composing a broadcast apart from a
  * background alert, so the restriction belongs at this layer.
  */
-function requireAdmin(membership: Membership) {
+/** `what` finishes "Only owners and admins can …": deleting said "post announcements" (A5-10). */
+function requireAdmin(membership: Membership, what = "post announcements") {
   if (membership.role !== "owner" && membership.role !== "admin") {
-    throw new HttpError(403, "Only owners and admins can post announcements");
+    throw new HttpError(403, `Only owners and admins can ${what}`);
   }
 }
+
+/** The longest message body kept; longer is refused, not cut (A5-10). */
+const ANNOUNCEMENT_BODY_MAX = 4000;
 
 function fail(error: unknown) {
   const status = error instanceof HttpError ? error.status : 400;
@@ -94,7 +98,7 @@ export async function GET(request: Request) {
         // not enforcing it, so any member — including a viewer — could read the
         // list, which falls back to a teammate's email address when no name is
         // set. Client-side gating is not authorization.
-        requireAdmin(membership);
+        requireAdmin(membership, "see who has not confirmed");
         return {
           orgId: membership.orgId,
           orgName: membership.orgName,
@@ -140,6 +144,9 @@ export async function POST(request: Request) {
           const title = (body.title ?? "").trim();
           if (!title) throw new HttpError(400, "Give the announcement a title");
           if (title.length > 200) throw new HttpError(400, "Title must be 200 characters or fewer");
+          if ((body.body ?? "").trim().length > ANNOUNCEMENT_BODY_MAX) {
+            throw new HttpError(400, "Keep the message to 4,000 characters. Split a longer one into two announcements.");
+          }
           const priority = isAnnouncementPriority(body.priority) ? body.priority : "normal";
           const announcementId = await createAnnouncement(client, {
             orgId,
@@ -180,13 +187,13 @@ export async function POST(request: Request) {
         }
 
         case "pin": {
-          requireAdmin(membership);
+          requireAdmin(membership, "pin announcements");
           await setPinned(client, orgId, body.announcementId, Boolean(body.pinned));
           return { ok: true };
         }
 
         case "delete": {
-          requireAdmin(membership);
+          requireAdmin(membership, "delete announcements");
           await deleteAnnouncement(client, orgId, body.announcementId);
           return { ok: true };
         }

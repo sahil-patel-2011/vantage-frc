@@ -1,9 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-
-/** A press shorter than this is a tap: it locks the action on until the next tap. */
-const TAP_MS = 320;
+import { holdReleaseStops } from "../../../lib/scouting/hold-release";
 
 function buzz() {
   try {
@@ -51,14 +49,14 @@ export function HoldButton({
     }
   }
 
-  function up() {
+  // Held: it ran for as long as the finger was down. Tapped while running: stop. Tapped while
+  // stopped: it started on the way down and stays locked on. Cancelled by the browser (the
+  // touch became a scroll): the scout did not let go, so it stays on (lib/scouting/hold-release.ts).
+  function release(how: "up" | "cancel") {
     const at = pressedAt.current;
     pressedAt.current = null;
     if (at === null) return;
-    const held = Date.now() - at;
-    // Held: it ran for as long as the finger was down. Tapped while running: stop.
-    // Tapped while stopped: it started on the way down and stays locked on.
-    if ((startedHere.current && held >= TAP_MS) || !startedHere.current) {
+    if (holdReleaseStops({ how, startedHere: startedHere.current, heldMs: Date.now() - at })) {
       buzz();
       onStop();
     }
@@ -72,8 +70,8 @@ export function HoldButton({
       aria-pressed={active}
       disabled={disabled}
       onPointerDown={down}
-      onPointerUp={up}
-      onPointerCancel={up}
+      onPointerUp={() => release("up")}
+      onPointerCancel={() => release("cancel")}
       onContextMenu={(event) => event.preventDefault()}
       onClick={(event) => {
         // Enter, Space and assistive tech arrive as a click with no pointer press (detail 0);

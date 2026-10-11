@@ -102,6 +102,11 @@ export function nextScoutTarget(input: {
   savedTeamKey: string;
   /** Robots this scout already has a report for: "Next" opened one, and Save would replace it. */
   done?: (matchKey: string, teamKey: string) => boolean;
+  /**
+   * Our own robot ("frc6925"): the drive team already knows it, so "Next" does not suggest it
+   * unless a lead assigned it.
+   */
+  ownTeamKey?: string | null;
 }): NextScoutTarget | null {
   const assigned = nextAssignedTarget(input.assignments, input.savedMatchKey, input.done);
   if (assigned) {
@@ -118,7 +123,8 @@ export function nextScoutTarget(input: {
   const index = schedule.findIndex((match) => match.matchKey === input.savedMatchKey);
   if (index < 0 || !schedule[index + 1]) return null;
   const slot = robotStation(schedule[index], input.savedTeamKey);
-  const done = input.done ?? (() => false);
+  const alreadyDone = input.done ?? (() => false);
+  const done = (matchKey: string, teamKey: string) => teamKey === input.ownTeamKey || alreadyDone(matchKey, teamKey);
   // The same station in the next match, unless this scout already has that robot; then another
   // robot in that match they have not done (same alliance first), then the match after.
   for (const next of schedule.slice(index + 1)) {

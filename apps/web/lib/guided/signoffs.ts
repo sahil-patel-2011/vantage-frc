@@ -12,27 +12,112 @@ export type SignoffStatus = "requested" | "approved" | "declined";
 
 export type MySignoff = { stepId: string; status: SignoffStatus; note: string | null; decidedAt: string | null };
 
+export type SignoffRequest = {
+  status: SignoffStatus;
+  id: string | null;
+  /** True when this press made a new request (first ask, or asking again after a decline). */
+  fresh: boolean;
+};
+
 /** Ask for a lead's sign-off, or ask again after a decline. An approved one stays approved. */
 export async function requestSignoff(
   client: PoolClient,
   input: { orgId: string; userId: string; trackId: string; stepId: string },
-): Promise<SignoffStatus> {
-  const result = await client.query<{ status: SignoffStatus }>(
+): Promise<SignoffRequest> {
+  const result = await client.query<{ id: string; status: SignoffStatus }>(
     `INSERT INTO guided_signoffs (org_id, user_id, lesson_id)
      VALUES ($1::uuid, $2::uuid, $3::text)
      ON CONFLICT (org_id, user_id, lesson_id) DO UPDATE
        SET status = 'requested', note = NULL, decided_by = NULL, decided_at = NULL, requested_at = now()
        WHERE guided_signoffs.status = 'declined'
-     RETURNING status`,
+     RETURNING id::text AS id, status`,
     [input.orgId, input.userId, guidedLessonId(input.trackId, input.stepId)],
   );
-  if (result.rows[0]) return result.rows[0].status;
+  if (result.rows[0]) return { status: result.rows[0].status, id: result.rows[0].id, fresh: true };
   // Already requested or approved: the conflict update did nothing; report what is there.
-  const existing = await client.query<{ status: SignoffStatus }>(
-    `SELECT status FROM guided_signoffs WHERE org_id = $1::uuid AND user_id = $2::uuid AND lesson_id = $3::text`,
+  const existing = await client.query<{ id: string; status: SignoffStatus }>(
+    `SELECT id::text AS id, status FROM guided_signoffs WHERE org_id = $1::uuid AND user_id = $2::uuid AND lesson_id = $3::text`,
     [input.orgId, input.userId, guidedLessonId(input.trackId, input.stepId)],
   );
-  return existing.rows[0]?.status ?? "requested";
+  const row = existing.rows[0];
+  return { status: row?.status ?? "requested", id: row?.id ?? null, fresh: false };
+}
+
+/** Team progress, where leads sign steps off. */
+export function teamProgressHref(orgId: string): string {
+  return `/learn/guided/team?orgId=${encodeURIComponent(orgId)}`;
+}
+
+/** The step a notice is about, where the student reads the decision. */
+export function guidedStepHref(orgId: string, trackId: string, stepId: string): string {
+  return `/learn/guided/${encodeURIComponent(trackId)}?orgId=${encodeURIComponent(orgId)}#step-${encodeURIComponent(stepId)}`;
+}
+
+type Notify = (client: PoolClient, input: { userId: string; orgId: string; type: string; payload: Record<string, unknown> }) => Promise<void>;
+
+/**
+ * Tell every owner and admin (except the student) that a step is waiting for them (A5-16).
+ * Returns how many were told. 0723's policy only lets the inbox row name the student's own
+ * pending request, so this cannot carry anything else.
+ */
+export async function notifyLeadsOfRequest(
+  client: PoolClient,
+  emit: Notify,
+  input: { orgId: string; userId: string; signoffId: string; trackId: string; stepId: string },
+): Promise<number> {
+  const named = describeGuidedLesson(guidedLessonId(input.trackId, input.stepId));
+  if (!named) return 0;
+  const [leads, me] = await Promise.all([
+    client.query<{ userId: string }>(
+      `SELECT user_id::text AS "userId" FROM memberships
+       WHERE org_id = $1::uuid AND role IN ('owner', 'admin') AND user_id <> $2::uuid`,
+      [input.orgId, input.userId],
+    ),
+    client.query<{ name: string | null }>(
+      `SELECT NULLIF(btrim(name), '') AS name FROM users WHERE id = $1::uuid`,
+      [input.userId],
+    ),
+  ]);
+  const who = me.rows[0]?.name ?? "A teammate";
+  for (const lead of leads.rows) {
+    await emit(client, {
+      userId: lead.userId,
+      orgId: input.orgId,
+      type: "guided_signoff_requested",
+      payload: {
+        signoffId: input.signoffId,
+        title: `${who} asked you to sign off a step`,
+        body: `${named.trackTitle}: ${named.stepTitle}. Check it with them, then sign it off or send it back on Team progress.`,
+        href: teamProgressHref(input.orgId),
+      },
+    });
+  }
+  return leads.rows.length;
+}
+
+/** Tell the student what a lead decided, with the lead's note (A5-16). */
+export async function notifyStudentOfDecision(
+  client: PoolClient,
+  emit: Notify,
+  input: { orgId: string; decided: DecidedSignoff },
+): Promise<boolean> {
+  const named = describeGuidedLesson(input.decided.lessonId);
+  if (!named) return false;
+  const approved = input.decided.status === "approved";
+  await emit(client, {
+    userId: input.decided.userId,
+    orgId: input.orgId,
+    type: "guided_signoff_decided",
+    payload: {
+      signoffId: input.decided.id,
+      title: approved ? `Signed off: ${named.stepTitle}` : `Try again: ${named.stepTitle}`,
+      body: approved
+        ? `A lead signed off this step of ${named.trackTitle}. It counts as done.`
+        : `A lead sent this step of ${named.trackTitle} back${input.decided.note ? `: “${input.decided.note}”` : "."} Fix it, then ask again.`,
+      href: guidedStepHref(input.orgId, named.trackId, named.stepId),
+    },
+  });
+  return true;
 }
 
 /** Withdraw a request, or give up an approval to redo the step. */
@@ -108,19 +193,32 @@ export async function readPendingSignoffs(client: PoolClient, orgId: string): Pr
   });
 }
 
-/** A lead approves or declines. Returns false when the request is gone or is the lead's own. */
+export type DecidedSignoff = { id: string; userId: string; lessonId: string; status: "approved" | "declined"; note: string | null };
+
+/** A lead approves or declines. Returns null when the request is gone or is the lead's own. */
 export async function decideSignoff(
   client: PoolClient,
   input: { orgId: string; leadId: string; id: string; approve: boolean; note?: string | null },
-): Promise<boolean> {
+): Promise<DecidedSignoff | null> {
   const note = input.note?.trim().slice(0, 500) || null;
-  const result = await client.query(
+  const result = await client.query<DecidedSignoff>(
     `UPDATE guided_signoffs
         SET status = $4::text, note = $5::text, decided_by = $3::uuid, decided_at = now()
-      WHERE id = $2::uuid AND org_id = $1::uuid AND status = 'requested' AND user_id <> $3::uuid`,
+      WHERE id = $2::uuid AND org_id = $1::uuid AND status = 'requested' AND user_id <> $3::uuid
+      RETURNING id::text AS id, user_id::text AS "userId", lesson_id AS "lessonId", status, note`,
     [input.orgId, input.id, input.leadId, input.approve ? "approved" : "declined", note],
   );
-  return (result.rowCount ?? 0) > 0;
+  return result.rows[0] ?? null;
+}
+
+/** How many sign-off requests wait on this lead (not their own). Zero for anyone else under RLS. */
+export async function countPendingSignoffs(client: PoolClient, input: { orgId: string; leadId: string }): Promise<number> {
+  const result = await client.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM guided_signoffs
+      WHERE org_id = $1::uuid AND status = 'requested' AND user_id <> $2::uuid`,
+    [input.orgId, input.leadId],
+  );
+  return result.rows[0]?.n ?? 0;
 }
 
 export type MemberTrackProgress = { userId: string; displayName: string; tracks: Record<string, number>; lastActivityAt: string | null };
@@ -143,17 +241,31 @@ export async function readTeamGuidedProgress(client: PoolClient, orgId: string):
        JOIN users u ON u.id = x.user_id`,
     [orgId],
   );
-  return summarizeTeamProgress(result.rows);
+  // Everyone on the team, so a lead sees who has not started (A5-19). View-only members are
+  // parents and guests, not learners, and are left out.
+  const roster = await client.query<{ userId: string; displayName: string }>(
+    `SELECT m.user_id::text AS "userId", COALESCE(NULLIF(btrim(u.name), ''), u.email) AS "displayName"
+       FROM memberships m
+       JOIN users u ON u.id = m.user_id
+      WHERE m.org_id = $1::uuid AND m.role <> 'viewer'`,
+    [orgId],
+  );
+  return summarizeTeamProgress(result.rows, roster.rows);
 }
 
 /**
  * Pure: rows of (member, finished lesson) → per-member counts per track. A step that needs a
  * lead counts only from an approved sign-off, never from a progress row (`via: "check"`).
+ * Members on the roster with nothing finished are listed with empty counts.
  */
 export function summarizeTeamProgress(
   rows: Array<{ userId: string; displayName: string; lessonId: string; at: string; via?: "check" | "signoff" }>,
+  roster: ReadonlyArray<{ userId: string; displayName: string }> = [],
 ): MemberTrackProgress[] {
   const members = new Map<string, MemberTrackProgress & { seen: Set<string> }>();
+  for (const person of roster) {
+    members.set(person.userId, { userId: person.userId, displayName: person.displayName, tracks: {}, lastActivityAt: null, seen: new Set<string>() });
+  }
   for (const row of rows) {
     const named = describeGuidedLesson(row.lessonId);
     if (!named) continue;

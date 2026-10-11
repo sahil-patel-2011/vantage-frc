@@ -4,6 +4,7 @@ import { buildBoard, buildMemberWorkload, summarizeMeetingOutput, visibleBenchma
 import { resolveOwnerNames, workItemHref } from "../work-items/canonical";
 import { loadRoster } from "../work-items/service";
 import type { BuildTask, MemberWorkload, MeetingOutput, TaskBoard, TaskPriority, TaskStatus } from "./types";
+import { resolveAsOf } from "../todos/evaluate";
 
 // Client components take these from ./task-constants directly: this module
 // imports @vantage/core, which reaches the Node pg driver and cannot be bundled
@@ -100,7 +101,7 @@ async function resolveOrg(
 
 export async function computeTasksView(
   client: PoolClient,
-  input: { userId: string; requestedOrg: string | null; seasonYear?: number | null },
+  input: { userId: string; requestedOrg: string | null; seasonYear?: number | null; today?: string | null },
 ): Promise<TasksView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
   const seasonYear = input.seasonYear && input.seasonYear > 2000 ? input.seasonYear : currentSeasonYear();
@@ -145,7 +146,8 @@ export async function computeTasksView(
   ]);
 
   const tasks = taskResult.rows.map(mapTask);
-  const board = buildBoard(tasks);
+  // The viewer's own date (A5-02): the server's UTC date made tasks overdue at 8 PM Eastern.
+  const board = buildBoard(tasks, resolveAsOf(input.today));
   const subsystems = [...new Set(tasks.map((t) => t.subsystem).filter(Boolean))].sort();
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);

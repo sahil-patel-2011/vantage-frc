@@ -225,6 +225,9 @@
   justify-content: space-between;
   margin-top: 12px;
 }
+.todos-card-text { display: grid; gap: 8px; margin-bottom: 12px; }
+.todos-card-text .todos-card-actions { justify-content: flex-start; margin-top: 0; }
+.todos-title-count { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
 .todos-card-controls { display: flex; align-items: flex-start; gap: 12px; }
 .todos-card-controls > .app-button { flex: none; }
 .todos-card-details { flex: 1; min-width: 0; }

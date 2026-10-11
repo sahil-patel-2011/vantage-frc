@@ -85,6 +85,27 @@ describe("nextScoutTarget", () => {
     expect(next).toMatchObject({ matchKey: "2026gaalb_qm11", teamKey: "frc254", matchLabel: "Qual 11", stationLabel: "Red 2" });
   });
 
+  it("does not suggest our own robot next; the drive team already knows it", () => {
+    const next = nextScoutTarget({
+      matches: schedule,
+      assignments: [],
+      savedMatchKey: "2026gaalb_qm10",
+      savedTeamKey: "frc1323",
+      ownTeamKey: "frc254",
+    });
+    // Red 2 in Qual 11 is our robot: the next open robot on the same alliance instead.
+    expect(next).toMatchObject({ matchKey: "2026gaalb_qm11", teamKey: "frc111", stationLabel: "Red 1" });
+    // A lead who assigned our own robot still gets it.
+    const assigned = nextScoutTarget({
+      matches: schedule,
+      assignments: [{ matchKey: "2026gaalb_qm11", teamKey: "frc254", role: "primary" }],
+      savedMatchKey: "2026gaalb_qm10",
+      savedTeamKey: "frc1323",
+      ownTeamKey: "frc254",
+    });
+    expect(assigned).toMatchObject({ teamKey: "frc254", reason: "assignment" });
+  });
+
   it("names the next match without a robot when its alliances are not out", () => {
     const next = nextScoutTarget({
       matches: [schedule[1]!, { matchKey: "2026gaalb_qm11", matchNumber: 11, compLevel: "qm" }],
