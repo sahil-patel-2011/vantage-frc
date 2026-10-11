@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, useConfirm } from "../../components/ui";
 import { FUNDRAISERS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { fundraisersNextActions } from "../../lib/business/fundraisers-next-actions";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
@@ -134,6 +134,9 @@ function FundraisersNextActions({
 export default function FundraisersClient({ orgId }: { orgId: string | null }) {
   const seasonYear = new Date().getFullYear();
   const [view, setView] = useState<View | null>(null);
+  const confirm = useConfirm();
+  // The deposit amount is typed in the row, not in the browser's prompt box.
+  const [proceeds, setProceeds] = useState<{ id: string; amount: string } | null>(null);
   const [message, setMessage] = useState("");
   // Kept so an expired session offers sign-in instead of a spinner that never resolves.
   const [loadError, setLoadError] = useState("");
@@ -237,13 +240,22 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
     }
   }
 
-  async function recordProceeds(id: string) {
-    const amount = window.prompt("How much did you collect (deposit amount, $)?");
-    if (!amount) return;
-    await post(
-      { action: "record_proceeds", id, amountUsd: Number(amount) },
-      "Proceeds recorded and posted to finance.",
-    );
+  async function recordProceeds(id: string, amount: string) {
+    const amountUsd = Number(amount);
+    if (!Number.isFinite(amountUsd) || amountUsd <= 0) return;
+    await post({ action: "record_proceeds", id, amountUsd }, "Proceeds recorded and posted to finance.");
+    setProceeds(null);
+  }
+
+  async function cancelEvent(id: string, name: string) {
+    const ok = await confirm({
+      title: "Cancel this fundraiser?",
+      body: `“${name}” is marked cancelled, and any proceeds recorded for it leave the team ledger.`,
+      confirmLabel: "Cancel fundraiser",
+      cancelLabel: "Keep it",
+      tone: "destructive",
+    });
+    if (ok) await post({ action: "set_status", id, status: "cancelled" }, "Cancelled.");
   }
 
   if (!view) {
@@ -592,16 +604,54 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
                       </Button>
                     ) : null}
                     {canManageMoney && e.status !== "cancelled" ? (
-                      <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void recordProceeds(e.id)}>
-                        Record $
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        type="button"
+                        disabled={busy}
+                        aria-expanded={proceeds?.id === e.id}
+                        onClick={() => setProceeds(proceeds?.id === e.id ? null : { id: e.id, amount: "" })}
+                      >
+                        Record proceeds
                       </Button>
                     ) : null}
                     {e.status !== "completed" && e.status !== "cancelled" && canPlan && (canManageMoney || e.proceedsUsd <= 0) ? (
-                      <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void post({ action: "set_status", id: e.id, status: "cancelled" }, "Cancelled.") }>
-                        Cancel
+                      <Button variant="secondary" size="sm" type="button" disabled={busy} onClick={() => void cancelEvent(e.id, e.name)}>
+                        Cancel event
                       </Button>
                     ) : null}
                   </div>
+                  {proceeds?.id === e.id ? (
+                    <form
+                      className="fr-proceeds-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void recordProceeds(e.id, proceeds.amount);
+                      }}
+                    >
+                      <label className="inline-field-label">
+                        Amount deposited ($)
+                        <input
+                          autoFocus
+                          type="number"
+                          inputMode="decimal"
+                          min="0.01"
+                          step="0.01"
+                          value={proceeds.amount}
+                          onChange={(event) => setProceeds({ id: e.id, amount: event.target.value })}
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") setProceeds(null);
+                          }}
+                        />
+                      </label>
+                      <Button variant="primary" size="sm" type="submit" disabled={busy || !(Number(proceeds.amount) > 0)}>
+                        Record deposit
+                      </Button>
+                      <Button variant="secondary" size="sm" type="button" onClick={() => setProceeds(null)}>
+                        Cancel
+                      </Button>
+                    </form>
+                  ) : null}
                 </li>
               );
             })}

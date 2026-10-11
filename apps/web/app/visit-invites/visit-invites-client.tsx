@@ -11,7 +11,7 @@ import {
   PageHeader,
   Panel,
   StatRowSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, useConfirm } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -595,6 +595,7 @@ function VisitCard({
   run: (body: ActionBody, key: string) => Promise<void>;
   onShareNote: (note: string) => void;
 }) {
+  const confirm = useConfirm();
   const counts = rsvpCounts(visit.rsvps);
   const tone = capacityTone(counts.partyGoing, visit.capacity);
   const [hostName, setHostName] = useState("");
@@ -875,10 +876,14 @@ function VisitCard({
               className="visit-link danger"
               aria-label={`Delete visit ${visit.title}`}
               disabled={busy}
-              onClick={() => {
-                if (confirm(`Delete "${visit.title}"?`)) {
-                  void run({ action: "delete_visit", orgId, id: visit.id }, `del:${visit.id}`);
-                }
+              onClick={async () => {
+                const ok = await confirm({
+                  title: "Delete this visit?",
+                  body: `“${visit.title}” and its invite responses are removed.`,
+                  confirmLabel: "Delete visit",
+                  tone: "destructive",
+                });
+                if (ok) void run({ action: "delete_visit", orgId, id: visit.id }, `del:${visit.id}`);
               }}
             >
               Delete visit

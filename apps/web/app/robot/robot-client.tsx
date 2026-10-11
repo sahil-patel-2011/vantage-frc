@@ -4,7 +4,7 @@ import { teamProseLabel } from "../../components/app-shell-model";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, useConfirm } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -100,6 +100,7 @@ function SubsystemCard({
   busyKey: string | null;
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
+  const confirm = useConfirm();
   const busy = busyKey === `sub:${subsystem.id}`;
   const readiness = subsystemReadiness(subsystem);
   const patch = (fields: Record<string, unknown>) =>
@@ -231,10 +232,14 @@ function SubsystemCard({
           type="button"
           className="robot-link danger"
           disabled={busy}
-          onClick={() => {
-            if (confirm(`Delete subsystem "${subsystem.name}"?`)) {
-              void run({ action: "delete_subsystem", orgId, id: subsystem.id }, `sub:${subsystem.id}`);
-            }
+          onClick={async () => {
+            const ok = await confirm({
+              title: "Delete this subsystem?",
+              body: `“${subsystem.name}” is removed from the robot blueprint.`,
+              confirmLabel: "Delete subsystem",
+              tone: "destructive",
+            });
+            if (ok) void run({ action: "delete_subsystem", orgId, id: subsystem.id }, `sub:${subsystem.id}`);
           }}
         >
           Delete

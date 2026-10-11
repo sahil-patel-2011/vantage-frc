@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button, useConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TeamHubRelated } from "../../components/team-hub-related";
@@ -292,6 +292,7 @@ function SessionDetail({
   members: AttendanceMember[];
   run: (body: ActionBody, key: string) => Promise<void>;
 }) {
+  const confirm = useConfirm();
   const [personName, setPersonName] = useState("");
   const [role, setRole] = useState<AttendanceRole>("student");
   const [hours, setHours] = useState("");
@@ -439,10 +440,14 @@ function SessionDetail({
             type="button"
             className="att-link danger"
             disabled={busy}
-            onClick={() => {
-              if (confirm(`Delete “${event.title}” and all attendees?`)) {
-                void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
-              }
+            onClick={async () => {
+              const ok = await confirm({
+                title: "Delete this event?",
+                body: `“${event.title}” and everyone marked at it are removed from attendance.`,
+                confirmLabel: "Delete event",
+                tone: "destructive",
+              });
+              if (ok) void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
             }}
           >
             Delete event
