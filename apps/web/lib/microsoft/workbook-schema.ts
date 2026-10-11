@@ -32,6 +32,9 @@ export type WorkbookEntity =
   | "Sponsors"
   | "RobotFailures"
   | "Batteries"
+  // The team's own season from TBA and Statbotics, read-only in the workbook.
+  | "SeasonEvents"
+  | "SeasonMatches"
   | "LongText"
   | "Tables"
   | "SyncInfo";
