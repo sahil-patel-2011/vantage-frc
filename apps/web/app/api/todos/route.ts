@@ -9,6 +9,7 @@ import {
   updateTodo,
   type TodosView,
 } from "../../../lib/todos/compute-todos";
+import { TODO_TITLE_MAX, TODO_TITLE_TOO_LONG } from "../../../lib/todos/evaluate";
 import type { TodoStatus } from "../../../lib/todos/types";
 import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
 
@@ -43,6 +44,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const requestedOrg = url.searchParams.get("orgId");
   const focusTodoId = url.searchParams.get("todoId");
+  // The browser's own date, so "Due today" lasts until the viewer's midnight (A5-02).
+  const today = url.searchParams.get("today");
 
   try {
     const view = await withRls({ userId: session.user.id }, (client) =>
@@ -50,6 +53,7 @@ export async function GET(request: Request) {
         userId: session.user.id,
         requestedOrg,
         focusTodoId,
+        today,
       }),
     );
     return Response.json(view);
@@ -89,8 +93,10 @@ export async function POST(request: Request) {
     const view = await withRls({ userId, orgId }, async (client) => {
       switch (action) {
         case "create-todo": {
-          const title = trimmedOrNull(body.title, 200);
-          if (!title) throw new Error("title is required");
+          // Refused, not cut: a pasted 500-character title lost its tail mid-word (A5-01).
+          if (typeof body.title === "string" && body.title.trim().length > TODO_TITLE_MAX) throw new Error(TODO_TITLE_TOO_LONG);
+          const title = trimmedOrNull(body.title, TODO_TITLE_MAX);
+          if (!title) throw new Error("Give the task a title.");
           const status = oneOf<TodoStatus>(TODO_STATUSES, body.status) ?? "todo";
           await createTodo(client, {
             orgId,
@@ -119,6 +125,10 @@ export async function POST(request: Request) {
           }
           if (body.subteamId !== undefined && body.subteamId !== null && body.subteamId !== "") {
             if (!uuidOrNull(body.subteamId)) throw new Error("Invalid subteam");
+          }
+          if (typeof body.title === "string") {
+            if (body.title.trim().length > TODO_TITLE_MAX) throw new Error(TODO_TITLE_TOO_LONG);
+            if (!body.title.trim()) throw new Error("Give the task a title.");
           }
           await updateTodo(client, {
             orgId,
@@ -162,6 +172,7 @@ export async function POST(request: Request) {
         userId,
         requestedOrg: orgId,
         focusTodoId: typeof body.todoId === "string" ? body.todoId : null,
+        today: typeof body.today === "string" ? body.today : null,
       });
     });
 

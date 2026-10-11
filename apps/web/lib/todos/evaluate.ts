@@ -81,3 +81,28 @@ export function sortTodos(todos: TeamTodo[]): TeamTodo[] {
 export function asOfUtcDate(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
 }
+
+/**
+ * "Today" for due dates: the viewer's own calendar date, sent by their browser, when it is a real
+ * date within a day of UTC's (every time zone is). The server's UTC date turned a task due today
+ * "Overdue 1d" at 8 PM in Georgia and 5 PM in California, mid build session. Anything else falls
+ * back to UTC.
+ */
+export function resolveAsOf(clientToday: unknown, now: Date = new Date()): string {
+  const utc = asOfUtcDate(now);
+  if (typeof clientToday !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(clientToday)) return utc;
+  const parsed = new Date(`${clientToday}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== clientToday) return utc;
+  const diff = daysToDue(clientToday, utc);
+  return diff != null && Math.abs(diff) <= 1 ? clientToday : utc;
+}
+
+/** This device's calendar date, for `resolveAsOf` on the server. */
+export function localDateIso(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/** The longest title the database keeps (0162: CHECK char_length(title) BETWEEN 1 AND 200). */
+export const TODO_TITLE_MAX = 200;
+
+export const TODO_TITLE_TOO_LONG = `Keep the title to ${TODO_TITLE_MAX} characters. Put the rest in the notes.`;

@@ -17,6 +17,8 @@
 --      times once it is closed; a member still clocks in and out.
 --   4. LEAD SIGN-OFF NOTICES (A5-16). Asking a lead to sign a step off, and the lead's answer, now
 --      reach the other person's inbox. Two peer-insert policies allow exactly those rows.
+--   5. TEAM TASKS (A5-22). Any member could delete any task. Now the person who added it, the
+--      person it is assigned to, or an owner or admin.
 --
 -- Safe to re-run: policies are DROP IF EXISTS + CREATE, functions CREATE OR REPLACE, triggers
 -- DROP IF EXISTS + CREATE, columns ADD COLUMN IF NOT EXISTS, constraints dropped before re-adding.
@@ -208,6 +210,19 @@ CREATE POLICY notifications_guided_signoff_decided_insert ON notifications FOR I
         AND s.decided_by = current_app_user_id()
         AND s.status IN ('approved', 'declined')
         AND s.id::text = notifications.payload ->> 'signoffId'
+    )
+  );
+
+-- ---------------------------------------------------------------- 5. team tasks
+
+DROP POLICY IF EXISTS team_todos_member_delete ON team_todos;
+CREATE POLICY team_todos_member_delete ON team_todos FOR DELETE TO vantage_app
+  USING (
+    is_org_member(org_id)
+    AND (
+      created_by = current_app_user_id()
+      OR assignee_user_id = current_app_user_id()
+      OR has_org_role(org_id, ARRAY['owner', 'admin']::org_role[])
     )
   );
 
