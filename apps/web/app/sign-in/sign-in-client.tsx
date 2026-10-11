@@ -10,6 +10,7 @@ import {
   canSubmitCode,
   canRetrySubmittedCode,
   classifyOtpFailure,
+  clearPendingCode,
   clearRememberedAccount,
   codeSecondsRemaining,
   emailOtpSetupRequired,
@@ -17,7 +18,6 @@ import {
   googleReady as isGoogleReady,
   initialSignInState,
   inviteTokenFromNext,
-  invitedOnlyHint,
   isCodeComplete,
   isCodeExpired,
   isLikelyEmail,
@@ -28,14 +28,18 @@ import {
   preferredSignInMethod,
   publicEmailUnavailableCopy,
   publicPasswordUnavailableCopy,
+  readPendingCode,
   readRememberedAccount,
   resendSecondsRemaining,
   restoreInviteNextPath,
   sanitizeCodeInput,
+  showCodeHelp,
   signInFlowReducer,
   signInStepCopy,
   signInUnavailableCopy,
   browserStorage,
+  tabStorage,
+  writePendingCode,
   writeRememberedAccount,
   type RememberedAccount,
   type SignInAuthStatus,
@@ -92,6 +96,10 @@ export default function SignInClient({
   const [remembered, setRemembered] = useState<RememberedAccount>({ email: null, method: null });
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [invitePreview, setInvitePreview] = useState<InvitePreview | null>(null);
+  /** The invite preview answered (or gave up), so the card can stop showing its placeholder. */
+  const [invitePreviewSettled, setInvitePreviewSettled] = useState(false);
+  /** Asked for a new code at least once on this step: the "no code yet?" help may show. */
+  const [resentOnce, setResentOnce] = useState(false);
   const invitedPrefilled = useRef(false);
   const [resolvedNext, setResolvedNext] = useState(() => safeAppPath(nextPath, "/dashboard"));
   const [recoveryOpen, setRecoveryOpen] = useState(false);
@@ -124,6 +132,52 @@ export default function SignInClient({
     const timer = window.setInterval(() => setClock(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, [flow.step]);
+
+  // The code step on this tab survives a reload (and the trip to the mail app, which often
+  // reloads a phone's tab) while its code is good. Read once, before the write below runs.
+  const restoredPending = useRef(false);
+  useEffect(() => {
+    if (restoredPending.current) return;
+    restoredPending.current = true;
+    const pending = readPendingCode(tabStorage(), Date.now());
+    if (!pending) return;
+    setClock(Date.now());
+    dispatch({ type: "code_restored", ...pending });
+  }, []);
+  useEffect(() => {
+    const live =
+      flow.step === "code" &&
+      flow.channel === "email-otp" &&
+      flow.codeExpiresAt != null &&
+      flow.codeExpiresAt > Date.now() &&
+      !flow.failure?.needsNewCode;
+    if (live && flow.codeExpiresAt != null) {
+      writePendingCode(tabStorage(), { email: flow.email, codeExpiresAt: flow.codeExpiresAt, resendAvailableAt: flow.resendAvailableAt });
+    } else {
+      // The email step, the second factor, or a code that can no longer work.
+      clearPendingCode(tabStorage());
+    }
+  }, [flow.step, flow.channel, flow.email, flow.codeExpiresAt, flow.resendAvailableAt, flow.failure]);
+
+  // Back on the code step returns to the email step instead of leaving sign-in.
+  useEffect(() => {
+    if (flow.step !== "code" || flow.channel !== "email-otp") return;
+    const current = (window.history.state ?? {}) as Record<string, unknown>;
+    if (current.vantageSignin !== "code") window.history.pushState({ ...current, vantageSignin: "code" }, "");
+    const onPop = () => {
+      const state = (window.history.state ?? {}) as Record<string, unknown>;
+      if (state.vantageSignin !== "code") dispatch({ type: "edit_email" });
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [flow.step, flow.channel]);
+
+  /** "Edit" on the code step: step back through history when the code step added an entry. */
+  function editEmail() {
+    const current = (window.history.state ?? {}) as Record<string, unknown>;
+    if (current.vantageSignin === "code") window.history.back();
+    else dispatch({ type: "edit_email" });
+  }
 
   const codeSeconds = codeSecondsRemaining(flow, clock);
   const resendSeconds = resendSecondsRemaining(flow, clock);
@@ -162,13 +216,18 @@ export default function SignInClient({
           });
           return false;
         }
-        writeRememberedAccount(browserStorage(), { email, method: "email" });
-        setRemembered({ email, method: "email" });
+        // The address is remembered once a sign-in works (verifyCode), not when a code is asked
+        // for: a mistyped address, or one typed on a shared laptop and never used, stayed behind.
         lastSubmittedCode.current = "";
         setTriedCode("");
+        if (options?.resent) setResentOnce(true);
+        const sentAt = Date.now();
+        // The countdown's clock only ticks on the code step; without this its first frame
+        // counted from when the page opened ("Expires in 5:15").
+        setClock(sentAt);
         dispatch({
           type: "code_sent",
-          now: Date.now(),
+          now: sentAt,
           email,
           expiresInSeconds: DEFAULT_CODE_TTL_SECONDS,
           resent: options?.resent,
@@ -221,9 +280,11 @@ export default function SignInClient({
         }
         lastSubmittedCode.current = "";
         setTriedCode("");
+        const sentAt = Date.now();
+        setClock(sentAt);
         dispatch({
           type: "code_sent",
-          now: Date.now(),
+          now: sentAt,
           emailHint: options?.emailHint ?? undefined,
           expiresInSeconds: Number(payload.expiresInSeconds ?? DEFAULT_CODE_TTL_SECONDS),
           resent: options?.resent,
@@ -333,7 +394,10 @@ export default function SignInClient({
         const data = (await response.json().catch(() => ({}))) as { preview?: InvitePreview | null };
         if (active && data.preview) setInvitePreview(data.preview);
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setInvitePreviewSettled(true);
+      });
     return () => {
       active = false;
     };
@@ -411,6 +475,9 @@ export default function SignInClient({
         await leave();
         return;
       }
+      // Remembered only now that the address has signed in (cleared again at sign-out).
+      writeRememberedAccount(browserStorage(), { email: flow.email, method: "email" });
+      clearPendingCode(tabStorage());
       // A first-factor email code already proves mailbox control, so Better Auth
       // marks the session 2FA-satisfied — no second prompt.
       await leave();
@@ -616,10 +683,19 @@ export default function SignInClient({
     if (failureKind === "wrong_code") codeRef.current?.focus();
   }, [failureKind, flow.failedAttempts]);
 
-  const hint = status.publicSignup ? null : invitedOnlyHint(flow);
+  useEffect(() => {
+    if (flow.step === "identity") setResentOnce(false);
+  }, [flow.step]);
+
   const working = busy !== "idle";
   const notInvited = flow.step !== "identity" && flow.failure?.kind === "not_authorized";
   const waitlistHref = useWaitlistHref();
+  // Someone holding an invitation needs the code form and the team's name, nothing else: the
+  // password, recovery and waitlist options asked a first-time student to leave the invite.
+  const invited = Boolean(inviteToken);
+  // Until the invitation is read, a placeholder, so the heading does not change from "a team"
+  // to the team's name under the person's eyes.
+  const inviteLoading = invited && !invitePreviewSettled && flow.step === "identity";
 
   if (probe.state === "active") {
     return (
@@ -641,9 +717,9 @@ export default function SignInClient({
     <SignInCard
       scouting={scouting}
       titleId="signin-title"
-      title={notInvited ? "You’re not on a team yet" : stepCopy.title}
+      title={inviteLoading ? "Opening your invitation…" : notInvited ? "You’re not on a team yet" : stepCopy.title}
       subtitle={
-        recoveryOpen
+        recoveryOpen || inviteLoading
           ? undefined
           : passwordPanel === "password"
           ? "Use the email and password for your team account."
@@ -656,7 +732,7 @@ export default function SignInClient({
               : stepCopy.sub
       }
     >
-      <InviteBanner token={inviteToken} headline={inviteHeadline} preview={invitePreview} />
+      {inviteLoading ? null : <InviteBanner token={inviteToken} preview={invitePreview} />}
       {status.localAcceptanceSignup ? (
         <p role="status">Local acceptance test: accounts use an isolated test database. Production signup remains closed.</p>
       ) : null}
@@ -665,7 +741,12 @@ export default function SignInClient({
       {recoveryOpen ? null : (
       <>
       <div className="signin-step">
-        {flow.step === "identity" ? (
+        {inviteLoading ? (
+          <div className="signin-invite-loading" aria-busy="true" aria-label="Opening your invitation">
+            <span />
+            <span />
+          </div>
+        ) : flow.step === "identity" ? (
           <SignInIdentityStep
             googleAvailable={googleAvailable}
             emailAvailable={emailAvailable}
@@ -694,6 +775,7 @@ export default function SignInClient({
             }
             onPasswordChange={setPassword}
             onCodeChange={(code) => dispatch({ type: "code_changed", code })}
+            invited={invited}
           />
         ) : notInvited ? (
           <SignInNotInvited
@@ -729,10 +811,12 @@ export default function SignInClient({
               void verifyCode();
             }}
             onCodeChange={(code) => dispatch({ type: "code_changed", code })}
-            onEditEmail={() => dispatch({ type: "edit_email" })}
+            onEditEmail={editEmail}
             onResend={() => void resend()}
             onSwitchAccount={(href) => void signOutAndRedirect(href)}
-            inviteHelp={flow.channel === "email-otp" && !inviteToken && !status.publicSignup ? { waitlistHref } : null}
+            inviteHelp={
+              !inviteToken && !status.publicSignup && showCodeHelp(flow, clock, { resentOnce }) ? { waitlistHref } : null
+            }
           />
         )}
       </div>
@@ -742,13 +826,13 @@ export default function SignInClient({
         failure={notInvited || flow.step === "code" ? null : (flow.failure?.message ?? null)}
         notice={flow.notice}
         oauthMessage={oauthMessage}
-        inviteHint={hint}
       />
       </>
       )}
 
       <div className="signin-footer">
-        {recoveryOpen ? null : (
+        {/* Kept for an invitation only when email codes are off, so there is still a way in. */}
+        {recoveryOpen || (invited && emailAvailable) ? null : (
         <SignInPasswordFooter
           working={working}
           passwordSignInAvailable={status.passwordSignInAvailable}
@@ -775,13 +859,13 @@ export default function SignInClient({
           }}
         />
         )}
-        {emailAvailable && flow.step === "identity" && passwordPanel === "closed" ? (
+        {emailAvailable && flow.step === "identity" && passwordPanel === "closed" && !invited ? (
           <SignInRecovery nextPath={resolvedNext} open={recoveryOpen} onOpenChange={setRecoveryOpen} />
         ) : null}
         {/* The not-on-a-team step leads with Join the waitlist, and the code step has its own
-            "No code?" help with the same link; a second one under it was noise. */}
-        {/* "Only invited emails get a code" is about codes; the password view has none. */}
-        {notInvited || flow.step === "code" ? null : <AccessFooter publicSignup={status.publicSignup} />}
+            "No code?" help with the same link; a second one under it was noise. Someone with an
+            invitation is not sent toward the waitlist at all. */}
+        {notInvited || flow.step === "code" || invited ? null : <AccessFooter publicSignup={status.publicSignup} />}
       </div>
     </SignInCard>
   );

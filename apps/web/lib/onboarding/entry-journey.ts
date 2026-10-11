@@ -17,9 +17,12 @@ export function teamJoinInvitePath(value: unknown): string | null {
   return url.pathname === "/invite" && token && /^[a-zA-Z0-9_-]{32,128}$/.test(token) ? `/invite?token=${encodeURIComponent(token)}` : null;
 }
 
+/** Every per-person onboarding draft key starts with this; sign-out clears them all. */
+export const ONBOARDING_ANSWERS_PREFIX = "vantage.onboarding.answers:";
+
 /** Never restore the old team-only keys on a shared device: their author is unknown. */
 export function onboardingAnswersKey(userId: string | null | undefined, orgId: string | null): string | null {
-  return userId ? `vantage.onboarding.answers:v2:${encodeURIComponent(userId)}:${encodeURIComponent(orgId ?? "personal")}` : null;
+  return userId ? `${ONBOARDING_ANSWERS_PREFIX}v2:${encodeURIComponent(userId)}:${encodeURIComponent(orgId ?? "personal")}` : null;
 }
 
 export function confirmedOnboardingState(value: unknown): boolean {
