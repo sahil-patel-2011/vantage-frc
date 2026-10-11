@@ -278,3 +278,10 @@
     align-items: flex-start;
   }
 }
+
+/* A submit placed straight in this grid form keeps its own width from tablet up (it was ~900px). */
+@media (min-width: 721px) {
+  .ns-form > :is(.app-button, button[type="submit"]) {
+    justify-self: start;
+  }
+}

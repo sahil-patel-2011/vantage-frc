@@ -22,7 +22,6 @@ import {
 import type { GoalCategory, GoalEvaluation, GoalPriority, GoalStatus, MetricType } from "../../lib/goals/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import "./goals.css";
 
 type LiveView = Extract<GoalsView, { status: "live" }>;
@@ -59,7 +58,8 @@ async function persistGoalsSnapshot(orgHint: string, seasonHint: string, data: G
 }
 
 function GoalsRelated({ orgId }: { orgId: string }) {
-  const primary = goalsRelatedLinks(orgId, { include: ["todos", "practice", "team"] });
+  // Todos and Practice come from the Team row beside it; this row adds only Team hub.
+  const primary = goalsRelatedLinks(orgId, { include: ["team"] });
   return (
     <div className="goals-related">
       <nav className="product-hub-related goals-hub-related" aria-label="Related team tools">
@@ -345,15 +345,7 @@ export default function GoalsClient() {
               </select>
             </label>
           ) : null}
-          <Button as="a" variant="secondary" href={withOrgHref("/todos", orgId)}>
-            Todos
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/practice", orgId)}>
-            Practice
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/team", orgId)}>
-            Team hub
-          </Button>
+          {/* Todos, Practice and Team hub are in the related row just below. */}
         </div>
       </PageHeader>
       <OfflineBanner feature="Goals" fromCache={fromCache} cachedAt={cachedAt} />
