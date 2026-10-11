@@ -9,6 +9,7 @@ import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-ven
 import { countdownLabel } from "../dashboard/widgets";
 import type { EventDayNextAction } from "../../lib/command/event-day-actions";
 import NexusQueuePanel from "../../lib/command/nexus-queue-panel";
+import { scoutQueueSummary } from "../../lib/command/scout-queue";
 import type { CommandSnapshot } from "../../lib/command/types";
 import { formatMyDayWhen } from "../../lib/my-day";
 import { hubHref } from "../../lib/nav/hubs";
@@ -340,20 +341,9 @@ export function CommandReadyView({
               <div>
                 <h2>Scout next</h2>
                 <p>
-                  {/* Counts the list below. It said "0 gaps in upcoming alliances" over a list of
-                      eight robots missing pit scouting. */}
-                  {snap?.scoutQueue.length
-                    ? (() => {
-                        // Said by kind: "8 robots need scouting" over a list of pit visits read as match gaps.
-                        const match = snap.scoutQueue.filter((item) => !item.hasMatchScout).length;
-                        const pit = snap.scoutQueue.filter((item) => item.hasMatchScout && !item.hasPitScout).length;
-                        const parts = [
-                          match ? `${match} ${match === 1 ? "needs" : "need"} match scouting` : null,
-                          pit ? `${pit} ${pit === 1 ? "needs" : "need"} a pit visit` : null,
-                        ].filter(Boolean);
-                        return parts.length ? parts.join(" · ") : `${snap.scoutQueue.length} to check`;
-                      })()
-                    : "Nothing waiting"}
+                  {/* Counts the list below (and the rest behind "See all"), by the same reasons
+                      the rows print: "2 need a pit visit" sat over five rows that all said it. */}
+                  {scoutQueueSummary(snap?.scoutQueue ?? [])}
                 </p>
               </div>
             </div>
