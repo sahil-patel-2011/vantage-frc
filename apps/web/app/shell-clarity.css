@@ -1,0 +1,34 @@
+/*
+ * Shell clarity: the last product sheet (after motion-polish.css). Fixes from the design and
+ * accessibility pass, each with the finding it answers. Motion uses the vantage-fluid tokens only,
+ * so it is zero under reduced motion.
+ */
+
+/* ── Bottom bar: where am I, and did my tap register (A6-14, A6-20) ─────────────────────── */
+
+/* More is current on every page that is not one of the four apps. */
+body.has-app-shell .soft-island a.soft-island-more[aria-current="location"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* The tab just tapped answers at once, before the page it opens has arrived. */
+body.has-app-shell .soft-island a[data-pending="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
+}
+body.has-app-shell .soft-island a[data-pending="true"]::after {
+  content: "";
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  animation: island-pending var(--dur-page) var(--ease-in-out) infinite alternate;
+}
+@keyframes island-pending {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}

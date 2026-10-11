@@ -21,6 +21,8 @@ import "./product-motion.css";
 import "./macos-product.css";
 // After macos-product.css on purpose: press feedback, the sliding segment and rows easing in.
 import "./motion-polish.css";
+// Last: the design and accessibility pass (field boundaries, contrast, touch targets, bottom bar).
+import "./shell-clarity.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

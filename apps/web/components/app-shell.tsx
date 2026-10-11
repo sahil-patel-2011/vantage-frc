@@ -801,6 +801,8 @@ export default function AppShell() {
         activeIslandTabHref={activeIslandTabHref}
         unreadMessages={unreadMessages}
         onOpenEditor={openIslandEditor}
+        onOpenMore={toggleMenu}
+        navOpen={navOpen}
         islandPressTimer={islandPressTimer}
         islandPressOrigin={islandPressOrigin}
         islandLongPressed={islandLongPressed}
