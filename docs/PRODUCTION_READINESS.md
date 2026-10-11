@@ -72,6 +72,6 @@ Legend: **[x]** verified · **[~]** works with a known, accepted limit · **[ ]*
 - [ ] Decide on `CRON_SECRET` (daily event syncs) — currently off by choice.
 - [ ] Owner connects the team data copy from Admin → Integrations (script redeploy, then Connect).
 - [ ] Legal review of Terms and Privacy for a student audience before wide launch.
-- [ ] Move the database to the team NAS (`docs/NAS_DATABASE.md`): Postgres 17 with TLS from your own CA, migrations applied from home through **0714**, `DATABASE_SSL_CA` and the two login URLs set in Vercel, then the first encrypted snapshot uploaded to Google and a restore drill done. Until then nothing is deployed against Neon (no new database charges).
+- [ ] Move the database to the team NAS (`docs/NAS_DATABASE.md`): Postgres 17 with TLS from your own CA, migrations applied from home through **0715**, `DATABASE_SSL_CA` and the two login URLs set in Vercel, then the first encrypted snapshot uploaded to Google and a restore drill done. Until then nothing is deployed against Neon (no new database charges).
 - [ ] Publish desktop release `desktop-v0.1.0` (`docs/DESKTOP.md`): Windows setup + portable `.exe` and the ad-hoc signed Mac zips (or a universal DMG from a Mac), then `npm run desktop:release -- --publish`. The `/desktop` page lists them as soon as the release exists.
 - [ ] Deploy to Vercel once the NAS is live (owner's call; one intentional production deploy after the schema check passes).
