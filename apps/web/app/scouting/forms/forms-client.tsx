@@ -4,7 +4,7 @@ import { FormsResponses } from "./forms-responses";
 import { ScoringFormulas } from "./scoring-formulas";
 import { useSearchParams } from "next/navigation";
 import { scoutingGameLabel, latestScoutingYear } from "../../../lib/scouting/free-scout";
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { type EntryType, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
 import { OfflineBanner } from "../../../components/offline-banner";
@@ -32,7 +32,7 @@ import { hubHref } from "../../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { FormBuilderShell } from "./forms-chrome";
-import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./forms-model";
+import { defaultQuestions, formStatusLine, initialFormType, type FormBuilderMode, type SchemasPayload } from "./forms-model";
 import { FormsTabletPreview } from "./forms-tablet-preview";
 import { FormQuestionCard } from "./forms-question-card";
 import { formEditorPrefix, listFormEditorDrafts, removeFormEditorDraft, saveFormEditorDraft, type FormEditorDraft, type FormEditorScope } from "../../../lib/scouting/form-editor-draft";
@@ -69,13 +69,28 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
   const [loadError, setLoadError] = useState("");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [loadErrorStatus, setLoadErrorStatus] = useState<number | null>(null);
-  const [type, setType] = useState<EntryType>("pit");
+  // Match form first: it is what scouts need before the first match; pit forms come second.
+  const [type, setType] = useState<EntryType>(() => initialFormType(searchParams.get("type")));
   const [mode, setMode] = useState<FormBuilderMode>("edit");
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [showAllQuestions, setShowAllQuestions] = useState(false);
   const questionFocusRef = useRef<string | null>(null);
-  const [title, setTitle] = useState("Pit scouting");
-  const [questions, setQuestions] = useState(() => defaultQuestions("pit"));
+  const [title, setTitle] = useState(() => (type === "pit" ? "Pit scouting" : "Match scouting"));
+  const [questions, setQuestions] = useState(() => defaultQuestions(type));
+  /*
+    The publish bar's height, so the form can end that far above it. On a phone the bar is
+    fixed to the bottom of the screen and covered the last question (13 on the match form).
+  */
+  const [barHeight, setBarHeight] = useState(0);
+  const barObserver = useRef<ResizeObserver | null>(null);
+  const barRef = useCallback((node: HTMLDivElement | null) => {
+    barObserver.current?.disconnect();
+    barObserver.current = null;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => setBarHeight(Math.ceil(node.getBoundingClientRect().height)));
+    observer.observe(node);
+    barObserver.current = observer;
+  }, []);
   /**
    * The last removed question and where it sat, so Remove is recoverable.
    * Deleting a configured field — options, settings, strategy role — used to
@@ -575,6 +590,14 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
   });
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const commandHref = hubHref("/competition", "command", orgId);
+  const statusLine = formStatusLine({
+    status: publishStatus,
+    canManage: payload.canManageSchemas,
+    publishBlocked: Boolean(publishBlocked),
+    justPublished: publicationConfirmed,
+    draft: !payload.canManageSchemas || publishStatus.kind === "published" ? null
+      : draftError ? "unsaved" : draftSavedAt ? "saved" : "saving",
+  });
 
   if (shell === "setup") {
     return (
@@ -593,11 +616,13 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
   }
 
   return (
-    <Root className="module-page sfb-page">
+    <Root className="module-page sfb-page" style={barHeight > 0 ? ({ "--sfb-bar-h": `${barHeight}px` } as CSSProperties) : undefined}>
       <header className="sfb-heading">{!embedded ? <h1>Scouting forms</h1> : null}<p>Build your questions. Preview the form. Review the answers.</p></header>
 
-      <div className="sfb-document-actions" role="group" aria-label="Form publication">
-        <div className="sfb-action-status" role="status"><strong>{publishStatus.label}</strong><span>{publishStatus.detail}</span></div>
+      {/* The form's one status line and its one primary: "Ready to publish" sits beside
+          Publish here, instead of in a card of its own with no button. */}
+      <div ref={barRef} className="sfb-document-actions" role="group" aria-label="Form publication" data-tone={statusLine.tone}>
+        <div className="sfb-action-status" role="status"><strong>{statusLine.label}</strong><span>{statusLine.detail}</span></div>
         <ActionMenu overflowOnly label="Form options" actions={[
           { id: "scoring", label: "Scoring formulas", onClick: () => setFormulaOpen(true) },
           ...(payload.canManageSchemas && publishStatus.kind !== "published" ? [{ id: "scout", label: "Open scouting", href: scoutingHref }] : []),
@@ -628,22 +653,8 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
       </section> : null}
       {payload.canManageSchemas && draftChoices.some(draft => draft.editorId !== editorIdRef.current) ? <details className="app-card soft-panel"><summary>Saved drafts on this device</summary><p className="app-muted">Drafts are private to your account, team, game and form type.</p>{draftChoices.filter(draft => draft.editorId !== editorIdRef.current).map(draft => <Button key={draft.editorId} type="button" variant="secondary" disabled={busy} onClick={() => restoreDraft(draft.editorId)}>{draft.title || "Untitled form"} · {new Date(draft.savedAt).toLocaleString()}</Button>)}</details> : null}
 
-      {/* Publishing was confirmed by small blue text beside a "Republish" button, with no way
-          back to the setup list that sent the owner here. */}
-      {publicationConfirmed ? (
-        <section className="sfb-published-card" role="status">
-          <div>
-            <strong>Published</strong>
-            <span>Scouts see this form the next time they open Scout.</span>
-          </div>
-        </section>
-      ) : null}
-
-      {shell === "empty" ? (
-        <section className="sfb-shell-empty sfb-published-card" role="status">
-          <div><strong>{payload.canManageSchemas ? "Ready to publish" : "No published form yet"}</strong><span>{payload.canManageSchemas ? "Start with these questions or tailor them below." : "Ask a scouting lead or team admin to publish a form. The questions below are a preview."}</span></div>
-        </section>
-      ) : null}
+      {/* Publishing is confirmed in the bar above ("Published v1 · Scouts see this form the
+          next time they open Scout"), next to Open scouting. */}
 
       {!payload.canManageSchemas ? (
         <p className="app-muted">You can preview this form and review responses. A scouting lead or team admin can edit and publish forms.</p>
@@ -690,7 +701,6 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
       </div>
       <div className="sfb-workspace-bar">
         <ToolStrip presentation="segments" aria-label="Form workspace" value={mode} onChange={id => setMode(id as FormBuilderMode)} items={[{ id: "edit", label: "Questions" }, { id: "preview", label: "Preview" }, { id: "responses", label: "Responses" }]} />
-        <p className={`sfb-document-state sfb-status-${publishStatus.kind}`} role="status"><strong>{publishStatus.label}</strong><span>{publishStatus.kind === "published" ? "Live for your team" : draftError ? "Draft not saved — keep this editor open" : draftSavedAt ? "Draft saved on this device · not yet published" : "Saving draft on this device…"}</span></p>
       </div>
 
       {validation.budget.status !== "healthy" ? (

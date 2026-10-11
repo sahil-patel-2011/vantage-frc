@@ -3,9 +3,27 @@
 .sfb-action-status { display: grid; gap: 3px; flex: 1; min-width: 0; font-size: 13px; }
 .sfb-action-status span { color: var(--muted); overflow-wrap: anywhere; }
 .sfb-document-actions > .app-button { flex-shrink: 0; min-height: 48px; }
+/* "Ready to publish" and a fresh publish read as good news, as the separate cards did. */
+.sfb-document-actions:is([data-tone="ready"], [data-tone="published"]) {
+  border-color: color-mix(in srgb, #16a34a 40%, var(--line));
+  background: color-mix(in srgb, #16a34a 7%, var(--surface));
+}
+.sfb-document-actions:is([data-tone="ready"], [data-tone="published"]) .sfb-action-status strong { color: #15803d; }
 @media (max-width: 720px) {
-  .sfb-page { padding-bottom: calc(140px + env(safe-area-inset-bottom)); }
   .sfb-document-actions { position: fixed; top: auto; bottom: max(12px, env(safe-area-inset-bottom)); left: 12px; right: 12px; margin: 0; flex-wrap: wrap; padding: 12px; }
+  /*
+    The page-in animation leaves a transform on the hub and on this page, and a transformed
+    ancestor — not the screen — is what a fixed element is fixed to. The bar sat at the end of
+    the form, over its last question. Without the animation it is fixed to the screen.
+  */
+  .module-page:has(.sfb-document-actions) { animation: none; transform: none; }
+  /* The form ends one bar (and its gap off the screen edge) above the bottom, measured in
+     forms-client.tsx, so nothing is ever under the bar. 120px until it has been measured. */
+  .sfb-page::after {
+    content: "";
+    display: block;
+    height: calc(var(--sfb-bar-h, 120px) + max(12px, env(safe-area-inset-bottom)) + 16px);
+  }
   .sfb-action-status { flex-basis: 100%; }
   .sfb-action-status span { display: none; }
   .sfb-document-actions > .app-button { flex: 1; }
