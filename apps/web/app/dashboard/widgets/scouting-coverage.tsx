@@ -22,8 +22,8 @@ export function ScoutingCoverageCard({ payload, orgId }: { payload?: WidgetPaylo
       <Button type="button" variant="secondary" onClick={() => window.dispatchEvent(new Event("vantage:dashboard-refresh"))}>Refresh data</Button>
     </> : <>
     {hasEvent ? <>
-      {progress("Pit coverage", data.pitReports, data.scheduledTeams)}
-      {progress("Match coverage", data.matchReports, data.matchSlots)}
+      {progress("Pits visited", data.pitReports, data.scheduledTeams)}
+      {progress("Robots scouted in played matches", data.matchReports, data.matchSlots)}
       {data.scheduledTeams === 0 ? <p>No event schedule is available yet. Saved reports will appear as the schedule arrives.</p> : null}
       <p className="app-muted">{typeof data.reports === "number" ? `${data.reports} match reports` : ""}{typeof data.openDisagreements === "number" && data.openDisagreements > 0 ? ` · ${data.openDisagreements} to review` : ""}</p>
     </> : <p>Start with a pit visit, or practice scouting a match.</p>}

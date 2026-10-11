@@ -455,19 +455,29 @@ export async function loadDashboardSnapshot(
       [input.orgId, eventKey],
     );
     const c = counts.rows[0]!;
+    // The same counts Scouting's home shows (lib/scouting/lead-summary.ts): pits of the OTHER
+    // teams at the event, and robots scouted out of robots in quals that have been played.
+    // Counting our own robot and unplayed matches made the two screens disagree.
     const progress = await client.query<{ scheduledTeams: string; pitReports: string; matchSlots: string; matchReports: string }>(
       `WITH roster AS (
          SELECT DISTINCT jsonb_array_elements_text(COALESCE(red_alliance->'teamKeys','[]'::jsonb)) AS team FROM matches_ref WHERE event_key=$2
          UNION SELECT DISTINCT jsonb_array_elements_text(COALESCE(blue_alliance->'teamKeys','[]'::jsonb)) FROM matches_ref WHERE event_key=$2
+       ), others AS (
+         SELECT team FROM roster WHERE team IS DISTINCT FROM $3::text
+       ), played AS (
+         SELECT match_key, red_alliance, blue_alliance FROM matches_ref
+          WHERE event_key=$2 AND comp_level='qm'
+            AND COALESCE(NULLIF(red_alliance->>'score','')::numeric, -1) >= 0
+            AND COALESCE(NULLIF(blue_alliance->>'score','')::numeric, -1) >= 0
        ), slots AS (
-         SELECT match_key, jsonb_array_elements_text(COALESCE(red_alliance->'teamKeys','[]'::jsonb)) AS team FROM matches_ref WHERE event_key=$2 AND comp_level='qm'
-         UNION SELECT match_key, jsonb_array_elements_text(COALESCE(blue_alliance->'teamKeys','[]'::jsonb)) FROM matches_ref WHERE event_key=$2 AND comp_level='qm'
+         SELECT match_key, jsonb_array_elements_text(COALESCE(red_alliance->'teamKeys','[]'::jsonb)) AS team FROM played
+         UNION SELECT match_key, jsonb_array_elements_text(COALESCE(blue_alliance->'teamKeys','[]'::jsonb)) FROM played
        ) SELECT
-         (SELECT count(*)::text FROM roster) AS "scheduledTeams",
-         (SELECT count(DISTINCT p.team_key)::text FROM pit_scout_entries p JOIN roster r ON r.team=p.team_key WHERE p.org_id=$1 AND p.event_key=$2) AS "pitReports",
+         (SELECT count(*)::text FROM others) AS "scheduledTeams",
+         (SELECT count(DISTINCT p.team_key)::text FROM pit_scout_entries p JOIN others r ON r.team=p.team_key WHERE p.org_id=$1 AND p.event_key=$2) AS "pitReports",
          (SELECT count(*)::text FROM slots) AS "matchSlots",
          (SELECT count(DISTINCT (s.match_key,s.team_key))::text FROM match_scout_entries s JOIN slots r ON r.match_key=s.match_key AND r.team=s.team_key WHERE s.org_id=$1 AND s.event_key=$2) AS "matchReports"`,
-      [input.orgId, eventKey],
+      [input.orgId, eventKey, teamKey],
     );
     widgets.scouting_coverage = stamp("live", "scouting_coverage", {
       ...Object.fromEntries(Object.entries(progress.rows[0] ?? {}).map(([key,value]) => [key, Number(value)])),
