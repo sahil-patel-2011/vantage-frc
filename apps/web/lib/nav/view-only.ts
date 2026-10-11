@@ -5,7 +5,13 @@
  * whether a page offers an obvious write (Add task, Visit a pit, Add event) or a
  * calm "View only" note instead, so buttons do not refuse after the fact.
  */
-export { VIEW_ONLY_MESSAGE } from "@vantage/db/view-only";
+/**
+ * The sentence the API answers a refused write with (packages/db/src/view-only.ts).
+ * Repeated here, not imported: client-reachable modules never import `@vantage/db`
+ * (client-bundle-boundary.test.ts). view-only.test.ts keeps the two identical.
+ */
+export const VIEW_ONLY_MESSAGE =
+  "View only — you can look but not change this. Ask a team owner or admin for Team member access.";
 
 export const VIEW_ONLY_CHIP_TITLE =
   "You can look but not change anything on this team. Ask a team owner or admin for Team member access.";

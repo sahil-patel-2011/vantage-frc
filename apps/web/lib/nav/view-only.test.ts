@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { VIEW_ONLY_MESSAGE as SERVER_VIEW_ONLY_MESSAGE } from "@vantage/db/view-only";
 import { VIEW_ONLY_MESSAGE, isViewOnlyIn, viewOnlyFromMe } from "./view-only";
 import { canDeleteCalendarEvent } from "../subteam-calendar";
 import { canDeleteSeasonMilestone } from "../season-calendar";
@@ -27,7 +28,7 @@ describe("View only on the client", () => {
   });
 
   it("shows the same sentence the API answers with", () => {
-    expect(VIEW_ONLY_MESSAGE).toMatch(/^View only — you can look but not change this\./);
+    expect(VIEW_ONLY_MESSAGE).toBe(SERVER_VIEW_ONLY_MESSAGE);
   });
 
   it("never offers edit/delete on calendar entries to a viewer, even their own", () => {
