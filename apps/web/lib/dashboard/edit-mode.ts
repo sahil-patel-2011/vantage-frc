@@ -413,7 +413,9 @@ export function hiddenOnHome(
         ? "setup_shared"
         : setupCard && input.teamSetupCard
         ? "setup_top"
-        : status === "empty" || (item.type === "ask_ai" && status === "setup_required")
+        // Same quiet states homeViewLayout steps aside: a card still waiting for setup
+        // (no event yet) is not one the team has finished setting up.
+        : status === "empty" || status === "setup_required"
           ? "empty"
           : "setup_done",
     );

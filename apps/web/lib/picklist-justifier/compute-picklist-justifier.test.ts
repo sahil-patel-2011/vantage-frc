@@ -172,6 +172,10 @@ describe("generatePicklistJustifications", () => {
       if (sql.includes("FROM pick_lists WHERE id")) {
         return { rows: [{ id: PICK_LIST, eventKey: "2026casj" }], rowCount: 1 };
       }
+      // setJustification locks the parent list before touching its entries.
+      if (sql.includes("FROM pick_lists WHERE org_id") && sql.includes("FOR UPDATE")) {
+        return { rows: [{ id: PICK_LIST }], rowCount: 1 };
+      }
       if (sql.includes("FROM pick_list_entries pe")) {
         return {
           rows: [
@@ -242,8 +246,12 @@ describe("generatePicklistJustifications", () => {
     }
     expect(queries.some((q) => q.includes("INSERT INTO ai_usage_events"))).toBe(true);
     expect(queries.some((q) => q.includes("INSERT INTO picklist_justifier_justifications"))).toBe(true);
-    // ...and the same rationale is written onto the unified pick-list row the board reads.
-    expect(queries.some((q) => q.includes("SET justification = $4::text"))).toBe(true);
+    // ...and the same rationale is written onto the unified pick-list row the board reads,
+    // with the parent list locked first so concurrent writers keep one lock order.
+    const lock = queries.findIndex((q) => q.includes("FROM pick_lists WHERE org_id") && q.includes("FOR UPDATE"));
+    const write = queries.findIndex((q) => q.includes("SET justification = $4::text"));
+    expect(lock).toBeGreaterThanOrEqual(0);
+    expect(write).toBeGreaterThan(lock);
   });
 
   it("throws instead of fabricating a justification when the pick list has no entries", async () => {

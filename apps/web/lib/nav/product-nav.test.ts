@@ -86,8 +86,12 @@ describe("product-nav", () => {
     );
     expect(byLabel.Home).toEqual([]);
     // Plus the pit TV, which had no menu entry at all.
-    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual(["Teams", "Match plan", "Pick list", "Event day", "Our robot"]);
+    // Forms and Assignments are canonical Competition destinations (hub-navigation.ts).
+    expect(byLabel.Competition?.map((entry) => entry.label)).toEqual([
+      "Forms", "Assignments", "Teams", "Match plan", "Pick list", "Event day", "Our robot",
+    ]);
     expect(byLabel.Competition?.map((entry) => entry.href)).toEqual([
+      "/competition?tab=forms", "/competition?tab=scout-coverage-live",
       "/competition?tab=teams", "/competition?tab=strategy", "/competition?tab=picks",
       "/competition?tab=command", "/competition?tab=match-checklist",
     ]);
@@ -102,9 +106,10 @@ describe("product-nav", () => {
     expect(byLabel.Logistics).toBeUndefined();
     for (const group of PRODUCT_NAV_GROUPS) {
       const sub = panelSubLinks(group);
-      expect(sub.length).toBeLessThanOrEqual(5);
+      expect(sub.length).toBeLessThanOrEqual(group.label === "Competition" ? 7 : 5);
       expect(sub.some((entry) => entry.label === group.label)).toBe(false);
-      expect(sub.some((entry) => entry.href === "/competition?tab=forms")).toBe(false);
+      // The pillar row already opens the default tab (Competition → Scout).
+      expect(sub.some((entry) => entry.href === "/competition?tab=scouting")).toBe(false);
       expect(sub.some((entry) => entry.href === "/alliance-selection-desk")).toBe(false);
       expect(sub.some((entry) => entry.href === "/bugbot")).toBe(false);
     }

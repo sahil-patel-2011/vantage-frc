@@ -12,7 +12,9 @@ describe("practice draft recovery", () => {
     expect(parseFreeScoutDraft(JSON.stringify(draft))).toEqual(draft);
   });
   it("still accepts drafts saved before submission identities were introduced", () => {
-    const { reportId, observedAt, ...legacy } = draft;
+    const legacy: Partial<typeof draft> = { ...draft };
+    delete legacy.reportId;
+    delete legacy.observedAt;
     expect(parseFreeScoutDraft(JSON.stringify(legacy))).toEqual(legacy);
   });
   it.each([{ definition: { fields: null } }, { observedAt: "invalid" }, { reportId: "bad-id" }, { payload: [] }, { year: 0 }])("rejects unusable recovery data without starting a broken form: %j", patch => {

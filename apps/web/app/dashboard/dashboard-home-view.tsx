@@ -35,7 +35,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import type { RoleOnboardingView } from "../../lib/role-onboarding/types";
 import { DashboardGridItem } from "./dashboard-grid-item";
-import { LiveCountdown } from "./widgets";
+import { DashboardRoleStrip } from "./dashboard-role-strip";
 import { WIDGET_PICKER_ICON, greeting } from "./dashboard-canvas";
 import type { HomeStripItem } from "../../lib/home-workflows";
 import { Button, EmptyState } from "../../components/ui";
@@ -571,43 +571,7 @@ export function DashboardHomeView(props: {
       {orgId ? <FirstWeekCard orgId={orgId} view={firstWeek.view} busy={firstWeek.busy} post={firstWeek.post} error={firstWeek.error} retry={firstWeek.retry} /> : null}
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      {showRoleStrip ? (
-        <section
-          className="dash-role-strip"
-          data-audience={homeAudience ?? "student"}
-          aria-label={homeAudience === "mentor" ? "Team logistics" : "This week"}
-          {...dim}
-        >
-          <header className="dash-role-strip-head">
-            <span>{homeAudience === "mentor" ? "Team logistics" : "This week"}</span>
-            <a href={withOrgHref("/logistics", orgId)}>
-              {homeAudience === "mentor" ? "Hotels & travel" : "My hotel & leave times"}
-            </a>
-          </header>
-          <ul>
-            {homeStripItems.filter((item) => item.tone !== "neutral").map((item) => (
-              <li key={item.key} data-tone={item.tone}>
-                <a href={item.href}>
-                  <span>{item.label}</span>
-                  <strong>
-                    {item.at ? (
-                      <>
-                        {item.detail}
-                        <em className="dash-strip-countdown">
-                          {" · "}
-                          <LiveCountdown iso={item.at} />
-                        </em>
-                      </>
-                    ) : (
-                      item.detail
-                    )}
-                  </strong>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      {showRoleStrip ? <DashboardRoleStrip orgId={orgId} audience={homeAudience} items={homeStripItems} dim={dim} /> : null}
 
       {inlineError ? (
         <p className="telemetry-status" role="status">

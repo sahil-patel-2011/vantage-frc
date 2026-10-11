@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * POST /api/chemistry promotes partner-fit onto pick_lists through
  * promoteChemistryShortlist (the picklist store). This file covers the route
- * contract: auth, action allowlist, honest setup, and that fit is taken from the
+ * contract: auth, scouting-lead access, action allowlist, honest setup, and that fit is taken from the
  * loaded view — never a client-supplied DEMO score.
  */
 
@@ -16,6 +16,8 @@ const state = vi.hoisted(() => ({
   chemistryScore: 72 as number | null,
   teamKeys: ["frc254", "frc1678"] as string[],
   promote: vi.fn(),
+  lead: vi.fn(),
+  loaded: vi.fn(),
 }));
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
@@ -32,33 +34,41 @@ vi.mock("@vantage/db", () => ({
   withRls: async (_context: unknown, work: (client: unknown) => Promise<unknown>) => work({}),
 }));
 
+// Writing the shared pick list is a scouting-lead action (has_org_capability manage_scouting).
+vi.mock("@vantage/scouting/permissions", () => ({
+  assertScoutingLead: (...args: unknown[]) => state.lead(...args),
+}));
+
 vi.mock("../reference/hydrate-active-event", () => ({
   hydrateOrgActiveEvent: async () => undefined,
 }));
 
 vi.mock("./load-chemistry", () => ({
-  loadAllianceChemistry: async () => ({
-    status: state.eventKey ? "live" : "setup_required",
-    orgId: ORG,
-    eventKey: state.eventKey,
-    eventName: state.eventKey ? "Ontario Provincial" : null,
-    teamNumber: 254,
-    teamKey: "frc254",
-    tbaConfigured: true,
-    teamKeys: state.teamKeys,
-    chemistry: state.chemistryScore == null
-      ? { score: null, modelVersion: "alliance-chemistry-v1" }
-      : {
-          score: state.chemistryScore,
-          modelVersion: "alliance-chemistry-v1",
-          complementarity: 85,
-          totalEpa: 94.2,
-          reliabilityBlend: 80,
-        },
-    teams: [],
-    suggestions: [],
-    computedAt: "2026-03-01T00:00:00.000Z",
-  }),
+  loadAllianceChemistry: async () => {
+    state.loaded();
+    return {
+      status: state.eventKey ? "live" : "setup_required",
+      orgId: ORG,
+      eventKey: state.eventKey,
+      eventName: state.eventKey ? "Ontario Provincial" : null,
+      teamNumber: 254,
+      teamKey: "frc254",
+      tbaConfigured: true,
+      teamKeys: state.teamKeys,
+      chemistry: state.chemistryScore == null
+        ? { score: null, modelVersion: "alliance-chemistry-v1" }
+        : {
+            score: state.chemistryScore,
+            modelVersion: "alliance-chemistry-v1",
+            complementarity: 85,
+            totalEpa: 94.2,
+            reliabilityBlend: 80,
+          },
+      teams: [],
+      suggestions: [],
+      computedAt: "2026-03-01T00:00:00.000Z",
+    };
+  },
 }));
 
 vi.mock("./promote-to-pick-list", async () => {
@@ -88,6 +98,9 @@ beforeEach(() => {
   state.eventKey = "2026onto";
   state.chemistryScore = 72;
   state.teamKeys = ["frc254", "frc1678"];
+  state.lead.mockReset();
+  state.lead.mockResolvedValue(undefined);
+  state.loaded.mockReset();
   state.promote.mockReset();
   state.promote.mockResolvedValue({
     pickListId: "desk-list",
@@ -127,6 +140,16 @@ describe("POST /api/chemistry partner-fit promote", () => {
     const response = await post({ orgId: ORG, action: "promote-partner-fit", teamKeys: [] });
     expect(response.status).toBe(400);
     expect((await response.json()).error).toMatch(/at least one team/i);
+    expect(state.promote).not.toHaveBeenCalled();
+  });
+
+  it("requires scouting lead access before loading chemistry or writing the pick list", async () => {
+    state.lead.mockRejectedValue(Object.assign(new Error("Scouting lead access required"), { status: 403 }));
+    const response = await post({ orgId: ORG, action: "promote-partner-fit", teamKeys: ["254"] });
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toMatch(/scouting lead/i);
+    expect(state.lead).toHaveBeenCalledWith(expect.anything(), ORG);
+    expect(state.loaded).not.toHaveBeenCalled();
     expect(state.promote).not.toHaveBeenCalled();
   });
 

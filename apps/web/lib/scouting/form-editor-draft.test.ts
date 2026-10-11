@@ -20,7 +20,8 @@ describe("unpublished scouting form recovery", () => {
   });
   it("keeps incomplete questions and exact stable keys through reload", () => {
     const store = storage(); saveFormEditorDraft(store, draft);
-    expect(listFormEditorDrafts(store, draft)[0]).toMatchObject(draft);
+    // toEqual: a question with no key yet has key: undefined, which JSON storage drops.
+    expect(listFormEditorDrafts(store, draft)[0]).toEqual(draft);
     expect(parseFormEditorDraft(store.getItem(formEditorPrefix(draft) + draft.editorId), { ...draft, userId: "other" })).toBeNull();
     for (const scope of [{ ...draft, orgId: "other" }, { ...draft, year: 2025 }, { ...draft, type: "pit" as const }]) expect(listFormEditorDrafts(store, scope)).toEqual([]);
   });

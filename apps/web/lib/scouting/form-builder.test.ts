@@ -64,7 +64,11 @@ describe("form-builder", () => {
     expect(published.fields.find(field => field.key === "auto_fuel")?.config).toMatchObject({ scoutPhase: "auto", min: 0, integer: true, requireObservation: true });
     expect(previewFieldForQuestion(auto).config).toMatchObject({ scoutPhase: "auto", min: 0, integer: true, requireObservation: true });
     expect(published.fields.find(field => field.key === "auto_tower_level")?.config?.scoutPhase).toBe("auto");
-    expect(previewFieldForQuestion(retypeQuestion(auto, "short")).config).toEqual({ scoutPhase: "auto" });
+    // A retype to free text keeps only the phase of the collection rules. The explicit strategy
+    // role stays, and the preview shows exactly the config that publishing would store.
+    const retyped = retypeQuestion(auto, "short");
+    expect(previewFieldForQuestion(retyped).config).toEqual({ scoutPhase: "auto", role: "auto_score" });
+    expect(previewFieldForQuestion(retyped).config).toEqual(definitionFromDraft(draft.title, [retyped]).fields[0]?.config);
   });
   it("slugifies unique keys", () => {
     const used = new Set<string>();
