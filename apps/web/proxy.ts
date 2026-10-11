@@ -8,7 +8,15 @@ import { productRedirect, requestOrigin } from "./lib/products/products";
 import { isPendingWorkspacePath } from "./lib/onboarding/pending-paths";
 import { isGoogleSheetsState } from "./lib/google-sheets/oauth-state";
 import { isKnownAppPath } from "./lib/nav/app-route-roots";
-import { REMEMBERED_TEAM_COOKIE, TEAM_SCOPED_PAGES, isTeamId, teamPageRedirect } from "./lib/nav/remembered-team";
+import {
+  REMEMBERED_TEAM_COOKIE,
+  TEAM_SCOPED_PAGES,
+  chooseMemberTeam,
+  isTeamId,
+  notOnTeamRedirect,
+  teamPageRedirect,
+} from "./lib/nav/remembered-team";
+import { memberTeamIds } from "./lib/nav/member-teams";
 import { pendingProvisioningTeam, requestedProvisioningTeam } from "./lib/provisioning/request-gate";
 import { noteDatabaseFailure } from "./lib/outage/note";
 
@@ -411,39 +419,64 @@ export async function proxy(request: NextRequest) {
     return postOnboardingRedirect(request);
   }
 
+  // Team pages: which of the person's own teams this page is for (lib/nav/remembered-team.ts).
+  const pageRequest = !pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD");
+  const opened = pageRequest ? request.nextUrl.searchParams.get("orgId") : null;
+  const remembered = request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null;
+  // An explicit team switch must reach the membership picker, without the remembered team
+  // being injected or sending the person back to Home.
+  const teamSwitch = pathname === "/workspace" && request.nextUrl.searchParams.has("next");
+  const needsTeams = pageRequest && !teamSwitch && (isTeamId(opened) || TEAM_SCOPED_PAGES.has(pathname));
+  // null: not read (or unreadable), so nothing is remembered and nobody is redirected on a guess.
+  let memberTeams: string[] | null = null;
+
   if (!isPendingWorkspacePath(pathname)) {
-    const requestedOrg = await requestedProvisioningTeam(request, request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null);
-    const pendingOrg = await withRls({ userId: session.user.id, ...(requestedOrg ? { orgId: requestedOrg } : {}) },
-      client => pendingProvisioningTeam(client, session.user.id, requestedOrg));
-    if (pendingOrg) {
-      const setup = `/team-setup?orgId=${encodeURIComponent(pendingOrg)}`;
+    const requestedOrg = await requestedProvisioningTeam(request, remembered);
+    // One transaction for both reads: this runs on nearly every page load.
+    const gate = await withRls({ userId: session.user.id, ...(requestedOrg ? { orgId: requestedOrg } : {}) },
+      async client => ({
+        pendingOrg: await pendingProvisioningTeam(client, session.user.id, requestedOrg),
+        teams: needsTeams ? await memberTeamIds(client, session.user.id) : null,
+      }));
+    if (gate.pendingOrg) {
+      const setup = `/team-setup?orgId=${encodeURIComponent(gate.pendingOrg)}`;
       if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Your team setup must finish before this action is available.", code: "TEAM_SETUP_REQUIRED", setup }, { status: 409, headers: { "cache-control": "private, no-store" } });
       return NextResponse.redirect(new URL(setup, request.url), 307);
     }
+    memberTeams = gate.teams;
+  } else if (needsTeams && isTeamId(opened) && opened !== remembered) {
+    // Account, Help and the other while-you-wait pages: only asked when there is a team to remember.
+    memberTeams = await withRls({ userId: session.user.id }, client => memberTeamIds(client, session.user.id)).catch(() => null);
   }
 
   // Remember the team a page was opened for, and fill it in for team pages that arrive
-  // without one (lib/nav/remembered-team.ts). Pages still check membership themselves.
-  if (!pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD")) {
-    const opened = request.nextUrl.searchParams.get("orgId");
-    const remembered = request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null;
+  // without one. Pages still check membership themselves.
+  if (pageRequest) {
+    if (teamSwitch) return NextResponse.next();
+    const openedTeam = isTeamId(opened) ? opened : null;
+    const notOnOpened = Boolean(openedTeam && memberTeams && !memberTeams.includes(openedTeam));
+    // A link to someone else's team: say so on the chooser, with a way back to the person's own
+    // team. Platform admin pages take any team id, and the while-you-wait pages have no team yet.
+    if (notOnOpened && memberTeams?.length && !pathname.startsWith("/admin") && !isPendingWorkspacePath(pathname)) {
+      return NextResponse.redirect(notOnTeamRedirect(new URL(request.url)), 307);
+    }
     // /workspace was a second home page (event tiles, sync status, keyboard letters) that
     // every "Choose your team" link pointed at. A member goes to their team's Home.
-    if (pathname === "/workspace") {
-      // An explicit team switch must reach the membership picker, without the
-      // remembered team being injected or sending the person back to Home.
-      if (request.nextUrl.searchParams.has("next")) return NextResponse.next();
-      const teamId = isTeamId(opened) ? opened : isTeamId(remembered) ? remembered : null;
+    if (pathname === "/workspace" && memberTeams) {
+      // The team they named, else the one they last used, else the one they run. The team
+      // switcher (/workspace?next=…) is the chooser; this address is "take me to my team".
+      const teamId = chooseMemberTeam(memberTeams, openedTeam, remembered);
       if (teamId) {
         const home = new URL("/dashboard", request.url);
         home.searchParams.set("orgId", teamId);
         return NextResponse.redirect(home, 307);
       }
     }
-    if (isTeamId(opened)) {
+    if (openedTeam) {
       const response = NextResponse.next();
-      if (remembered !== opened) {
-        response.cookies.set(REMEMBERED_TEAM_COOKIE, opened, {
+      // Never a team the person is not on, and never on a guess when the read failed.
+      if (remembered !== openedTeam && memberTeams?.includes(openedTeam)) {
+        response.cookies.set(REMEMBERED_TEAM_COOKIE, openedTeam, {
           httpOnly: true,
           sameSite: "lax",
           secure: process.env.NODE_ENV === "production",
@@ -453,19 +486,9 @@ export async function proxy(request: NextRequest) {
       }
       return response;
     }
-    if (TEAM_SCOPED_PAGES.has(pathname)) {
-      const teamId = isTeamId(remembered)
-        ? remembered
-        : await withRls({ userId: session.user.id }, async (client) => {
-            const row = await client.query<{ orgId: string }>(
-              `SELECT org_id::text AS "orgId" FROM memberships WHERE user_id = $1::uuid
-                ORDER BY CASE role::text WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, created_at ASC
-                LIMIT 1`,
-              [session.user.id],
-            );
-            return row.rows[0]?.orgId ?? null;
-          }).catch(() => null);
-      const target = teamPageRedirect(new URL(request.url), teamId);
+    if (TEAM_SCOPED_PAGES.has(pathname) && memberTeams) {
+      // A remembered team the person has since left (or never joined) falls back to their own.
+      const target = teamPageRedirect(new URL(request.url), chooseMemberTeam(memberTeams, remembered));
       if (target) return NextResponse.redirect(target, 307);
     }
   }
