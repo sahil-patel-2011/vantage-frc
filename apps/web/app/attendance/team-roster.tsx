@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { roleLabel } from "@vantage/core/role-words";
 import { Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { SuggestInvite } from "../team/suggest-invite";
 
 type Member = { userId: string; name: string; role: string; you: boolean };
-
-const ROLE_LABEL: Record<string, string> = { owner: "Owner", admin: "Mentor or coach", scout: "Student", viewer: "Parent or guest" };
 
 /** Who is on the team, shown first on People. Owners and admins get the invite button. */
 export function TeamRoster({ orgId }: { orgId: string }) {
@@ -62,11 +62,19 @@ export function TeamRoster({ orgId }: { orgId: string }) {
                 {member.name}
                 {member.you ? <small> (you)</small> : null}
               </span>
-              <span className={`team-roster-role role-${member.role}`}>{ROLE_LABEL[member.role] ?? member.role}</span>
+              <span className={`team-roster-role role-${member.role}`}>{roleLabel(member.role)}</span>
             </li>
           ))}
         </ul>
       )}
+      {/* Everyone else can ask the owner and mentors to invite someone (QA A3-04). */}
+      {members && !canManage ? (
+        <SuggestInvite
+          orgId={orgId}
+          compact
+          leadNames={members.filter((row) => (row.role === "owner" || row.role === "admin") && !row.you).map((row) => row.name)}
+        />
+      ) : null}
     </section>
   );
 }

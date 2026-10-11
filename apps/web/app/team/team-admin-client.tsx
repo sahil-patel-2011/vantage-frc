@@ -290,6 +290,16 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     void load();
   }, [load, orgId]);
 
+  // A teammate's "please invite" notice opens here with the address and access filled in, so
+  // inviting the mentor a student asked for is one tap (QA A3-04).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const suggested = params.get("email")?.trim();
+    const suggestedRole = params.get("role");
+    if (suggested && !inviteEmailProblem(suggested)) setEmail(suggested);
+    if (suggestedRole === "admin" || suggestedRole === "scout" || suggestedRole === "viewer") setRole(suggestedRole);
+  }, []);
+
   // Arriving from "Invite someone" / Home's "Invite your team": the form is at
   // the top already, so put the cursor in Email, once.
   useEffect(() => {
