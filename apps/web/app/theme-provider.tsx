@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import PaidSessionSplash from "../components/paid-session-splash";
 import { ConfirmProvider } from "../components/ui/confirm-dialog";
 import AppearanceRuntime from "../lib/branding/appearance-runtime";
+import { pathnameIsMarketingPage } from "../lib/marketing/public-theme";
 import { pathnameIsEntryScreen, pathnameUsesAppShell } from "../lib/nav/product-route";
 
 const AppShell = dynamic(() => import("../components/app-shell"), { ssr: true });
@@ -88,6 +89,27 @@ function applyPreference(pref: ThemePreference) {
   localStorage.setItem(PREF_STORAGE_KEY, pref);
   document.cookie = `vantage-theme-pref=${pref}; Path=/; Max-Age=31536000; SameSite=Lax`;
   applyResolvedTheme(resolveTheme(pref));
+}
+
+/** This device's theme choice (or the default when it never chose), for pickers outside Account. */
+export function deviceThemePreference(): ThemePreference {
+  return readStoredPreference();
+}
+
+/**
+ * Apply a choice on this device now and tell any open picker. Saving it to the account is the
+ * caller's job (Account PUTs /api/theme; onboarding sends it with Finish).
+ */
+export function applyThemeChoice(pref: ThemePreference) {
+  applyPreference(pref);
+  window.dispatchEvent(new CustomEvent("vantage-theme-pref", { detail: pref }));
+}
+
+/** Paint the document in `theme` without saving anything as a choice. */
+function showDocumentTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+  syncBrowserColor();
 }
 
 export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
@@ -175,6 +197,15 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   // Sign-in, invites, join-by-code and onboarding keep a frame of chrome, but the person there
   // is signed out or mid-onboarding: /api/theme and /api/branding would only answer 401/403.
   const entryScreen = pathnameIsEntryScreen(pathname);
+  const marketingPage = pathnameIsMarketingPage(pathname);
+
+  useEffect(() => {
+    if (!marketingPage) return;
+    // The public site is light only (lib/marketing/public-theme.ts). Shown light here, with the
+    // device's own choice left as it is and put back on the way out, to sign-in or the product.
+    showDocumentTheme("light");
+    return () => showDocumentTheme(resolveTheme(readStoredPreference()));
+  }, [marketingPage]);
 
   useEffect(() => {
     // The product palette arrives with the shell; public pages use their own palette.

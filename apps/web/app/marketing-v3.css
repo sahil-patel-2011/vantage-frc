@@ -188,15 +188,6 @@
   box-shadow:0 0 0 1px var(--m-warm),var(--m-card-shadow-lg);
 }
 .marketing-lux .pricing-grid .plan-flag{background:var(--m-warm);color:#fff}
-html[data-theme="dark"] .marketing-lux .pricing-grid .plan-flag{color:#1a1206}
-/* Pricing surfaces that carry hardcoded light inks/backgrounds */
-html[data-theme="dark"] .marketing-lux .pricing-grid ul{color:var(--m-muted)}
-html[data-theme="dark"] .marketing-lux .pricing-note{
-  background:var(--m-surface-2);color:var(--m-ink);border-left-color:var(--m-warm);
-}
-html[data-theme="dark"] .marketing-lux .pricing-footnote{color:var(--m-muted)}
-html[data-theme="dark"] .marketing-lux .payg{background:var(--m-paper)}
-html[data-theme="dark"] .marketing-lux .payg>div:last-child{color:var(--m-muted)}
 
 /* â”€â”€ Footer: brand + three clean columns â”€â”€ */
 .marketing-lux .marketing-footer{

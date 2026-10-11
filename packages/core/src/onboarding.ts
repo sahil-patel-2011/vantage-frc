@@ -600,12 +600,18 @@ export async function completeOnboarding(
     ];
   }
 
+  // A theme picked on the Finish screen is a choice (0650 theme_chosen_at), exactly as it is from
+  // Account. Without the stamp, /api/theme reported it as not persisted, ThemeProvider ignored it,
+  // and someone who picked Dark while joining opened Home in light. An omitted answer stores the
+  // column's 'light' but is not a choice, so the device's own setting still wins.
+  const themeChosen = input.themePreference === "light" || input.themePreference === "dark";
   await client.query(
     `INSERT INTO profiles(
        user_id, first_name, last_name, date_of_birth, gender,
        preferred_team_number, team_role, crew_role, role_description, primary_focus, display_name, theme_preference,
-       onboarding_current_step, onboarding_started_at, onboarding_saved_at, onboarding_completed_at
-     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,'complete',COALESCE($13::timestamptz,now()),now(),now())
+       theme_chosen_at, onboarding_current_step, onboarding_started_at, onboarding_saved_at, onboarding_completed_at
+     ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,CASE WHEN $14::boolean THEN now() ELSE NULL END,
+       'complete',COALESCE($13::timestamptz,now()),now(),now())
      ON CONFLICT (user_id) DO UPDATE SET
        first_name = excluded.first_name,
        last_name = excluded.last_name,
@@ -617,7 +623,8 @@ export async function completeOnboarding(
        role_description = excluded.role_description,
        primary_focus = excluded.primary_focus,
        display_name = excluded.display_name,
-       theme_preference = excluded.theme_preference,
+       theme_preference = CASE WHEN $14::boolean THEN excluded.theme_preference ELSE profiles.theme_preference END,
+       theme_chosen_at = CASE WHEN $14::boolean THEN now() ELSE profiles.theme_chosen_at END,
        onboarding_current_step = 'complete',
        onboarding_started_at = COALESCE(profiles.onboarding_started_at, excluded.onboarding_started_at),
        onboarding_saved_at = now(),
@@ -636,6 +643,7 @@ export async function completeOnboarding(
       payload.displayName,
       payload.themePreference,
       state.startedAt,
+      themeChosen,
     ],
   );
 

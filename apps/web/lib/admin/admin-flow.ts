@@ -202,7 +202,7 @@ export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Use a verified platform_admins account. Closed waitlist access — no public admin signup.",
+        detail: "Sign in with a Vantage operator account. Operator access is granted by hand; there is no sign-up for it.",
         href: "/signin?next=%2Fadmin",
         primary: true,
       },
@@ -214,7 +214,7 @@ export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
       {
         id: "workspace",
         label: "Back to workspace",
-        detail: "Team tools and org admin live under Team — they do not grant platform_admins.",
+        detail: "Your team's tools and team settings are under Team. Running a team doesn't make you a Vantage operator.",
         href: "/workspace",
         primary: true,
       },

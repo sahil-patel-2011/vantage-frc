@@ -14,6 +14,13 @@ describe("notification helpers", () => {
     expect(notificationBody({})).toBeNull();
   });
 
+  it("files team lifecycle notes under Team", () => {
+    for (const type of ["member_left", "team_deleted", "team_owner_added"]) {
+      expect(notificationTypeLabel(type)).toBe("Team");
+    }
+    expect(notificationHref("team_deleted", { href: "/account/teams" }, null)).toBe("/account/teams");
+  });
+
   it("builds org-scoped hrefs for known types", () => {
     expect(notificationHref("export_ready", {}, "org-1")).toBe("/exports?orgId=org-1");
     expect(notificationHref("dm_message", {}, "org-1")).toBe("/messages?orgId=org-1");

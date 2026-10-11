@@ -47,16 +47,18 @@ export function OutageContactsLine() {
       ? "not saved yet"
       : `${view.count} ${view.count === 1 ? "person" : "people"}, refreshed ${relativeTime(view.refreshedAt)}`;
 
+  // Under the team list, not above "Create a team": it is checked now and then, and the setup
+  // note below used to push the form down by about 150px (QA A2-19). Operators may read env names.
   return (
-    <p className="admin-outage-contacts app-muted" role="status">
-      Outage contact list: {summary} —{" "}
+    <div className="admin-outage-contacts app-muted" role="status">
+      <span>Outage contact list: {summary}</span>
       <button type="button" className="admin-outage-contacts-refresh" onClick={() => void refresh()} disabled={busy}>
         {busy ? "Refreshing…" : "Refresh now"}
       </button>
       {view.sharedStore ? null : (
-        <small> Kept on this server only: set OUTAGE_REDIS_URL and OUTAGE_REDIS_TOKEN (or the rate limiter&rsquo;s RATE_LIMIT_REDIS_URL and RATE_LIMIT_REDIS_TOKEN) so it&rsquo;s there during an outage.</small>
+        <small>Kept on this server only, so it may be gone during an outage. Set OUTAGE_REDIS_URL and OUTAGE_REDIS_TOKEN to keep it.</small>
       )}
-      {error ? <small role="alert"> {error}</small> : null}
-    </p>
+      {error ? <small role="alert">{error}</small> : null}
+    </div>
   );
 }

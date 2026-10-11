@@ -32,7 +32,7 @@ export function SignInSessionView({
       title={inviteHeadline ?? "You’re already signed in"}
       subtitle="Continue with the account already open in this browser."
     >
-      <InviteBanner token={inviteToken} headline={inviteHeadline} preview={invitePreview} />
+      <InviteBanner token={inviteToken} preview={invitePreview} />
       <div className="signin-step">
         <button type="button" className="signin-submit" disabled={working} onClick={onContinue}>
           {continueAsLabel(working, emailHint)}
@@ -46,7 +46,7 @@ export function SignInSessionView({
           Use a different account
         </button>
       </div>
-      <AccessFooter />
+      {inviteToken ? null : <AccessFooter />}
     </SignInCard>
   );
 }

@@ -24,6 +24,15 @@ export const DEFAULT_RESEND_COOLDOWN_SECONDS = 30;
 /** Longest cooldown we will ever show, so a bad header cannot freeze the UI. */
 const MAX_RETRY_AFTER_SECONDS = 15 * 60;
 
+/**
+ * Wrong tries one code survives: `OTP_POLICY.allowedAttempts` in packages/core/src/index.ts (a
+ * test keeps the two equal). After this many, even the right code is refused.
+ */
+export const OTP_ALLOWED_ATTEMPTS = 5;
+
+/** The longest address mail systems accept (RFC 5321 path limit). */
+export const MAX_EMAIL_LENGTH = 254;
+
 export function normalizeSignInEmail(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }
@@ -31,12 +40,27 @@ export function normalizeSignInEmail(value: string | null | undefined): string {
 /**
  * Deliberately loose: the server is the authority on whether an address is
  * real. This only decides when the "Continue" button stops being disabled.
+ * Plain ASCII only, like the browser's own email check: "jöse@exämple.test" used to enable the
+ * button, which then did nothing while the browser refused the field without a word on iPhone.
  */
 export function isLikelyEmail(value: string | null | undefined): boolean {
   const email = normalizeSignInEmail(value);
-  if (email.length < 6 || email.length > 254) return false;
+  if (email.length < 6 || email.length > MAX_EMAIL_LENGTH) return false;
   if (/\s/.test(email)) return false;
+  if (!/^[\x21-\x7e]+$/.test(email)) return false;
   return /^[^@]+@[^@.]+(\.[^@.]+)+$/.test(email);
+}
+
+/** Why an address can't be used yet, for the line under the field; null when it can. */
+export function emailEntryHint(value: string | null | undefined): string | null {
+  const email = normalizeSignInEmail(value);
+  if (isLikelyEmail(email)) return null;
+  if (email.length > MAX_EMAIL_LENGTH) return `Addresses can't be longer than ${MAX_EMAIL_LENGTH} characters.`;
+  if (/[^\x20-\x7e]/.test(email.replace(/\s/g, " "))) {
+    return "This address has characters we can't send to. Use plain letters and numbers.";
+  }
+  if (/\s/.test(email)) return "Email addresses can't have spaces in them.";
+  return "Finish the address, like name@school.org.";
 }
 
 /** Same masking the `/api/auth/email-2fa` GET already returns: `j***@team.org`. */

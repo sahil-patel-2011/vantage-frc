@@ -4,12 +4,19 @@ import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 import { LegalAgreementCheckbox } from "../legal-agreement-checkbox";
 import { legalConsentComplete, legalConsentMessage } from "../../lib/legal";
 import { track } from "../../lib/marketing/analytics";
-import { waitlistUnavailableCopy } from "../../lib/marketing/waitlist-copy";
+import {
+  WAITLIST_SMS_CONSENT_ERROR,
+  WaitlistServerError,
+  waitlistEmailProblem,
+  waitlistJoinedCopy,
+  waitlistSubmitErrorMessage,
+  waitlistUnavailableCopy,
+} from "../../lib/marketing/waitlist-copy";
 import { rememberWaitlistJoined } from "../../lib/marketing/waitlist-joined";
 
 type FormState = "idle" | "sending" | "success" | "error" | "unavailable";
 
-type FieldErrors = { email?: string; teamNumber?: string; phone?: string };
+type FieldErrors = { email?: string; teamNumber?: string; phone?: string; smsConsent?: string };
 
 /**
  * "+1 202 555 0123", or a plain ten-digit US number, which gets the +1 added. Null for
@@ -122,16 +129,14 @@ export function WaitlistForm({
     const formElement = event.currentTarget;
     const fields = new FormData(formElement);
     const nextErrors: FieldErrors = {};
-    const emailValue = String(fields.get("email") ?? "").trim();
-    if (!emailValue) nextErrors.email = "Enter the email you want us to write to.";
-    else if (!emailValue.includes("@")) nextErrors.email = "That email is missing the @ and the part after it.";
-    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailValue)) {
-      nextErrors.email = "That email is missing the part after the dot, like .com or .org.";
-    }
+    const emailProblem = waitlistEmailProblem(String(fields.get("email") ?? ""));
+    if (emailProblem) nextErrors.email = emailProblem;
     const teamValue = String(fields.get("teamNumber") ?? "").trim();
     if (!teamValue) nextErrors.teamNumber = "Enter your FRC team number, like 6925.";
     else if (!/^[0-9]{1,5}$/.test(teamValue) || Number(teamValue) < 1) nextErrors.teamNumber = "Team numbers are digits only, 1 to 99999.";
     if (normalizeWaitlistPhone(phone) == null) nextErrors.phone = PHONE_ERROR;
+    // Said beside the box, not as a line by the button far below it.
+    else if (phoneProvided && fields.get("smsConsent") !== "on") nextErrors.smsConsent = WAITLIST_SMS_CONSENT_ERROR;
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length) {
       setState("idle");
@@ -175,7 +180,7 @@ export function WaitlistForm({
         return;
       }
       if (!response.ok || !result?.ok) {
-        throw new Error(result?.message ?? "Submission failed");
+        throw new WaitlistServerError(result?.message ?? "We couldn't add you just now. Your details are still here. Please try again.");
       }
       const joined = { email: String(form.get("email") ?? "").trim(), team: String(form.get("teamNumber") ?? "").trim() };
       setRecorded(joined);
@@ -185,9 +190,7 @@ export function WaitlistForm({
       track("waitlist_success");
     } catch (error) {
       setState("error");
-      setMessage(error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")
-        ? "We couldn't confirm your request in time. Your details are still here. Try again; the same email will not create a duplicate request."
-        : error instanceof Error ? error.message : "We couldn't reach Vantage. Your details are still here. Please try again.");
+      setMessage(waitlistSubmitErrorMessage(error));
     }
   }
 
@@ -208,6 +211,7 @@ export function WaitlistForm({
   }
 
   if (state === "success") {
+    const joinedCopy = waitlistJoinedCopy(recorded);
     return (
       <div
         className="confirmation waitlist-confirmation"
@@ -218,12 +222,8 @@ export function WaitlistForm({
         <h3 ref={successRef} tabIndex={-1}>
           You’re on the list.
         </h3>
-        <p>
-          {recorded?.email
-            ? `We'll email ${recorded.email}${recorded.team ? ` when team ${recorded.team} is set up` : " when your team is set up"}, usually within a few days.`
-            : "We'll email you when your team is set up, usually within a few days."}{" "}
-          Then you sign in and invite your students and mentors.
-        </p>
+        <p>{joinedCopy.body}</p>
+        <p className="waitlist-aside">{joinedCopy.kept}</p>
         {/* Said to everyone, so the form never reveals which teams already use Vantage. Second, and
             short: the outcome comes first, and a mentor whose team is already here still sees it. */}
         <p className="waitlist-aside waitlist-aside-box">
@@ -311,7 +311,7 @@ export function WaitlistForm({
           type="text"
           inputMode="numeric"
           pattern="0*[1-9][0-9]{0,4}"
-          maxLength={5}
+          // No maxLength: it cut 100000 to 10000 without a word. Too long is said under the field.
           title="Your FRC team number, 1 to 99999"
           placeholder="e.g. 6925"
           aria-describedby={fieldErrors.teamNumber ? `${prefix}-teamNumber-error` : `${prefix}-teamNumber-hint`}
@@ -363,10 +363,27 @@ export function WaitlistForm({
       </div>
 
       {phoneProvided ? (
-        <label className="consent">
-          <input name="smsConsent" type="checkbox" required disabled={state === "sending"} />
-          <span>I agree to receive occasional launch texts at this number.</span>
-        </label>
+        <div className="field">
+          <label className="consent">
+            <input
+              name="smsConsent"
+              type="checkbox"
+              required
+              disabled={state === "sending"}
+              aria-invalid={fieldErrors.smsConsent ? true : undefined}
+              aria-describedby={fieldErrors.smsConsent ? `${prefix}-sms-error` : undefined}
+              onChange={() => {
+                if (fieldErrors.smsConsent) setFieldErrors((current) => ({ ...current, smsConsent: undefined }));
+              }}
+            />
+            <span>I agree to receive occasional launch texts at this number.</span>
+          </label>
+          {fieldErrors.smsConsent ? (
+            <small id={`${prefix}-sms-error`} className="field-error" role="alert">
+              {fieldErrors.smsConsent}
+            </small>
+          ) : null}
+        </div>
       ) : null}
 
       <LegalAgreementCheckbox
