@@ -124,7 +124,7 @@ suite("View only is read-only (0715) in PostgreSQL", () => {
     // Re-running the installer is a no-op.
     expect((await asSuper<{ changed: number }>("SELECT install_view_only_guards() AS changed")).rows[0]?.changed).toBe(0);
 
-    // On exempt tables the only view-only rules left are the two narrower Ask AI ones.
+    // On exempt tables the only view-only rules left are the narrower membership and Ask AI ones.
     const exemptRestrictions = await asSuper<{ table_name: string; polname: string }>(
       `SELECT c.relname AS table_name, p.polname
          FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
@@ -139,6 +139,8 @@ suite("View only is read-only (0715) in PostgreSQL", () => {
       { table_name: "agent_messages", polname: "view_only_unshared_message_update" },
       { table_name: "agent_threads", polname: "view_only_private_thread_insert" },
       { table_name: "agent_threads", polname: "view_only_private_thread_update" },
+      { table_name: "memberships", polname: "view_only_membership_insert" },
+      { table_name: "memberships", polname: "view_only_membership_update" },
     ]);
   });
 
@@ -410,6 +412,17 @@ suite("View only is read-only (0715) in PostgreSQL", () => {
       await ok("agent_threads private", "INSERT INTO agent_threads(org_id,created_by,scope,title) VALUES($1,$2,'private','Q')", [org, viewer]);
       const teamThread = await attempt(viewer, "INSERT INTO agent_threads(org_id,created_by,scope,title) VALUES($1,$2,'team','Q')", [org, viewer]);
       expect(teamThread).toMatchObject({ ok: false, code: "42501", message: VIEW_ONLY_MESSAGE });
+      // Their own membership: never promote themselves, but leaving stays possible. No self-leave
+      // policy exists yet (owners/admins remove people), so prove it with one inside this rollback.
+      const promote = await attempt(viewer, "UPDATE memberships SET role = 'admin' WHERE org_id = $1 AND user_id = $2", [org, viewer]);
+      expect(promote.ok).toBe(false);
+      await asSuper(
+        `CREATE POLICY view_only_test_self_leave ON memberships FOR DELETE TO vantage_app
+           USING (user_id = current_app_user_id())`,
+      );
+      await ok("memberships: leave the team", "DELETE FROM memberships WHERE org_id = $1 AND user_id = $2", [org, viewer]);
+      await asSuper("INSERT INTO memberships(org_id,user_id,role) VALUES($1,$2,'viewer')", [org, viewer]);
+
       await ok(
         "ai_usage_events",
         `INSERT INTO ai_usage_events(org_id,user_id,feature,model,provider,key_source,prompt_tokens,completion_tokens,total_tokens,cost_usd,request_id)

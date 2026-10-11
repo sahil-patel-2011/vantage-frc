@@ -34,7 +34,8 @@ database lets a role write.
 | AI proposals ("Confirm to create…") | yes | yes | yes | **no** |
 
 Leaving a team is not self-service for any role today: an owner or admin removes the person
-(Team admin › a person › Remove).
+(Team admin › a person › Remove). The View only rule deliberately leaves a person's own
+membership DELETE alone, so a future "Leave team" works for viewers too.
 
 ## How it is enforced
 
@@ -55,7 +56,7 @@ Leaving a team is not self-service for any role today: an owner or admin removes
   the service roles (`vantage_auth`, `vantage_billing`, `vantage_pairing`…) are not affected.
 
 **The exceptions are a person's own state**, listed with a reason in `view_only_exempt_tables`
-(43 tables): own settings and devices (`dashboards` personal layouts, `learning_mode_prefs`,
+(44 tables): own settings and devices (`dashboards` personal layouts, `learning_mode_prefs`,
 `cad_user_preferences`, `scout_voice_user_prefs`, `member_llm_keys`, `cad_connections`,
 `cad_relay_devices`, `editor_devices`, `ai_bridge_devices`, `calendar_feed_tokens`,
 `push_subscriptions`, `grant_calendar_watchlist`, `cad_change_radar_subscriptions`), inbox and
@@ -68,9 +69,10 @@ audit trail (`mfa_step_up_sessions`, `auth_policy_audit_events`, `membership_aud
 `hours_self_view_biometric_consents`), answers to a form sent to them (`form_responses`,
 `form_answers`) and their own Ask AI runs (`agent_threads`, `agent_messages`,
 `agent_context_usage`, `ai_runs`, `ai_run_steps`, `ai_run_approvals`, `ai_usage_events`,
-`api_usage_denials`, `autonomous_agent_runs`, `autonomous_agent_steps`). Two of those keep a
-narrower rule: a viewer's Ask AI threads stay `private` and their AI messages are never
-`explicitly_shared`. Personal tables without an `org_id` (`profiles` — settings, tour, Terms
+`api_usage_denials`, `autonomous_agent_runs`, `autonomous_agent_steps`), plus `memberships`, so
+leaving the team (deleting their own row) is never blocked by this rule. Three of those keep a
+narrower rule: a viewer never inserts or updates a membership (their own role included), their
+Ask AI threads stay `private`, and their AI messages are never `explicitly_shared`. Personal tables without an `org_id` (`profiles` — settings, tour, Terms
 acceptance — `user_email_preferences`, `org_conversation_participants` — chat read position) are
 not org-scoped and are not touched.
 

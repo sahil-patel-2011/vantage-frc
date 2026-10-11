@@ -90,9 +90,12 @@ describe("View only migrations (0715)", () => {
     for (const row of rows) expect(row.reason.trim().length, row.table).toBeGreaterThanOrEqual(12);
     const exempt = new Set(rows.map((row) => row.table));
     // Personal state stays writable…
-    for (const table of ["notifications", "push_subscriptions", "dashboards", "announcement_acks", "org_message_reports"]) {
+    for (const table of ["notifications", "push_subscriptions", "dashboards", "announcement_acks", "org_message_reports", "memberships"]) {
       expect(exempt.has(table), table).toBe(true);
     }
+    // …and leaving the team stays possible without letting a viewer add or edit a membership.
+    expect(sql).toContain("CREATE POLICY view_only_membership_insert ON memberships AS RESTRICTIVE FOR INSERT TO vantage_app");
+    expect(sql).toContain("CREATE POLICY view_only_membership_update ON memberships AS RESTRICTIVE FOR UPDATE TO vantage_app");
     // …team data never is: posting chat, scouting, tasks, calendar, inventory, CAD.
     for (const table of [
       "org_messages",
@@ -105,7 +108,7 @@ describe("View only migrations (0715)", () => {
       "subteam_calendar_rsvps",
       "inventory_items",
       "cad_documents",
-      "memberships",
+      "invites",
     ]) {
       expect(exempt.has(table), table).toBe(false);
     }

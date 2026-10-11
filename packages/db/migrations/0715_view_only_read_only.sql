@@ -19,10 +19,11 @@
 --   The exceptions are the person's OWN state, listed with a reason in
 --   view_only_exempt_tables below: their settings, devices, inbox, read receipts,
 --   onboarding and practice progress, security trail, feedback to Vantage, safety
---   reports, answers to forms sent to them, and their own Ask AI conversations
---   (Ask AI is offered to every role, lib/ai/capabilities.ts). Two exempt tables
---   keep a narrower rule: a viewer's Ask AI threads stay private and their AI
---   messages are never shared to the team.
+--   reports, answers to forms sent to them, their own Ask AI conversations (Ask AI
+--   is offered to every role, lib/ai/capabilities.ts) and their own membership
+--   (leaving the team). Three exempt tables keep a narrower rule: a viewer never
+--   inserts or updates a membership, their Ask AI threads stay private, and their
+--   AI messages are never shared to the team.
 --
 --   TEAM CHAT: a viewer READS chat (conversations, messages, mentions and their own
 --   read position, which lives in org_conversation_participants — no org_id, so it
@@ -141,6 +142,9 @@ INSERT INTO view_only_exempt_tables (table_name, reason, added_in) VALUES
   ('auth_policy_audit_events', 'Audit row for their own security changes (two-factor enrolment and similar).', '0715'),
   ('membership_audit_events', 'The invite.accepted row written when they join; every other action needs owner/admin by policy.', '0715'),
   ('export_audit_events', 'Audit row written when they export or download (a read).', '0715'),
+  -- Their own membership: leaving the team deletes their own row. Writes are owner/admin-only by
+  -- memberships' own policies; view_only_membership_* still refuses a viewer INSERT/UPDATE.
+  ('memberships', 'Leaving the team deletes their own membership; view_only_membership_* refuses viewer INSERT/UPDATE.', '0715'),
   -- Feedback to Vantage, not team data
   ('bug_reports', 'Own bug report to Vantage.', '0715'),
   ('support_tickets', 'Own support ticket to Vantage.', '0715'),
@@ -236,11 +240,21 @@ COMMENT ON FUNCTION install_view_only_guards() IS
 
 SELECT install_view_only_guards();
 
--- ---------------------------------------------------------------- narrower rules on two exempt tables
+-- ---------------------------------------------------------------- narrower rules on three exempt tables
 
--- A viewer's Ask AI threads are private: no team-scope thread, no switching one to team.
 DO $$
 BEGIN
+  -- A viewer never adds or changes a membership (their own role included); only a DELETE of
+  -- their own row (leaving) is left to memberships' own policies.
+  IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polrelid = 'memberships'::regclass AND polname = 'view_only_membership_insert') THEN
+    CREATE POLICY view_only_membership_insert ON memberships AS RESTRICTIVE FOR INSERT TO vantage_app
+      WITH CHECK (refuse_view_only_write(org_id));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polrelid = 'memberships'::regclass AND polname = 'view_only_membership_update') THEN
+    CREATE POLICY view_only_membership_update ON memberships AS RESTRICTIVE FOR UPDATE TO vantage_app
+      USING (true) WITH CHECK (refuse_view_only_write(org_id));
+  END IF;
+  -- A viewer's Ask AI threads are private: no team-scope thread, no switching one to team.
   IF NOT EXISTS (SELECT 1 FROM pg_policy WHERE polrelid = 'agent_threads'::regclass AND polname = 'view_only_private_thread_insert') THEN
     CREATE POLICY view_only_private_thread_insert ON agent_threads AS RESTRICTIVE FOR INSERT TO vantage_app
       WITH CHECK (CASE WHEN scope = 'private' THEN true ELSE refuse_view_only_write(org_id) END);
