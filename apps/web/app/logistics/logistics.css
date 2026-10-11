@@ -128,9 +128,12 @@
   background: #fff;
 }
 
-.log-grid-form textarea {
+.log-grid-form textarea,
+.log-grid-form > label:has(textarea) {
   grid-column: 1 / -1;
 }
+/* Labelled fields: the input fills its label's cell. */
+.log-grid-form > .inline-field-label > :is(input, select, textarea) { width: 100%; box-sizing: border-box; }
 
 .log-grid-form button[type="submit"] {
   border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
