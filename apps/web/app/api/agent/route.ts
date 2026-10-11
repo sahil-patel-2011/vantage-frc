@@ -1,4 +1,4 @@
-import { getOrgPromptCachingEnabled, resolveOrgChatAdapter } from "@vantage/agent";
+import { getOrgPromptCachingEnabled, isSkillToolOutput, resolveOrgChatAdapter, skillIdFromToolName, skillToolName } from "@vantage/agent";
 import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
@@ -12,6 +12,22 @@ import {
 } from "../../../lib/github";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
 import { buildHistoryContext } from "../../../lib/chat/history-context";
+import { aiSkillById, canSaveSkillDraft } from "../../../lib/ai-skills/catalog";
+import type { SkillPageContext } from "../../../lib/ai-skills/executors";
+import {
+  availableSkillIds,
+  buildSkillTools,
+  loadSkillAccessFacts,
+  meteredFeatureForSkill,
+  routeSkillForTurn,
+  runSkillPreview,
+  sanitizeSkillPage,
+  skillAvailabilityList,
+  skillInstructions,
+  skillPreviewOf,
+  type RoutedSkill,
+  type SkillAvailability,
+} from "../../../lib/ai-skills/server";
 
 async function current() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -27,6 +43,13 @@ const fail = (error: unknown) => failMeteredAi(error, "Agent request failed");
  */
 export const maxDuration = 60;
 
+/** The chip and starters: which skill a turn used, and how it was chosen. */
+function skillSummary(routed: RoutedSkill | null, usedIds: string[]) {
+  const skill = routed?.skill ?? aiSkillById(usedIds[0] ?? null);
+  if (!skill) return null;
+  return { id: skill.id, name: skill.name, group: skill.group, source: routed?.source ?? ("model" as const) };
+}
+
 export async function GET(request: Request) {
   try {
     const session = await current();
@@ -38,12 +61,16 @@ export async function GET(request: Request) {
       const promptCachingEnabled = orgId
           ? await getOrgPromptCachingEnabled(client, orgId)
           : true; // platform default since 0448 — personal chats cache too
+      const facts = orgId ? await loadSkillAccessFacts(client, orgId, session.user.id) : null;
       return {
         threads: await repository.listThreads(),
         memories: await repository.listUserMemories(session.user.id),
         memorySettings: await repository.getMemorySettings(session.user.id, orgId),
         messages: threadId ? await repository.getMessages(threadId) : [],
         promptCachingEnabled,
+        // Which Ask AI skills this member may use here, and in plain words why not.
+        role: facts?.role ?? null,
+        skills: facts ? skillAvailabilityList(facts) : [],
       };
     });
     return Response.json(data);
@@ -53,8 +80,18 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // Kept outside the transaction so a turn that fails because AI is off can still show what the
+  // skill found in the team's records (read again in a fresh transaction below).
+  let routed: RoutedSkill | null = null;
+  let pinnedRefused: SkillAvailability | null = null;
+  let page: SkillPageContext = {};
+  let turnMessage = "";
+  let userId = "";
+  let orgIdForPreview = "";
+  let role: string | null = null;
   try {
     const session = await current();
+    userId = session.user.id;
     const body = (await request.json()) as {
       action?: "thread" | "message";
       orgId?: string;
@@ -67,9 +104,15 @@ export async function POST(request: Request) {
       editorContextId?: string;
       /** Optional GitHub file/tree request for this turn */
       githubContext?: GitHubContextRequest;
+      /** The skill the "Using …" chip is pinned to; null or "" lets the assistant choose. */
+      skill?: string | null;
+      /** The page Ask AI was opened from (path, a record it was about). */
+      page?: unknown;
     };
     if (!body.orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
     const orgId = body.orgId;
+    orgIdForPreview = orgId;
+    page = sanitizeSkillPage(body.page);
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const repository = new AgentRepository(client);
       const membership = await client.query("SELECT 1 FROM memberships WHERE org_id=$1", [body.orgId]);
@@ -83,6 +126,16 @@ export async function POST(request: Request) {
         turns: await repository.getMessages(body.threadId),
         message: body.message,
       });
+      turnMessage = historyContext.message;
+
+      // One assistant, many skills: decide the skill before anything can fail, so the chip is
+      // right even when the model can't run.
+      const facts = await loadSkillAccessFacts(client, orgId, session.user.id);
+      role = facts.role;
+      const allowed = availableSkillIds(facts);
+      ({ routed, pinnedRefused } = routeSkillForTurn({ pinned: body.skill, message: historyContext.message, allowed }));
+      const turnSkill: RoutedSkill | null = routed;
+
       const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
       const adapter = await resolveOrgChatAdapter(client, {
         orgId,
@@ -107,7 +160,7 @@ export async function POST(request: Request) {
         ...(await withSavepoint(client, () => robotCodeContextItems(client, orgId, historyContext.message), [])),
       ];
 
-      return repository.sendMessage({
+      const sent = await repository.sendMessage({
         userId: session.user.id,
         orgId: body.orgId!,
         threadId: body.threadId,
@@ -115,14 +168,53 @@ export async function POST(request: Request) {
         scope: body.scope,
         adapter,
         requestId: crypto.randomUUID(),
-        selected: body.selected,
+        selected: body.selected ?? (page.teamKey || page.matchKey ? { teamKey: page.teamKey ?? undefined, matchKey: page.matchKey ?? undefined } : undefined),
         promptCachingEnabled,
         bridgeContext,
         conversationHistory: historyContext.history,
+        extraTools: buildSkillTools({ allowed, request: historyContext.message, page }),
+        forcedToolCalls: turnSkill
+          ? [{ name: skillToolName(turnSkill.skill.id), input: { request: historyContext.message, about: page.about ?? null } }]
+          : [],
+        nativeCandidateToolNames: [...allowed].map(skillToolName),
+        usageFeature: meteredFeatureForSkill(turnSkill?.skill ?? null, facts.policy),
+        instructions: turnSkill ? skillInstructions(turnSkill.skill) : undefined,
       });
+      const skillOutputs = sent.toolOutputs
+        .map((tool) => tool.output)
+        .filter(isSkillToolOutput)
+        .map(skillPreviewOf);
+      const usedIds = sent.toolOutputs.map((tool) => skillIdFromToolName(tool.name)).filter((id): id is string => Boolean(id));
+      const skill = skillSummary(turnSkill, usedIds);
+      return {
+        ...sent,
+        skill,
+        skillNotice: pinnedRefused?.reason ?? null,
+        skillOutputs,
+        canSaveDraft: canSaveSkillDraft(aiSkillById(skill?.id ?? null), facts.role),
+      };
     });
     return Response.json(data, { status: 201 });
   } catch (error) {
-    return fail(error);
+    const response = fail(error);
+    const turnSkill = routed as RoutedSkill | null;
+    // AI is off, over its limit, or paused: still show what the skill found in the records.
+    if (!turnSkill || !userId || !orgIdForPreview || ![402, 403, 429, 503].includes(response.status)) return response;
+    const payload = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+    if (!payload || payload.reason === "view_only") return Response.json(payload ?? {}, { status: response.status });
+    const preview = await withRls({ userId, orgId: orgIdForPreview }, (client) =>
+      runSkillPreview({ client, orgId: orgIdForPreview, userId, skillId: turnSkill.skill.id, request: turnMessage, page }),
+    ).catch(() => null);
+    return Response.json(
+      {
+        ...payload,
+        skill: { id: turnSkill.skill.id, name: turnSkill.skill.name, group: turnSkill.skill.group, source: turnSkill.source },
+        skillNotice: (pinnedRefused as SkillAvailability | null)?.reason ?? null,
+        skillPreview: preview,
+        canSaveDraft: false,
+        role,
+      },
+      { status: response.status },
+    );
   }
 }
