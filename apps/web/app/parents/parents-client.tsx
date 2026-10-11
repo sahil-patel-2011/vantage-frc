@@ -599,7 +599,8 @@ export default function ParentsClient() {
         </FormRow>
         <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
           <Button onClick={() => void load(note)} disabled={busy}>Update preview</Button>
-          <Button variant="primary" disabled={busy || !ready.preview || activeContacts.length === 0}
+          {/* Until there is someone to send to, adding a contact is the page's one primary. */}
+          <Button variant={activeContacts.length === 0 ? "secondary" : "primary"} disabled={busy || !ready.preview || activeContacts.length === 0}
             onClick={() => void mutate({ action: "send_now", logisticsNotes: note || null })}>
             Send digest now
           </Button>

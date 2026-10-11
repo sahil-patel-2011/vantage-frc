@@ -750,7 +750,7 @@ function LearnedItems({
         </ul>
       )}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Button variant="primary" type="button" disabled={busy || items.length === 0} onClick={() => send("season-report")}>
+        <Button variant={items.length === 0 ? "secondary" : "primary"} type="button" disabled={busy || items.length === 0} onClick={() => send("season-report")}>
           Send to Season report
         </Button>
         <Button variant="secondary" type="button" disabled={busy || items.length === 0} onClick={() => send("playbook")}>

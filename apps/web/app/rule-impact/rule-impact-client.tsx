@@ -447,7 +447,7 @@ export default function RuleImpactClient() {
             title="No prior-season subsystems on file"
             description="Log robot subsystems so Rule Impact can diff them against logged rule changes — empty means nothing on file."
           >
-            <Button as="a" variant="primary" href={subsystemsHref}>
+            <Button as="a" variant="secondary" href={subsystemsHref}>
               Open Subsystems
             </Button>
           </EmptyState>

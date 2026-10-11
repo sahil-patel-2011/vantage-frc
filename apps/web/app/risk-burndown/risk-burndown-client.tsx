@@ -411,7 +411,8 @@ export default function RiskBurndownClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href={risksHref}>
+          {/* Logging a risk below is this page's primary; this only leaves for the full list. */}
+          <Button as="a" variant="secondary" href={risksHref}>
             Open Risks
           </Button>
         </EmptyState>
