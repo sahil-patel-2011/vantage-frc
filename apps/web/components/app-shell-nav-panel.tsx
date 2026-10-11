@@ -284,7 +284,10 @@ export function AppShellNavPanel({
             </button>
             {resultRows.length === 0 && !searchLoading ? (
               <p className="command-empty">
-                Nothing matches “{navQuery.trim()}”. Press Ctrl/⌘+Enter to search your data.
+                {/* A phone has no Ctrl or ⌘: the keys are said only where there is a keyboard,
+                    and only the one this device has. */}
+                No page or tool matches “{navQuery.trim()}”. Open full search to look through your team’s data
+                <span className="command-empty-keys"> ({shortcutHint.startsWith("⌘") ? "⌘" : "Ctrl"}+Enter)</span>.
               </p>
             ) : null}
           </div>

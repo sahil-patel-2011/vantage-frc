@@ -210,7 +210,7 @@ export default function BudgetReconcilerClient() {
         });
         const data: unknown = await response.json().catch(() => null);
         if (!response.ok || !isBudgetReconcilerView(data)) {
-          setError(responseError(data) || "Something went wrong.");
+          setError(responseError(data) || "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

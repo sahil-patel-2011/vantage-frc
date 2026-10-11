@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { describeAllowedSignInMethods } from "@vantage/core";
-import { apiErrorMessage, classifyLoadFailure, loadFailureCopy, signInHref } from "./load-failure";
+import {
+  GENERIC_LOAD_FAILURE,
+  apiErrorMessage,
+  classifyLoadFailure,
+  isTeamReadableMessage,
+  loadFailureCopy,
+  signInHref,
+} from "./load-failure";
 
 describe("classifyLoadFailure", () => {
   it("treats 401 as a signed-out session", () => {
@@ -107,13 +114,31 @@ describe("loadFailureCopy", () => {
     expect(loadFailureCopy("setup", { message: "Connect The Blue Alliance key" }).description).toBe(
       "Connect The Blue Alliance key",
     );
-    expect(loadFailureCopy("unknown", { message: "Upstream timeout" }).description).toBe(
-      "Upstream timeout",
+    expect(loadFailureCopy("unknown", { message: "The match schedule is not published yet." }).description).toBe(
+      "The match schedule is not published yet.",
     );
   });
 
+  it("never prints the exception text a program produced (A6-12, A2-20)", () => {
+    for (const raw of [
+      "signal timed out",
+      "Upstream timeout",
+      "Failed to fetch",
+      "TypeError: Cannot read properties of undefined (reading 'map')",
+      "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON",
+      'relation "org_billing" does not exist',
+      "DATABASE_URL is not set",
+      "500 Internal Server Error",
+      "connect ECONNREFUSED 127.0.0.1:5432",
+    ]) {
+      expect(isTeamReadableMessage(raw), raw).toBe(false);
+      expect(loadFailureCopy("unknown", { message: raw }).description, raw).toBe(GENERIC_LOAD_FAILURE);
+    }
+    expect(isTeamReadableMessage("Only an owner can delete the team.")).toBe(true);
+  });
+
   it("never leaves a state without a description", () => {
-    for (const kind of ["auth", "forbidden", "offline", "setup", "unknown"] as const) {
+    for (const kind of ["auth", "forbidden", "offline", "slow", "setup", "unknown"] as const) {
       const copy = loadFailureCopy(kind);
       expect(copy.title.length).toBeGreaterThan(0);
       expect(copy.description.length).toBeGreaterThan(0);
@@ -121,9 +146,22 @@ describe("loadFailureCopy", () => {
   });
 
   it("ignores a blank message rather than rendering an empty description", () => {
-    expect(loadFailureCopy("unknown", { message: "   " }).description).toBe(
-      "That did not load. Try again in a moment.",
-    );
+    expect(loadFailureCopy("unknown", { message: "   " }).description).toBe(GENERIC_LOAD_FAILURE);
+    // Says what happened and what to do next, unlike "Something went wrong".
+    expect(loadFailureCopy("unknown").title).toBe("This didn't load");
+    expect(GENERIC_LOAD_FAILURE).toMatch(/Try again/);
+  });
+
+  it("treats a slow, dropped or rate-limited connection as slow, with Retry", () => {
+    for (const message of ["signal timed out", "TimeoutError: signal timed out", "Failed to fetch", "Load failed", "NetworkError when attempting to fetch resource."]) {
+      expect(classifyLoadFailure({ message }), message).toBe("slow");
+    }
+    expect(classifyLoadFailure({ status: 429 })).toBe("slow");
+    expect(classifyLoadFailure({ status: 504 })).toBe("slow");
+    const copy = loadFailureCopy("slow");
+    expect(copy.title).toBe("This is taking longer than usual");
+    expect(copy.badge).toBe("Slow connection");
+    expect(copy.showRetry).toBe(true);
   });
 });
 

@@ -33,6 +33,11 @@ body.has-app-shell .soft-island a[data-pending="true"]::after {
   to { opacity: 1; }
 }
 
+/* Command search's "no match" line names the keyboard shortcut only where there is a keyboard. */
+@media (pointer: coarse) {
+  body.has-app-shell .command-empty-keys { display: none; }
+}
+
 /* ── Layout shift while a page loads (A6-02) ────────────────────────────────────────────── */
 
 /* A hub's panel holds its place while the tab's data arrives, so the actions under it start

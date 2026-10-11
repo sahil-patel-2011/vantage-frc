@@ -288,7 +288,7 @@ export default function MediaKitClient() {
         });
         const data = (await response.json()) as MediaKitView | { error?: string };
         if (!response.ok || !isMediaKitView(data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

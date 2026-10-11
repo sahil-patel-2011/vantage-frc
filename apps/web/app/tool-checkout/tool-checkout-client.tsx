@@ -288,7 +288,7 @@ export default function ToolCheckoutClient() {
           setError(
             data && typeof data === "object" && "error" in data && typeof data.error === "string"
               ? data.error
-              : "Something went wrong.",
+              : "That didn't go through. Check your connection and try again.",
           );
           return;
         }

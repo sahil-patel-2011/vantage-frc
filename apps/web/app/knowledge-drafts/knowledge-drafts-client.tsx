@@ -163,7 +163,7 @@ export default function KnowledgeDraftsClient() {
         });
         const data: unknown = await response.json().catch(() => null);
         if (!response.ok || !isCaptureView(data)) {
-          setError(responseError(data) || "Something went wrong.");
+          setError(responseError(data) || "That didn't go through. Check your connection and try again.");
           return false;
         }
         setView(data);
