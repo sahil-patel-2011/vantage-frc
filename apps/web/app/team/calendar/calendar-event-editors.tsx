@@ -23,6 +23,7 @@ import {
 import { toLocalInputValue } from "../../../lib/calendar-ai/pick";
 import { describeConflicts, findConflicts } from "../../../lib/calendar/conflicts";
 import {
+  addedNote,
   fmtRange,
   isSeriesEvent,
   type ActionBody,
@@ -40,15 +41,6 @@ import {
  * changing the time field, and someone not watching the form would otherwise
  * never learn it was there.
  */
-/** "Added Tuesday build practice · Tue, Sep 29, 6:00 PM": the form said nothing after Add. */
-function addedNote(title: string, startsAt: string): string {
-  const at = new Date(startsAt);
-  const when = Number.isNaN(at.getTime())
-    ? ""
-    : ` · ${at.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
-  return `Added ${title}${when}. It is under Coming up.`;
-}
-
 function ConflictNote({
   events,
   startsAt,

@@ -226,6 +226,18 @@
 .tc-form-grid .wide {
   grid-column: 1 / -1;
 }
+/* A date-and-time field needs the panel's whole width: in half of the side panel at 1280px it
+   showed "10/11/2026, 02:0", losing AM/PM (A5-05). */
+.tc-form-grid .tc-field:has(input[type="datetime-local"]) {
+  grid-column: 1 / -1;
+}
+.tc-field input[type="datetime-local"] {
+  min-width: 0;
+  width: 100%;
+}
+.tc-zone-note {
+  margin-top: -6px;
+}
 .tc-field {
   display: grid;
   gap: 4px;
@@ -795,9 +807,11 @@
   overflow-x: auto;
   min-height: 480px;
 }
+/* 52px of hours plus seven 72px days: at 1280px with the sidebar open the grid column is about
+   620px wide, and the old 640px minimum pushed Saturday behind a sideways scroll. */
 .tc-timed {
   --tc-slot: 44px;
-  min-width: 640px;
+  min-width: 556px;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
@@ -815,7 +829,21 @@
   grid-template-columns: 52px repeat(var(--tc-cols, 7), minmax(0, 1fr));
 }
 .tc-timed-corner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 6px 6px 0;
   border-bottom: 1px solid var(--line);
+}
+.tc-timed-zone {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.tc-timed-head > button {
+  min-width: 0;
+  overflow: hidden;
 }
 .tc-timed-head > button {
   display: flex;

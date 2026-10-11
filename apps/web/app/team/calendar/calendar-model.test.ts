@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  addedNote,
   dayNum,
   fmtRange,
   fmtTime,
@@ -8,6 +9,20 @@ import {
   withOrg,
   type RecurringEvent,
 } from "./calendar-model";
+
+describe("the note after adding an event (A5-06)", () => {
+  const now = new Date(2026, 9, 11, 12, 0).getTime();
+  it("never claims a past event is under Coming up", () => {
+    const past = addedNote("Kickoff", new Date(2026, 9, 1, 18, 0).toISOString(), now);
+    expect(past).toMatch(/^Added Kickoff · /);
+    expect(past).toMatch(/That date has passed/);
+  });
+  it("names a future event and its time without a false claim", () => {
+    const next = addedNote("Build night", new Date(2026, 9, 13, 18, 0).toISOString(), now);
+    expect(next).toMatch(/^Added Build night · .+\.$/);
+    expect(next).not.toMatch(/Coming up/);
+  });
+});
 
 describe("calendar-model", () => {
   it("keeps orgId on paths that already have a query", () => {
