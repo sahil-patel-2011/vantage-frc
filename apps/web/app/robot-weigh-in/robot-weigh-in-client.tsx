@@ -162,7 +162,7 @@ function WeighShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#robot-weigh-in-form">
+            <Button as="a" variant="secondary" href="#robot-weigh-in-form">
               Log a weigh-in
             </Button>
           ) : null}

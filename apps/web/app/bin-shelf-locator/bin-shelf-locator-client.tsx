@@ -150,7 +150,7 @@ function LocatorShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#bin-shelf-locations">Map the first location</Button>
+            <Button as="a" variant="secondary" href="#bin-shelf-locations">Map the first location</Button>
           ) : null}
         </EmptyState>
       )}

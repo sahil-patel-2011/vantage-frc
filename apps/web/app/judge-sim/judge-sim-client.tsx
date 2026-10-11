@@ -435,7 +435,7 @@ export default function JudgeSimClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#judge-sim-evidence">
+          <Button as="a" variant="secondary" href="#judge-sim-evidence">
             Log evidence
           </Button>
         </EmptyState>

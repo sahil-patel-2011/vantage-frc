@@ -161,7 +161,7 @@ function RetroShell({
             </Button>
           ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#retro-new-session">Start a session</Button>
+          <Button as="a" variant="secondary" href="#retro-new-session">Start a session</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <RetroNextActionsPanel actions={actions} /> : null}
@@ -442,7 +442,7 @@ export default function RetroClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href="#retro-new-session">
+          <Button as="a" variant="secondary" href="#retro-new-session">
             Start a session
           </Button>
         </EmptyState>

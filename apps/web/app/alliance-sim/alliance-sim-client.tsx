@@ -253,7 +253,7 @@ export default function AllianceSimClient() {
                   title="Add alliance robots to this scenario"
                   description="Declare each robot's capable physical roles and strength to see role assignment and conflicts. Win odds stay blank until real coverage exists."
                 >
-                  <Button as="a" variant="primary" href="#alliance-sim-add-robot">
+                  <Button as="a" variant="secondary" href="#alliance-sim-add-robot">
                     Add a robot
                   </Button>
                 </EmptyState>

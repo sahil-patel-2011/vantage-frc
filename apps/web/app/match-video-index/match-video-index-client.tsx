@@ -144,7 +144,7 @@ function IndexShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#match-video-index-add">Add a match video</Button>
+            <Button as="a" variant="secondary" href="#match-video-index-add">Add a match video</Button>
           ) : null}
         </EmptyState>
       )}

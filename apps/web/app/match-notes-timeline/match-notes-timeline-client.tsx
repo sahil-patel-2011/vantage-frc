@@ -131,7 +131,7 @@ function MatchNotesShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#match-notes-timeline-log">Log a note</Button>
+          <Button as="a" variant="secondary" href="#match-notes-timeline-log">Log a note</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <MatchNotesNextActionsPanel actions={actions} /> : null}
@@ -342,7 +342,7 @@ export default function MatchNotesTimelineClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#match-notes-timeline-log">
+          <Button as="a" variant="secondary" href="#match-notes-timeline-log">
             Log a note
           </Button>
         </EmptyState>

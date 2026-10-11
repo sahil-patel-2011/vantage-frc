@@ -447,7 +447,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#control-map-form">
+          <Button as="a" variant="secondary" href="#control-map-form">
             Add first binding
           </Button>
         </EmptyState>

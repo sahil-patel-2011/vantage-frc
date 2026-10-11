@@ -157,7 +157,7 @@ function TimerShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#field-reset-new-session">
+            <Button as="a" variant="secondary" href="#field-reset-new-session">
               Create a practice session
             </Button>
           ) : null}

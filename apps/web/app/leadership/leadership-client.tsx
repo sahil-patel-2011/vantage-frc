@@ -480,7 +480,7 @@ function RoleBoard({
         title="Add your first leadership role"
         description="Officer positions, subsystem leads, mentors — track who holds each role and who's next."
       >
-        <Button as="a" variant="primary" href="#add-role">
+        <Button as="a" variant="secondary" href="#add-role">
           Add a role
         </Button>
       </EmptyState>

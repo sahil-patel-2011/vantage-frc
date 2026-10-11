@@ -826,7 +826,7 @@ function IterationHistory({
         title="Log your first gain set and test result"
         description="Each iteration you log sharpens the next-gain suggestion above."
       >
-        <Button as="a" variant="primary" href="#tuning-autopilot-log-iteration">
+        <Button as="a" variant="secondary" href="#tuning-autopilot-log-iteration">
           Log iteration
         </Button>
       </EmptyState>

@@ -461,7 +461,7 @@ function SessionDetail({
           }
         >
           {canManage ? (
-            <Button as="a" variant="primary" href="#att-add-attendee">
+            <Button as="a" variant="secondary" href="#att-add-attendee">
               Add an attendee
             </Button>
           ) : (
@@ -940,7 +940,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
                 />
               ) : (
                 <EmptyState soft title="Pick a session" description="Choose a roll call from the session list to mark who showed up.">
-                  <Button as="a" variant="primary" href="#att-session-list">
+                  <Button as="a" variant="secondary" href="#att-session-list">
                     View sessions
                   </Button>
                 </EmptyState>
@@ -955,7 +955,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
                   title="Board is empty"
                   description="No marks yet — the board stays empty until someone is added to an event."
                 >
-                  <Button as="a" variant="primary" href="#att-session-list">
+                  <Button as="a" variant="secondary" href="#att-session-list">
                     Pick a session
                   </Button>
                 </EmptyState>

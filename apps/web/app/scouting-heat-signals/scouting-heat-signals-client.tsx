@@ -164,7 +164,7 @@ function HeatShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#scouting-heat-log">Log a heat signal</Button>
+            <Button as="a" variant="secondary" href="#scouting-heat-log">Log a heat signal</Button>
           ) : null}
         </EmptyState>
       )}

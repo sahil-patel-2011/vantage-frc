@@ -194,7 +194,7 @@ function ScoutDataImpactShell({
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#log-alliance-pick">Log an alliance pick</Button>
+          <Button as="a" variant="secondary" href="#log-alliance-pick">Log an alliance pick</Button>
         ) : null}
       </EmptyState>
       {shell === "empty" || shell === "setup" ? logPick : null}

@@ -169,7 +169,7 @@ function DeployShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#code-deploy-log-form">Log the first deploy</Button>
+            <Button as="a" variant="secondary" href="#code-deploy-log-form">Log the first deploy</Button>
           ) : null}
         </EmptyState>
       )}
@@ -452,7 +452,7 @@ function RecentDeploys({
         title="Log your first code deploy"
         description="Record the firmware version, commit, and match tied to each deploy so you can trace robot behavior back to code."
       >
-        <Button as="a" variant="primary" href="#code-deploy-log-form">
+        <Button as="a" variant="secondary" href="#code-deploy-log-form">
           Log deploy
         </Button>
       </EmptyState>

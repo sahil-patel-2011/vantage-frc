@@ -453,7 +453,7 @@ export default function DecisionsClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#decision-log-form">
+          <Button as="a" variant="secondary" href="#decision-log-form">
             Record first decision
           </Button>
         </EmptyState>

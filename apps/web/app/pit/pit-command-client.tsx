@@ -266,7 +266,7 @@ function PitShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#pit-actions">Log first evidence</Button>
+          <Button as="a" variant="secondary" href="#pit-actions">Log first evidence</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <PitNextActionsPanel actions={actions} /> : null}
@@ -529,7 +529,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
             title={shellCopy.title}
             description={shellCopy.description}
           >
-            <Button as="a" variant="primary" href="#pit-actions">
+            <Button as="a" variant="secondary" href="#pit-actions">
               Log first evidence
             </Button>
           </EmptyState>

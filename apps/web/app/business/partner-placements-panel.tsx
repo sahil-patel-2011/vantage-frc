@@ -394,7 +394,7 @@ export function PartnerPlacementsPanel({
           title="No placement packages yet"
           description="Add a priced package with surfaces below. Totals only reflect packages you configure for this team."
         >
-          <Button as="a" variant="primary" href="#pp-add-package">
+          <Button as="a" variant="secondary" href="#pp-add-package">
             Add a package
           </Button>
         </EmptyState>

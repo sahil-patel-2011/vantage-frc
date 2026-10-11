@@ -171,7 +171,7 @@ export function BatteriesForms({
             <h3>Log an event</h3>
             {view.packs.length === 0 ? (
               <EmptyState soft title="Add a pack first" description="Events attach to a labeled pack on this team.">
-                <Button as="a" variant="primary" href="#batt-add-pack">
+                <Button as="a" variant="secondary" href="#batt-add-pack">
                   Add a battery
                 </Button>
               </EmptyState>

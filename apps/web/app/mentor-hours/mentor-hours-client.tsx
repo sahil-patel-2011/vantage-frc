@@ -346,7 +346,7 @@ export default function MentorHoursClient() {
             title={view.message}
             description="Adult volunteer time is a separate ledger from student shop hours. Totals stay empty until a mentor or parent logs minutes here — student clock-ins never fill this in."
           >
-            <Button as="a" variant="primary" href="#mentor-hours-log">
+            <Button as="a" variant="secondary" href="#mentor-hours-log">
               Log hours
             </Button>
           </EmptyState>

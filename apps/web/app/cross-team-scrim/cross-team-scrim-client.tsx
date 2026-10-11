@@ -173,7 +173,7 @@ function ScrimShell({
             </Button>
           ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#cross-team-scrim-propose">Propose a scrim</Button>
+          <Button as="a" variant="secondary" href="#cross-team-scrim-propose">Propose a scrim</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <ScrimNextActionsPanel actions={actions} /> : null}
@@ -431,7 +431,7 @@ export default function CrossTeamScrimClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href="#cross-team-scrim-propose">
+          <Button as="a" variant="secondary" href="#cross-team-scrim-propose">
             Propose a scrim
           </Button>
         </EmptyState>

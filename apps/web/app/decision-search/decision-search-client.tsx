@@ -454,7 +454,7 @@ export default function DecisionSearchClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#decision-search-index">
+          <Button as="a" variant="secondary" href="#decision-search-index">
             Index first record
           </Button>
         </EmptyState>

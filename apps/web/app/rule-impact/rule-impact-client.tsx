@@ -174,7 +174,7 @@ function RuleImpactShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#rule-impact-log-change">Log a rule change</Button>
+          <Button as="a" variant="secondary" href="#rule-impact-log-change">Log a rule change</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <RuleImpactNextActionsPanel actions={actions} /> : null}
@@ -426,7 +426,7 @@ export default function RuleImpactClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#rule-impact-log-change">
+          <Button as="a" variant="secondary" href="#rule-impact-log-change">
             Log a rule change
           </Button>
         </EmptyState>

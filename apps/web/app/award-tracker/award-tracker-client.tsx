@@ -458,7 +458,7 @@ export default function AwardTrackerClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#award-tracker-create">
+          <Button as="a" variant="secondary" href="#award-tracker-create">
             Track a submission
           </Button>
         </EmptyState>

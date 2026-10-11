@@ -145,7 +145,7 @@ function CounterShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#counter-book-generate">Generate a report</Button>
+          <Button as="a" variant="secondary" href="#counter-book-generate">Generate a report</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <CounterNextActionsPanel actions={actions} /> : null}
@@ -358,7 +358,7 @@ export default function CounterBookClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#counter-book-generate">
+          <Button as="a" variant="secondary" href="#counter-book-generate">
             Generate a report
           </Button>
         </EmptyState>

@@ -393,7 +393,7 @@ export default function WiringDiagnoserClient() {
             title="Run your first wiring check"
             description="Enter the channels from your wiring diagram (expected) and what you see on the board (observed) to get a grounded fault diagnosis."
           >
-            <Button as="a" variant="primary" href="#wiring-diagnoser-form">
+            <Button as="a" variant="secondary" href="#wiring-diagnoser-form">
               Run a wiring check
             </Button>
           </EmptyState>

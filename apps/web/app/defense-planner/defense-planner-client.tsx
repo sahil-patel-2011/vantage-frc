@@ -173,7 +173,7 @@ function DefenseShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#defense-planner-matchup">
+            <Button as="a" variant="secondary" href="#defense-planner-matchup">
               Log a matchup
             </Button>
           ) : null}

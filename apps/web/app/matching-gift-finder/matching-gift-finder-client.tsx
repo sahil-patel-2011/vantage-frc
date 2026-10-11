@@ -150,7 +150,7 @@ function GiftShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#matching-gift-contacts">Add a household contact</Button>
+            <Button as="a" variant="secondary" href="#matching-gift-contacts">Add a household contact</Button>
           ) : null}
         </EmptyState>
       )}
@@ -552,7 +552,7 @@ function ContactsPanel({
       <h2 style={{ marginTop: 0 }}>Household contacts</h2>
       {view.contacts.length === 0 ? (
         <EmptyState soft title="No contacts recorded yet">
-          <Button as="a" variant="primary" href="#matching-gift-contacts">
+          <Button as="a" variant="secondary" href="#matching-gift-contacts">
             Add a household contact
           </Button>
         </EmptyState>
@@ -614,7 +614,7 @@ function ProgramsPanel({
       </p>
       {view.programs.length === 0 ? (
         <EmptyState soft title="No programs tracked yet">
-          <Button as="a" variant="primary" href="#matching-gift-programs">
+          <Button as="a" variant="secondary" href="#matching-gift-programs">
             Add a program
           </Button>
         </EmptyState>

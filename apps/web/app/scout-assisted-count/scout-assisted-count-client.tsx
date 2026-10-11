@@ -148,7 +148,7 @@ function CountShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#scout-assisted-count-start">Start a session</Button>
+            <Button as="a" variant="secondary" href="#scout-assisted-count-start">Start a session</Button>
           ) : null}
         </EmptyState>
       )}

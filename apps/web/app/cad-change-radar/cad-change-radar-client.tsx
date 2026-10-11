@@ -151,7 +151,7 @@ function RadarShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#cad-change-radar-snapshot">Record the first snapshot</Button>
+            <Button as="a" variant="secondary" href="#cad-change-radar-snapshot">Record the first snapshot</Button>
           ) : null}
         </EmptyState>
       )}
@@ -468,7 +468,7 @@ function DiffsPanel({
         title="Record a revision snapshot below to start diffing releases"
         description="Diffs appear once a second snapshot of the same part is recorded — empty means nothing tracked yet."
       >
-        <Button as="a" variant="primary" href="#cad-change-radar-snapshot">
+        <Button as="a" variant="secondary" href="#cad-change-radar-snapshot">
           Record snapshot
         </Button>
       </EmptyState>

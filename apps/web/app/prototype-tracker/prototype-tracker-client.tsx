@@ -431,7 +431,7 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
             title="Log your first prototype test"
             description="Outcomes, metrics, and decision confidence stay blank until you record a real test — nothing is pre-filled."
           >
-            <Button as="a" variant="primary" href="#ptk-log-test">
+            <Button as="a" variant="secondary" href="#ptk-log-test">
               Log a test
             </Button>
           </EmptyState>
@@ -557,7 +557,7 @@ function DecisionsList({
         title="No decision records drafted yet"
         description="Draft a decision from any logged test above. Recommendation and confidence come only from that test’s recorded outcome and metric."
       >
-        <Button as="a" variant="primary" href="#ptk-log-test">
+        <Button as="a" variant="secondary" href="#ptk-log-test">
           Log a test
         </Button>
       </EmptyState>

@@ -174,7 +174,7 @@ function BusFactorShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#bus-factor-log">Log a workload entry</Button>
+            <Button as="a" variant="secondary" href="#bus-factor-log">Log a workload entry</Button>
           ) : null}
         </EmptyState>
       )}
@@ -428,7 +428,7 @@ export default function BusFactorClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href="#bus-factor-log">
+          <Button as="a" variant="secondary" href="#bus-factor-log">
             Log a workload entry
           </Button>
         </EmptyState>

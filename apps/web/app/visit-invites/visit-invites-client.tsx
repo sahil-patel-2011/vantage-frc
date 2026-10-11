@@ -546,7 +546,7 @@ export default function VisitInvitesClient() {
             {/* One action out of an empty state. The related links live in the
                 header for every state of this page. */}
             {canManage ? (
-              <Button as="a" variant="primary" href="#visit-create">
+              <Button as="a" variant="secondary" href="#visit-create">
                 Jump to create
               </Button>
             ) : null}

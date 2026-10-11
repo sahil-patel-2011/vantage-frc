@@ -158,7 +158,7 @@ function CollabShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#picklist-collab-create">
+            <Button as="a" variant="secondary" href="#picklist-collab-create">
               Create pick list
             </Button>
           ) : null}

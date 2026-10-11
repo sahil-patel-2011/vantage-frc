@@ -483,7 +483,7 @@ function ItemTable({ view, busy, mutate }: { view: LiveView; busy: boolean; muta
         title="Stock your shelf"
         description="Add the consumables you burn through so the team knows when to reorder."
       >
-        <Button as="a" variant="primary" href="#spares-add">
+        <Button as="a" variant="secondary" href="#spares-add">
           Add a consumable
         </Button>
       </EmptyState>

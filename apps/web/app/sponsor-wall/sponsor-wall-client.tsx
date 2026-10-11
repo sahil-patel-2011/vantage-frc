@@ -402,7 +402,7 @@ export default function SponsorWallClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#sponsor-wall-add">
+          <Button as="a" variant="secondary" href="#sponsor-wall-add">
             Add a sponsor
           </Button>
         </EmptyState>

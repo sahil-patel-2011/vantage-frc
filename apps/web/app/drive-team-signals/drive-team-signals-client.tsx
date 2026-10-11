@@ -155,7 +155,7 @@ function SignalsShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#drive-team-signals-new">
+            <Button as="a" variant="secondary" href="#drive-team-signals-new">
               Create a signal sheet
             </Button>
           ) : null}

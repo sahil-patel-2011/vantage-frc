@@ -160,7 +160,7 @@ function MediaKitShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#media-kit-profile">Save team profile</Button>
+          <Button as="a" variant="secondary" href="#media-kit-profile">Save team profile</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <MediaKitNextActionsPanel actions={actions} /> : null}
@@ -425,7 +425,7 @@ export default function MediaKitClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#media-kit-profile">
+          <Button as="a" variant="secondary" href="#media-kit-profile">
             Save team profile
           </Button>
         </EmptyState>

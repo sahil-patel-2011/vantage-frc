@@ -172,7 +172,7 @@ function TriageShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#pit-repair-triage-log">Log a pit failure</Button>
+            <Button as="a" variant="secondary" href="#pit-repair-triage-log">Log a pit failure</Button>
           ) : null}
         </EmptyState>
       )}

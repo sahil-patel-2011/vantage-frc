@@ -460,7 +460,7 @@ export default function PartRequestsClient() {
           ) : null}
           {view.queue.length === 0 ? (
             <EmptyState compact title="Nothing waiting" description="No part requests need a decision right now.">
-              <Button as="a" variant="primary" href="#pr-ask">
+              <Button as="a" variant="secondary" href="#pr-ask">
                 Ask for a part
               </Button>
             </EmptyState>
@@ -517,7 +517,7 @@ export default function PartRequestsClient() {
         <h2>Your requests</h2>
         {view.mine.length === 0 ? (
           <EmptyState compact title="You have not asked for anything yet" description="Requests you send appear here with their decision.">
-            <Button as="a" variant="primary" href="#pr-ask">
+            <Button as="a" variant="secondary" href="#pr-ask">
               Ask for a part
             </Button>
           </EmptyState>

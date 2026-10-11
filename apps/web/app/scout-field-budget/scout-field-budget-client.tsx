@@ -152,7 +152,7 @@ function BudgetShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href="#scout-field-budget-lint">Check a form</Button>
+            <Button as="a" variant="secondary" href="#scout-field-budget-lint">Check a form</Button>
           ) : null}
         </EmptyState>
       )}

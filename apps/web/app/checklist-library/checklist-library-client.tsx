@@ -421,7 +421,7 @@ function TemplatesPanel({
         title="Create your first checklist template"
         description="Pit setup, transport load-out, and competition load-in checklists all start as a named template with a list of items."
       >
-        <Button as="a" variant="primary" href="#checklist-library-new">
+        <Button as="a" variant="secondary" href="#checklist-library-new">
           Create template
         </Button>
       </EmptyState>

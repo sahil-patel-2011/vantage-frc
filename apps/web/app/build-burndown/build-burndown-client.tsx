@@ -161,7 +161,7 @@ function BurndownShell({
             </Button>
           ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#build-burndown-plan">Set kickoff plan</Button>
+          <Button as="a" variant="secondary" href="#build-burndown-plan">Set kickoff plan</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <BurndownNextActionsPanel actions={actions} /> : null}

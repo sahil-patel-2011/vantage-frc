@@ -586,7 +586,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
               }
             >
               {canManage ? (
-                <Button as="a" variant="primary" href="#awards-start">
+                <Button as="a" variant="secondary" href="#awards-start">
                   Start a catalog award
                 </Button>
               ) : null}
