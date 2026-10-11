@@ -3,6 +3,8 @@
 import { type Me, type MembershipOption } from "./app-shell-model";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { Icon } from "./icon";
+import { FeedbackBugIcon } from "./feedback-bug-icon";
+import { openFeedback } from "../lib/feedback/feedback-open";
 
 export function AppShellAccountMenu({
   open,
@@ -64,6 +66,18 @@ export function AppShellAccountMenu({
         <a className="soft-account-destination" role="menuitem" href={withOrgHref("/help", orgId)} onClick={onClose}>
           <Icon name="chat" /><span>Help and support</span>
         </a>
+        {/* The same dialog as the round bug button in the corner (components/feedback-button.tsx). */}
+        <button
+          className="soft-account-destination"
+          role="menuitem"
+          type="button"
+          onClick={() => {
+            onClose();
+            openFeedback();
+          }}
+        >
+          <FeedbackBugIcon size={18} /><span>Send feedback</span>
+        </button>
         {me.platformAdmin ? (
           <a role="menuitem" href="/admin" onClick={onClose}>
             Platform admin

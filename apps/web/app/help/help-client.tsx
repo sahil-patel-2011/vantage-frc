@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PageHeader, ToolStrip, Button } from "../../components/ui";
+import { openFeedback } from "../../lib/feedback/feedback-open";
 import {
   HELP_ARTICLES,
   filterHelpArticles,
@@ -85,7 +86,15 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
         <nav className="product-hub-related" aria-label="Related account tools">
           <a href="/whats-new">What’s new</a>
           <a href="/support">Support tickets</a>
-          <a href="/report-bug">Report a bug</a>
+          {/* Opens the same dialog as the round bug button; /report-bug is the page it falls back to. */}
+          <a
+            href="/report-bug"
+            onClick={(event) => {
+              if (openFeedback()) event.preventDefault();
+            }}
+          >
+            Send feedback
+          </a>
           {!hasGuide ? (
             <a href="/docs?view=sections">App manual</a>
           ) : null}
