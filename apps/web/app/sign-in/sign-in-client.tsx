@@ -378,7 +378,9 @@ export default function SignInClient({
   /** A session that still owes a second factor goes straight to the code step. */
   useEffect(() => {
     if (probe.state !== "needs_verification") return;
-    if (busy !== "idle" || flow.step !== "identity" || authRequestRef.current || leavingRef.current) return;
+    // A first-factor code step kept from before a reload (pending-code.ts) does not stand in the
+    // way: a session that owes its second factor goes there.
+    if (busy !== "idle" || flow.channel === "email-2fa" || authRequestRef.current || leavingRef.current) return;
     if (requestedInitialCode.current) return;
     requestedInitialCode.current = true;
     dispatch({ type: "second_factor_required", emailHint: probe.emailHint || null });
