@@ -392,10 +392,9 @@ export async function computeScoutingCoverageView(
 
 // ------------------------------------------------------------------ writes
 //
-// scout_assignments (migration 0003) grants vantage_app SELECT/INSERT/UPDATE only — there is no
-// DELETE grant, and an append-only migration is not warranted just to unassign, so "swap" moves
-// an existing row to a different member instead of deleting it. Assign is idempotent through the
-// table's own UNIQUE (org_id, user_id, match_key, team_key).
+// "swap" moves an existing row to a different member; "unassign" deletes one (vantage_app has
+// DELETE on scout_assignments since 0722, and RLS still limits it to scouting leads). Assign is
+// idempotent through the table's own UNIQUE (org_id, user_id, match_key, team_key).
 
 export type AssignCoverageInput = {
   orgId: string;
@@ -450,6 +449,24 @@ export async function swapCoverageSlot(
     [input.orgId, input.matchKey, input.teamKey, input.fromUserId, input.toUserId],
   );
   return { moved: (result.rowCount ?? 0) > 0 };
+}
+
+/**
+ * Take one scout off one robot. Scoped to the exact (org, event, match, team, member) row, so a
+ * second device that already removed it gets "nothing removed" rather than removing another.
+ * The scout's reports for that robot, if any, are not touched.
+ */
+export async function unassignCoverageSlot(
+  client: PoolClient,
+  input: { orgId: string; eventKey: string; matchKey: string; teamKey: string; userId: string },
+): Promise<{ removed: boolean }> {
+  const result = await client.query(
+    `DELETE FROM scout_assignments
+      WHERE org_id = $1::uuid AND event_key = $2::text AND match_key = $3::text
+        AND team_key = $4::text AND user_id = $5::uuid`,
+    [input.orgId, input.eventKey, input.matchKey, input.teamKey, input.userId],
+  );
+  return { removed: (result.rowCount ?? 0) > 0 };
 }
 
 export type AutoAssignPlanSlot = {

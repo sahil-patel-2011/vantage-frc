@@ -19,7 +19,7 @@ const view = z.discriminatedUnion("status", [
     schemaRoles: z.object({ status: z.string(), warnings: z.array(z.object({ id: z.string(), severity: z.enum(["blocking", "warning"]), message: z.string() })) }).passthrough(),
   }).passthrough(),
 ]);
-const result = z.object({ action: z.enum(["assign", "swap", "assign-range", "auto-assign"]), assigned: count, unchanged: count, refused: strings });
+const result = z.object({ action: z.enum(["assign", "swap", "assign-range", "auto-assign", "unassign"]), assigned: count, unchanged: count, refused: strings, removed: count.optional() });
 export function isCoverageView(value: unknown, scope: { orgId: string; eventKey?: string; qualsOnly: boolean }): value is ScoutingCoverageView {
   const parsed = view.safeParse(value);
   if (!parsed.success || parsed.data.orgId !== scope.orgId) return false;

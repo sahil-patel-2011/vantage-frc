@@ -19,6 +19,8 @@
 // Pure. The loader in assignment-conflicts-load.ts builds the context from the
 // database in one query per source.
 
+import { labelForMatchKey } from "./next-match";
+
 export type ConflictMatch = {
   matchKey: string;
   teamKeys: readonly string[];
@@ -129,10 +131,13 @@ export function labelFromMatchKey(matchKey: string): string {
   return `${prefix}${first}-${second}`;
 }
 
-/** One sentence a coordinator can act on. */
+/**
+ * One sentence a coordinator can act on: the scout by name, and the match the way every
+ * scouting screen names it ("Qual 33", not "Q33").
+ */
 export function describeAssignmentConflict(conflict: AssignmentConflict, name?: string | null): string {
   const who = name?.trim() || "That scout";
-  const label = labelFromMatchKey(conflict.matchKey);
+  const label = labelForMatchKey(conflict.matchKey) ?? labelFromMatchKey(conflict.matchKey);
   if (conflict.kind === "drive_team") {
     return `${who} is on drive team for ${label} — our robot is on the field, so they cannot scout it.`;
   }

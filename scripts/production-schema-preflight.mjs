@@ -18,6 +18,8 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0718_service_notice_recipients.sql",
   // Guided-track lead sign-offs: /api/guided and /api/guided/team read guided_signoffs.
   "0719_guided_signoffs.sql",
+  // Un-assign on the Assignments board: /api/scouting/coverage deletes scout_assignments rows.
+  "0722_scout_assignment_unassign.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */

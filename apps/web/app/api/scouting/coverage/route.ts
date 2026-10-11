@@ -3,7 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { applyAutoAssignments, assignCoverageSlot, computeScoutingCoverageView, planAutoAssignments, swapCoverageSlot } from "../../../../lib/scouting/coverage";
+import { applyAutoAssignments, assignCoverageSlot, computeScoutingCoverageView, planAutoAssignments, swapCoverageSlot, unassignCoverageSlot } from "../../../../lib/scouting/coverage";
 import { expandAssignmentRange, parseMatchKey } from "../../../../lib/scouting/assignment-range";
 import { coverageEventKey, coverageMutationRequest, type AssignmentResult } from "../../../../lib/scouting/coverage-request";
 import { lockAssignmentEvent } from "../../../../lib/scouting/assignment-write";
@@ -76,6 +76,8 @@ export async function POST(request: Request) {
       if (preview.status !== "live" || preview.orgId !== orgId || preview.eventKey !== eventKey) throw new RequestSecurityError(409, "The event changed. Refresh before assigning scouts.");
       let conflicts = await loadAssignmentConflictContext(client, { orgId, eventKey });
       const result: AssignmentResult = { action: body.action, assigned: 0, unchanged: 0, refused: [] };
+      // Conflict sentences name the scout ("Riley Scout is already scouting 1678 in Qual 33").
+      const nameOf = (userId: string) => preview.scouts.find((scout) => scout.userId === userId)?.name ?? null;
       const requireMember = async (userId: string) => {
         const member = await client.query("SELECT 1 FROM memberships WHERE org_id=$1::uuid AND user_id=$2::uuid", [orgId, userId]);
         if (!member.rowCount) throw new RequestSecurityError(409, "That scout is no longer on this team. Choose a current member.");
@@ -95,10 +97,15 @@ export async function POST(request: Request) {
         await requireMember(body.toUserId);
         if (body.fromUserId === body.toUserId) throw new RequestSecurityError(400, "Choose a different scout to reassign this robot.");
         const conflict = assignmentConflict(conflicts, { userId: body.toUserId, matchKey: body.matchKey, teamKey: body.teamKey });
-        if (conflict) throw new RequestSecurityError(409, describeAssignmentConflict(conflict));
+        if (conflict) throw new RequestSecurityError(409, describeAssignmentConflict(conflict, nameOf(conflict.userId)));
         const moved = await swapCoverageSlot(client, { orgId, matchKey: body.matchKey, teamKey: body.teamKey, fromUserId: body.fromUserId, toUserId: body.toUserId });
         if (!moved.moved) throw new RequestSecurityError(409, "This assignment was already changed. Refresh before reassigning it.");
         result.assigned = 1;
+      } else if (body.action === "unassign") {
+        requireSlot(body.matchKey, body.teamKey);
+        const taken = await unassignCoverageSlot(client, { orgId, eventKey, matchKey: body.matchKey, teamKey: body.teamKey, userId: body.userId });
+        if (!taken.removed) throw new RequestSecurityError(409, "That scout is no longer on this robot. Refresh to see who is on it now.");
+        result.removed = 1;
       } else {
         const userId = body.userId ?? session.user.id;
         await requireMember(userId);
@@ -113,8 +120,8 @@ export async function POST(request: Request) {
           const candidate = { userId, ...slot };
           const conflict = assignmentConflict(conflicts, candidate);
           if (conflict) {
-            if (body.action === "assign") throw new RequestSecurityError(409, describeAssignmentConflict(conflict));
-            result.refused.push(describeAssignmentConflict(conflict));
+            if (body.action === "assign") throw new RequestSecurityError(409, describeAssignmentConflict(conflict, nameOf(conflict.userId)));
+            result.refused.push(describeAssignmentConflict(conflict, nameOf(conflict.userId)));
             continue;
           }
           const written = await assignCoverageSlot(client, { orgId, eventKey, ...candidate });
