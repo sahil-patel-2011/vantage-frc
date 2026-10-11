@@ -7,6 +7,8 @@
  * dialogs show, so the dialog and the policy say the same thing. Pure: no database, no React.
  */
 
+import { ROLE_LABELS, roleLabel } from "@vantage/core/role-words";
+
 export type LifecycleAction = "rename" | "leave" | "delete_team" | "delete_account";
 
 export type LifecycleRefusal =
@@ -48,7 +50,7 @@ export function refusalMessage(reason: LifecycleRefusal, action: LifecycleAction
     case "not_owner":
       return "Only the team owner can delete the team.";
     case "not_allowed":
-      return "Only the team owner or a team admin can rename the team.";
+      return "Only the team owner or a mentor or coach can rename the team.";
     case "confirm_mismatch":
       return action === "delete_account"
         ? "That isn't your email address. Type it exactly to confirm."
@@ -104,18 +106,13 @@ export function normalizeTeamName(value: unknown): string | null {
 }
 
 /**
- * The access level under each team in the chooser and on Your teams, in Team admin's words.
- * (One app-wide role vocabulary is being settled separately; switch to it when it lands.)
+ * The access level under each team in the chooser and on Your teams, in the one app-wide role
+ * vocabulary (@vantage/core/role-words: Owner, Mentor or coach, Student, Parent or guest).
  */
-export const ACCESS_ROLE_LABEL: Record<string, string> = {
-  owner: "Owner",
-  admin: "Team admin",
-  scout: "Team member",
-  viewer: "View only",
-};
+export const ACCESS_ROLE_LABEL: Record<string, string> = { ...ROLE_LABELS };
 
 export function accessRoleLabel(role: string | null | undefined): string {
-  return (role && ACCESS_ROLE_LABEL[role]) || "Team member";
+  return roleLabel(role);
 }
 
 /** What someone types to delete a team: its number, or its name for a team without one. */

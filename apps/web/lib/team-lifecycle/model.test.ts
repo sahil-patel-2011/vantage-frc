@@ -8,7 +8,18 @@ import {
   sessionIsFresh,
   teamConfirmPhrase,
   teamDisplayName,
+  accessRoleLabel,
 } from "./model";
+
+describe("team chooser access labels (QA A2-13)", () => {
+  it("use the one app-wide role vocabulary", () => {
+    expect(accessRoleLabel("owner")).toBe("Owner");
+    expect(accessRoleLabel("admin")).toBe("Mentor or coach");
+    expect(accessRoleLabel("scout")).toBe("Student");
+    expect(accessRoleLabel("viewer")).toBe("Parent or guest");
+    expect(accessRoleLabel(null)).toBe("Member");
+  });
+});
 
 describe("team lifecycle refusals", () => {
   it("reads the reason the 0720 functions raise, and nothing else", () => {

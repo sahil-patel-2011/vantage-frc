@@ -391,3 +391,6 @@ export * from "./legal";
 /* The one switch that opens the doors — see public-signup.ts. */
 export * from "./public-signup";
 export * from "./team-handover";
+export * from "./role-words";
+export * from "./membership-notices";
+export * from "./invite-policy";

@@ -78,8 +78,15 @@ describe("View only migrations (0715)", () => {
     }
   });
 
-  it("raises exactly the sentence the API answers with", () => {
-    expect(sql).toContain(`RAISE EXCEPTION '${VIEW_ONLY_MESSAGE}'`);
+  it("raises exactly the sentence the API answers with, from the newest definition", () => {
+    // 0721 reworded the sentence into the role words; whichever migration defines
+    // refuse_view_only_write() last is what the database raises.
+    const latest = migrationFiles()
+      .filter((name) => read(name).includes("CREATE OR REPLACE FUNCTION refuse_view_only_write(target_org_id uuid)"))
+      .at(-1)!;
+    const definition = read(latest);
+    expect(definition).toContain(`RAISE EXCEPTION '${VIEW_ONLY_MESSAGE.replace(/'/g, "''")}'`);
+    expect(definition).toContain("ERRCODE = 'insufficient_privilege', DETAIL = 'vantage:view_only'");
     expect(sql).toContain("ERRCODE = 'insufficient_privilege', DETAIL = 'vantage:view_only'");
   });
 

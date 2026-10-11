@@ -1,0 +1,19 @@
+/* "You were removed from Team 9301" on the no-team screen (QA A3-15): a calm warning, not the
+   green "saved" note the rest of the panel uses. */
+.onboarding-removed-note {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  color: var(--ink);
+}
+.onboarding-removed-note strong {
+  font-size: 15px;
+}
+.onboarding-removed-note span {
+  font-size: 14px;
+  line-height: 1.45;
+}

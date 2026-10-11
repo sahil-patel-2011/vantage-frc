@@ -54,8 +54,9 @@ describe("View only refusals", () => {
     expect(error.status).toBe(403);
     expect(error.reason).toBe("view_only");
     expect(error.cause).toBe(OWN_REFUSAL);
+    // In the role words people see everywhere else (0721), never "Team member access".
     expect(VIEW_ONLY_MESSAGE).toBe(
-      "View only — you can look but not change this. Ask a team owner or admin for Team member access.",
+      "View only — you can look but not change this. Ask the team owner or a mentor or coach for Student access.",
     );
   });
 });

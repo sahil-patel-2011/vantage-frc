@@ -1,0 +1,137 @@
+/* Team admin additions from QA report 3: invite lifetime, the join code's state and the
+   access its joiners get, People search, and "ask the owner to invite someone". Kept apart
+   from team-admin.css so the shared file stays as it was. */
+
+/* Email · Team access · Link works for · Send */
+.team-invite-fields.has-lifetime {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+@media (max-width: 720px) {
+  .team-invite-fields.has-lifetime {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* People: search and role filter once the list is long. */
+.team-admin-people-find {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: end;
+  margin: 0 0 12px;
+}
+.team-admin-people-find label {
+  display: grid;
+  gap: 4px;
+  flex: 1 1 200px;
+  margin: 0;
+}
+.team-admin-people-find input,
+.team-admin-people-find select {
+  min-height: 44px;
+  font-size: 16px;
+}
+.team-admin-people-find p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* The join code: a plain section that says whether it is on, never a closed disclosure. */
+.team-code-panel h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+.team-code-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.team-code-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.team-code-state.is-on {
+  border-color: var(--warning);
+  color: var(--ink);
+  background: var(--warning-soft);
+}
+.team-code-role {
+  border: 0;
+  padding: 0;
+  margin: 12px 0;
+  display: grid;
+  gap: 8px;
+}
+.team-code-role legend {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.team-code-role label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 44px;
+}
+.team-code-role input {
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+}
+.team-code-role small {
+  display: block;
+}
+.team-code-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* Ask the owner to invite someone (students, parents: anyone who can't invite). */
+.team-suggest {
+  margin: 16px 0 0;
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  text-align: left;
+}
+.team-suggest h2 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+.team-suggest form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.team-suggest label {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.team-suggest input,
+.team-suggest select,
+.team-suggest textarea {
+  min-height: 44px;
+  font-size: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+}
+.team-suggest-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

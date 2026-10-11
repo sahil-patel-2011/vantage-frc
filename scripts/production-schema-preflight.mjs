@@ -21,6 +21,10 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // Team lifecycle: /api/organizations/lifecycle and /api/account/delete call leave_team(),
   // delete_team(), team_has_live_subscription() and delete_my_account().
   "0720_team_lifecycle.sql",
+  // Invites and roles: /api/teams/join calls team_code_join_retry_at(), invite acceptance calls
+  // my_invite_join_context(), /api/invites/preview calls peek_replaced_invite(), suggestions call
+  // suggest_team_invite(), and Team admin reads team_join_codes.join_role.
+  "0721_invites_and_roles.sql",
   // Un-assign on the Assignments board: /api/scouting/coverage deletes scout_assignments rows.
   "0722_scout_assignment_unassign.sql",
   // Operations trust: /api/hours reads hour_logs.entry_source and correction columns; the

@@ -13,7 +13,7 @@ import {
   type GoalsView,
 } from "../../../lib/goals/compute-goals";
 import type { GoalCategory, GoalPriority, MetricType } from "../../../lib/goals/types";
-import { publicErrorMessage } from "../../../lib/security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
 
 export type { GoalsView };
 
@@ -158,6 +158,10 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    // A parent or guest's refused write is a 403 with reason "view_only", like tasks and todos
+    // (it was a 400 here; QA A3-18).
+    const viewOnly = viewOnlyResponse(error);
+    if (viewOnly) return viewOnly;
     const message = publicErrorMessage(error, "Season goals request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(

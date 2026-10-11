@@ -15,6 +15,8 @@ import {
   shouldDeliverOutboundEmail,
 } from "./access-policy";
 import { gmailSmtpFrom, sendGmailSmtp } from "./gmail-smtp";
+import { inviteLifetimeWords } from "./invite-policy";
+import { roleHint, roleLabel } from "./role-words";
 
 export type OtpEmail = {
   email: string;
@@ -27,6 +29,8 @@ export type InviteEmail = {
   role: string;
   token: string;
   expiresAt: Date;
+  /** Who sent it ("Quinn Owner"), when known: a parent should not have to guess. */
+  inviterName?: string | null;
 };
 export type SecurityNotice = { email:string; subject:string; message:string };
 /** `html` is optional; providers must always deliver the plain-text body. */
@@ -79,6 +83,36 @@ async function assertResendAccepted(response: Response) {
   throw new Error(`Email provider returned ${response.status}${hint}`);
 }
 
+/**
+ * The invite email, the same for every provider. It said "as scout" (the raw role) and
+ * "expires Sat, 12 Oct 2026 19:48:00 GMT"; it now names the access in the app's words, says
+ * what that access can do and who invited them, and how long the link works.
+ */
+export function inviteEmailContent(message: InviteEmail, now = Date.now()): { subject: string; text: string } {
+  const acceptUrl = inviteAcceptUrl(message.token);
+  const access = roleLabel(message.role);
+  const hint = roleHint(message.role);
+  const inviter = message.inviterName?.trim();
+  const hoursLeft = Math.max(1, Math.round((message.expiresAt.getTime() - now) / 3_600_000));
+  const until = message.expiresAt.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+    timeZoneName: "short",
+  });
+  const opening = `${inviter ? `${inviter} invited you` : "You were invited"} to join ${message.organization} on Vantage as ${access}.`;
+  return {
+    subject: `Join ${message.organization} on Vantage`,
+    text:
+      `${opening}${hint ? ` ${access} access: ${hint}` : ""}\n\n` +
+      `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
+      `This link works for ${inviteLifetimeWords(hoursLeft)} (until ${until}). If it stops working, ask whoever invited you to send a new one.\n` +
+      "If you were not expecting this, you can ignore it.",
+  };
+}
+
 export class ResendEmailProvider implements EmailProvider {
   readonly name = "resend";
   constructor(
@@ -105,17 +139,8 @@ export class ResendEmailProvider implements EmailProvider {
     });
   }
   async sendInvite(message: InviteEmail) {
-    const acceptUrl = inviteAcceptUrl(message.token);
-    const role = message.role.trim() || "member";
-    await this.postEmail({
-      from: this.from,
-      to: [message.email],
-      subject: `Join ${message.organization} on Vantage`,
-      text:
-        `You were invited to join ${message.organization} on Vantage as ${role}.\n\n` +
-        `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
-        `This invite expires ${message.expiresAt.toUTCString()}. If you were not expecting this, you can ignore it.`,
-    });
+    const { subject, text } = inviteEmailContent(message);
+    await this.postEmail({ from: this.from, to: [message.email], subject, text });
   }
   async sendSecurityNotice(message: SecurityNotice) {
     await this.postEmail({
@@ -182,15 +207,8 @@ export class GmailSmtpEmailProvider implements EmailProvider {
     );
   }
   async sendInvite(message: InviteEmail) {
-    const acceptUrl = inviteAcceptUrl(message.token);
-    const role = message.role.trim() || "member";
-    await this.send(
-      message.email,
-      `Join ${message.organization} on Vantage`,
-      `You were invited to join ${message.organization} on Vantage as ${role}.\n\n` +
-        `Sign in with ${message.email}, then open this link to accept:\n${acceptUrl}\n\n` +
-        `This invite expires ${message.expiresAt.toUTCString()}. If you were not expecting this, you can ignore it.`,
-    );
+    const { subject, text } = inviteEmailContent(message);
+    await this.send(message.email, subject, text);
   }
   async sendSecurityNotice(message: SecurityNotice) {
     await this.send(message.email, message.subject, message.message);

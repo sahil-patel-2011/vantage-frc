@@ -91,6 +91,10 @@ describe("teamAdminShellCopy", () => {
     }
     expectPlainCopy(teamAdminShellCopy("empty").description);
     expectPlainCopy(teamAdminShellCopy("setup").description);
+    // A failed people list says only that, and that inviting still works (QA A3-23).
+    expectPlainCopy(teamAdminShellCopy("error").description);
+    expect(teamAdminShellCopy("error").description).not.toMatch(/Discord|Connectors/);
+    expect(teamAdminShellCopy("error").description).toMatch(/inviting still works/);
     expect(teamAdminShellCopy("setup").description).not.toMatch(/pick a team/i);
     expect(teamAdminShellCopy("setup").badge).toBe("Needs setup");
     expect(teamAdminShellCopy("empty").title).toBe("Invite someone by exact email");

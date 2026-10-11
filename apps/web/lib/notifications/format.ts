@@ -1,3 +1,5 @@
+import { inviteSuggestionCopy } from "../team/invite-suggestion";
+
 /** Student-readable inbox category — never a raw `todo_assigned` slug. */
 export function notificationTypeLabel(type: string): string {
   switch (type) {
@@ -27,11 +29,20 @@ export function notificationTypeLabel(type: string): string {
     case "export_ready":
       return "Export";
     // Joins, and the team lifecycle (migration 0720, platform provisioning): someone left, the
-    // team was deleted, or a new team was set up with you as its owner.
+    // team was deleted, or a new team was set up with you as its owner. Then your own access
+    // (0721): changed, removed, handed the team; a teammate asking you to invite someone; and
+    // the asking-to-join lifecycle.
     case "invite_accepted":
     case "member_left":
     case "team_deleted":
     case "team_owner_added":
+    case "team_role_changed":
+    case "team_removed":
+    case "team_ownership_given":
+    case "invite_suggestion":
+    case "team_access_request":
+    case "team_access_approved":
+    case "team_access_declined":
       return "Team";
     case "guided_signoff_requested":
     case "guided_signoff_decided":
@@ -53,15 +64,28 @@ export function notificationTypeLabel(type: string): string {
   }
 }
 
+/** The asking-to-join row the database writes (0445, 0721) carries facts, not sentences. */
+function accessRequestTitle(payload: Record<string, unknown>): string {
+  const who = typeof payload.requesterName === "string" && payload.requesterName.trim() ? payload.requesterName.trim() : "Someone";
+  const team = typeof payload.teamNumber === "number" ? `Team ${payload.teamNumber}` : "your team";
+  return `${who} asked to join ${team}`;
+}
+
 export function notificationTitle(type: string, payload: Record<string, unknown> = {}) {
   const fromPayload = payload.title ?? payload.headline ?? payload.subject;
   if (typeof fromPayload === "string" && fromPayload.trim()) return fromPayload.trim();
+  if (type === "invite_suggestion") return inviteSuggestionCopy(payload, null).title;
+  if (type === "team_access_request") return accessRequestTitle(payload);
   return notificationTypeLabel(type);
 }
 
-export function notificationBody(payload: Record<string, unknown> = {}) {
+export function notificationBody(payload: Record<string, unknown> = {}, type?: string) {
   const fromPayload = payload.body ?? payload.message ?? payload.detail ?? payload.summary;
   if (typeof fromPayload === "string" && fromPayload.trim()) return fromPayload.trim();
+  if (type === "invite_suggestion") return inviteSuggestionCopy(payload, null).body;
+  if (type === "team_access_request") {
+    return "Review it in Team admin: let them in as a student, a parent or guest, or a mentor or coach, or decline.";
+  }
   return null;
 }
 
@@ -70,6 +94,12 @@ export function notificationHref(
   payload: Record<string, unknown> = {},
   orgId: string | null = null,
 ) {
+  // The asking-to-join inbox is on Team admin; rows written before 0721 linked to /team.
+  if (type === "team_access_request") {
+    const org = orgId ?? (typeof payload.orgId === "string" ? payload.orgId : null);
+    return org ? `/team/admin?orgId=${encodeURIComponent(org)}#team-access-title` : "/team/admin#team-access-title";
+  }
+  if (type === "invite_suggestion") return inviteSuggestionCopy(payload, orgId).href;
   const fromPayload = payload.href ?? payload.url ?? payload.link;
   if (typeof fromPayload === "string" && fromPayload.startsWith("/")) return fromPayload;
   const orgQuery = orgId ? `?orgId=${encodeURIComponent(orgId)}` : "";

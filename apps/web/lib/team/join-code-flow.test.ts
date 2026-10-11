@@ -1,6 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { teamJoinInvitePath } from "../onboarding/entry-journey";
-import { teamJoinNextStep } from "./join-code-flow";
+import { joinCodeDigits, joinCodeHint, joinFailureMessage, teamJoinNextStep, teamNumberDigits } from "./join-code-flow";
+
+describe("typing and pasting a join code (QA A3-13)", () => {
+  it("keeps all six digits from a pasted code with a space or dash", () => {
+    expect(joinCodeDigits("206 436")).toBe("206436");
+    expect(joinCodeDigits("206-436")).toBe("206436");
+    expect(joinCodeDigits("1234 56")).toBe("123456");
+    expect(joinCodeDigits("1234567")).toBe("123456");
+    expect(teamNumberDigits("Team 6925")).toBe("6925");
+  });
+
+  it("says what is missing instead of a silently grey Continue", () => {
+    expect(joinCodeHint("20643")).toBe("Enter all 6 numbers (1 more to go).");
+    expect(joinCodeHint("")).toBeNull();
+    expect(joinCodeHint("206436")).toBeNull();
+  });
+});
+
+describe("a refused code (QA A3-14)", () => {
+  const at = (date: Date) => `${date.getUTCHours()}:${String(date.getUTCMinutes()).padStart(2, "0")} UTC`;
+  it("names the time to come back when locked out", () => {
+    expect(
+      joinFailureMessage(429, { code: "join_code_locked", retryAt: "2026-10-11T20:42:00.000Z", error: "x" }, at),
+    ).toBe("Too many wrong tries. Try again at 20:42 UTC, or ask a team admin for an email invite.");
+  });
+
+  it("never says to wait on a first wrong code", () => {
+    const message = joinFailureMessage(400, { code: "join_code_wrong", error: "That team number and join code don't match." });
+    expect(message).toBe("That team number and join code don't match.");
+    expect(message).not.toMatch(/fifteen|wait/i);
+    expect(joinFailureMessage(500, null)).toBe("Could not join. Check the details and try again.");
+  });
+});
 
 const TOKEN = "a".repeat(43);
 const ORG = "22222222-2222-4222-8222-222222222222";

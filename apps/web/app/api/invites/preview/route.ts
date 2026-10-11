@@ -1,7 +1,7 @@
-import { auth, isInviteTokenShape, peekOrganizationInvite } from "@vantage/core";
+import { auth, isInviteTokenShape, peekOrganizationInvite, peekReplacedInvite } from "@vantage/core";
 import { requestPool, withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { inviteLegalRequired } from "../../../../lib/invite";
+import { inviteLegalRequired, inviteTeamName } from "../../../../lib/invite";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
@@ -17,6 +17,22 @@ async function peekInvite(token: string) {
   const client = await requestPool.connect();
   try {
     return await peekOrganizationInvite(client, token);
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * An unknown token may be one a resend replaced: name its team so the page can say "a newer
+ * invite was sent" (QA A3-09). Only the team's name and number, never the address.
+ */
+async function replacedInvite(token: string): Promise<{ team: string | null } | null> {
+  const client = await requestPool.connect();
+  try {
+    const row = await peekReplacedInvite(client, token);
+    return row ? { team: inviteTeamName({ orgName: row.orgName, teamNumber: row.teamNumber ?? Number.NaN }) } : null;
+  } catch {
+    return null;
   } finally {
     client.release();
   }
@@ -41,7 +57,7 @@ export async function GET(request: Request) {
       const preview = await peekInvite(token);
       if (!preview) {
         return privateJson(
-          { preview: null, signedIn: false, emailMismatch: false, legalRequired: true },
+          { preview: null, signedIn: false, emailMismatch: false, legalRequired: true, replaced: await replacedInvite(token) },
           { status: 404 },
         );
       }
@@ -89,6 +105,7 @@ export async function GET(request: Request) {
           emailMismatch: false,
           legalRequired: result.legalRequired,
           sessionEmail: session.user.email ?? null,
+          replaced: await replacedInvite(token),
         },
         { status: 404 },
       );

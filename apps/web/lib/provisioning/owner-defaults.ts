@@ -50,13 +50,14 @@ export async function ensureFirstOwnerTeamDefaults(
 
   // Codes are encrypted with the auth secret; without it the team still works by email invite,
   // and the owner can make a code from People once the server is configured.
+  // The code is made OFF: it works only once the owner turns it on in Team admin (QA A3-01).
   const joinCode = process.env.BETTER_AUTH_SECRET
     ? await withSavepoint(
         client,
         async () => {
           const existing = await client.query("SELECT 1 FROM team_join_codes WHERE org_id = $1::uuid", [orgId]);
           if (existing.rowCount) return false;
-          await setTeamJoinCode(client, orgId);
+          await setTeamJoinCode(client, orgId, undefined, { enable: false });
           return true;
         },
         false,

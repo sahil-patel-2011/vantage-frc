@@ -11,8 +11,10 @@
  * message and the predicates without opening a database connection.
  */
 
+// The role words (Owner, Mentor or coach, Student, Parent or guest) since 0721, which raises
+// this same sentence from refuse_view_only_write().
 export const VIEW_ONLY_MESSAGE =
-  "View only — you can look but not change this. Ask a team owner or admin for Team member access.";
+  "View only — you can look but not change this. Ask the team owner or a mentor or coach for Student access.";
 
 /** `reason` on the 403 body, and the DETAIL the 0715 policy function raises with. */
 export const VIEW_ONLY_REASON = "view_only";

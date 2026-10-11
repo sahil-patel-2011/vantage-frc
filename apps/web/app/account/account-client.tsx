@@ -373,25 +373,9 @@ export default function AccountClient() {
         </span>
         <h2 className="acct-name">{displayName.trim() || "Your account"}</h2>
         {account?.email ? <p className="acct-email">{account.email}</p> : null}
-        {/* Role and team only. The reference shows a join date here and the
-            session does not carry one; a plausible-looking invented date is
-            worse than a shorter row. */}
-        {org.role || org.orgName ? (
-          <dl className="acct-facts">
-            {org.role ? (
-              <div>
-                <dt>Role</dt>
-                <dd>{org.role}</dd>
-              </div>
-            ) : null}
-            {org.orgName ? (
-              <div>
-                <dt>Team</dt>
-                <dd>{org.orgName}</dd>
-              </div>
-            ) : null}
-          </dl>
-        ) : null}
+        {/* Who you are only. Your team and your access on it are on the "This team" card beside
+            this, once, in the role words (it said "Scout" here, "Student" in the menu and the
+            access again on the card: QA A6-09, handed over by F). */}
       </section>
 
 

@@ -1,8 +1,13 @@
 "use client";
 
+import { useMemo, useState } from "react";
+import { ROLE_LABELS, type AccessRole } from "@vantage/core/role-words";
 import { ActionMenu, Panel } from "../../components/ui";
-import { ROLE_LABELS } from "./admin/member-access-panel";
+import { filterMembers, memberAccessLine } from "../../lib/team/people-list";
 import type { Member } from "./team-admin-model";
+
+/** A long team gets a search box and a role filter; a short one doesn't need them. */
+const SEARCH_FROM = 9;
 
 /**
  * One people list. Each row: who they are, their role in plain words, and one
@@ -28,16 +33,55 @@ export function TeamAdminPeople({
   onRemove: (member: Member) => void;
   onStepDown: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const searchable = members.length >= SEARCH_FROM;
+  const shown = useMemo(
+    () => (searchable ? filterMembers(members, query, roleFilter) : members),
+    [members, query, roleFilter, searchable],
+  );
   return (
     <section className="team-admin-people" id="people" aria-labelledby="people-title">
       <h2 id="people-title">People ({members.length})</h2>
+      {searchable ? (
+        <div className="team-admin-people-find" role="search">
+          <label>
+            <span className="app-muted">Find someone</span>
+            <input
+              type="search"
+              value={query}
+              placeholder="Name or email"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          <label>
+            <span className="app-muted">Access</span>
+            <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
+              <option value="">Everyone</option>
+              {(Object.keys(ROLE_LABELS) as AccessRole[]).map((role) => (
+                <option key={role} value={role}>
+                  {ROLE_LABELS[role]}
+                </option>
+              ))}
+            </select>
+          </label>
+          {query || roleFilter ? (
+            <p className="app-muted" role="status">
+              Showing {shown.length} of {members.length}.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       <Panel className="team-admin-members invite-list" aria-label="Members list">
-        {members.map((member) => {
+        {shown.length === 0 ? <p className="app-muted">Nobody matches. Clear the search to see everyone.</p> : null}
+        {shown.map((member) => {
           const self = member.userId === actorUserId;
+          // An owner can change or remove another owner and anyone else; a mentor or coach can
+          // change and remove students and parents or guests.
           const canManage =
-            !self && member.role !== "owner" && (member.role !== "admin" || actorRole === "owner");
+            !self &&
+            (actorRole === "owner" || (member.role !== "owner" && member.role !== "admin"));
           const who = member.name || member.email;
-          const extras = (member.capabilities ?? []).length;
           return (
             <article key={member.userId}>
               <div>
@@ -46,10 +90,7 @@ export function TeamAdminPeople({
                   {self ? <span className="team-member-you"> (you)</span> : null}
                 </strong>
                 <small>
-                  {ROLE_LABELS[member.role] ?? member.role}
-                  {extras && (member.role === "scout" || member.role === "viewer")
-                    ? ` · ${extras} extra power${extras === 1 ? "" : "s"}`
-                    : ""}
+                  {memberAccessLine(member)}
                   {member.email && member.email !== who ? ` · ${member.email}` : ""}
                 </small>
               </div>
@@ -66,9 +107,9 @@ export function TeamAdminPeople({
                     overflowLabel="More"
                     triggerTestId={`member-more-${member.userId}`}
                     actions={[
-                      // An owner's access cannot be changed here; the button opened a dialog that
-                      // said only that, so owners have no Access button.
-                      ...(member.role === "owner"
+                      // Another owner's access is for an owner to change; everyone else sees no
+                      // Access button on an owner (it opened a dialog that said only that).
+                      ...(member.role === "owner" && actorRole !== "owner"
                         ? []
                         : [
                             {

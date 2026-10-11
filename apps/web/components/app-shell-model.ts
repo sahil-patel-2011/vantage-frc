@@ -1,3 +1,4 @@
+import { ROLE_LABELS } from "@vantage/core/role-words";
 import type { ClientHubAccessRow } from "../lib/nav/hub-access-filter";
 import {
   ORG_EXEMPT_HREFS,
@@ -70,13 +71,8 @@ export function formatMembershipLabel(row: MembershipOption): string {
   return teamLabelFor(teamNumber, row.orgName) ?? "Your team";
 }
 
-/** The words the invite and Team admin use for each access level ("scout" is the tier, "Student" the person). */
-const ROLE_WORDS: Record<string, string> = {
-  owner: "Owner",
-  admin: "Mentor or coach",
-  scout: "Student",
-  viewer: "Parent or guest",
-};
+/** The one table of role words (@vantage/core/role-words), shared with Team admin, invites and email. */
+const ROLE_WORDS: Record<string, string> = { ...ROLE_LABELS };
 
 /** The role in the words the invite and Team admin use ("scout" → "Student"). */
 export function roleWord(role?: string | null): string {

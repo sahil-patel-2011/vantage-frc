@@ -38,7 +38,9 @@ describe("access-request notification payloads", () => {
     });
     expect(created.type).toBe("team_access_request");
     expect(created.payload.title).toBe("Dana Scout asked to join Team 1234");
-    expect(created.payload.href).toBe("/team?orgId=org-1#team-access-title");
+    // The inbox is on Team admin (/team was the calendar hub, with no request on it).
+    expect(created.payload.href).toBe("/team/admin?orgId=org-1#team-access-title");
+    expect(created.payload.body).not.toMatch(/\bscout\b|view-only/);
     expect(created.payload.requestId).toBe("req-1");
   });
 
@@ -62,7 +64,9 @@ describe("access-request notification payloads", () => {
     });
     expect(approved.type).toBe("team_access_approved");
     expect(approved.payload.title).toBe("You're in — welcome to Team 1234");
-    expect(approved.payload.body).toContain("as scout");
+    // The app's words, never the stored role ("approved your request as scout").
+    expect(approved.payload.body).toContain("as a student");
+    expect(approved.payload.body).not.toMatch(/\bscout\b/);
     expect(approved.payload.href).toBe("/workspace?orgId=org-1");
   });
 

@@ -42,10 +42,12 @@ const url = process.env.TEST_DATABASE_ADMIN_URL;
       await client.query("RESET ROLE");
       expect((await client.query("SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2", [orgId, lead])).rows[0].role).toBe("owner");
       expect((await client.query("SELECT action FROM membership_audit_events WHERE org_id=$1 AND action='team.handed_over'", [orgId])).rows).toHaveLength(1);
+      // The new owner is told they were handed the team (QA A3-16).
+      expect((await client.query("SELECT payload->>'title' AS title FROM notifications WHERE user_id=$1 AND org_id=$2 AND type='team_ownership_given'", [lead, orgId])).rows[0]?.title).toMatch(/^You're now the owner of /);
       await client.query("INSERT INTO membership_capabilities(org_id,user_id,capability,granted_by) VALUES($1,$2,'manage_members',$3)", [orgId, starter, lead]);
       await client.query("SET LOCAL ROLE vantage_app");
       await client.query("SAVEPOINT delegated_invite");
-      await expect(createOrganizationInvite(service, starter, { orgId, email: "delegated-admin@example.test", role: "admin" })).rejects.toThrow(/Only an owner or admin/);
+      await expect(createOrganizationInvite(service, starter, { orgId, email: "delegated-admin@example.test", role: "admin" })).rejects.toThrow(/Only the team owner can invite a mentor or coach/);
       await client.query("ROLLBACK TO SAVEPOINT delegated_invite");
       await createOrganizationInvite(service, starter, { orgId, email: "delegated-member@example.test", role: "scout" });
       await client.query("SAVEPOINT refused");
@@ -54,7 +56,9 @@ const url = process.env.TEST_DATABASE_ADMIN_URL;
       // The new owner can promote the starter, who can later lower their own access.
       await client.query("SELECT set_config('app.user_id',$1,true)", [lead]);
       await setMemberRole(service, lead, { orgId, userId: starter, role: "admin" });
+      // The starter hears that their access changed, in role words.
       await client.query("SELECT set_config('app.user_id',$1,true)", [starter]);
+      expect((await client.query("SELECT payload->>'title' AS title FROM notifications WHERE user_id=$1 AND type='team_role_changed'", [starter])).rows[0]?.title).toMatch(/^You're now a mentor or coach on /);
       await setMemberRole(service, starter, { orgId, userId: starter, role: "viewer" });
       expect((await client.query("SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2", [orgId, starter])).rows[0].role).toBe("viewer");
       await client.query("RESET ROLE");

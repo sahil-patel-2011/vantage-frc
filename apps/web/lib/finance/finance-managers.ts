@@ -26,9 +26,9 @@ export const MANAGE_MONEY_LABEL = "Manage money";
 export const MANAGE_MONEY_DESCRIPTION =
   "Can manage money — budgets, spending, reimbursements, sponsors' contributions, fundraiser proceeds, grant allocations.";
 
-/** Shown in place of the toggle when the person is view-only. */
+/** Shown in place of the toggle when the person is view-only (Parent or guest, in the role words). */
 export const MANAGE_MONEY_VIEWER_REFUSAL =
-  "View-only people can't manage money. Change their access to Team member or Team admin first.";
+  "A parent or guest can't manage money. Change their access to Student or Mentor or coach first.";
 
 /** Thrown by assertFinanceManager; routes map it to HTTP 403. */
 export class FinanceAccessError extends Error {

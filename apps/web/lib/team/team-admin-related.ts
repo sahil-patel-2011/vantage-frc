@@ -179,9 +179,10 @@ export function teamAdminShellCopy(kind: TeamAdminShellKind): TeamAdminEmptyCopy
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load membership",
-        description:
-          "A network or server issue blocked the members list. Retry, or open Account / Discord / Connectors while it reloads.",
+        title: "Could not load the people list",
+        // Only the list failed: invites above still work (QA A3-23). The pointer to Account,
+        // Discord and Connectors had nothing to do with it.
+        description: "The people list didn't load, maybe a slow connection. Try again in a moment; inviting still works.",
       };
     case "setup":
       return {
