@@ -5,12 +5,35 @@ import type { FieldDefinition, ScoutSchema, SyncEntry } from "@vantage/scouting"
 import { isLayoutOnlyField, recordScoutAction, undoableScoutAction, undoScoutAction, validatePayload } from "@vantage/scouting";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { visibleFields } from "../../../lib/scouting/context-visible";
-import { answersToSave } from "../../../lib/scouting/entry-answers";
-import { clearScoutDraft, readScoutDraft, scoutDraftStorageKey, writeScoutDraft } from "../../../lib/scouting/draft-autosave";
+import { answersToSave, hasObservation } from "../../../lib/scouting/entry-answers";
+import {
+  clearScoutDraft,
+  formatDraftSavedAgo,
+  rememberActiveScoutDraft,
+  scoutDraftStorageKey,
+  writeScoutDraft,
+} from "../../../lib/scouting/draft-autosave";
 import { stepCounter } from "../../../lib/scouting/quick-scout";
+import type { RobotFormChoice } from "../../../lib/scouting/robot-form";
+import { MEDIA_ENABLED } from "../../../lib/media-availability";
 import { queueEntry, stableClientId } from "../../../lib/scout-offline";
-import { myReports, type Bootstrap } from "../../scouting/scouting-model";
+import type { Bootstrap } from "../../scouting/scouting-model";
 import { QuickTile } from "../match/quick-scout-tiles";
+
+export const PIT_EDITING_NOTE = "You visited this pit already. Saving replaces your earlier report.";
+export const PIT_NOTHING_ANSWERED_NOTE =
+  "Nothing answered yet, so this pit is not marked visited. Answer at least one question, or tap the team number at the top to skip this pit for now.";
+
+function openingNotes(form: Extract<RobotFormChoice, { kind: "ready" }>): string | null {
+  const notes = [
+    form.editing ? PIT_EDITING_NOTE : null,
+    form.note,
+    form.from === "draft" && !form.note && !form.editing && form.draftSavedAt
+      ? `Your answers for this pit are back. ${formatDraftSavedAgo(form.draftSavedAt)}.`
+      : null,
+  ].filter(Boolean);
+  return notes.length ? notes.join(" ") : null;
+}
 
 type Group = { id: string; title: string | null; fields: FieldDefinition[] };
 
@@ -38,22 +61,27 @@ const identity = () => ({ id: crypto.randomUUID(), at: new Date().toISOString() 
 export function QuickPitForm({
   orgId,
   data,
-  schema,
+  form,
   teamKey,
   nickname,
+  ownTeam = false,
   fullFormHref,
   onSaved,
   onChangeTeam,
 }: {
   orgId: string;
   data: Bootstrap;
-  schema: ScoutSchema;
+  /** The form this pit visit opens on and its starting answers (lib/scouting/robot-form.ts). */
+  form: Extract<RobotFormChoice, { kind: "ready" }>;
   teamKey: string;
   nickname: string | null;
+  /** Our own team's pit. */
+  ownTeam?: boolean;
   fullFormHref: string;
-  onSaved(teamKey: string): void;
+  onSaved(saved: { teamKey: string; clientId: string }): void;
   onChangeTeam(): void;
 }) {
+  const schema: ScoutSchema = form.schema;
   const draftKey = scoutDraftStorageKey({
     userId: data.scoutIdentity?.userId,
     orgId,
@@ -62,24 +90,16 @@ export function QuickPitForm({
     teamKey,
   });
   const fields = useMemo(() => schema.definition.fields.filter((field) => !isScoutIdentityField(field)), [schema]);
-  const [initial] = useState(() => {
-    const draft = readScoutDraft(draftKey);
-    if (draft && (!draft.schemaId || draft.schemaId === schema.id)) {
-      return { payload: draft.payload, clientId: draft.clientId ?? stableClientId(), editing: false };
-    }
-    const earlier = myReports(data).find((entry) => entry.type === "pit" && entry.teamKey === teamKey);
-    if (earlier?.payload && (!earlier.schemaId || earlier.schemaId === schema.id)) {
-      return { payload: earlier.payload, clientId: earlier.clientId ?? stableClientId(), editing: true };
-    }
-    return { payload: {}, clientId: stableClientId(), editing: false };
-  });
+  const [initial] = useState(() => ({
+    payload: form.payload ?? {},
+    clientId: form.clientId ?? stableClientId(),
+    editing: form.editing,
+  }));
   const [payload, setPayload] = useState<Record<string, unknown>>(initial.payload);
   const [dirty, setDirty] = useState(false);
   const [issues, setIssues] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(
-    initial.editing ? "You visited this pit already. Saving replaces your earlier report." : null,
-  );
+  const [message, setMessage] = useState<string | null>(() => openingNotes(form));
   const payloadRef = useRef(payload);
   payloadRef.current = payload;
   const savingRef = useRef(false);
@@ -89,9 +109,11 @@ export function QuickPitForm({
   const answered = visible.filter((field) => !isLayoutOnlyField(field) && payload[field.key] !== undefined && payload[field.key] !== "").length;
   const answerable = visible.filter((field) => !isLayoutOnlyField(field)).length;
 
+  // Kept on this phone after every answer, and remembered as the visit to pick up again
+  // (Scouting home's "Pick up where you left off", and the "Draft" mark on the pit list).
   useEffect(() => {
     if (!dirty || !draftKey) return;
-    writeScoutDraft(draftKey, {
+    const savedAt = writeScoutDraft(draftKey, {
       payload,
       confidence: "normal",
       matchKey: "",
@@ -101,7 +123,13 @@ export function QuickPitForm({
       schema,
       source: "manual",
     });
-  }, [dirty, draftKey, payload, teamKey, initial.clientId, schema]);
+    if (savedAt && data.scoutIdentity?.userId && data.eventKey) {
+      rememberActiveScoutDraft(
+        { userId: data.scoutIdentity.userId, orgId, eventKey: data.eventKey },
+        { key: draftKey, type: "pit", matchKey: "", teamKey },
+      );
+    }
+  }, [dirty, draftKey, payload, teamKey, initial.clientId, schema, data.scoutIdentity?.userId, data.eventKey, orgId]);
 
   const change = useCallback((key: string, compute: (current: unknown) => unknown) => {
     const before = payloadRef.current[key];
@@ -131,6 +159,12 @@ export function QuickPitForm({
   async function save() {
     if (savingRef.current || !data.eventKey) return;
     const answers = answersToSave(schema.definition.fields, payload);
+    // A blank visit marked the pit visited with nothing in it, and nobody walked back to it.
+    if (!hasObservation(answers)) {
+      setIssues([]);
+      setMessage(PIT_NOTHING_ANSWERED_NOTE);
+      return;
+    }
     const problems = validatePayload(schema.definition, answers);
     setIssues(problems);
     if (problems.length) {
@@ -162,7 +196,7 @@ export function QuickPitForm({
     clearScoutDraft(draftKey);
     savingRef.current = false;
     setSaving(false);
-    onSaved(teamKey);
+    onSaved({ teamKey, clientId: initial.clientId });
   }
 
   const invalid = new Set(fields.filter((field) => issues.some((issue) => issue.startsWith(field.label))).map((field) => field.key));
@@ -191,7 +225,17 @@ export function QuickPitForm({
         </p>
       ) : null}
 
-      <p className="qs-fineprint qs-pit-hint">Record what you can see and what the team tells you. Skip anything you did not get to ask.</p>
+      {ownTeam ? (
+        <p className="qs-message" role="note">
+          This is your own team’s pit. It does not count toward the event’s pits to visit.
+        </p>
+      ) : null}
+
+      <p className="qs-fineprint qs-pit-hint">
+        Record what you can see and what the team tells you. Skip anything you did not get to ask.
+        {/* Uploads are off for every team (lib/media-availability.ts); a scout will look for a camera. */}
+        {MEDIA_ENABLED ? null : " Photos can’t be added here, so describe the robot in words instead."}
+      </p>
 
       {groups.map((group) => (
         <section key={group.id} className="qs-section qs-pit-group" aria-label={group.title ?? "Pit questions"}>

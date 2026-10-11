@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../offline/feature-cache";
 import { listPendingEntries } from "../scout-offline";
-import { FEATURE_API_TIMEOUT_MS } from "../nav/resolve-org";
+import { SCOUTING_LOAD_TIMEOUT_MS, SCOUTING_RETRY_MS } from "./load-state";
 import type { LeadSummaryView } from "./lead-summary-load";
 import { useScoutQueueRefresh } from "./use-queue-refresh";
 
@@ -35,7 +35,9 @@ export function useScoutingSummary(orgId: string | null): ScoutingSummaryState {
       try {
         const response = await fetch(`/api/scouting/summary?orgId=${encodeURIComponent(orgId)}`, {
           cache: "no-store",
-          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+          // The summary counts every report at the event; a busy venue network gets the
+          // scouting wait, not the 8 seconds a small read gets.
+          signal: AbortSignal.timeout(SCOUTING_LOAD_TIMEOUT_MS),
         });
         if (!response.ok) throw new Error(String(response.status));
         const body = (await response.json()) as LeadSummaryView;
@@ -80,5 +82,23 @@ export function useScoutingSummary(orgId: string | null): ScoutingSummaryState {
         })()
       : view;
 
-  return { view: merged, status, cachedAt, reload: () => setAttempt((value) => value + 1) };
+  // Showing this phone's copy, or nothing, because the live numbers failed: try again every
+  // 30 seconds while the page is open (and the moment the phone is back online), instead of
+  // waiting for the scout to find a reload.
+  const stale = status === "failed" || cachedAt !== null;
+  useEffect(() => {
+    if (!orgId || !stale) return;
+    const again = () => setAttempt((value) => value + 1);
+    window.addEventListener("online", again);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "hidden" && navigator.onLine !== false) again();
+    }, SCOUTING_RETRY_MS);
+    return () => {
+      window.removeEventListener("online", again);
+      window.clearInterval(timer);
+    };
+  }, [orgId, stale]);
+
+  const reload = useCallback(() => setAttempt((value) => value + 1), []);
+  return { view: merged, status, cachedAt, reload };
 }

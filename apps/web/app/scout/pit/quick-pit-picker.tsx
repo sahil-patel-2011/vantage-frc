@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { askConfirm } from "../../../components/ui";
 import type { SummaryRosterTeam } from "../../../lib/scouting/lead-summary";
 
 type PitTeam = SummaryRosterTeam & { visited: boolean };
@@ -13,14 +14,23 @@ function teamName(team: { teamNumber: number; nickname: string | null }): string
 
 /**
  * Which pit next. The teams nobody has visited come first, in number order (the order pits
- * are usually laid out in); visited teams fold away. Typing filters both, and a number that
- * is not on the list can still be opened, for a team the event list has not caught up with.
+ * are usually laid out in); visited teams fold away. Typing filters both. A number that is not
+ * on the event's list can still be opened, for a team the list has not caught up with, but
+ * only after the list and with a confirm: one typo used to add a phantom team to the event.
  */
 export function QuickPitPicker({
   teams,
+  drafts = new Map(),
+  ownTeamNumber = null,
+  eventName = null,
   onPick,
 }: {
   teams: PitTeam[];
+  /** Pit visits started on this phone and not saved yet, by team key ("Draft · 6 of 8"). */
+  drafts?: ReadonlyMap<string, string>;
+  /** Our own team, which is not on the pit list. */
+  ownTeamNumber?: number | null;
+  eventName?: string | null;
   onPick(team: { teamKey: string; nickname: string | null }): void;
 }) {
   const [query, setQuery] = useState("");
@@ -35,19 +45,37 @@ export function QuickPitPicker({
   const todo = matches.filter((team) => !team.visited);
   const done = matches.filter((team) => team.visited);
   const typedNumber = /^\d{1,5}$/.test(needle) && !teams.some((team) => String(team.teamNumber) === needle) ? Number(needle) : null;
+  const typedOwnTeam = typedNumber !== null && typedNumber === ownTeamNumber;
 
-  const row = (team: PitTeam) => (
-    <li key={team.teamKey}>
-      <button type="button" className={`qs-row${team.visited ? " is-done" : ""}`} onClick={() => onPick({ teamKey: team.teamKey, nickname: team.nickname })}>
-        <span className={`qs-dot${team.visited ? " is-visited" : ""}`} aria-hidden="true" />
-        <span className="qs-row-main">
-          <strong>{team.teamNumber}</strong>
-          <span>{teamName(team) || (team.visited ? "Visited" : "Not visited yet")}</span>
-        </span>
-        <span className="qs-row-end">{team.visited ? "Visited" : <span aria-hidden="true" className="qs-chevron">›</span>}</span>
-      </button>
-    </li>
-  );
+  async function visitOffList(teamNumber: number) {
+    const ok = await askConfirm({
+      title: typedOwnTeam ? "Visit your own pit?" : `Team ${teamNumber} is not at ${eventName ?? "this event"}`,
+      body: typedOwnTeam
+        ? "Your drive team already knows this robot, and your own pit visit does not count toward the event’s pits."
+        : "Check the number on the pit sign. A visit to a team that is not on the event’s list is kept apart from the event’s pits.",
+      confirmLabel: typedOwnTeam ? "Visit anyway" : `Visit ${teamNumber} anyway`,
+      tone: "neutral",
+    });
+    if (ok) onPick({ teamKey: `frc${teamNumber}`, nickname: null });
+  }
+
+  const row = (team: PitTeam) => {
+    const draft = drafts.get(team.teamKey);
+    // The heading already says "Not visited yet"; the second line is for something new.
+    const detail = draft ?? (teamName(team) || null);
+    return (
+      <li key={team.teamKey}>
+        <button type="button" className={`qs-row${team.visited ? " is-done" : ""}${draft ? " has-draft" : ""}`} onClick={() => onPick({ teamKey: team.teamKey, nickname: team.nickname })}>
+          <span className={`qs-dot${team.visited ? " is-visited" : draft ? " is-draft" : ""}`} aria-hidden="true" />
+          <span className="qs-row-main">
+            <strong>{team.teamNumber}</strong>
+            {detail ? <span>{detail}</span> : null}
+          </span>
+          <span className="qs-row-end">{team.visited ? "Visited" : <span aria-hidden="true" className="qs-chevron">›</span>}</span>
+        </button>
+      </li>
+    );
+  };
 
   return (
     <div className="qs-picker">
@@ -61,14 +89,6 @@ export function QuickPitPicker({
           onChange={(event) => setQuery(event.target.value)}
         />
       </label>
-
-      {typedNumber ? (
-        <button type="button" className="qs-resume" onClick={() => onPick({ teamKey: `frc${typedNumber}`, nickname: null })}>
-          <span>Not on this event’s list</span>
-          <strong>Visit team {typedNumber}</strong>
-          <span aria-hidden="true" className="qs-chevron">›</span>
-        </button>
-      ) : null}
 
       {todo.length ? (
         <section className="qs-section" aria-labelledby="qs-pit-todo">
@@ -86,7 +106,24 @@ export function QuickPitPicker({
         </details>
       ) : null}
 
-      {!teams.length && !typedNumber ? (
+      {needle && !matches.length ? (
+        <p className="qs-message" role="status">
+          {typedOwnTeam
+            ? `${typedNumber} is your team. Your pit is not on the list to visit.`
+            : typedNumber !== null
+              ? `No team ${typedNumber} on this event’s list.`
+              : `No team at this event matches “${query.trim()}”. Team names may not be loaded yet, so try the number on the pit sign.`}
+        </p>
+      ) : null}
+
+      {/* Last and quiet, so the half-typed "25" on the way to "254" is never the biggest button. */}
+      {typedNumber !== null && needle.length >= (teams.length ? 2 : 1) ? (
+        <button type="button" className="qs-secondary qs-offlist" onClick={() => void visitOffList(typedNumber)}>
+          {typedOwnTeam ? "Visit your own pit anyway" : `Team ${typedNumber} is not on the list · visit anyway`}
+        </button>
+      ) : null}
+
+      {!teams.length && typedNumber === null ? (
         <p className="qs-fineprint">The event’s team list has not arrived yet. Type a team number above to visit its pit anyway.</p>
       ) : null}
     </div>

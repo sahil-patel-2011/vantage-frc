@@ -1,6 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { applyMultiCounterStep, multiCounterConfig, validatePayload, type FieldDefinition } from "@vantage/scouting";
-import { answersToSave } from "./entry-answers";
+import { answersToSave, hasObservation } from "./entry-answers";
+
+describe("hasObservation", () => {
+  it("is false for a report with nothing in it, or only the seat the schedule filled in", () => {
+    expect(hasObservation({})).toBe(false);
+    expect(hasObservation(null)).toBe(false);
+    expect(hasObservation({ alliance_station: "Red 1" })).toBe(false);
+    expect(hasObservation({ notes: "   ", drivetrain: "", tags: [], counts: {} })).toBe(false);
+    expect(hasObservation({ _observations: { version: 1, events: [] }, _match_capture: { bouts: [] } })).toBe(false);
+  });
+
+  it("counts a zero, a No, a choice and a timed action as something the scout saw", () => {
+    expect(hasObservation({ auto_points: 0 })).toBe(true);
+    expect(hasObservation({ climbed: false })).toBe(true);
+    expect(hasObservation({ drivetrain: "swerve" })).toBe(true);
+    expect(hasObservation({ _match_capture: { bouts: [{ id: "a", kind: "shooting", startMs: 0, endMs: 3000, count: null }] } })).toBe(true);
+    expect(hasObservation({ _match_capture: { bouts: [{ id: "a", kind: "shooting", startMs: 0, endMs: 3000, count: null, voided: true }] } })).toBe(false);
+  });
+});
 
 describe("observed scouting answers", () => {
   const count: FieldDefinition = { key: "fuel", label: "Fuel", type: "counter", required: true };

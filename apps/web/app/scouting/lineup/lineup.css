@@ -175,6 +175,7 @@
 .lineup-scouts{list-style:none;display:grid;gap:12px;padding:0;margin:0}
 .lineup-scouts li{display:grid;gap:8px;min-width:0}
 .lineup-scouts li>span{font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.lineup-unassign{justify-self:start;min-height:44px}
 .lineup-scout-link{display:flex;align-items:center;min-height:44px;color:var(--accent);font-weight:600}
 .lineup-notice{margin:0;padding:12px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink)}
 .lineup-workspace-views{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px}

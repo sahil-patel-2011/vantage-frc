@@ -333,7 +333,12 @@ export function ScoutingHome() {
             <header>
               <h2>Scouting numbers didn’t load</h2>
             </header>
-            <p className="scout-card-note">You can still scout; this summary comes back when the connection does.</p>
+            <p className="scout-card-note">
+              You can still scout. This summary tries again by itself every 30 seconds.{" "}
+              <button type="button" className="scout-card-link" onClick={summary.reload}>
+                Try now
+              </button>
+            </p>
             <div className="scout-home-actions">
               <Button as="a" variant="primary" href={pitPageHref()}>
                 Pit scouting

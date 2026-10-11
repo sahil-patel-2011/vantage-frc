@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { SyncEntry } from "@vantage/scouting";
 import {
   OTHER_ROBOT_REASON,
+  entryRefusal,
   isMissingReferenceError,
   isTransientDbError,
+  notInMatchReason,
   resolveSyncTarget,
 } from "./sync-guards";
+import { NOTHING_RECORDED_REASON } from "./entry-answers";
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const ME = "11111111-1111-4111-8111-111111111111";
@@ -134,5 +137,40 @@ describe("sync error kinds", () => {
   it("names a missing schedule row", () => {
     expect(isMissingReferenceError({ code: "23503" })).toBe(true);
     expect(isMissingReferenceError({ code: "23505" })).toBe(false);
+  });
+});
+
+describe("entryRefusal", () => {
+  const schedule = (compLevel: string, red: string[], blue: string[]) => ({
+    async query<T>(sql: string, params: unknown[] = []): Promise<{ rows: T[] }> {
+      if (!sql.includes("FROM matches_ref")) throw new Error(`unexpected query: ${sql}`);
+      return {
+        rows: (params[0] === "2026gacmp_qm33" || params[0] === "2026gacmp_sf1m1"
+          ? [{ compLevel, redAlliance: { teamKeys: red }, blueAlliance: { teamKeys: blue } }]
+          : []) as T[],
+      };
+    },
+  });
+  const qual33 = schedule("qm", ["frc1678", "frc148", "frc118"], ["frc2056", "frc67", "frc7457"]);
+
+  it("refuses a qualification robot that is not in that match", async () => {
+    // 254 is not in Qual 33: a mistyped match or team used to be filed and counted.
+    expect(await entryRefusal(qual33, entry({ teamKey: "frc254" }))).toBe(notInMatchReason("frc254", "2026gacmp_qm33"));
+    expect(notInMatchReason("frc254", "2026gacmp_qm33")).toMatch(/^Team 254 is not in Qual 33 on the event schedule/);
+    expect(await entryRefusal(qual33, entry({ teamKey: "frc1678" }))).toBeNull();
+  });
+
+  it("leaves playoffs, unpublished alliances and unknown matches to the other checks", async () => {
+    const playoff = schedule("sf", ["frc1", "frc2", "frc3"], ["frc4", "frc5", "frc6"]);
+    expect(await entryRefusal(playoff, entry({ matchKey: "2026gacmp_sf1m1", teamKey: "frc254" }))).toBeNull();
+    expect(await entryRefusal(schedule("qm", [], []), entry({ teamKey: "frc254" }))).toBeNull();
+    expect(await entryRefusal(qual33, entry({ matchKey: "2026gacmp_qm99", teamKey: "frc254" }))).toBeNull();
+  });
+
+  it("refuses a report with nothing recorded, pit or match", async () => {
+    const noQueries = { async query(): Promise<never> { throw new Error("no query expected"); } };
+    expect(await entryRefusal(noQueries, entry({ type: "pit", matchKey: undefined, payload: {} }))).toBe(NOTHING_RECORDED_REASON);
+    expect(await entryRefusal(noQueries, entry({ payload: { alliance_station: "red1" } }))).toBe(NOTHING_RECORDED_REASON);
+    expect(await entryRefusal(noQueries, entry({ type: "pit", matchKey: undefined, payload: { drivetrain: "swerve" } }))).toBeNull();
   });
 });

@@ -5,7 +5,7 @@ import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "..
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import type { ScoutingCoverageView } from "../../../lib/scouting/coverage";
 import { assignmentResult, isCoverageView } from "../../../lib/scouting/coverage-view-contract";
-import type { CoverageCommand } from "../../../lib/scouting/coverage-request";
+import { assignmentNotice, type CoverageCommand } from "../../../lib/scouting/coverage-request";
 
 export function useCoverageData(orgId: string, eventKey: string | undefined, qualsOnly: boolean, focusMatch: string) {
   const [view, setView] = useState<ScoutingCoverageView | null>(null);
@@ -125,7 +125,7 @@ export function useCoverageData(orgId: string, eventKey: string | undefined, qua
       setView(data);
       setFromCache(false);
       setCachedAt(null);
-      setNotice(`${result.assigned} ${body.action === "swap" ? "reassigned" : "new assignments saved"}${result.unchanged ? ` · ${result.unchanged} already assigned` : ""}${result.refused.length ? ` · ${result.refused.length} items need attention` : ""}.`);
+      setNotice(assignmentNotice(result));
       setError(result.refused.join(" "));
       void putFeatureSnapshot("lineup", orgId, data, cacheKey).catch(() => {});
     } catch {

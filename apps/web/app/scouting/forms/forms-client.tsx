@@ -29,7 +29,8 @@ import {
   type DraftQuestion,
 } from "../../../lib/scouting/form-builder";
 import { hubHref } from "../../../lib/nav/hubs";
-import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
+import { SCOUTING_LOAD_TIMEOUT_MS } from "../../../lib/scouting/load-state";
+import { PUBLISH_CHECK_TIMEOUT_MS, PUBLISH_TIMEOUT_MS, publishCheckMessage, publishOutcomeAfterTimeout, type PublishCheck } from "../../../lib/scouting/publish-confirm";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { FormBuilderShell } from "./forms-chrome";
 import { defaultQuestions, formStatusLine, initialFormType, type FormBuilderMode, type SchemasPayload } from "./forms-model";
@@ -287,7 +288,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
     try {
       const response = await fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}${requestedYear ? `&year=${requestedYear}` : ""}`, {
         cache: "no-store",
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        signal: AbortSignal.timeout(SCOUTING_LOAD_TIMEOUT_MS),
       });
       const body: unknown = await response.json().catch(() => null);
       if (generation !== loadGenerationRef.current) return;
@@ -482,18 +483,43 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
     publishingRef.current = true;
     setPublishing(true);
     const generation = loadGenerationRef.current;
+    const definition: SchemaDefinition = definitionFromDraft(title, questions);
+    const baseSchemaId = baseSchemaIdRef.current;
+    // The published version becomes the editor's baseline (from the answer, or from the
+    // read-back after an answer that never came).
+    const adopt = (published: { id: string; version: number; definition?: SchemaDefinition }) => {
+      // The acknowledged version becomes the local baseline immediately. A
+      // refresh failure must not turn a confirmed publish into another POST.
+      const schema: ScoutSchema = { id: published.id, version: published.version, orgId, year: year!, type, definition: published.definition ?? definition };
+      const nextPayload = payload ? { ...payload, schemas: [...payload.schemas.filter(entry => entry.type !== type), schema] } : null;
+      if (nextPayload) {
+        setPayload(nextPayload);
+        payloadRef.current = nextPayload;
+        void persistScoutFormsSnapshot(orgId, nextPayload);
+      }
+      // Assign the stored field keys to the editor before another rename can
+      // generate a different key and disconnect already-collected answers.
+      let cleanupFailed = false;
+      try {
+        if (writtenDraftRef.current) removeFormEditorDraft(window.localStorage, writtenDraftRef.current);
+        if (recoveredDraftRef.current) removeFormEditorDraft(window.localStorage, recoveredDraftRef.current);
+      } catch { cleanupFailed = true; }
+      loadSchemaIntoDraft(schema, type, year, false);
+      if (cleanupFailed) setDraftError("Publication succeeded, but the old device draft could not be removed.");
+      setPublished({ id: published.id, version: published.version });
+    };
     try {
-      const definition: SchemaDefinition = definitionFromDraft(title, questions);
       const response = await fetch("/api/scouting/schemas", {
         method: "POST",
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        // A write on venue Wi-Fi gets longer than a read (lib/scouting/publish-confirm.ts).
+        signal: AbortSignal.timeout(PUBLISH_TIMEOUT_MS),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           orgId,
           year,
           type,
           definition,
-          baseSchemaId: baseSchemaIdRef.current,
+          baseSchemaId,
           acknowledgeBudget: acknowledgeBudget || undefined,
         }),
       });
@@ -518,29 +544,31 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
       if (typeof body.id !== "string" || !body.id || !Number.isInteger(body.version) || Number(body.version) < 1) {
         throw new Error("Publication could not be confirmed");
       }
-      // The acknowledged version becomes the local baseline immediately. A
-      // refresh failure must not turn a confirmed publish into another POST.
-      const schema: ScoutSchema = { id: body.id, version: Number(body.version), orgId, year: year!, type, definition: body.definition ?? definition };
-      const nextPayload = payload ? { ...payload, schemas: [...payload.schemas.filter(entry => entry.type !== type), schema] } : null;
-      if (nextPayload) {
-        setPayload(nextPayload);
-        payloadRef.current = nextPayload;
-        void persistScoutFormsSnapshot(orgId, nextPayload);
-      }
-      // Assign the stored field keys to the editor before another rename can
-      // generate a different key and disconnect already-collected answers.
-      let cleanupFailed = false;
-      try {
-        if (writtenDraftRef.current) removeFormEditorDraft(window.localStorage, writtenDraftRef.current);
-        if (recoveredDraftRef.current) removeFormEditorDraft(window.localStorage, recoveredDraftRef.current);
-      } catch { cleanupFailed = true; }
-      loadSchemaIntoDraft(schema, type, year, false);
-      if (cleanupFailed) setDraftError("Publication succeeded, but the old device draft could not be removed.");
       setMessage("");
-      setPublished({ id: body.id, version: Number(body.version) });
+      adopt({ id: body.id, version: Number(body.version), definition: body.definition });
     } catch {
       if (currentOrgRef.current !== orgId || generation !== loadGenerationRef.current) return;
-      setMessage("Could not confirm publication. Check the published form in another tab before retrying; your draft is still here.");
+      // No answer (or an unreadable one): read the published form back and say what happened,
+      // instead of leaving the lead to guess and retry into a conflict.
+      setMessage("Checking whether the form was published…");
+      let check: PublishCheck | null = null;
+      try {
+        const response = await fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}${year ? `&year=${year}` : ""}`, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(PUBLISH_CHECK_TIMEOUT_MS),
+        });
+        const latestBody: unknown = response.ok ? await response.json() : null;
+        if (isSchemasPayload(latestBody)) {
+          const latest = latestBody.schemas.find((schema) => schema.type === type) ?? null;
+          check = publishOutcomeAfterTimeout({ baseSchemaId, sent: definition, latest });
+        }
+      } catch {
+        check = null;
+      }
+      if (currentOrgRef.current !== orgId || generation !== loadGenerationRef.current) return;
+      if (check?.kind === "published") adopt({ id: check.id, version: check.version, definition: check.definition });
+      if (check?.kind === "someone-else") setPublicationConflict(true);
+      setMessage(publishCheckMessage(check));
     } finally {
       publishingRef.current = false;
       setPublishing(false);

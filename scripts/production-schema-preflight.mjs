@@ -21,6 +21,8 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // Team lifecycle: /api/organizations/lifecycle and /api/account/delete call leave_team(),
   // delete_team(), team_has_live_subscription() and delete_my_account().
   "0720_team_lifecycle.sql",
+  // Un-assign on the Assignments board: /api/scouting/coverage deletes scout_assignments rows.
+  "0722_scout_assignment_unassign.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */

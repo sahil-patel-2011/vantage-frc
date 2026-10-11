@@ -15,6 +15,7 @@ import { StudioField, isStudioField } from "./studio-fields";
 import { ScoutChoice, ScoutChoiceRow, segmentedOptions } from "./scout-choice";
 import type { OfficialFlag } from "./scouting-model";
 import { isTapCounterField } from "../../lib/scouting/count-field";
+import { MEDIA_ENABLED } from "../../lib/media-availability";
 export { isTapCounterField } from "../../lib/scouting/count-field";
 
 /**
@@ -178,7 +179,7 @@ export function Field({
       return (
         <FormRow
           label={label}
-          hint={field.helpText ?? "Camera or gallery — stored only for this organization"}
+          hint={field.helpText ?? (MEDIA_ENABLED && onAttachRobotImage ? "Camera or gallery, kept only for your team" : undefined)}
         >
           <div className="scout-robot-images">
             {refs.length ? (
@@ -203,6 +204,13 @@ export function Field({
                 ))}
               </ul>
             ) : null}
+            {/* Uploads are off for every team (lib/media-availability.ts), and a screen with no
+                upload handler would drop the photo the moment it was chosen. Say so instead of
+                offering a camera that keeps nothing. Photos already on the report stay listed. */}
+            {!MEDIA_ENABLED || !onAttachRobotImage ? (
+              <small className="app-muted">Photos can’t be added here. Describe what you see in words instead.</small>
+            ) : (
+            <>
             <div className="scout-robot-image-actions">
               <label className="scout-media scout-robot-capture">
                 Camera
@@ -231,7 +239,9 @@ export function Field({
                 />
               </label>
             </div>
-            <small className="app-muted">Works offline — photos queue on this device until sync.</small>
+            <small className="app-muted">Photos are kept on this device until they send.</small>
+            </>
+            )}
           </div>
         </FormRow>
       );
