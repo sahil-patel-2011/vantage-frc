@@ -57,7 +57,8 @@ export default function AdminFeedbackClient() {
     if (nextKind !== "all") params.set("kind", nextKind);
     if (nextStatus !== "all") params.set("status", nextStatus);
     try {
-      const response = await fetch(`/api/admin/feedback${params.size ? `?${params}` : ""}`, { cache: "no-store" });
+      const query = params.toString();
+      const response = await fetch(`/api/admin/feedback${query ? `?${query}` : ""}`, { cache: "no-store" });
       const data = (await response.json().catch(() => ({}))) as {
         items?: FeedbackItem[];
         hasMore?: boolean;

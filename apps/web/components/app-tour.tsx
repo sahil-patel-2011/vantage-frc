@@ -92,6 +92,10 @@ function openDialogLabels(): (string | null)[] {
   return [...document.querySelectorAll('[role="dialog"]')]
     .filter((node): node is HTMLElement => {
       if (!(node instanceof HTMLElement)) return false;
+      // The navigation drawer is a dialog that is always in the page, parked off-screen and hidden
+      // while it is closed; a closed dialog is not one the person has open.
+      if (node.getAttribute("aria-hidden") === "true" || node.closest("[inert]")) return false;
+      if (getComputedStyle(node).visibility === "hidden") return false;
       const box = node.getBoundingClientRect();
       return box.width > 0 && box.height > 0;
     })
