@@ -17,7 +17,7 @@ import {
   EventDayShell,
   classifyEventDayShell,
 } from "./command-chrome";
-import { CommandEventPicker, type CustomEventSubmission } from "./command-event-picker";
+import { CommandEventPicker, type CustomEventSubmission, type EventListState } from "./command-event-picker";
 import {
   COMMAND_POLL_MS,
   commandHrefsFromSnap,
@@ -40,6 +40,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const [eventOpen, setEventOpen] = useState(false);
   const [eventQ, setEventQ] = useState("");
   const [events, setEvents] = useState<EventOption[]>([]);
+  const [eventsState, setEventsState] = useState<EventListState>("loading");
   const [eventBusy, setEventBusy] = useState(false);
   const [eventMessage, setEventMessage] = useState("");
   // Opened from Home's "Pick your event" step: the picker opens at once, and choosing an
@@ -183,10 +184,21 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       if (!orgId) return;
       const year = new Date().getFullYear();
       const params = new URLSearchParams({ orgId, year: String(year), q });
-      const response = await fetch(`/api/context/event?${params}`);
-      if (!response.ok) return;
-      const data = await response.json();
-      setEvents(data.events ?? []);
+      // "No events found" used to show while the list was still on its way, or after it failed,
+      // which sent a new team's mentor off to Team → Data for nothing (QA A2-05).
+      setEventsState("loading");
+      try {
+        const response = await fetch(`/api/context/event?${params}`);
+        if (!response.ok) {
+          setEventsState("failed");
+          return;
+        }
+        const data = await response.json();
+        setEvents(data.events ?? []);
+        setEventsState("ready");
+      } catch {
+        setEventsState("failed");
+      }
     },
     [orgId],
   );
@@ -258,9 +270,10 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       open={eventOpen}
       query={eventQ}
       events={events}
+      eventsState={eventsState}
+      onRetry={() => void loadEvents(eventQ)}
       busy={eventBusy}
       snap={snap}
-      teamDataHref={hrefs.teamData}
       onClose={() => setEventOpen(false)}
       onQuery={setEventQ}
       onSelect={(eventKey) => void setActiveEvent(eventKey)}

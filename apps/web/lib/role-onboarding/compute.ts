@@ -96,7 +96,7 @@ async function ensureTracks(
  * Which team-setup steps the team has really done, read from its own rows (RLS-scoped to
  * this team). A step done this way stays done even if nobody ticked it.
  */
-async function teamSetupDone(client: PoolClient, orgId: string): Promise<Set<string>> {
+export async function teamSetupDone(client: PoolClient, orgId: string): Promise<Set<string>> {
   const result = await client.query<{ invite: boolean; event: boolean; scouting: boolean; calendar: boolean }>(
     // Inviting is the owner's step: it is done once an invite goes out, not when someone
     // happens to accept it. Home used to keep saying "Invite your team" after two invites.
@@ -107,7 +107,13 @@ async function teamSetupDone(client: PoolClient, orgId: string): Promise<Set<str
                           AND role::text <> 'owner')) AS invite,
             EXISTS (SELECT 1 FROM org_active_context
                      WHERE org_id = $1::uuid AND active_event_key IS NOT NULL) AS event,
-            EXISTS (SELECT 1 FROM scout_schemas WHERE org_id = $1::uuid) AS scouting,
+            -- Every new team gets version-1 starter forms (provisioning/defaults.ts), so their mere
+            -- existence ticked "Set up your scouting form" before the owner touched it. Done means a
+            -- person published a form (version 2 and up), copied one in, or the team is scouting.
+            (EXISTS (SELECT 1 FROM scout_schemas WHERE org_id = $1::uuid
+                      AND (version > 1 OR cloned_from_schema_id IS NOT NULL))
+             OR EXISTS (SELECT 1 FROM match_scout_entries WHERE org_id = $1::uuid)
+             OR EXISTS (SELECT 1 FROM pit_scout_entries WHERE org_id = $1::uuid)) AS scouting,
             EXISTS (SELECT 1 FROM subteam_calendar_events WHERE org_id = $1::uuid) AS calendar`,
     [orgId],
   );

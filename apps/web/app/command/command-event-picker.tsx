@@ -131,13 +131,25 @@ function AddEventForm({
   );
 }
 
+/** Whether the event list is on its way, failed to arrive, or arrived (possibly empty). */
+export type EventListState = "loading" | "failed" | "ready";
+
+/** The line in the list when there is nothing to pick yet; never "none" while still loading. */
+export function emptyEventListCopy(state: EventListState, year: number, searching: boolean): string {
+  if (state === "loading") return "Loading this season's events…";
+  if (state === "failed") return "We couldn't load the event list.";
+  if (searching) return "No event matches that search. Try part of the name or the city, or add it below.";
+  return `No ${year} events are listed yet. The Blue Alliance posts the season's events around kickoff. Going to an offseason event or one that isn't listed? Add it below.`;
+}
+
 export function CommandEventPicker({
   open,
   query,
   events,
+  eventsState = "ready",
+  onRetry,
   busy,
   snap,
-  teamDataHref,
   year,
   onClose,
   onQuery,
@@ -149,9 +161,10 @@ export function CommandEventPicker({
   open: boolean;
   query: string;
   events: EventOption[];
+  eventsState?: EventListState;
+  onRetry?: () => void;
   busy: boolean;
   snap: CommandSnapshot | null;
-  teamDataHref: string;
   year: number;
   onClose: () => void;
   onQuery: (value: string) => void;
@@ -232,10 +245,16 @@ export function CommandEventPicker({
                   </li>
                 ))
               ) : (
-                <li className="edc-empty-events">
-                  No events found for this year.{" "}
-                  <a href={teamDataHref}>Load this season&rsquo;s events in Team → Data</a>, or add
-                  your own below.
+                <li className="edc-empty-events" role={eventsState === "loading" ? "status" : undefined} aria-busy={eventsState === "loading" || undefined}>
+                  {emptyEventListCopy(eventsState, year, query.trim().length > 0)}
+                  {eventsState === "failed" && onRetry ? (
+                    <>
+                      {" "}
+                      <button type="button" className="text-button" onClick={onRetry}>
+                        Try again
+                      </button>
+                    </>
+                  ) : null}
                 </li>
               )}
             </ul>
