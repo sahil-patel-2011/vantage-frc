@@ -3102,4 +3102,4 @@ details[open] > summary[data-disclosure]::before{transform:rotate(45deg)}
 
 /* A date or time box shows only its format ("mm/dd/yyyy"), so it carries a small visible name. */
 .inline-field-label{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--muted)}
-.inline-field-label > input{font-weight:400;color:var(--ink)}
+.inline-field-label > :is(input,select,textarea){font-weight:400;color:var(--ink);width:100%;box-sizing:border-box}
