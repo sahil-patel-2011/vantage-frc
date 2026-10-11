@@ -155,7 +155,7 @@ function TuningShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#tuning-autopilot-new-session">Start a session</Button>
+          <Button as="a" variant="secondary" href="#tuning-autopilot-new-session">Start a session</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <TuningNextActionsPanel actions={actions} /> : null}
@@ -420,7 +420,7 @@ export default function TuningAutopilotClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#tuning-autopilot-new-session">
+          <Button as="a" variant="secondary" href="#tuning-autopilot-new-session">
             Start a session
           </Button>
         </EmptyState>

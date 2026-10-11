@@ -446,7 +446,7 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
             ))}
           </select>
         </FormRow>
-        <Button as="a" variant="primary" href={exportHref}>
+        <Button as="a" variant="secondary" href={exportHref}>
           Download constants
         </Button>
         <p className="app-muted">

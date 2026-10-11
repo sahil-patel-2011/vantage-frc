@@ -148,7 +148,7 @@ function EpaShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#epa-trend-alerts-watch">Watch a team</Button>
+          <Button as="a" variant="secondary" href="#epa-trend-alerts-watch">Watch a team</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <EpaNextActionsPanel actions={actions} /> : null}
@@ -363,7 +363,7 @@ export default function EpaTrendAlertsClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#epa-trend-alerts-watch">
+          <Button as="a" variant="secondary" href="#epa-trend-alerts-watch">
             Watch a team
           </Button>
         </EmptyState>

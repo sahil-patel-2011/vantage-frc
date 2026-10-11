@@ -239,7 +239,7 @@ export function SponsorPipelinePanel({
         >
           {view.canManageFinance ? (
             <Button
-              variant="primary"
+              variant="secondary"
               type="button"
               onClick={() => {
                 const form = document.getElementById("biz-add-partner");
@@ -409,7 +409,7 @@ export function SponsorPipelinePanel({
             The research agent uses the team number, prior sponsor industries, and robotics/STEM fit. It stores the source and
             reasoning—never auto-contacts anyone.
           </p>
-          <Button variant="primary" type="button" disabled={busy} onClick={() => void research()}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => void research()}>
             {busy ? "Researching…" : "Research sponsor prospects"}
           </Button>
           <div className="biz-prospect-list">

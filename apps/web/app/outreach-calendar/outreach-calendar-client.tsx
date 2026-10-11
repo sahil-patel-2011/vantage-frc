@@ -188,7 +188,7 @@ function OutreachShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#outreach-calendar-schedule">Schedule an event</Button>
+          <Button as="a" variant="secondary" href="#outreach-calendar-schedule">Schedule an event</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <OutreachNextActionsPanel actions={actions} /> : null}
@@ -452,7 +452,7 @@ export default function OutreachCalendarClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#outreach-calendar-schedule">
+          <Button as="a" variant="secondary" href="#outreach-calendar-schedule">
             Schedule an event
           </Button>
         </EmptyState>

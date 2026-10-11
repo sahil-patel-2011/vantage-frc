@@ -311,7 +311,7 @@ function RosterPanel({
         style={{ display: "flex", gap: 8, marginTop: 12 }}
       >
         <input aria-label="Scout name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Scout name" />
-        <Button variant="primary" type="submit" disabled={busy || !name.trim()}>
+        <Button variant="secondary" type="submit" disabled={busy || !name.trim()}>
           Add scout
         </Button>
       </form>

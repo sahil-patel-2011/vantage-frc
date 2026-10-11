@@ -157,7 +157,7 @@ function WatchlistShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href="#opponent-watchlist-watch">Watch a team</Button>
+          <Button as="a" variant="secondary" href="#opponent-watchlist-watch">Watch a team</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <WatchlistNextActionsPanel actions={actions} /> : null}
@@ -374,7 +374,7 @@ export default function OpponentWatchlistClient() {
           title={shellCopy.title}
           description={shellCopy.description}
         >
-          <Button as="a" variant="primary" href="#opponent-watchlist-watch">
+          <Button as="a" variant="secondary" href="#opponent-watchlist-watch">
             Watch a team
           </Button>
         </EmptyState>

@@ -615,7 +615,7 @@ export default function PackingClient() {
               if (event.key === "Enter") createList();
             }}
           />
-          <Button variant="primary" type="button" disabled={busyKey === "create"} onClick={createList}>
+          <Button variant={lists.length === 0 ? "secondary" : "primary"} type="button" disabled={busyKey === "create"} onClick={createList}>
             New list
           </Button>
         </div>

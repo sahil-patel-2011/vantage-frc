@@ -181,6 +181,15 @@ function parenBlocks(src: string, marker: string): string[] {
 
 const clients = [...collectClients(APP_ROOT), ...HUB_EMPTY_FILES];
 
+/**
+ * A link that only scrolls to a form on the same page may stay secondary: that form's own
+ * submit is the page's one primary, so a primary jump link would make two.
+ */
+function jumpsToOnPageForm(tag: string, src: string): boolean {
+  const anchor = /href="#([\w-]+)"/.exec(tag)?.[1];
+  return Boolean(anchor && src.includes(`id="${anchor}"`));
+}
+
 describe("empty-state R4 (one primary on the empty card)", () => {
   it("finds product clients", () => {
     expect(clients.length).toBeGreaterThan(80);
@@ -198,7 +207,7 @@ describe("empty-state R4 (one primary on the empty card)", () => {
           continue;
         }
         const tag = tags[0] ?? "";
-        if (!isPrimaryTag(tag)) {
+        if (!isPrimaryTag(tag) && !jumpsToOnPageForm(tag, src)) {
           problems.push(`${file} empty card control is not primary: ${tag.slice(0, 120)}`);
         }
       }

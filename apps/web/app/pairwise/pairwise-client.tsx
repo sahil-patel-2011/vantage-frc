@@ -366,10 +366,10 @@ function LivePairwise({
             />
           </label>
           <div className="pairwise-bout-actions">
-            <Button variant="primary" type="button" disabled={busy} onClick={() => onCompare("left")}>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => onCompare("left")}>
               A looked better
             </Button>
-            <Button variant="primary" type="button" disabled={busy} onClick={() => onCompare("right")}>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => onCompare("right")}>
               B looked better
             </Button>
           </div>
