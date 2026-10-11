@@ -102,7 +102,8 @@ Raise `MINIMUM_SHELL_VERSION` in the release workflow only when that is really t
 
 ### What unsigned builds mean for this
 
-These are unsigned (`signAndEditExecutable: false`, no Authenticode cert), so the
+These are unsigned (no Authenticode cert; the .exe still gets the Vantage icon and product
+name), so the
 trust chain is **TLS to an allowlisted host plus the manifest's SHA-256** — checked
 before the file is executed. That is genuinely weaker than a signed installer:
 anyone who could serve both the manifest and the asset from a trusted host could
@@ -114,28 +115,46 @@ never restarted, because there is no installer to run in place.
 
 `/api/desktop/release` is public. It returns `{ version, minimumSupported, url, sha256, downloads: { win_msi, win_nsis, mac_dmg }, unsigned: true }` from GitHub `latest.json`, or 503 with an honest empty body when no `desktop-v*` release exists.
 
-## Signing and notarization (owner must buy)
+## Releasing for Windows and Mac (a simple download that opens)
 
-Builds are unsigned unless these env vars exist on the GitHub Actions runners:
+Repository Actions stay off (no runner minutes), so a release is cut from a laptop. The
+`/desktop` page and every installed copy read the newest GitHub release's `latest.json`, so
+publishing the release is the whole launch: there is nothing else to deploy.
 
-| Variable | What it is |
-|---|---|
-| `CSC_LINK` | Path or URL to the Windows Authenticode (or macOS Developer ID) certificate |
-| `CSC_KEY_PASSWORD` | Password for that certificate |
-| `APPLE_ID` | Apple ID for notarization |
-| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password |
-| `APPLE_TEAM_ID` | Apple Team ID |
+### One-time setup (owner)
 
-Until those are set, `CSC_IDENTITY_AUTO_DISCOVERY=false` and the installer license (`apps/desktop/build/UNSIGNED.txt`) says the build is unsigned. SmartScreen and Gatekeeper will warn. That is honest, not a bug.
+| For | What to get | Environment variables at build time |
+|---|---|---|
+| Mac that opens with no warning | Apple Developer Program membership; a **Developer ID Application** certificate exported as a `.p12` | `CSC_LINK` (path to the `.p12`), `CSC_KEY_PASSWORD` |
+| Mac notarization (Apple checks the build) | An app-specific password for your Apple ID, and your Team ID — or an App Store Connect API key | `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` — or `APPLE_API_KEY`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER` |
+| Windows with no SmartScreen warning (optional) | An Authenticode code-signing certificate (or Azure Trusted Signing) | `CSC_LINK`, `CSC_KEY_PASSWORD` for a `.pfx` |
+| Publishing | The `gh` CLI signed in with write access to this repository | — |
 
-macOS DMG/universal builds run on `macos-latest` in `.github/workflows/desktop.yml`. They cannot be produced on a Windows shop laptop.
+The Mac build is hardened-runtime with `apps/desktop/build/entitlements.mac.plist`; electron-builder
+signs and notarizes automatically when the variables above are present. Without them it still builds,
+but an unsigned Mac app is refused by macOS ("damaged" on Apple silicon), so
+`scripts/desktop/publish-release.mjs` **never publishes a Mac file whose notarization ticket is not
+stapled** (checked with `xcrun stapler validate`). Windows builds without a certificate still install;
+SmartScreen shows "More info → Run anyway" until one exists, and the installer license
+(`apps/desktop/build/UNSIGNED.txt`) says so. The `.exe` always carries the Vantage icon and name.
 
-## Installer (unsigned)
+### Cut a release (on a Mac)
 
 ```text
-npm run desktop:dist        # Windows NSIS + MSI + portable
-npm run dist:mac --workspace=@vantage/desktop   # macOS DMG + zip (macOS only)
+npm ci
+# bump apps/desktop/package.json "version" and add notes to apps/desktop/release-notes.json
+npm run desktop:dist:mac                                   # signed + notarized .dmg and .zip (universal)
+brew install --cask wine-stable                            # once; electron-builder needs Wine for the Windows installer
+npm run dist:win:cross --workspace=@vantage/desktop        # Windows setup .exe + portable .exe
+npm run desktop:release                                    # dry run: writes release/latest.json and lists the files
+npm run desktop:release -- --publish                       # creates GitHub release desktop-v<version> and marks it latest
 ```
+
+On Windows, `npm run desktop:dist` also builds the MSI. Linux can build the Windows files with Wine
+(`apt install wine64`), never a Mac file that opens.
+
+`.github/workflows/desktop.yml` does the same on `windows-latest` and `macos-latest` when run by hand
+(`workflow_dispatch`). Add the variables above as repository secrets before using it.
 
 ## Run
 
@@ -153,17 +172,8 @@ npm run desktop:dev
 
 Hostile `VANTAGE_URL` values are ignored and production is used.
 
-## Installer (unsigned)
-
-```text
-npm run desktop:dist
-```
-
-Outputs under `apps/desktop/release/` (Windows: MSI, NSIS setup and portable exe; macOS: DMG and zip from the macOS workflow). Windows SmartScreen will warn until Authenticode certs exist. Fusion CAD still uses `vantage-cad` on the machine (`docs/CAD_RELAY.md`).
-
-Tagged builds (`desktop-v*`) also publish those exes to GitHub Releases. Marketing copy lives at `/desktop`.
-
 Google sign-in uses a Chromium user agent with the Electron token stripped so OAuth is not treated as an embedded WebView.
+Fusion CAD still uses `vantage-cad` on the machine (`docs/CAD_RELAY.md`).
 
 ## Implementation notes
 
