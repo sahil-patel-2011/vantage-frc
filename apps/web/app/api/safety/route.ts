@@ -3,7 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { certExpiryStatus, parseSafetyAction, summarizeSafety, type CertType } from "../../../lib/safety";
-import { SafetyAuthError } from "../../../lib/safety/authorization";
+import { SafetyAuthError, assertCanRecordCertification, canRecordCertification } from "../../../lib/safety/authorization";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
       });
       return {
         status: "ready" as const,
-        context: { orgId: row.orgId, orgName: row.orgName, role: row.role },
+        context: { orgId: row.orgId, orgName: row.orgName, role: row.role, canRecord: canRecordCertification(row.role) },
         certifications: certsWithStatus,
         summary: { expiringCerts, expiredCerts },
       };
@@ -95,6 +95,9 @@ export async function POST(request: Request) {
 
     const result = await withRls({ userId, orgId: action.orgId }, async (client) => {
       await requireMembership(client, action.orgId, userId);
+      // A certification is a lead's attestation (0723), never something a member writes about
+      // themselves or anyone else. RLS refuses the same insert and delete.
+      await assertCanRecordCertification(client, { orgId: action.orgId, userId });
 
       switch (action.action) {
         case "add_certification": {
