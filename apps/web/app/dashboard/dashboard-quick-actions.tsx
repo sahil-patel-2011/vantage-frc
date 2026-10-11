@@ -59,8 +59,10 @@ export function DashboardCardActions({ type, label }: { type: DashboardWidgetTyp
   const menu = useRef<HTMLDetailsElement>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const offerTask = TASK_CARDS.has(type);
-  const offerScout = SCOUT_CARDS.has(type);
+  // View only (0715): no "Add a task" / "Log a scouting report" menu on Home cards.
+  const canWrite = actions?.role !== "viewer";
+  const offerTask = canWrite && TASK_CARDS.has(type);
+  const offerScout = canWrite && SCOUT_CARDS.has(type);
   if (!actions || (!offerTask && !offerScout)) return null;
   function open(action: Action) {
     if (menu.current) {

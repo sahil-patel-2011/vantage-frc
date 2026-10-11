@@ -8,6 +8,8 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0712_account_first_run_tour.sql",
   "0713_scouting_lead_notifications.sql",
   "0714_finance_managers.sql",
+  // View only = read-only: request code calls is_org_viewer() (withRls, scouting sync).
+  "0715_view_only_read_only.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */

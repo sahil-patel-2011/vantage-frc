@@ -13,6 +13,7 @@ import {
   type MessageObjectLink,
 } from "../../lib/messages/object-links";
 import { earliestCursor, prependEarlier } from "../../lib/messages/history";
+import { useViewOnly } from "../../lib/nav/use-view-only";
 import {
   LONG_POLL_MAX_MS,
   mergeMessages,
@@ -82,6 +83,8 @@ export default function MessagesClient({
   initialConversationId?: string | null;
   initialObjectLink?: MessageObjectLink | null;
 }) {
+  // View only (0715) members read chat; posting is a team write the database refuses.
+  const viewOnly = useViewOnly(orgId);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(initialConversationId);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -779,6 +782,7 @@ export default function MessagesClient({
 
   return (
     <MessagesReadyView
+      viewOnly={viewOnly}
       orgId={orgId}
       embedded={embedded}
       live={live}

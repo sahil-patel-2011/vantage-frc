@@ -6,6 +6,7 @@ import {
   canManageFinances,
   isFinanceGuardRefusal,
 } from "./finance/finance-managers";
+import { viewOnlyResponse } from "./security/public-error";
 
 export { FINANCE_MANAGER_REQUIRED, canManageFinances } from "./finance/finance-managers";
 
@@ -127,6 +128,9 @@ export function tenantErrorResponse(error: unknown, fallback = "Request failed")
   if (error instanceof TenantHttpError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
+  // A View only member's write, refused by 0715 in Postgres.
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
   // A money write refused by can_manage_finances() in RLS or a 0714 guard.
   if (isFinanceGuardRefusal(error)) {
     return Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 });

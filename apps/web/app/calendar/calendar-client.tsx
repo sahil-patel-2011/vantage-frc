@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { ViewOnlyNote } from "../../components/view-only-note";
 import { shopTimeLeft } from "../../lib/calendar/shop-time-left";
 import { restOfWeek } from "../../lib/calendar/rest-of-week";
 import { moveToDate } from "../../lib/calendar/move-entry";
@@ -898,6 +899,10 @@ function ReadyCalendar({
         ))
       )}
 
+      {/* View only (0715): the season, without the Add milestone form. */}
+      {view.context.role === "viewer" ? (
+        <ViewOnlyNote />
+      ) : (
       <Panel
         as="form"
         className="cal-add"
@@ -952,6 +957,7 @@ function ReadyCalendar({
           {repeat.dates.length > 1 ? `Add ${repeat.dates.length} entries` : "Add milestone"}
         </Button>
       </Panel>
+      )}
 
       <AiInsightPanel
         orgId={orgId}

@@ -15,6 +15,7 @@ import { SCOUTING_NAV } from "./scouting-shell";
 import { hubHref } from "../../lib/nav/hubs";
 import { ScoutHomeLead, ScoutHomeMatch, ScoutHomeMe, ScoutHomePit } from "./scout-home-sections";
 import { useScoutingSummary } from "../../lib/scouting/use-scouting-summary";
+import { useViewOnly } from "../../lib/nav/use-view-only";
 import { readActiveScoutDraft } from "../../lib/scouting/draft-autosave";
 import { scoutContext, describeScoutContext } from "../../lib/scouting/scout-context";
 import type { ScheduleMatch } from "../../lib/scouting/next-match";
@@ -65,6 +66,8 @@ export function ScoutingHome() {
   const [scoutUserId, setScoutUserId] = useState<string | null>(null);
   const [scheduleMatches, setScheduleMatches] = useState<ScheduleMatch[]>([]);
   const summary = useScoutingSummary(orgId);
+  // View only (0715): the coverage counts, without the Visit / Scout buttons.
+  const viewOnly = useViewOnly(orgId);
   const activeOrg = useRef(orgId);
   activeOrg.current = orgId;
 
@@ -312,11 +315,12 @@ export function ScoutingHome() {
       ) : view ? (
         <>
           <div className={`scout-home-cards${matchSoon ? " is-match-first" : ""}`}>
-            <ScoutHomePit view={view} pitHref={pitPageHref} primary={!matchSoon} />
+            <ScoutHomePit view={view} pitHref={pitPageHref} primary={!matchSoon} viewOnly={viewOnly} />
             <ScoutHomeMatch
               view={view}
               matchHref={matchHref}
               primary={matchSoon}
+              viewOnly={viewOnly}
               duty={duty ? { teamNumber: duty.teamNumber, matchLabel: duty.matchLabel, station: duty.station, when: duty.startsAt ? formatDutyTime(duty.startsAt) : null } : null}
             />
           </div>

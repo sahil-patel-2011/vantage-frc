@@ -4,6 +4,7 @@ import {
   meteredAiErrorBody,
   meteredAiErrorResponse,
 } from "@vantage/billing";
+import { viewOnlyResponse } from "./security/public-error";
 
 export type MeteredAiSetupStep = {
   id: string;
@@ -67,6 +68,8 @@ export function failMeteredAi(
   fallbackMessage: string,
   fallbackStatus = 400,
 ): Response {
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
   const cutoff = meteredAiErrorResponse(error);
   if (cutoff) return cutoff;
 

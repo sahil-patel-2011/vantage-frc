@@ -48,6 +48,7 @@ Start with the section that matches you. Each document says who it is for in its
 | [RELEASING.md](RELEASING.md) | Cutting releases, including desktop builds |
 | [../SECURITY_OPERATIONS.md](../SECURITY_OPERATIONS.md) | The security model, admin access, secrets and how to report a problem |
 | [PRICING.md](PRICING.md) | Today: free for every team, bring your own AI key. Also the dormant plan and credit model |
+| [ROLES.md](ROLES.md) | Who can change what: owner, team admin, team member and View only (read-only, enforced in Postgres) |
 | [FINANCE_SECURITY.md](FINANCE_SECURITY.md) | How money-related data is protected |
 
 ## Contributing

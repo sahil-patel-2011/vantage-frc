@@ -42,7 +42,8 @@ import {
 } from "../../../lib/messages/supervision";
 import { supervisionBadge, type DmMode } from "../../../lib/messages/youth-protection";
 import { createRateLimiter, rateLimitedResponse } from "../../../lib/rate-limit";
-import { publicErrorMessage } from "../../../lib/security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
+import { isViewOnlyRefusal } from "@vantage/db/view-only";
 
 export const maxDuration = 10;
 
@@ -460,6 +461,8 @@ async function requireMembership(client: PoolClient, orgId: string, userId: stri
 }
 
 function fail(error: unknown, status = 400) {
+  const viewOnly = viewOnlyResponse(error);
+  if (viewOnly) return viewOnly;
   const message = publicErrorMessage(error, "Messages request failed");
   // A refused channel mutation is an authorization answer, not a malformed request.
   const resolved =
@@ -556,7 +559,7 @@ async function attachMentions(client: PoolClient, orgId: string, messages: Messa
   }
 }
 
-async function ensureTeamChannel(client: PoolClient, orgId: string, userId: string) {
+async function ensureTeamChannel(client: PoolClient, orgId: string, userId: string): Promise<string | null> {
   const existing = await client.query<{ id: string }>(
     `SELECT id FROM org_conversations
      WHERE org_id = $1 AND kind = 'team' AND lower(title) = lower($2)
@@ -575,7 +578,7 @@ async function ensureTeamChannel(client: PoolClient, orgId: string, userId: stri
     );
     await client.query("RELEASE SAVEPOINT ensure_team_channel");
     return inserted.rows[0]!.id;
-  } catch {
+  } catch (error) {
     await client.query("ROLLBACK TO SAVEPOINT ensure_team_channel");
     const again = await client.query<{ id: string }>(
       `SELECT id FROM org_conversations
@@ -583,7 +586,10 @@ async function ensureTeamChannel(client: PoolClient, orgId: string, userId: stri
        LIMIT 1`,
       [orgId, TEAM_CHANNEL_TITLE],
     );
-    if (!again.rowCount) throw new Error("Could not open team channel");
+    // A View only member reads chat but cannot create the team channel (0715).
+    // Their inbox still opens; the channel appears once a team member opens chat.
+    if (!again.rowCount && isViewOnlyRefusal(error)) return null;
+    if (!again.rowCount) throw new Error("Could not open team channel", { cause: error });
     return again.rows[0]!.id;
   }
 }

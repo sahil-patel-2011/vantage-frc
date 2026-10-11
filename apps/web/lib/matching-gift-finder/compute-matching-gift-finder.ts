@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db/savepoint";
 import { meteredAI } from "@vantage/billing";
 import { MATCHING_GIFT_SEED_PROGRAMS, buildDraftLetter, matchContactsToPrograms, summarizeMatchingGiftFinder } from ".";
 import type {
@@ -227,7 +228,9 @@ export async function computeMatchingGiftFinderView(
     };
   }
 
-  await ensureSeedPrograms(client, org.orgId);
+  // A seed write on a read: a View only member is refused it (0715) and sees the
+  // team's programs as they are.
+  await withSavepoint(client, () => ensureSeedPrograms(client, org.orgId), undefined);
 
   const [contactResult, programResult, pledgeResult, draftResult] = await Promise.all([
     client.query<ContactRow>(
