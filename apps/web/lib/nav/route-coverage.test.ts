@@ -40,6 +40,7 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
   ["/claim", "public self-serve org claim"],
   ["/invite", "reached from an emailed token link"],
   ["/unsubscribe", "reached from an email footer"],
+  ["/status/outage", "outage console, opened from the signed link in the owner's alert email"],
   ["/offline", "service-worker fallback page"],
   ["/workspace", "team switcher, reached from the account menu"],
   ["/support", "reached from the account menu"],

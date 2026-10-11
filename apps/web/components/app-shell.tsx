@@ -8,6 +8,7 @@ import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-
 import { AppTour } from "./app-tour";
 import { StatusEcho } from "./status-echo";
 import { LegalUpdateBanner } from "./legal-update-banner";
+import { ServiceNoticeBanner } from "./service-notice-banner";
 import { useSheetsAutoSync } from "./use-sheets-auto-sync";
 import { AppShellTopbar } from "./app-shell-topbar";
 import { AppShellSidebar } from "./app-shell-sidebar";
@@ -745,6 +746,11 @@ export default function AppShell() {
         />
       ) : null}
       {entryScreen ? null : <LegalUpdateBanner />}
+      {/* On entry screens too: /access-unavailable is where people land while the database is down. */}
+      <ServiceNoticeBanner
+        cacheOrgId={!entryScreen && me.userId && orgId ? orgId : null}
+        orgLabel={me.teamNumber ? `Team ${me.teamNumber}` : (me.orgName ?? null)}
+      />
       {accountMenuOpen ? (
         <button
           className="soft-account-scrim"

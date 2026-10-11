@@ -1,33 +1,23 @@
-import { withRls } from "@vantage/db";
+import { probeDatabase, reportProbeOutcome } from "../../../lib/outage/probe";
 
 export const dynamic = "force-dynamic";
-
-/** No one's identity: the check reads nothing but the clock. */
-const NOBODY = "00000000-0000-0000-0000-000000000000";
-const TIMEOUT_MS = 4_000;
 
 /**
  * Uptime check for a monitor (Vercel, UptimeRobot, a status page): 200 when the app can reach its
  * database, 503 when it cannot. It says only that, never which host, driver or error, so it is
  * safe to leave public.
+ *
+ * After answering, it tells the outage tracker (lib/outage/incident.ts) what it found: the first
+ * failure emails the owner why, and the first success after an outage emails that it is back.
+ * An external monitor hitting this every few minutes is what catches an outage when nobody is
+ * using the app (docs/NAS_DATABASE.md, "When the NAS goes down").
  */
 export async function GET() {
-  const started = Date.now();
-  let database: "ok" | "unreachable";
-  try {
-    await Promise.race([
-      withRls({ userId: NOBODY }, async (client) => {
-        await client.query("SELECT 1");
-      }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), TIMEOUT_MS)),
-    ]);
-    database = "ok";
-  } catch {
-    database = "unreachable";
-  }
-  const ok = database === "ok";
+  const probe = await probeDatabase();
+  reportProbeOutcome(probe, "api/health");
+  const ok = probe.ok;
   return Response.json(
-    { ok, database, checkedInMs: Date.now() - started },
+    { ok, database: ok ? "ok" : "unreachable", checkedInMs: probe.ms },
     { status: ok ? 200 : 503, headers: { "cache-control": "no-store" } },
   );
 }
