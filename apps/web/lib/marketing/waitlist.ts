@@ -62,6 +62,8 @@ export interface WaitlistStore {
   list(options?: { q?: string; limit?: number }): Promise<WaitlistEntry[]>;
   markLaunchInvited(email: string): Promise<WaitlistEntry | null>;
   markConverted(email: string): Promise<WaitlistEntry | null>;
+  /** Forget an address entirely (account deletion). True when a row was removed. */
+  remove(email: string): Promise<boolean>;
 }
 
 type MemoryRow = WaitlistInput & {
@@ -152,6 +154,9 @@ export class MemoryWaitlistStore implements WaitlistStore {
     row.convertedAt = row.convertedAt ?? now;
     row.updatedAt = now;
     return memoryToEntry(row);
+  }
+  async remove(emailAddress: string) {
+    return localRows.delete(emailAddress.trim().toLowerCase());
   }
 }
 
@@ -315,6 +320,11 @@ export class NeonWaitlistStore implements WaitlistStore {
     );
     const row = result.rows[0];
     return row ? mapWaitlistRow(row) : null;
+  }
+  async remove(emailAddress: string) {
+    const email = emailAddress.trim().toLowerCase();
+    const result = await this.pool().query(`DELETE FROM waitlist_signups WHERE email_normalized = $1::text`, [email]);
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

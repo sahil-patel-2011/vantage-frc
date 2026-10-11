@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const TEAM = "97d33e82-3d2d-4cf4-adba-727d777ba243";
 
 const state = vi.hoisted(() => ({
-  session: null as null | { user: { id: string }; session: { createdAt: Date } },
+  session: null as null | { user: { id: string; email?: string }; session: { createdAt: Date } },
   queries: [] as Array<{ sql: string; params: unknown[] }>,
   scopes: [] as Array<{ userId: string; orgId?: string }>,
   failWith: null as unknown,
@@ -11,7 +11,10 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
-vi.mock("@vantage/core", () => ({ auth: { api: { getSession: async () => state.session } } }));
+vi.mock("@vantage/core", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@vantage/core")>()),
+  auth: { api: { getSession: async () => state.session } },
+}));
 vi.mock("@vantage/db", () => ({
   withRls: async (scope: { userId: string; orgId?: string }, work: (client: unknown) => Promise<unknown>) => {
     state.scopes.push(scope);
@@ -27,6 +30,7 @@ vi.mock("@vantage/db", () => ({
 
 const lifecycle = await import("../../app/api/organizations/lifecycle/route");
 const account = await import("../../app/api/account/delete/route");
+const { createWaitlistStore, waitlistSchema } = await import("../marketing/waitlist");
 
 function request(method: string, body?: unknown, query = "") {
   return new Request(`https://vantage.example/api/organizations/lifecycle${query}`, {
@@ -132,6 +136,16 @@ describe("deleting my account", () => {
     const cookies = response.headers.getSetCookie();
     expect(cookies.some((cookie) => cookie.startsWith("better-auth.session_token=;"))).toBe(true);
     expect(cookies.some((cookie) => cookie.startsWith("__Secure-better-auth.session_token=;") && cookie.includes("Secure"))).toBe(true);
+  });
+
+  it("also forgets the address on the public waitlist", async () => {
+    state.session = { user: { id: "user-1", email: "me@example.test" }, session: { createdAt: new Date() } };
+    const waitlist = createWaitlistStore();
+    await waitlist.upsert(waitlistSchema.parse({ email: "me@example.test", teamNumber: 9201, termsAccepted: true, privacyAccepted: true }));
+    expect((await waitlist.list({ q: "me@example.test" })).length).toBe(1);
+    const response = await account.POST(accountRequest({ confirm: "me@example.test" }));
+    expect(response.status).toBe(200);
+    expect(await waitlist.list({ q: "me@example.test" })).toEqual([]);
   });
 
   it("tells a team's only owner to hand it over first", async () => {
