@@ -54,7 +54,8 @@ export type OnboardingDraft = {
   noTeam: boolean;
   primaryFocus: OnboardingFocus;
   displayName: string;
-  themePreference: "light" | "dark";
+  /** "system" follows the device, like Account › Appearance. Only light and dark go to the server. */
+  themePreference: "light" | "dark" | "system";
   orgCity: string;
   orgStateProv: string;
   orgDescription: string;
@@ -141,7 +142,72 @@ export function defaultFocusForRole(
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-function validateProfileStep(draft: OnboardingDraft): StepValidation {
+/** Same floor the server enforces (`packages/core/src/eligibility.ts`). */
+export const MINIMUM_ACCOUNT_AGE = 13;
+const OLDEST_AGE = 120;
+
+/**
+ * Whole years from a YYYY-MM-DD birthday to `now`, by calendar date in UTC like the server, or
+ * null when the text is not a real date.
+ */
+export function ageOnDate(dateOfBirth: string, now: Date = new Date()): number | null {
+  const text = dateOfBirth.trim();
+  if (!ISO_DATE.test(text)) return null;
+  const [year, month, day] = text.split("-").map(Number) as [number, number, number];
+  // setUTCFullYear, not Date.UTC: Date.UTC reads years 0 to 99 as 1900 to 1999.
+  const dob = new Date(0);
+  dob.setUTCFullYear(year, month - 1, day);
+  if (dob.getUTCFullYear() !== year || dob.getUTCMonth() !== month - 1 || dob.getUTCDate() !== day) return null;
+  let age = now.getUTCFullYear() - year;
+  if (now.getUTCMonth() < month - 1 || (now.getUTCMonth() === month - 1 && now.getUTCDate() < day)) age--;
+  return age;
+}
+
+/**
+ * What is wrong with a birthday, in the words the person needs, or null when the server will take
+ * it. These used to be checked only by the server, whose answer appeared at the top of the card
+ * while the person's thumb was on Continue at the bottom: on a phone, Continue looked dead.
+ */
+export function birthDateProblem(dateOfBirth: string, now: Date = new Date()): string | null {
+  if (!ISO_DATE.test(dateOfBirth.trim())) {
+    return "Add your date of birth. It keeps student accounts safe, and teammates never see it.";
+  }
+  const age = ageOnDate(dateOfBirth, now);
+  if (age === null) return "That date doesn't exist. Check the day and the month.";
+  // Any date after today counts to -1 or less; today itself is 0, which the age rule covers.
+  if (age < 0) {
+    return "Your date of birth can't be in the future. Check the year.";
+  }
+  if (age > OLDEST_AGE) return "Check the year of your date of birth.";
+  if (age < MINIMUM_ACCOUNT_AGE) {
+    return "Vantage accounts are for people age 13 and older. If the year is a typo, fix it here.";
+  }
+  return null;
+}
+
+/**
+ * A role and a birthday that rarely go together: an adult role under 18, or Student at 25 or
+ * older. The birthday decides student protections and the role is only a label, so a slip in
+ * either one is worth a question before it is saved. Null when they fit.
+ */
+export function roleAgeQuestion(
+  teamRole: OnboardingRole | "",
+  dateOfBirth: string,
+  now: Date = new Date(),
+): string | null {
+  const age = ageOnDate(dateOfBirth, now);
+  if (age === null || !teamRole) return null;
+  const label = { student: "Student", mentor: "Mentor", coach: "Head mentor or coach", parent: "Parent", other: "Other" }[teamRole];
+  if (age < 18 && (teamRole === "mentor" || teamRole === "coach" || teamRole === "parent")) {
+    return `You picked ${label}, and your date of birth makes you ${age}. Is that right?`;
+  }
+  if (age >= 25 && teamRole === "student") {
+    return `You picked Student, and your date of birth makes you ${age}. Is that right?`;
+  }
+  return null;
+}
+
+function validateProfileStep(draft: OnboardingDraft, now: Date = new Date()): StepValidation {
   if (!draft.firstName.trim()) {
     return { ok: false, field: "firstName", message: "Add your first name." };
   }
@@ -151,16 +217,60 @@ function validateProfileStep(draft: OnboardingDraft): StepValidation {
   if (!draft.teamRole) {
     return { ok: false, field: "teamRole", message: "Pick the card that matches your role." };
   }
-  // Required by the account system, not by us — kept on screen 1 with that reason
-  // shown, because `POST /api/onboarding` rejects the submit without them.
-  if (!ISO_DATE.test(draft.dateOfBirth)) {
-    return {
-      ok: false,
-      field: "dateOfBirth",
-      message: "Your date of birth is required for youth-safe account records. Teammates never see it.",
-    };
-  }
+  // Required by the account system, not by us: `POST /api/onboarding` rejects the submit without
+  // it, and checks the same rules as here.
+  const birthday = birthDateProblem(draft.dateOfBirth, now);
+  if (birthday) return { ok: false, field: "dateOfBirth", message: birthday };
   return { ok: true };
+}
+
+/**
+ * Where a message from the server belongs: the screen and the field that can fix it, so it is
+ * shown beside that field instead of at the top of a card. Null for anything no field can fix (a
+ * lost connection, a server fault); those sit above the step's buttons.
+ */
+export function onboardingErrorTarget(message: string): { step: OnboardingSetupStep; field: string } | null {
+  if (/birth|age 13/i.test(message)) return { step: "profile", field: "dateOfBirth" };
+  if (/first name/i.test(message)) return { step: "profile", field: "firstName" };
+  if (/last name/i.test(message)) return { step: "profile", field: "lastName" };
+  if (/gender/i.test(message)) return { step: "profile", field: "gender" };
+  if (/team role/i.test(message)) return { step: "profile", field: "teamRole" };
+  if (/affiliated|private school, public school/i.test(message)) return { step: "team", field: "teamAffiliation" };
+  if (/funding path|how the team is funded|funded/i.test(message)) return { step: "team", field: "funding" };
+  if (/team number/i.test(message)) return { step: "team", field: "teamNumber" };
+  if (/terms of service|privacy policy/i.test(message)) return { step: "preferences", field: "legal" };
+  return null;
+}
+
+/**
+ * The screen to reopen on. The server moves its saved step to "team" after the profile is saved,
+ * but someone the invite already put on a team never sees that screen (skipsTeamStep). A reload
+ * used to show them the team screen anyway, a flow they had not seen before Continue.
+ */
+export function resumeOnboardingStep(
+  serverStep: string | null | undefined,
+  context: Pick<OnboardingStepContext, "locked" | "isTeamHead">,
+): OnboardingSetupStep {
+  if (serverStep === "preferences") return "preferences";
+  if (serverStep === "team") return skipsTeamStep(context) ? "preferences" : "team";
+  return "profile";
+}
+
+/**
+ * The focus to show after a reload. The server answers "competition" when nothing was picked
+ * (the column has a default), so only a saved team screen (or a finished profile) counts as an
+ * answer. Otherwise the role's default applies, the same one picking the role sets: a parent who
+ * skipped the team screen was shown "Starting view: Competition".
+ */
+export function resumedFocus(input: {
+  serverFocus: OnboardingFocus | null | undefined;
+  serverStep: string | null | undefined;
+  teamRole: OnboardingRole | "" | null | undefined;
+  crewRole: OnboardingCrew | "" | null | undefined;
+}): { focus: OnboardingFocus; answered: boolean } {
+  const answered = input.serverStep === "preferences" || input.serverStep === "complete";
+  if (answered && input.serverFocus) return { focus: input.serverFocus, answered: true };
+  return { focus: defaultFocusForRole(input.teamRole, input.crewRole), answered: false };
 }
 
 function validateTeamStep(draft: OnboardingDraft, context: OnboardingStepContext): StepValidation {
@@ -212,10 +322,11 @@ export function validateOnboardingStep(
   step: OnboardingSetupStep,
   draft: OnboardingDraft,
   context: OnboardingStepContext,
+  now: Date = new Date(),
 ): StepValidation {
   switch (step) {
     case "profile":
-      return validateProfileStep(draft);
+      return validateProfileStep(draft, now);
     case "team":
       return validateTeamStep(draft, context);
     case "preferences":
@@ -271,11 +382,12 @@ export type OnboardingStepState = {
 export function onboardingAdvance(
   state: OnboardingStepState,
   context: OnboardingStepContext,
+  now: Date = new Date(),
 ): OnboardingStepState & { submit: boolean } {
   if (state.step === "pending" || state.step === "done") {
     return { ...state, submit: false };
   }
-  const result = validateOnboardingStep(state.step, state.draft, context);
+  const result = validateOnboardingStep(state.step, state.draft, context, now);
   if (!result.ok) {
     return {
       step: state.step,

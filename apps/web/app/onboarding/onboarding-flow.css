@@ -149,6 +149,7 @@
 
 /* Every button/link in the flow is a real thumb target. */
 .onboarding-actions .signin-submit,.onboarding-actions .signin-link,.onboarding-pending-actions .signin-submit,.onboarding-pending-actions .signin-link{min-height:44px}
+.onboarding-actions > .signin-submit:only-child{margin-left:auto}
 .onboarding-actions .signin-link,.onboarding-pending-actions .signin-link{display:inline-flex;align-items:center;justify-content:center;padding:0 12px;background:none;border:0;cursor:pointer;color:var(--muted)}
 .onboarding-pending-actions a.signin-submit{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 
@@ -193,9 +194,12 @@
 .onboarding-required{margin-left:6px;color:var(--muted);font-weight:500;font-size:12px}
 
 /* Continue stopped on a missing answer: red, and under the question it is about. */
-.onboarding-message.invalid{border-color:color-mix(in srgb,#dc2626 45%,var(--line));background:color-mix(in srgb,#dc2626 8%,var(--surface));color:#991b1b}
-.onboarding-field-error{margin:4px 0 8px;color:#b91c1c;font-size:13px;font-weight:600}
-fieldset[aria-invalid="true"]{border-color:#dc2626}
+.onboarding-message.invalid{border-color:color-mix(in srgb,var(--critical) 45%,var(--line));background:color-mix(in srgb,var(--critical) 8%,var(--surface));color:var(--critical)}
+.onboarding-field-error{margin:4px 0 8px;color:var(--critical);font-size:13px;font-weight:600}
+/* Server and connection failures sit just above the buttons, where the thumb already is. */
+.onboarding-form-error{margin:4px 0 0}
+fieldset[aria-invalid="true"]{border-color:var(--critical)}
+.onboarding-form :is(input,select,textarea)[aria-invalid="true"]:not([type="radio"],[type="checkbox"]){border-color:var(--critical);box-shadow:0 0 0 1px var(--critical)}
 
 /* A chosen card says so with a check, not only a faint fill (an owner who skimmed became a Mentor). */
 .onboarding-cards label.selected::after,.onboarding-focus-grid label.selected::after{content:"";position:absolute;top:10px;right:10px;width:18px;height:18px;border-radius:50%;background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat}
