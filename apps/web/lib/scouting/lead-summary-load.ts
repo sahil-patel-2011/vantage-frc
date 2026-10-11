@@ -42,19 +42,21 @@ export async function loadLeadSummary(
   const params = [input.orgId, eventKey];
 
   const [roster, matches, matchEntries, pitEntries, assignments, members, disagreements] = await Promise.all([
+    // The event's teams come from the event (its schedule and its team list). A pit report
+    // for a typed team number no longer adds that team to the event: summarizeScouting lists
+    // it apart, under otherVisited.
     client.query<SummaryRosterTeam>(
       `WITH roster AS (
-         SELECT jsonb_array_elements_text(m.red_alliance->'teamKeys') AS team_key FROM matches_ref m WHERE m.event_key = $2::text
-         UNION SELECT jsonb_array_elements_text(m.blue_alliance->'teamKeys') FROM matches_ref m WHERE m.event_key = $2::text
-         UNION SELECT tm.team_key FROM team_event_metrics tm WHERE tm.event_key = $2::text
-         UNION SELECT p.team_key FROM pit_scout_entries p WHERE p.org_id = $1::uuid AND p.event_key = $2::text
+         SELECT jsonb_array_elements_text(m.red_alliance->'teamKeys') AS team_key FROM matches_ref m WHERE m.event_key = $1::text
+         UNION SELECT jsonb_array_elements_text(m.blue_alliance->'teamKeys') FROM matches_ref m WHERE m.event_key = $1::text
+         UNION SELECT tm.team_key FROM team_event_metrics tm WHERE tm.event_key = $1::text
        )
        SELECT r.team_key AS "teamKey",
               COALESCE(t.team_number, NULLIF(regexp_replace(r.team_key, '\\D', '', 'g'), '')::int) AS "teamNumber",
               t.nickname
          FROM roster r LEFT JOIN teams_ref t ON t.team_key = r.team_key
         WHERE r.team_key ~ '^frc[0-9]+$'`,
-      params,
+      [eventKey],
     ),
     client.query<{
       matchKey: string;

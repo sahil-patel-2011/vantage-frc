@@ -40,6 +40,11 @@ export type LeadSummary = {
     notVisited: SummaryRosterTeam[];
     /** Every other team, by number, with whether anyone on the team has a pit report for it. */
     teams: Array<SummaryRosterTeam & { visited: boolean }>;
+    /**
+     * Pit reports for teams that are not on the event's list (a typo, or a list that has not
+     * caught up). Kept out of the total so one mistyped number cannot change the event.
+     */
+    otherVisited: SummaryRosterTeam[];
   };
   match: {
     playedMatches: number;
@@ -69,6 +74,12 @@ export function summarizeScouting(input: {
     .filter((team) => team.teamNumber !== input.ownTeamNumber)
     .sort((a, b) => a.teamNumber - b.teamNumber);
   const notVisited = others.filter((team) => !pitDone.has(team.teamKey));
+  const onList = new Set(input.roster.map((team) => team.teamKey));
+  const otherVisited = [...pitDone]
+    .filter((teamKey) => !onList.has(teamKey) && /^frc\d+$/.test(teamKey))
+    .map((teamKey) => ({ teamKey, teamNumber: Number(teamKey.slice(3)), nickname: null }))
+    .filter((team) => team.teamNumber !== input.ownTeamNumber)
+    .sort((a, b) => a.teamNumber - b.teamNumber);
 
   const matchEntries = input.entries.filter((entry) => entry.type === "match" && entry.matchKey);
   const scoutedRobots = new Set(matchEntries.map((entry) => `${entry.matchKey}|${entry.teamKey}`));
@@ -145,6 +156,7 @@ export function summarizeScouting(input: {
       visited: others.length - notVisited.length,
       notVisited,
       teams: others.map((team) => ({ ...team, visited: pitDone.has(team.teamKey) })),
+      otherVisited,
     },
     match: {
       playedMatches,

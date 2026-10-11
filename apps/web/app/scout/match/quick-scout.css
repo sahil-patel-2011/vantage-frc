@@ -277,6 +277,9 @@
   background:var(--surface);color:var(--ink);font-size:16px;
 }
 .qs-dot.is-visited{background:var(--positive)}
+.qs-dot.is-draft{background:var(--warning)}
+.qs-row.has-draft .qs-row-main span{color:var(--ink);font-weight:600}
+.qs-offlist{width:100%}
 .qs-visited summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
 .qs-pit{--qs-team:var(--accent)}
 .qs-pit-hint{padding:0 4px}
