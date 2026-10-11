@@ -1,12 +1,12 @@
 {
   "schemaVersion": 3,
-  "generatedAt": "2026-10-11T17:59:36.914Z",
+  "generatedAt": "2026-10-11T20:00:09.751Z",
   "summary": {
-    "pages": 331,
-    "apis": 511,
+    "pages": 334,
+    "apis": 513,
     "manifests": 123,
     "coreWorkflows": 20,
-    "historicalTables": 624,
+    "historicalTables": 627,
     "scheduledJobs": 0,
     "cronRoutes": 11,
     "durableWorkflows": 3,
@@ -4362,6 +4362,26 @@
       ]
     },
     {
+      "path": "apps/web/app/api/team-lessons/[id]/route.ts",
+      "route": "/api/team-lessons/[id]",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "PATCH",
+        "POST",
+        "DELETE"
+      ]
+    },
+    {
+      "path": "apps/web/app/api/team-lessons/route.ts",
+      "route": "/api/team-lessons",
+      "kind": "api",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
       "path": "apps/web/app/api/team-resources/route.ts",
       "route": "/api/team-resources",
       "kind": "api",
@@ -5297,6 +5317,24 @@
     {
       "path": "apps/web/app/learn/page.tsx",
       "route": "/learn",
+      "kind": "page",
+      "methods": []
+    },
+    {
+      "path": "apps/web/app/learn/team/[id]/edit/page.tsx",
+      "route": "/learn/team/[id]/edit",
+      "kind": "page",
+      "methods": []
+    },
+    {
+      "path": "apps/web/app/learn/team/[id]/page.tsx",
+      "route": "/learn/team/[id]",
+      "kind": "page",
+      "methods": []
+    },
+    {
+      "path": "apps/web/app/learn/team/page.tsx",
+      "route": "/learn/team",
       "kind": "page",
       "methods": []
     },
@@ -8169,6 +8207,9 @@
     "team_join_codes",
     "team_knowledge",
     "team_knowledge_revisions",
+    "team_lesson_attempts",
+    "team_lesson_revisions",
+    "team_lessons",
     "team_lookup_notes",
     "team_memories",
     "team_memory_settings",

@@ -11,6 +11,8 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // View only = read-only: request code calls is_org_viewer() (withRls, scouting sync).
   "0715_view_only_read_only.sql",
   "0716_github_pr_reviews.sql",
+  // Team lessons: /api/team-lessons reads and writes team_lessons, revisions and attempts.
+  "0717_team_lessons.sql",
   // The outage console's contact list: /api/me (platform admins) and /api/admin/outage-contacts
   // call list_service_notice_recipients().
   "0718_service_notice_recipients.sql",

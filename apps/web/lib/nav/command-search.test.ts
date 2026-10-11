@@ -281,6 +281,8 @@ describe("this wave's tools are findable by the words teams type", () => {
     ["dxf", "/build?tab=cad-vault"],
     ["upload cad", "/build?tab=cad-vault"],
     ["inspection prep", "/competition?tab=event-readiness"],
+    ["team lessons", "/build?tab=team-lessons"],
+    ["write a lesson", "/build?tab=team-lessons"],
     ["consent", "/competition?tab=event-readiness"],
     ["pre event", "/competition?tab=event-readiness"],
   ];

@@ -234,6 +234,10 @@ const KEYWORDS: Record<string, string[]> = {
   "build:learn-resources": [
     "code and cad", "cad resources", "programming resources", "code cad hub",
   ],
+  "build:team-lessons": [
+    "team lessons", "our lessons", "write a lesson", "make a lesson", "lesson builder",
+    "training module", "teach the team", "upload a pdf lesson", "practice questions", "quiz",
+  ],
   "build:sketch-to-brief": ["sketch", "napkin", "idea to brief", "concept"],
   "build:code": ["code", "programming", "software", "java", "python", "wpilib", "robot code"],
   // The loudest blocker in the community research, so it carries the panic words a
