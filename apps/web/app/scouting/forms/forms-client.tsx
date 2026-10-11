@@ -5,14 +5,13 @@ import { ScoringFormulas } from "./scoring-formulas";
 import { useSearchParams } from "next/navigation";
 import { scoutingGameLabel, latestScoutingYear } from "../../../lib/scouting/free-scout";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type EntryType, type FormResetBehavior, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
+import { type EntryType, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { ActionMenu, ConfirmProvider, EmptyState, FormRow, Panel, ToolStrip, Button, useConfirm } from "../../../components/ui";
 import { useTierDrag } from "../../../components/ui/use-tier-drag";
 import "../../../components/ui/tier-drag.css";
 import {
-  ANSWER_KIND_OPTIONS,
   DRIVETRAIN_OPTIONS_TEXT,
   IMPORTED_FORM_DRAFT_KEY,
   classifyFormBuilderShell,
@@ -21,31 +20,21 @@ import {
   formBuilderPublishBlockedReason,
   formBuilderPublishLabel,
   duplicateQuestion,
-  needsOptionEditor,
-  needsSettingsEditor,
   newDraftQuestion,
   parseOptions,
   resolveDraftPublishStatus,
   retypeQuestion,
-  RESET_BEHAVIOR_OPTIONS,
-  STRATEGY_ROLE_OPTIONS,
-  detectedRoleForQuestion,
   validateDraft,
   type AnswerKind,
   type DraftQuestion,
-  type StrategyFieldRole,
 } from "../../../lib/scouting/form-builder";
 import { hubHref } from "../../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { FormBuilderShell } from "./forms-chrome";
 import { defaultQuestions, type FormBuilderMode, type SchemasPayload } from "./forms-model";
-import { OptionEditor } from "./forms-option-editor";
 import { FormsTabletPreview } from "./forms-tablet-preview";
-import { StudioSettingsEditor } from "./forms-settings-editor";
-import { CollectionSettings } from "./forms-collection-settings";
-import { FormsVisibilityEditor } from "./forms-visibility-editor";
-import { FormsOfficialComparison } from "./forms-official-comparison";
+import { FormQuestionCard } from "./forms-question-card";
 import { formEditorPrefix, listFormEditorDrafts, removeFormEditorDraft, saveFormEditorDraft, type FormEditorDraft, type FormEditorScope } from "../../../lib/scouting/form-editor-draft";
 
 function isSchemasPayload(value: unknown): value is SchemasPayload {
@@ -814,228 +803,35 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
                   questionDrag.drag?.id !== question.id ? (
                     <div className="tier-drop-slot" aria-hidden="true" />
                   ) : null}
-                  <article
-                    className={`sfb-question${questionDrag.drag?.id === question.id ? " is-dragging" : ""}`}
-                    data-entry-id={question.id}
-                    data-expanded={showAllQuestions || focusedQuestionId === question.id}
-                  >
-                    <div className="sfb-question-head">
-                      <button type="button" className="sfb-question-select"
-                        aria-expanded={showAllQuestions || focusedQuestionId === question.id}
-                        aria-controls={`question-editor-${question.id}`}
-                        onClick={() => { setShowAllQuestions(false); setEditingQuestionId(question.id); }}>
-                        <span className="sfb-question-number" aria-hidden="true">{index + 1}</span>
-                        <span><strong>{question.label || "Untitled question"}</strong><small>{ANSWER_KIND_OPTIONS.find(option => option.kind === question.kind)?.label}{question.required ? " · Required" : " · Optional"}</small></span>
-                        <span className="sfb-question-chevron" aria-hidden="true">⌄</span>
-                      </button>
-                      {/*
-                        Four buttons on every question became two and a menu.
-
-                        A seven-question form put twenty-eight controls down the
-                        side of the page — Move up, Move down, Duplicate, Remove,
-                        seven times over — and the words that told them apart were
-                        the same four words each time. Reordering is the one that
-                        wants to be immediate, so it stays as a pair of arrows with
-                        the sentence in its accessible name; duplicating and
-                        removing are occasional and go behind the overflow, where
-                        Remove also picks up the menu's confirmation step.
-                      */}
-                      <div className="sfb-question-actions">
-                        {payload.canManageSchemas ? (
-                          <button
-                            type="button"
-                            className="tier-drag-handle"
-                            aria-label={`Move question ${index + 1}: drag, or press the up and down arrow keys`}
-                            aria-disabled={busy || undefined}
-                            {...questionDrag.handleProps(question.id, "questions")}
-                          >
-                            <span aria-hidden="true">⋮⋮</span>
-                          </button>
-                        ) : null}
-                        <ActionMenu
-                          tone="row"
-                          overflowOnly
-                          label={`Question ${index + 1} actions`}
-                          maxSecondary={0}
-                          triggerTestId={`sfb-question-more:${question.id}`}
-                          actions={[
-                            {
-                              id: "duplicate",
-                              label: "Duplicate",
-                              intent: "normal",
-                              disabled: !payload.canManageSchemas || busy,
-                              hint: "A copy directly below, ready to edit",
-                              onClick: () => {
-                                const next = duplicateQuestion(questions, index);
-                                setQuestions(next);
-                                setEditingQuestionId(next[index + 1]?.id ?? null);
-                              },
-                            },
-                            {
-                              id: "remove",
-                              label: "Remove",
-                              intent: "destructive",
-                              disabled: !payload.canManageSchemas || busy || questions.length <= 1,
-                              hint: "Undo is offered right after",
-                              onClick: () => {
-                                setRemoved({ question, index });
-                                setQuestions((prev) => prev.filter((entry) => entry.id !== question.id));
-                              },
-                            },
-                          ]}
-                        />
-                      </div>
-                    </div>
-                    <div id={`question-editor-${question.id}`} className="sfb-question-editor" hidden={!showAllQuestions && focusedQuestionId !== question.id}>
-                    {showAllQuestions || focusedQuestionId === question.id ? <>
-                    <div className="sfb-question-grid">
-                      <FormRow label="Label">
-                        <input
-                          value={question.label}
-                          disabled={!payload.canManageSchemas || busy}
-                          onChange={(event) => updateQuestion(question.id, { label: event.target.value })}
-                          placeholder="What should scouts answer?"
-                        />
-                      </FormRow>
-                      <FormRow label="Answer type">
-                        <select
-                          value={question.kind}
-                          disabled={!payload.canManageSchemas || busy}
-                          onChange={(event) =>
-                            retypeQuestionById(question.id, event.target.value as AnswerKind)
-                          }
-                        >
-                          {ANSWER_KIND_OPTIONS.map((option) => (
-                            <option key={option.kind} value={option.kind}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </FormRow>
-                    </div>
-                    {needsOptionEditor(question.kind) ? (
-                      <OptionEditor
-                        optionsText={question.optionsText}
-                        disabled={!payload.canManageSchemas || busy}
-                        kind={question.kind}
-                        onChange={(optionsText) => updateQuestion(question.id, { optionsText })}
-                      />
-                    ) : (
-                      <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
-                        {ANSWER_KIND_OPTIONS.find((o) => o.kind === question.kind)?.hint}
-                      </p>
-                    )}
-                    {needsSettingsEditor(question.kind) ? (
-                      <StudioSettingsEditor
-                        question={question}
-                        disabled={!payload.canManageSchemas || busy}
-                        onChange={(settings) => updateQuestion(question.id, { settings })}
-                      />
-                    ) : null}
-                    {question.kind === "section" ? (
-                      <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
-                        Layout only — this heading groups every question under it until the next
-                        section, and it stores no answer.
-                      </p>
-                    ) : (
-                      <>
-                        {/* The settings most forms never change, folded: every question showed all of them. */}
-                        <details className="sfb-more">
-                          <summary data-disclosure>Description, chart and advanced options</summary>
-                          <CollectionSettings question={question} index={index} match={type === "match"} disabled={!payload.canManageSchemas || busy} onChange={collectionConfig => updateQuestion(question.id, { collectionConfig })} />
-                          <FormsVisibilityEditor rule={question.visibleWhen} fieldKey={previewDefinition.fields[index]!.key} fields={previewDefinition.fields} disabled={!payload.canManageSchemas || busy} onChange={visibleWhen => setQuestions(previous => {
-                            // Conditions reference stable keys, so later label edits cannot break them.
-                            const definition = definitionFromDraft(title, previous);
-                            return previous.map((item, i) => ({ ...item, key: definition.fields[i]!.key, ...(item.id === question.id ? { visibleWhen } : {}) }));
-                          })} />
-                          <FormRow label="Description"><input value={question.helpText ?? ""} disabled={!payload.canManageSchemas || busy} onChange={event => updateQuestion(question.id, { helpText: event.target.value })} placeholder="Optional guidance for scouts" /></FormRow>
-                          <FormRow label="Response chart"><select aria-label={`Chart for question ${index+1}`} value={question.chart ?? "auto"} disabled={!payload.canManageSchemas || busy} onChange={event => updateQuestion(question.id, { chart: event.target.value as DraftQuestion["chart"] })}><option value="auto">Automatic</option><option value="bar">Answer counts</option><option value="trend">Number trend</option><option value="none">Table only</option></select></FormRow>
-                          <FormRow
-                            label="Feeds strategy as"
-                            hint={
-                              question.role === "none"
-                                ? detectedRoleForQuestion(question) !== "none"
-                                  ? `Detected: ${
-                                      STRATEGY_ROLE_OPTIONS.find(
-                                        (option) => option.role === detectedRoleForQuestion(question),
-                                      )?.label ?? detectedRoleForQuestion(question)
-                                    }`
-                                  : "Not mapped — pick a role so answers reach strategy and pick tools"
-                                : STRATEGY_ROLE_OPTIONS.find((option) => option.role === question.role)
-                                    ?.hint
-                            }
-                          >
-                            <select
-                              value={question.role}
-                              disabled={!payload.canManageSchemas || busy}
-                              aria-label={`Strategy mapping for question ${index + 1}`}
-                              onChange={(event) =>
-                                updateQuestion(question.id, {
-                                  role: event.target.value as StrategyFieldRole,
-                                })
-                              }
-                            >
-                              {STRATEGY_ROLE_OPTIONS.map((option) => (
-                                <option key={option.role} value={option.role}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </FormRow>
-                          {type === "match" ? <FormsOfficialComparison question={question} field={previewDefinition.fields[index]!} index={index}
-                            disabled={!payload.canManageSchemas || busy}
-                            onChange={officialComparison => updateQuestion(question.id, { officialComparison })} /> : null}
-                        <FormRow
-                          label="After a save"
-                          hint={
-                            RESET_BEHAVIOR_OPTIONS.find(
-                              (option) => option.behavior === question.reset,
-                            )?.hint
-                          }
-                        >
-                          <select
-                            value={question.reset}
-                            disabled={!payload.canManageSchemas || busy}
-                            aria-label={`After-save behavior for question ${index + 1}`}
-                            onChange={(event) =>
-                              updateQuestion(question.id, {
-                                reset: event.target.value as FormResetBehavior,
-                              })
-                            }
-                          >
-                            {RESET_BEHAVIOR_OPTIONS.map((option) => (
-                              <option key={option.behavior} value={option.behavior}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </FormRow>
-                        </details>
-                        <label
-                          className={`sfb-check sfb-required-toggle${question.required ? " is-on" : ""}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={question.required}
-                            disabled={!payload.canManageSchemas || busy}
-                            onChange={(event) =>
-                              updateQuestion(question.id, { required: event.target.checked })
-                            }
-                          />
-                          <span>
-                            <strong>Required</strong>
-                            <small className="app-muted">
-                              {question.required
-                                ? "Scouts must answer before save"
-                                : "Optional — scouts can skip"}
-                            </small>
-                          </span>
-                        </label>
-                      </>
-                    )}
-                    </> : null}
-                    </div>
-                  </article>
+                  <FormQuestionCard
+                    question={question}
+                    index={index}
+                    fields={previewDefinition.fields}
+                    expanded={showAllQuestions || focusedQuestionId === question.id}
+                    dragging={questionDrag.drag?.id === question.id}
+                    canManage={payload.canManageSchemas}
+                    busy={busy}
+                    canRemove={questions.length > 1}
+                    isMatch={type === "match"}
+                    dragHandleProps={questionDrag.handleProps(question.id, "questions")}
+                    onSelect={() => { setShowAllQuestions(false); setEditingQuestionId(question.id); }}
+                    onDuplicate={() => {
+                      const next = duplicateQuestion(questions, index);
+                      setQuestions(next);
+                      setEditingQuestionId(next[index + 1]?.id ?? null);
+                    }}
+                    onRemove={() => {
+                      setRemoved({ question, index });
+                      setQuestions((prev) => prev.filter((entry) => entry.id !== question.id));
+                    }}
+                    onUpdate={(patch) => updateQuestion(question.id, patch)}
+                    onRetype={(kind) => retypeQuestionById(question.id, kind)}
+                    onVisibleWhen={(visibleWhen) => setQuestions((previous) => {
+                      // Conditions reference stable keys, so later label edits cannot break them.
+                      const definition = definitionFromDraft(title, previous);
+                      return previous.map((item, i) => ({ ...item, key: definition.fields[i]!.key, ...(item.id === question.id ? { visibleWhen } : {}) }));
+                    })}
+                  />
                   </Fragment>
                 ))}
                 {questionDrag.slotIndex("questions") !== null &&

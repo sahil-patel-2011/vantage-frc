@@ -26,6 +26,7 @@ const THIS_SLICE = [
   "lib/hours/hours-related.ts",
   "lib/strategy/pick-desk-related.ts",
   "app/strategy/pick-list-workbench.tsx",
+  "app/strategy/pick-desk-chrome.tsx",
   "lib/nav/hubs.ts",
 ] as const;
 

@@ -20,6 +20,7 @@ const THIS_WEEK = [
   "app/my-day/my-day-client.tsx",
   "lib/scouting/scouting-related.ts",
   "app/scouting/scouting-client.tsx",
+  "app/scouting/use-scout-conflicts.ts",
   "app/scouting/scouting-ready-view.tsx",
   "app/command/command-chrome.tsx",
   "lib/command/event-day-related.ts",

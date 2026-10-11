@@ -26,6 +26,7 @@ const FILES = [
   "app/strategy/strategy-client.tsx",
   "lib/strategy/pick-desk-related.ts",
   "app/strategy/pick-list-workbench.tsx",
+  "app/strategy/pick-desk-chrome.tsx",
   "lib/strategy/pick-clock-related.ts",
   "app/pick-clock/pick-clock-client.tsx",
   "lib/video-rescout-related.ts",

@@ -3,7 +3,7 @@
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { scoutingQualityHref, type QualityQuery } from "../../lib/scouting/quality-navigation";
-import { qualityEvidenceSchema, qualityFieldsForSchema } from "../../lib/scouting/quality-evidence";
+import { qualityFieldsForSchema } from "../../lib/scouting/quality-evidence";
 import type { ScoutSchema, SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior, recordScoutAction, undoScoutAction, validatePayload } from "@vantage/scouting";
 import { answersToSave } from "../../lib/scouting/entry-answers";
@@ -54,7 +54,6 @@ import {
   type SaveReceipt,
   type SavedScoutReport,
   type ScoutTab,
-  type TrustSnapshot,
 } from "./scouting-model";
 import { ScoutingReadyView } from "./scouting-ready-view";
 import { ScoutingShell } from "./scouting-chrome";
@@ -63,6 +62,8 @@ import { clearFeatureSnapshot, getFeatureSnapshot } from "../../lib/offline/feat
 import { cacheLiveScouting } from "../../lib/scouting/live-cache";
 import { bootstrapForEvent, scoutingBootstrapUrl } from "../../lib/scouting/bootstrap-event";
 import { useScoutTask } from "./use-scout-task";
+import { useScoutConflicts } from "./use-scout-conflicts";
+import { useScoutTrust } from "./use-scout-trust";
 import { focusInvalidScoutField } from "./scouting-form-focus";
 import { ConfirmProvider, useConfirm } from "../../components/ui";
 import "./scouting-qr.css";
@@ -155,15 +156,10 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     confidence: "high" | "normal" | "low";
   } | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "degraded">("idle");
-  const [conflicts, setConflicts] = useState<Array<Record<string, unknown>>>([]);
-  const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({});
+  const { conflicts, selectedWinners, setSelectedWinners, loadConflicts, reviewConflict } =
+    useScoutConflicts({ orgId, eventKey: data?.eventKey, active: tab === "conflicts", setMessage });
   const [officialFlags, setOfficialFlags] = useState<OfficialFlag[]>([]);
-  const [trustContext, setTrust] = useState<{ orgId: string; eventKey: string; snapshot: TrustSnapshot } | null>(null);
-  const trust = trustContext && trustContext.orgId === orgId && trustContext.eventKey === data?.eventKey ? trustContext.snapshot : null;
-  const trustGeneration = useRef(0);
-  const trustAbort = useRef<AbortController | null>(null);
-  const trustMounted = useRef(true);
-  useEffect(() => { trustMounted.current = true; return () => { trustMounted.current = false; ++trustGeneration.current; trustAbort.current?.abort(); }; }, []);
+  const { trust, loadTrust } = useScoutTrust(orgId, data?.eventKey);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [draftDirty, setDraftDirty] = useState(false);
   const { cheatOpen, setCheatOpen, shortcuts } = useVenueShortcuts(orgId);
@@ -195,26 +191,6 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     setQuarantine(await listQuarantine(orgId));
   }, [orgId]);
   useScoutQueueRefresh(refreshCounts);
-  const loadTrust = useCallback(async (eventKey: string | null | undefined) => {
-    if (!trustMounted.current) return;
-    trustAbort.current?.abort();
-    const generation = ++trustGeneration.current;
-    setTrust(null);
-    if (!orgId || !eventKey || !navigator.onLine) return;
-    const controller = new AbortController(); trustAbort.current = controller;
-    try {
-      const params = new URLSearchParams({ orgId, eventKey });
-      const response = await fetch(`/api/scouting/trust?${params}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
-      const raw: unknown = await response.json().catch(() => null);
-      if (generation !== trustGeneration.current) return;
-      if (!response.ok) return;
-      const body = qualityEvidenceSchema.safeParse(raw);
-      if (!body.success || body.data.orgId !== orgId || body.data.eventKey !== eventKey) return;
-      setTrust({ orgId, eventKey, snapshot: { fieldTrust: body.data.fieldTrust, fieldTrustBySchema: body.data.fieldTrustBySchema, leaderboard: body.data.leaderboard } });
-    } catch {
-      /* Optional hints stay absent when their current scope cannot be confirmed. */
-    }
-  }, [orgId]);
   // After an upload, the team's data again, quietly, so the "Done" ticks and your reports include
   // what was just sent. The list used to refresh only on reload.
   const refreshLive = useCallback(async () => {
@@ -399,25 +375,6 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
       setTab(deepTab);
     }
   }, [orgId, searchParams]);
-
-  // Fetch disagreements for both task switches and notification deep links.
-  const conflictsEventKey = data?.eventKey ?? "";
-  useEffect(() => {
-    if (tab !== "conflicts" || !orgId || !conflictsEventKey) return;
-    let cancelled = false;
-    void fetch(
-      `/api/scouting/disagreements?orgId=${encodeURIComponent(orgId)}&eventKey=${encodeURIComponent(conflictsEventKey)}`,
-    )
-      .then(async (response) => {
-        if (!response.ok || cancelled) return;
-        const body = (await response.json()) as { disagreements: [] };
-        if (!cancelled) setConflicts(body.disagreements);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [tab, orgId, conflictsEventKey]);
 
   // The robot picked for you: only once the live team data has arrived (or could not), so it is
   // never chosen from an old copy on the phone that forgot what you already scouted.
@@ -854,14 +811,6 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     setMessage("Discarded — it will not sync.");
   }
 
-  async function loadConflicts() {
-    if (!data?.eventKey) return;
-    const response = await fetch(
-      `/api/scouting/disagreements?orgId=${encodeURIComponent(orgId)}&eventKey=${encodeURIComponent(data?.eventKey ?? "")}`,
-    );
-    if (response.ok) setConflicts(((await response.json()) as { disagreements: [] }).disagreements);
-  }
-
   async function createStarterForms() {
     if (starterCreating.current || !data?.canManageSchemas || !navigator.onLine) return;
     starterCreating.current = true; setCreatingStarterForms(true); setMessage("");
@@ -886,37 +835,6 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
       starterCreating.current = false;
       if (bootstrapMounted.current) setCreatingStarterForms(false);
     }
-  }
-
-  async function reviewConflict(id: string, status: "resolved" | "dismissed") {
-    if (status === "resolved" && !selectedWinners[id]) {
-      setMessage("Pick which scout was right before resolving — that updates pick-desk trust.");
-      return;
-    }
-    const response = await fetch("/api/scouting/disagreements", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        orgId,
-        id,
-        status,
-        winningEntryId: status === "resolved" ? selectedWinners[id] : undefined,
-        resolution: { reviewedIn: "scouting-ui" },
-      }),
-    });
-    if (response.ok) {
-      setSelectedWinners((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      await loadConflicts();
-      setMessage(
-        status === "resolved"
-          ? "Resolved · pick-desk trust updated · coordinators notified"
-          : "Dismissed · coordinators notified",
-      );
-    } else setMessage("Coach role is required to review conflicts");
   }
 
   const shell = classifyScoutingShell({
