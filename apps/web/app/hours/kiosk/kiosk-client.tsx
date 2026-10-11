@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../../components/ui";
+import { Button, askConfirm } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -858,7 +858,7 @@ function CardsPanel(props: {
                   {row.label ? ` · ${row.label}` : ""}
                 </small>
               </div>
-              <button type="button" className="hours-link danger" onClick={() => void remove(row.id)} disabled={busy}>
+              <button type="button" className="hours-link danger" onClick={async () => { if (await askConfirm({ title: "Remove this sign-in code?", body: `${row.userName ?? "This member"}'s code (${SCAN_CODE_KIND_LABELS[row.codeKind]}) stops working at the kiosk.`, confirmLabel: "Remove code", tone: "destructive" })) void remove(row.id); }} disabled={busy}>
                 Remove
               </button>
             </li>

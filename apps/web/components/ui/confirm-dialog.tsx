@@ -105,6 +105,20 @@ export function ConfirmDialog({
 type ConfirmFn = (opts: ConfirmOpts) => Promise<boolean>;
 const ConfirmContext = createContext<ConfirmFn | null>(null);
 
+/** Mounted providers, innermost last; askConfirm() asks through the innermost one. */
+const mounted: ConfirmFn[] = [];
+
+/**
+ * The same dialog as useConfirm(), for a click handler in a component that does not hold the
+ * hook: `onClick={async () => { if (await askConfirm({…})) remove(); }}`. A ConfirmProvider is
+ * always mounted under the app's ThemeProvider; without one it falls back to the browser box.
+ */
+export function askConfirm(opts: ConfirmOpts): Promise<boolean> {
+  const ask = mounted[mounted.length - 1];
+  if (ask) return ask(opts);
+  return Promise.resolve(typeof window !== "undefined" && window.confirm(opts.title));
+}
+
 /**
  * Mount once (e.g. inside app-shell or a page root). Provides useConfirm().
  * Replaces window.confirm with a portal + focus-trapped dialog.
@@ -129,6 +143,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     resolver.current?.(false);
     resolver.current = null;
   }, []);
+
+  useEffect(() => {
+    mounted.push(confirm);
+    return () => {
+      const at = mounted.lastIndexOf(confirm);
+      if (at >= 0) mounted.splice(at, 1);
+    };
+  }, [confirm]);
 
   const onResolve = useCallback((ok: boolean) => {
     setState((s) => ({ ...s, open: false }));

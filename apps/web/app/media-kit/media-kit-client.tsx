@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { mediaKitAssetKindLabel } from "../../lib/media-kit";
 import type { MediaKitView } from "../../lib/media-kit/compute-media-kit";
 import {
@@ -637,7 +637,7 @@ function AssetsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => mutate({ action: "delete-asset", assetId: asset.id })}
+                onClick={async () => { if (await askConfirm({ title: "Delete this asset?", body: `“${asset.title}” is deleted from the media kit.`, confirmLabel: "Delete asset", tone: "destructive" })) void (mutate({ action: "delete-asset", assetId: asset.id })); }}
               >
                 Delete
               </button>
@@ -770,7 +770,7 @@ function DocumentsPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-document", documentId: doc.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this document?", body: `“${doc.title}” is deleted from the media kit.`, confirmLabel: "Delete document", tone: "destructive" })) void (mutate({ action: "delete-document", documentId: doc.id })); }}
                 >
                   Delete
                 </button>

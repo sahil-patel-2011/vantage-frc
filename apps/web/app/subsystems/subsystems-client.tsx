@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, askConfirm } from "../../components/ui";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -476,7 +476,7 @@ export default function SubsystemsClient({ orgId }: { orgId: string | null }) {
                     size="sm"
                     variant="danger"
                     aria-label={`Delete subsystem ${s.name}`}
-                    onClick={() => void post({ action: "delete_subsystem", id: s.id }, "Subsystem removed.")}
+                    onClick={async () => { if (await askConfirm({ title: "Delete this subsystem?", body: `“${s.name}” is deleted.`, confirmLabel: "Delete subsystem", tone: "destructive" })) void post({ action: "delete_subsystem", id: s.id }, "Subsystem removed."); }}
                   >
                     Delete
                   </Button>

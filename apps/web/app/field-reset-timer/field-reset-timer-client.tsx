@@ -12,7 +12,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import type { FieldResetTimerView } from "../../lib/field-reset-timer/compute-field-reset-timer";
 import type { FieldResetTimerTier } from "../../lib/field-reset-timer/types";
 import {
@@ -637,7 +637,7 @@ function CycleLog({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => mutate({ action: "delete-cycle", cycleId: cycle.id })}
+                onClick={async () => { if (await askConfirm({ title: "Delete this cycle?", body: `Cycle #${cycle.cycleNumber} is deleted.`, confirmLabel: "Delete cycle", tone: "destructive" })) void (mutate({ action: "delete-cycle", cycleId: cycle.id })); }}
               >
                 Delete
               </button>

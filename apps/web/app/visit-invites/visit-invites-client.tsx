@@ -11,7 +11,7 @@ import {
   PageHeader,
   Panel,
   StatRowSkeleton,
-  StatTile, Button, useConfirm } from "../../components/ui";
+  StatTile, Button, useConfirm, askConfirm } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -693,7 +693,7 @@ function VisitCard({
                       className="visit-link danger"
                       aria-label={`Remove host ${host.hostName || "Host"}`}
                       disabled={busy}
-                      onClick={() => void run({ action: "remove_host", orgId, id: host.id }, `rh:${host.id}`)}
+                      onClick={async () => { if (await askConfirm({ title: "Remove this host?", body: `${host.hostName} comes off the visit.`, confirmLabel: "Remove host", tone: "destructive" })) void run({ action: "remove_host", orgId, id: host.id }, `rh:${host.id}`); }}
                     >
                       Remove
                     </button>
@@ -744,7 +744,7 @@ function VisitCard({
                         className="visit-link danger"
                         aria-label={`Remove demo ${demo.demoTitle}`}
                         disabled={busy}
-                        onClick={() => void run({ action: "remove_demo", orgId, id: demo.id }, `rd:${demo.id}`)}
+                        onClick={async () => { if (await askConfirm({ title: "Remove this demo?", body: `“${demo.demoTitle}” comes off the visit.`, confirmLabel: "Remove demo", tone: "destructive" })) void run({ action: "remove_demo", orgId, id: demo.id }, `rd:${demo.id}`); }}
                       >
                         Remove
                       </button>
@@ -861,7 +861,7 @@ function VisitCard({
                       className="visit-link danger"
                       aria-label={`Remove RSVP ${rsvp.guestName || "Member"}`}
                       disabled={busy}
-                      onClick={() => void run({ action: "remove_rsvp", orgId, id: rsvp.id }, `rr:${rsvp.id}`)}
+                      onClick={async () => { if (await askConfirm({ title: "Remove this response?", body: `${rsvp.guestName}'s response is removed.`, confirmLabel: "Remove response", tone: "destructive" })) void run({ action: "remove_rsvp", orgId, id: rsvp.id }, `rr:${rsvp.id}`); }}
                     >
                       Remove
                     </button>

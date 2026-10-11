@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -646,7 +646,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                       Copy text
                     </Button>
                     {selected ? (
-                      <Button variant="secondary" type="button" disabled={busy} onClick={() => void mutate({ action: "delete", id: selected.id }, "Deleted.")}>
+                      <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Delete this one-pager?", body: "The sponsorship one-pager is deleted.", confirmLabel: "Delete one-pager", tone: "destructive" })) void mutate({ action: "delete", id: selected.id }, "Deleted."); }}>
                         Delete
                       </Button>
                     ) : null}

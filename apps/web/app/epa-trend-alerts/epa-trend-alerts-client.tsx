@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { directionLabel, severityLabel } from "../../lib/epa-trend-alerts";
 import type { EpaTrendAlertsView } from "../../lib/epa-trend-alerts/compute-epa-trend-alerts";
 import {
@@ -562,7 +562,7 @@ function WatchlistPanel({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => mutate({ action: "unwatch-team", watchlistId: team.id })}
+              onClick={async () => { if (await askConfirm({ title: "Stop watching this team?", body: `Team ${team.teamNumber} comes off the watchlist.`, confirmLabel: "Stop watching", tone: "neutral" })) void (mutate({ action: "unwatch-team", watchlistId: team.id })); }}
             >
               Remove
             </button>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { trainingWinnerLabel } from "../../lib/scout-training-mode";
 import type { ScoutTrainingView } from "../../lib/scout-training-mode/compute-scout-training-mode";
 import type { PracticeMatch, TrainingWinner } from "../../lib/scout-training-mode/types";
@@ -503,7 +503,7 @@ function RecentAttempts({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => mutate({ action: "delete-attempt", attemptId: attempt.id })}
+              onClick={async () => { if (await askConfirm({ title: "Delete this attempt?", body: "The practice attempt is deleted.", confirmLabel: "Delete attempt", tone: "destructive" })) void (mutate({ action: "delete-attempt", attemptId: attempt.id })); }}
             >
               Delete
             </button>

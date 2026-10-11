@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../components/ui";
 import {
   CAPABILITY_LABEL,
   NEXT_SEASON_DISCLAIMER,
@@ -188,12 +188,10 @@ export function NextSeasonSection({
                 size="sm"
                 type="button"
                 disabled={busy}
-                onClick={() =>
-                  void run(
+                onClick={async () => { if (await askConfirm({ title: "Remove this note?", body: "The next-season note is removed.", confirmLabel: "Remove note", tone: "destructive" })) void run(
                     { action: "delete_next_season_signal", orgId, id: signal.id },
                     `delete-signal-${signal.id}`,
-                  )
-                }
+                  ); }}
               >
                 Remove
               </Button>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { OfflineBanner } from "../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   AI_EXPAND_IDLE,
   expandedDisplay,
@@ -624,7 +624,7 @@ function SnapshotsPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-snapshot", snapshotId: snapshot.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this snapshot?", body: "The season report snapshot is deleted.", confirmLabel: "Delete snapshot", tone: "destructive" })) void (mutate({ action: "delete-snapshot", snapshotId: snapshot.id })); }}
                 >
                   Delete
                 </button>

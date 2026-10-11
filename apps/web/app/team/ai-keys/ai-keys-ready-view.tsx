@@ -1,7 +1,7 @@
 "use client";
 
 import { type Dispatch, type SetStateAction } from "react";
-import { Button } from "../../../components/ui";
+import { Button, askConfirm } from "../../../components/ui";
 import { ModelSelector } from "../../../components/model-selector";
 import { BYOK_PROVIDER_META, type ByokProvider } from "../../../lib/ai-keys/byok-providers";
 import { MODEL_POLICY_MODE_META } from "../../../lib/ai-keys/model-policy-related";
@@ -288,7 +288,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                           : " · not used yet"}
                       </small>
                     </div>
-                    <Button variant="secondary" type="button" disabled={mineBusy} onClick={() => void removeMemberKey(row.provider)}>
+                    <Button variant="secondary" type="button" disabled={mineBusy} onClick={async () => { if (await askConfirm({ title: "Remove your key?", body: "Your personal key for this provider is deleted from Vantage.", confirmLabel: "Remove key", tone: "destructive" })) void removeMemberKey(row.provider); }}>
                       Remove
                     </Button>
                   </li>

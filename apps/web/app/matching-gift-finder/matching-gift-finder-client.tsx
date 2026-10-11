@@ -10,7 +10,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   MATCHING_GIFT_PLEDGE_STATUSES,
@@ -755,7 +755,7 @@ function PledgesPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-pledge", pledgeId: pledge.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Remove this pledge?", body: `${pledge.contactName}'s pledge is removed.`, confirmLabel: "Remove pledge", tone: "destructive" })) void (mutate({ action: "delete-pledge", pledgeId: pledge.id })); }}
                 >
                   Remove
                 </button>
@@ -802,7 +802,7 @@ function DraftsPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => mutate({ action: "delete-draft", draftId: draft.id })}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this draft?", body: `“${draft.subject}” is deleted.`, confirmLabel: "Delete draft", tone: "destructive" })) void (mutate({ action: "delete-draft", draftId: draft.id })); }}
                 >
                   Delete
                 </button>

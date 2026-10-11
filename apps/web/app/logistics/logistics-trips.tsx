@@ -1,6 +1,6 @@
 "use client";
 
-import { EmptyState, Panel, ToolStrip } from "../../components/ui";
+import { EmptyState, Panel, ToolStrip, askConfirm } from "../../components/ui";
 import {
   TRAVEL_LEG_KINDS,
   TRAVEL_LEG_LABELS,
@@ -369,7 +369,7 @@ function HotelBlock({
                     type="button"
                     className="log-link danger"
                     disabled={!act || busy}
-                    onClick={() => void run({ action: "delete_room", orgId, id: room.id }, `del-room:${room.id}`)}
+                    onClick={async () => { if (await askConfirm({ title: "Remove this room?", body: `Room ${room.roomLabel} comes off the hotel.`, confirmLabel: "Remove room", tone: "destructive" })) void run({ action: "delete_room", orgId, id: room.id }, `del-room:${room.id}`); }}
                   >
                     Remove room
                   </button>

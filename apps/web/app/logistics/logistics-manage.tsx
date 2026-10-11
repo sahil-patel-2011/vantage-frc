@@ -1,6 +1,6 @@
 "use client";
 
-import { Panel, Button } from "../../components/ui";
+import { Panel, Button, askConfirm } from "../../components/ui";
 import {
   AUDIENCE_LABEL,
   CHECKLIST_AUDIENCES,
@@ -168,7 +168,7 @@ export function LogisticsManagePanel({
               type="button"
               className="log-link danger"
               disabled={!act || busy}
-              onClick={() => void run({ action: "delete_contact", orgId, id: contact.id }, `del-contact:${contact.id}`)}
+              onClick={async () => { if (await askConfirm({ title: "Delete this contact?", body: `“${contact.name}” is deleted from logistics contacts.`, confirmLabel: "Delete contact", tone: "destructive" })) void run({ action: "delete_contact", orgId, id: contact.id }, `del-contact:${contact.id}`); }}
             >
               Delete
             </button>
@@ -238,7 +238,7 @@ export function LogisticsManagePanel({
               type="button"
               className="log-link danger"
               disabled={!act || busy}
-              onClick={() => void run({ action: "delete_on_duty", orgId, id: activeOnDuty.id }, `del-od:${activeOnDuty.id}`)}
+              onClick={async () => { if (await askConfirm({ title: "Remove the on-duty slot?", body: `${activeOnDuty.mentorName} is no longer listed as on duty.`, confirmLabel: "Remove slot", tone: "destructive" })) void run({ action: "delete_on_duty", orgId, id: activeOnDuty.id }, `del-od:${activeOnDuty.id}`); }}
             >
               Remove active slot
             </button>

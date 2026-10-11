@@ -5,7 +5,7 @@ import { BusinessRelated } from "../../../components/business-related";
 import { MeteredAiCutoffBanner } from "../../../components/metered-ai-cutoff-banner";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../../components/usage-cutoff-banner";
-import { EmptyState, Button } from "../../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { GRANTS_WRITING_RELATED_INCLUDE } from "../../../lib/business/business-related";
 import { grantsWritingNextActions } from "../../../lib/business/grants-writing-next-actions";
@@ -668,7 +668,7 @@ function GrantWritingWorkspace({
                     </option>
                   ))}
                 </select>
-                <Button variant="secondary" type="button" disabled={busy} onClick={() => void onMutate({ action: "delete", draftId: selectedDraft.id }, "Draft deleted.") }>
+                <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Delete this draft?", body: "The grant draft is deleted.", confirmLabel: "Delete draft", tone: "destructive" })) void onMutate({ action: "delete", draftId: selectedDraft.id }, "Draft deleted."); }}>
                   Delete draft
                 </Button>
               </>

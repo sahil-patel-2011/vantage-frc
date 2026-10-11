@@ -11,7 +11,7 @@ import {
   StatRowSkeleton,
   StatTile,
   TableSkeleton,
-  type BadgeTone, Button } from "../../components/ui";
+  type BadgeTone, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
@@ -670,7 +670,7 @@ function ChecklistPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => mutate({ action: "delete-checklist-item", itemId: item.id })}
+                onClick={async () => { if (await askConfirm({ title: "Delete this checklist item?", body: "The checklist item is deleted.", confirmLabel: "Delete item", tone: "destructive" })) void (mutate({ action: "delete-checklist-item", itemId: item.id })); }}
               >
                 Delete
               </button>

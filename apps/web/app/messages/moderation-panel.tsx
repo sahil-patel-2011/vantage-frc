@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Button, EmptyState } from "../../components/ui";
+import { Badge, Button, EmptyState, askConfirm } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./moderation.css";
 
@@ -139,7 +139,7 @@ export function ModerationPanel({ orgId }: { orgId: string }) {
                   onChange={(event) => setReasons((current) => ({ ...current, [report.id]: event.target.value }))}
                 />
                 {!report.messageRemoved ? (
-                  <Button variant="danger" type="button" disabled={busy === report.id} onClick={() => void act(report, "remove")}>
+                  <Button variant="danger" type="button" disabled={busy === report.id} onClick={async () => { if (await askConfirm({ title: "Remove this message?", body: `The reported message from ${report.authorName} is removed from ${report.conversationLabel}.`, confirmLabel: "Remove message", tone: "destructive" })) void act(report, "remove"); }}>
                     Remove message
                   </Button>
                 ) : null}

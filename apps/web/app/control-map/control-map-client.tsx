@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   canDeleteControlBinding,
   COMMON_INPUTS,
@@ -642,7 +642,7 @@ function BindingLists({
                           type="button"
                           disabled={busy}
                           aria-label={`Delete binding ${b.inputLabel}`}
-                          onClick={() => onDelete(b.id)}
+                          onClick={async () => { if (await askConfirm({ title: "Delete this binding?", body: `“${b.inputLabel}” is deleted from the control map.`, confirmLabel: "Delete binding", tone: "destructive" })) void (onDelete(b.id)); }}
                         >
                           Delete
                         </Button>

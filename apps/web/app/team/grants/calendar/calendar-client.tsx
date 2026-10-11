@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../../../components/offline-banner";
-import { Badge, EmptyState, PageHeader, Panel, Button } from "../../../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../../../components/ui";
 import { BusinessRelated } from "../../../../components/business-related";
 import type {
   GrantCalendarEntry,
@@ -623,7 +623,7 @@ function GrantRow({
           {busy ? "Saving…" : entry.watching ? "Watching — alerts on" : "Watch this grant"}
         </Button>
         {canManage && entry.teamAdded ? (
-          <Button variant="ghost" type="button" onClick={onRemove} disabled={busy}>
+          <Button variant="ghost" type="button" onClick={async () => { if (await askConfirm({ title: "Remove this grant?", body: "It comes off your team's grant calendar.", confirmLabel: "Remove grant", tone: "destructive" })) onRemove(); }} disabled={busy}>
             Remove
           </Button>
         ) : null}

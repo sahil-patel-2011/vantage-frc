@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
 import { CallYourShot } from "../../lib/learning/call-your-shot";
 import { buildShooterCall } from "../../lib/learning/surfaces";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
@@ -485,7 +485,7 @@ export default function ShooterTableClient({ orgId }: { orgId: string | null }) 
                     size="sm"
                     variant="danger"
                     aria-label={`Delete point ${p.notes || `${p.distanceFt} ft`}`}
-                    onClick={() => void post({ action: "delete_point", id: p.id }, "Point removed.")}
+                    onClick={async () => { if (await askConfirm({ title: "Delete this point?", body: `The ${p.distanceFt} ft point is deleted from the shooter table.`, confirmLabel: "Delete point", tone: "destructive" })) void post({ action: "delete_point", id: p.id }, "Point removed."); }}
                   >
                     Delete
                   </Button>

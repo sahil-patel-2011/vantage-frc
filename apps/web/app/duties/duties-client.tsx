@@ -9,7 +9,7 @@ import {
   Panel,
   SelectField,
   TextareaField,
-  TextField, Button } from "../../components/ui";
+  TextField, Button, askConfirm } from "../../components/ui";
 import {
   ROSTER_KIND_LABELS,
   WATCH_KIND_LABELS,
@@ -526,7 +526,7 @@ function WatchRow({
               Clear assignment
             </Button>
           ) : null}
-          <Button variant="secondary" type="button" disabled={busy} onClick={onDelete}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Remove this duty?", body: "It comes off the duty list.", confirmLabel: "Remove duty", tone: "destructive" })) onDelete(); }}>
             Remove
           </Button>
         </div>

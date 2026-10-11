@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile } from "../../components/ui";
+import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
 import { CallYourShot } from "../../lib/learning/call-your-shot";
 import { buildPowerBudgetCall } from "../../lib/learning/surfaces";
 import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
@@ -537,7 +537,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
                     size="sm"
                     variant="danger"
                     aria-label={`Delete load ${l.name}`}
-                    onClick={() => void post({ action: "delete_load", id: l.id }, "Load removed.")}
+                    onClick={async () => { if (await askConfirm({ title: "Delete this load?", body: `“${l.name}” is deleted from the power budget.`, confirmLabel: "Delete load", tone: "destructive" })) void post({ action: "delete_load", id: l.id }, "Load removed."); }}
                   >
                     Delete
                   </Button>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button, askConfirm } from "../../components/ui";
 import { RECOGNITION_STAGE_LABEL, SUGGESTED_AWARDS, type RecognitionStage } from "../../lib/recognition";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -352,7 +352,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
                   Advance to {RECOGNITION_STAGE_LABEL[NEXT_STAGE[award.stage]!]}
                 </Button>
               ) : null}
-              <Button variant="secondary" type="button" onClick={() => void post({ action: "delete_award", id: award.id }, "Award deleted.")}>
+              <Button variant="secondary" type="button" onClick={async () => { if (await askConfirm({ title: "Delete this award?", body: `“${award.name}” is deleted.`, confirmLabel: "Delete award", tone: "destructive" })) void post({ action: "delete_award", id: award.id }, "Award deleted."); }}>
                 Delete
               </Button>
             </p>

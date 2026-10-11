@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { AIAttribution, Button, EmptyState, PageHeader } from "../../components/ui";
+import { AIAttribution, Button, EmptyState, PageHeader, askConfirm } from "../../components/ui";
 import {
   AI_EXPAND_IDLE,
   expandedDisplay,
@@ -353,7 +353,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
               userId: view.context.userId,
               authorId: d.loggedBy,
             }) ? (
-              <button type="button" aria-label={`Delete debrief ${d.matchLabel}`} onClick={() => void post({ action: "delete_debrief", id: d.id }, "Debrief deleted.")}>
+              <button type="button" aria-label={`Delete debrief ${d.matchLabel}`} onClick={async () => { if (await askConfirm({ title: "Delete this debrief?", body: `The debrief for ${d.matchLabel} is deleted.`, confirmLabel: "Delete debrief", tone: "destructive" })) void post({ action: "delete_debrief", id: d.id }, "Debrief deleted."); }}>
                 Delete
               </button>
             ) : null}

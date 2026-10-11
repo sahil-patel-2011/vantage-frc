@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";
-import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button, askConfirm } from "../../components/ui";
 import {
   classifyLoadFailure,
   loadFailureCopy,
@@ -654,7 +654,7 @@ export default function VideoRescoutClient() {
                   type="button"
                   className="vid-link danger"
                   disabled={busyKey === `note:${entry.id}`}
-                  onClick={() => void runVideo({ action: "delete_note", orgId, id: entry.id }, `note:${entry.id}`)}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this note?", body: "The video note is deleted.", confirmLabel: "Delete note", tone: "destructive" })) void runVideo({ action: "delete_note", orgId, id: entry.id }, `note:${entry.id}`); }}
                 >
                   Delete
                 </button>
@@ -818,7 +818,7 @@ export default function VideoRescoutClient() {
                   type="button"
                   className="vid-link danger"
                   disabled={busyKey === `score:${entry.id}`}
-                  onClick={() => void runRescout({ action: "delete_score", orgId, id: entry.id }, `score:${entry.id}`)}
+                  onClick={async () => { if (await askConfirm({ title: "Delete this score?", body: "The re-scout score is deleted.", confirmLabel: "Delete score", tone: "destructive" })) void runRescout({ action: "delete_score", orgId, id: entry.id }, `score:${entry.id}`); }}
                 >
                   Delete
                 </button>

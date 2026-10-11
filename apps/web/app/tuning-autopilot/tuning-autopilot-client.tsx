@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { TUNING_CONTROLLER_TYPES, tuningControllerTypeLabel, tuningSessionStatusLabel } from "../../lib/tuning-autopilot";
 import type { TuningAutopilotView } from "../../lib/tuning-autopilot/compute-tuning-autopilot";
 import {
@@ -869,9 +869,7 @@ function IterationHistory({
                 className="text-button"
                 disabled={busy}
                 aria-label={`Delete iteration ${iteration.notes || `#${iteration.iterationIndex}`}`}
-                onClick={() =>
-                  mutate({ action: "delete-iteration", iterationId: iteration.id, sessionId: view.selectedSessionId })
-                }
+                onClick={async () => { if (await askConfirm({ title: "Delete this iteration?", body: `Iteration #${iteration.iterationIndex} is deleted.`, confirmLabel: "Delete iteration", tone: "destructive" })) void (mutate({ action: "delete-iteration", iterationId: iteration.id, sessionId: view.selectedSessionId })); }}
               >
                 Delete
               </button>

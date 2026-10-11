@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Badge, EmptyState, StatTile, Button } from "../../components/ui";
+import { Badge, EmptyState, StatTile, Button, askConfirm } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { OfflineBanner } from "../../components/offline-banner";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -585,7 +585,7 @@ function LiveDesk({
                           type="button"
                           className="danger"
                           disabled={busy}
-                          onClick={() => void mutate({ action: "delete-funding", fundingId: row.id })}
+                          onClick={async () => { if (await askConfirm({ title: "Remove this funding source?", body: `“${row.name}” comes out of this season's funding.`, confirmLabel: "Remove funding", tone: "destructive" })) void mutate({ action: "delete-funding", fundingId: row.id }); }}
                         >
                           Remove
                         </button>
@@ -729,7 +729,7 @@ function LiveDesk({
                           type="button"
                           className="danger"
                           disabled={busy}
-                          onClick={() => void mutate({ action: "delete-purchase", purchaseId: row.id })}
+                          onClick={async () => { if (await askConfirm({ title: "Remove this purchase?", body: `“${row.item}” comes out of this season's purchases.`, confirmLabel: "Remove purchase", tone: "destructive" })) void mutate({ action: "delete-purchase", purchaseId: row.id }); }}
                         >
                           Remove
                         </button>
