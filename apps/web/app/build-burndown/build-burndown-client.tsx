@@ -407,7 +407,7 @@ export default function BuildBurndownClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href={hasPlan ? "#build-burndown-tasks" : "#build-burndown-plan"}>
+          <Button as="a" variant="secondary" href={hasPlan ? "#build-burndown-tasks" : "#build-burndown-plan"}>
             {hasPlan ? "Add a build task" : "Set kickoff plan"}
           </Button>
         </EmptyState>

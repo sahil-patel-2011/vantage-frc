@@ -439,7 +439,7 @@ export default function DefensePlannerClient() {
           description={shellCopy.description}
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
+          <Button as="a" variant="secondary" href={hasProfile ? "#defense-planner-matchup" : "#defense-planner-profile"}>
             {hasProfile ? "Log a matchup" : "Save robot profile"}
           </Button>
         </EmptyState>
