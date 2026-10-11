@@ -1,5 +1,6 @@
 import { resolveActiveSeasonYear } from "./season-year";
 import { isProposedActionOutput } from "./action-proposals";
+import { isSkillToolOutput } from "./skill-output";
 
 export type PlannedToolCall = { name: string; input: unknown };
 
@@ -352,6 +353,18 @@ export function annotateToolOutput(name: string, output: unknown, input?: unknow
             name.startsWith("fmea.")
           ? ("model_inference" as const)
           : ("hard_metric" as const);
+
+  // An Ask AI skill (skill-output.ts) already says what it found, in plain words.
+  if (isSkillToolOutput(output)) {
+    return {
+      name,
+      status: output.status,
+      classification: output.classification,
+      summary: output.summary,
+      output,
+      input,
+    };
+  }
 
   // A write tool only proposed its change (action-proposals.ts): say exactly that.
   if (isProposedActionOutput(output)) {

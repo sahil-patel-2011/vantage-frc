@@ -21,6 +21,8 @@ import {
   loadOrgSessionFacts,
 } from "./org-session-context";
 import { loadOrgAgentRulesContextItem } from "./org-agent-rules";
+import { isSkillToolName, planTurnTools } from "./skill-output";
+import type { PlannedToolCall } from "./auto-tools";
 
 export type ClaimClassification="hard_metric"|"scout_observation"|"researched_claim"|"model_inference";
 export type ContextSource=ContextItem&{classification:ClaimClassification|"private_memory"|"team_memory"|"artifact"|"github_file"|"vscode_selection";sourceUrl?:string;observedAt?:string;label?:string};
@@ -100,6 +102,14 @@ export type OrchestratorRequest={
   conversationHistory?:ChatMessage[];
   selected?:{teamKey?:string;matchKey?:string};toolCalls?:Array<{name:string;input:unknown}>;
   billingOwner?:{type:"user"|"org";id:string};usesOrgData?:boolean;autoTools?:boolean;promptCachingEnabled?:boolean;
+  /** Tools that run before the model whatever it decides: an Ask AI skill the person pinned, or the one the keyword router matched (skill-output.ts). */
+  forcedToolCalls?:PlannedToolCall[];
+  /** More registry tools a provider with native tool calls may choose from (every other skill the person may use). They never run on their own. */
+  nativeCandidateToolNames?:string[];
+  /** `meteredAI` feature for this turn (an Ask AI skill id). Defaults to `capability`. */
+  usageFeature?:string;
+  /** Our own fixed guidance for this turn (a skill's rules), sent ahead of the person's message. Never text a user or a record supplied. */
+  instructions?:string;
 };
 
 export type OrchestratorResult={
@@ -121,7 +131,7 @@ export class AIOrchestrator{
     const {resolveActiveSeasonYear}=await import("./season-year");
     const seasonYear=resolveActiveSeasonYear({seasonYear:activeRow?.season_year,activeEventKey:active,matchKey:request.selected?.matchKey});
     const autoToolSurfaces = new Set(["chat", "cad", "strategy"]);
-    const fallbackToolCalls =
+    const plannerToolCalls =
       request.toolCalls ??
       ((request.autoTools ?? autoToolSurfaces.has(request.capability))
         ? planChatToolCalls(request.message, {
@@ -131,17 +141,24 @@ export class AIOrchestrator{
             seasonYear,
           })
         : []);
-    const nativeToolPlanning =
-      request.toolCalls === undefined &&
-      fallbackToolCalls.length > 0 &&
-      request.adapter.supportsNativeTools === true;
-    let plannedToolCalls = nativeToolPlanning ? [] : fallbackToolCalls;
+    const aiPolicy=await loadOrgAiPolicy(this.client,request.orgId);
+    const registered=new Set(this.registry.list().map((tool)=>tool.name));
+    // Skills the team's tool allowlist leaves out are simply not offered; a forced one is checked below like any planned call.
+    const turn = planTurnTools({
+      forced: request.toolCalls === undefined ? (request.forcedToolCalls ?? []) : [],
+      fallback: plannerToolCalls,
+      nativeCandidates: request.toolCalls === undefined ? (request.nativeCandidateToolNames ?? []).filter((name) => registered.has(name) && isToolAllowed(aiPolicy, name)) : [],
+      explicit: request.toolCalls !== undefined,
+      supportsNativeTools: request.adapter.supportsNativeTools === true,
+    });
+    const fallbackToolCalls = turn.planned;
+    const nativeToolPlanning = turn.native;
+    let plannedToolCalls = turn.upFront;
     let billingOwner=request.billingOwner;if(!billingOwner&&request.privacyScope==="private"){const personal=await this.client.query(`SELECT 1 FROM billing_accounts a JOIN billing_subscriptions s ON s.billing_account_id=a.id AND s.status IN ('active','trialing') WHERE a.owner_user_id=$1 AND s.current_period_start<=now() AND s.current_period_end>now()`,[request.userId]);if(personal.rowCount)billingOwner={type:"user",id:request.userId};}billingOwner??={type:"org",id:request.orgId};
     const plannedUsesOrgData=fallbackToolCalls.some((call)=>toolUsesOrgData(call.name));
     const usesOrgData=request.usesOrgData??(plannedUsesOrgData||request.contextSources.some(source=>["team_memory","hard_metric","scout_observation","researched_claim","artifact","github_file","vscode_selection"].includes(source.classification)));if(billingOwner.type==="user"&&usesOrgData){const allowed=await this.client.query(`SELECT 1 FROM org_member_funding_policies WHERE org_id=$1 AND user_id=$2 AND allow_individual_funding=true`,[request.orgId,request.userId]);if(!allowed.rowCount)throw new Error("Organization admin approval is required to fund an org-data run with an individual plan");}
     if(request.privacyScope==="team"&&billingOwner.type!=="org")throw new Error("Team-shared AI must use the organization billing account");
-    const usageFeature=request.capability;
-    const aiPolicy=await loadOrgAiPolicy(this.client,request.orgId);
+    const usageFeature=request.usageFeature?.trim()||request.capability;
     for(const call of fallbackToolCalls){
       if(!isToolAllowed(aiPolicy,call.name)){
         throw new Error(`AI tool is not allowed by organization policy: ${call.name}`);
@@ -191,16 +208,18 @@ export class AIOrchestrator{
         const stampedTools=attachDataSourceNote(annotatedTools,dataSourceNote);
         annotatedTools.splice(0,annotatedTools.length,...stampedTools);
       };
-      if(!nativeToolPlanning)await executeCalls(plannedToolCalls);
-      const candidateNames=new Set(fallbackToolCalls.map((call)=>call.name));
+      // Forced calls (a pinned skill) run in both modes; the planner's list runs here only without native tools.
+      await executeCalls(plannedToolCalls);
+      const candidateNames=new Set(turn.candidateNames);
       const nativeDefinitions=this.registry.list().filter((tool)=>candidateNames.has(tool.name));
-      const deterministicToolTokens=nativeToolPlanning?0:toolOutputsToContextContent(annotatedTools).reduce((sum,item)=>sum+Math.ceil(item.content.length/4),0);
-      const basePromptTokens=Math.ceil(request.message.length/4)+context.estimatedTokens+historyTokens+deterministicToolTokens;
+      const deterministicToolTokens=toolOutputsToContextContent(annotatedTools).reduce((sum,item)=>sum+Math.ceil(item.content.length/4),0);
+      const modelMessage=request.instructions?.trim()?`${request.instructions.trim()}\n\n${request.message}`:request.message;
+      const basePromptTokens=Math.ceil(modelMessage.length/4)+context.estimatedTokens+historyTokens+deterministicToolTokens;
       const estimatedPromptTokens=basePromptTokens*(nativeToolPlanning?2:1);
       const estimatedCompletionTokens=nativeToolPlanning?1400:700;
       const estimatedCostUsd=estimateAdapterCostUsd(request.adapter,estimatedPromptTokens,estimatedCompletionTokens);
-      const text=await meteredAI({client:this.client,orgId:request.orgId,userId:request.userId,feature:usageFeature,requestId:request.requestId,estimatedCostUsd,estimatedPromptTokens,estimatedCompletionTokens,provider:request.adapter.provider,model:request.adapter.model,billingOwner,keySource:(request.adapter.provider==="petals"||request.adapter.provider==="ai_horde")?"public_swarm":undefined,metadata:{runId,threadId:request.threadId,activeEventKey:active,contextSources:[...context.provenance,...historyProvenance],tools:fallbackToolCalls.map((item)=>({name:item.name})),toolPlanning:nativeToolPlanning?"provider_native":"deterministic",usageTag:fallbackToolCalls.some((t)=>t.name.startsWith("scouting."))?"chat.scouting":fallbackToolCalls.some((t)=>t.name.startsWith("strategy."))?"chat.strategy":fallbackToolCalls.length?"chat.tools":"chat",promptCachingEnabled:request.promptCachingEnabled??true},invoke:async()=>{
-        const first=await request.adapter.complete({message:request.message,context:nativeToolPlanning?context.items:[...context.items,...toolOutputsToContextContent(annotatedTools)],history,tools:nativeToolPlanning?nativeDefinitions:undefined,promptCachingEnabled:request.promptCachingEnabled});
+      const text=await meteredAI({client:this.client,orgId:request.orgId,userId:request.userId,feature:usageFeature,requestId:request.requestId,estimatedCostUsd,estimatedPromptTokens,estimatedCompletionTokens,provider:request.adapter.provider,model:request.adapter.model,billingOwner,keySource:(request.adapter.provider==="petals"||request.adapter.provider==="ai_horde")?"public_swarm":undefined,metadata:{runId,threadId:request.threadId,activeEventKey:active,contextSources:[...context.provenance,...historyProvenance],tools:fallbackToolCalls.map((item)=>({name:item.name})),toolPlanning:nativeToolPlanning?"provider_native":"deterministic",usageTag:fallbackToolCalls.some((t)=>isSkillToolName(t.name))?"chat.skill":fallbackToolCalls.some((t)=>t.name.startsWith("scouting."))?"chat.scouting":fallbackToolCalls.some((t)=>t.name.startsWith("strategy."))?"chat.strategy":fallbackToolCalls.length?"chat.tools":"chat",promptCachingEnabled:request.promptCachingEnabled??true},invoke:async()=>{
+        const first=await request.adapter.complete({message:modelMessage,context:[...context.items,...toolOutputsToContextContent(annotatedTools)],history,tools:nativeToolPlanning?nativeDefinitions:undefined,promptCachingEnabled:request.promptCachingEnabled});
         if(!nativeToolPlanning||!first.toolCalls?.length){
           return{value:first.text,...first,provider:request.adapter.provider,model:request.adapter.model};
         }
@@ -209,7 +228,7 @@ export class AIOrchestrator{
           if(!candidateNames.has(call.name))throw new Error(`AI tool is not authorized for this request: ${call.name}`);
         }
         await executeCalls(plannedToolCalls);
-        const second=await request.adapter.complete({message:request.message,context:[...context.items,...toolOutputsToContextContent(annotatedTools)],history,promptCachingEnabled:request.promptCachingEnabled});
+        const second=await request.adapter.complete({message:modelMessage,context:[...context.items,...toolOutputsToContextContent(annotatedTools)],history,promptCachingEnabled:request.promptCachingEnabled});
         return{
           value:second.text,
           text:second.text,

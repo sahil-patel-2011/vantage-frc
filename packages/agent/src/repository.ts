@@ -1,8 +1,8 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { boundedContext, type ChatAdapter, type ChatMessage, type ContextItem } from "./index";
-import { AIOrchestrator, type ContextSource } from "./orchestrator";
+import { AIOrchestrator, type ContextSource, type ToolDefinition } from "./orchestrator";
 import { createVantageToolRegistry } from "./tools";
-import type { AnnotatedToolOutput } from "./auto-tools";
+import type { AnnotatedToolOutput, PlannedToolCall } from "./auto-tools";
 
 export type SourceRef = {
   type: string;
@@ -302,6 +302,16 @@ export class AgentRepository {
     >;
     /** Prior turns already shaped for the model. Empty = first message only. */
     conversationHistory?: ChatMessage[];
+    /** Ask AI skills (`skill.<id>`) registered for this turn only, next to the shared registry. */
+    extraTools?: ToolDefinition<unknown, unknown>[];
+    /** See OrchestratorRequest: a pinned or keyword-matched skill. */
+    forcedToolCalls?: PlannedToolCall[];
+    /** See OrchestratorRequest: other skills a native-tool provider may choose. */
+    nativeCandidateToolNames?: string[];
+    /** `meteredAI` feature (the skill id) — defaults to "chat". */
+    usageFeature?: string;
+    /** The skill's own fixed rules, sent ahead of the person's message. */
+    instructions?: string;
   }) {
     const history =
       input.conversationHistory !== undefined
@@ -348,7 +358,9 @@ export class AgentRepository {
         }) as ContextSource,
     );
     const bridgeTokens = bridgeItems.reduce((sum, item) => sum + Math.ceil(item.content.length / 4), 0);
-    const orchestrated = await new AIOrchestrator(this.client, createVantageToolRegistry({ requestText: input.message })).run({
+    const registry = createVantageToolRegistry({ requestText: input.message });
+    for (const tool of input.extraTools ?? []) registry.register(tool);
+    const orchestrated = await new AIOrchestrator(this.client, registry).run({
       orgId: input.orgId,
       userId: input.userId,
       threadId: input.threadId,
@@ -363,6 +375,10 @@ export class AgentRepository {
       tokenBudget: context.estimatedTokens + bridgeTokens + 1000,
       conversationHistory: history.messages,
       promptCachingEnabled: input.promptCachingEnabled,
+      forcedToolCalls: input.forcedToolCalls,
+      nativeCandidateToolNames: input.nativeCandidateToolNames,
+      usageFeature: input.usageFeature,
+      instructions: input.instructions,
     });
     const text = orchestrated.text;
     const assistant = await this.client.query<{ id: string }>(

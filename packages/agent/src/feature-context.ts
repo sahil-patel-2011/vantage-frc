@@ -166,7 +166,8 @@ export const ORG_DATA_TOOL_NAMES = [
 ] as const;
 
 export function toolUsesOrgData(toolName: string): boolean {
-  return (ORG_DATA_TOOL_NAMES as readonly string[]).includes(toolName);
+  // Every Ask AI skill (`skill.<id>`, skill-output.ts) reads this team's own records.
+  return (ORG_DATA_TOOL_NAMES as readonly string[]).includes(toolName) || toolName.startsWith("skill.");
 }
 
 export async function linkFeatureContext(
