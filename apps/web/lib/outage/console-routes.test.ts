@@ -99,11 +99,11 @@ describe("outage console API", () => {
     expect(refused.status).toBe(409);
     expect((await refused.json()).code).toBe("no_contact_list");
 
-    // The fallback: only the owner.
+    // The fallback: only the owner. A test email changes nothing anyone else sees.
     const owner = await post(broadcast.POST, { ...limited, audience: "owner" });
     expect(owner.status).toBe(200);
     expect(mail.sent.map((row) => row.to)).toEqual(["owner@example.com"]);
-    expect((await readNotice(store))?.limited).toBe(true);
+    expect(await readNotice(store)).toBeNull();
   });
 
   it("emails everyone on the saved list once, turns the banner on, and needs 'send again' for a second time", async () => {
@@ -114,6 +114,10 @@ describe("outage console API", () => {
     const first = await post(broadcast.POST, limited);
     expect(first.status).toBe(202);
     expect((await first.json()).bannerOn).toBe(true);
+    // A second run while the first is still sending would email everyone twice.
+    const overlapping = await post(broadcast.POST, { ...limited, again: true });
+    expect(overlapping.status).toBe(409);
+    expect((await overlapping.json()).code).toBe("in_progress");
     await settle(3);
     expect(mail.sent.map((row) => row.to).sort()).toEqual(["coach@example.com", "owner@example.com", "student@example.org"]);
     expect(mail.sent.every((row) => row.subject === limited.subject)).toBe(true);

@@ -7,6 +7,7 @@
  * Raw parameterized SQL with explicit casts, the house pattern.
  */
 
+import { isDatabaseFailure } from "../outage/classify";
 import type { PoolClient } from "@neondatabase/serverless";
 import {
   gradePractice,
@@ -105,17 +106,20 @@ export function isLessonsSchemaMissing(error: unknown): boolean {
   return code === "42703" && /team_lesson/i.test(message);
 }
 
-/** No database configured or reachable for this deployment. */
+/**
+ * No database configured, or it can't be reached: the outage classifier's call, so lessons and the
+ * NAS-down alerts agree on what counts as "the database is down".
+ */
 export function isDatabaseUnavailable(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? "");
-  return (
-    /DATABASE_URL|DATABASE_AUTH_URL/.test(message) ||
-    /ECONNREFUSED|ENOTFOUND|getaddrinfo|connection terminated|timeout expired/i.test(message)
-  );
+  return /DATABASE_URL|DATABASE_AUTH_URL/.test(message) || isDatabaseFailure(error);
 }
 
 export const LESSONS_SETUP_MESSAGE =
   "Team lessons aren't switched on for this server yet. The person who runs Vantage for your team needs to apply the latest database update.";
+
+export const LESSONS_UNREACHABLE_MESSAGE =
+  "Vantage can't reach its database right now, so lessons can't load. Your work in the editor is kept on this device; try again in a few minutes.";
 
 /** The caller's role in this team, or a 403. */
 export async function requireLessonRole(client: LessonClient, orgId: string, userId: string): Promise<LessonRole> {

@@ -3,7 +3,7 @@ import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { HttpError, failResponse, markProgress, resolveMembership } from "../../../lib/cad-learn/store";
 import { runGuidedCheck, type CheckInput } from "../../../lib/guided/run-check";
-import { clearMySignoff, readMySignoffs, requestSignoff } from "../../../lib/guided/signoffs";
+import { clearMySignoff, needsLeadSignoff, readMySignoffs, requestSignoff } from "../../../lib/guided/signoffs";
 import { guidedStep, guidedTrack } from "../../../lib/guided/tracks";
 import { GUIDED_PREFIX, guidedLessonId } from "../../../lib/guided/types";
 
@@ -24,7 +24,11 @@ export async function GET(request: Request) {
             AND lesson_id LIKE $3`,
         [membership.orgId, session.user.id, `${GUIDED_PREFIX}${track.id}:%`],
       );
-      const checked = rows.rows.map((row) => ({ stepId: row.lessonId.slice(`${GUIDED_PREFIX}${track.id}:`.length), completedAt: row.completedAt }));
+      const checked = rows.rows
+        .map((row) => ({ stepId: row.lessonId.slice(`${GUIDED_PREFIX}${track.id}:`.length), completedAt: row.completedAt }))
+        // A step that needs a lead is done only by an approved sign-off (read below), never by an
+        // older self-marked progress row.
+        .filter((row) => !needsLeadSignoff(track.id, row.stepId));
       // Before migration 0719 there are no sign-offs to read; the track still loads.
       const mine = await withSavepoint(client, () => readMySignoffs(client, { orgId: membership.orgId, userId: session.user.id, trackId: track.id }), []);
       const approved = mine.filter((s) => s.status === "approved" && s.decidedAt).map((s) => ({ stepId: s.stepId, completedAt: s.decidedAt! }));
@@ -72,6 +76,10 @@ export async function POST(request: Request) {
     });
     return Response.json(result);
   } catch (error) {
+    // Lead sign-offs need migration 0719: say so instead of passing a database message on.
+    if ((error as { code?: string } | null)?.code === "42P01") {
+      return Response.json({ status: "setup_required", passed: false, message: "Lead sign-offs need a database update (0719). Ask your team's owner." }, { status: 503 });
+    }
     return failResponse(error, "Could not check that step");
   }
 }

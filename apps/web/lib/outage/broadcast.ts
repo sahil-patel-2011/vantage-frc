@@ -18,6 +18,8 @@ export type BroadcastJob = {
   seq: number;
   audience: BroadcastAudience;
   subject: string;
+  /** The text the first recipients got; "Continue sending" sends exactly this. */
+  message?: string;
   total: number;
   sent: number;
   failed: number;
@@ -62,6 +64,11 @@ export async function readBroadcastJob(store: OutageStore, incidentId: string, k
 
 export function jobStalled(job: BroadcastJob, now = Date.now()): boolean {
   return !job.finishedAt && job.nextIndex < job.total && now - Date.parse(job.updatedAt) > STALLED_AFTER_MS;
+}
+
+/** Still sending: not finished, recipients left, and progress saved recently. */
+export function jobRunning(job: BroadcastJob, now = Date.now()): boolean {
+  return !job.finishedAt && job.nextIndex < job.total && !jobStalled(job, now);
 }
 
 export type RunBroadcastInput = {

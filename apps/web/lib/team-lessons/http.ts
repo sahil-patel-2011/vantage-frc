@@ -8,7 +8,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { parseSecureJson, RequestSecurityError } from "../security/request";
 import { publicErrorMessage, viewOnlyResponse } from "../security/public-error";
-import { isDatabaseUnavailable, isLessonsSchemaMissing, LessonHttpError, LESSONS_SETUP_MESSAGE } from "./store";
+import { isDatabaseUnavailable, isLessonsSchemaMissing, LessonHttpError, LESSONS_SETUP_MESSAGE, LESSONS_UNREACHABLE_MESSAGE } from "./store";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -53,9 +53,9 @@ export function lessonErrorResponse(error: unknown, fallback: string): Response 
   if (error instanceof RequestSecurityError) return privateJson({ error: error.message }, error.status);
   const viewOnly = viewOnlyResponse(error);
   if (viewOnly) return viewOnly;
-  if (isLessonsSchemaMissing(error) || isDatabaseUnavailable(error)) {
-    return privateJson({ status: "setup_required", error: LESSONS_SETUP_MESSAGE }, 503);
-  }
+  if (isLessonsSchemaMissing(error)) return privateJson({ status: "setup_required", error: LESSONS_SETUP_MESSAGE }, 503);
+  // Down, not unconfigured: don't send anyone looking for a missing database update.
+  if (isDatabaseUnavailable(error)) return privateJson({ status: "unavailable", error: LESSONS_UNREACHABLE_MESSAGE }, 503);
   const code = typeof error === "object" && error !== null ? String((error as { code?: unknown }).code ?? "") : "";
   // Row security refused a write the role checks allowed: the person's role changed mid-request.
   if (code === "42501") return privateJson({ error: "Your access to this lesson changed. Reload and try again." }, 403);

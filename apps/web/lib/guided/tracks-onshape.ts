@@ -154,11 +154,12 @@ const ONSHAPE_FIRST_PART: GuidedTrack = {
         "Round the four outside corners to 0.125 in, then paste the Part Studio's address below.",
       ],
       checkedBy:
-        "Vantage measures your part: its size must be within 0.01 in of 5 × 2 × 0.125 in, the material must be 6061, and the volume must be within 0.5% of the drawing's 1.116 in³, so a missing hole or a wrong bore shows up. Hole positions aren't measured; show a lead your sketch.",
+        "Vantage measures your part: its size must be within 0.01 in of 5 × 2 × 0.125 in, the material must be 6061, and the volume must be within 0.25% of the drawing's 1.116 in³, so even one missing #10 hole or a wrong bore shows up. Hole positions and the corner rounds are too small to change the volume that much; show a lead your sketch for those.",
       check: {
         kind: "onshape-measure",
         size: { inches: [5, 2, 0.125], tolerance: 0.01 },
-        volume: { cubicInches: 1.116, tolerancePct: 0.5 },
+        // One #10 hole is 0.36% of the plate; four rounded corners are 0.15%.
+        volume: { cubicInches: 1.116, tolerancePct: 0.25 },
         material: "6061",
       },
     },

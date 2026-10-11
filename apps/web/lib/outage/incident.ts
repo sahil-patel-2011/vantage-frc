@@ -53,6 +53,8 @@ export type OutageIncident = {
     /** True once an alert went out and no "back" email has followed it. */
     ownerKnowsDown: boolean;
     lastError: string | null;
+    /** Alerts the provider accepted. Until one is, a retry is still the "first" email. */
+    delivered?: number;
   };
   /** Times this incident closed (the "back" lock sequence). */
   recoveries: number;
@@ -84,7 +86,21 @@ const iso = (ms: number) => new Date(ms).toISOString();
 
 export async function readIncident(store: OutageStore): Promise<OutageIncident | null> {
   const incident = await readJson<OutageIncident>(store, INCIDENT_KEY);
-  return incident && incident.v === 1 && typeof incident.id === "string" ? incident : null;
+  if (!incident || incident.v !== 1 || typeof incident.id !== "string") return null;
+  // Alert bookkeeping lives in its own record (see writeAlerts), so a concurrent writer of the
+  // incident can't wind it back; the incident's copy is only a fallback for older records.
+  const alerts = await readJson<OutageIncident["alerts"]>(store, alertsKey(incident.id));
+  return alerts ? { ...incident, alerts } : incident;
+}
+
+const alertsKey = (incidentId: string) => `alerts:${incidentId}`;
+
+/**
+ * Only the holder of an alert or close lock writes this, so two requests that both saw the
+ * first failure can't leave it saying "nobody was emailed" after one of them emailed.
+ */
+async function writeAlerts(store: OutageStore, incidentId: string, alerts: OutageIncident["alerts"]) {
+  await writeJson(store, alertsKey(incidentId), alerts, { ttlSeconds: INCIDENT_TTL_SECONDS });
 }
 
 export function formatDuration(ms: number): string {
@@ -122,7 +138,9 @@ export function alertReason(incident: OutageIncident, now: number): AlertReason 
   const since = alerts.lastAt ? now - Date.parse(alerts.lastAt) : Number.POSITIVE_INFINITY;
   if (!alerts.ownerKnowsDown) {
     if (alerts.sent === 0) return "first";
-    return since >= (alerts.lastError ? RETRY_FAILED_SEND_MS : REALERT_AFTER_RECOVERY_MS) ? "again" : null;
+    if (since < (alerts.lastError ? RETRY_FAILED_SEND_MS : REALERT_AFTER_RECOVERY_MS)) return null;
+    // The owner never received one (the first send failed): this is still the first they hear.
+    return (alerts.delivered ?? 0) === 0 ? "first" : "again";
   }
   const code = incident.classification.code;
   if (!alerts.emailedCodes.includes(code) && since >= CAUSE_CHANGE_MIN_MS) return "cause";
@@ -316,12 +334,14 @@ export function createOutageReporter(deps: ReporterDeps): OutageReporter {
       }
       if (claimed) {
         incident.alerts = {
+          ...incident.alerts,
           sent: incident.alerts.sent + 1,
           lastAt: iso(at),
           emailedCodes: [...new Set([...incident.alerts.emailedCodes, classification.code])],
           ownerKnowsDown: true,
           lastError: null,
         };
+        await writeAlerts(store, incident.id, incident.alerts);
       }
       await writeJson(store, INCIDENT_KEY, incident, { ttlSeconds: INCIDENT_TTL_SECONDS });
       memo = { openId: incident.id, code: classification.code, writtenAt: at, pending: 0, sources: new Set() };
@@ -329,12 +349,13 @@ export function createOutageReporter(deps: ReporterDeps): OutageReporter {
       if (claimed && reason) {
         const mail = alertEmail(incident, reason, deps.consoleUrl(incident.id), at, deps.timeZone);
         const outcome = await mailOwner(incident.id, mail, at);
-        if (outcome !== "sent") {
-          // Not delivered: let the next failure try again (after a short wait) instead of
-          // believing the owner knows.
-          incident.alerts = { ...incident.alerts, ownerKnowsDown: false, lastError: outcome };
-          await writeJson(store, INCIDENT_KEY, incident, { ttlSeconds: INCIDENT_TTL_SECONDS });
-        }
+        // Not delivered: let the next failure try again (after a short wait) instead of
+        // believing the owner knows. Delivered: count it, so a later alert says "again".
+        incident.alerts =
+          outcome === "sent"
+            ? { ...incident.alerts, delivered: (incident.alerts.delivered ?? 0) + 1 }
+            : { ...incident.alerts, ownerKnowsDown: false, lastError: outcome };
+        await writeAlerts(store, incident.id, incident.alerts);
       }
     } catch (failure) {
       log.error(`[outage] Could not record the database failure: ${safeMessage(failure)}`);
@@ -362,6 +383,7 @@ export function createOutageReporter(deps: ReporterDeps): OutageReporter {
         alerts: { ...incident.alerts, ownerKnowsDown: false },
       };
       await writeJson(store, INCIDENT_KEY, closed, { ttlSeconds: INCIDENT_TTL_SECONDS });
+      if (won) await writeAlerts(store, incident.id, closed.alerts);
       if (!notify) return;
       const bannerOn = Boolean(await store.get(NOTICE_KEY).catch(() => null));
       const mail = recoveryEmail(incident, at, bannerOn, deps.consoleUrl(incident.id), deps.timeZone);

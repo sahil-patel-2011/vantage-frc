@@ -137,6 +137,17 @@ describe("lead sign-offs", () => {
       { userId: "u1", displayName: "Ana", lessonId: guidedLessonId(track.id, b.id), at: "2026-10-04" },
       { userId: "u1", displayName: "Ana", lessonId: "guided:gone:step", at: "2026-10-05" },
     ];
+    // A step only a lead completes counts from an approved sign-off, never a self-marked row.
+    const signoffTrack = GUIDED_TRACKS.find((t) => t.steps.some((st) => st.check.kind === "lead-signoff"))!;
+    const signoffStep = signoffTrack.steps.find((st) => st.check.kind === "lead-signoff")!;
+    const legacy = summarizeTeamProgress([
+      { userId: "u3", displayName: "Kai", lessonId: guidedLessonId(signoffTrack.id, signoffStep.id), at: "2026-10-01", via: "check" },
+    ]);
+    expect(legacy).toEqual([]);
+    const approved = summarizeTeamProgress([
+      { userId: "u3", displayName: "Kai", lessonId: guidedLessonId(signoffTrack.id, signoffStep.id), at: "2026-10-02", via: "signoff" },
+    ]);
+    expect(approved[0]?.tracks[signoffTrack.id]).toBe(1);
     expect(summarizeTeamProgress(rows)).toEqual([
       { userId: "u1", displayName: "Ana", tracks: { [track.id]: 2 }, lastActivityAt: "2026-10-04" },
       { userId: "u2", displayName: "Zoe", tracks: { [track.id]: 1 }, lastActivityAt: "2026-10-01" },

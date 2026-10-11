@@ -214,12 +214,10 @@ describe("Your first part", () => {
 });
 
 describe("Measuring a practice part", () => {
-  const check: OnshapeApiCheck = {
-    kind: "onshape-measure",
-    size: { inches: [5, 2, 0.125], tolerance: 0.01 },
-    volume: { cubicInches: 1.116, tolerancePct: 0.5 },
-    material: "6061",
-  };
+  // The track's own practice check, so the test proves what students get.
+  const practice = ONSHAPE_TRACKS[0]!.steps.at(-1)!.check;
+  if (practice.kind !== "onshape-measure") throw new Error("first track ends with a measured part");
+  const check: OnshapeApiCheck = practice;
   const IN = 0.0254;
   const parts = [{ name: "Bearing plate", partId: "JHD", bodyType: "solid", isFlattenedBody: false, material: { displayName: "Aluminum - 6061" } }];
   // Lying flat on Top, centered: 5 in along x, 2 in along y, 0.125 in up.
@@ -246,6 +244,11 @@ describe("Measuring a practice part", () => {
     const noHoles = await run(check, routes({ [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.1241) }));
     expect(noHoles.result.passed).toBe(false);
     expect(noHoles.result.message).toMatch(/too much material — a hole is missing or too small/);
+    // One #10 hole left out (+0.0040 in³, +0.36%) is still caught.
+    const oneHole = await run(check, routes({ [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.1201) }));
+    expect(oneHole.result.passed).toBe(false);
+    // Corner rounds forgotten (+0.15%) and Close-fit holes are within the drawing's tolerance.
+    expect((await run(check, routes({ [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.1178) }))).result.passed).toBe(true);
     const bigBore = await run(check, routes({ [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.09) }));
     expect(bigBore.result.message).toMatch(/too little material — a hole is too big/);
   });

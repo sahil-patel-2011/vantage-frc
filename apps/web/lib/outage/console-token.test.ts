@@ -61,3 +61,17 @@ describe("outage console token", () => {
     expect(consoleTokenFromRequest(new Request("https://x.test"), {})).toBeNull();
   });
 });
+
+describe("the console cookie", () => {
+  it("reads the key from a Cookie header among others, and nothing from a missing one", async () => {
+    const { CONSOLE_COOKIE, consoleTokenFromCookieHeader, consoleTokenFromRequest } = await import("./console-token");
+    expect(consoleTokenFromCookieHeader(`a=1; ${CONSOLE_COOKIE}=abc.def%3D; b=2`)).toBe("abc.def=");
+    expect(consoleTokenFromCookieHeader("a=1")).toBeNull();
+    expect(consoleTokenFromCookieHeader(null)).toBeNull();
+    const request = new Request("https://vantage.test/api/status/outage", { headers: { cookie: `${CONSOLE_COOKIE}=tok.sig` } });
+    expect(consoleTokenFromRequest(request)).toBe("tok.sig");
+    // An explicit header still wins over the cookie.
+    const both = new Request("https://vantage.test/api/status/outage", { headers: { cookie: `${CONSOLE_COOKIE}=old.sig`, authorization: "Bearer new.sig" } });
+    expect(consoleTokenFromRequest(both)).toBe("new.sig");
+  });
+});

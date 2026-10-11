@@ -10,6 +10,11 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  */
 
 export const CONSOLE_TOKEN_PURPOSE = "outage-console";
+/**
+ * The console link is swapped for this HttpOnly cookie by /status/outage/open before any page
+ * renders, so the key never sits in the address bar, browser history or an analytics pageview.
+ */
+export const CONSOLE_COOKIE = "vantage_outage_console";
 export const CONSOLE_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 export type ConsoleTokenFailure = "malformed" | "signature" | "expired" | "purpose" | "secret_missing";
@@ -69,11 +74,28 @@ export function verifyConsoleToken(token: unknown, env: TokenEnv = process.env, 
   return { ok: true, incidentId: payload.incidentId, expiresAt: exp * 1000 };
 }
 
-/** Token from `Authorization: Bearer …`, `x-outage-token`, or a JSON body's `token`. */
+/** The console cookie's value from a Cookie header, or null. */
+export function consoleTokenFromCookieHeader(header: string | null): string | null {
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const [name, ...rest] = part.trim().split("=");
+    if (name === CONSOLE_COOKIE) {
+      try {
+        return decodeURIComponent(rest.join("=")) || null;
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+/** Token from `Authorization: Bearer …`, `x-outage-token`, a JSON body's `token`, or the console cookie. */
 export function consoleTokenFromRequest(request: Request, body?: { token?: unknown } | null): string | null {
   const header = request.headers.get("authorization");
   if (header?.toLowerCase().startsWith("bearer ")) return header.slice(7).trim() || null;
   const direct = request.headers.get("x-outage-token");
   if (direct) return direct.trim() || null;
-  return typeof body?.token === "string" ? body.token : null;
+  if (typeof body?.token === "string") return body.token;
+  return consoleTokenFromCookieHeader(request.headers.get("cookie"));
 }

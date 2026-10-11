@@ -19,7 +19,7 @@ export async function requestSignoff(
 ): Promise<SignoffStatus> {
   const result = await client.query<{ status: SignoffStatus }>(
     `INSERT INTO guided_signoffs (org_id, user_id, lesson_id)
-     VALUES ($1::uuid, $2::uuid, $3)
+     VALUES ($1::uuid, $2::uuid, $3::text)
      ON CONFLICT (org_id, user_id, lesson_id) DO UPDATE
        SET status = 'requested', note = NULL, decided_by = NULL, decided_at = NULL, requested_at = now()
        WHERE guided_signoffs.status = 'declined'
@@ -29,7 +29,7 @@ export async function requestSignoff(
   if (result.rows[0]) return result.rows[0].status;
   // Already requested or approved: the conflict update did nothing; report what is there.
   const existing = await client.query<{ status: SignoffStatus }>(
-    `SELECT status FROM guided_signoffs WHERE org_id = $1::uuid AND user_id = $2::uuid AND lesson_id = $3`,
+    `SELECT status FROM guided_signoffs WHERE org_id = $1::uuid AND user_id = $2::uuid AND lesson_id = $3::text`,
     [input.orgId, input.userId, guidedLessonId(input.trackId, input.stepId)],
   );
   return existing.rows[0]?.status ?? "requested";
@@ -37,7 +37,7 @@ export async function requestSignoff(
 
 /** Withdraw a request, or give up an approval to redo the step. */
 export async function clearMySignoff(client: PoolClient, input: { orgId: string; userId: string; trackId: string; stepId: string }) {
-  await client.query(`DELETE FROM guided_signoffs WHERE org_id = $1::uuid AND user_id = $2::uuid AND lesson_id = $3`, [
+  await client.query(`DELETE FROM guided_signoffs WHERE org_id = $1::uuid AND user_id = $2::uuid AND lesson_id = $3::text`, [
     input.orgId,
     input.userId,
     guidedLessonId(input.trackId, input.stepId),
@@ -50,10 +50,18 @@ export async function readMySignoffs(client: PoolClient, input: { orgId: string;
   const result = await client.query<{ lessonId: string; status: SignoffStatus; note: string | null; decidedAt: string | null }>(
     `SELECT lesson_id AS "lessonId", status, note, decided_at::text AS "decidedAt"
        FROM guided_signoffs
-      WHERE org_id = $1::uuid AND user_id = $2::uuid AND lesson_id LIKE $3`,
+      WHERE org_id = $1::uuid AND user_id = $2::uuid AND lesson_id LIKE $3::text`,
     [input.orgId, input.userId, `${prefix}%`],
   );
   return result.rows.map((row) => ({ stepId: row.lessonId.slice(prefix.length), status: row.status, note: row.note, decidedAt: row.decidedAt }));
+}
+
+/**
+ * True for a step only a lead's sign-off completes. Before migration 0719 the student's own
+ * button wrote these into cad_learn_progress; those self-marked rows never count as done.
+ */
+export function needsLeadSignoff(trackId: string, stepId: string): boolean {
+  return GUIDED_TRACKS.find((t) => t.id === trackId)?.steps.find((s) => s.id === stepId)?.check.kind === "lead-signoff";
 }
 
 /** Names a guided lesson id in words: track title and step title. Null for a step that no longer exists. */
@@ -108,7 +116,7 @@ export async function decideSignoff(
   const note = input.note?.trim().slice(0, 500) || null;
   const result = await client.query(
     `UPDATE guided_signoffs
-        SET status = $4, note = $5, decided_by = $3::uuid, decided_at = now()
+        SET status = $4::text, note = $5::text, decided_by = $3::uuid, decided_at = now()
       WHERE id = $2::uuid AND org_id = $1::uuid AND status = 'requested' AND user_id <> $3::uuid`,
     [input.orgId, input.id, input.leadId, input.approve ? "approved" : "declined", note],
   );
@@ -122,13 +130,14 @@ export type MemberTrackProgress = { userId: string; displayName: string; tracks:
  * sign-offs. Only steps that still exist count, so a renamed step never inflates a total.
  */
 export async function readTeamGuidedProgress(client: PoolClient, orgId: string): Promise<MemberTrackProgress[]> {
-  const result = await client.query<{ userId: string; displayName: string; lessonId: string; at: string }>(
-    `SELECT x.user_id AS "userId", COALESCE(NULLIF(btrim(u.name), ''), u.email) AS "displayName", x.lesson_id AS "lessonId", x.at::text AS at
+  const result = await client.query<{ userId: string; displayName: string; lessonId: string; at: string; via: "check" | "signoff" }>(
+    `SELECT x.user_id AS "userId", COALESCE(NULLIF(btrim(u.name), ''), u.email) AS "displayName", x.lesson_id AS "lessonId",
+            x.at::text AS at, x.via
        FROM (
-         SELECT user_id, lesson_id, completed_at AS at FROM cad_learn_progress
+         SELECT user_id, lesson_id, completed_at AS at, 'check'::text AS via FROM cad_learn_progress
           WHERE org_id = $1::uuid AND completed_at IS NOT NULL AND lesson_id LIKE 'guided:%'
-         UNION
-         SELECT user_id, lesson_id, decided_at AS at FROM guided_signoffs
+         UNION ALL
+         SELECT user_id, lesson_id, decided_at AS at, 'signoff'::text AS via FROM guided_signoffs
           WHERE org_id = $1::uuid AND status = 'approved'
        ) x
        JOIN users u ON u.id = x.user_id`,
@@ -137,12 +146,18 @@ export async function readTeamGuidedProgress(client: PoolClient, orgId: string):
   return summarizeTeamProgress(result.rows);
 }
 
-/** Pure: rows of (member, finished lesson) → per-member counts per track. */
-export function summarizeTeamProgress(rows: Array<{ userId: string; displayName: string; lessonId: string; at: string }>): MemberTrackProgress[] {
+/**
+ * Pure: rows of (member, finished lesson) → per-member counts per track. A step that needs a
+ * lead counts only from an approved sign-off, never from a progress row (`via: "check"`).
+ */
+export function summarizeTeamProgress(
+  rows: Array<{ userId: string; displayName: string; lessonId: string; at: string; via?: "check" | "signoff" }>,
+): MemberTrackProgress[] {
   const members = new Map<string, MemberTrackProgress & { seen: Set<string> }>();
   for (const row of rows) {
     const named = describeGuidedLesson(row.lessonId);
     if (!named) continue;
+    if (row.via !== "signoff" && needsLeadSignoff(named.trackId, named.stepId)) continue;
     const member = members.get(row.userId) ?? { userId: row.userId, displayName: row.displayName, tracks: {}, lastActivityAt: null, seen: new Set<string>() };
     if (!member.seen.has(row.lessonId)) {
       member.seen.add(row.lessonId);

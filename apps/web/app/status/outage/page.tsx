@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { verifyConsoleToken } from "../../../lib/outage/console-token";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { CONSOLE_COOKIE, verifyConsoleToken } from "../../../lib/outage/console-token";
 import { OutageConsole } from "./outage-console";
 import "./outage-console.css";
 
@@ -21,10 +23,17 @@ const LINK_PROBLEMS: Record<string, string> = {
  * The outage console. Opened from the owner's alert email while the database is down, so it
  * needs no sign-in and no database: the signed link is checked here and by every call it makes.
  */
-export default async function OutageConsolePage({ searchParams }: { searchParams: Promise<{ t?: string | string[] }> }) {
+export default async function OutageConsolePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ t?: string | string[]; problem?: string | string[] }>;
+}) {
   const params = await searchParams;
-  const token = typeof params.t === "string" ? params.t : "";
-  const checked = verifyConsoleToken(token);
+  // An older link with the key in the address: swap it for the cookie before anything renders.
+  if (typeof params.t === "string" && params.t) redirect(`/status/outage/open?t=${encodeURIComponent(params.t)}`);
+  const token = (await cookies()).get(CONSOLE_COOKIE)?.value ?? "";
+  const problem = typeof params.problem === "string" ? params.problem : null;
+  const checked = token ? verifyConsoleToken(token) : ({ ok: false, reason: problem ?? "malformed" } as const);
   if (!checked.ok) {
     return (
       <main className="outage-console">

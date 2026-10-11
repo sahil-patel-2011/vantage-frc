@@ -77,6 +77,9 @@ export function TabBar({
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(place);
     observer.observe(nav);
+    // A label that changes width ("Inbox" → "Inbox (12)", a web font arriving) doesn't resize
+    // the strip, so watch each tab too.
+    nav.querySelectorAll<HTMLElement>('[role="tab"]').forEach((tab) => observer.observe(tab));
     return () => observer.disconnect();
   }, [value, variant, tabs.length]);
   const tabList = (

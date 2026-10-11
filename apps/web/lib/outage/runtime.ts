@@ -22,7 +22,7 @@ export function outageOwnerEmail(): string | null {
 export function outageConsoleUrl(incidentId: string): string | null {
   const token = signConsoleToken(incidentId);
   if (!token) return null;
-  return `${resolveAuthBaseURL()}/status/outage?t=${encodeURIComponent(token)}`;
+  return `${resolveAuthBaseURL()}/status/outage/open?t=${encodeURIComponent(token)}`;
 }
 
 export const EMAIL_SETUP_MESSAGE =

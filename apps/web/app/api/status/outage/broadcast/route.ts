@@ -1,6 +1,7 @@
 import { createEmailProvider } from "@vantage/core";
 import { z } from "zod";
 import {
+  jobRunning,
   jobStalled,
   readBroadcastJob,
   runBroadcast,
@@ -67,8 +68,9 @@ export async function POST(request: Request) {
     } catch {
       return consoleJson({ error: "The email provider didn't accept the email. Try again in a minute.", code: "send_failed" }, 502);
     }
-    const bannerOn = await setBanner(store, input.kind, input.message, incidentId);
-    return consoleJson({ sentTo: "owner", bannerOn });
+    // A test to the owner changes nothing anyone else sees: the banner stays as it was
+    // ("Turn on the banner" and "Turn off the banner" are their own buttons).
+    return consoleJson({ sentTo: "owner" });
   }
   const saved = await readRecipientEmails(store).catch(() => null);
   if (!saved?.length) {
@@ -82,6 +84,9 @@ export async function POST(request: Request) {
   const existing = await readBroadcastJob(store, incidentId, input.kind);
   if (input.resume) {
     if (!existing || !jobStalled(existing)) return consoleJson({ error: "There's nothing to continue.", code: "nothing_to_resume" }, 409);
+  } else if (existing && jobRunning(existing)) {
+    // A second run alongside the first would email everyone twice and mix their progress.
+    return consoleJson({ error: "This is still sending. Wait for it to finish before sending again.", code: "in_progress", job: existing }, 409);
   } else if (existing && !input.again) {
     return consoleJson(
       { error: "This was already sent for this outage. Choose “Send again” to send it a second time.", code: "already_sent", job: existing },
@@ -103,6 +108,7 @@ export async function POST(request: Request) {
         seq,
         audience: "everyone",
         subject: input.subject,
+        message: input.message,
         total: recipients.length,
         sent: 0,
         failed: 0,
@@ -113,7 +119,9 @@ export async function POST(request: Request) {
       };
   await writeJson(store, broadcastKey(incidentId, input.kind), job, { ttlSeconds: 7 * 24 * 60 * 60 });
 
-  const bannerOn = await setBanner(store, input.kind, input.message, incidentId);
+  // A resumed run sends what the first recipients got, whatever the form shows now.
+  const message = input.resume && existing?.message ? existing.message : input.message;
+  const bannerOn = await setBanner(store, input.kind, message, incidentId);
 
   deferOutageWork(() =>
     runBroadcast({
@@ -121,7 +129,7 @@ export async function POST(request: Request) {
       incidentId,
       job,
       recipients,
-      message: input.message,
+      message,
       send: (to, subject, text) => provider.sendFreeform({ to, subject, text }),
     }),
   );

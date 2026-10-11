@@ -8,6 +8,9 @@
  *   3. Rows that appear in a list ease in where they land, using @starting-style, so a saved
  *      record, a filter change or a new review arrives instead of popping.
  *
+ * No global `scroll-behavior: smooth`: Next 16 would then animate every route change and
+ * back/forward scroll restore unless <html> carries data-scroll-behavior="smooth".
+ *
  * Every duration is a vantage-fluid token (0ms under reduced motion). `scale` and `translate`
  * are the standalone properties, so none of this fights a keyframed `transform`.
  */
@@ -89,12 +92,5 @@ body.has-app-shell .soft-tab-bar[data-glide] > :is(.active, [aria-selected="true
   :where(body.has-app-shell .module-page) :where(ul, ol):not([role="menu"], [role="listbox"], [role="tablist"]) > :where(li) {
     opacity: 0;
     translate: 0 4px;
-  }
-}
-
-/* In-page jumps (Skip to content, #section links) glide rather than cut. */
-@media (prefers-reduced-motion: no-preference) {
-  html:not([data-motion="reduced"]) {
-    scroll-behavior: smooth;
   }
 }

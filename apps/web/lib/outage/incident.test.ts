@@ -56,6 +56,35 @@ describe("outage incident reporting", () => {
     h = harness();
   });
 
+  it("keeps the alert record when several first failures arrive at once, so recovery still emails", async () => {
+    const [a, b, c] = [h.another(), h.another(), h.another()];
+    await Promise.all([a.reportFailure(refused(), "proxy"), b.reportFailure(refused(), "api/me"), c.reportFailure(refused(), "api/health")]);
+    expect(h.mails).toHaveLength(1);
+    const incident = await readIncident(h.store);
+    expect(incident?.alerts).toMatchObject({ sent: 1, ownerKnowsDown: true, delivered: 1 });
+    h.advance(5 * MINUTE);
+    await h.reporter.reportHealthy("api/health");
+    expect(h.mails).toHaveLength(2);
+    expect(h.mails[1]!.subject).toMatch(/^Vantage is back/);
+  });
+
+  it("calls a retried first alert the first one, not 'again'", async () => {
+    let fail = true;
+    const flaky = harness({
+      sendOwnerEmail: async (mail) => {
+        if (fail) throw new Error("rate limited");
+        flaky.mails.push(mail);
+      },
+    });
+    await flaky.reporter.reportFailure(refused(), "api/health");
+    expect(flaky.mails).toHaveLength(0);
+    fail = false;
+    flaky.advance(6 * MINUTE);
+    await flaky.reporter.reportFailure(refused(), "api/health");
+    expect(flaky.mails).toHaveLength(1);
+    expect(flaky.mails[0]!.subject).toBe("Vantage: the NAS database is unreachable — Postgres isn't accepting connections");
+  });
+
   it("emails the owner once on the first failure, with what/why/fix and the console link", async () => {
     await h.reporter.reportFailure(refused(), "api/health");
     expect(h.mails).toHaveLength(1);
