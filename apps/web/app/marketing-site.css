@@ -897,6 +897,7 @@
   font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
+  flex: none;
 }
 
 .marketing-lux .mx-pill.is-ok {
@@ -974,6 +975,16 @@
   background: #e8ecf1;
   font-size: 9.5px;
   font-weight: 700;
+}
+
+.marketing-lux .mx-card-act {
+  color: var(--mx-accent);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.marketing-lux .mx-card .mx-pill-row {
+  margin: 0 0 10px;
 }
 
 /* Hero composition: a window with Home, and a phone with Quick scout over its corner. */
@@ -2445,11 +2456,10 @@
     align-items: center;
     gap: 48px;
   }
-  .marketing-lux .mx-price-card .mx-h3 {
-  margin-top: 16px;
 }
 
-.marketing-lux .mx-included {
+@media (min-width: 1080px) {
+  .marketing-lux .mx-included {
     grid-template-columns: 1fr 1fr;
   }
 }
@@ -2638,16 +2648,31 @@ html.reveal-armed .marketing-lux .mx-four[data-mx-reveal].is-in > li:nth-child(4
   border-color: var(--mx-accent-hover);
 }
 
-.marketing-site.marketing-lux .text-link {
+.marketing-site.marketing-lux .text-link,
+.marketing-site.marketing-lux .lux-route-hero .actions .text-link {
   color: var(--mx-accent);
 }
 
-.marketing-lux .mx-card-act {
-  color: var(--mx-accent);
-  font-size: 11.5px;
+/* The same type voice as the rebuilt pages: sentence-case eyebrows, the display face with
+   tight tracking, navy ink. Legal pages keep their own document styling. */
+.marketing-site.marketing-lux :is(.lux-kicker, .lux-eyebrow) {
+  font-family: var(--mx-font);
+  font-size: var(--mx-fs-small);
   font-weight: 600;
+  letter-spacing: -0.005em;
+  text-transform: none;
 }
 
-.marketing-lux .mx-card .mx-pill-row {
-  margin: 0 0 10px;
+.marketing-site.marketing-lux .lux-route-hero h1 {
+  color: var(--mx-ink);
+  font-family: var(--mx-font-display);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.marketing-site.marketing-lux :is(.lux-section-head h2, .lux-pricing h2) {
+  color: var(--mx-ink);
+  font-family: var(--mx-font-display);
+  font-weight: 700;
+  letter-spacing: -0.038em;
 }
