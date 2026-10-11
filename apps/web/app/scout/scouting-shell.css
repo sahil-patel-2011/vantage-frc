@@ -205,6 +205,7 @@
 
 /* --- Home cards: pits first, then matches, then you, then the lead's view ------- */
 .scout-home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.scout-home-cards.is-match-first > :last-child{order:-1}
 .scout-card{display:grid;align-content:start;gap:12px;padding:18px;border-radius:22px;background:var(--surface);border:1px solid var(--line)}
 .scout-card > header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .scout-card h2{margin:0;font-size:19px;letter-spacing:-.015em}

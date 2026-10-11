@@ -643,7 +643,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 </button>
               </div>
             ) : (
-              <p className="tc-muted tc-list-hint">Upcoming, grouped by day</p>
+              <p className="tc-muted tc-list-hint">Grouped by day</p>
             )}
             <div className="tc-toolbar-links">
               {taskCounts.open > 0 ? (

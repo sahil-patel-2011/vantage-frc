@@ -38,7 +38,8 @@ import {
   type QuarantinedItem,
 } from "../../lib/scout-offline";
 import { nextMatchKey } from "../../lib/scouting/form-builder";
-import { nextScoutTarget, scoutContext, syncSummary, teamNumberOf } from "../../lib/scouting/scout-context";
+import { nextScoutTarget, robotStation, scoutContext, syncSummary, teamNumberOf } from "../../lib/scouting/scout-context";
+import { scheduleAnswers } from "../../lib/scouting/quick-scout";
 import {
   classifyScoutingShell,
   scoutingOfflineBannerDetail,
@@ -517,6 +518,15 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
   useEffect(() => {
     if (draftKey && loadedDraftKey === draftKey && latestSchema && pinnedForm?.key !== draftKey) setPinnedForm({ key: draftKey, id: latestSchema.id, schema: latestSchema });
   }, [draftKey, loadedDraftKey, latestSchema, pinnedForm?.key]);
+  // The seat comes from the schedule: a scout who tapped "1323 · Blue 1" is not asked again, and
+  // cannot file it as Red 2 by leaving a stale answer. Only a blank answer is filled.
+  useEffect(() => {
+    if (type !== "match" || !matchKey || !teamKey || loadedDraftKey !== draftKey) return;
+    const fields = latestSchema?.definition.fields ?? [];
+    const station = robotStation((data?.matches ?? []).find((match) => match.matchKey === matchKey), teamKey);
+    const filled = scheduleAnswers(fields, payload, station);
+    if (Object.keys(filled).length) setPayload((current) => ({ ...current, ...scheduleAnswers(fields, current, station) }));
+  }, [type, matchKey, teamKey, loadedDraftKey, draftKey, latestSchema, data?.matches, payload]);
 
   // Picking a robot you already scouted in this match loads your report instead of a blank form;
   // tapping a "Done" robot used to start over, and saving made a second report. Your reports are

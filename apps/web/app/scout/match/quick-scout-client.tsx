@@ -264,7 +264,14 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
         </section>
       ) : null}
 
-      <QuickScoutPicker data={data} savedHere={savedHere} resume={receipt ? null : resume} onPick={open} />
+      <QuickScoutPicker
+        key={receipt?.next?.matchKey ?? "start"}
+        data={data}
+        savedHere={savedHere}
+        resume={receipt ? null : resume}
+        focusMatchKey={receipt?.next?.matchKey ?? null}
+        onPick={open}
+      />
 
       <footer className="qs-foot">
         <a href={entryHref({ scoutTab: "pit" })}>Pit scouting</a>

@@ -30,11 +30,14 @@ export function QuickScoutPicker({
   data,
   savedHere,
   resume,
+  focusMatchKey = null,
   onPick,
 }: {
   data: Bootstrap;
   savedHere: QuickTarget[];
   resume: (QuickTarget & { label: string }) | null;
+  /** After a save, the card opens on the match the "Next" button names, not back at the start. */
+  focusMatchKey?: string | null;
   onPick(target: QuickTarget): void;
 }) {
   const schedule = useMemo(() => orderedSchedule(data.matches ?? []), [data.matches]);
@@ -58,7 +61,8 @@ export function QuickScoutPicker({
     [schedule, scouted, data.assignments],
   );
   const [index, setIndex] = useState<number | null>(null);
-  const shown = index ?? startIndex;
+  const focusIndex = focusMatchKey ? schedule.findIndex((match) => match.matchKey === focusMatchKey) : -1;
+  const shown = index ?? (focusIndex >= 0 ? focusIndex : startIndex);
   const card = shown >= 0 ? matchCard(schedule, shown, scouted, data.assignments ?? []) : null;
 
   const [byHandMatch, setByHandMatch] = useState("");

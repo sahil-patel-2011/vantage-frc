@@ -271,6 +271,9 @@ export function ScoutingHome() {
         })()
     : null;
   const summaryLoading = Boolean(orgId) && summary.status === "loading" && !summary.view;
+  // Pits first, except in the minutes before your own robot plays: then that match leads.
+  const dutyAt = duty?.startsAt ? Date.parse(duty.startsAt) : NaN;
+  const matchSoon = Number.isFinite(dutyAt) && dutyAt - Date.now() < 15 * 60_000;
 
   return (
     <main className="scout-home">
@@ -308,11 +311,12 @@ export function ScoutingHome() {
         </div>
       ) : view ? (
         <>
-          <div className="scout-home-cards">
-            <ScoutHomePit view={view} pitHref={pitPageHref} />
+          <div className={`scout-home-cards${matchSoon ? " is-match-first" : ""}`}>
+            <ScoutHomePit view={view} pitHref={pitPageHref} primary={!matchSoon} />
             <ScoutHomeMatch
               view={view}
               matchHref={matchHref}
+              primary={matchSoon}
               duty={duty ? { teamNumber: duty.teamNumber, matchLabel: duty.matchLabel, station: duty.station, when: duty.startsAt ? formatDutyTime(duty.startsAt) : null } : null}
             />
           </div>

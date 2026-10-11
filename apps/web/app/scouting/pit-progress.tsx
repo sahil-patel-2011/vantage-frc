@@ -18,6 +18,7 @@ export function PitProgress({
   teamKey,
   onTeamKey,
   savedTeamKey = null,
+  ownTeamNumber = null,
 }: {
   orgId: string | null | undefined;
   eventKey: string;
@@ -25,6 +26,8 @@ export function PitProgress({
   onTeamKey: (teamKey: string) => void;
   /** The team just saved here: counted at once, not after a reload ("Saved 254" beside "1 of 24"). */
   savedTeamKey?: string | null;
+  /** Our own robot needs no pit visit; counting it made this "of 24" while Home said "of 23". */
+  ownTeamNumber?: number | null;
 }) {
   const [teams, setTeams] = useState<RosterTeam[] | null>(null);
   const [savedHere, setSavedHere] = useState<string[]>([]);
@@ -41,10 +44,10 @@ export function PitProgress({
   }, [savedTeamKey]);
   const roster = useMemo(
     () =>
-      teams?.map((team) =>
+      teams?.filter((team) => team.teamNumber !== ownTeamNumber).map((team) =>
         savedHere.includes(`frc${team.teamNumber}`) || queuedTeams.includes(`frc${team.teamNumber}`) ? { ...team, pitScouted: Math.max(1, team.pitScouted ?? 0) } : team,
       ) ?? null,
-    [teams, savedHere, queuedTeams],
+    [teams, savedHere, queuedTeams, ownTeamNumber],
   );
 
   useEffect(() => {
@@ -82,7 +85,7 @@ export function PitProgress({
     <section className="pit-progress" aria-label="Pit visits">
       <header>
         <strong>
-          {visited} of {roster.length} teams visited
+          {visited} of {roster.length} pits visited
         </strong>
         <span className="pit-progress-meter" aria-hidden="true">
           <i style={{ width: `${Math.round((visited / roster.length) * 100)}%` }} />

@@ -30,7 +30,7 @@ function chipName(team: { teamNumber: number; nickname: string | null }): string
  * played, and it is what the drive team asks about when an alliance forms. The one primary
  * button walks to the next pit nobody has visited.
  */
-export function ScoutHomePit({ view, pitHref }: { view: Ready; pitHref: (teamKey?: string) => string }) {
+export function ScoutHomePit({ view, pitHref, primary = true }: { view: Ready; pitHref: (teamKey?: string) => string; primary?: boolean }) {
   const { pit } = view;
   const percent = share(pit.visited, pit.total);
   const next = pit.notVisited[0];
@@ -47,7 +47,7 @@ export function ScoutHomePit({ view, pitHref }: { view: Ready; pitHref: (teamKey
       ) : null}
       {next ? (
         <>
-          <Button as="a" variant="primary" className="scout-home-start" href={pitHref(next.teamKey)}>
+          <Button as="a" variant={primary ? "primary" : "secondary"} className="scout-home-start" href={pitHref(next.teamKey)}>
             Visit {next.teamNumber}
             {chipName(next) ? ` · ${chipName(next)}` : ""}
           </Button>
@@ -91,10 +91,13 @@ export function ScoutHomeMatch({
   view,
   duty,
   matchHref,
+  primary = false,
 }: {
   view: Ready | null;
   duty: { teamNumber: string; matchLabel: string; station: string | null; when: string | null } | null;
   matchHref: string;
+  /** Your robot is about to play: the match comes before the pits for these few minutes. */
+  primary?: boolean;
 }) {
   const match = view?.match;
   return (
@@ -119,7 +122,7 @@ export function ScoutHomeMatch({
       ) : (
         <p className="scout-card-note">Pick any robot in the match that is up next.</p>
       )}
-      <Button as="a" variant="secondary" href={matchHref}>
+      <Button as="a" variant={primary ? "primary" : "secondary"} href={matchHref}>
         {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Scout a match"}
       </Button>
     </section>
@@ -146,7 +149,7 @@ export function ScoutHomeMe({ view, resume }: { view: Ready; resume: { href: str
           <dd>{me.matchReports}</dd>
         </div>
         <div>
-          <dt>Still to scout</dt>
+          <dt>Assigned, still to come</dt>
           <dd>{me.upcoming}</dd>
         </div>
         {me.missed ? (

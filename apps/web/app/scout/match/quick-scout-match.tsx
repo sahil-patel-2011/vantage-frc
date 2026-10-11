@@ -25,7 +25,9 @@ import {
 import { clockLabel, phaseRemainingSeconds, rebuiltShiftAt, timingForSeason } from "../../../lib/scouting/match-clock";
 import {
   QUICK_STAGE_LABELS,
+  STATION_FIELD_KEY,
   fieldsForQuickStage,
+  stationAnswer,
   matchLengthMs,
   pushUndo,
   scheduleAnswers,
@@ -304,7 +306,10 @@ export function QuickScoutMatch({
 
   const shift = timesActions ? rebuiltShiftAt(elapsed, station?.alliance ?? null, matchCapture(payload)?.firstInactiveAlliance ?? "unknown") : null;
   const live = stage === "auto" || stage === "teleop" || stage === "endgame";
-  const stageFields = stage === "review" ? [] : fieldsForQuickStage(visible, stage);
+  // The seat the schedule already filled is in the header ("Red 2"); asking again is noise.
+  const stageFields = stage === "review" ? [] : fieldsForQuickStage(visible, stage).filter(
+    (field) => !(field.key === STATION_FIELD_KEY && station && payload[field.key] === stationAnswer(field, station)),
+  );
   const invalidKeys = new Set(
     fields.filter((field) => issues.some((issue) => issue.startsWith(field.label))).map((field) => field.key),
   );

@@ -662,6 +662,7 @@ return (
                 teamKey={teamKey}
                 onTeamKey={setTeamKey}
                 savedTeamKey={saveReceipt?.entryType === "pit" ? saveReceipt.teamKey : null}
+                ownTeamNumber={data?.teamNumber ?? null}
               />
               <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
             </>

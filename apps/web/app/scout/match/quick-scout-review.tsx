@@ -15,7 +15,7 @@ import { QuickTile } from "./quick-scout-tiles";
 
 const CONFIDENCE: Array<{ value: "high" | "normal" | "low"; label: string }> = [
   { value: "high", label: "Sure" },
-  { value: "normal", label: "Mostly" },
+  { value: "normal", label: "OK" },
   { value: "low", label: "Guessing" },
 ];
 
