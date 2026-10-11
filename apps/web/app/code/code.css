@@ -231,7 +231,7 @@
   font-size: 11px;
   font-weight: 700;
 }
-.cdc-panel input,
+.cdc-panel input:not([type="checkbox"], [type="radio"]),
 .cdc-panel textarea {
   min-height: 44px;
   padding: 8px 10px;
@@ -655,4 +655,20 @@
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+/* The scan-tests toggle borrows Account's checkbox row, whose sheet is not loaded here: a
+   checkbox beside its text, not a 465px box above it. */
+.cdc-panel .appearance-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.cdc-panel .appearance-check input {
+  flex: none;
+  width: auto;
+  margin-top: 3px;
 }

@@ -43,11 +43,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
         </div>
         <div className="cdc-header-actions">
           <span className="app-badge good">Local · proposal-only</span>
-          {orgId ? (
-            <Button as="a" variant="secondary" href={withOrgHref("/editor/pair", orgId)}>
-              Pair VS Code
-            </Button>
-          ) : null}
+          {/* Pair VS Code is in the links row right under the header. */}
         </div>
       </header>
       ) : null}
