@@ -7,6 +7,8 @@ export {
   inviteEmptyCopy,
   inviteJoiningHeadline,
   inviteNextActions,
+  inviteProfileHref,
+  inviteProfileRedirect,
   inviteSignInHref,
   inviteLegalRequired,
   normalizeInviteStatus,

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { VantageLogo } from "../../components/brand";
 import { Button, FormRow } from "../../components/ui";
 import { teamJoinInvitePath } from "../../lib/onboarding/entry-journey";
+import { teamJoinNextStep, type TeamJoinMember } from "../../lib/team/join-code-flow";
 import { apiErrorMessage } from "../../lib/ui/load-failure";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import "./join-team.css";
@@ -16,6 +17,7 @@ export default function JoinTeamClient() {
   const submitting = useRef(false);
   const errorRef = useRef<HTMLParagraphElement | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [alreadyOn, setAlreadyOn] = useState<TeamJoinMember | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/auth/get-session", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]) })
@@ -47,16 +49,40 @@ export default function JoinTeamClient() {
         setError((await apiErrorMessage(response)) ?? "Could not join. Check the details and try again.");
         return;
       }
-      const data = await response.json() as { href?: unknown };
-      const href = teamJoinInvitePath(data.href);
-      if (!href) throw new Error("Invitation handoff was not confirmed");
-      window.location.assign(href);
+      const data = (await response.json()) as Record<string, unknown>;
+      const next = teamJoinNextStep(data, { signedIn: Boolean(sessionEmail), validInvitePath: teamJoinInvitePath });
+      if (next.kind === "member") {
+        setAlreadyOn(next.member);
+        return;
+      }
+      if (next.kind === "error") throw new Error("Invitation handoff was not confirmed");
+      // Signed out: straight to sign-in for this invitation (the email and "You're joining Team
+      // N" come with it), not an invitation page whose only step is "Sign in to accept".
+      window.location.assign(next.href);
     } catch {
       setError("Could not connect. Your details are still here. Try again.");
     } finally {
       submitting.current = false;
       setBusy(false);
     }
+  }
+  if (alreadyOn) {
+    const team = alreadyOn.orgName?.trim() || `Team ${alreadyOn.teamNumber}`;
+    return (
+      <main className="join-team-page">
+        <section className="join-team-card" aria-labelledby="join-team-title">
+          <VantageLogo />
+          <h1 id="join-team-title" tabIndex={-1}>You&rsquo;re already on {team}</h1>
+          <p className="app-muted">
+            No new invitation needed: this account is a member of {team} already.
+          </p>
+          <Button as="a" variant="primary" href={alreadyOn.href}>Open Home</Button>
+          <p className="join-team-alternative">
+            Joining a different team? <button type="button" className="join-team-link" onClick={() => { setAlreadyOn(null); setTeam(""); setPin(""); }}>Enter another code</button>
+          </p>
+        </section>
+      </main>
+    );
   }
   return (
     <main className="join-team-page">

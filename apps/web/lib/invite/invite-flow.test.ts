@@ -7,10 +7,26 @@ import {
   inviteEmptyCopy,
   inviteJoiningHeadline,
   inviteNextActions,
+  inviteProfileRedirect,
   inviteSignInHref,
   inviteLegalRequired,
   normalizeInviteStatus,
 } from "./invite-flow";
+
+describe("inviteProfileRedirect", () => {
+  const ready = { kind: "ready" as const, token: "tok_123", profileRequired: true, onboardingComplete: false };
+  it("sends a new account straight to onboarding, coming back to this invite", () => {
+    expect(inviteProfileRedirect(ready)).toBe(`/onboarding?next=${encodeURIComponent("/invite?token=tok_123")}`);
+  });
+  it("never bounces a finished profile, an unknown one, or a page that is not ready", () => {
+    expect(inviteProfileRedirect({ ...ready, onboardingComplete: true })).toBeNull();
+    expect(inviteProfileRedirect({ ...ready, onboardingComplete: null })).toBeNull();
+    expect(inviteProfileRedirect({ ...ready, profileRequired: false })).toBeNull();
+    expect(inviteProfileRedirect({ ...ready, kind: "auth_required" })).toBeNull();
+    expect(inviteProfileRedirect({ ...ready, kind: "email_mismatch" })).toBeNull();
+    expect(inviteProfileRedirect({ ...ready, token: "" })).toBeNull();
+  });
+});
 
 describe("invite Soft-UI flow helpers", () => {
   it("tells people without an invite they are on the waitlist", () => {

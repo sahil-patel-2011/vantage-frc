@@ -71,6 +71,34 @@ export function formatInviteRole(role: string | null | undefined): string | null
   return role.trim();
 }
 
+/** Onboarding, then back to this invite: finishing onboarding joins the team that invited you. */
+export function inviteProfileHref(token?: string | null): string {
+  const inviteReturn = token?.trim()
+    ? `/invite?token=${encodeURIComponent(token.trim())}`
+    : "/invite";
+  return `/onboarding?next=${encodeURIComponent(inviteReturn)}`;
+}
+
+/**
+ * Where a signed-in person on a valid invite goes next when their profile is not done.
+ *
+ * Back from signing in, a new account landed here on a disabled "Accept invitation", a small
+ * "Finish your profile" link, and Terms/Privacy boxes that onboarding then asked again. A
+ * profile that was never finished goes straight to onboarding, which asks for it and the
+ * agreements once and joins the team when it is done (migration 0686). A finished profile that
+ * still is not eligible stays here, so this can never bounce between the two pages.
+ */
+export function inviteProfileRedirect(input: {
+  kind: InviteFlowKind;
+  token: string | null | undefined;
+  profileRequired: boolean;
+  onboardingComplete: boolean | null;
+}): string | null {
+  if (input.kind !== "ready" || !input.profileRequired || input.onboardingComplete !== false) return null;
+  if (!input.token?.trim()) return null;
+  return inviteProfileHref(input.token);
+}
+
 /** Sign-in return that preserves the invite token. */
 export function inviteSignInHref(token?: string | null): string {
   const inviteReturn = token?.trim()
