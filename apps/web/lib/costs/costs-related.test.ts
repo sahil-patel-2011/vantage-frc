@@ -35,6 +35,7 @@ describe("costs-related Soft-UI helpers", () => {
   it("hides dollars and % until real evidence exists", () => {
     expect(formatCostUsdDisplay(0, false)).toBe("—");
     expect(formatCostUsdDisplay(12500, true)).toBe("$12,500");
+    expect(formatCostUsdDisplay(22865.25, true)).toBe("$22,865.25");
     expect(formatBudgetPctDisplay(null)).toBe("—");
     expect(formatBudgetPctDisplay(0.42)).toBe("42%");
   });

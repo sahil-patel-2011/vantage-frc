@@ -41,7 +41,7 @@ export const CONTEXT_ACTIONS: Record<string, readonly { id: string; label: strin
   "team:attendance": [{ id: "hours-self-view", label: "My hours" }, { id: "learning", label: "Learning" }],
   "team:todos": [{ id: "season-planning-workspace", label: "Plan the season" }, { id: "practice", label: "Plan practice" }],
   "team:knowledge": [{ id: "writer", label: "Write a draft" }, { id: "decisions", label: "Team decisions" }],
-  "business:finance": [{ id: "season-budget", label: "Set season budget" }, { id: "orders", label: "Purchase orders" }, { id: "reimbursements", label: "Reimbursements" }],
+  "business:finance": [{ id: "season-budget", label: "Season budget" }, { id: "orders", label: "Purchase orders" }, { id: "reimbursements", label: "Reimbursements" }],
   "business:sponsors": [{ id: "sponsorship", label: "Sponsorship packages" }, { id: "sponsor-wall", label: "Sponsor wall" }],
   "business:grants": [{ id: "grant-calendar", label: "Grant deadlines" }, { id: "grant-report", label: "Grant reports" }],
   "business:evidence": [{ id: "fundraisers", label: "Fundraisers" }, { id: "awards-workbench", label: "Prepare awards" }],

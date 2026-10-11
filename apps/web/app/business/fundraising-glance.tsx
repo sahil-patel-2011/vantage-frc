@@ -2,15 +2,11 @@
 
 import { EmptyState, Button } from "../../components/ui";
 import type { BusinessView } from "../../lib/business-portal";
+import { formatUsdCents } from "../../lib/finance/format-usd";
 import { PIPELINE_STAGE_LABELS } from "../../lib/sponsor-pipeline";
 
-function money(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
-}
+/** The shared money format (A5-07): cents whenever there are cents. */
+const money = formatUsdCents;
 
 function percent(value: number, total: number): number {
   if (total <= 0) return 0;

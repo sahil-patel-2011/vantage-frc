@@ -20,6 +20,7 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { FINANCE_MANAGER_REQUIRED } from "../../lib/finance/finance-managers";
 import "./fundraisers.css";
 import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
+import { formatUsd } from "../../lib/finance/format-usd";
 
 type FundraiserEvent = {
   id: string;
@@ -96,13 +97,8 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function moneyUsd(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+/** The shared money format (A5-07): cents whenever there are cents. */
+const moneyUsd = formatUsd;
 
 function FundraisersNextActions({
   actions,

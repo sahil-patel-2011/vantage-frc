@@ -7,6 +7,7 @@ import {
 } from "../../../lib/dashboard/venue-weather";
 import { LiveCountdown } from "./live-countdown";
 import { matchShortLabel } from "../../../lib/matches/no-next-match";
+import { formatUsd } from "../../../lib/finance/format-usd";
 
 function asItems(data: Record<string, unknown>, key = "items"): Array<Record<string, unknown>> {
   const raw = data[key];
@@ -17,8 +18,8 @@ function money(value: unknown): string | null {
   if ((typeof value !== "number" && typeof value !== "string") || (typeof value === "string" && !value.trim())) return null;
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return null;
-  const rounded = Math.round(n);
-  return `$${rounded.toLocaleString()}`;
+  // The shared money format (A5-07): Home's card showed "$2,135" for $2,134.75.
+  return formatUsd(n);
 }
 
 export function DutiesLive({ data }: { data: Record<string, unknown> }) {

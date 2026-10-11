@@ -12,6 +12,7 @@ import type { CapabilityGrant, OrgRole } from "../../lib/capabilities/org-capabi
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { formatUsd } from "../../lib/finance/format-usd";
 
 type Candidate = { userId: string; name: string; email: string; role: OrgRole };
 
@@ -53,8 +54,7 @@ async function persistBudgetSnapshot(
   }
 }
 
-const money = (value: number) =>
-  value.toLocaleString(undefined, { style: "currency", currency: "USD" });
+const money = formatUsd;
 
 /**
  * Every state's headline. `remainingUsd` is null only while no budget is set;

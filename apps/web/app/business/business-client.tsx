@@ -290,7 +290,9 @@ export default function BusinessClient() {
     <main className="module-page business-page product-hub product-hub--business">
       <div className="workspace-hub-header">
         <div className="hub-bar-id"><span className="workspace-hub-eyebrow">Business</span><h1>{hubPageTitle(BUSINESS_HUB, tab)}</h1></div>
-        {live ? <MoneyAddMenu orgId={orgId ?? null} /> : null}
+        {live ? (
+          <MoneyAddMenu orgId={orgId ?? null} canManageFinances={live.canManageFinances} viewOnly={live.role === "viewer"} />
+        ) : null}
       </div>
       <TabBar className="workspace-hub-tabs" aria-label="Business sections" tabs={visibleWorkbenches} value={workbenchId} onChange={next => selectTab(next as Tab)} />
 
