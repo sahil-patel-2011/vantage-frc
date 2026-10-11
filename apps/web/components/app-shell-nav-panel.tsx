@@ -234,7 +234,7 @@ export function AppShellNavPanel({
                       goToCommand(hit);
                     }}
                   >
-                    <Icon name={hit.kind === "action" ? "bolt" : "grid"} />
+                    <Icon name={hit.kind === "action" ? "bolt" : "chevron"} />
                     <span>
                       {hit.label}
                       <small>{hit.context}</small>
@@ -303,7 +303,7 @@ export function AppShellNavPanel({
             <div className="soft-drawer-settings" aria-label="Settings">
               <p className="main-menu-heading">Manage</p>
               {me.platformAdmin ? (
-                <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
+                <a href="/admin" onClick={closeNav}><Icon name="shield" /><span><strong>Platform admin</strong></span></a>
               ) : null}
               <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
                 <Icon name="gear" /><span><strong>Account</strong></span>

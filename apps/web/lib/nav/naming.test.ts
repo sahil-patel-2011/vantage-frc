@@ -51,6 +51,30 @@ describe("one name per destination", () => {
   });
 });
 
+describe("one icon per meaning (A6-23)", () => {
+  it("Ask AI is sparkles everywhere, Help is a book, Security and Platform admin a shield", () => {
+    expect(read("lib/nav/product-nav.ts")).not.toMatch(/label: "Ask AI", icon: "bolt"/);
+    expect(read("components/app-shell-topbar.tsx")).toMatch(/aria-label="Ask AI"[\s\S]{0,200}<Icon name="sparkles" \/>/);
+    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/help", label: "Help", icon: "book"/);
+    expect(read("lib/nav/settings-nav.ts")).toMatch(/label: "Security", href: "\/security", icon: "shield"/);
+    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/<Icon name="shield" \/><span><strong>Platform admin<\/strong>/);
+  });
+});
+
+describe("one accent for the interface (A6-19)", () => {
+  it("the Scouting app's document takes the product accent, not the public teal", () => {
+    const macos = read("app/macos-product.css");
+    expect(macos).toMatch(/^html:not\(\[data-brand-accent\]\):has\(body\.has-app-shell, \.scouting-product\),$/m);
+    expect(read("BRAND.md")).toMatch(/## Interface accent/);
+  });
+
+  it("every product page title uses one size token (A6-10)", () => {
+    const css = read("app/shell-clarity.css");
+    expect(css).toMatch(/--page-title: clamp\(28px, 1\.2vw \+ 20px, 34px\);/);
+    expect(css).toMatch(/\.scouting-product main :is\(\.app-page-header, \.qs-head\) h1 \{\n {2}font-size: var\(--page-title\);/);
+  });
+});
+
 describe("top bar: two patterns", () => {
   it("shows the team switcher alone unless the page has a parent to go back to", () => {
     const topbar = read("components/app-shell-topbar.tsx");

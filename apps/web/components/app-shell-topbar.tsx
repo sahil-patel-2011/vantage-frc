@@ -179,7 +179,7 @@ export function AppShellTopbar({
           aria-label="Ask AI"
           title="Ask AI — strategy, match predictions, design help"
         >
-          <Icon name="bolt" />
+          <Icon name="sparkles" />
         </a>
         <a
           className="soft-icon-btn soft-notif"

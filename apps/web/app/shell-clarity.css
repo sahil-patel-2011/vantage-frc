@@ -135,6 +135,20 @@ body.has-app-shell :is(.app-button, .app-button.primary, .app-button.is-primary)
   box-shadow: none;
 }
 
+/* ── One page-title size (A6-10) ─────────────────────────────────────────────────────────── */
+
+/* Page h1s were 28/30/32/34px on a phone and 32/35.84/36/40/46px on a computer depending on which
+   sheet styled that page last. One token for every page title in the product and the Scouting
+   app's working pages (its home keeps its hero). */
+:is(body.has-app-shell, .scouting-product) {
+  --page-title: clamp(28px, 1.2vw + 20px, 34px);
+}
+body.has-app-shell main :is(.app-page-header, .hub-bar-id, .dash-home-header, .intel-header) h1,
+body.has-app-shell main h1.dash-hero-greeting,
+.scouting-product main :is(.app-page-header, .qs-head) h1 {
+  font-size: var(--page-title);
+}
+
 /* ── One filled button per view (A6-13) ─────────────────────────────────────────────────── */
 
 /* A segmented choice is a selection, not an action: the selected "Event" in Add event was filled

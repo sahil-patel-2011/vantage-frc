@@ -42,7 +42,7 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     scope: "personal",
     requiredRole: "member",
   },
-  { id: "security", label: "Security", href: "/security", icon: "pin", scope: "personal", requiredRole: "member" },
+  { id: "security", label: "Security", href: "/security", icon: "shield", scope: "personal", requiredRole: "member" },
   // Personal rather than team: a member whose own Onshape authorisation has
   // expired needs this page, and the deployment-level rows on it are read-only
   // facts they can pass to whoever runs the deployment.
