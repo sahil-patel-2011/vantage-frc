@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Admin-only Link spend control. Posts one named finance expense + amount > 0
- * to POST /api/grants/allocations. Never copies a season-wide total.
+ * Finance-manager-only Link spend control (0714: the team owner, or someone the
+ * owner chose to manage money). Posts one named finance expense + amount > 0 to
+ * POST /api/grants/allocations. Never copies a season-wide total.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, Button } from "../../../components/ui";
-import { fetchProductSession } from "../../../lib/nav/product-session";
-import { strategyCanSync } from "../../../lib/strategy/strategy-related";
+import { FINANCE_MANAGER_REQUIRED } from "../../../lib/finance/finance-managers";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -201,14 +201,22 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
       .finally(() => setLoading(false));
   }, [orgId, seasonYear]);
 
+  // Asked of the server (the same SQL function RLS uses), not inferred from the
+  // role: admins are not finance managers unless the owner chose them.
   useEffect(() => {
     let cancelled = false;
-    void fetchProductSession(orgId).then((session) => {
-      if (cancelled) return;
-      const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
-      setCanManage(strategyCanSync(membership?.role ?? session?.role));
-      setRoleReady(true);
-    });
+    void fetch(`/api/finance/managers?${new URLSearchParams({ orgId }).toString()}`, { cache: "no-store" })
+      .then(async (response) => (response.ok ? ((await response.json()) as { canManageFinances?: boolean }) : null))
+      .then((data) => {
+        if (cancelled) return;
+        setCanManage(data?.canManageFinances === true);
+        setRoleReady(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCanManage(false);
+        setRoleReady(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -259,7 +267,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
       const data = (await response.json()) as { error?: string; allocation?: unknown };
       if (response.status === 401 || response.status === 403) {
         setForbidden(true);
-        setError(data.error || "Organization administrator access required");
+        setError(data.error || FINANCE_MANAGER_REQUIRED);
         return;
       }
       if (!response.ok) {
@@ -290,9 +298,9 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
         <span className="eyebrow">Link spend</span>
         <EmptyState
           compact
-          badge="Admins"
-          title="Owner or admin required"
-          description="Linking a named expense to a grant is an admin action. Ask a team owner or admin — season totals are never copied in."
+          badge="Finance managers"
+          title="Linking spend is a money change"
+          description={`${FINANCE_MANAGER_REQUIRED} Season totals are never copied in.`}
         />
       </section>
     );
@@ -303,7 +311,7 @@ export function AllocateSpend({ orgId, seasonYear }: { orgId: string; seasonYear
       <span className="eyebrow">Link spend</span>
       <h2>Attach a named expense</h2>
       <p className="app-muted">
-        Admins link one recorded expense and an amount greater than 0. Grant reports count only these
+        Link one recorded expense and an amount greater than 0. Grant reports count only these
         allocations — never a season spend total.
       </p>
 

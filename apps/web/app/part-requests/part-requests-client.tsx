@@ -291,16 +291,22 @@ export default function PartRequestsClient() {
       <PageHeader
         breadcrumbs="Business / Money"
         title="Part requests"
-        description={`Ask for what you need in ${view.orgName}. A mentor decides, and an approved request becomes real spend against the season budget.`}
+        description={`Ask for what you need in ${view.orgName}. A finance manager decides, and an approved request becomes real spend against the season budget.`}
       />
       <OfflineBanner feature="Part requests" fromCache={fromCache} cachedAt={cachedAt} />
 
+      {view.canAsk === false ? (
+        <Panel>
+          <h2>Ask for a part</h2>
+          <p className="app-muted">You have view-only access, so you can see requests but not ask for parts.</p>
+        </Panel>
+      ) : (
       <Panel>
         <h2>Ask for a part</h2>
         <p className="app-muted">
-          Anyone on the team can ask — you do not need budget access, and the vendor is optional. Your
+          Anyone on the team can ask — you do not need money access, and the vendor is optional. Your
           request is your own row; nobody else can file one in your name. It lands on the same list as the
-          purchases mentors log on Orders.
+          purchases on Orders.
         </p>
         <form
           id="pr-ask"
@@ -325,7 +331,7 @@ export default function PartRequestsClient() {
                 itemUrl,
                 neededBy: neededBy || undefined,
               },
-              "Request sent. A mentor will see it in their queue.",
+              "Request sent. A finance manager will see it in their queue.",
             ).then((ok) => {
               setConfirmSubmit(false);
               if (ok) {
@@ -438,6 +444,7 @@ export default function PartRequestsClient() {
           )}
         </form>
       </Panel>
+      )}
 
       {view.canDecide ? (
         <Panel>

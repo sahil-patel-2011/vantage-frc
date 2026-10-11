@@ -19,7 +19,7 @@ type Payload = {
   view: BudgetView;
   canGrantAccess: boolean;
   grants: CapabilityGrant[];
-  /** Owners and admins, who hold budget access without a grant row. */
+  /** Owners, who manage money without a grant row (0714 — admins are not implicit). */
   implicitHolders: Candidate[];
   candidates: Candidate[];
 };
@@ -237,7 +237,7 @@ export default function BudgetClient() {
         <OfflineBanner feature="Season budget" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge={denied.reason === "not_budget_manager" ? "Mentors only" : "Not available"}
+          badge={denied.reason === "not_budget_manager" ? "Finance managers" : "Not available"}
           badgeTone="setup"
           title={
             denied.reason === "not_budget_manager"
@@ -247,7 +247,7 @@ export default function BudgetClient() {
           description={denied.error}
         >
           <p className="app-muted">
-            You can still ask for a part — a request does not need budget access.
+            You can still ask for a part — a request does not need money access.
           </p>
           <Button as="a" variant="primary" href="/part-requests">
             Request a part
@@ -341,16 +341,8 @@ export default function BudgetClient() {
         <p className="budget-verdict">{describeBudget(summary)}</p>
         {/* One sentence on who can see this, not a panel and a contradiction. */}
         <p className="app-muted budget-who-line">
-          Only owners, mentors and people you give budget access can see this page. You are
-          here as{" "}
-          <Badge tone="info">
-            {view.accessVia === "owner"
-              ? "Owner"
-              : view.accessVia === "admin"
-                ? "Mentor or coach"
-                : "Budget access"}
-          </Badge>
-          .
+          Only the team owner and the people they chose to manage money can see this page. You
+          are here as <Badge tone="info">{view.accessVia === "owner" ? "Owner" : "Manage money"}</Badge>.
         </p>
       </Panel>
 
@@ -657,13 +649,13 @@ export default function BudgetClient() {
 
       {payload.canGrantAccess ? (
         <Panel>
-          <h2>Who else can see the budget</h2>
-          {/* Budget access is set per person in one place: Team admin → Access. */}
+          <h2>Who else manages money</h2>
+          {/* Manage money is set per person in one place: Team admin → Access (owner only). */}
           <p className="app-muted">
             {payload.grants.length === 0
-              ? "Only owners and mentors can see it right now."
-              : `Also open to: ${payload.grants.map((grant) => grant.name || grant.email).join(", ")}.`}{" "}
-            To let someone else see it, open their <strong>Access</strong> on Team admin.
+              ? "Only owners manage money right now."
+              : `Also managed by: ${payload.grants.map((grant) => grant.name || grant.email).join(", ")}.`}{" "}
+            To choose someone, open their <strong>Access</strong> on Team admin.
           </p>
           <div>
             <Button
@@ -671,7 +663,7 @@ export default function BudgetClient() {
               variant="secondary"
               href={`/team/admin?orgId=${encodeURIComponent(view.orgId)}#people`}
             >
-              Choose who can see it
+              Choose who manages money
             </Button>
           </div>
         </Panel>

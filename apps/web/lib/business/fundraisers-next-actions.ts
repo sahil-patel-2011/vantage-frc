@@ -11,7 +11,10 @@ export type FundraisersNextAction = {
 
 export type FundraisersNextActionContext = {
   orgId?: string | null;
+  /** Finance manager (0714): may record proceeds. */
   canManageMoney?: boolean;
+  /** Anyone but a view-only member may plan events. Defaults to canManageMoney. */
+  canPlanEvents?: boolean;
   eventCount?: number;
   activeCount?: number;
   plannedCount?: number;
@@ -43,13 +46,14 @@ export function fundraisersNextActions(ctx: FundraisersNextActionContext): Fundr
   const totalGoal = ctx.totalGoalUsd ?? 0;
   const totalRaised = ctx.totalRaisedUsd ?? 0;
 
+  const canPlan = ctx.canPlanEvents ?? ctx.canManageMoney;
   if (eventCount === 0) {
     actions.push({
       id: "first-event",
-      label: ctx.canManageMoney ? "Plan your first fundraiser" : "Wait for a lead to plan events",
-      detail: ctx.canManageMoney
-        ? "Add a car wash, bottle drive, or sale — raised $ stays blank until someone records proceeds."
-        : "Owners and admins add events and deposit totals. You can still open Sponsors and Grants.",
+      label: canPlan ? "Plan your first fundraiser" : "Wait for a teammate to plan events",
+      detail: canPlan
+        ? "Add a car wash, bottle drive, or sale — raised $ stays blank until a finance manager records proceeds."
+        : "Team members plan events and finance managers record deposits. You can still open Sponsors and Grants.",
       href: withOrgHref("/fundraisers", orgId),
       primary: true,
     });
@@ -64,7 +68,7 @@ export function fundraisersNextActions(ctx: FundraisersNextActionContext): Fundr
   } else if (totalRaised <= 0 && (ctx.activeCount ?? 0) + (ctx.plannedCount ?? 0) > 0) {
     actions.push({
       id: "record",
-      label: ctx.canManageMoney ? "Record real proceeds" : "Ask a lead to record proceeds",
+      label: ctx.canManageMoney ? "Record real proceeds" : "Ask a finance manager to record proceeds",
       detail: "Deposit amounts post straight to team finance.",
       href: withOrgHref("/fundraisers", orgId),
       primary: true,

@@ -16,6 +16,12 @@ export type CostsNextActionContext = {
   subscriptionCount?: number;
   budgetUsd?: number | null;
   overBudget?: boolean;
+  /**
+   * Finance manager (0714). When false the person cannot set the budget or log
+   * costs, so those steps are not offered; ordering becomes the primary path.
+   * Defaults to true for callers that predate it.
+   */
+  canManageFinances?: boolean;
 };
 
 /**
@@ -47,7 +53,9 @@ export function costsNextActions(ctx: CostsNextActionContext): CostsNextAction[]
   const subscriptionCount = ctx.subscriptionCount ?? 0;
   const budgetUsd = ctx.budgetUsd ?? null;
 
-  if (budgetUsd == null) {
+  if (ctx.canManageFinances === false) {
+    // Nothing to set or log here for this person — ask through Orders instead.
+  } else if (budgetUsd == null) {
     actions.push({
       id: "set-budget",
       label: "Set a season budget",

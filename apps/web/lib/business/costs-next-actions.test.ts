@@ -42,4 +42,16 @@ describe("costsNextActions Soft-UI helpers", () => {
     });
     expect(actions[0]?.id).toBe("over-budget");
   });
+
+  it("never offers budget or cost steps to someone who cannot manage money (0714)", () => {
+    const actions = costsNextActions({
+      orgId: "org-1",
+      budgetUsd: null,
+      costCount: 0,
+      canManageFinances: false,
+    });
+    expect(actions.map((a) => a.id)).not.toContain("set-budget");
+    expect(actions.map((a) => a.id)).not.toContain("first-cost");
+    expect(actions[0]).toMatchObject({ id: "orders", primary: true });
+  });
 });
