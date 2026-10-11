@@ -1,10 +1,10 @@
+import { LEARN_PAGE_DESCRIPTION } from "../../lib/learn/resources";
 import { LearnResources } from "./learn-resources";
 import "./learn-resources.css";
 
 export const metadata = {
   title: "Code & CAD",
-  description:
-    "Programming setup, Learn Onshape, shop drawings, and the Team 6925 lab — one list, official docs only.",
+  description: LEARN_PAGE_DESCRIPTION,
 };
 
 export default function LearnResourcesPage() {

@@ -282,6 +282,7 @@ describe("product hubs", () => {
       ["team", "knowledge", "knowledge-drafts", "/knowledge-drafts"],
       ["build", "cad", "cad-vault", "/cad-vault"],
       ["build", "cad", "learn-resources", "/learn"],
+      ["build", "cad", "team-lessons", "/learn/team"],
       ["build", "fmea", "manufacturing", "/manufacturing"],
       ["build", "fmea", "print-farm", "/print-farm"],
       ["competition", "command", "event-readiness", "/event-readiness"],

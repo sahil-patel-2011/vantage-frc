@@ -1,6 +1,6 @@
 /**
  * Code & CAD resources hub — one page that points at the tracks that already
- * exist, plus the Onshape drawing lesson. No invented scores.
+ * exist, the lessons a team writes itself, and the Onshape drawing lesson. No invented scores.
  */
 
 export type LearnResourceCard = {
@@ -19,6 +19,14 @@ export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
       "Onshape from zero to robot parts (a first part, an assembly, sheet metal, a shop drawing, parts from FRC libraries, a belt layout) and Team 6925's programming weeks. Vantage checks each step in your own Onshape document, build output or pull request before it counts.",
     href: "/learn/guided",
     primary: "Start a checked track",
+  },
+  {
+    id: "team-lessons",
+    title: "Team lessons",
+    description:
+      "Lessons your own team wrote here or uploaded as a PDF: one step at a time, with examples and when to use each step, then practice questions Vantage checks.",
+    href: "/learn/team",
+    primary: "Open team lessons",
   },
   {
     id: "dev-setup",
@@ -52,4 +60,4 @@ export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
 ];
 
 export const LEARN_PAGE_DESCRIPTION =
-  "Programming setup, Learn Onshape, shop drawings, and the Team 6925 lab — one list, official docs only.";
+  "Checked tracks, your team's own lessons, programming setup, Learn Onshape, shop drawings, and the Team 6925 lab — one list.";

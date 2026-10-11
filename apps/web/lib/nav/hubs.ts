@@ -377,6 +377,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // Build's four workbenches, and a training surface is not one of them.
         { id: "cad-learn", label: "Learn CAD", legacyHref: "/cad-learn", featured: true },
         { id: "learn-resources", label: "Code & CAD", legacyHref: "/learn", featured: true },
+        // Lessons a team writes itself (or uploads as a PDF), ending in checked practice.
+        { id: "team-lessons", label: "Team lessons", legacyHref: "/learn/team" },
       ]),
       { id: "code", label: "Code", legacyHref: "/code" },
       ...nest("code", [
