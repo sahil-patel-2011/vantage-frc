@@ -8,12 +8,17 @@ export type DesktopDownloads = {
   win_msi: string | null;
   win_nsis: string | null;
   mac_dmg: string | null;
+  /** One zip per chip when the Mac build was made without a Mac (no universal app). */
+  mac_zip_arm64?: string | null;
+  mac_zip_x64?: string | null;
 };
 
 export type DesktopSha256ByDownload = {
   win_nsis: string | null;
   win_msi: string | null;
   mac_dmg: string | null;
+  mac_zip_arm64?: string | null;
+  mac_zip_x64?: string | null;
 };
 
 export type DesktopReleaseNotes = {
@@ -33,6 +38,8 @@ export type DesktopRelease = {
   notes: string | null;
   publishedAt: string | null;
   unsigned: true;
+  /** True only when the Mac files carry Apple's notarization; otherwise macOS asks once before opening. */
+  macNotarized?: boolean;
   /** Per-file digests. A Mac shell refuses a DMG that only has the Windows hash. */
   sha256ByDownload?: DesktopSha256ByDownload;
   releaseNotes?: DesktopReleaseNotes;
@@ -100,6 +107,11 @@ export function normalizeDesktopRelease(raw: unknown): DesktopRelease | null {
     win_msi: allowedHttps(downloadsRaw.win_msi),
     mac_dmg: allowedHttps(downloadsRaw.mac_dmg),
   };
+  // Per-chip Mac zips appear only when published, so a feed without them reads as before.
+  const macArm = allowedHttps(downloadsRaw.mac_zip_arm64);
+  const macIntel = allowedHttps(downloadsRaw.mac_zip_x64);
+  if (macArm) downloads.mac_zip_arm64 = macArm;
+  if (macIntel) downloads.mac_zip_x64 = macIntel;
   const url = downloads.win_nsis;
   if (!url) return null;
 
@@ -123,6 +135,7 @@ export function normalizeDesktopRelease(raw: unknown): DesktopRelease | null {
     notes,
     publishedAt,
     unsigned: true,
+    macNotarized: row.macNotarized === true,
   };
 }
 
@@ -160,6 +173,8 @@ export function publishDesktopRelease(raw: unknown): DesktopRelease | null {
         win_nsis: sha256Hex(scoped.win_nsis) ?? base.sha256,
         win_msi: sha256Hex(scoped.win_msi),
         mac_dmg: sha256Hex(scoped.mac_dmg),
+        mac_zip_arm64: sha256Hex(scoped.mac_zip_arm64),
+        mac_zip_x64: sha256Hex(scoped.mac_zip_x64),
       }
     : undefined;
   const notesRaw = row.releaseNotes;

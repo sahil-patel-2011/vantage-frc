@@ -6,7 +6,7 @@
       "Match scores are estimated from your own scouting when no official numbers exist — off-season events like GRITS, week-0 scrimmages, and the first morning of an event",
       "A robot your scouts keep seeing break down is marked down automatically, which the official ratings cannot see",
       "The app tells you when a new version is ready and what changed, instead of going quiet",
-      "Mac builds update themselves the same way Windows ones do"
+      "A Mac app for Apple silicon and Intel; when a new version is out it says so and opens the download"
     ],
     "fixed": [
       "The team calendar opened on a week grid you had to drag sideways to read on a phone",

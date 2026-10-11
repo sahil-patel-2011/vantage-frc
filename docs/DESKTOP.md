@@ -113,7 +113,7 @@ handles the **portable** target, which electron-updater cannot update at all. Th
 portable build is told about the new version and pointed at the download; it is
 never restarted, because there is no installer to run in place.
 
-`/api/desktop/release` is public. It returns `{ version, minimumSupported, url, sha256, downloads: { win_msi, win_nsis, mac_dmg }, unsigned: true }` from GitHub `latest.json`, or 503 with an honest empty body when no `desktop-v*` release exists.
+`/api/desktop/release` is public. It returns `{ version, minimumSupported, url, sha256, downloads: { win_msi, win_nsis, mac_dmg, mac_zip_arm64?, mac_zip_x64? }, macNotarized, unsigned: true }` from GitHub `latest.json`, or 503 with an honest empty body when no `desktop-v*` release exists.
 
 ## Releasing for Windows and Mac (a simple download that opens)
 
@@ -123,35 +123,57 @@ publishing the release is the whole launch: there is nothing else to deploy.
 
 ### One-time setup (owner)
 
+Nothing has to be bought. The free path below is what the team ships today.
+
 | For | What to get | Environment variables at build time |
 |---|---|---|
-| Mac that opens with no warning | Apple Developer Program membership; a **Developer ID Application** certificate exported as a `.p12` | `CSC_LINK` (path to the `.p12`), `CSC_KEY_PASSWORD` |
-| Mac notarization (Apple checks the build) | An app-specific password for your Apple ID, and your Team ID — or an App Store Connect API key | `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` — or `APPLE_API_KEY`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER` |
-| Windows with no SmartScreen warning (optional) | An Authenticode code-signing certificate (or Azure Trusted Signing) | `CSC_LINK`, `CSC_KEY_PASSWORD` for a `.pfx` |
 | Publishing | The `gh` CLI signed in with write access to this repository | — |
+| Mac build without a Mac | `rcodesign` (`cargo install apple-codesign`), plus `zip` | `RCODESIGN` if it is not on `PATH` |
+| Optional: Mac with no first-open question | Apple Developer Program ($99/year); a **Developer ID Application** `.p12` and notarization credentials | `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID` |
+| Optional: Windows with no SmartScreen warning | An Authenticode code-signing certificate (or Azure Trusted Signing) | `CSC_LINK`, `CSC_KEY_PASSWORD` for a `.pfx` |
 
-The Mac build is hardened-runtime with `apps/desktop/build/entitlements.mac.plist`; electron-builder
-signs and notarizes automatically when the variables above are present. Without them it still builds,
-but an unsigned Mac app is refused by macOS ("damaged" on Apple silicon), so
-`scripts/desktop/publish-release.mjs` **never publishes a Mac file whose notarization ticket is not
-stapled** (checked with `xcrun stapler validate`). Windows builds without a certificate still install;
-SmartScreen shows "More info → Run anyway" until one exists, and the installer license
-(`apps/desktop/build/UNSIGNED.txt`) says so. The `.exe` always carries the Vantage icon and name.
+### What a Mac owner sees (free path)
 
-### Cut a release (on a Mac)
+The Mac app is **ad-hoc signed**, not notarized. Apple silicon refuses an app whose signature is
+broken ("damaged"), so it is always signed, just without an Apple Developer ID. The first open:
+
+1. Open the download (a `.zip` unzips itself) and drag **Vantage** to **Applications**.
+2. Open it. macOS says it can't check the app: choose **Done**.
+3. **System Settings › Privacy & Security**, scroll to Security, choose **Open Anyway**, and confirm.
+
+After that it opens like any other app. `latest.json` carries `macNotarized: false`, and the
+`/desktop` page shows exactly these steps; it only says "Apple has checked this build" when a
+release is notarized (`xcrun stapler validate` passes on a Mac at publish time).
+
+Updates on a Mac are **notify-only**: the app says a new version is out and opens the download,
+the same as the portable Windows `.exe`. Replacing an un-notarized app in place would bring back
+the first-open question on every update, so it never tries.
+
+Windows builds without a certificate still install; SmartScreen shows "More info → Run anyway"
+until one exists, and the installer license (`apps/desktop/build/UNSIGNED.txt`) says so. The `.exe`
+always carries the Vantage icon and name.
+
+### Cut a release
 
 ```text
 npm ci
 # bump apps/desktop/package.json "version" and add notes to apps/desktop/release-notes.json
-npm run desktop:dist:mac                                   # signed + notarized .dmg and .zip (universal)
-brew install --cask wine-stable                            # once; electron-builder needs Wine for the Windows installer
-npm run dist:win:cross --workspace=@vantage/desktop        # Windows setup .exe + portable .exe
+
+# Windows (Linux needs `apt install wine64 wine32`; macOS needs `brew install --cask wine-stable`)
+npm run dist:win:cross --workspace=@vantage/desktop        # setup .exe + portable .exe
+
+# Mac, pick one:
+npm run desktop:dist:mac:free     # on a Mac: one universal .dmg, ad-hoc signed
+npm run desktop:dist:mac:zip      # anywhere else: Vantage-<v>-mac-arm64.zip and -mac-x64.zip, ad-hoc signed
+npm run desktop:dist:mac          # on a Mac with the paid Apple credentials: signed + notarized
+
 npm run desktop:release                                    # dry run: writes release/latest.json and lists the files
 npm run desktop:release -- --publish                       # creates GitHub release desktop-v<version> and marks it latest
 ```
 
-On Windows, `npm run desktop:dist` also builds the MSI. Linux can build the Windows files with Wine
-(`apt install wine64`), never a Mac file that opens.
+A universal `.dmg` serves both chips with one button. Without one, the page offers the zip for
+the visitor's chip (Chrome and Edge report it; Safari falls back to Apple silicon) with the other
+chip as a link underneath. On Windows, `npm run desktop:dist` also builds the MSI.
 
 `.github/workflows/desktop.yml` does the same on `windows-latest` and `macos-latest` when run by hand
 (`workflow_dispatch`). Add the variables above as repository secrets before using it.

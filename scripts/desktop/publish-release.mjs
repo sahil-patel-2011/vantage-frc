@@ -2,14 +2,17 @@
 /**
  * Publish a desktop release from a laptop, the same way .github/workflows/desktop.yml does.
  *
- * Repository Actions are off to keep runner minutes at zero, and a Mac build has to be made
- * (and notarized) on a Mac anyway. So the release can be cut by hand:
+ * Repository Actions are off to keep runner minutes at zero, so the release is cut by hand:
  *
- *   # on a Mac, with Apple credentials in the environment (see docs/DESKTOP.md):
- *   npm run desktop:dist:mac          # signed + notarized .dmg and .zip when credentials exist
  *   npm run desktop:dist              # Windows .exe installers (Wine on macOS/Linux, native on Windows)
+ *   npm run desktop:dist:mac:free     # on a Mac: one universal .dmg, ad-hoc signed (no Apple fee)
+ *   npm run desktop:dist:mac          # on a Mac with Apple credentials: signed + notarized instead
+ *   node scripts/desktop/mac-adhoc-zip.mjs   # no Mac at all: one ad-hoc signed .zip per chip
  *   node scripts/desktop/publish-release.mjs            # dry run: writes release/latest.json, prints the plan
  *   node scripts/desktop/publish-release.mjs --publish  # creates or updates GitHub release desktop-v<version>
+ *
+ * A Mac build without Apple's notarization still opens: macOS asks once (Privacy & Security, then
+ * Open Anyway). latest.json says which kind it is (`macNotarized`) so the download page tells the truth.
  *
  * latest.json keeps the exact shape installed shells already read: a plain `sha256` string for the
  * Windows installer, plus per-file digests so a Mac never checks a DMG against the Windows hash.
@@ -34,28 +37,25 @@ if (!existsSync(RELEASE)) {
   console.error(`No ${RELEASE}. Build first: npm run desktop:dist and/or npm run desktop:dist:mac`);
   process.exit(1);
 }
-const allFiles = readdirSync(RELEASE).filter((name) => /\.(exe|msi|dmg|zip)$/i.test(name) && name.includes(version));
-const files = allFiles;
+const files = readdirSync(RELEASE).filter((name) => /\.(exe|msi|dmg|zip)$/i.test(name) && name.includes(version));
 const pick = (pattern) => files.find((name) => pattern.test(name)) ?? null;
 const nsis = pick(/-setup\.exe$/i);
 const msi = pick(/\.msi$/i);
-let dmg = pick(/\.dmg$/i);
+const dmg = pick(/\.dmg$/i);
+// Per-chip zips come from a build made without a Mac (scripts/desktop/mac-adhoc-zip.mjs).
+const macZipArm64 = pick(/-mac-arm64\.zip$/i);
+const macZipX64 = pick(/-mac-x64\.zip$/i);
+const macFiles = [dmg, macZipArm64, macZipX64].filter(Boolean);
 
-// The download page tells Mac users their build was checked by Apple. A DMG goes out only when
-// macOS confirms the notarization ticket is stapled to it (or with an explicit override).
-if (dmg && !process.argv.includes("--allow-unnotarized-mac")) {
-  let stapled = false;
-  if (process.platform === "darwin") {
-    try {
-      execFileSync("xcrun", ["stapler", "validate", join(RELEASE, dmg)], { stdio: "ignore" });
-      stapled = true;
-    } catch {
-      stapled = false;
-    }
-  }
-  if (!stapled) {
-    console.warn(`Leaving ${dmg} out: it is not notarized (run on a Mac with Apple credentials, see docs/DESKTOP.md).`);
-    dmg = null;
+// Notarized only when macOS itself confirms the ticket is stapled; anything else is described as
+// "macOS asks once" on the download page, which is true for an ad-hoc signed build.
+let macNotarized = false;
+if (dmg && process.platform === "darwin") {
+  try {
+    execFileSync("xcrun", ["stapler", "validate", join(RELEASE, dmg)], { stdio: "ignore" });
+    macNotarized = true;
+  } catch {
+    macNotarized = false;
   }
 }
 if (!nsis) {
@@ -76,30 +76,42 @@ try {
 }
 
 const signed = Boolean(process.env.CSC_LINK || process.env.WIN_CSC_LINK);
-const notarized = Boolean(dmg && (process.env.APPLE_ID || process.env.APPLE_API_KEY));
+const digests = { win_nsis: sha(nsis), win_msi: sha(msi), mac_dmg: sha(dmg) };
+const downloads = { win_nsis: url(nsis), win_msi: url(msi), mac_dmg: url(dmg) };
+// Only published chips get a key, so a shell or page never sees an empty Mac link.
+for (const [key, name] of [["mac_zip_arm64", macZipArm64], ["mac_zip_x64", macZipX64]]) {
+  if (!name) continue;
+  digests[key] = sha(name);
+  downloads[key] = url(name);
+}
 const manifest = {
   version,
   minimumVersion: minimum,
   minimumSupported: minimum,
   url: url(nsis),
   sha256: sha(nsis),
-  sha256ByDownload: { win_nsis: sha(nsis), win_msi: sha(msi), mac_dmg: sha(dmg) },
-  downloads: { win_nsis: url(nsis), win_msi: url(msi), mac_dmg: url(dmg) },
-  notes:
-    signed && notarized
-      ? "The window loads the hosted Vantage web app."
-      : "Windows SmartScreen may warn until the installer is signed. The window loads the hosted Vantage web app.",
+  sha256ByDownload: digests,
+  downloads,
+  ...(macFiles.length ? { macNotarized } : {}),
+  notes: [
+    signed ? null : "Windows SmartScreen may warn until the installer is signed.",
+    macFiles.length && !macNotarized ? "On a Mac, the first open needs Open Anyway in Privacy & Security." : null,
+    "The window loads the hosted Vantage web app.",
+  ]
+    .filter(Boolean)
+    .join(" "),
   publishedAt: new Date().toISOString(),
   ...(releaseNotes ? { releaseNotes } : {}),
 };
 writeFileSync(join(RELEASE, "latest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 
-// Mac files ship only alongside a notarized DMG; Windows files always.
-const shipped = files.filter((name) => !/mac/i.test(name) || Boolean(dmg));
+// Every file latest.json points at, and nothing it does not (a universal zip next to the DMG is not linked).
+const shipped = [nsis, msi, pick(/-portable\.exe$/i), ...macFiles].filter(Boolean);
 const assets = [...shipped.map((name) => join(RELEASE, name)), join(RELEASE, "latest.json")];
 console.log(`Release ${tag}`);
 for (const asset of assets) console.log(`  ${asset.replace(`${ROOT}/`, "")}`);
-if (!dmg) console.log("  (no macOS .dmg: build it on a Mac with npm run desktop:dist:mac)");
+if (!macFiles.length) console.log("  (no Mac build: npm run desktop:dist:mac:free on a Mac, or node scripts/desktop/mac-adhoc-zip.mjs)");
+else console.log(`  Mac: ${macNotarized ? "notarized" : "ad-hoc signed; macOS asks once before the first open"}`);
 
 if (!publish) {
   console.log("\nDry run. Re-run with --publish to create the GitHub release (needs the gh CLI signed in with write access).");
@@ -118,7 +130,7 @@ else
   gh([
     "release", "create", tag, ...assets, "--repo", REPO,
     "--title", `Vantage desktop ${version}`,
-    "--notes", releaseNotes?.headline ?? `Vantage desktop ${version} for Windows${dmg ? " and macOS" : ""}. The window loads the hosted Vantage web app.`,
+    "--notes", releaseNotes?.headline ?? `Vantage desktop ${version} for Windows${macFiles.length ? " and macOS" : ""}. The window loads the hosted Vantage web app.`,
   ]);
 gh(["release", "edit", tag, "--latest", "--repo", REPO]);
 console.log(`Published ${tag}. The site's /desktop page and installed shells pick it up from releases/latest/download/latest.json.`);

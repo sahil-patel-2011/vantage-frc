@@ -27,4 +27,17 @@ describe("desktop download page student copy", () => {
     expect(src).not.toMatch(/vantage-frc\/releases/);
     expect(src).toMatch(/docs\/DESKTOP\.md/);
   });
+
+  it("only claims Apple checked the Mac build when the release says it is notarized", () => {
+    expect(src).toMatch(/macNotarized === true/);
+    expect(src).toMatch(/Open Anyway/);
+    expect(src).toMatch(/Privacy & Security/);
+    expect(src).not.toMatch(/signed and checked by Apple before they are published/);
+  });
+
+  it("offers the right chip when the Mac build is one zip per chip", () => {
+    expect(src).toMatch(/mac_zip_arm64/);
+    expect(src).toMatch(/mac_zip_x64/);
+    expect(src).toMatch(/Intel Mac\? Get the Intel version\./);
+  });
 });

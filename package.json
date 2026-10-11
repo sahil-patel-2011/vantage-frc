@@ -23,6 +23,8 @@
     "desktop:dev": "npm run dev --workspace=@vantage/desktop",
     "desktop:dist": "npm run dist --workspace=@vantage/desktop",
     "desktop:dist:mac": "npm run dist:mac --workspace=@vantage/desktop",
+    "desktop:dist:mac:free": "npm run dist:mac:free --workspace=@vantage/desktop",
+    "desktop:dist:mac:zip": "node scripts/desktop/mac-adhoc-zip.mjs",
     "desktop:release": "node scripts/desktop/publish-release.mjs",
     "deploy:preflight": "node scripts/deploy-preflight.mjs",
     "db:generate": "drizzle-kit generate --config packages/db/drizzle.config.ts",

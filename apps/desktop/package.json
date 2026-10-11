@@ -17,6 +17,7 @@
     "dist": "tsc && electron-builder --win nsis msi portable",
     "dist:win:cross": "tsc && electron-builder --win nsis portable --x64",
     "dist:mac": "tsc && electron-builder --mac dmg zip",
+    "dist:mac:free": "tsc && electron-builder --mac dmg -c.mac.identity=- -c.mac.hardenedRuntime=false",
     "dist:all": "tsc && electron-builder --win nsis msi portable --mac dmg zip"
   },
   "devDependencies": {
