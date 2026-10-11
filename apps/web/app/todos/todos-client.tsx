@@ -32,11 +32,12 @@ type LiveView = Extract<TodosView, { status: "live" }>;
 type LiveWorkView = Extract<WorkItemsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
+/** Tones are theme tokens: a fixed #c02626 was 2.65:1 on a dark card (A6-07). */
 function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
   if (!todo.dueOn || todo.flags.daysToDue == null) return null;
   const d = todo.flags.daysToDue;
-  if (todo.flags.overdue) return { text: `Overdue ${Math.abs(d)}d`, tone: "#c02626" };
-  if (todo.flags.dueSoon) return { text: d === 0 ? "Due today" : `Due ${d}d`, tone: "#b26a00" };
+  if (todo.flags.overdue) return { text: `Overdue ${Math.abs(d)}d`, tone: "var(--critical)" };
+  if (todo.flags.dueSoon) return { text: d === 0 ? "Due today" : `Due ${d}d`, tone: "var(--warning)" };
   return { text: `Due ${todo.dueOn}`, tone: "inherit" };
 }
 

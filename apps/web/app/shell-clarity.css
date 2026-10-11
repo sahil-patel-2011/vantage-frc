@@ -60,3 +60,122 @@ body.has-app-shell .account-personal:has(> [aria-busy="true"]) > .acct-hero {
   min-height: 132px;
   box-sizing: border-box;
 }
+
+/* ── Form field boundaries reach 3:1 (A6-04, WCAG 1.4.11) ──────────────────────────────── */
+
+/* --line (#dfe2e9) is right for card edges, which are decoration, and was 1.30:1 as the only
+   edge of every text field. --field-line is 3.4:1 on white, 3.1:1 on the page grey and the
+   field fill (light), 3.3:1+ on dark surfaces. Fields take it by redefining --line on
+   themselves, so every rule that draws a field's border with var(--line) (there are a dozen,
+   per feature) gets it without being touched. Focus keeps its accent ring. */
+:is(body.has-app-shell, .scouting-product) {
+  --field-line: color-mix(in srgb, var(--ink) 55%, var(--surface));
+}
+html[data-theme="dark"] :is(body.has-app-shell, .scouting-product) {
+  --field-line: color-mix(in srgb, var(--ink) 42%, var(--surface));
+}
+:is(body.has-app-shell, .scouting-product) :is(input:not([type="range"], [type="hidden"], [type="file"], [type="submit"], [type="button"], [type="reset"], [type="image"]), select, textarea, .soft-panel-search) {
+  --line: var(--field-line);
+}
+
+/* ── Text contrast on the match-day screens (A6-07) ─────────────────────────────────────── */
+
+/* Quick scout tiles are filled with white text. Dark mode's --alliance-blue (#93b4e8) is a text
+   colour for dark surfaces: as a fill it put white at 1.98:1. Fills are fixed deep tones in both
+   themes (white 6.7:1 on blue, 5.5:1 on red); text in the alliance colour uses the theme's own. */
+.scouting-product .qs-shell {
+  --qs-red: #c53030;
+  --qs-blue: #1d4ed8;
+}
+.scouting-product .qs-match.is-red { --qs-team-ink: var(--critical); }
+.scouting-product .qs-match.is-blue { --qs-team-ink: var(--alliance-blue, #1d4ed8); }
+.scouting-product .qs-bar-robot strong { color: var(--qs-team-ink, var(--qs-team)); }
+.scouting-product .qs-robot small { opacity: 1; }
+/* Done is said by the tile changing material, not by fading its text below 4.5:1. */
+.scouting-product .qs-robot.is-done { opacity: 1; color: var(--ink); }
+.scouting-product .qs-robot.is-done.is-red { background: color-mix(in srgb, var(--qs-red) 16%, var(--surface)); }
+.scouting-product .qs-robot.is-done.is-blue { background: color-mix(in srgb, var(--qs-blue) 16%, var(--surface)); }
+/* Pit scouting's "Visited" rows were faded to 2.3:1; they step back by losing their fill. */
+.scouting-product .qs-row.is-done { opacity: 1; background: transparent; border-style: dashed; }
+
+/* Calendar: the other month's day numbers were muted at 45% opacity (1.9:1). This month's are
+   ink, the other month's muted (4.9:1). */
+body.has-app-shell .cal-grid-day[data-in-month="no"] .cal-grid-num { opacity: 1; }
+body.has-app-shell .cal-grid-day:not([data-in-month="no"], [data-today="yes"]) .cal-grid-num { color: var(--ink); }
+
+/* My Day: played matches were faded to 85%, taking every time, score and alliance chip in them
+   under 4.5:1. They step back with a flat fill instead. */
+body.has-app-shell .myday-card.played { opacity: 1; background: var(--surface-2); }
+
+/* Robot status: "No open robot issues" was #9aa7b5 on white (2.45:1). */
+body.has-app-shell .pit-empty { color: var(--ink); }
+
+/* A disabled primary was the accent at 55% opacity: white text at 2.9:1 that still looked like
+   the next step. Disabled reads as disabled: flat, muted, still legible. */
+body.has-app-shell :is(.app-button, .app-button.primary, .app-button.is-primary):is(:disabled, [aria-disabled="true"]) {
+  opacity: 1;
+  background: var(--surface-2);
+  color: var(--muted);
+  border-color: var(--line);
+  box-shadow: none;
+}
+
+/* ── Small type in the frame (A6-24) ─────────────────────────────────────────────────────── */
+
+/* 10px section labels and captions in the sidebar, menu panel and account menu: 11px minimum. */
+body.has-app-shell :is(.app-sidebar-label, .app-sidebar-team small, .soft-nav-group a small, .soft-nav-group span.planned small, .soft-account-teams a small, .soft-focus-rail > small, .soft-outbox-error) {
+  font-size: 11px;
+}
+
+/* ── Touch targets: 44px on touch screens (A6-08) ─────────────────────────────────────────── */
+
+/* The avatar stays a 34px circle; the button around it is 44×44. */
+body.has-app-shell .soft-avatar.soft-avatar-btn {
+  position: relative;
+  isolation: isolate;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+body.has-app-shell .soft-avatar.soft-avatar-btn::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-ink) 20%, transparent);
+}
+body.has-app-shell .soft-avatar.soft-avatar-btn img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+
+@media (pointer: coarse) {
+  /* Breadcrumb links ("Team", "Build") were 29-32px wide and 36px tall. */
+  :is(body.has-app-shell, .scouting-product) .breadcrumbs a {
+    padding: 13px 8px;
+    margin: -13px -8px;
+  }
+  /* Related-tool strips and the Code page's links were 18px-tall words. */
+  :is(body.has-app-shell, .scouting-product) :is(.cdc-gov a, .product-hub-related a, .pit-related a, .todos-card-actions > a, .scout-home-storage > a, .legal-update p a) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  /* Disclosure rows (Teams had thirteen at 40px). */
+  :is(body.has-app-shell, .scouting-product) summary {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+  /* The Scouting app's "Pit" tab was 36px wide. */
+  .scouting-product .scouting-tabs a { min-width: 44px; }
+  /* Event focus actions and its collapse button. */
+  body.has-app-shell .soft-focus-rail nav a { min-height: 44px; }
+  body.has-app-shell .soft-focus-collapse { width: 44px; height: 44px; }
+}
