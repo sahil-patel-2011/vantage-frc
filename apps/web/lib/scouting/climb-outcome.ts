@@ -1,7 +1,8 @@
 /** A missing outcome never describes a robot's capability or intent. */
 export type ClimbOutcome = "successful" | "failed" | "not_attempted" | "no_success" | "unseen";
 
-const successful = new Set(["l1", "l2", "l3", "l4", "low", "mid", "high", "deep", "shallow", "climbed", "success", "successful", "yes", "true", "1"]);
+// "climb" is the answer itself in the common Climb / Park / None endgame choice.
+const successful = new Set(["l1", "l2", "l3", "l4", "low", "mid", "high", "deep", "shallow", "climb", "climbed", "success", "successful", "yes", "true", "1"]);
 const failed = new Set(["failed", "attempted_failed", "failed_attempt", "fell", "failed_climb", "climb_failed"]);
 const notAttempted = new Set(["not_attempted", "no_attempt", "did_not_attempt", "did_not_attempt_climb"]);
 const noSuccess = new Set(["none", "no", "false", "0", "park", "parked", "did_not_climb", "no_climb"]);
