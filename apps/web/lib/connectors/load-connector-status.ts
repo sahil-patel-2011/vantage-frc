@@ -207,13 +207,23 @@ export async function loadConnectorProofs(
   return proofs;
 }
 
+/**
+ * Stripe is not part of Vantage today: the app is free and AI runs on each team's own key.
+ * Its card only appears once someone has actually configured it, so a fresh deployment does
+ * not list "Stripe — needs setup" as if something were missing.
+ */
+export function connectorInUse(id: string, env: Record<string, string | undefined>): boolean {
+  if (id !== "stripe") return true;
+  return Boolean(env.STRIPE_SECRET_KEY?.trim());
+}
+
 /** Every connector's card, in catalog order. */
 export function buildConnectorStatuses(
   env: Record<string, string | undefined>,
   proofs: ConnectorProofs,
   audience: ConnectorAudience = "operator",
 ): ConnectorStatus[] {
-  return CONNECTORS.map((def) => describeConnector(def, env, proofs[def.id] ?? {}, audience));
+  return CONNECTORS.filter((def) => connectorInUse(def.id, env)).map((def) => describeConnector(def, env, proofs[def.id] ?? {}, audience));
 }
 
 /** One line for the page header: "3 connected · 2 need setup". Never a fake total. */

@@ -348,7 +348,9 @@ export function buildIntegrationHealthReport(input: IntegrationHealthInputs): In
   });
 
   // ---- Billing & encryption ----
-  checks.push({
+  // Stripe is not used (Vantage is free; AI runs on each team's key). Only a deployment that
+  // configured it on purpose gets a Stripe row, so an unset key is not reported as a gap.
+  if (input.billing.stripe.secretConfigured) checks.push({
     id: "stripe",
     category: "Billing & encryption",
     label: "Stripe billing",

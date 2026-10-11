@@ -40,8 +40,6 @@ export const RECOMMENDED_VARS = [
   { name: "AWS_KMS_KEY_ID", breaks: "BYOK AI-key saves fail: the local KMS refuses to init in production, so envelope encryption needs AWS KMS." },
   { name: "AWS_ACCESS_KEY_ID", breaks: "Pairs with AWS_KMS_KEY_ID (unless the runtime has an IAM role)." },
   { name: "AWS_SECRET_ACCESS_KEY", breaks: "Pairs with AWS_ACCESS_KEY_ID." },
-  { name: "STRIPE_SECRET_KEY", breaks: "Checkout and billing portal stay setup_required (teams cannot buy credits)." },
-  { name: "STRIPE_WEBHOOK_SECRET", breaks: "/api/stripe/webhook rejects every event — payments never credit the org." },
   { name: "MARKETING_DATABASE_URL", breaks: "Waitlist signups fall back to the in-memory dev store (lost on redeploy)." },
   { name: "VAPID_PUBLIC_KEY", breaks: "Web push degrades to 'server setup'; in-app notifications still work." },
   { name: "VAPID_PRIVATE_KEY", breaks: "Pairs with VAPID_PUBLIC_KEY." },
@@ -54,7 +52,9 @@ export const RECOMMENDED_VARS = [
 /** Fully optional integrations — absence is a designed setup-required state. */
 export const OPTIONAL_VARS = [
   { name: "ERROR_WEBHOOK_URL", breaks: "Server errors are only in Vercel's runtime logs; nobody is pinged when one happens." },
-  { name: "DATABASE_BILLING_URL", breaks: "Stripe webhook uses the pooled URL instead of a least-privilege role." },
+  { name: "STRIPE_SECRET_KEY", breaks: "Not used: Vantage is free and AI runs on each team's own key. Only needed if paid plans ever return." },
+  { name: "STRIPE_WEBHOOK_SECRET", breaks: "Pairs with STRIPE_SECRET_KEY; not used today." },
+  { name: "DATABASE_BILLING_URL", breaks: "Only for the unused Stripe webhook: it would use the pooled URL instead of a least-privilege role." },
   { name: "DATABASE_DISPLAY_URL", breaks: "Pit-TV snapshots use the pooled URL instead of execute-only." },
   { name: "DATABASE_ALLIANCE_BOARD_URL", breaks: "Alliance-board share links use the pooled URL." },
   { name: "DATABASE_CAD_RELAY_URL", breaks: "Fusion relay pairing uses the pooled URL." },
