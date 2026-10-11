@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
 import { defaultIslandLabelList } from "../lib/nav/island-preferences";
 import { ISLAND_TAB_CATALOG, withOrgHref, type IslandTabDefinition } from "../lib/nav/product-nav";
+import { tourTargetForHref } from "../lib/tour/tour-steps";
 
 export function AppShellEventFocus({
   eventFocus,
@@ -148,6 +149,7 @@ export function AppShellIsland({
       {islandTabs.map((tab) => (
         <a
           key={tab.href}
+          data-tour={tourTargetForHref(tab.href)}
           aria-label={tab.href.includes("tab=messages") && unreadMessages >= 1 ? `${tab.label}, ${unreadMessages} unread` : tab.label}
           aria-current={activeIslandTabHref === tab.href ? "page" : undefined}
           href={withOrgHref(tab.href, orgId)}

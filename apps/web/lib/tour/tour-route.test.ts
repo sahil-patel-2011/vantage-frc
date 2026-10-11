@@ -4,12 +4,31 @@ vi.mock("next/headers",()=>({headers:async()=>new Headers()}));
 vi.mock("@vantage/core",()=>({auth:{api:{getSession:async()=>state.session}}}));
 vi.mock("@vantage/db",()=>({withRls:async (_context:unknown,work:(client:unknown)=>Promise<unknown>)=>work({query:state.query})}));
 const {POST}=await import("../../app/api/account/tour/route");
+const {TOUR_NEW_MEMBER_DAYS}=await import("./tour-steps");
 const request=()=>new Request("https://vantage.test/api/account/tour",{method:"POST",headers:{"content-type":"application/json",origin:"https://vantage.test"},body:"{}"});
 beforeEach(()=>{state.seen=false;state.session={user:{id:"user-a"}};state.query.mockReset().mockImplementation(async()=>{if(state.seen)return {rowCount:0,rows:[]};state.seen=true;return {rowCount:1,rows:[{user_id:"user-a"}]};});});
 it("claims before first display and refuses concurrent browser replays",async()=>{
   const results=await Promise.all([POST(request()),POST(request()),POST(request())]);
   expect(await Promise.all(results.map(response=>response.json()))).toEqual([{start:true},{start:false},{start:false}]);
   expect(state.query.mock.calls[0]).toEqual([expect.stringContaining("app_tour_seen_at IS NULL AND onboarding_completed_at IS NOT NULL"),["user-a"]]);
+});
+it("claims only for an onboarded account made in the last 14 days that has no marker yet",async()=>{
+  // The once-only rule lives in this statement: the marker must be empty (so it can win once),
+  // the profile finished, and the account young. An older account, or one that has seen it, matches no row.
+  await POST(request());
+  const sql=String(state.query.mock.calls[0]?.[0]);
+  expect(sql).toContain("app_tour_seen_at IS NULL");
+  expect(sql).toContain("onboarding_completed_at IS NOT NULL");
+  expect(sql).toMatch(/created_at\s*>=\s*now\(\)\s*-\s*interval\s*'14 days'/);
+  expect(sql).toContain("RETURNING user_id");
+  // The same window the browser checks first (lib/tour/tour-steps.ts), so the two cannot drift apart.
+  expect(14).toBe(TOUR_NEW_MEMBER_DAYS);
+});
+it("answers a replay-prone caller the same way every time after the first",async()=>{
+  const first=await (await POST(request())).json();
+  const second=await (await POST(request())).json();
+  const third=await (await POST(request())).json();
+  expect([first,second,third]).toEqual([{start:true},{start:false},{start:false}]);
 });
 it("requires sign-in without touching persistence",async()=>{state.session=null;expect((await POST(request())).status).toBe(401);expect(state.query).not.toHaveBeenCalled();});
 it("rejects cross-origin requests and unknown fields",async()=>{

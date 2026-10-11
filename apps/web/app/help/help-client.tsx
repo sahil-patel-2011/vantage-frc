@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PageHeader, ToolStrip, Button } from "../../components/ui";
 import { openFeedback } from "../../lib/feedback/feedback-open";
+import { tourReplayHref } from "../../lib/tour/tour-start";
 import {
   HELP_ARTICLES,
   filterHelpArticles,
@@ -53,11 +54,14 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
   const [view, setView] = useState<HelpView>("topics");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<HelpCategoryId | "all">("all");
+  // The team in the address, so "Take the tour again" opens that team's Home.
+  const [teamId, setTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     setView(readInitialView(hasGuide));
     const q = readInitialQuery();
     if (q) setQuery(q);
+    setTeamId(new URLSearchParams(window.location.search).get("orgId"));
   }, [hasGuide]);
 
   const searching = query.trim().length >= 2;
@@ -95,6 +99,8 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
           >
             Send feedback
           </a>
+          {/* Home with ?tour=replay: the tour starts there whatever it remembers. */}
+          <a href={tourReplayHref(teamId)}>Take the tour again</a>
           {!hasGuide ? (
             <a href="/docs?view=sections">App manual</a>
           ) : null}

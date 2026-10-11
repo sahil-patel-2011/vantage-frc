@@ -5,6 +5,7 @@ import { withOrgHref } from "../lib/nav/product-nav";
 import { Icon } from "./icon";
 import { FeedbackBugIcon } from "./feedback-bug-icon";
 import { openFeedback } from "../lib/feedback/feedback-open";
+import { tourReplayHref } from "../lib/tour/tour-start";
 
 export function AppShellAccountMenu({
   open,
@@ -78,6 +79,10 @@ export function AppShellAccountMenu({
         >
           <FeedbackBugIcon size={18} /><span>Send feedback</span>
         </button>
+        {/* Home with ?tour=replay: the tour starts there whatever it remembers (components/app-tour.tsx). */}
+        <a className="soft-account-destination" role="menuitem" href={tourReplayHref(orgId)} onClick={onClose}>
+          <Icon name="play" /><span>Take the tour again</span>
+        </a>
         {me.platformAdmin ? (
           <a role="menuitem" href="/admin" onClick={onClose}>
             Platform admin

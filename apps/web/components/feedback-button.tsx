@@ -182,6 +182,7 @@ export function FeedbackButton({ orgId, signedIn }: { orgId?: string | null; sig
           ref={buttonRef}
           type="button"
           className="feedback-fab"
+          data-tour="feedback"
           aria-label="Send feedback"
           aria-haspopup="dialog"
           title="Send feedback"

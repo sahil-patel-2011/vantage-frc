@@ -3,6 +3,7 @@
 import { Icon } from "./icon";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import { workspacePickerHref } from "../lib/workspace";
+import { tourTargetForHref } from "../lib/tour/tour-steps";
 
 /** The same permission-filtered destinations as search, available without a modal. */
 export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel, collapsed, onCollapse, allowed }: {
@@ -17,7 +18,7 @@ export function AppShellSidebar({ groups, pathname, pathSearch, orgId, orgLabel,
     <a className="app-sidebar-team" href={workspacePickerHref(pathname, pathSearch)} title="Switch team" aria-label={`Switch team — ${orgLabel}`}><i><Icon name="users" /></i><span><strong>{orgLabel}</strong><small>Team workspace</small></span><Icon name="chevron" /></a>
     <nav className="app-sidebar-main" aria-label="Workspaces">
       <p className="app-sidebar-label">Workspace</p>
-      {groups.flatMap(group => group.items).map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} title={item.label}
+      {groups.flatMap(group => group.items).map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} title={item.label} data-tour={tourTargetForHref(item.href)}
         aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}>
         <Icon name={item.icon} /><span>{item.label}</span>
       </a>)}
