@@ -4,11 +4,17 @@
  * lives here so it can be smoke-tested.
  */
 
+import { ORGANIZATION_INVITE_MAX_HOURS } from "@vantage/core/invite-policy";
+
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const TEAM_NUMBER_MIN = 1;
 export const TEAM_NUMBER_MAX = 99999;
-/** One-time owner invite lifetime; matches the member-invite default ceiling. */
-export const OWNER_INVITE_HOURS = 24;
+/**
+ * One-time owner invite lifetime: the member-invite ceiling (7 days, invite-policy.ts). A new
+ * team's mentor is the person most likely to open the email days later, and a day-long link
+ * left new teams ownerless until someone reissued it (QA A2-10).
+ */
+export const OWNER_INVITE_HOURS = ORGANIZATION_INVITE_MAX_HOURS;
 
 export type ProvisionInput = {
   name?: unknown;

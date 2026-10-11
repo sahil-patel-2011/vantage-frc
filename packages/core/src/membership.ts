@@ -116,9 +116,11 @@ export class AlreadyTeamMemberError extends Error {
 export function inviteEmailDeliveryMode(
   provider: EmailProvider = createEmailProvider(),
 ): Exclude<InviteDeliveryMode, "failed"> {
-  if (provider.name === "resend") return "resend";
+  // "resend" means a real provider sends the email. Gmail SMTP (a school's mailbox) used to fall
+  // through to "unconfigured", so on those deployments no invite email was ever sent.
   if (provider.name === "local-mailbox") return "local";
-  return "unconfigured";
+  if (provider.name === "unconfigured") return "unconfigured";
+  return "resend";
 }
 
 export async function deliverInviteEmail(

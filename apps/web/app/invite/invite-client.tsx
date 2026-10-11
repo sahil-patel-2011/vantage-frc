@@ -22,6 +22,7 @@ import {
 import { legalConsentMessage } from "../../lib/legal";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { inviteAcceptanceFailure } from "../../lib/invite/accept-error";
+import "../sign-in/sign-in-flow.css";
 import "./invite-flow.css";
 
 /** Kept for onboarding handoff (`PENDING_INVITE_KEY` import). */
@@ -352,10 +353,12 @@ export default function InviteClient() {
   const showReady = kind === "ready" && preview;
 
   return (
-    <main className="onboarding-page invite-flow-page">
-      <section className="onboarding-card invite-flow-card" aria-labelledby="invite-title">
+    // The sign-in card's chrome (plain logo, left-aligned heading, its primary button), so the
+    // invite looks like the step before and after it, not a different site (QA A1-P3).
+    <main className="signin-page invite-flow-page">
+      <section className="signin-card invite-flow-card" aria-labelledby="invite-title">
         <header className="invite-flow-header">
-          <div className="onboarding-brand">
+          <div className="signin-brand">
             <VantageLogo />
           </div>
           {empty.badge && !showReady ? (
@@ -363,12 +366,15 @@ export default function InviteClient() {
           ) : null}
           <span>{empty.eyebrow}</span>
           <h1 id="invite-title">{showReady ? "Join your team" : empty.title}</h1>
-          <p className="onboarding-sub">
+          <p className="signin-sub">
             {showReady
               ? identity
                 ? `Join ${identity} with ${preview.email}.`
                 : "Accept this invite with the email it was sent to."
-              : empty.description}
+              : kind === "email_mismatch"
+                ? // One block names both addresses; the generic line said it a second time (QA A1-25).
+                  `You are signed in as ${sessionEmail || "a different email"}. This invite is for ${preview?.email || "another address"}. Sign out, then sign in with that address.`
+                : empty.description}
           </p>
         </header>
 
@@ -434,11 +440,6 @@ export default function InviteClient() {
             ) : null}
             {kind === "email_mismatch" ? (
               <>
-                {/* The heading already says "different email"; this line says which two. */}
-                <p className="onboarding-sub">
-                  You are signed in as {sessionEmail || "a different email"}. This invite is for{" "}
-                  {preview?.email || "another address"}.
-                </p>
                 <div className="invite-actions">
                   <button
                     type="button"
