@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  confirmationDetails,
   confirmationLines,
   ownerProvisionMode,
   provisionConflictMessage,
@@ -86,6 +87,20 @@ describe("confirmationLines", () => {
       owner: { email: "coach@example.com", mode: "invited", emailSent: true },
     });
     expect(lines.join(" ")).toContain("We emailed an owner invite");
+  });
+});
+
+describe("confirmationDetails", () => {
+  const base = { id: "org-1", name: "Circuit Breakers", slug: "circuit-breakers", teamNumber: 4926 };
+
+  it("says whether the team's starter forms and Home are in place", () => {
+    const seeded = confirmationDetails({ ...base, owner: { email: "c@example.com", mode: "seeded" }, teamDefaults: "ready" });
+    expect(seeded.at(-1)).toBe("Starter scout forms, finance categories and the owner's Home are ready.");
+    const invited = confirmationDetails({ ...base, owner: { email: "c@example.com", mode: "invited" }, teamDefaults: "on_owner_join" });
+    expect(invited.at(-1)).toMatch(/added when the owner accepts/);
+    const pending = confirmationDetails({ ...base, owner: { email: "c@example.com", mode: "seeded" }, teamDefaults: "pending" });
+    expect(pending.at(-1)).toMatch(/could not be added/);
+    expect(confirmationDetails({ ...base, owner: { email: "c@example.com", mode: "seeded" } })).toHaveLength(3);
   });
 });
 

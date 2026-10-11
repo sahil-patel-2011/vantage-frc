@@ -73,6 +73,11 @@ export type ProvisionConfirmation = {
     /** "local" logs the email instead of sending it, so it does not count as sent. */
     delivery?: string;
   };
+  /**
+   * Starter scout forms, finance categories and the owner's Home ("ready" once added; an invited
+   * owner's team gets them when the owner accepts). A /claim team gets the same set.
+   */
+  teamDefaults?: "ready" | "on_owner_join" | "pending";
 };
 
 /** What to do next, in plain words. The technical record is in confirmationDetails. */
@@ -99,7 +104,14 @@ export function confirmationDetails(confirmation: ProvisionConfirmation): string
     confirmation.owner.mode === "seeded"
       ? "Owner: existing verified account, added directly."
       : "Owner: no verified account yet, so a one-time invite was created. The link is shown once and not stored.",
+    ...(confirmation.teamDefaults ? [teamDefaultsLine(confirmation.teamDefaults)] : []),
   ];
+}
+
+function teamDefaultsLine(state: NonNullable<ProvisionConfirmation["teamDefaults"]>): string {
+  if (state === "ready") return "Starter scout forms, finance categories and the owner's Home are ready.";
+  if (state === "on_owner_join") return "Starter scout forms, finance categories and Home are added when the owner accepts.";
+  return "Starter scout forms could not be added. The owner can publish forms from Competition → Forms.";
 }
 
 /** Friendly message for the two uniqueness races provisioning can hit. */

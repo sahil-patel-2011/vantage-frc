@@ -2,6 +2,7 @@ import { acceptMyOrganizationInvite, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { z } from "zod";
+import { ensureFirstOwnerTeamDefaults } from "../../../../lib/provisioning/owner-defaults";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
 
@@ -34,7 +35,9 @@ export async function POST(request: Request) {
         (error as Error & { status?: number }).status = 409;
         throw error;
       }
-      return acceptMyOrganizationInvite(client, session.user.id, body.orgId);
+      const joined = await acceptMyOrganizationInvite(client, session.user.id, body.orgId);
+      await ensureFirstOwnerTeamDefaults(client, joined, session.user.id);
+      return joined;
     });
     const response = Response.json({ orgId });
     response.headers.set("cache-control", "private, no-store, max-age=0");
