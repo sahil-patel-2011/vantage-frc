@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db/savepoint";
 import { daysUntil, evaluateGrantEligibility } from ".";
 import type { CatalogGrant, GrantEligibilityRules, GrantMatch, TeamEligibilityProfile } from "./types";
 
@@ -158,7 +159,9 @@ async function recomputeMatches(client: PoolClient, orgId: string, profile: Team
         unmetReasons: outcome.unmetReasons,
       };
     });
-    await client.query(
+    // A cache write on a read: a View only member is refused it (0715) and reads
+    // the last scores a team member's visit stored.
+    await withSavepoint(client, () => client.query(
       `INSERT INTO grant_eligibility_matcher_matches (org_id, grant_id, is_eligible, score, matched_reasons, unmet_reasons, computed_at)
        SELECT $1::uuid, (r->>'grantId')::uuid, (r->>'isEligible')::boolean, (r->>'score')::int,
               ARRAY(SELECT e FROM jsonb_array_elements_text(r->'matchedReasons') WITH ORDINALITY AS m(e, i) ORDER BY i),
@@ -172,7 +175,7 @@ async function recomputeMatches(client: PoolClient, orgId: string, profile: Team
          unmet_reasons = EXCLUDED.unmet_reasons,
          computed_at = now()`,
       [orgId, JSON.stringify(outcomes)],
-    );
+    ), undefined);
   }
 
   return catalog;

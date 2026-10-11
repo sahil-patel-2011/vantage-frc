@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db/savepoint";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { alertMessage, classifyEpaChange, classifyScheduleChange, round1, summarizeWatchlist, teamLabel } from ".";
@@ -309,7 +310,9 @@ export async function computeOpponentWatchlistView(
         : null,
     });
 
-    await client.query(
+    // A snapshot write on a read: a View only member is refused it (0715); the
+    // alerts above already came from the last stored snapshot.
+    await withSavepoint(client, () => client.query(
       `INSERT INTO opponent_watchlist_snapshots (org_id, entry_id, team_key, epa_total, next_match_key, next_match_time)
        VALUES ($1,$2,$3,$4,$5,$6::timestamptz)
        ON CONFLICT (org_id, entry_id) DO UPDATE SET
@@ -319,7 +322,7 @@ export async function computeOpponentWatchlistView(
          next_match_time = EXCLUDED.next_match_time,
          captured_at = now()`,
       [org.orgId, row.id, row.teamKey, currentEpa, currentMatchKey, currentMatchTime],
-    );
+    ), undefined);
   }
 
   return {

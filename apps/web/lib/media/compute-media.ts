@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db/savepoint";
 import { computeMediaKitReadiness } from "../media-kit";
 import type { MediaKitAsset, MediaKitProfile } from "../media-kit/types";
 import {
@@ -184,11 +185,18 @@ export async function computeMediaView(
   }
 
   // Fire due media reminders before listing so the Soft-UI board stays current.
-  await processDueMediaReminders(client, {
-    orgId: org.orgId,
-    userId: input.userId,
-    seasonYear,
-  });
+  // A write on a read: a View only member is refused it (0715) and the next team
+  // member to open the board fires them instead.
+  await withSavepoint(
+    client,
+    () =>
+      processDueMediaReminders(client, {
+        orgId: org.orgId,
+        userId: input.userId,
+        seasonYear,
+      }),
+    0,
+  );
 
   const [
     profileResult,
