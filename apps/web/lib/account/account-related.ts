@@ -81,7 +81,11 @@ export function formatAccountRole(role: string | null | undefined): string | nul
   return role.trim();
 }
 
-/** One-line workspace context — blank until a real membership exists. */
+/**
+ * One-line workspace context — blank until a real membership exists. The team only: Account
+ * printed the person's access three times (hero, this line and its badge), so the access is
+ * shown once, as the "This team" card's badge (handed over by F).
+ */
 export function formatAccountOrgLabel(input: AccountOrgContext): string | null {
   if (!input.orgId) return null;
   const team =
@@ -89,8 +93,7 @@ export function formatAccountOrgLabel(input: AccountOrgContext): string | null {
   const rawName = input.orgName?.trim() || null;
   // A team named "Team 6925" printed as "Team 6925 · Team 6925 · scout".
   const name = rawName && team && rawName.toLowerCase() === team.toLowerCase() ? null : rawName;
-  const role = formatAccountRole(input.role);
-  const parts = [team, name, role].filter(Boolean);
+  const parts = [team, name].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "This team";
 }
 

@@ -37,7 +37,8 @@ export const PROFILE_CAPABILITIES = [
 
 export const PROFILE_HUBS = [
   { id: "competition", label: "Competition", hint: "Event day, scouting, strategy, pit" },
-  { id: "team", label: "Team", hint: "Calendar, chat, people, work, playbook" },
+  // "Tasks" is the place's name now (F's naming pass); it said "work".
+  { id: "team", label: "Team", hint: "Calendar, chat, people, tasks, playbook" },
   { id: "build", label: "Build", hint: "Kickoff, CAD, code, robot" },
   { id: "business", label: "Business", hint: "Money, sponsors, grants, outreach" },
   { id: "ai", label: "AI", hint: "Chat, writer, agent" },
