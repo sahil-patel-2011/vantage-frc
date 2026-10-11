@@ -91,7 +91,7 @@ show the same sentence with their usual status.
 **The page says so first.** Viewers see a calm **View only** chip in the top bar, and the obvious
 writes on the busiest pages are replaced by the same sentence: Home card quick actions, Scouting
 home (Visit / Scout), Tasks and Todos (Add), the team and season calendars (Add event, Add
-milestone, edit/delete) and the chat composer. Other pages keep their buttons; the database
+milestone, edit/delete) and the chat composer and New message. Other pages keep their buttons; the database
 refuses and the API explains.
 
 ## Adding a table or a write
