@@ -7,7 +7,7 @@
  * team has scouting for. Arrows step through the schedule. Pure, so it is tested.
  */
 
-import { isMatchStillAhead, type ScheduleMatch as BoardMatch } from "../schedule-board";
+import { isMatchPlayed, type PlayStateMatch } from "./play-state";
 
 export type ScheduleMatch = {
   matchKey: string;
@@ -41,30 +41,23 @@ function levelOf(match: ScheduleMatch): string {
   return (match.compLevel ?? /_(qm|ef|qf|sf|f)\d/i.exec(match.matchKey)?.[1] ?? "qm").toLowerCase();
 }
 
-function toBoardMatch(match: ScheduleMatch): BoardMatch {
+function toPlayState(match: ScheduleMatch): PlayStateMatch {
   return {
     matchKey: match.matchKey,
     compLevel: levelOf(match),
     matchNumber: match.matchNumber,
-    scheduledTime: match.matchTime ?? null,
-    red: [],
-    blue: [],
-    redScore: null,
-    blueScore: null,
-    winningAlliance: (match.winningAlliance || null) as BoardMatch["winningAlliance"],
-    scoutCount: 0,
-    plannedTime: match.plannedTime ?? null,
-    predictedTime: match.predictedTime ?? null,
+    winningAlliance: match.winningAlliance || null,
     actualTime: match.actualTime ?? null,
     postResultTime: match.postResultTime ?? null,
   };
 }
 
 /**
- * Worth opening for a scout: still to come by the rule Home, Event day and the schedule use
- * (isMatchStillAhead — no result, no start, the field has not moved past it, not hours gone),
- * or started in the last few minutes, so the scout finishing it keeps it. A late event no
- * longer skips a match that has not been played just because its planned time has passed.
+ * Worth opening for a scout: not played yet by the scouting rule the lead card and the
+ * Assignments board share (lib/scouting/play-state.ts: no result, no start, the field has not
+ * moved past it, however late), or started in the last few minutes, so the scout finishing it
+ * keeps it. A late event no longer hides a match nobody has played, or the robots a lead just
+ * assigned in it.
  */
 export function matchOpenForScouting(
   match: ScheduleMatch,
@@ -75,7 +68,7 @@ export function matchOpenForScouting(
     const time = match.matchTime ? Date.parse(match.matchTime) : NaN;
     return !Number.isFinite(time) || time >= now - LEGACY_PLAYED_AFTER_MS;
   }
-  if (isMatchStillAhead(toBoardMatch(match), schedule.map(toBoardMatch), now)) return true;
+  if (!isMatchPlayed(toPlayState(match), schedule.map(toPlayState))) return true;
   const started = match.actualTime ? Date.parse(match.actualTime) : NaN;
   return Number.isFinite(started) && started >= now - JUST_PLAYED_MS;
 }

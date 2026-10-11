@@ -1,30 +1,32 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button, EmptyState, Skeleton } from "../../../components/ui";
-import { readActiveScoutDraft } from "../../../lib/scouting/draft-autosave";
+import { readActiveScoutDraft, scoutDraftStorageKey } from "../../../lib/scouting/draft-autosave";
 import { nextScoutTarget, scoutContext, describeScoutContext, type NextScoutTarget } from "../../../lib/scouting/scout-context";
-import { syncOutbox } from "../../../lib/scout-offline";
+import { loadFailedCopy } from "../../../lib/scouting/load-state";
 import { useOnline } from "../../../lib/offline/use-online";
+import { useViewOnly } from "../../../lib/nav/use-view-only";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { hubHref } from "../../../lib/nav/hubs";
+import { signInHref } from "../../../lib/ui/load-failure";
 import { myReports, type Bootstrap } from "../../scouting/scouting-model";
 import { QuickScoutMatch, type QuickSaved } from "./quick-scout-match";
 import { QuickScoutPicker, type QuickTarget } from "./quick-scout-picker";
-import { replaceQuery, useScoutingBootstrap } from "../use-scouting-bootstrap";
-
-type Receipt = {
-  label: string;
-  next: NextScoutTarget | null;
-  sync: "sending" | "sent" | "waiting" | "failed";
-};
+import { closeQuery, pushQuery, useQueryPopState, useScoutingBootstrap } from "../use-scouting-bootstrap";
+import { SaveReceipt } from "../save-receipt";
+import { SavedCopyBanner } from "../saved-copy-banner";
+import { ScoutViewOnly } from "../scout-view-only";
+import { useRobotForm } from "../use-robot-form";
+import { useSaveReceipt } from "../use-save-receipt";
 
 /**
  * Quick scout: pick a robot, watch it, save. Loads the same scouting data as the full
  * Scout form (and its copy on this phone with no signal), and hands each robot to the
  * match screen. The robot being scouted lives in the address, so a reload or a closed
- * tab comes back to the same robot with its draft.
+ * tab comes back to the same robot with its draft, and the phone's Back button returns
+ * from a robot to the list.
  */
 export function QuickScoutClient({ orgId }: { orgId: string }) {
   const params = useSearchParams();
@@ -41,37 +43,54 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
   const matchKey = target?.matchKey ?? "";
   const teamKey = target?.teamKey ?? "";
   const online = useOnline();
-  const { data, status, fromCache, retry, replace } = useScoutingBootstrap(orgId, requestedEventKey);
+  // View only (0715): no form to fill. The server refuses their reports anyway.
+  const viewOnly = useViewOnly(orgId);
+  const { data, status, fromCache, cachedAt, failure, retry, replace } = useScoutingBootstrap(orgId, requestedEventKey);
   const [savedHere, setSavedHere] = useState<QuickTarget[]>([]);
-  const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const { receipt, show: showReceipt, retry: retrySend, clear: clearReceipt } = useSaveReceipt<{ label: string; next: NextScoutTarget | null }>(orgId);
   const [creatingForms, setCreatingForms] = useState(false);
   const [formsNote, setFormsNote] = useState<string | null>(null);
-  const mounted = useRef(true);
 
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-
-  const show = useCallback(
-    (next: QuickTarget | null) => {
-      setTarget(next);
-      replaceQuery(pathname, { matchKey: next?.matchKey ?? null, teamKey: next?.teamKey ?? null });
-    },
-    [pathname],
-  );
   const open = useCallback(
     (next: QuickTarget) => {
-      setReceipt(null);
-      show(next);
+      clearReceipt();
+      setTarget(next);
+      pushQuery(pathname, { matchKey: next.matchKey, teamKey: next.teamKey });
     },
-    [show],
+    [pathname, clearReceipt],
   );
-  const closeRobot = useCallback(() => show(null), [show]);
+  const closeRobot = useCallback(() => {
+    setTarget(null);
+    closeQuery(pathname, { matchKey: null, teamKey: null });
+  }, [pathname]);
+  // The phone's Back (and Forward) between the list and a robot.
+  useQueryPopState(
+    useCallback((query: URLSearchParams) => {
+      const nextMatch = query.get("matchKey");
+      const nextTeam = query.get("teamKey");
+      setTarget(nextMatch && nextTeam ? { matchKey: nextMatch, teamKey: nextTeam } : null);
+    }, []),
+  );
 
   const schema = useMemo(() => data?.schemas.find((candidate) => candidate.type === "match") ?? null, [data]);
+  const ownTeamKey = data?.teamNumber ? `frc${data.teamNumber}` : null;
+  const draftKey = scoutDraftStorageKey({
+    userId: data?.scoutIdentity?.userId,
+    orgId,
+    eventKey: data?.eventKey ?? "",
+    entryType: "match",
+    matchKey,
+    teamKey,
+  });
+  const earlier = useMemo(
+    () =>
+      target && data
+        ? myReports(data).find((entry) => entry.type === "match" && entry.matchKey === target.matchKey && entry.teamKey === target.teamKey) ?? null
+        : null,
+    [data, target],
+  );
+  // The form this robot was started on (or filed under), not always the newest one.
+  const form = useRobotForm({ orgId, live: schema, draftKey, earlier, target: target ? `${matchKey}|${teamKey}` : null });
 
   const resume = useMemo(() => {
     if (!data?.eventKey || !data.scoutIdentity?.userId) return null;
@@ -81,20 +100,6 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
     return { matchKey: draft.matchKey, teamKey: draft.teamKey, label: context ? describeScoutContext(context) : draft.teamKey };
     // Re-read when the robot changes: saving clears the draft it pointed at.
   }, [data, orgId, matchKey, teamKey]);
-
-  async function sendNow() {
-    if (!navigator.onLine) {
-      setReceipt((current) => (current ? { ...current, sync: "waiting" } : current));
-      return;
-    }
-    try {
-      const result = await syncOutbox(orgId, { maxAttempts: 3 });
-      if (!mounted.current) return;
-      setReceipt((current) => (current ? { ...current, sync: result.quarantined > 0 ? "failed" : "sent" } : current));
-    } catch {
-      if (mounted.current) setReceipt((current) => (current ? { ...current, sync: "waiting" } : current));
-    }
-  }
 
   function saved(entry: QuickSaved) {
     if (!data) return;
@@ -106,24 +111,19 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
       assignments: data.assignments ?? [],
       savedMatchKey: entry.matchKey,
       savedTeamKey: entry.teamKey,
+      ownTeamKey,
       done: (nextMatch, nextTeam) =>
         done.some((row) => row.matchKey === nextMatch && row.teamKey === nextTeam) ||
         mine.some((row) => row.type === "match" && row.matchKey === nextMatch && row.teamKey === nextTeam),
     });
     const context = scoutContext({ matches: data.matches ?? [], matchKey: entry.matchKey, teamKey: entry.teamKey });
-    setReceipt({
+    showReceipt({
+      clientId: entry.clientId,
       label: context ? describeScoutContext(context) : entry.teamKey,
       next: next?.teamKey ? next : null,
-      sync: navigator.onLine ? "sending" : "waiting",
     });
-    show(null);
-    void sendNow();
+    closeRobot();
   }
-
-  // Back online with a receipt still waiting: send it now.
-  useEffect(() => {
-    if (online && receipt?.sync === "waiting") void sendNow();
-  }, [online]);
 
   async function createStarterForms() {
     setCreatingForms(true);
@@ -147,6 +147,9 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
 
   const entryHref = (extra: Record<string, string> = {}) =>
     `/scout/entry?${new URLSearchParams({ orgId, ...extra }).toString()}`;
+  const homeHref = `/scout?${new URLSearchParams({ orgId }).toString()}`;
+
+  if (viewOnly) return <ScoutViewOnly what="match reports" homeHref={homeHref} />;
 
   if (status === "loading" && !data) {
     return (
@@ -160,15 +163,19 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
   }
 
   if (status === "failed" || !data) {
+    const copy = loadFailedCopy(failure ?? (online ? "server" : "offline"));
     return (
       <div className="qs-shell">
-        <EmptyState
-          title="Scouting didn’t load"
-          description={online ? "Your team’s matches could not be loaded. Try again in a moment." : "This phone has no saved copy of your event yet. Open Scouting once with a signal, then it works offline."}
-        >
-          <Button variant="primary" type="button" onClick={retry}>
-            Try again
-          </Button>
+        <EmptyState title="Scouting didn’t load" description={copy.description}>
+          {copy.action === "retry" ? (
+            <Button variant="primary" type="button" onClick={retry}>
+              Try again
+            </Button>
+          ) : copy.action === "sign-in" ? (
+            <Button as="a" variant="primary" href={signInHref(`${pathname}?${params.toString()}`)}>
+              Sign in again
+            </Button>
+          ) : null}
         </EmptyState>
       </div>
     );
@@ -216,18 +223,26 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
   if (matchKey && teamKey) {
     return (
       <div className="qs-shell is-live">
-        {fromCache ? <p className="qs-offline">Offline · using this phone’s saved copy. Saves send when the signal is back.</p> : null}
-        <QuickScoutMatch
-          key={`${matchKey}|${teamKey}|${schema.id}`}
-          orgId={orgId}
-          data={data}
-          schema={schema}
-          matchKey={matchKey}
-          teamKey={teamKey}
-          fullFormHref={entryHref({ matchKey, teamKey })}
-          onSaved={saved}
-          onChangeRobot={closeRobot}
-        />
+        {fromCache ? <SavedCopyBanner failure={failure} cachedAt={cachedAt} onRetry={retry} /> : null}
+        {form?.kind === "ready" ? (
+          <QuickScoutMatch
+            key={`${matchKey}|${teamKey}|${form.schema.id}`}
+            orgId={orgId}
+            data={data}
+            form={form}
+            matchKey={matchKey}
+            teamKey={teamKey}
+            ownTeamKey={ownTeamKey}
+            fullFormHref={entryHref({ matchKey, teamKey })}
+            onSaved={saved}
+            onChangeRobot={closeRobot}
+          />
+        ) : (
+          <div aria-busy="true">
+            <p className="qs-message" role="status">Opening the form this robot was started on…</p>
+            <Skeleton height={220} />
+          </div>
+        )}
       </div>
     );
   }
@@ -237,31 +252,23 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
       <header className="qs-head">
         <p className="qs-eyebrow">{data.eventName ?? data.eventKey}</p>
         <h1>Scout a match</h1>
-        {fromCache ? <p className="qs-offline">Offline · using this phone’s saved copy.</p> : null}
+        {fromCache ? <SavedCopyBanner failure={failure} cachedAt={cachedAt} onRetry={retry} /> : null}
       </header>
 
       {receipt ? (
-        <section className="qs-receipt" role="status" aria-live="polite">
-          <span className="qs-receipt-check" aria-hidden="true">✓</span>
-          <div>
-            <strong>Saved {receipt.label}</strong>
-            <span>
-              {receipt.sync === "sent"
-                ? "Sent to your team."
-                : receipt.sync === "sending"
-                  ? "Sending to your team…"
-                  : receipt.sync === "failed"
-                    ? "Saved here, but your team’s server refused it. Open the full form to see why."
-                    : "Saved on this phone. It sends itself when the signal is back."}
-            </span>
-          </div>
+        <SaveReceipt
+          title={`Saved ${receipt.label}`}
+          status={receipt.status}
+          needsALookHref={`${entryHref()}#needs-a-look`}
+          onRetry={retrySend}
+        >
           {receipt.next ? (
             <Button variant="primary" type="button" className="qs-next" onClick={() => open({ matchKey: receipt.next!.matchKey, teamKey: receipt.next!.teamKey })}>
               Next: {receipt.next.teamKey.replace(/^frc/, "")} · {receipt.next.matchLabel}
               {receipt.next.stationLabel ? ` · ${receipt.next.stationLabel}` : ""}
             </Button>
           ) : null}
-        </section>
+        </SaveReceipt>
       ) : null}
 
       <QuickScoutPicker
@@ -270,6 +277,7 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
         savedHere={savedHere}
         resume={receipt ? null : resume}
         focusMatchKey={receipt?.next?.matchKey ?? null}
+        ownTeamKey={ownTeamKey}
         onPick={open}
       />
 

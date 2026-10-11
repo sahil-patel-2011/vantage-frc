@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Bootstrap } from "../../scouting/scouting-model";
 import { scoutedRobots } from "../../scouting/scouting-model";
 import {
+  labelForMatchKey,
   matchCard,
   matchLabel,
   matchOpenForScouting,
@@ -31,6 +32,7 @@ export function QuickScoutPicker({
   savedHere,
   resume,
   focusMatchKey = null,
+  ownTeamKey = null,
   onPick,
 }: {
   data: Bootstrap;
@@ -38,6 +40,8 @@ export function QuickScoutPicker({
   resume: (QuickTarget & { label: string }) | null;
   /** After a save, the card opens on the match the "Next" button names, not back at the start. */
   focusMatchKey?: string | null;
+  /** Our own robot ("frc6925"), named as such when it comes up. */
+  ownTeamKey?: string | null;
   onPick(target: QuickTarget): void;
 }) {
   const schedule = useMemo(() => orderedSchedule(data.matches ?? []), [data.matches]);
@@ -69,6 +73,11 @@ export function QuickScoutPicker({
   const [byHandTeam, setByHandTeam] = useState("");
   const byHandMatchKey = /^\d{1,3}$/.test(byHandMatch.trim()) && data.eventKey ? `${data.eventKey}_qm${Number(byHandMatch.trim())}` : null;
   const byHandTeamKey = /^\d{1,5}$/.test(byHandTeam.trim()) ? `frc${Number(byHandTeam.trim())}` : null;
+  // A typed match the schedule has: pick from its six robots, so a mistyped team cannot file a
+  // report against a robot that never played in it (254 in Qual 33).
+  const typedMatch = byHandMatchKey ? schedule.find((match) => match.matchKey === byHandMatchKey) ?? null : null;
+  const typedCard = typedMatch ? matchCard(schedule, schedule.indexOf(typedMatch), scouted, data.assignments ?? []) : null;
+  const typedRobots = typedCard?.robots ?? [];
 
   return (
     <div className="qs-picker">
@@ -151,7 +160,7 @@ export function QuickScoutPicker({
                 <strong>{robot.teamNumber}</strong>
                 <small>
                   {robot.alliance === "red" ? "Red" : "Blue"} {robot.station}
-                  {robot.assignedToYou ? " · Yours" : robot.scouted ? " · Done" : ""}
+                  {robot.assignedToYou ? " · Yours" : robot.teamKey === ownTeamKey ? " · Us" : robot.scouted ? " · Done" : ""}
                 </small>
               </button>
             ))}
@@ -165,22 +174,50 @@ export function QuickScoutPicker({
           className="qs-byhand-form"
           onSubmit={(event) => {
             event.preventDefault();
-            if (byHandMatchKey && byHandTeamKey) onPick({ matchKey: byHandMatchKey, teamKey: byHandTeamKey });
+            if (byHandMatchKey && byHandTeamKey && !typedRobots.length) onPick({ matchKey: byHandMatchKey, teamKey: byHandTeamKey });
           }}
         >
           <label>
             <span>Qualification match</span>
             <input inputMode="numeric" pattern="[0-9]*" value={byHandMatch} onChange={(event) => setByHandMatch(event.target.value)} placeholder="12" />
           </label>
-          <label>
-            <span>Team number</span>
-            <input inputMode="numeric" pattern="[0-9]*" value={byHandTeam} onChange={(event) => setByHandTeam(event.target.value)} placeholder="254" />
-          </label>
-          <button type="submit" className="qs-primary" disabled={!byHandMatchKey || !byHandTeamKey}>
-            Scout this robot
-          </button>
+          {typedRobots.length ? null : (
+            <>
+              <label>
+                <span>Team number</span>
+                <input inputMode="numeric" pattern="[0-9]*" value={byHandTeam} onChange={(event) => setByHandTeam(event.target.value)} placeholder="254" />
+              </label>
+              <button type="submit" className="qs-primary" disabled={!byHandMatchKey || !byHandTeamKey}>
+                Scout this robot
+              </button>
+            </>
+          )}
         </form>
-        <p className="qs-fineprint">Use your robot list when you can: a mistyped match cannot be matched to the schedule.</p>
+        {typedCard && typedRobots.length ? (
+          <div className="qs-robots" role="group" aria-label={`Robots in ${typedCard.label}`}>
+            {typedRobots.map((robot) => (
+              <button
+                key={robot.teamKey}
+                type="button"
+                className={`qs-robot is-${robot.alliance}${robot.scouted ? " is-done" : ""}`}
+                onClick={() => onPick({ matchKey: typedCard.match.matchKey, teamKey: robot.teamKey })}
+                aria-label={`Scout ${robot.teamNumber}, ${robot.alliance} ${robot.station}${robot.scouted ? ", already scouted" : ""}`}
+              >
+                <strong>{robot.teamNumber}</strong>
+                <small>
+                  {robot.alliance === "red" ? "Red" : "Blue"} {robot.station}
+                  {robot.teamKey === ownTeamKey ? " · Us" : robot.scouted ? " · Done" : ""}
+                </small>
+              </button>
+            ))}
+          </div>
+        ) : byHandMatchKey && !typedMatch ? (
+          <p className="qs-fineprint" role="status">
+            {labelForMatchKey(byHandMatchKey) ?? "That match"} is not on this phone’s copy of the schedule. Check the number on the field screen. A report for it is kept on this phone and sent once the match is on the schedule.
+          </p>
+        ) : (
+          <p className="qs-fineprint">Type the match number and its six robots show up to pick from.</p>
+        )}
       </details>
     </div>
   );

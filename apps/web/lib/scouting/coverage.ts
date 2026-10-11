@@ -27,7 +27,8 @@ import {
   type LineupMatchRow,
 } from "./lineup-related";
 import { resolveScoutOrg } from "../scout-org-access";
-import { matchStillAheadSql } from "../matches/match-ahead-sql";
+import { allianceScore, type TbaAllianceJson } from "../schedule/tba-cache";
+import { playedMatchKeys } from "./play-state";
 import { loadScoutRoleCoverage, type ScoutRoleCoverage } from "./schema-role-coverage";
 import {
   compareCoverageByWatchlist,
@@ -275,12 +276,13 @@ export async function computeScoutingCoverageView(
 
   const qualsOnly = input.qualsOnly !== false;
 
-  const matches = await client.query<LineupMatchRow & { played?: boolean | null }>(
+  const matches = await client.query<LineupMatchRow & { winningAlliance: string | null; postResultTime: string | null; actualTime: string | null }>(
     `SELECT match_key AS "matchKey", comp_level AS "compLevel", set_number AS "setNumber",
             match_number AS "matchNumber",
             red_alliance AS "redAlliance", blue_alliance AS "blueAlliance",
             COALESCE(actual_time, predicted_time, event_time)::text AS "eventTime",
-            NOT (${matchStillAheadSql()}) AS played
+            NULLIF(winning_alliance, '') AS "winningAlliance",
+            post_result_time::text AS "postResultTime", actual_time::text AS "actualTime"
        FROM matches_ref
       WHERE event_key = $1::text
         AND ($2::boolean IS FALSE OR comp_level = 'qm')
@@ -342,12 +344,26 @@ export async function computeScoutingCoverageView(
   ).sort((a, b) => (matchOrder.get(a.matchKey) ?? 0) - (matchOrder.get(b.matchKey) ?? 0))
     .map(slot => ({ ...slot, assignedScouts: assignedScouts.get(`${slot.matchKey}|${slot.teamKey}`) ?? [] }));
   const summary = summarizeCoverageGaps(slots);
-  const playedMatchKeys = matches.rows.filter((row) => row.played === true).map((row) => row.matchKey);
-  const scope = summarizeCoverageScope(slots, new Set(playedMatchKeys));
+  // Scouting's one "played" rule (play-state.ts), the same the lead card on Scouting home
+  // and Quick scout use: a late match nobody has played is still upcoming here too.
+  const played = playedMatchKeys(
+    matches.rows.map((row) => ({
+      matchKey: row.matchKey,
+      compLevel: row.compLevel,
+      matchNumber: Number(row.matchNumber),
+      redScore: allianceScore(row.redAlliance as TbaAllianceJson),
+      blueScore: allianceScore(row.blueAlliance as TbaAllianceJson),
+      winningAlliance: row.winningAlliance,
+      postResultTime: row.postResultTime,
+      actualTime: row.actualTime,
+    })),
+  );
+  const playedKeys = matches.rows.filter((row) => played.has(row.matchKey)).map((row) => row.matchKey);
+  const scope = summarizeCoverageScope(slots, played);
   // The live window opens on the next match still to be played. Opening on the
   // first gap put it on Qual 1 at an event 30 matches in, where every gap is
   // already history.
-  const nextUpcoming = matches.rows.find((row) => row.played !== true)?.matchKey ?? null;
+  const nextUpcoming = matches.rows.find((row) => !played.has(row.matchKey))?.matchKey ?? null;
   const focusKey = input.matchKey && matchKeys.includes(input.matchKey) ? input.matchKey : nextUpcoming || defaultLineupFocusMatchKey(slots);
 
   const live = focusLiveCoverage(slots, {
@@ -367,7 +383,7 @@ export async function computeScoutingCoverageView(
     summary,
     live,
     slots,
-    playedMatchKeys,
+    playedMatchKeys: playedKeys,
     scope,
     scouts,
     schemaRoles,

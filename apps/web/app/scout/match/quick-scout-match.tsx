@@ -12,17 +12,19 @@ import {
 } from "@vantage/scouting";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { visibleFields, withInferredPhaseRules } from "../../../lib/scouting/context-visible";
-import { answersToSave } from "../../../lib/scouting/entry-answers";
+import { answersToSave, hasObservation } from "../../../lib/scouting/entry-answers";
 import {
   clearScoutDraft,
+  formatDraftSavedAgo,
   readScoutClock,
-  readScoutDraft,
   rememberActiveScoutDraft,
   scoutDraftStorageKey,
   writeScoutClock,
   writeScoutDraft,
 } from "../../../lib/scouting/draft-autosave";
-import { clockLabel, phaseRemainingSeconds, rebuiltShiftAt, timingForSeason } from "../../../lib/scouting/match-clock";
+import { liveClockReadout, rebuiltShiftAt, timingForSeason } from "../../../lib/scouting/match-clock";
+import type { RobotFormChoice } from "../../../lib/scouting/robot-form";
+import { useOnline } from "../../../lib/offline/use-online";
 import {
   QUICK_STAGE_LABELS,
   STATION_FIELD_KEY,
@@ -42,11 +44,27 @@ import {
 } from "../../../lib/scouting/quick-scout";
 import { robotStation, scoutContext } from "../../../lib/scouting/scout-context";
 import { queueEntry, stableClientId } from "../../../lib/scout-offline";
-import { myReports, type Bootstrap } from "../../scouting/scouting-model";
+import type { Bootstrap } from "../../scouting/scouting-model";
 import { CapturePad, QuickTile } from "./quick-scout-tiles";
 import { QuickScoutReview } from "./quick-scout-review";
 
 export type QuickSaved = { matchKey: string; teamKey: string; clientId: string };
+
+export const EDITING_NOTE = "You scouted this robot already. Saving replaces your earlier report.";
+export const NOTHING_RECORDED_NOTE =
+  "Nothing recorded yet. Count or answer at least one thing, or tap “Saw none · 0” for counts you watched. To skip this robot, tap its number at the top.";
+
+/** The notes a robot opens with: already filed, the form changed, answers restored. */
+function openingNotes(form: Extract<RobotFormChoice, { kind: "ready" }>): string | null {
+  const notes = [
+    form.editing ? EDITING_NOTE : null,
+    form.note,
+    form.from === "draft" && !form.note && !form.editing && form.draftSavedAt
+      ? `Your answers are back. ${formatDraftSavedAgo(form.draftSavedAt)}.`
+      : null,
+  ].filter(Boolean);
+  return notes.length ? notes.join(" ") : null;
+}
 
 function seasonOf(data: Bootstrap, schema: ScoutSchema): number | null {
   const fromEvent = Number(/^(\d{4})/.exec(data.eventKey ?? "")?.[1]);
@@ -62,22 +80,28 @@ const identity = () => ({ id: crypto.randomUUID(), at: new Date().toISOString() 
 export function QuickScoutMatch({
   orgId,
   data,
-  schema,
+  form,
   matchKey,
   teamKey,
+  ownTeamKey = null,
   fullFormHref,
   onSaved,
   onChangeRobot,
 }: {
   orgId: string;
   data: Bootstrap;
-  schema: ScoutSchema;
+  /** The form this robot opens on and its starting answers (lib/scouting/robot-form.ts). */
+  form: Extract<RobotFormChoice, { kind: "ready" }>;
   matchKey: string;
   teamKey: string;
+  /** Our own robot, which the drive team already knows. */
+  ownTeamKey?: string | null;
   fullFormHref: string;
   onSaved(saved: QuickSaved): void;
   onChangeRobot(): void;
 }) {
+  const schema: ScoutSchema = form.schema;
+  const online = useOnline();
   const match = (data.matches ?? []).find((candidate) => candidate.matchKey === matchKey);
   const station = robotStation(match, teamKey);
   const context = scoutContext({ matches: data.matches ?? [], matchKey, teamKey });
@@ -99,26 +123,14 @@ export function QuickScoutMatch({
   );
 
   // Where the answers start: this phone's draft, else your own saved report (Save replaces
-  // it), else blank with the seat filled in from the schedule.
-  const [initial] = useState(() => {
-    const draft = readScoutDraft(draftKey);
-    if (draft && (!draft.schemaId || draft.schemaId === schema.id)) {
-      return { payload: draft.payload, confidence: draft.confidence, clientId: draft.clientId ?? stableClientId(), editing: false, restored: true };
-    }
-    const earlier = myReports(data).find(
-      (entry) => entry.type === "match" && entry.matchKey === matchKey && entry.teamKey === teamKey,
-    );
-    if (earlier?.payload && (!earlier.schemaId || earlier.schemaId === schema.id)) {
-      return {
-        payload: earlier.payload,
-        confidence: (["high", "normal", "low"].includes(earlier.confidence) ? earlier.confidence : "normal") as "high" | "normal" | "low",
-        clientId: earlier.clientId ?? stableClientId(),
-        editing: true,
-        restored: false,
-      };
-    }
-    return { payload: scheduleAnswers(fields, {}, station), confidence: "normal" as const, clientId: stableClientId(), editing: false, restored: false };
-  });
+  // it), else blank with the seat filled in from the schedule. A draft started on an older
+  // version of the form opens on that version (lib/scouting/robot-form.ts).
+  const [initial] = useState(() => ({
+    payload: form.payload ?? scheduleAnswers(fields, {}, station),
+    confidence: form.confidence,
+    clientId: form.clientId ?? stableClientId(),
+    editing: form.editing,
+  }));
   const [payload, setPayload] = useState<Record<string, unknown>>(initial.payload);
   const [confidence, setConfidence] = useState<"high" | "normal" | "low">(initial.confidence);
   const [dirty, setDirty] = useState(false);
@@ -130,7 +142,7 @@ export function QuickScoutMatch({
   const [stage, setStage] = useState<QuickStage>(() => (startedAt === null ? (initial.editing ? "review" : "pre") : clockStage));
   const [issues, setIssues] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(initial.editing ? "You scouted this robot already. Saving replaces your earlier report." : null);
+  const [message, setMessage] = useState<string | null>(() => openingNotes(form));
   const savingRef = useRef(false);
 
   const visible = useMemo(() => visibleFields(fields, payload), [fields, payload]);
@@ -269,6 +281,12 @@ export function QuickScoutMatch({
     if (savingRef.current || !data.eventKey) return;
     const closed = elapsed === null ? payload : stopCaptureAction(payload, elapsed);
     const answers = answersToSave(schema.definition.fields, closed);
+    // A blank report counts this robot as scouted on the lead's board with nothing in it.
+    if (!hasObservation(answers)) {
+      setIssues([]);
+      setMessage(NOTHING_RECORDED_NOTE);
+      return;
+    }
     const problems = validatePayload(schema.definition, answers);
     setIssues(problems);
     if (problems.length) {
@@ -313,21 +331,25 @@ export function QuickScoutMatch({
   const invalidKeys = new Set(
     fields.filter((field) => issues.some((issue) => issue.startsWith(field.label))).map((field) => field.key),
   );
+  const readout = elapsed === null ? null : liveClockReadout(elapsed, timing, clockRunning ? shift : null);
 
   return (
     <div className={`qs-match is-${stage}${station ? ` is-${station.alliance}` : ""}`}>
       <header className="qs-bar">
         <button type="button" className="qs-bar-robot" onClick={onChangeRobot} aria-label="Change robot">
           <strong>{context?.teamNumber ?? teamKey.replace(/^frc/, "")}</strong>
-          <span>{[context?.matchLabel, context?.stationLabel].filter(Boolean).join(" · ") || "Change robot"}</span>
+          {/* Match and seat on their own lines, so a long shift label never cuts off "Red 1". */}
+          <span>{context?.matchLabel ?? "Change robot"}</span>
+          {context?.stationLabel ? <span className="qs-bar-seat">{context.stationLabel}</span> : null}
         </button>
         <div className="qs-clock" aria-live="off">
-          {elapsed === null ? (
+          {readout === null ? (
             <span className="qs-clock-idle">Clock not started</span>
           ) : (
             <>
-              <strong>{clockRunning ? `${phaseRemainingSeconds(elapsed, timing)}s` : "Done"}</strong>
-              <span>{shift && clockRunning ? `${shift.label}${shift.hub !== "unknown" ? ` · hub ${shift.hub}` : ""}` : clockLabel(Math.min(elapsed, matchEnd))}</span>
+              <strong>{readout.big}</strong>
+              <span>{readout.label}</span>
+              {readout.left ? <small>{readout.left}</small> : null}
             </>
           )}
         </div>
@@ -335,6 +357,17 @@ export function QuickScoutMatch({
           <span aria-hidden="true">↶</span> Undo
         </button>
       </header>
+
+      {online ? null : (
+        <p className="qs-signal" role="status">
+          No signal · keep scouting. This match saves on this phone and sends when the signal is back.
+        </p>
+      )}
+      {ownTeamKey && teamKey === ownTeamKey ? (
+        <p className="qs-message" role="note">
+          This is your own team’s robot. Your drive team already knows how it played, so scout it only if your lead asked you to.
+        </p>
+      ) : null}
 
       <nav className="qs-stages" aria-label="Match stage">
         {stages.map((candidate) => (
@@ -415,9 +448,15 @@ export function QuickScoutMatch({
                   Started too early? Restart the clock
                 </button>
               ) : null}
-              <button type="button" className="qs-secondary" onClick={() => setStage("review")}>
-                Match over · answer the last questions
-              </button>
+              {/* A second Undo where the thumb is; the one in the header is a reach on a tall phone. */}
+              <div className="qs-live-foot-row">
+                <button type="button" className="qs-undo" onClick={undo} disabled={!canUndo} aria-label="Undo last tap">
+                  <span aria-hidden="true">↶</span> Undo
+                </button>
+                <button type="button" className="qs-secondary" onClick={() => setStage("review")}>
+                  Match over · last questions
+                </button>
+              </div>
             </div>
           </>
         ) : null}

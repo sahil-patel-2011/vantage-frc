@@ -8,6 +8,8 @@ import {
   isolateFailedChunk,
   isPermanentOutboxFailure,
   isPermanentOutboxStatus,
+  isWholeBatchRefusal,
+  OutboxPushError,
   parseOutboxChunkBody,
   type OutboxChunkOutcome,
 } from "./outbox-chunk";
@@ -80,6 +82,20 @@ describe("isPermanentOutboxFailure", () => {
     expect(isPermanentOutboxFailure(new Error("Sync failed (503)"))).toBe(false);
     expect(isPermanentOutboxFailure(new Error("flaky venue wifi"))).toBe(false);
   });
+
+  it("reads the status the server answered with, not the wording", () => {
+    // The route's 403 says "View only — …", with no "(403)" in it: it used to count as transient.
+    expect(isPermanentOutboxFailure(new OutboxPushError(403, "View only — you can look but not change this.", "view_only"))).toBe(true);
+    expect(isPermanentOutboxFailure(new OutboxPushError(400, "This match isn't on the event schedule yet."))).toBe(true);
+    expect(isPermanentOutboxFailure(new OutboxPushError(503, "Scouting is temporarily unavailable."))).toBe(false);
+    expect(isPermanentOutboxFailure(new OutboxPushError(429, "Too many requests"))).toBe(false);
+    // A session that ended is not the entry's fault: it goes through after signing in again.
+    expect(isPermanentOutboxStatus(401)).toBe(false);
+    expect(isPermanentOutboxFailure(new OutboxPushError(401, "Your session ended. Sign in again."))).toBe(false);
+    expect(isWholeBatchRefusal(new OutboxPushError(401, "Your session ended."))).toBe(true);
+    expect(isWholeBatchRefusal(new OutboxPushError(403, "View only", "view_only"))).toBe(true);
+    expect(isWholeBatchRefusal(new OutboxPushError(403, "Organization access denied"))).toBe(false);
+  });
 });
 
 describe("parseOutboxChunkBody", () => {
@@ -150,7 +166,47 @@ describe("drainOutboxChunks", () => {
     const push = vi.fn();
     const result = await drainOutboxChunks([], push);
     expect(push).not.toHaveBeenCalled();
-    expect(result).toEqual({ accepted: [], rejected: [], isolated: [], remaining: [] });
+    expect(result).toEqual({ accepted: [], rejected: [], isolated: [], remaining: [], failure: null });
+  });
+
+  it("sets a View only batch aside once, with the server's sentence, instead of retrying it forever", async () => {
+    const queued = rows(4);
+    const push = vi.fn(async () => {
+      throw new OutboxPushError(403, "View only — you can look but not change this.", "view_only");
+    });
+    const result = await drainOutboxChunks(queued, push);
+    // One POST, not one per row: the refusal is about the person, not about a poisoned row.
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(result.isolated.map((row) => row.entry.clientId)).toEqual(queued.map((row) => row.clientId));
+    expect(result.isolated[0]?.reason).toBe("View only — you can look but not change this.");
+    expect(result.remaining).toEqual([]);
+    expect(result.failure).toBeNull();
+  });
+
+  it("keeps everything queued and stops sending when the session ended (401)", async () => {
+    const queued = rows(120);
+    const push = vi.fn(async () => {
+      throw new OutboxPushError(401, "Your session ended. Sign in again.");
+    });
+    const result = await drainOutboxChunks(queued, push);
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(result.remaining.map((row) => row.clientId)).toEqual(queued.map((row) => row.clientId));
+    expect(result.isolated).toEqual([]);
+    expect(result.failure).toBe("signed-out");
+  });
+
+  it("says why rows stayed queued: a server error or no answer at all", async () => {
+    const serverDown = await drainOutboxChunks(rows(2), async () => {
+      throw new OutboxPushError(503, "Scouting is temporarily unavailable.");
+    });
+    expect(serverDown.remaining).toHaveLength(2);
+    expect(serverDown.failure).toBe("server");
+
+    const timedOut = await drainOutboxChunks(rows(2), async () => {
+      throw new DOMException("The operation timed out.", "TimeoutError");
+    });
+    expect(timedOut.remaining).toHaveLength(2);
+    expect(timedOut.failure).toBe("unreachable");
   });
 
   it("drains a 120-entry weekend in ≤50-entry batches", async () => {

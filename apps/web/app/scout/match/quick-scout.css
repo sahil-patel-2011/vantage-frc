@@ -86,6 +86,17 @@
 .qs-receipt strong{font-size:17px}
 .qs-receipt div span{color:var(--muted);font-size:14px}
 .qs-receipt .qs-next{grid-column:1/-1;min-height:52px;font-size:16px}
+/* Not sent yet: amber, never the green tick. Refused or signed out: the problem colour. */
+.qs-receipt.is-pending{background:color-mix(in srgb,var(--warning) 10%,var(--surface));border-color:color-mix(in srgb,var(--warning) 35%,var(--line))}
+.qs-receipt.is-pending .qs-receipt-check{background:var(--warning);color:var(--ink)}
+.qs-receipt.is-problem{background:var(--critical-soft);border-color:color-mix(in srgb,var(--critical) 35%,var(--line))}
+.qs-receipt.is-problem .qs-receipt-check{background:var(--critical)}
+.qs-receipt div span{color:var(--ink)}
+.qs-receipt-action{justify-self:start;padding-inline:0}
+.qs-inline-action{background:none;border:0;padding:0 2px;min-height:24px;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer}
+.qs-offline a{color:inherit;font-weight:600}
+/* No signal mid-match: say so on the live screen, not only after Save. */
+.qs-signal{margin:0;padding:8px 12px;border-radius:12px;background:var(--warning-soft);color:var(--ink);font-size:14px;font-weight:600}
 
 /* --- Match screen --------------------------------------------------------- */
 .qs-match{display:grid;gap:12px;--qs-team:var(--accent)}
@@ -97,13 +108,17 @@
   border-radius:18px;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:saturate(1.5) blur(12px);
   border:1px solid var(--line);box-shadow:inset 5px 0 0 var(--qs-team);
 }
-.qs-bar-robot{display:grid;gap:0;text-align:left;background:none;border:0;padding:4px 8px 4px 12px;cursor:pointer;min-height:48px;min-width:0}
+/* The seat is how a scout confirms the robot: its own line, never cut off by the clock. */
+.qs-bar-robot{display:grid;gap:0;text-align:left;background:none;border:0;padding:4px 8px 4px 12px;cursor:pointer;min-height:48px;min-width:96px}
 .qs-bar-robot strong{font-size:24px;line-height:1.05;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--qs-team)}
-.qs-bar-robot span{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.qs-clock{display:grid;justify-items:end;gap:0;min-width:84px;font-variant-numeric:tabular-nums}
+.qs-bar-robot span{color:var(--ink);font-size:14px;line-height:1.25;white-space:nowrap}
+.qs-bar-robot .qs-bar-seat{color:var(--qs-team);font-weight:700}
+/* One big countdown, its name under it (wrapping, never clipping the seat), match time small. */
+.qs-clock{display:grid;justify-items:end;gap:0;min-width:84px;max-width:11em;text-align:right;font-variant-numeric:tabular-nums}
 .qs-clock strong{font-size:24px;letter-spacing:-.02em;line-height:1.05}
-.qs-clock span{color:var(--muted);font-size:11.5px;white-space:nowrap}
-.qs-clock-idle{color:var(--muted);font-size:12.5px}
+.qs-clock span{color:var(--ink);font-size:14px;line-height:1.2}
+.qs-clock small{color:var(--muted);font-size:13px;line-height:1.2}
+.qs-clock-idle{color:var(--ink);font-size:14px}
 .qs-undo{display:inline-flex;align-items:center;gap:6px;min-height:48px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);font-weight:600;cursor:pointer}
 .qs-undo:disabled{opacity:.4;cursor:default}
 .qs-stages{display:flex;gap:6px;padding:4px;border-radius:14px;background:var(--surface-2);overflow-x:auto;scrollbar-width:none}
@@ -197,6 +212,8 @@
 .qs-hold:disabled{opacity:.45;cursor:not-allowed}
 
 .qs-live-foot{display:grid;justify-items:center;gap:6px;padding-top:4px}
+.qs-live-foot-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;width:100%}
+.qs-live-foot-row .qs-undo{min-height:52px}
 .qs-live-foot .qs-secondary{width:100%}
 
 /* --- After the match ------------------------------------------------------ */
