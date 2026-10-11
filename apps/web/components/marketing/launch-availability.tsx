@@ -30,9 +30,9 @@ export function usePublicSignupOpen() {
   return open;
 }
 
-export function LaunchAvailability() {
+export function LaunchAvailability({ className = "mx-hero-note" }: { className?: string }) {
   const open = usePublicSignupOpen();
-  return <p className="lux-hero-note" data-testid="launch-availability">
+  return <p className={className} data-testid="launch-availability">
     {open ? <>Team signup is open. <a href="/signin">Create your account</a></>
       : <>Teams are set up from <strong>{PUBLIC_SIGNUP_DATE_LABEL}</strong>. <a href={EARLY_ACCESS_HREF}>Contact us for early access</a>.</>}
   </p>;

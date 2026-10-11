@@ -20,25 +20,34 @@ const HEADING: Record<WaitlistStage, { title: string; body: string }> = {
 };
 
 /**
- * The homepage waitlist section. Its heading follows the form: "Join the waitlist" sat next
+ * The waitlist section (home and Cost). Its heading follows the form: "Join the waitlist" sat next
  * to "My team already uses Vantage — no waitlist", and still asked people to join after they had.
  */
 export function WaitlistSection() {
   const [stage, setStage] = useState<WaitlistStage>("setup");
   const copy = HEADING[stage];
+  const joined = stage === "joined";
   return (
-    <section className={`lux-waitlist${stage === "joined" ? " is-joined" : ""}`} id="waitlist">
-      {/* Once joined, the left column had only its eyebrow left over an empty half page: the
-          card is the whole section then. */}
-      <div hidden={stage === "joined"}>
-        <p className="lux-eyebrow">Closed membership</p>
-        {/* Once joined, the card's "You're on the list." is the one headline; this said "Thanks for
-            joining." above it. */}
-        {stage === "joined" ? <h2 className="sr-only">Waitlist</h2> : <h2>{copy.title}</h2>}
-        {stage === "joined" ? null : <p>{copy.body}</p>}
-        {stage === "joined" ? null : <MarketingInvitedNote />}
+    <section className="mx-section mx-rule" id="waitlist" aria-labelledby="waitlist-title">
+      <div className={`mx-wrap mx-waitlist${joined ? " is-joined" : ""}`}>
+        {/* Once joined, the card's "You're on the list." is the one headline, and the column beside it
+            would be an empty half page: the card is the whole section then. */}
+        {joined ? (
+          <h2 className="mx-sr-only" id="waitlist-title">
+            Waitlist
+          </h2>
+        ) : (
+          <div className="mx-waitlist-copy">
+            <p className="mx-eyebrow">Closed membership</p>
+            <h2 className="mx-h2" id="waitlist-title">
+              {copy.title}
+            </h2>
+            <p className="mx-lead">{copy.body}</p>
+            <MarketingInvitedNote className="mx-invited" />
+          </div>
+        )}
+        <WaitlistForm idPrefix="hero" onStageChange={setStage} />
       </div>
-      <WaitlistForm idPrefix="hero" onStageChange={setStage} />
     </section>
   );
 }
