@@ -421,7 +421,8 @@ function ProfileList({
     const copy = alumniShellCopy("empty");
     return (
       <EmptyState badge={copy.badge} badgeTone="setup" title={copy.title} description={copy.description}>
-        <Button as="a" variant="primary" href="#alumni-add-profile">
+        {/* The form below owns the one primary action (Add profile); this only jumps to it. */}
+        <Button as="a" variant="secondary" href="#alumni-add-profile">
           Add an alumni profile
         </Button>
       </EmptyState>

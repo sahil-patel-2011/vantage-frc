@@ -427,7 +427,8 @@ export default function SubsystemSignoffClient() {
           title="Add your first robot subsystem"
           description="Drivetrain, intake, scoring, climber — each clears the same review gates. Readiness stays blank until someone records a real approve or reject."
         >
-          <Button as="a" variant="primary" href="#signoff-add">
+          {/* The form above owns the one primary action (Add subsystem); this only jumps to it. */}
+          <Button as="a" variant="secondary" href="#signoff-add">
             Add a subsystem
           </Button>
         </EmptyState>
