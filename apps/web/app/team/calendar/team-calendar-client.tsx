@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";
+import { ViewOnlyNote } from "../../../components/view-only-note";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import {
@@ -425,6 +426,8 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
   const orgId = view.context.orgId!;
   const canManage = view.context.canManage;
+  // View only (0715): the calendar, without Add event / quick add.
+  const viewOnly = view.context.role === "viewer";
   const busy = busyKey != null;
   const showDuties = (view.duties?.length ?? 0) > 0 || canManage;
   const showTrip = (view.travelLegs?.length ?? 0) > 0;
@@ -691,12 +694,16 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                 listDays.length === 0 ? (
                   <div className="tc-empty tc-list-empty">
                     <strong>Nothing scheduled</strong>
-                    <p className="tc-muted">Add an event below, or switch to Week and click a time.</p>
-                    <div className="tc-guide-actions">
-                      <Button variant="primary" type="button" onClick={() => document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" }) }>
-                        Add event
-                      </Button>
-                    </div>
+                    {viewOnly ? null : (
+                      <>
+                        <p className="tc-muted">Add an event below, or switch to Week and click a time.</p>
+                        <div className="tc-guide-actions">
+                          <Button variant="primary" type="button" onClick={() => document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" }) }>
+                            Add event
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : (
                   listDays.map((bucket) => (
@@ -881,7 +888,8 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
             <aside className="tc-panel">
               {canManage ? <AiScheduler onUse={usePick} /> : null}
-              <div id="tc-quick-add">
+              {viewOnly ? <ViewOnlyNote /> : null}
+              <div id="tc-quick-add" hidden={viewOnly}>
                 <QuickAddForm
                   orgId={orgId}
                   subteams={view.subteams}

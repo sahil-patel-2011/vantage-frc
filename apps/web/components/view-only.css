@@ -1,0 +1,37 @@
+/* View only (0715): a calm chip in the top bar and a one-line note where a write would be. */
+.view-only-chip {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-2, var(--surface)) 70%, transparent);
+  color: var(--muted);
+  font: 600 11px/1 var(--font-sans, ui-sans-serif), system-ui, sans-serif;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.view-only-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-soft, var(--line));
+  border-radius: var(--radius-sm, 10px);
+  color: var(--muted);
+  font: 500 13px/1.45 var(--font-sans, ui-sans-serif), system-ui, sans-serif;
+}
+
+.view-only-note.chat-composer-view-only {
+  margin: 8px 12px 12px;
+}
+
+@media (max-width: 599px) {
+  .view-only-chip {
+    min-height: 22px;
+    padding: 0 7px;
+    font-size: 10.5px;
+  }
+}

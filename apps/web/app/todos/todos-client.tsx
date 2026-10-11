@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
+import { ViewOnlyNote } from "../../components/view-only-note";
+import { useViewOnly } from "../../lib/nav/use-view-only";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, Button } from "../../components/ui";
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -141,6 +143,8 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
   const [filter, setFilter] = useState<TodoListFilter>("all");
 
   const orgId = view && "orgId" in view ? view.orgId : null;
+  // View only (0715): the list, without the Add form.
+  const viewOnly = useViewOnly(orgId);
 
   const load = useCallback(() => {
     setFetchFailed(false);
@@ -351,7 +355,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         <div style={{ display: "grid", gap: 16 }}>
           {embedded ? null : <MetricsTiles view={view} />}
           <UnifiedWorkSummary view={workView} />
-          <CreateTodoForm view={view} busy={busy} mutate={mutate} />
+          {viewOnly ? <ViewOnlyNote /> : <CreateTodoForm view={view} busy={busy} mutate={mutate} />}
           <FilterBar
             filter={filter}
             setFilter={setFilter}

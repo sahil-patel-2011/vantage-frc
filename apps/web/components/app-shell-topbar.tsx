@@ -4,7 +4,9 @@ import { Icon } from "./icon";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import { AppShellAccountMenu } from "./app-shell-account-menu";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { VIEW_ONLY_CHIP_TITLE, isViewOnlyIn } from "../lib/nav/view-only";
 import type { Me, MembershipOption } from "./app-shell-model";
+import "./view-only.css";
 
 /** The current team also opens the workspace picker. */
 function TeamChip({ label, className, onOpen }: { label: string; onOpen: () => void; className: string }) {
@@ -72,6 +74,8 @@ export function AppShellTopbar({
   onWorkspaceSwitch: (nextOrgId: string) => void;
   onSignOut: () => void;
 }) {
+  // View only (0715): say so once, calmly, so a refused button is never a surprise.
+  const viewOnly = isViewOnlyIn(memberships, orgId, me.role);
   return (
     <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
@@ -147,6 +151,11 @@ export function AppShellTopbar({
         </div>
       </div>
       <div className="soft-topbar-actions">
+        {viewOnly ? (
+          <span className="view-only-chip" title={VIEW_ONLY_CHIP_TITLE} aria-label={`View only. ${VIEW_ONLY_CHIP_TITLE}`}>
+            View only
+          </span>
+        ) : null}
         <button hidden={navOpen} className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>
         <ShellOutboxStatus orgId={orgId || null} />
         <a

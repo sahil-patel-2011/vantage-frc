@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "../../components/ui";
+import { ViewOnlyNote } from "../../components/view-only-note";
 import type { LeadSummaryView } from "../../lib/scouting/lead-summary-load";
 import { share } from "../../lib/scouting/lead-summary";
 
@@ -30,10 +31,21 @@ function chipName(team: { teamNumber: number; nickname: string | null }): string
  * played, and it is what the drive team asks about when an alliance forms. The one primary
  * button walks to the next pit nobody has visited.
  */
-export function ScoutHomePit({ view, pitHref, primary = true }: { view: Ready; pitHref: (teamKey?: string) => string; primary?: boolean }) {
+export function ScoutHomePit({
+  view,
+  pitHref,
+  primary = true,
+  viewOnly = false,
+}: {
+  view: Ready;
+  pitHref: (teamKey?: string) => string;
+  primary?: boolean;
+  /** View only (0715): the counts, and a note instead of the visit buttons. */
+  viewOnly?: boolean;
+}) {
   const { pit } = view;
   const percent = share(pit.visited, pit.total);
-  const next = pit.notVisited[0];
+  const next = viewOnly ? undefined : pit.notVisited[0];
   return (
     <section className="scout-card scout-card-pit" aria-labelledby="scout-pit-title">
       <header>
@@ -72,12 +84,14 @@ export function ScoutHomePit({ view, pitHref, primary = true }: { view: Ready; p
             </ul>
           ) : null}
         </>
+      ) : viewOnly ? (
+        <ViewOnlyNote />
       ) : pit.total ? (
         <p className="scout-card-note">Every other team at this event has a pit report.</p>
       ) : (
         <p className="scout-card-note">The event’s teams appear here when its schedule syncs. You can still visit a pit by team number.</p>
       )}
-      {!next || pit.notVisited.length <= 1 ? (
+      {viewOnly ? null : !next || pit.notVisited.length <= 1 ? (
         <a className="scout-card-link" href={pitHref()}>
           {pit.total ? "All pits" : "Visit a pit"}
         </a>
@@ -92,12 +106,15 @@ export function ScoutHomeMatch({
   duty,
   matchHref,
   primary = false,
+  viewOnly = false,
 }: {
   view: Ready | null;
   duty: { teamNumber: string; matchLabel: string; station: string | null; when: string | null } | null;
   matchHref: string;
   /** Your robot is about to play: the match comes before the pits for these few minutes. */
   primary?: boolean;
+  /** View only (0715): coverage, and a note instead of the scout button. */
+  viewOnly?: boolean;
 }) {
   const match = view?.match;
   return (
@@ -119,12 +136,16 @@ export function ScoutHomeMatch({
           </strong>
           {duty.when ? <small>{duty.when}</small> : null}
         </p>
-      ) : (
+      ) : viewOnly ? null : (
         <p className="scout-card-note">Pick any robot in the match that is up next.</p>
       )}
-      <Button as="a" variant={primary ? "primary" : "secondary"} href={matchHref}>
-        {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Scout a match"}
-      </Button>
+      {viewOnly ? (
+        <ViewOnlyNote />
+      ) : (
+        <Button as="a" variant={primary ? "primary" : "secondary"} href={matchHref}>
+          {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Scout a match"}
+        </Button>
+      )}
     </section>
   );
 }

@@ -13,6 +13,7 @@ import {
 } from "react";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
+import { ViewOnlyNote } from "../../components/view-only-note";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
@@ -176,9 +177,12 @@ export type MessagesReadyViewProps = {
   startDm: (peerUserId: string) => void;
   setChannelArchived: (archived: boolean) => void;
   softDelete: (messageId: string) => void;
+  /** View only (0715): read the conversation; no composer. */
+  viewOnly?: boolean;
 };
 
 export function MessagesReadyView({
+  viewOnly = false,
   orgId,
   embedded,
   live,
@@ -693,6 +697,9 @@ export function MessagesReadyView({
                   <div ref={bottomRef} className="messages-bottom-anchor" />
                 </div>
 
+                {viewOnly ? (
+                  <ViewOnlyNote className="chat-composer-view-only" />
+                ) : (
                 <form className="chat-composer" onSubmit={send}>
                   {active.kind === "team" ? (
                     <div className="messages-composer-hint">
@@ -879,6 +886,7 @@ export function MessagesReadyView({
                     </button>
                   </div>
                 </form>
+                )}
                 {status ? (
                   <p className="chat-status" role="status">
                     {status}
