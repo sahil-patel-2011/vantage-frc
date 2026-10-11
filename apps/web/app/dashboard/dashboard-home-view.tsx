@@ -598,7 +598,7 @@ export function DashboardHomeView(props: {
 
       {!showsOverview && surfaces.setupBannerAllowed && (sharedSetupPrompt || (dashShell !== "ready" && dashShell !== "loading" &&
       showStandaloneSetupBanner({ editing, displayLayout }))) ? (
-        <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} compact={sharedSetupPrompt} />
+        <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} compact={sharedSetupPrompt} platformAdmin={me.platformAdmin === true} />
       ) : null}
 
       {meLoaded && dashShell === "ready" && nextActions.length > 0 && !teamSetupCard && !showsOverview ? (

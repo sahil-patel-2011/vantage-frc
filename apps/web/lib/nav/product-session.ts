@@ -16,6 +16,8 @@ export type ProductSession = {
   role?: string | null;
   teamRole?: string | null;
   tbaConfigured?: boolean;
+  /** Runs Vantage itself (a platform_admins row), whether or not they are on a team. */
+  platformAdmin?: boolean;
   memberships?: Array<{
     orgId: string;
     orgName?: string | null;
