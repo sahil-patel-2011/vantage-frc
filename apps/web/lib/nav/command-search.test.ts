@@ -293,6 +293,20 @@ describe("this wave's tools are findable by the words teams type", () => {
   }
 });
 
+describe("natural words for Code and pull request reviews (A6-17)", () => {
+  it("finds Bugbot and Code for 'pull request' ahead of Connectors and Part requests", () => {
+    const top = hrefs("pull request", 3);
+    expect(top[0]).toMatch(/tab=(bugbot|code)/);
+    expect(top.some((href) => /tab=bugbot/.test(href))).toBe(true);
+    expect(top.some((href) => /tab=code/.test(href))).toBe(true);
+    expect(hrefs("code review", 3).some((href) => /tab=bugbot/.test(href))).toBe(true);
+  });
+
+  it("puts Tasks first for 'task'", () => {
+    expect(hrefs("task", 1)[0]).toMatch(/tab=todos/);
+  });
+});
+
 describe("equivalent destinations across permission scopes",()=>{
  it("lists the same robot tool once for unrestricted users",()=>{
   const hits=searchCommands("fmea",commandCatalog(),{limit:100});

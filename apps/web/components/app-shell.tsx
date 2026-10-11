@@ -152,6 +152,8 @@ export default function AppShell() {
   const islandLongPressed = useRef(false);
   const focusSearchOnOpen = useRef(false);
   const navOpenerRef = useRef<HTMLElement | null>(null);
+  /** Focus goes back only after a real close, never on the first render. */
+  const navWasOpenRef = useRef(false);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
 
@@ -162,7 +164,10 @@ export default function AppShell() {
 
   const openNav = useCallback((options?: { focusSearch?: boolean }) => {
     if (!document.activeElement?.closest(".soft-drawer")) {
-      navOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      // Ctrl/⌘+K from the page itself has <body> as the "opener"; focusing that again on close
+      // dropped keyboard users at the top of the document. null sends focus to the search button.
+      const active = document.activeElement;
+      navOpenerRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
     }
     focusSearchOnOpen.current = Boolean(options?.focusSearch);
     setAccountMenuOpen(false);
@@ -267,9 +272,11 @@ export default function AppShell() {
   useEffect(() => {
     if (!navOpen) {
       const opener = navOpenerRef.current;
+      const wasOpen = navWasOpenRef.current;
       navOpenerRef.current = null;
-      if (opener) requestAnimationFrame(() => {
-        const visible = opener.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden";
+      navWasOpenRef.current = false;
+      if (wasOpen) requestAnimationFrame(() => {
+        const visible = Boolean(opener?.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden");
         const fallback = [...document.querySelectorAll<HTMLElement>(".app-topbar-search, .soft-menu-btn")]
           .find(control => control.getClientRects().length > 0 && getComputedStyle(control).visibility !== "hidden");
         (visible ? opener : fallback)?.focus();
@@ -280,6 +287,7 @@ export default function AppShell() {
       setResultCursor(0);
       return;
     }
+    navWasOpenRef.current = true;
     setRecentCommands(listRecentCommands());
     const wantsSearch = focusSearchOnOpen.current;
     focusSearchOnOpen.current = false;

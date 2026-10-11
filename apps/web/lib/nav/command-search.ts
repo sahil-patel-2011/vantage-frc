@@ -239,7 +239,7 @@ const KEYWORDS: Record<string, string[]> = {
     "training module", "teach the team", "upload a pdf lesson", "practice questions", "quiz",
   ],
   "build:sketch-to-brief": ["sketch", "napkin", "idea to brief", "concept"],
-  "build:code": ["code", "programming", "software", "java", "python", "wpilib", "robot code"],
+  "build:code": ["code", "programming", "software", "java", "python", "wpilib", "robot code", "pull request", "commits", "repository", "repo"],
   // The loudest blocker in the community research, so it carries the panic words a
   // student actually types at 11pm: the symptom, not the name of the tool.
   "build:troubleshoot": [
@@ -249,7 +249,11 @@ const KEYWORDS: Record<string, string[]> = {
     "radio", "brownout", "browning out", "can device not found", "blink code", "status light",
     "fix it", "broken robot", "not working",
   ],
-  "build:bugbot": ["bugbot", "bugs", "review code", "static analysis", "github", "lint"],
+  // "pull request" found Connectors and Part requests (on "request"), never the tool that reviews them.
+  "build:bugbot": [
+    "bugbot", "bugs", "review code", "static analysis", "github", "lint",
+    "pull request", "pull requests", "pr", "prs", "pr review", "review my pr", "code review", "ai review",
+  ],
   "build:team-resources": [
     "6925", "team 6925", "limelight", "wpilib", "pathplanner", "github student pack",
     "coding lessons", "paced coding", "vision camera",
