@@ -104,15 +104,19 @@ describe("packKeepingOrder", () => {
 });
 
 describe("hiddenOnHome", () => {
-  it("does not tuck away selected cards when their data is empty", () => {
+  it("names the quiet cards the normal view leaves out, and why", () => {
     const layout = [card("n", "next_match", 0, 0, 12, 4), card("h", "hours_month", 0, 4), card("c", "onboarding_checklist", 4, 4)];
-    const hidden = hiddenOnHome(layout, {
-      shell: "ready",
-      widgets: { next_match: { status: "empty" }, hours_month: { status: "empty" }, onboarding_checklist: { status: "live" } },
-    });
-    // Next match always stays; the empty hours card and the finished setup card do not.
-    expect(hidden.has("n")).toBe(false);
-    expect(hidden.size).toBe(0);
+    const widgets = { next_match: { status: "empty" }, hours_month: { status: "empty" }, onboarding_checklist: { status: "live" } };
+    const hidden = hiddenOnHome(layout, { shell: "ready", widgets });
+    // Empty cards step aside on Home; the finished setup card is hidden because the team is set up.
+    expect(hidden).toEqual(new Map([["n", "empty"], ["h", "empty"], ["c", "setup_done"]]));
+    // Nothing leaves the saved board: Show quiet widgets puts every card back where it was.
+    expect(homeViewLayout(layout, { editing: false, shell: "ready", widgets, showQuietWidgets: true })).toEqual(layout);
+  });
+
+  it("calls a card still waiting for setup quiet, not set up", () => {
+    const layout = [card("n", "next_match", 0, 0, 12, 4)];
+    expect(hiddenOnHome(layout, { shell: "ready", widgets: { next_match: { status: "setup_required" } } }).get("n")).toBe("empty");
   });
 
   it("hides nothing that has data", () => {
@@ -126,7 +130,7 @@ describe("Always show", () => {
   const layout = [card("h", "hours_month", 0, 0), card("c", "onboarding_checklist", 4, 0, 6, 3)];
 
   it("keeps an empty card and a finished setup card on Home", () => {
-    expect(hiddenOnHome(layout, { shell: "ready", widgets }).size).toBe(0);
+    expect(hiddenOnHome(layout, { shell: "ready", widgets }).size).toBe(2);
     const always = setAlwaysShow(setAlwaysShow(layout, "h", true), "c", true);
     expect(hiddenOnHome(always, { shell: "ready", widgets }).size).toBe(0);
     expect(homeViewLayout(always, { editing: false, shell: "ready", widgets }).map((item) => item.i).sort()).toEqual(["c", "h"]);
