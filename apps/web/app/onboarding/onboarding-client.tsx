@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { isAccessRole, roleHint, roleLabel } from "@vantage/core/role-words";
 import { VantageLogo } from "../../components/brand";
 import {
   buildOnboardingStepMeta,
@@ -607,6 +608,16 @@ export default function OnboardingClient() {
               // The stepper already counts the steps; the heading said it again.
               title: `Set up ${teamName ?? "your team"}.`,
               sub: "Tell us who you are, then Home walks you through inviting your team.",
+            }
+          : onTeamAlready && state?.accessStatus === "invited"
+          ? {
+              // Invited, not joined yet: finishing joins them. It said "You're on <team>" before
+              // they had joined and never said with what access (QA A3-28).
+              eyebrow: "YOU'RE INVITED",
+              title: `Join ${teamName ?? "your team"}.`,
+              sub: isAccessRole(state.workspaceRole)
+                ? `Tell us who you are. When you finish, you join as ${roleLabel(state.workspaceRole)}: ${roleHint(state.workspaceRole).charAt(0).toLowerCase()}${roleHint(state.workspaceRole).slice(1)}`
+                : "Tell us who you are. When you finish, you join the team.",
             }
           : onTeamAlready
           ? {
