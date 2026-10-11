@@ -1216,6 +1216,15 @@ export const HELP_ARTICLES: HelpArticle[] = [
           "Card and bank numbers are stripped from finance writes. Link a receipt URL instead of pasting account details.",
         ],
       },
+      {
+        heading: "Who can manage money",
+        body: [
+          "The team owner always manages money, and chooses anyone else who does: open Team admin, pick a person, then Access → Money → Manage money. Admins don't get it automatically.",
+          "People who manage money set budgets and categories, record spending, sponsor money and fundraiser proceeds, approve purchase and part requests, pay reimbursements, and link grant spend.",
+          "Everyone else can see the team's money and still ask: submit a purchase or part request, or file their own reimbursement. View-only people can look but not change anything — the owner switches them to Team member first if they should manage money.",
+          "Team admin and the Money tab both show who manages money right now.",
+        ],
+      },
     ],
   },
   {
@@ -1247,7 +1256,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "The treasurer queue",
         body: [
-          "Only owners and admins see Approve, Deny, and Mark paid. A denied claim shows the note so the filer can fix and resubmit.",
+          "Only the people who manage money — the team owner and the people they chose — see Approve, Deny, and Mark paid. A denied claim shows the note so the filer can fix and resubmit.",
           "Statuses read plainly: Waiting on treasurer → Approved — not paid yet → Paid.",
         ],
       },
