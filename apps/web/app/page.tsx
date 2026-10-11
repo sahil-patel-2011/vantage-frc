@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PUBLIC_SIGNUP_DATE_LABEL } from "@vantage/core/public-signup";
 import { WaitlistSection } from "../components/marketing/waitlist-section";
 import {
   MarketingHeroActions,
@@ -17,7 +18,7 @@ export const revalidate = 86_400;
 export const metadata: Metadata = marketingPageMetadata({
   title: "Vantage — your FRC team, connected",
   description:
-    "An FRC team workspace for scouting, strategy, team coordination, robot development and business. Free to use, with optional personal AI connections. Team signup planned for December 1, 2026; contact us for early access.",
+    `An FRC team workspace for scouting, strategy, team coordination, robot development and business. Free to use, with optional personal AI connections. Teams are set up from ${PUBLIC_SIGNUP_DATE_LABEL}; contact us for early access.`,
   path: "/",
 });
 

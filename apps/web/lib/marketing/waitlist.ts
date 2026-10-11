@@ -33,7 +33,7 @@ export const waitlistSchema = z.object({
     context.addIssue({
       code: "custom",
       path: ["smsConsent"],
-      message: "SMS consent is required when a phone number is provided",
+      message: "Tick the box to get launch texts, or clear the phone number.",
     });
   }
   if (!value.phone && value.smsConsent) {
@@ -91,16 +91,28 @@ function matchesQuery(entry: WaitlistEntry, q: string) {
   return entry.email.includes(needle) || String(entry.teamNumber).includes(needle);
 }
 
+/**
+ * The public form cannot tell who is typing an address, so the first answers for an address win.
+ * A later submission (anyone's) only notes the renewed interest: it used to replace the team
+ * number, the phone and both consent times, so a stranger could erase a mentor's phone or record
+ * SMS consent for a number next to someone else's email (QA A1-07). The reply is the same either
+ * way, so the form never reveals that an address is on the list; a person who needs a change
+ * emails us (the success panel says so).
+ */
 export class MemoryWaitlistStore implements WaitlistStore {
   async upsert(input: WaitlistInput) {
     const key = input.email.toLowerCase();
     const existing = localRows.get(key);
     const now = new Date();
+    if (existing) {
+      existing.updatedAt = now;
+      return;
+    }
     localRows.set(key, {
       ...input,
-      launchInvitedAt: existing?.launchInvitedAt ?? null,
-      convertedAt: existing?.convertedAt ?? null,
-      createdAt: existing?.createdAt ?? now,
+      launchInvitedAt: null,
+      convertedAt: null,
+      createdAt: now,
       updatedAt: now,
     });
   }
@@ -232,6 +244,7 @@ export class NeonWaitlistStore implements WaitlistStore {
     } as unknown as ReturnType<typeof createSqlPool>;
   }
 
+  /** First answers win; see MemoryWaitlistStore.upsert. */
   async upsert(input: WaitlistInput) {
     const now = new Date();
     await this.pool().query(
@@ -241,12 +254,6 @@ export class NeonWaitlistStore implements WaitlistStore {
       VALUES
         ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (email_normalized) DO UPDATE SET
-        team_number = EXCLUDED.team_number,
-        phone_e164 = EXCLUDED.phone_e164,
-        email_consent_at = EXCLUDED.email_consent_at,
-        sms_consent_at = EXCLUDED.sms_consent_at,
-        consent_disclosure_version = EXCLUDED.consent_disclosure_version,
-        source = EXCLUDED.source,
         updated_at = now()`,
       [
         input.email,

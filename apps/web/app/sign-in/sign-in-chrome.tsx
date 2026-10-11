@@ -14,6 +14,7 @@ import {
 import type { InvitePreview } from "../../lib/invite";
 import { inviteBannerBody } from "./sign-in-model";
 import { EARLY_ACCESS_HREF } from "../../components/marketing/launch-availability";
+import { PUBLIC_SIGNUP_DATE_LABEL } from "@vantage/core/public-signup";
 
 export function SignInCard({
   titleId,
@@ -59,7 +60,7 @@ export function AccessFooter({ publicSignup = false }: { publicSignup?: boolean 
   if (publicSignup) return <p className="signin-waitlist">After email verification, you can create your team or join through an invitation or approved request.</p>;
   return (
     <p className="signin-waitlist">
-      <span>Team signup is planned for December 1, 2026. Until then, use your invitation or <a href={EARLY_ACCESS_HREF}>contact us for early access</a>.</span>
+      <span>Teams are set up from {PUBLIC_SIGNUP_DATE_LABEL}. Until then, use your invitation or <a href={EARLY_ACCESS_HREF}>contact us for early access</a>.</span>
       <a className="signin-waitlist-btn" href={waitlistHref}>
         Join the waitlist
       </a>
