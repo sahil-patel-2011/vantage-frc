@@ -1,6 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { ADMIN_FEEDBACK_NEW_EVENT, newFeedbackBadge } from "../../lib/feedback/admin-feedback";
+import "./admin-feedback-badge.css";
 
 /**
  * Platform admin navigation.
@@ -31,6 +34,8 @@ const GROUPS = [
     links: [
       { href: "/admin/analytics", label: "Analytics" },
       { href: "/admin/waitlist", label: "Waitlist" },
+      // People telling us things, next to the waitlist: both are inboxes someone has to read.
+      { href: "/admin/feedback", label: "Feedback" },
       { href: "/admin/audit", label: "Audit log" },
     ],
   },
@@ -55,6 +60,8 @@ const GROUPS = [
   },
 ] as const;
 
+const FEEDBACK_HREF = "/admin/feedback";
+
 /** `/admin` is only Teams; every other entry owns its own subtree. */
 function linkIsActive(pathname: string, href: string): boolean {
   return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
@@ -71,9 +78,39 @@ export function activeAdminGroup(pathname: string) {
   );
 }
 
-export function AdminSubnav() {
+/** A quiet count after a label, with a spoken form so a screen reader hears "3 new". */
+function NewCount({ label }: { label: string }) {
+  if (!label) return null;
+  return (
+    <span className="admin-new-count" aria-label={`${label} new`}>
+      {label}
+    </span>
+  );
+}
+
+/**
+ * `newFeedback` is what the layout counted on the server; the Feedback page announces the
+ * number again whenever the operator changes a status, so the tabs never show a stale one.
+ */
+export function AdminSubnav({ newFeedback = null }: { newFeedback?: number | null }) {
   const pathname = usePathname();
   const active = activeAdminGroup(pathname);
+  const [feedbackNew, setFeedbackNew] = useState<number | null>(newFeedback);
+
+  useEffect(() => {
+    setFeedbackNew(newFeedback);
+  }, [newFeedback]);
+
+  useEffect(() => {
+    const onCount = (event: Event) => {
+      const count = (event as CustomEvent<{ count?: number }>).detail?.count;
+      if (typeof count === "number") setFeedbackNew(count);
+    };
+    window.addEventListener(ADMIN_FEEDBACK_NEW_EVENT, onCount);
+    return () => window.removeEventListener(ADMIN_FEEDBACK_NEW_EVENT, onCount);
+  }, []);
+
+  const badge = newFeedbackBadge(feedbackNew);
 
   return (
     <div className="admin-nav">
@@ -90,6 +127,8 @@ export function AdminSubnav() {
               aria-current={isOpen ? "true" : undefined}
             >
               {group.label}
+              {/* New feedback is waiting inside this tab: say so from any other tab. */}
+              {!isOpen && group.links.some((link) => link.href === FEEDBACK_HREF) ? <NewCount label={badge} /> : null}
             </a>
           );
         })}
@@ -105,6 +144,7 @@ export function AdminSubnav() {
               aria-current={isActive ? "page" : undefined}
             >
               {link.label}
+              {link.href === FEEDBACK_HREF ? <NewCount label={badge} /> : null}
             </a>
           );
         })}

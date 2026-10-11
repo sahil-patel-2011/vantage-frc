@@ -1,0 +1,16 @@
+/* The "3 new" count beside Feedback in the admin tabs. A quiet pill, not an alarm: the number
+   is the information, the accent fill is the second channel so it is not colour alone. */
+.admin-new-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
