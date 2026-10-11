@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { withOrgHref } from "../lib/nav/product-nav";
-import { pendingCounts, syncMediaOutbox, syncOutbox as syncScoutOutbox } from "../lib/scout-offline";
+import { pendingCounts, SCOUT_OUTBOX_CHANGED_EVENT, syncMediaOutbox, syncOutbox as syncScoutOutbox } from "../lib/scout-offline";
 import { listOutbox, syncOutbox as syncProductOutbox } from "../lib/offline/outbox";
 
 type ShellOutboxStatusProps = {
@@ -42,6 +42,28 @@ export function ShellOutboxStatus({ orgId, scoutPath = "/scouting" }: ShellOutbo
       setProduct(0);
     }
   }, [orgId]);
+
+  // A save or a send on this page: count again now, not at the next 12-second check, and say
+  // when reports went out, so a scout who saved offline and closed the page can tell "sent"
+  // from "lost" when it drains later.
+  const [sentNote, setSentNote] = useState<string | null>(null);
+  useEffect(() => {
+    let clear: number | undefined;
+    const onChanged = (event: Event) => {
+      refresh();
+      const sent = Number((event as CustomEvent<{ sent?: number }>).detail?.sent ?? 0);
+      if (sent > 0) {
+        setSentNote(`${sent} ${sent === 1 ? "report" : "reports"} sent to your team`);
+        window.clearTimeout(clear);
+        clear = window.setTimeout(() => setSentNote(null), 8_000);
+      }
+    };
+    window.addEventListener(SCOUT_OUTBOX_CHANGED_EVENT, onChanged);
+    return () => {
+      window.removeEventListener(SCOUT_OUTBOX_CHANGED_EVENT, onChanged);
+      window.clearTimeout(clear);
+    };
+  }, [refresh]);
 
   useEffect(() => {
     const updateOnline = () => setOnline(navigator.onLine);
@@ -103,7 +125,13 @@ export function ShellOutboxStatus({ orgId, scoutPath = "/scouting" }: ShellOutbo
   }, [orgId, refresh]);
 
   const pending = entries + media + product;
-  if (pending <= 0 && !lastError) return null;
+  if (pending <= 0 && !lastError) {
+    return sentNote ? (
+      <div className="soft-outbox-status" role="status" aria-live="polite">
+        <span className="soft-outbox-pill">{sentNote}</span>
+      </div>
+    ) : null;
+  }
 
   const offlineHref = withOrgHref("/offline", orgId ?? null);
   const scoutHref = withOrgHref(scoutPath, orgId ?? null);
@@ -113,14 +141,21 @@ export function ShellOutboxStatus({ orgId, scoutPath = "/scouting" }: ShellOutbo
     setSyncing(true);
     setLastError(null);
     try {
-      await syncScoutOutbox(orgId, {
+      const scout = await syncScoutOutbox(orgId, {
         onRetry: (n, delayMs) => {
           setLastError(`Retry ${n} in ${Math.round(delayMs / 1000)}s — entries stay queued`);
         },
       });
       await syncMediaOutbox(orgId);
       await syncProductOutbox({ orgId });
-      setLastError(null);
+      // "Finished" is not "sent": say why scouting entries are still here.
+      setLastError(
+        scout.failure === "signed-out"
+          ? "You are signed out. Sign in again to send what is waiting."
+          : scout.failure
+            ? "Your team’s server didn’t answer. Entries stay on this device."
+            : null,
+      );
     } catch (error) {
       setLastError(error instanceof Error ? error.message : "Sync paused — outbox kept");
     } finally {

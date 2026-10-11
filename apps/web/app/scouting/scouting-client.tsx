@@ -6,7 +6,7 @@ import { scoutingQualityHref, type QualityQuery } from "../../lib/scouting/quali
 import { qualityFieldsForSchema } from "../../lib/scouting/quality-evidence";
 import type { ScoutSchema, SyncEntry } from "@vantage/scouting";
 import { applyFormResetBehavior, recordScoutAction, undoScoutAction, validatePayload } from "@vantage/scouting";
-import { answersToSave } from "../../lib/scouting/entry-answers";
+import { answersToSave, hasObservation } from "../../lib/scouting/entry-answers";
 import { FreeScoutView } from "./free-scout-view";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { lintSchemaBudget, type FieldTrustSummary } from "@vantage/scouting/trust";
@@ -255,7 +255,13 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
         // A retry notice from earlier in this sync is no longer true.
         setMessage((current) => (current.startsWith("Couldn't reach the team yet") ? "" : current));
       }
-      setSyncState("idle");
+      // A sync that "finished" can still have left entries on this phone: say why.
+      if (entries.failure === "signed-out") {
+        setMessage("You are signed out, so nothing more was sent. Sign in again; your entries stay on this phone until then.");
+      } else if (entries.failure) {
+        setMessage("Couldn't reach the team yet, so some entries were not sent. They stay on this phone and send themselves later.");
+      }
+      setSyncState(entries.failure ? "degraded" : "idle");
       await refreshCounts();
       if (entries.count > 0) void refreshLive();
     } catch (error) {
@@ -605,6 +611,11 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     const answers = answersToSave(schema.definition.fields, payload);
     // The same checks the team's server runs, before anything is queued: an entry it would refuse
     // used to be saved here, then set aside with "Entry rejected" once it reached the team.
+    if (!hasObservation(answers)) {
+      setValidationIssues([]);
+      setMessage("Not saved yet. Nothing is answered, so it would count as scouted with no data. Answer at least one question.");
+      return;
+    }
     const problems = validatePayload(schema.definition, answers);
     setValidationIssues(problems);
     if (problems.length) {

@@ -17,6 +17,7 @@ import {
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 import {
   MISSING_REFERENCE_REASON,
+  entryRefusal,
   isMissingReferenceError,
   isTransientDbError,
   resolveSyncTarget,
@@ -108,6 +109,8 @@ export async function POST(request: Request) {
           const repository = new ScoutingRepository(client);
           const results = [];
           for (const entry of body.entries!) {
+            const refusal = await entryRefusal(client, entry);
+            if (refusal) throw new Error(refusal);
             const target = await resolveSyncTarget(client, { orgId: body.orgId!, userId: session.user.id, entry });
             if (target.kind === "refuse") throw new Error(target.reason);
             const ack = await repository.syncEntry(body.orgId!, session.user.id, target.entry);
@@ -133,6 +136,10 @@ export async function POST(request: Request) {
         // One report per scout per robot, and never across robots (lib/scouting/sync-guards.ts).
         // The acknowledgement always carries the id the phone sent, so its outbox row clears.
         const fileOne = async (entry: SyncEntry): Promise<SyncAcknowledgement | SyncRejection> => {
+          // Blank reports and a qualification robot not in that match are refused with a
+          // sentence the scout can act on (lib/scouting/sync-guards.ts).
+          const refusal = await entryRefusal(client, entry);
+          if (refusal) return { clientId: entry.clientId, reason: refusal };
           const target = await resolveSyncTarget(client, { orgId: body.orgId!, userId: session.user.id, entry });
           if (target.kind === "refuse") return { clientId: entry.clientId, reason: target.reason };
           const ack = await repository.syncEntry(body.orgId!, session.user.id, target.entry);
