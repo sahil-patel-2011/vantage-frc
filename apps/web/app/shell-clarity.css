@@ -33,6 +33,16 @@ body.has-app-shell .soft-island a[data-pending="true"]::after {
   to { opacity: 1; }
 }
 
+/* Top bar title over its crumb (pages with a back button): the copy column clipped vertically, so
+   the small caption's top was cut at the bar's edge (A5-23). Clip sideways only. */
+body.has-app-shell .soft-page-head-copy {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+body.has-app-shell .soft-page-head-copy > :is(.soft-topbar-title, .soft-org-crumb) {
+  line-height: 1.3;
+}
+
 /* Command search's "no match" line names the keyboard shortcut only where there is a keyboard. */
 @media (pointer: coarse) {
   body.has-app-shell .command-empty-keys { display: none; }
