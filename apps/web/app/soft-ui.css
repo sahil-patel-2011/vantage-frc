@@ -899,9 +899,10 @@ body.has-app-shell .dash-widget.is-empty{box-shadow:none}
 /* A label around a checkbox or radio is a row, not a stack: as a one-column grid the box
    stretched to the label's width (a 95px checkbox) with its text underneath. Same specificity
    as the rule above, so a sheet that lays its toggle out on purpose still wins. */
-.soft-panel label:where(:has(> input[type="checkbox"], > input[type="radio"])){grid-template-columns:auto minmax(0,1fr);column-gap:8px;align-items:start}
-.soft-panel label > input:where([type="checkbox"], [type="radio"]){grid-column:1;grid-row:1;justify-self:start;margin:2px 0 0}
-.soft-panel label:where(:has(> input[type="checkbox"], > input[type="radio"])) > :where(:not(input[type="checkbox"], input[type="radio"])){grid-column:2}
+/* .choice-field-option is a whole-card radio whose real input is hidden over the card. */
+.soft-panel label:where(:not(.choice-field-option)):where(:has(> input[type="checkbox"], > input[type="radio"])){grid-template-columns:auto minmax(0,1fr);column-gap:8px;align-items:start}
+.soft-panel label:where(:not(.choice-field-option)) > input:where([type="checkbox"], [type="radio"]){grid-column:1;grid-row:1;justify-self:start;margin:2px 0 0}
+.soft-panel label:where(:not(.choice-field-option)):where(:has(> input[type="checkbox"], > input[type="radio"])) > :where(:not(input[type="checkbox"], input[type="radio"])){grid-column:2}
 /* Text fields only: on a checkbox or radio this padding drew a 95px-wide box. :where() keeps the old specificity. */
 .soft-panel input:where(:not([type="checkbox"], [type="radio"])){min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);font:500 14px var(--font-source-sans),ui-sans-serif;background:var(--surface);color:inherit}
 .soft-panel small{color:var(--muted);font-weight:500;font-size:12px}
