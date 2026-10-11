@@ -67,7 +67,20 @@ export type OnshapeApiCheck =
   /** A List configuration with enough rows; optionally a Variable whose value it configures. */
   | { kind: "onshape-configuration"; minOptions: number; configuresVariable?: string }
   /** The Part Studio rebuilds with no errors (in every row of its first List configuration, if asked). */
-  | { kind: "onshape-rebuild"; minFeatures: number; everyConfiguration?: boolean };
+  | { kind: "onshape-rebuild"; minFeatures: number; everyConfiguration?: boolean }
+  /**
+   * Measures the finished part against a drawing: its overall size (bounding box, any orientation),
+   * its volume (catches a wrong bore or missing holes) and its material. For practice parts.
+   */
+  | {
+      kind: "onshape-measure";
+      /** Overall size in inches, any order; each side within `tolerance` inches. */
+      size?: { inches: [number, number, number]; tolerance: number };
+      /** Volume in cubic inches within `tolerancePct` percent. */
+      volume?: { cubicInches: number; tolerancePct: number };
+      /** The material's name contains this text, e.g. "6061". */
+      material?: string;
+    };
 
 export type OnshapeApiKind = OnshapeApiCheck["kind"];
 
@@ -82,6 +95,7 @@ const API_KINDS: ReadonlySet<string> = new Set<OnshapeApiKind>([
   "onshape-drawing",
   "onshape-configuration",
   "onshape-rebuild",
+  "onshape-measure",
 ]);
 
 export function isOnshapeApiCheck(check: { kind: string }): check is OnshapeApiCheck {
@@ -569,6 +583,98 @@ export function checkMaterial(parts: PartRow[], massKg: number | null): CheckRes
   };
 }
 
+const M3_TO_IN3 = 61023.744094732;
+const M_TO_IN = 39.37007874;
+
+/** Total volume in cubic inches from a Part Studio mass-properties response. */
+export function readVolumeIn3(body: unknown): number | null {
+  const bodies = asRecord(asRecord(body)?.bodies);
+  if (!bodies) return null;
+  const volumeOf = (value: unknown) => {
+    const volume = asRecord(value)?.volume;
+    const first = Array.isArray(volume) ? volume[0] : volume;
+    return typeof first === "number" && Number.isFinite(first) ? first * M3_TO_IN3 : null;
+  };
+  if (bodies["-all-"]) return volumeOf(bodies["-all-"]);
+  const each = Object.values(bodies).map(volumeOf).filter((v): v is number => v != null);
+  return each.length ? each.reduce((a, b) => a + b, 0) : null;
+}
+
+/** The three sides of a Part Studio's bounding box in inches, longest first. */
+export function readBoxInches(body: unknown): [number, number, number] | null {
+  const box = asRecord(body);
+  if (!box) return null;
+  const read = (key: string) => (typeof box[key] === "number" && Number.isFinite(box[key]) ? (box[key] as number) : null);
+  const [lx, ly, lz, hx, hy, hz] = ["lowX", "lowY", "lowZ", "highX", "highY", "highZ"].map(read);
+  if ([lx, ly, lz, hx, hy, hz].some((v) => v == null)) return null;
+  const sides = [hx! - lx!, hy! - ly!, hz! - lz!].map((m) => Math.abs(m) * M_TO_IN).sort((a, b) => b - a);
+  return [sides[0]!, sides[1]!, sides[2]!];
+}
+
+const inches = (n: number) => `${Number(n.toFixed(3))} in`;
+
+/**
+ * A practice part measured against its drawing. Each line says what was measured and what it
+ * should be, so a miss tells the student which dimension to look at.
+ */
+export function checkMeasure(
+  check: Extract<OnshapeApiCheck, { kind: "onshape-measure" }>,
+  measured: { parts: PartRow[]; box: [number, number, number] | null; volumeIn3: number | null },
+): CheckResult {
+  const solids = measured.parts.filter((p) => p.solid && !p.flattened);
+  if (solids.length === 0) return { passed: false, message: "Not yet: this Part Studio has no solid part to measure." };
+  const evidence: string[] = [];
+  const misses: string[] = [];
+
+  if (check.material) {
+    const wanted = check.material.toLowerCase();
+    const bare = solids.find((p) => !p.material);
+    const wrong = solids.find((p) => p.material && !p.material.toLowerCase().includes(wanted));
+    evidence.push(`Material: ${[...new Set(solids.map((p) => p.material || "none"))].join(", ")} (wanted ${check.material})`);
+    if (bare) misses.push(`${quote(bare.name)} has no material — assign ${check.material}`);
+    else if (wrong) misses.push(`${quote(wrong.name)} is ${wrong.material}, not ${check.material}`);
+  }
+
+  if (check.size) {
+    const want = [...check.size.inches].sort((a, b) => b - a) as [number, number, number];
+    if (!measured.box) {
+      misses.push("Onshape didn't report the part's size — make sure it rebuilds with no errors");
+    } else {
+      const got = measured.box;
+      evidence.push(`Size: ${got.map(inches).join(" × ")} (drawing: ${want.map(inches).join(" × ")}, ± ${check.size.tolerance} in)`);
+      want.forEach((side, i) => {
+        if (Math.abs(got[i]! - side) > check.size!.tolerance) {
+          misses.push(`a side measures ${inches(got[i]!)} where the drawing says ${inches(side)}`);
+        }
+      });
+    }
+  }
+
+  if (check.volume) {
+    const target = check.volume.cubicInches;
+    if (measured.volumeIn3 == null) {
+      misses.push("Onshape didn't report a volume — give the part a material and make sure it has no errors");
+    } else {
+      const off = ((measured.volumeIn3 - target) / target) * 100;
+      evidence.push(
+        `Volume: ${measured.volumeIn3.toFixed(3)} in³ (drawing: ${target.toFixed(3)} in³ ± ${check.volume.tolerancePct}%, off by ${off >= 0 ? "+" : ""}${off.toFixed(2)}%)`,
+      );
+      if (Math.abs(off) > check.volume.tolerancePct) {
+        misses.push(
+          off > 0
+            ? `the part has ${off.toFixed(1)}% too much material — a hole is missing or too small`
+            : `the part has ${Math.abs(off).toFixed(1)}% too little material — a hole is too big or a cut went too far`,
+        );
+      }
+    }
+  }
+
+  if (misses.length) {
+    return { passed: false, message: `Not yet: ${misses.join("; ")}.`, evidence };
+  }
+  return { passed: true, message: "Checked: your part matches the drawing — size, material and volume.", evidence };
+}
+
 export function checkFlatPattern(features: FeatureNode[], parts: PartRow[]): CheckResult {
   const start = features.filter((f) => f.featureType === "sheetMetalStart" && !f.suppressed);
   if (start.length === 0) {
@@ -925,6 +1031,26 @@ async function runInner(http: OnshapeFetch, check: OnshapeApiCheck, url: string,
         mass = got.ok ? readMassKg(got.body) : null;
       }
       return withNote(checkMaterial(rows, mass), picked.value.note, picked.value.row.name);
+    }
+    case "onshape-measure": {
+      const picked = partStudio();
+      if (!picked.ok) return picked.result;
+      const studio = elementPath("partstudios", where, picked.value.row.id);
+      const parts = await getJson(http, elementPath("parts", where, picked.value.row.id));
+      if (!parts.ok) return onshapeTrouble(parts.status, "Part Studio");
+      const [box, mass] = await Promise.all([
+        check.size ? getJson(http, `${studio}/boundingboxes`) : Promise.resolve<Got>({ ok: false, status: -2 }),
+        check.volume ? getJson(http, `${studio}/massproperties`) : Promise.resolve<Got>({ ok: false, status: -2 }),
+      ]);
+      return withNote(
+        checkMeasure(check, {
+          parts: readParts(parts.body),
+          box: box.ok ? readBoxInches(box.body) : null,
+          volumeIn3: mass.ok ? readVolumeIn3(mass.body) : null,
+        }),
+        picked.value.note,
+        picked.value.row.name,
+      );
     }
     case "onshape-flat-pattern": {
       const picked = partStudio();

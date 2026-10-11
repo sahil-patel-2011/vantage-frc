@@ -19,7 +19,7 @@ const GROUPS = [
   {
     id: "team",
     title: "Team tracks",
-    intro: "Programming and shop weeks. Code steps read your build output or GitHub; shop steps are signed off by a lead.",
+    intro: "Programming and shop weeks. Code steps read your build output or GitHub; shop steps are signed off by an owner or admin on Team progress.",
     numbered: false,
     tracks: GUIDED_TRACKS.filter((track) => !track.id.startsWith("onshape-")),
   },
@@ -34,7 +34,12 @@ export default function GuidedTracksPage() {
           <h1>Checked step by step</h1>
           <p>
             One step at a time. After each one, Vantage checks your work: it reads your own Onshape document, the output
-            your build printed, or your pull request on GitHub. A step only counts once the check passes.
+            your build printed, or your pull request on GitHub. A step only counts once the check passes. Each Onshape
+            track ends with a practice part you build on your own, measured against its drawing.
+          </p>
+          <p className="guided-meta">
+            Owners and admins: <a href="/learn/guided/team">Team progress</a> shows every member&apos;s steps and the
+            sign-offs waiting for you.
           </p>
         </div>
       </header>

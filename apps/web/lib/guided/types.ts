@@ -5,7 +5,7 @@
  * an Onshape step reads the student's own Part Studio through the Onshape API, a code step reads
  * what they paste for the lines a working build prints, a GitHub step asks GitHub whether the pull
  * request or tag exists. Where software cannot tell (a mentor watched you use the band saw), the
- * step says a lead signs it off, and only a lead can.
+ * student asks and an owner or admin signs it off in Vantage (signoffs.ts, migration 0719).
  */
 
 import type { PasteVerifier, PrChangeRule } from "./checks-6925";
@@ -56,6 +56,15 @@ export type GuidedStep = {
   title: string;
   /** Why this step matters, one or two sentences. */
   why?: string;
+  /** When to reach for this tool on a real robot, and when another tool is the better choice. */
+  whenToUse?: string;
+  /** A short worked example from real FRC parts. */
+  example?: string;
+  /**
+   * The end-of-track practice: a part made from a short spec with no click-by-click help,
+   * checked the same way as the steps. Shown under "Practice on your own".
+   */
+  practice?: true;
   /** What to do, in order. */
   do: string[];
   /** How it is checked, in words the student reads before trying. */

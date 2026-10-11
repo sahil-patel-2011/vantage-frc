@@ -102,3 +102,44 @@ describe("parseGitHubUrl", () => {
     expect(parseGitHubUrl("https://github.com/a/b")).toBeNull();
   });
 });
+
+describe("lead sign-offs", () => {
+  it("never passes a sign-off step from the student's own button", async () => {
+    const { runGuidedCheck } = await import("./run-check");
+    const step = GUIDED_TRACKS.flatMap((t) => t.steps).find((s) => s.check.kind === "lead-signoff")!;
+    const result = await runGuidedCheck({} as never, { orgId: "o", userId: "u" }, step.check, { values: { confirmed: true } });
+    expect(result.passed).toBe(false);
+    expect(result.message).toMatch(/sign it off in Vantage/);
+  });
+
+  it("names a step from its lesson id, and ignores steps that no longer exist", async () => {
+    const { describeGuidedLesson } = await import("./signoffs");
+    const track = GUIDED_TRACKS[0]!;
+    const step = track.steps[1]!;
+    expect(describeGuidedLesson(guidedLessonId(track.id, step.id))).toEqual({
+      trackId: track.id,
+      stepId: step.id,
+      trackTitle: track.title,
+      stepTitle: step.title,
+    });
+    expect(describeGuidedLesson("guided:gone:step")).toBeNull();
+    expect(describeGuidedLesson("lesson-1")).toBeNull();
+  });
+
+  it("counts each finished step once per member and track, checked or signed off", async () => {
+    const { summarizeTeamProgress } = await import("./signoffs");
+    const track = GUIDED_TRACKS[0]!;
+    const [a, b] = [track.steps[1]!, track.steps[2]!];
+    const rows = [
+      { userId: "u2", displayName: "Zoe", lessonId: guidedLessonId(track.id, a.id), at: "2026-10-01" },
+      { userId: "u1", displayName: "Ana", lessonId: guidedLessonId(track.id, a.id), at: "2026-10-02" },
+      { userId: "u1", displayName: "Ana", lessonId: guidedLessonId(track.id, a.id), at: "2026-10-03" },
+      { userId: "u1", displayName: "Ana", lessonId: guidedLessonId(track.id, b.id), at: "2026-10-04" },
+      { userId: "u1", displayName: "Ana", lessonId: "guided:gone:step", at: "2026-10-05" },
+    ];
+    expect(summarizeTeamProgress(rows)).toEqual([
+      { userId: "u1", displayName: "Ana", tracks: { [track.id]: 2 }, lastActivityAt: "2026-10-04" },
+      { userId: "u2", displayName: "Zoe", tracks: { [track.id]: 1 }, lastActivityAt: "2026-10-01" },
+    ]);
+  });
+});

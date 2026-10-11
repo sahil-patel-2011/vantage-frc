@@ -11,6 +11,7 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // View only = read-only: request code calls is_org_viewer() (withRls, scouting sync).
   "0715_view_only_read_only.sql",
   "0716_github_pr_reviews.sql",
+  "0719_guided_signoffs.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */
