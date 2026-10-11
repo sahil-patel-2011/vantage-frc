@@ -120,6 +120,24 @@
 .dash-setup-progress li a{display:inline-flex;align-items:center;min-height:32px;color:var(--ink);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 45%,transparent);text-underline-offset:3px}
 .dash-setup-progress li a:hover{color:var(--accent)}
 @media (pointer:coarse){.dash-setup-progress li a{min-height:44px}}
+/* The next step is the button's job; the list marks it instead of linking it a second time. */
+.dash-setup-progress li[aria-current="step"]{font-weight:650}
+.dash-setup-progress li[aria-current="step"]>i{border-color:var(--accent);box-shadow:inset 0 0 0 3px var(--surface),inset 0 0 0 9px var(--accent)}
+
+/* ---- The setup checklist as its own card, while a match or task leads Home ---- */
+.dash-home>.dash-first-week.dash-team-setup{display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px 24px;margin:0;padding:18px 20px;border-radius:20px}
+.dash-team-setup-main{flex:1 1 260px;display:grid;justify-items:start;align-content:start;gap:4px;min-width:0}
+.dash-team-setup-main>span{color:var(--muted);font:600 12px/1.3 var(--font-source-sans),system-ui}
+.dash-team-setup-main>strong{color:var(--ink);font-size:17px;line-height:1.3}
+.dash-team-setup-main>small{color:var(--muted);font-size:13px;line-height:1.4}
+.dash-team-setup-main>.app-button{margin-top:10px;min-height:44px}
+.dash-team-setup .dash-setup-progress{flex:0 1 260px}
+.dash-team-setup .dash-setup-progress>span{display:block;color:var(--muted);font:600 13px/1.3 var(--font-source-sans),system-ui}
+/* The first-week card's two-column rows are for its tick boxes; these rows have a dot. */
+.dash-team-setup .dash-setup-progress li{display:flex;align-items:center;gap:8px}
+@media (max-width:640px){
+  .dash-team-setup .dash-setup-progress{flex-basis:100%}
+}
 
 /* Phone, not editing: one column, so cards stack in board order and grow to fit what they
    show. With fixed grid heights the Next match card clipped its own "Open" link. Edit mode
@@ -381,7 +399,8 @@ body.has-app-shell .dash-home .dash-widget .soft-empty-compact { padding: 10px 0
 .dash-widget-open svg { width: 15px; height: 15px; flex: none; color: var(--muted); }
 .dash-widget-open:hover { color: var(--accent); }
 .dash-widget-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-@media (pointer: coarse) { .dash-widget-open { min-height: 44px; } }
+/* A thumb gets the full 44px: the card-title link and the strip's travel link were 36 and 32. */
+@media (pointer: coarse) { .dash-widget-open, .dash-home .dash-role-strip-head > a { min-height: 44px; } }
 
 /* Phone cards use the same reading rhythm without desktop padding. */
 @media (max-width: 640px) {

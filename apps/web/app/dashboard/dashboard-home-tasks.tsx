@@ -69,7 +69,8 @@ export function DashboardHomeTasks({ orgId, role, payload }: {
     {canWrite ? <form className="dash-home-task-add" onSubmit={event => {
       event.preventDefault(); if (title.trim()) void save("create", { action: "create-todo", title: title.trim() });
     }}><input aria-label="New team task" placeholder="Add a team task…" maxLength={200} value={title} disabled={busy !== null} onChange={event => setTitle(event.target.value)} />
-      <Button type="submit" variant="primary" disabled={busy !== null || !title.trim()} aria-label="Add task"><span aria-hidden="true">＋</span></Button>
+      {/* Secondary: Home's one primary is the card at the top. */}
+      <Button type="submit" variant="secondary" disabled={busy !== null || !title.trim()} aria-label="Add task"><span aria-hidden="true">＋</span></Button>
     </form> : null}
     {error ? <p className="dash-home-task-feedback" role="alert">{error}</p> : null}
     <p className="dash-home-task-feedback" role="status">{busy ? "Saving…" : notice}</p>

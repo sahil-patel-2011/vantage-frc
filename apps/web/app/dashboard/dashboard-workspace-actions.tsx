@@ -6,16 +6,22 @@ import { useDashboardActions } from "./dashboard-quick-actions";
 import { sameHomeDestination, scoutingHomeAction } from "./dashboard-overview-model";
 
 /** Launch the existing tools; task creation stays in the saved board's action provider. */
-export function DashboardWorkspaceActions({ orgId, role, hasEvent, hasForms, primaryHref, hasTaskCard = false }: {
+export function DashboardWorkspaceActions({ orgId, role, hasEvent, hasForms, primaryHref, setupHrefs = [], hasTaskCard = false }: {
   orgId: string; role: string | null; hasEvent: boolean; hasForms: boolean;
   primaryHref?: string;
+  /** Where the open setup steps on Home already lead. */
+  setupHrefs?: readonly string[];
   hasTaskCard?: boolean;
 }) {
   const actions = useDashboardActions();
   const canCreate = Boolean(actions && role && role !== "viewer");
   const scouting = scoutingHomeAction({ orgId, role, hasEvent, hasForms });
-  const showTask = !hasTaskCard && (canCreate || !primaryHref || !sameHomeDestination(primaryHref, "/todos"));
-  const showScout = !primaryHref || !sameHomeDestination(primaryHref, scouting.href);
+  // A shortcut to somewhere Home already offers a way into is the same destination twice:
+  // "Set up scouting" sat beside the setup step "Set up your scouting form".
+  const covered = [primaryHref, ...setupHrefs].filter((href): href is string => Boolean(href));
+  const elsewhere = (href: string) => covered.some((taken) => sameHomeDestination(taken, href));
+  const showTask = !hasTaskCard && (canCreate || !elsewhere("/todos"));
+  const showScout = !elsewhere(scouting.href);
   if (!showTask && !showScout) return null;
   return (
     <nav className="dash-workspace-actions" aria-label="Quick actions" data-testid="dash-workspace-actions">

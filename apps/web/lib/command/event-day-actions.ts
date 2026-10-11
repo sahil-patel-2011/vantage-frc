@@ -99,7 +99,9 @@ export function eventDayNextActions(
   }
 
   if ((snap?.coverage.upcomingUnscouted ?? 0) > 0 || (snap?.scoutQueue.length ?? 0) > 0) {
-    const gaps = snap?.coverage.upcomingUnscouted ?? snap?.scoutQueue.length ?? 0;
+    // The queue lists every robot with a match or pit gap; "upcoming unscouted" only the match
+    // gaps, so a queue of pit visits read "Scout 0 coverage gaps" (0 is not missing to `??`).
+    const gaps = snap?.scoutQueue.length || snap?.coverage.upcomingUnscouted || 0;
     actions.push({
       id: "scout",
       label: gaps === 1 ? "Scout 1 coverage gap" : `Scout ${gaps} coverage gaps`,

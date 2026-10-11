@@ -9,6 +9,11 @@ import "./legal-update-banner.css";
  * "We updated the Terms and Privacy Policy", once, for someone who accepted an earlier version.
  * In the page, never over it, and it does not block anything: the two boxes and one button record
  * the new acceptance, the same two consents onboarding asks for.
+ *
+ * On a phone it is one line and a Review button until opened: the full sentence, its link and
+ * a wrapping button took a fifth of the first screen, and with the event bar under it most of
+ * it. Opening it shows the sentence, the short-version link and the two boxes, so the consent
+ * reads exactly as it does on a computer.
  */
 export function LegalUpdateBanner() {
   const [needed, setNeeded] = useState(false);
@@ -63,13 +68,23 @@ export function LegalUpdateBanner() {
   }
 
   return (
-    <section className="legal-update" role="region" aria-label="Updated Terms and Privacy Policy" data-testid="legal-update">
+    <section
+      className="legal-update"
+      role="region"
+      aria-label="Updated Terms and Privacy Policy"
+      data-testid="legal-update"
+      data-open={open ? "true" : "false"}
+    >
       <p>
-        <strong>We rewrote our Terms and Privacy Policy</strong> ({LEGAL_LAST_UPDATED}): plainer words, a short version at
-        the top, and exactly where AI requests go.{" "}
-        <a href="/privacy#summary" target="_blank" rel="noopener noreferrer">
-          Read the short version
-        </a>
+        {/* Phone, closed: this line alone. Everything after it is the full notice. */}
+        <strong className="legal-update-short">Terms and Privacy updated</strong>
+        <span className="legal-update-full">
+          <strong>We rewrote our Terms and Privacy Policy</strong> ({LEGAL_LAST_UPDATED}): plainer words, a short version
+          at the top, and exactly where AI requests go.{" "}
+          <a href="/privacy#summary" target="_blank" rel="noopener noreferrer">
+            Read the short version
+          </a>
+        </span>
       </p>
       {open ? (
         <div className="legal-update-form">
@@ -89,7 +104,8 @@ export function LegalUpdateBanner() {
         </div>
       ) : (
         <button type="button" className="app-button secondary" onClick={() => setOpen(true)}>
-          Review and accept
+          <span className="legal-update-full">Review and accept</span>
+          <span className="legal-update-short">Review</span>
         </button>
       )}
     </section>

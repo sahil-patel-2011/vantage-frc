@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "../../components/ui";
 import type { RoleOnboardingView, StartCheckView, StartTrackView } from "../../lib/role-onboarding/types";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { isMemberRole, pickFirstWeek } from "../../lib/role-onboarding/first-week-order";
@@ -145,6 +146,8 @@ function useJustSetUp(orgId: string, view: RoleOnboardingView | null): boolean {
 }
 
 export type SetupHero = {
+  /** The step the button performs; the progress list names it without linking it again. */
+  nextKey: string;
   title: string;
   detail: string;
   href: string;
@@ -179,6 +182,7 @@ export function setupHeroFrom(view: RoleOnboardingView | null): SetupHero | null
   if (!next) return null;
   const action = SETUP_STEP_ACTION[next.key];
   return {
+    nextKey: next.key,
     title: next.label,
     // The step's detail, without the bookkeeping sentence about when it ticks.
     detail: next.detail.replace(/\s*Ticks once[^.]*\.\s*$/i, "").trim(),
@@ -197,7 +201,8 @@ export function setupHeroFrom(view: RoleOnboardingView | null): SetupHero | null
 
 /**
  * The setup steps as a small progress list inside the hero. Steps still to do are links: they
- * looked like a list you could tap, and "Pick your event" did nothing when tapped.
+ * looked like a list you could tap, and "Pick your event" did nothing when tapped. The next step
+ * is the one the button beside the list performs, so it is named here, not linked a second time.
  */
 export function SetupProgress({ hero, orgId }: { hero: SetupHero; orgId?: string | null }) {
   return (
@@ -206,28 +211,52 @@ export function SetupProgress({ hero, orgId }: { hero: SetupHero; orgId?: string
         {hero.doneCount} of {hero.totalCount} done
       </span>
       <ol>
-        {hero.steps.map((step) => (
-          <li key={step.key} data-done={step.done ? "true" : "false"}>
-            <i aria-hidden="true">{step.done ? "✓" : ""}</i>
-            {step.done ? (
-              <span>
-                {step.label}
-                <span className="dash-live-region"> (done)</span>
-              </span>
-            ) : (
-              <a href={withOrgHref(step.href, orgId ?? null)}>{step.label}</a>
-            )}
-          </li>
-        ))}
+        {hero.steps.map((step) => {
+          const next = !step.done && step.key === hero.nextKey;
+          return (
+            <li key={step.key} data-done={step.done ? "true" : "false"} aria-current={next ? "step" : undefined}>
+              <i aria-hidden="true">{step.done ? "✓" : ""}</i>
+              {step.done || next ? (
+                <span>
+                  {step.label}
+                  <span className="dash-live-region">{step.done ? " (done)" : " (next)"}</span>
+                </span>
+              ) : (
+                <a href={withOrgHref(step.href, orgId ?? null)}>{step.label}</a>
+              )}
+            </li>
+          );
+        })}
       </ol>
     </div>
   );
 }
 
 /**
- * A member's first-week steps. While the team itself is still being set up,
- * the hero carries those steps, so this card steps aside rather than repeat
- * them beside it.
+ * The team's setup checklist while something more pressing leads Home (a match in fourteen
+ * minutes, a duty, open tasks). It waits below that, its button secondary so the screen keeps
+ * one primary — but it stays on Home until setup is done, as onboarding promised.
+ */
+export function TeamSetupCard({ hero, orgId }: { hero: SetupHero; orgId: string }) {
+  return (
+    <section className="dash-first-week dash-team-setup" aria-label="Set up your team" data-testid="dash-team-setup">
+      <div className="dash-team-setup-main">
+        <span>Set up your team</span>
+        <strong>{hero.title}</strong>
+        {hero.detail ? <small>{hero.detail}</small> : null}
+        <Button as="a" variant="secondary" href={withOrgHref(hero.href, orgId || null)} data-testid="dash-setup-cta">
+          {hero.cta}
+        </Button>
+      </div>
+      <SetupProgress hero={hero} orgId={orgId || null} />
+    </section>
+  );
+}
+
+/**
+ * A member's first-week steps. While the team itself is still being set up, its checklist is
+ * Home's one setup surface: the hero carries it when nothing more pressing is on (this card
+ * steps aside), and otherwise this card is it (`setupHere`).
  */
 export function FirstWeekCard({
   orgId,
@@ -236,6 +265,7 @@ export function FirstWeekCard({
   post,
   error,
   retry,
+  setupHere = false,
 }: {
   orgId: string;
   view: RoleOnboardingView | null;
@@ -243,6 +273,8 @@ export function FirstWeekCard({
   post: (payload: Record<string, unknown>, key: string) => Promise<void>;
   error?: string;
   retry?: () => void;
+  /** Home placed the unfinished team setup checklist here rather than in the hero. */
+  setupHere?: boolean;
 }) {
   const justSetUp = useJustSetUp(orgId, view);
   if (error) return <section className="dash-first-week" aria-label="Checklist needs attention">
@@ -250,7 +282,8 @@ export function FirstWeekCard({
     {retry ? <button type="button" className="dash-first-week-all" onClick={retry}>Reload checklist</button> : null}
   </section>;
   if (!view || view.status !== "live" || view.totalCount === 0) return null;
-  if (setupHeroFrom(view)) return null;
+  const setup = setupHeroFrom(view);
+  if (setup) return setupHere ? <TeamSetupCard hero={setup} orgId={orgId} /> : null;
   const left = view.totalCount - view.doneCount;
   const next = nextFirstWeekChecks(view);
   const setupNote = justSetUp ? (

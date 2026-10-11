@@ -7,6 +7,8 @@ export function sameHomeDestination(left: string, right: string): boolean {
   const destination = (href: string) => {
     const url = new URL(href, "https://vantage.invalid");
     if (url.pathname === "/scouting") return "scouting";
+    // The form builder lives at both addresses.
+    if (url.pathname === "/scouting/forms") return "forms";
     if (url.pathname === "/scout/teams") return "teams";
     if (url.pathname === "/todos") return "todos";
     if (url.pathname === "/competition") return url.searchParams.get("tab") ?? "scouting";
