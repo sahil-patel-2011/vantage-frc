@@ -455,8 +455,8 @@ function AssetList({
                 size="sm"
                 disabled={busy}
                 aria-label={`Delete ${asset.name}`}
-                onClick={() => {
-                  if (window.confirm(`Delete "${asset.name}" and its maintenance history?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${asset.name}” and its maintenance history?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-asset", assetId: asset.id });
                   }
                 }}

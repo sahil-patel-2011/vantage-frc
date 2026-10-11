@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { agendaItemKindLabel } from "../../lib/meeting-autopilot";
 import type { MeetingAutopilotView } from "../../lib/meeting-autopilot/compute-meeting-autopilot";
 import type { AgendaItem, CalendarMeeting, MeetingAgenda } from "../../lib/meeting-autopilot/types";
@@ -447,8 +447,8 @@ function MeetingCard({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete agenda for "${meeting.title}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete agenda for “${meeting.title}”?`, body: null, confirmLabel: "Delete agenda", tone: "destructive" })) {
                   mutate({ action: "delete-agenda", agendaId: agenda.id });
                 }
               }}
@@ -552,8 +552,8 @@ function ActionItemsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${item.title}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-action-item", actionItemId: item.id });
                   }
                 }}

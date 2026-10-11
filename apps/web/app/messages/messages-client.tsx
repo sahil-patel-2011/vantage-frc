@@ -33,6 +33,7 @@ import { isArchived, type Conversation, type LinkTarget, type Member, type Messa
 import { MessagesReadyView } from "./messages-ready-view";
 import "./youth-protection.css";
 import "./channels.css";
+import { askConfirm } from "../../components/ui";
 
 function waitUntilVisible(signal: AbortSignal) {
   if (!document.hidden) return Promise.resolve();
@@ -682,7 +683,7 @@ export default function MessagesClient({
   }
 
   async function softDelete(messageId: string) {
-    if (!confirm("Delete this message for everyone in the conversation?")) return;
+    if (!(await askConfirm({ title: "Delete this message for everyone in the conversation?", body: null, confirmLabel: "Delete message", tone: "destructive" }))) return;
     const response = await fetch("/api/messages", {
       method: "POST",
       headers: { "content-type": "application/json" },

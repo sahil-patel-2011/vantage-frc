@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "../../../components/ui";
+import { Button, askConfirm } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { ViewOnlyNote } from "../../../components/view-only-note";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
@@ -520,14 +520,14 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             `edit:${event.id}`,
           );
         }}
-        onDelete={() => {
+        onDelete={async () => {
           // A repeating meeting needs the this / following / all choice before
           // anything is removed; a one-off keeps the plain confirm.
           if (repeats) {
             setScopeEventId(event.id);
             return;
           }
-          if (confirm(`Remove “${event.title}” from the calendar?`)) {
+          if (await askConfirm({ title: `Remove “${event.title}” from the calendar?`, body: null, confirmLabel: "Remove event", tone: "destructive" })) {
             void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
           }
         }}

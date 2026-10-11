@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, PageHeader } from "../../components/ui";
+import { Button, EmptyState, PageHeader, askConfirm } from "../../components/ui";
 import { incidentCategoryLabel, incidentSeverityLabel, incidentStatusLabel } from "../../lib/incidents";
 import {
   INCIDENT_CATEGORIES,
@@ -582,8 +582,8 @@ function IncidentCard({ evaluation, busy, mutate }: { evaluation: IncidentEvalua
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${incident.title}"?`)) mutate({ action: "delete-incident", incidentId: incident.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${incident.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-incident", incidentId: incident.id });
           }}
           style={{ marginLeft: "auto" }}
         >

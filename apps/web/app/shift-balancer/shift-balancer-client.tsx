@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DEFAULT_STATIONS, describeUnfilled, planMatchLabel, planToCsv, tabletSheetsByScout } from "../../lib/shift-balancer";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
@@ -287,8 +287,8 @@ function RosterPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Remove "${scout.name}" from the roster?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Remove “${scout.name}” from the roster?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                       mutate({ action: "remove-scout", scoutId: scout.id });
                     }
                   }}
@@ -610,8 +610,8 @@ function PlansPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete plan "${plan.label}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete plan “${plan.label}”?`, body: null, confirmLabel: "Delete plan", tone: "destructive" })) {
                     mutate({ action: "delete-plan", planId: plan.id });
                   }
                 }}

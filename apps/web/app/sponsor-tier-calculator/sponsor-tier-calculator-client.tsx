@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -435,8 +435,8 @@ function TierDefinitionsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete tier "${tier.name}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete tier “${tier.name}”?`, body: null, confirmLabel: "Delete tier", tone: "destructive" })) {
                     mutate({ action: "delete-tier", tierId: tier.id });
                   }
                 }}

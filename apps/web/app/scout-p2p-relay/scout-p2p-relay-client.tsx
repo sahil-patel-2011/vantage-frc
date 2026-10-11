@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -427,8 +427,8 @@ function Sessions({
                     type="button"
                     className="text-button"
                     disabled={busy}
-                    onClick={() => {
-                      if (window.confirm(`Delete relay session "${scoutEventLabel(sess) ?? "Your event"}"?`)) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete relay session “${scoutEventLabel(sess) ?? "Your event"}”?`, body: null, confirmLabel: "Delete relay session", tone: "destructive" })) {
                         mutate({ action: "delete-session", sessionId: sess.id });
                       }
                     }}

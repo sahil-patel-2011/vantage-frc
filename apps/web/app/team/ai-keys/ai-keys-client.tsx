@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AiAgentStatus } from "../../../components/ai-agent-status";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { PageHeader, SoftBlockSkeleton } from "../../../components/ui";
+import { PageHeader, SoftBlockSkeleton, askConfirm } from "../../../components/ui";
 import { SponsoredPromoBanner } from "../../../components/sponsored-promo-banner";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
@@ -334,7 +334,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
 
   async function remove(provider: ByokProvider) {
     if (!orgId) return;
-    if (!confirm(`Remove the ${BYOK_PROVIDER_META[provider].label} API key from this team?`)) return;
+    if (!(await askConfirm({ title: `Remove the ${BYOK_PROVIDER_META[provider].label} API key from this team?`, body: null, confirmLabel: "Remove", tone: "destructive" }))) return;
     setBusyProvider(provider);
     setMessage("");
     setMessageIsError(false);
@@ -425,7 +425,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
 
   async function removeLocal() {
     if (!orgId) return;
-    if (!confirm("Remove the local OpenAI-compatible connector?")) return;
+    if (!(await askConfirm({ title: "Remove the local OpenAI-compatible connector?", body: null, confirmLabel: "Remove connector", tone: "destructive" }))) return;
     setBusyLocal(true);
     setMessage("");
     setMessageIsError(false);

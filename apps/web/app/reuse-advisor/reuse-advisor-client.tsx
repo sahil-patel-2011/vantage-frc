@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -445,8 +445,8 @@ function AssessmentsPanel({
                   className="text-button"
                   disabled={busy}
                   aria-label={`Delete ${assessment.subsystemName}`}
-                  onClick={() => {
-                    if (window.confirm(`Delete assessment for "${assessment.subsystemName}"?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete assessment for “${assessment.subsystemName}”?`, body: null, confirmLabel: "Delete assessment", tone: "destructive" })) {
                       mutate({ action: "delete-assessment", assessmentId: assessment.id });
                     }
                   }}

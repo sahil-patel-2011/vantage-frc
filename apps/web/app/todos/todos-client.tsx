@@ -6,7 +6,7 @@ import { TeamHubRelated } from "../../components/team-hub-related";
 import { TeamOpsNav } from "../../components/team-ops-nav";
 import { ViewOnlyNote } from "../../components/view-only-note";
 import { useViewOnly } from "../../lib/nav/use-view-only";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, Button, askConfirm } from "../../components/ui";
 import { useOnline } from "../../lib/offline";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -690,7 +690,7 @@ function TodoCard({
           </FormGrid>
           <div className="todos-card-actions">
             <a className="app-muted" href={deepLink}>Link to task</a>
-            <Button variant="secondary" type="button" disabled={busy} onClick={() => { if (window.confirm(`Delete “${todo.title}”?`)) { mutate({ action: "delete-todo", todoId: todo.id }); } }}>
+            <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: `Delete “${todo.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) { mutate({ action: "delete-todo", todoId: todo.id }); } }}>
               Delete
             </Button>
           </div>

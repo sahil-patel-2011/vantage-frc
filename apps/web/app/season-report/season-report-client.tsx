@@ -730,8 +730,8 @@ function RecentEntries({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.title}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-entry", entryId: item.id });
                 }
               }}

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { OfflineBanner } from "../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { DECISION_SEARCH_SOURCE_KINDS, decisionSearchSourceLabel } from "../../lib/decision-search";
 import type { DecisionSearchView } from "../../lib/decision-search/compute-decision-search";
 import {
@@ -659,8 +659,8 @@ function DocumentsList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Remove "${doc.title}" from the search index?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Remove “${doc.title}” from the search index?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                   mutate({ action: "delete-document", documentId: doc.id });
                 }
               }}

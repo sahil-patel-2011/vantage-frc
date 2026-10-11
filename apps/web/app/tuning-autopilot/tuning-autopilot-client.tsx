@@ -572,8 +572,8 @@ function SessionSwitcher({
                 className="text-button"
                 disabled={busy}
                 aria-label={`Delete session ${selected.session.subsystem}`}
-                onClick={() => {
-                  if (window.confirm(`Delete session "${selected.session.subsystem}" and all its iterations?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete session “${selected.session.subsystem}” and all its iterations?`, body: null, confirmLabel: "Delete session", tone: "destructive" })) {
                     mutate({ action: "delete-session", sessionId: selected.session.id });
                   }
                 }}

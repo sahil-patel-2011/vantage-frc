@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AWARD_LABEL, IMPACT_ESSAY_AWARDS, awardLabel } from "../../lib/impact-essay";
 import type { ImpactEssayView } from "../../lib/impact-essay/compute-impact-essay";
@@ -554,8 +554,8 @@ function DraftsList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm("Delete this draft?")) {
+                onClick={async () => {
+                  if (await askConfirm({ title: "Delete this draft?", body: null, confirmLabel: "Delete draft", tone: "destructive" })) {
                     mutate({ action: "delete-draft", draftId: draft.id });
                   }
                 }}

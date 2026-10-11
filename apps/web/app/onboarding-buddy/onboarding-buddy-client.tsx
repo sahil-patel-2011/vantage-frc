@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, SelectField, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, SelectField, Button, askConfirm } from "../../components/ui";
 import { eligibleBuddyCandidates, pairingStatusLabel } from "../../lib/onboarding-buddy";
 import type { OnboardingBuddyView } from "../../lib/onboarding-buddy/compute-onboarding-buddy";
 import {
@@ -589,8 +589,8 @@ function PairingCard({
             type="button"
             className="text-button"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete pairing for ${pairing.newMemberName}?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete pairing for ${pairing.newMemberName}?`, body: null, confirmLabel: "Delete pairing", tone: "destructive" })) {
                 mutate({ action: "delete-pairing", pairingId: pairing.id });
               }
             }}

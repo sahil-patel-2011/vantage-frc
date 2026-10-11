@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button, askConfirm } from "../../components/ui";
 import {
   ANNOUNCEMENT_PRIORITIES,
   type Announcement,
@@ -402,8 +402,8 @@ export default function AnnouncementsClient() {
                         type="button"
                         className="text-button"
                         disabled={busy}
-                        onClick={() => {
-                          if (window.confirm(`Delete "${item.title}"?`)) {
+                        onClick={async () => {
+                          if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                             void act({ action: "delete", announcementId: item.id });
                           }
                         }}

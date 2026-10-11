@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { BusinessRelated } from "../../components/business-related";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { COSTS_RELATED_INCLUDE } from "../../lib/business/business-related";
 import { costsNextActions } from "../../lib/business/costs-next-actions";
 import { costCategoryLabel, subscriptionCadenceLabel, usd } from "../../lib/costs";
@@ -703,8 +703,8 @@ function SubscriptionsSection({ view, busy, mutate }: { view: LiveView; busy: bo
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${sub.name}"?`)) mutate({ action: "delete-subscription", subscriptionId: sub.id });
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${sub.name}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-subscription", subscriptionId: sub.id });
                   }}
                 >
                   Delete
@@ -935,8 +935,8 @@ function CostLog({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${cost.label}"?`)) mutate({ action: "delete-cost", costId: cost.id });
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${cost.label}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-cost", costId: cost.id });
                   }}
                 >
                   Delete

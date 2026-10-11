@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -584,8 +584,8 @@ function SubsystemCard({
             type="button"
             className="text-button"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete "${subsystem.name}" and its sign-offs?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete “${subsystem.name}” and its sign-offs?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                 mutate({ action: "delete-subsystem", subsystemId: subsystem.id });
               }
             }}

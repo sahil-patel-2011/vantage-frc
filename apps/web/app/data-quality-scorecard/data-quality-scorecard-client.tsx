@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import type { DataQualityScorecardView } from "../../lib/data-quality-scorecard/compute-data-quality-scorecard";
 import type { DataQualityGrade } from "../../lib/data-quality-scorecard/types";
 import { hubHref } from "../../lib/nav/hubs";
@@ -546,10 +546,10 @@ function RecentChecks({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
+              onClick={async () => {
                 const eventLabel = scoutEventLabel({ eventName: item.eventName, eventKey: item.eventKey }) ?? item.eventKey;
                 const matchLabel = item.matchKey ? ` ${describeMatchKey(item.matchKey)}` : "";
-                if (window.confirm(`Delete check for ${eventLabel}${matchLabel}?`)) {
+                if (await askConfirm({ title: `Delete the check for ${eventLabel}${matchLabel}?`, body: null, confirmLabel: "Delete check", tone: "destructive" })) {
                   mutate({ action: "delete-check", checkId: item.id });
                 }
               }}

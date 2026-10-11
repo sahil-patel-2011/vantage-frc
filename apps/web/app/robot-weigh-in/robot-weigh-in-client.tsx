@@ -10,7 +10,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { robotWeighInStationLabel, suggestedWeightLimitLbs, weighIn2026LimitCue } from "../../lib/robot-weigh-in";
 import {
   ROBOT_WEIGH_IN_STATIONS,
@@ -524,8 +524,8 @@ function RecentEntries({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete the ${item.weighedOn} weigh-in?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete the ${item.weighedOn} weigh-in?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-weigh-in", entryId: item.id });
                 }
               }}

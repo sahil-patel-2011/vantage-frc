@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import type { CadReviewQueueView } from "../../lib/cad-review-queue/compute-cad-review-queue";
 import {
@@ -362,8 +362,8 @@ function ItemCard({
             type="button"
             className="text-button"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Remove "${item.partName}" from the queue?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Remove “${item.partName}” from the queue?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                 mutate({ action: "delete-item", itemId: item.id });
               }
             }}

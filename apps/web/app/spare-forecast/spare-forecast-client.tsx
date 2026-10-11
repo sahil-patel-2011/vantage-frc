@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { canDeleteSpareForecastRequest, PURCHASE_REQUEST_STATUSES, forecastUrgencyLabel } from "../../lib/spare-forecast";
 import type { SpareForecastView } from "../../lib/spare-forecast/compute-spare-forecast";
 import {
@@ -679,8 +679,8 @@ function PurchaseRequestsList({
                   className="text-button"
                   aria-label={`Delete request ${request.title}`}
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${request.title}"?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${request.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                       mutate({ action: "delete-request", requestId: request.id });
                     }
                   }}

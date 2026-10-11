@@ -13,7 +13,7 @@ import {
   StatRowSkeleton,
   StatTile,
   TableSkeleton,
-  type BadgeTone, Button } from "../../components/ui";
+  type BadgeTone, Button, askConfirm } from "../../components/ui";
 import { busFactorAreaLabel } from "../../lib/bus-factor";
 import { BUS_FACTOR_AREAS, DEFAULT_WINDOW_WEEKS, type BusFactorView } from "../../lib/bus-factor/compute-bus-factor";
 import {
@@ -582,8 +582,8 @@ function RecentEntries({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete this entry for ${item.memberName}?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete this entry for ${item.memberName}?`, body: null, confirmLabel: "Delete entry", tone: "destructive" })) {
                   mutate({ action: "delete-entry", entryId: item.id });
                 }
               }}

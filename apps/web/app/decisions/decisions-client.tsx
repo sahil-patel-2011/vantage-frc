@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { decisionCategoryLabel, decisionStatusLabel } from "../../lib/decisions";
 import {
   DECISION_CATEGORIES,
@@ -773,8 +773,8 @@ function DecisionCard({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${decision.title}"?`)) {
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${decision.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
               mutate({ action: "delete-decision", decisionId: decision.id });
             }
           }}

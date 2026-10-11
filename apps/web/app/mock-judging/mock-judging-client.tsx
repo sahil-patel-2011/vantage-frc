@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   MOCK_JUDGING_AWARD_CATEGORIES,
   mockJudgingAwardCategoryLabel,
@@ -493,8 +493,8 @@ function SessionsList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm("Delete this session?")) {
+                onClick={async () => {
+                  if (await askConfirm({ title: "Delete this session?", body: null, confirmLabel: "Delete session", tone: "destructive" })) {
                     mutate({ action: "delete-session", sessionId: item.id });
                   }
                 }}
@@ -645,8 +645,8 @@ function PrepNotesList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${item.title}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-note", noteId: item.id });
                 }
               }}

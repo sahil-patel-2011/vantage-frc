@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   OFFLINE_SHELL_RELATED_INCLUDE,
   classifyOfflineShell,
@@ -311,8 +311,8 @@ function RecentEvents({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete sync event for "${item.deviceLabel}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete sync event for “${item.deviceLabel}”?`, body: null, confirmLabel: "Delete sync event", tone: "destructive" })) {
                   mutate({ action: "delete-cache-event", eventId: item.id });
                 }
               }}

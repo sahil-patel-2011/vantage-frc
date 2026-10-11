@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "../../../components/ui";
+import { Button, askConfirm } from "../../../components/ui";
 import {
   DUTY_KIND_LABELS,
   DUTY_KINDS,
@@ -109,8 +109,8 @@ export function SubteamsPanel({
                   type="button"
                   className="tc-text-btn"
                   disabled={busy}
-                  onClick={() => {
-                    if (confirm(`Delete subteam “${st.name}”? Calendar events for it are removed; people stay on the team.`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete subteam “${st.name}”?`, body: "Calendar events for it are removed; people stay on the team.", confirmLabel: "Delete subteam", tone: "destructive" })) {
                       void run({ action: "delete_subteam", orgId, id: st.id }, `st:${st.id}`);
                     }
                   }}
@@ -462,8 +462,8 @@ export function DutiesPanel({
                   highlighted={duty.id === highlightId}
                   canDelete={canManage}
                   busy={busy}
-                  onDelete={() => {
-                    if (confirm(`Remove duty “${duty.title}”?`)) {
+                  onDelete={async () => {
+                    if (await askConfirm({ title: `Remove duty “${duty.title}”?`, body: null, confirmLabel: "Remove duty", tone: "destructive" })) {
                       void onMutate({ action: "delete_duty", orgId, id: duty.id }, `duty-del:${duty.id}`);
                     }
                   }}

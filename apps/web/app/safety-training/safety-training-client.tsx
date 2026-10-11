@@ -3,7 +3,7 @@
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { SAFETY_CATEGORIES, safetyCategoryLabel } from "../../lib/safety-training";
 import type { SafetyTrainingView } from "../../lib/safety-training/compute-safety-training";
@@ -452,8 +452,8 @@ function ModulesList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete "${mod.title}"? This also removes its completion records.`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete “${mod.title}”?`, body: "This also removes its completion records.", confirmLabel: "Delete", tone: "destructive" })) {
                   mutate({ action: "delete-module", moduleId: mod.id });
                 }
               }}
@@ -627,8 +627,8 @@ function CompletionsList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete this completion for ${item.memberName}?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete this completion for ${item.memberName}?`, body: null, confirmLabel: "Delete completion", tone: "destructive" })) {
                   mutate({ action: "delete-completion", completionId: item.id });
                 }
               }}

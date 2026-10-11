@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { forecastStatusLabel } from "../../lib/battery-health-forecast";
 import type { BatteryHealthForecastView } from "../../lib/battery-health-forecast/compute-battery-health-forecast";
 import type { ForecastStatus } from "../../lib/battery-health-forecast/types";
@@ -498,8 +498,8 @@ function ForecastTable({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${forecast.label}"?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${forecast.label}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                       mutate({ action: "delete-battery", batteryId: forecast.batteryId });
                     }
                   }}

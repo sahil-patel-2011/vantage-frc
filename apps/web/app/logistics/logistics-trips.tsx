@@ -100,8 +100,8 @@ export function LogisticsTripsPanel({
             type="button"
             className="log-link danger"
             disabled={!act || busy}
-            onClick={() => {
-              if (confirm(`Delete trip "${trip.title}" and its hotels/legs?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete trip “${trip.title}” and its hotels/legs?`, body: null, confirmLabel: "Delete trip", tone: "destructive" })) {
                 void run({ action: "delete_trip", orgId, id: trip.id }, `del-trip:${trip.id}`);
               }
             }}
@@ -224,8 +224,8 @@ export function LogisticsTripsPanel({
                         type="button"
                         className="log-link danger"
                         disabled={!act || busy}
-                        onClick={() => {
-                          if (confirm(`Remove "${leg.title}"?`)) {
+                        onClick={async () => {
+                          if (await askConfirm({ title: `Remove “${leg.title}”?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                             void run({ action: "delete_travel_leg", orgId, id: leg.id }, `del-leg:${leg.id}`);
                           }
                         }}
@@ -317,8 +317,8 @@ function HotelBlock({
             type="button"
             className="log-link danger"
             disabled={!act || busy}
-            onClick={() => {
-              if (confirm(`Delete hotel "${hotel.name}"?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete hotel “${hotel.name}”?`, body: null, confirmLabel: "Delete hotel", tone: "destructive" })) {
                 void run({ action: "delete_hotel", orgId, id: hotel.id }, `del-hotel:${hotel.id}`);
               }
             }}

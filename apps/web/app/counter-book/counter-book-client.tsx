@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { counterBookFieldLabel } from "../../lib/counter-book";
 import type { CounterBookView } from "../../lib/counter-book/compute-counter-book";
 import {
@@ -481,8 +481,8 @@ function ReportCard({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${report.title}"?`)) {
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${report.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
               mutate({ action: "delete-report", reportId: report.id });
             }
           }}

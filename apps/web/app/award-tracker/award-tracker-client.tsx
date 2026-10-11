@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   AWARD_SUBMISSION_STATUSES,
   AWARD_TYPES,
@@ -555,8 +555,8 @@ function SubmissionsList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${submission.awardName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${submission.awardName}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-submission", submissionId: submission.id });
                   }
                 }}

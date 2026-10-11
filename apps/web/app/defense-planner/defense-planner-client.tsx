@@ -13,7 +13,7 @@ import {
   StatRowSkeleton,
   StatTile,
   TableSkeleton,
-  type BadgeTone, Button } from "../../components/ui";
+  type BadgeTone, Button, askConfirm } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   DRIVETRAIN_TYPES,
@@ -724,8 +724,8 @@ function MatchupsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete the matchup vs Team ${matchup.opponentTeamNumber}?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete the matchup vs Team ${matchup.opponentTeamNumber}?`, body: null, confirmLabel: "Delete matchup", tone: "destructive" })) {
                     mutate({ action: "delete-matchup", matchupId: matchup.id });
                   }
                 }}

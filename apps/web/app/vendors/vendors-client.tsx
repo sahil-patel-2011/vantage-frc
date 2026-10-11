@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { vendorCategoryLabel } from "../../lib/vendors";
 import { VENDOR_CATEGORIES, type VendorsView } from "../../lib/vendors/compute-vendors";
@@ -617,8 +617,8 @@ function VendorCard({ vendor, busy, mutate }: { vendor: Vendor; busy: boolean; m
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${vendor.name}"?`)) mutate({ action: "delete-vendor", vendorId: vendor.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${vendor.name}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-vendor", vendorId: vendor.id });
           }}
           style={{ marginLeft: "auto" }}
         >

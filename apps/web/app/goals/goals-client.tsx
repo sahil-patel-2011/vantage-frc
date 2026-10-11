@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { formatGoalValue, goalCategoryLabel, goalStatusLabel } from "../../lib/goals";
@@ -648,8 +648,8 @@ function GoalCard({ evaluation, busy, mutate }: { evaluation: GoalEvaluation; bu
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${goal.title}"?`)) mutate({ action: "delete-goal", goalId: goal.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${goal.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-goal", goalId: goal.id });
           }}
           style={{ marginLeft: "auto" }}
         >

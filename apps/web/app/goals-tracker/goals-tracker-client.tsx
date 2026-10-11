@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { GOAL_CATEGORIES, GOAL_STATUSES, goalCategoryLabel, goalStatusLabel } from "../../lib/goals-tracker";
 import type { GoalsTrackerView } from "../../lib/goals-tracker/compute-goals-tracker";
 import type { GoalCategory, GoalStatus } from "../../lib/goals-tracker/types";
@@ -453,8 +453,8 @@ function GoalsList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${row.goal.title}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${row.goal.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-goal", goalId: row.goal.id });
                   }
                 }}

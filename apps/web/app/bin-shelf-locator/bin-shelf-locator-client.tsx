@@ -12,8 +12,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
-} from "../../components/ui";
+  StatTile, askConfirm } from "../../components/ui";
 import {
   BIN_SHELF_LOCATION_KINDS,
   binShelfLocationKindLabel,
@@ -489,8 +488,8 @@ function LocationsPanel({
               variant="ghost"
               size="sm"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Archive location "${loc.code}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Archive location “${loc.code}”?`, body: null, confirmLabel: "Archive location", tone: "destructive" })) {
                   mutate({ action: "archive-location", locationId: loc.id });
                 }
               }}

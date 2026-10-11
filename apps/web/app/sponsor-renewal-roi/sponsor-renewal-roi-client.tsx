@@ -11,7 +11,7 @@ import {
   Panel,
   ProgressMeter,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import type { SponsorRenewalRoiView } from "../../lib/sponsor-renewal-roi/compute-sponsor-renewal-roi";
 import type { SponsorRenewalRiskTier } from "../../lib/sponsor-renewal-roi/types";
@@ -510,8 +510,8 @@ function SponsorRiskCard({
             type="button"
             className="text-button"
             disabled={busy !== null}
-            onClick={() => {
-              if (window.confirm("Delete this report?")) {
+            onClick={async () => {
+              if (await askConfirm({ title: "Delete this report?", body: null, confirmLabel: "Delete report", tone: "destructive" })) {
                 mutate({ action: "delete-report", reportId: sponsor.latestReport!.id }, busyKey);
               }
             }}

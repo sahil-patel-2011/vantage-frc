@@ -107,8 +107,8 @@ export function LogisticsManagePanel({
                   type="button"
                   className="log-link danger"
                   disabled={!act || busy}
-                  onClick={() => {
-                    if (confirm(`Remove "${item.label}"?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Remove “${item.label}”?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                       void run({ action: "delete_checklist_item", orgId, id: item.id }, `del-chk:${item.id}`);
                     }
                   }}

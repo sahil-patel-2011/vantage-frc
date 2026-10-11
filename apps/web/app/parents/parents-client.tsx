@@ -11,8 +11,7 @@ import {
   FormGrid,
   FormRow,
   PageHeader,
-  Panel,
-} from "../../components/ui";
+  Panel, askText } from "../../components/ui";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -309,7 +308,15 @@ export default function ParentsClient() {
       setCopiedId(contact.id);
       setTimeout(() => setCopiedId((current) => (current === contact.id ? null : current)), 2000);
     } catch {
-      window.prompt("Copy this parent view link:", contact.viewUrl);
+      // No clipboard access (an embedded browser): show the link selected, ready to copy by hand.
+      await askText({
+        title: "Copy this parent view link",
+        body: null,
+        confirmLabel: "Done",
+        cancelLabel: "Close",
+        tone: "neutral",
+        input: { label: "Parent view link", initial: contact.viewUrl },
+      });
     }
   }, []);
 

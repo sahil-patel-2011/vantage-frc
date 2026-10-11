@@ -12,7 +12,7 @@ import { CalendarHero } from "./calendar-hero";
 import { CalendarMonth } from "./calendar-month";
 import { CalendarRepeat, useRepeatRule } from "./calendar-repeat";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import {
   QUEUED_ON_DEVICE,
@@ -258,8 +258,8 @@ function MilestoneRow({
             className="cal-link danger"
             aria-label="Delete milestone"
             disabled={busy}
-            onClick={() => {
-              if (confirm(`Delete milestone "${milestone.title}"?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete milestone “${milestone.title}”?`, body: null, confirmLabel: "Delete milestone", tone: "destructive" })) {
                 void run({ action: "delete_milestone", orgId, id: milestone.id }, `delete:${milestone.id}`);
               }
             }}
@@ -282,11 +282,14 @@ function MilestoneRow({
             type="button"
             className="cal-link danger"
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               if (
-                confirm(
-                  `Delete all ${seriesCount} entries created with "${milestone.title}"? This cannot be undone.`,
-                )
+                await askConfirm({
+                  title: `Delete all ${seriesCount} entries?`,
+                  body: `Every entry created with “${milestone.title}” is deleted. This cannot be undone.`,
+                  confirmLabel: "Delete all",
+                  tone: "destructive",
+                })
               ) {
                 void run(
                   { action: "delete_series", orgId, seriesId: milestone.seriesId! },

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   DECISION_CRITIC_CATEGORIES,
   DECISION_CRITIC_OUTCOMES,
@@ -327,8 +327,8 @@ function ReviewsList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${review.title}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${review.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-review", reviewId: review.id });
                   }
                 }}

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
 import PartnerPlacement from "../../components/partner-placement";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -559,8 +559,8 @@ export function PartnerPlacementsPanel({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => {
-                            if (window.confirm("Delete this archived artwork permanently?")) {
+                          onClick={async () => {
+                            if (await askConfirm({ title: "Delete this archived artwork permanently?", body: null, confirmLabel: "Delete archived artwork", tone: "destructive" })) {
                               void mutate({ action: "delete-asset", assetId: asset.id });
                             }
                           }}

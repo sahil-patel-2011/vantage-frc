@@ -38,4 +38,26 @@ describe("Delete and Remove buttons ask before sending", () => {
     }
     expect(problems).toEqual([]);
   });
+
+  // The browser's boxes say "localhost:3001 says" over an OK button, block the page, and look
+  // like neither iOS nor the app. askConfirm()/askText() are the app's dialog. The platform
+  // admin console is internal and keeps the browser's.
+  it("uses the app's dialog, not the browser's confirm, prompt or alert", () => {
+    const problems: string[] = [];
+    for (const file of ROOTS.flatMap((root) => collect(root))) {
+      const rel = file.replace(WEB, "");
+      if (rel.startsWith("/app/admin/") || rel.endsWith("/components/ui/confirm-dialog.tsx")) continue;
+      const src = readFileSync(file, "utf8");
+      // A local `confirm` (the useConfirm hook, or a function of that name) is not the browser box.
+      const localConfirm = /const\s+confirm\s*=|function\s+confirm\s*\(/.test(src);
+      for (const match of src.matchAll(/(?<![\w.])(window\.)?(confirm|prompt|alert)\(/g)) {
+        if (!match[1] && match[2] === "confirm" && localConfirm) continue;
+        const lineText = src.slice(0, match.index).split("\n").length;
+        const line = src.split("\n")[lineText - 1]?.trim() ?? "";
+        if (line.startsWith("*") || line.startsWith("//") || line.includes("`confirm()`")) continue;
+        problems.push(`${rel}:${lineText} ${match[0]}`);
+      }
+    }
+    expect(problems).toEqual([]);
+  });
 });

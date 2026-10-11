@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { formatClock, matchNoteCategoryLabel, matchNotePhaseLabel, actionIntervalsFromNotes, actionTrackerStrip } from "../../lib/match-notes-timeline";
 import {
   MATCH_NOTE_CATEGORIES,
@@ -435,8 +435,8 @@ function Timelines({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm("Delete this note?")) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: "Delete this note?", body: null, confirmLabel: "Delete note", tone: "destructive" })) {
                       mutate({ action: "delete-note", entryId: entry.id });
                     }
                   }}

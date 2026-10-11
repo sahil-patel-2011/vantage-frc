@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { SPONSOR_WALL_TIERS, sponsorWallTierLabel } from "../../lib/sponsor-wall";
 import type { SponsorWallView } from "../../lib/sponsor-wall/compute-sponsor-wall";
 import {
@@ -647,8 +647,8 @@ function WallPreview({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Remove "${item.sponsorName}" from the wall?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Remove “${item.sponsorName}” from the wall?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                     mutate({ action: "delete-entry", entryId: item.id });
                   }
                 }}

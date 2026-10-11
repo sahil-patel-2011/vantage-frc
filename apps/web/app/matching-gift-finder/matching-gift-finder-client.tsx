@@ -571,8 +571,8 @@ function ContactsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete contact "${contact.fullName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete contact “${contact.fullName}”?`, body: null, confirmLabel: "Delete contact", tone: "destructive" })) {
                     mutate({ action: "delete-contact", contactId: contact.id });
                   }
                 }}
@@ -637,8 +637,8 @@ function ProgramsPanel({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete program "${program.employerName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete program “${program.employerName}”?`, body: null, confirmLabel: "Delete program", tone: "destructive" })) {
                     mutate({ action: "delete-program", programId: program.id });
                   }
                 }}

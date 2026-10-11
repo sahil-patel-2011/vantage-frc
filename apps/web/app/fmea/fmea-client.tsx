@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { canDeleteFmeaFailure, fmeaContextLabel, fmeaLevelLabel, fmeaStatusLabel } from "../../lib/fmea";
 import { FMEA_CONTEXTS, FMEA_STATUSES, type FmeaView } from "../../lib/fmea/compute-fmea";
@@ -862,8 +862,8 @@ function FailureCard({
             type="button"
             disabled={busy}
             aria-label={`Delete ${f.title}`}
-            onClick={() => {
-              if (window.confirm("Delete this failure entry?")) mutate({ action: "delete-failure", failureId: f.id });
+            onClick={async () => {
+              if (await askConfirm({ title: "Delete this failure entry?", body: null, confirmLabel: "Delete failure entry", tone: "destructive" })) mutate({ action: "delete-failure", failureId: f.id });
             }}
           >
             Delete

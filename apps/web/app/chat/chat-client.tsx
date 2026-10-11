@@ -9,7 +9,7 @@ import { AiAgentStatus } from "../../components/ai-agent-status";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button, EmptyState } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState, askConfirm } from "../../components/ui";
 import {
   AI_CHAT_RELATED_INCLUDE,
   AI_CHAT_SCOPE_CARDS,
@@ -332,7 +332,7 @@ export default function ChatClient({
   }
 
   async function removeMemory(id: string) {
-    if (!confirm("Delete this private memory? This cannot be undone.")) return;
+    if (!(await askConfirm({ title: "Delete this private memory?", body: "This cannot be undone.", confirmLabel: "Delete private memory", tone: "destructive" }))) return;
     await fetch(`/api/agent/memory?id=${id}`, { method: "DELETE" });
     await load(thread?.id);
   }

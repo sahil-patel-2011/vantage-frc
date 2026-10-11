@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button, askConfirm } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -557,8 +557,8 @@ function ItemTable({ view, busy, mutate }: { view: LiveView; busy: boolean; muta
                     type="button"
                     className="text-button"
                     disabled={busy}
-                    onClick={() => {
-                      if (window.confirm(`Delete "${item.name}"?`)) mutate({ action: "delete-item", itemId: item.id });
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete “${item.name}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-item", itemId: item.id });
                     }}
                   >
                     Delete

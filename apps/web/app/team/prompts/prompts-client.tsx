@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { Button, EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { Button, EmptyState, PageHeader, Panel, askConfirm } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
@@ -181,7 +181,7 @@ export default function PromptsClient({ orgId }: { orgId: string }) {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this prompt?")) return;
+    if (!(await askConfirm({ title: "Delete this prompt?", body: null, confirmLabel: "Delete prompt", tone: "destructive" }))) return;
     const response = await fetch(
       `/api/team/prompts?orgId=${encodeURIComponent(orgId)}&id=${encodeURIComponent(id)}`,
       { method: "DELETE" },

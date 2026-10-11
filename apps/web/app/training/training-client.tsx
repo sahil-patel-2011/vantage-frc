@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { trainingCategoryLabel } from "../../lib/training";
@@ -491,8 +491,8 @@ function SkillsList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete skill "${skill.name}"? This also removes its certifications.`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete skill “${skill.name}”?`, body: "This also removes its certifications.", confirmLabel: "Delete skill", tone: "destructive" })) {
                     mutate({ action: "delete-skill", skillId: skill.id });
                   }
                 }}
@@ -550,8 +550,8 @@ function CertificationsList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Revoke ${cert.memberName}'s ${cert.skillName} certification?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Revoke ${cert.memberName}'s ${cert.skillName} certification?`, body: null, confirmLabel: "Revoke", tone: "destructive" })) {
                   mutate({ action: "revoke-certification", certificationId: cert.id });
                 }
               }}

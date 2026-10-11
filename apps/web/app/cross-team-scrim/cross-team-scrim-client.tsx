@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { scrimDataShareLabel, scrimStatusLabel } from "../../lib/cross-team-scrim";
 import {
   SCRIM_DATA_SHARE_SCOPES,
@@ -603,8 +603,8 @@ function InviteRow({
             type="button"
             className="text-button"
             disabled={busy}
-            onClick={() => {
-              if (window.confirm(`Delete invite to Team ${invite.partnerTeamNumber}?`)) {
+            onClick={async () => {
+              if (await askConfirm({ title: `Delete invite to Team ${invite.partnerTeamNumber}?`, body: null, confirmLabel: "Delete invite", tone: "destructive" })) {
                 mutate({ action: "delete-invite", inviteId: invite.id });
               }
             }}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import {
   RULE_CHANGE_CATEGORIES,
   RULE_CHANGE_SEVERITIES,
@@ -639,8 +639,8 @@ function RuleChangeList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Delete rule "${rule.ruleCode}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete rule “${rule.ruleCode}”?`, body: null, confirmLabel: "Delete rule", tone: "destructive" })) {
                   mutate({ action: "delete-rule-change", ruleChangeId: rule.id });
                 }
               }}
@@ -772,8 +772,8 @@ function AssessmentList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete assessment for "${assessment.subsystemName}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete assessment for “${assessment.subsystemName}”?`, body: null, confirmLabel: "Delete assessment", tone: "destructive" })) {
                     mutate({ action: "delete-assessment", assessmentId: assessment.id });
                   }
                 }}

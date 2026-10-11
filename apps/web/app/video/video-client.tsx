@@ -3,7 +3,7 @@ import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button } from "../../components/ui";
+import { Button, askConfirm } from "../../components/ui";
 import { AiInsightPanel } from "../../components/ai-insight-panel";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -96,8 +96,8 @@ function ReviewDetail({
           type="button"
           className="vid-link danger"
           disabled={busy}
-          onClick={() => {
-            if (confirm(`Delete review "${review.title}" and all of its notes?`)) {
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete review “${review.title}” and all of its notes?`, body: null, confirmLabel: "Delete review", tone: "destructive" })) {
               void run({ action: "delete_review", orgId, id: review.id }, "delete");
             }
           }}

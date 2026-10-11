@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Button } from "../../components/ui";
+import { Badge, Button, askConfirm } from "../../components/ui";
 import type { PublicPreview } from "../../lib/microsoft/run-import";
 import "./microsoft-excel-card.css";
 
@@ -329,7 +329,7 @@ export default function MicrosoftExcelCard({ orgId }: { orgId: string }) {
   }
 
   async function disconnect() {
-    if (!window.confirm("Disconnect Microsoft? The workbook stays in OneDrive but stops updating.")) return;
+    if (!(await askConfirm({ title: "Disconnect Microsoft?", body: "The workbook stays in OneDrive but stops updating.", confirmLabel: "Disconnect", tone: "destructive" }))) return;
     setBusy("disconnect");
     setMessage(null);
     try {

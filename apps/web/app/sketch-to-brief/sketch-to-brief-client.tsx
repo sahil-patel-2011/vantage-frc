@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { mechanismCategoryLabel } from "../../lib/sketch-to-brief";
 import type { SketchToBriefView } from "../../lib/sketch-to-brief/compute-sketch-to-brief";
 import {
@@ -567,8 +567,8 @@ function SketchList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${sketch.title}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${sketch.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-sketch", sketchId: sketch.id });
                   }
                 }}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { PROFICIENCY_LEVELS, SKILL_CATEGORIES, skillCategoryLabel, proficiencyLabel } from "../../lib/skills-graph";
 import type { SkillsGraphView } from "../../lib/skills-graph/compute-skills-graph";
@@ -585,8 +585,8 @@ function SkillEntries({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Remove this skill for ${entry.userName}?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Remove this skill for ${entry.userName}?`, body: null, confirmLabel: "Remove skill", tone: "destructive" })) {
                   mutate({ action: "delete-skill", entryId: entry.id });
                 }
               }}

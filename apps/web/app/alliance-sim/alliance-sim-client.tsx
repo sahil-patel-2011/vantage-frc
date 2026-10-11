@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { ALLIANCE_SIM_ROLE_DEFS, allianceSimRoleLabel } from "../../lib/alliance-sim";
 import type { AllianceSimView } from "../../lib/alliance-sim/compute-alliance-sim";
@@ -291,9 +291,9 @@ function ScenarioPanel({
             type="button"
             className="text-button"
             disabled={busy}
-            onClick={() => {
+            onClick={async () => {
               const scenario = view.scenarios.find((s) => s.id === view.selectedScenarioId);
-              if (scenario && window.confirm(`Delete scenario "${scenario.name}"?`)) {
+              if (scenario && (await askConfirm({ title: `Delete scenario “${scenario.name}”?`, body: null, confirmLabel: "Delete scenario", tone: "destructive" }))) {
                 mutate({ action: "delete-scenario", scenarioId: scenario.id });
               }
             }}
@@ -523,8 +523,8 @@ function RobotList({
               type="button"
               className="text-button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm(`Remove Team ${robot.teamNumber}?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Remove Team ${robot.teamNumber}?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
                   mutate({ action: "delete-robot", robotId: robot.id, scenarioId: view.selectedScenarioId });
                 }
               }}

@@ -537,8 +537,8 @@ function SessionList({
                 type="button"
                 className="text-button"
                 disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Delete "${sessionItem.label}" and its logged cycles?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete “${sessionItem.label}” and its logged cycles?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-session", sessionId: sessionItem.id });
                     if (sessionItem.id === selectedSessionId) onSelect("");
                   }

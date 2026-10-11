@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
+import { Button, EmptyState, PageHeader, Panel, askText } from "../../components/ui";
 import {
   BUDGET_CLOSE_RATIO,
   describeBudgetLine,
@@ -272,13 +272,22 @@ export default function ReimbursementsClient() {
   const act = useCallback(
     async (id: string, action: ReimbursementAction) => {
       if (!orgId || busy) return;
+      let note: string | null = null;
+      if (action === "deny") {
+        // Asked before anything is sent; Cancel keeps the claim as it is.
+        const reason = await askText({
+          title: "Deny this claim?",
+          body: "The filer sees your note.",
+          confirmLabel: "Deny claim",
+          tone: "destructive",
+          input: { label: "Why it is denied (optional)", multiline: true },
+        });
+        if (reason === null) return;
+        note = reason.trim() || null;
+      }
       setBusy(true);
       setError(null);
       setNotice(null);
-      let note: string | null = null;
-      if (action === "deny" && typeof window !== "undefined") {
-        note = window.prompt("Why is this being denied? The filer sees this note.")?.trim() || null;
-      }
       try {
         const response = await fetch(`/api/reimbursements/${id}`, {
           method: "PATCH",

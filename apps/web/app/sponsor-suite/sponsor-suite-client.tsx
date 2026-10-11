@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { reminderKindLabel, tierLabel } from "../../lib/sponsor-suite";
 import type { SponsorSuiteView } from "../../lib/sponsor-suite/compute-sponsor-suite";
 import {
@@ -766,8 +766,8 @@ function DeckPanel({
                   type="button"
                   className="text-button"
                   disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(`Delete "${deck.title}"?`)) {
+                  onClick={async () => {
+                    if (await askConfirm({ title: `Delete “${deck.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                       mutate({ action: "delete-deck", deckId: deck.id });
                     }
                   }}

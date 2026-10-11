@@ -27,7 +27,14 @@ export type ConfirmOpts = {
   tone?: "destructive" | "critical" | "neutral";
   /** For critical: the resource name or literal "DELETE" the user must type. */
   confirmPhrase?: string;
+  /**
+   * A text answer to collect with the yes (a reason, a note, an address). askText() resolves
+   * to it; the field takes focus, and Enter answers a one-line field.
+   */
+  input?: { label: string; initial?: string; placeholder?: string; required?: boolean; multiline?: boolean; type?: "text" | "email" };
 };
+
+type Answer = { ok: boolean; value: string };
 
 /** Standalone controlled confirm dialog (Cancel default-focused; critical adds type-to-confirm). */
 export function ConfirmDialog({
@@ -37,32 +44,68 @@ export function ConfirmDialog({
 }: {
   open: boolean;
   opts: ConfirmOpts | null;
-  onResolve: (ok: boolean) => void;
+  onResolve: (ok: boolean, value?: string) => void;
 }) {
   const [lastOpts, setLastOpts] = useState(opts);
   useEffect(() => { if (opts) setLastOpts(opts); }, [opts]);
   const visibleOpts = opts ?? lastOpts;
   const [typed, setTyped] = useState("");
+  const [answer, setAnswer] = useState("");
   const cancelRef = useRef<HTMLButtonElement | null>(null);
+  const answerRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  const initialAnswer = opts?.input?.initial ?? "";
+  const asksText = Boolean(opts?.input);
 
   useEffect(() => {
     if (open) {
       setTyped("");
-      // Cancel is the default focus (safe action).
-      const id = window.setTimeout(() => cancelRef.current?.focus(), 0);
+      setAnswer(initialAnswer);
+      // Cancel is the default focus (safe action); a question with a text field focuses the field.
+      const id = window.setTimeout(() => (asksText ? answerRef.current : cancelRef.current)?.focus(), 0);
       return () => window.clearTimeout(id);
     }
-  }, [open]);
+  }, [open, asksText, initialAnswer]);
 
   if (!visibleOpts) return null;
   const critical = visibleOpts.tone === "critical";
   const phrase = visibleOpts.confirmPhrase ?? "DELETE";
-  const confirmDisabled = critical && typed.trim() !== phrase;
+  const input = visibleOpts.input;
+  const confirmDisabled = (critical && typed.trim() !== phrase) || Boolean(input?.required && !answer.trim());
 
   return (
     <Modal open={open} onClose={() => onResolve(false)} title={visibleOpts.title} hideClose>
       <div className={styles.dialogBody}>
-        <p style={{ margin: 0 }}>{visibleOpts.body}</p>
+        {visibleOpts.body ? <p style={{ margin: 0 }}>{visibleOpts.body}</p> : null}
+        {input ? (
+          <label className={styles.stackKey} style={{ display: "grid", gap: 6, marginTop: visibleOpts.body ? 14 : 0 }}>
+            {input.label}
+            {input.multiline ? (
+              <textarea
+                ref={answerRef}
+                className={styles.confirmInput}
+                rows={3}
+                value={answer}
+                placeholder={input.placeholder}
+                onChange={(e) => setAnswer(e.target.value)}
+              />
+            ) : (
+              <input
+                ref={answerRef}
+                className={styles.confirmInput}
+                type={input.type ?? "text"}
+                value={answer}
+                placeholder={input.placeholder}
+                onChange={(e) => setAnswer(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !confirmDisabled) {
+                    e.preventDefault();
+                    onResolve(true, answer);
+                  }
+                }}
+              />
+            )}
+          </label>
+        ) : null}
         {critical ? (
           <div style={{ marginTop: 14 }}>
             <label className={styles.stackKey} htmlFor="confirm-phrase" style={{ display: "block", marginBottom: 6 }}>
@@ -93,7 +136,7 @@ export function ConfirmDialog({
           variant={visibleOpts?.tone === "neutral" ? "primary" : "danger"}
           size="sm"
           disabled={confirmDisabled}
-          onClick={() => onResolve(true)}
+          onClick={() => onResolve(true, answer)}
         >
           {visibleOpts.confirmLabel}
         </Button>
@@ -105,8 +148,8 @@ export function ConfirmDialog({
 type ConfirmFn = (opts: ConfirmOpts) => Promise<boolean>;
 const ConfirmContext = createContext<ConfirmFn | null>(null);
 
-/** Mounted providers, innermost last; askConfirm() asks through the innermost one. */
-const mounted: ConfirmFn[] = [];
+/** Mounted providers, innermost last; askConfirm() and askText() ask through the innermost one. */
+const mounted: Array<(opts: ConfirmOpts) => Promise<Answer>> = [];
 
 /**
  * The same dialog as useConfirm(), for a click handler in a component that does not hold the
@@ -115,8 +158,18 @@ const mounted: ConfirmFn[] = [];
  */
 export function askConfirm(opts: ConfirmOpts): Promise<boolean> {
   const ask = mounted[mounted.length - 1];
-  if (ask) return ask(opts);
+  if (ask) return ask(opts).then((answer) => answer.ok);
   return Promise.resolve(typeof window !== "undefined" && window.confirm(opts.title));
+}
+
+/**
+ * The app's dialog with a text field, in place of window.prompt(): resolves to what was typed,
+ * or null on Cancel. `const reason = await askText({ title, body, confirmLabel, input: { label } })`.
+ */
+export function askText(opts: ConfirmOpts & { input: NonNullable<ConfirmOpts["input"]> }): Promise<string | null> {
+  const ask = mounted[mounted.length - 1];
+  if (ask) return ask(opts).then((answer) => (answer.ok ? answer.value : null));
+  return Promise.resolve(typeof window === "undefined" ? null : window.prompt(opts.title, opts.input.initial ?? ""));
 }
 
 /**
@@ -128,33 +181,34 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     opts: null,
     open: false,
   });
-  const resolver = useRef<((ok: boolean) => void) | null>(null);
+  const resolver = useRef<((answer: Answer) => void) | null>(null);
 
-  const confirm = useCallback<ConfirmFn>((opts) => {
+  const ask = useCallback((opts: ConfirmOpts) => {
     // Resolve the previous caller before replacing its dialog.
-    resolver.current?.(false);
+    resolver.current?.({ ok: false, value: "" });
     setState({ opts, open: true });
-    return new Promise<boolean>((resolve) => {
+    return new Promise<Answer>((resolve) => {
       resolver.current = resolve;
     });
   }, []);
+  const confirm = useCallback<ConfirmFn>((opts) => ask(opts).then((answer) => answer.ok), [ask]);
 
   useEffect(() => () => {
-    resolver.current?.(false);
+    resolver.current?.({ ok: false, value: "" });
     resolver.current = null;
   }, []);
 
   useEffect(() => {
-    mounted.push(confirm);
+    mounted.push(ask);
     return () => {
-      const at = mounted.lastIndexOf(confirm);
+      const at = mounted.lastIndexOf(ask);
       if (at >= 0) mounted.splice(at, 1);
     };
-  }, [confirm]);
+  }, [ask]);
 
-  const onResolve = useCallback((ok: boolean) => {
+  const onResolve = useCallback((ok: boolean, value?: string) => {
     setState((s) => ({ ...s, open: false }));
-    resolver.current?.(ok);
+    resolver.current?.({ ok, value: value ?? "" });
     resolver.current = null;
   }, []);
 

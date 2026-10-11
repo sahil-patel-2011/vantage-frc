@@ -4,7 +4,7 @@ import { MatchActivityReport } from "./match-activity-report";
 import { useState } from "react";
 import { actionHistory, matchCapture } from "@vantage/scouting";
 import { ScoutActionHistoryView } from "./scout-action-history";
-import { Button } from "../../components/ui";
+import { Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { formatReportClock, savedWhen, scoutEntryByline, scoutReportFromPayload } from "../../lib/scouting/scout-report";
 import { labelForMatchKey } from "../../lib/scouting/next-match";
@@ -99,8 +99,8 @@ export function ScoutReportViewer({
                     variant="ghost"
                     size="sm"
                     disabled={busy}
-                    onClick={() => {
-                      if (!window.confirm(`Delete the report for ${entry.teamKey}? This cannot be undone.`)) {
+                    onClick={async () => {
+                      if (!(await askConfirm({ title: `Delete the report for ${entry.teamKey}?`, body: "This cannot be undone.", confirmLabel: "Delete report", tone: "destructive" }))) {
                         return;
                       }
                       setBusy(true);

@@ -10,7 +10,7 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile, Button } from "../../components/ui";
+  StatTile, Button, askConfirm } from "../../components/ui";
 import { matchVideoSourceLabel } from "../../lib/match-video-index";
 import {
   MATCH_VIDEO_SOURCES,
@@ -400,8 +400,8 @@ function VideoGroups({
                     className="text-button"
                     disabled={busy}
                     aria-label={`Remove video ${video.videoUrl} from ${group.matchLabel ?? group.matchKey}`}
-                    onClick={() => {
-                      if (window.confirm("Remove this video from the index?")) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: "Remove this video from the index?", body: null, confirmLabel: "Remove video", tone: "destructive" })) {
                         mutate({ action: "delete-video", entryId: video.id });
                       }
                     }}

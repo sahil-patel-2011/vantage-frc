@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, PageHeader } from "../../components/ui";
+import { Button, EmptyState, PageHeader, askConfirm } from "../../components/ui";
 import {
   CERT_TYPE_LABEL,
   CERT_TYPES,
@@ -343,8 +343,8 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
                 <Button
                   variant="danger"
                   type="button"
-                  onClick={() => {
-                    if (!window.confirm("Delete this incident? The log entry cannot be recovered.")) return;
+                  onClick={async () => {
+                    if (!(await askConfirm({ title: "Delete this incident?", body: "The log entry cannot be recovered.", confirmLabel: "Delete incident", tone: "destructive" }))) return;
                     void post({ action: "delete_incident", id: i.id }, "Incident deleted.");
                   }}
                 >

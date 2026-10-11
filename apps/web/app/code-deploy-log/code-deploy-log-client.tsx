@@ -13,8 +13,7 @@ import {
   Panel,
   SoftBlockSkeleton,
   StatTile,
-  type BadgeTone,
-} from "../../components/ui";
+  type BadgeTone, askConfirm } from "../../components/ui";
 import { deployStatusLabel, deployTypeLabel } from "../../lib/code-deploy-log";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import {
@@ -480,8 +479,8 @@ function RecentDeploys({
               size="sm"
               disabled={busy}
               aria-label={`Delete deploy ${item.firmwareVersion}`}
-              onClick={() => {
-                if (window.confirm(`Delete deploy "${item.firmwareVersion}"?`)) {
+              onClick={async () => {
+                if (await askConfirm({ title: `Delete deploy “${item.firmwareVersion}”?`, body: null, confirmLabel: "Delete deploy", tone: "destructive" })) {
                   mutate({ action: "delete-deploy", entryId: item.id });
                 }
               }}

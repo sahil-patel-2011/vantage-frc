@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button, askConfirm } from "../../components/ui";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -607,8 +607,8 @@ function ReviewCard({ evaluation, busy, mutate }: { evaluation: ReviewEvaluation
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${review.title}"?`)) mutate({ action: "delete-review", reviewId: review.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${review.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-review", reviewId: review.id });
           }}
           style={{ marginLeft: "auto" }}
         >

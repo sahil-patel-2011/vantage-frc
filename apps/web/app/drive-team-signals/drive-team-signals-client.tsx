@@ -485,8 +485,8 @@ function SheetCard({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete sheet "${sheet.title}"?`)) {
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete sheet “${sheet.title}”?`, body: null, confirmLabel: "Delete sheet", tone: "destructive" })) {
               mutate({ action: "delete-sheet", sheetId: sheet.id });
             }
           }}

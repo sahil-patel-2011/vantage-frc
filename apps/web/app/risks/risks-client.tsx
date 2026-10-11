@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { TeamHubRelated } from "../../components/team-hub-related";
 import { riskCategoryLabel, riskLevelLabel, riskStatusLabel } from "../../lib/risks";
 import { RISK_CATEGORIES, RISK_STATUSES, type RisksView } from "../../lib/risks/compute-risks";
@@ -719,8 +719,8 @@ function RiskCard({
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${risk.title}"?`)) mutate({ action: "delete-risk", riskId: risk.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${risk.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-risk", riskId: risk.id });
           }}
           style={{ marginLeft: "auto" }}
         >

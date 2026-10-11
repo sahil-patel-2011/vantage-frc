@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ActionMenu, EmptyState, PageHeader, Button, Modal } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Button, Modal, askConfirm } from "../../components/ui";
 import {
   PRESET_META,
   PRESET_WIDGETS,
@@ -309,7 +309,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
 
   async function revokeToken(tokenId: string, title: string) {
     if (!canSync) return;
-    if (!window.confirm(`Turn off "${title}"? The TV using it goes blank until it gets a new link.`)) return;
+    if (!(await askConfirm({ title: `Turn off “${title}”?`, body: "The TV using it goes blank until it gets a new link.", confirmLabel: "Turn off", tone: "destructive" }))) return;
     const r = await fetch("/api/display/boards", {
       method: "PATCH",
       headers: { "content-type": "application/json" },

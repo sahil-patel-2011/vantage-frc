@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { TeamOpsNav } from "../../components/team-ops-nav";
@@ -488,8 +488,8 @@ function TaskCard({ task, busy, mutate }: { task: TaskWithFlags; busy: boolean; 
           type="button"
           className="text-button"
           disabled={busy}
-          onClick={() => {
-            if (window.confirm(`Delete "${task.title}"?`)) mutate({ action: "delete-task", taskId: task.id });
+          onClick={async () => {
+            if (await askConfirm({ title: `Delete “${task.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-task", taskId: task.id });
           }}
           style={{ marginLeft: "auto", fontSize: "0.8rem" }}
         >

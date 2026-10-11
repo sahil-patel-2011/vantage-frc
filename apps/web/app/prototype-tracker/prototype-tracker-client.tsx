@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TEST_OUTCOMES, decisionRecommendationLabel, testOutcomeLabel } from "../../lib/prototype-tracker";
@@ -482,8 +482,8 @@ function TestsList({
                     className="text-button"
                     disabled={busy}
                     aria-label={`Delete ${test.title}`}
-                    onClick={() => {
-                      if (window.confirm(`Delete "${test.title}"?`)) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete “${test.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                         void mutate({ action: "delete-test", testId: test.id });
                       }
                     }}
@@ -603,8 +603,8 @@ function DecisionsList({
                     className="text-button"
                     disabled={busy}
                     aria-label={`Delete ${decision.decisionTitle}`}
-                    onClick={() => {
-                      if (window.confirm(`Delete "${decision.decisionTitle}"?`)) {
+                    onClick={async () => {
+                      if (await askConfirm({ title: `Delete “${decision.decisionTitle}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
                         void mutate({ action: "delete-decision", decisionId: decision.id });
                       }
                     }}

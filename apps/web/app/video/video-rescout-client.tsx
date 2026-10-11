@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";
-import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button, askConfirm } from "../../components/ui";
+import { EmptyState, FormRow, PageHeader, Panel, ToolStrip, Button, askConfirm, askText } from "../../components/ui";
 import {
   classifyLoadFailure,
   loadFailureCopy,
@@ -785,8 +785,14 @@ export default function VideoRescoutClient() {
                   key={field.key}
                   type="button"
                   className="vid-score-btn"
-                  onClick={() => {
-                    const text = window.prompt(`${field.label} note`);
+                  onClick={async () => {
+                    const text = await askText({
+                      title: `${field.label} note`,
+                      body: null,
+                      confirmLabel: "Add note",
+                      tone: "neutral",
+                      input: { label: "Note", required: true, multiline: true },
+                    });
                     if (text?.trim()) addScore(field, text.trim());
                   }}
                 >
@@ -913,8 +919,8 @@ export default function VideoRescoutClient() {
                 type="button"
                 className="vid-link danger"
                 disabled={busyKey != null}
-                onClick={() => {
-                  if (confirm(`Delete review "${selected.title}"?`)) {
+                onClick={async () => {
+                  if (await askConfirm({ title: `Delete review “${selected.title}”?`, body: null, confirmLabel: "Delete review", tone: "destructive" })) {
                     void runVideo({ action: "delete_review", orgId, id: selected.id }, "delete");
                   }
                 }}

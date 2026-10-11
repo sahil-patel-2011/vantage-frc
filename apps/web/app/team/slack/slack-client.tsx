@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Button, askConfirm } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { withOrgHref } from "../../../lib/nav/product-nav";
@@ -383,8 +383,8 @@ export default function TeamSlackClient({ orgId }: { orgId: string }) {
               variant="ghost"
               type="button"
               disabled={busy}
-              onClick={() => {
-                if (window.confirm("Disconnect Slack? Vantage stops posting to the channel.")) void run("disconnect");
+              onClick={async () => {
+                if (await askConfirm({ title: "Disconnect Slack?", body: "Vantage stops posting to the channel.", confirmLabel: "Disconnect", tone: "destructive" })) void run("disconnect");
               }}
             >
               Disconnect
