@@ -223,7 +223,10 @@ BEGIN
   DELETE FROM invites WHERE lower(email) = lower(me.email) AND status <> 'accepted';
   UPDATE invites SET email = 'deleted-' || actor::text || '@deleted.invalid' WHERE lower(email) = lower(me.email);
   DELETE FROM waitlist_signups WHERE email_normalized = lower(btrim(me.email));
-  DELETE FROM verifications WHERE position(lower(me.email) IN lower(identifier)) > 0;
+  -- Better Auth names a pending code '<type>-otp-<email>'; match the whole address, so nobody whose
+  -- address merely contains this one loses their code.
+  DELETE FROM verifications
+   WHERE right(lower(identifier), length(btrim(me.email)) + 5) = '-otp-' || lower(btrim(me.email));
 
   INSERT INTO auth_audit_events(action, email_hash, user_id, success, metadata)
     VALUES ('account.deleted', encode(digest(lower(btrim(me.email)), 'sha256'), 'hex'), actor, true, '{}'::jsonb);
