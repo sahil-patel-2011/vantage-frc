@@ -421,7 +421,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
               </Button>
             </>
           ) : null}
-          <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
+          <Button variant={onePagers.length ? "primary" : "secondary"} type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
             New one-pager
           </Button>
         </div>
@@ -447,7 +447,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
               ))}
             </select>
           </label>
-          <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
+          <Button variant={onePagers.length ? "primary" : "secondary"} type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
             New one-pager
           </Button>
         </div>
