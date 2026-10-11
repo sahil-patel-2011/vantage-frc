@@ -247,6 +247,11 @@
 .scout-context-change {
   min-height: 44px;
 }
+.scout-context-quick {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
 
 /* ---- "What are you watching?" as one control ----------------------------- */
 

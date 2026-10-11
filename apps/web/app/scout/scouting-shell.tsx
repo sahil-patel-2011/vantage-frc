@@ -11,7 +11,8 @@ type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number 
 
 export const SCOUTING_NAV = [
   { href: "/scout", label: "Home", match: (path: string) => path === "/scout" },
-  { href: "/scout/entry", label: "Scout", match: (path: string) => path.startsWith("/scout/entry") },
+  // Scout opens Quick scout (one robot, one stage at a time); the full form stays one tap away there.
+  { href: "/scout/match", label: "Scout", match: (path: string) => path.startsWith("/scout/match") || path.startsWith("/scout/entry") },
   { href: "/scout/teams", label: "Teams", match: (path: string) => path.startsWith("/scout/teams") },
   { href: "/scout/predict", label: "Predict", match: (path: string) => path.startsWith("/scout/predict") },
   { href: "/scout/picklist", label: "Pick list", match: (path: string) => path.startsWith("/scout/picklist") },

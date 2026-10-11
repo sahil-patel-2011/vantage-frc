@@ -218,7 +218,8 @@ export function ScoutingHome() {
       if (teams && teams.saved > 0) {
         saved.push(teams.saved === 1 ? "one team's page" : `${teams.saved} teams' pages`);
       }
-      const warmed = await warmOfflineRoutes(SCOUTING_NAV.map((item) => withOrg(item.href)));
+      // The full form too: pit scouting and corrections live there.
+      const warmed = await warmOfflineRoutes([...SCOUTING_NAV.map((item) => withOrg(item.href)), withOrg("/scout/entry")]);
       const data =
         saved.length > 1 ? `${saved.slice(0, -1).join(", ")} and ${saved[saved.length - 1]}` : (saved[0] ?? null);
       if (warmed && warmed.pages > 0) {
@@ -307,8 +308,8 @@ export function ScoutingHome() {
             className="scout-home-start"
             href={
               duty
-                ? `${withOrg("/scout/entry")}${orgId ? "&" : "?"}matchKey=${encodeURIComponent(duty.matchKey)}&teamKey=${encodeURIComponent(duty.teamKey)}`
-                : withOrg("/scout/entry")
+                ? `${withOrg("/scout/match")}${orgId ? "&" : "?"}matchKey=${encodeURIComponent(duty.matchKey)}&teamKey=${encodeURIComponent(duty.teamKey)}`
+                : withOrg("/scout/match")
             }
           >
             {duty ? `Scout ${duty.teamNumber} in ${duty.matchLabel}` : "Start scouting"}

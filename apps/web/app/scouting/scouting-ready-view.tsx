@@ -689,6 +689,10 @@ return (
                     {context.matchLabel ? <> · {context.matchLabel}</> : null}
                     {context.stationLabel ? <span className="scout-context-station"> · {context.stationLabel}</span> : null}
                   </p>
+                  {/* The same robot, one stage at a time with big buttons; the draft carries over. */}
+                  <a className="scout-context-change scout-context-quick" href={`/scout/match?${new URLSearchParams({ orgId, matchKey, teamKey })}`}>
+                    Quick mode
+                  </a>
                   <button type="button" className="scout-context-change" onClick={backToPicker}>
                     Change
                   </button>
