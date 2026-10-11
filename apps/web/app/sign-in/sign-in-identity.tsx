@@ -62,7 +62,6 @@ export function SignInIdentityStep({
 }) {
   return (
     <>
-      <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p>
       {googleAvailable ? (
         <>
           <button className="signin-google" type="button" onClick={onGoogle} disabled={working}>
@@ -174,6 +173,8 @@ export function SignInIdentityStep({
           ) : null}
         </form>
       )}
+      {/* The other way in comes after the main one, as on Apple and Google sign-in pages. */}
+      <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p>
     </>
   );
 }

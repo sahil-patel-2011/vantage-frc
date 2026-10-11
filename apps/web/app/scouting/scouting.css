@@ -321,3 +321,19 @@ button.scout-quality-question-control:hover { background: var(--surface-2); }
 @keyframes scout-quality-report-exit { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(4px); } }
 @media (max-width: 600px) { .scout-quality-report-list dl { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .scout-quality-report-disclosure { animation: none; } }
+
+/* Phone: the task tabs (Match · Pit · Transfer · Review) get the whole row, and a lead's
+   Scouting quality link sits on its own line instead of squeezing beside them and wrapping
+   onto two lines. */
+@media (max-width:720px){
+  .scout-task-row{flex-wrap:wrap;row-gap:2px}
+  .scout-task-row .scout-task-tabs{flex:1 1 100%}
+  .scout-task-row > a{min-height:44px;display:inline-flex;align-items:center;white-space:nowrap}
+}
+/* These are links to other places: tinted like the app's other text links ("Assign scouts"),
+   not the browser's default blue underline or a grey line that read as stray text. */
+.scout-task-row > a,.scout-status-bar .scout-free-link{color:var(--accent);font-weight:600;text-decoration:none}
+.scout-task-row > a:hover,.scout-status-bar .scout-free-link:hover{text-decoration:underline}
+@media (pointer:coarse){
+  .scout-status-bar .scout-free-link{min-height:44px}
+}
