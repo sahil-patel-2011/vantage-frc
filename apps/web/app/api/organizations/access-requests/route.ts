@@ -10,7 +10,8 @@ const reviewSchema = z.object({
   orgId: z.string().uuid(),
   requestId: z.string().uuid(),
   decision: z.enum(["approved", "declined"]),
-  role: z.enum(["scout", "viewer"]).optional(),
+  // A mentor who asked to join can be let in as one (owners only; review_workspace_access checks).
+  role: z.enum(["admin", "scout", "viewer"]).optional(),
 }).strict();
 
 async function currentUser() {

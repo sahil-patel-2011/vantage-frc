@@ -1,18 +1,19 @@
 "use client";
 
 import { type FormEvent, type RefObject, useState } from "react";
+import { INVITE_LIFETIME_CHOICES } from "@vantage/core/invite-policy";
+import { ROLE_HINTS, ROLE_LABELS } from "@vantage/core/role-words";
 import { Panel, Button } from "../../components/ui";
-import { formatInviteRowMeta, inviteDeliveryBanner, inviteLinkButtonLabels } from "../../lib/team/team-invites";
+import {
+  formatInviteRowMeta,
+  inviteDeliveryBanner,
+  inviteExpiryWords,
+  inviteLinkButtonLabels,
+} from "../../lib/team/team-invites";
 import type { Invite, InviteNotice } from "./team-admin-model";
 
-function expiryWords(expiresAt: string): string {
-  const days = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000);
-  if (!Number.isFinite(days)) return "";
-  if (days <= 0) return "expires today";
-  if (days === 1) return "expires tomorrow";
-  // The date, the way the owner invite from platform admin reads ("expires Oct 1").
-  return `expires ${new Date(expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
-}
+/** The invite form's access choices: Student first (the usual one), Mentor or coach for owners. */
+const INVITE_ROLES = ["scout", "admin", "viewer"] as const;
 
 /**
  * Invite form first, then only the invites still waiting. Accepted, revoked
@@ -26,6 +27,9 @@ export function TeamAdminInvitesPanel({
   setEmail,
   role,
   setRole,
+  lifetimeHours,
+  setLifetimeHours,
+  canInviteMentor,
   emailRef,
   inviteBusy,
   inviteNotice,
@@ -36,6 +40,7 @@ export function TeamAdminInvitesPanel({
   onSend,
   onCopyLink,
   onAct,
+  onOpenMember,
 }: {
   deliveryBanner: ReturnType<typeof inviteDeliveryBanner>;
   /** No email goes out from here: the buttons say "Create" and there is nothing to resend. */
@@ -45,6 +50,11 @@ export function TeamAdminInvitesPanel({
   setEmail: (value: string) => void;
   role: string;
   setRole: (value: string) => void;
+  /** How long the link works, in hours (1, 3 or 7 days). */
+  lifetimeHours: number;
+  setLifetimeHours: (value: number) => void;
+  /** Only the owner invites a mentor or coach (the API says so too). */
+  canInviteMentor: boolean;
   emailRef: RefObject<HTMLInputElement | null>;
   inviteBusy: boolean;
   inviteNotice: InviteNotice | null;
@@ -55,6 +65,8 @@ export function TeamAdminInvitesPanel({
   onSend: (event: FormEvent) => void;
   onCopyLink: (id: string, url: string) => void;
   onAct: (inviteId: string, action: "resend" | "revoke" | "copy") => void;
+  /** "Change their access" on an already-member notice. */
+  onOpenMember?: (userId: string) => void;
 }) {
   // A new link kills the one already sent, so it takes a second tap that says so.
   const [confirmNewLink, setConfirmNewLink] = useState<string | null>(null);
@@ -72,7 +84,7 @@ export function TeamAdminInvitesPanel({
         <p className="app-muted">
           They join when they verify this email. You can also share your team’s join code below.
         </p>
-        <div className="team-invite-fields">
+        <div className="team-invite-fields has-lifetime">
           <label>
             Email
             {/* Text, not type="email": a pasted list of addresses is fine here (one invite each),
@@ -101,20 +113,35 @@ export function TeamAdminInvitesPanel({
           </label>
           <label>
             Team access
-            {/* The words people use. Underneath: scout, admin and viewer team roles. */}
+            {/* The role words every screen uses (@vantage/core/role-words). Underneath: the
+                scout, admin and viewer team roles. */}
             <select value={role} aria-label="Team access" aria-describedby="team-invite-access-help" onChange={(e) => setRole(e.target.value)}>
-              <option value="scout">Team member</option>
-              <option value="admin">Team admin</option>
-              <option value="viewer">View only</option>
+              {INVITE_ROLES.filter((choice) => choice !== "admin" || canInviteMentor).map((choice) => (
+                <option key={choice} value={choice}>
+                  {ROLE_LABELS[choice]}
+                </option>
+              ))}
             </select>
-            {/* The dropdown did not say what each choice can do, and "Mentor" is an admin. */}
+            {/* The dropdown did not say what each choice can do. */}
             <small className="app-muted" id="team-invite-access-help">
-              {role === "admin"
-                ? "A team admin: invites and removes people, changes team settings and adds AI keys, and uses every team tool."
-                : role === "viewer"
-                  ? "Can look, can't change."
-                  : "Scouts and uses team tools."}
+              {ROLE_HINTS[role as keyof typeof ROLE_HINTS] ?? ""}
+              {!canInviteMentor ? " Only the owner can invite a mentor or coach." : ""}
             </small>
+          </label>
+          <label>
+            Link works for
+            <select
+              value={lifetimeHours}
+              aria-label="Link works for"
+              onChange={(e) => setLifetimeHours(Number(e.target.value))}
+            >
+              {INVITE_LIFETIME_CHOICES.map((choice) => (
+                <option key={choice.hours} value={choice.hours}>
+                  {choice.label}
+                </option>
+              ))}
+            </select>
+            <small className="app-muted">Longer is easier for families; shorter is safer.</small>
           </label>
           <Button variant="primary" type="submit" disabled={inviteBusy}>
             {inviteBusy ? (emailOff ? "Creating…" : "Sending…") : emailOff ? "Create invite" : "Send invite"}
@@ -141,6 +168,11 @@ export function TeamAdminInvitesPanel({
             {inviteNotice.undo ? (
               <Button variant="secondary" type="button" onClick={inviteNotice.undo.run}>
                 {inviteNotice.undo.label}
+              </Button>
+            ) : null}
+            {inviteNotice.memberUserId && onOpenMember ? (
+              <Button variant="secondary" type="button" onClick={() => onOpenMember(inviteNotice.memberUserId!)}>
+                Change their access
               </Button>
             ) : null}
             {inviteNotice.links?.length ? (
@@ -192,7 +224,7 @@ export function TeamAdminInvitesPanel({
                 <div>
                   <strong>{inviteRow.email}</strong>
                   <small>
-                    {formatInviteRowMeta(inviteRow).split(" · ")[0]} · {expiryWords(inviteRow.expiresAt)}
+                    {formatInviteRowMeta(inviteRow).split(" · ")[0]} · {inviteExpiryWords(inviteRow.expiresAt)}
                   </small>
                 </div>
                 {/* One button set on every waiting invite. Each names its person for screen readers. */}

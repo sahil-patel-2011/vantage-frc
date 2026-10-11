@@ -36,8 +36,12 @@ import { TeamHandoverDialog } from "./team-handover-dialog";
 import { TeamAdminProvidersPanel } from "./team-admin-providers";
 import { formatInviteRole } from "../../lib/invite/invite-flow";
 import { likelyEmailTypo } from "../../lib/team/email-typo";
+import { inviteEmailProblem, splitInviteEmails } from "../../lib/team/invite-email-address";
+import { bulkInviteOutcome, type BulkInviteResult } from "../../lib/team/team-invites";
+import { ORGANIZATION_INVITE_HOURS } from "@vantage/core/invite-policy";
 import "./team-access-requests.css";
 import "./team-admin.css";
+import "./team-people-invites.css";
 import { teamSettingsBreadcrumb } from "../../lib/nav/team-settings-nav";
 
 function isTeamAdminSnapshot(value: unknown): value is TeamAdminSnapshot {
@@ -70,7 +74,7 @@ function tenureTip(tenure: AdminTenure | null, invites: Invite[] = []): string |
   // Gone once a second adult is on the way: it stayed up after a mentor had been invited.
   const adultInvited = invites.some((invite) => invite.status === "pending" && invite.role !== "scout" && invite.role !== "viewer");
   if (tenure.adminCount <= 1 && !adultInvited) {
-    return "Invite your team lead with team admin access. Once they join, use your people menu to hand over the team or change your access.";
+    return "Invite your team lead as a mentor or coach. Once they join, use your people menu to hand over the team or change your access.";
   }
   return null;
 }
@@ -99,6 +103,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([]);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("scout");
+  const [lifetimeHours, setLifetimeHours] = useState(ORGANIZATION_INVITE_HOURS);
   const [message, setMessage] = useState("");
   const [inviteBusy, setInviteBusy] = useState(false);
   const [actingInviteId, setActingInviteId] = useState<string | null>(null);
@@ -164,30 +169,62 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       void clearFeatureSnapshot("team-admin", orgId);
     };
 
+    // Each list on its own: one slow call (the members list, 8 s under load) used to replace the
+    // whole page, invite form included, with "Something went wrong" (QA A3-23).
+    const fetchJson = async (url: string) => {
+      try {
+        const response = await fetch(url, timeout);
+        const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+        return { ok: response.ok, status: response.status, data };
+      } catch {
+        return { ok: false, status: 0, data: {} as Record<string, unknown> };
+      }
+    };
+    const refused = (result: { status: number; data: Record<string, unknown> }) =>
+      result.status !== 0 &&
+      ["auth", "reauth", "forbidden"].includes(
+        classifyLoadFailure({ status: result.status, message: typeof result.data.error === "string" ? result.data.error : "" }),
+      );
+
     try {
-      const [response, membersResponse] = await Promise.all([
-        fetch(`/api/organizations/invites?orgId=${orgId}`, timeout),
-        fetch(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`, timeout),
+      const [invitesResult, membersResult] = await Promise.all([
+        fetchJson(`/api/organizations/invites?orgId=${orgId}`),
+        fetchJson(`/api/organizations/members?orgId=${encodeURIComponent(orgId)}`),
       ]);
-      const data = await response.json();
-      if (["auth", "reauth", "forbidden"].includes(classifyLoadFailure({ status: response.status, message: data.error }))) {
-        denied(response.status, typeof data.error === "string" ? data.error : "");
+      const data = invitesResult.data;
+      if (refused(invitesResult)) {
+        denied(invitesResult.status, typeof data.error === "string" ? data.error : "");
         return;
       }
-      const nextInvites = Array.isArray(data.invites) ? data.invites : [];
+      const membersData = membersResult.data;
+      if (refused(membersResult)) {
+        denied(membersResult.status, typeof membersData.error === "string" ? membersData.error : "Could not load members");
+        return;
+      }
+      if (!invitesResult.ok && !membersResult.ok) {
+        // Nothing came back at all: the last copy on this device, or the page's own error.
+        if (hadCache || viewRef.current) {
+          setFromCache(true);
+          setMessage("Could not refresh the people list. Showing the last copy on this device.");
+          setMembershipFetchFailed(false);
+          setMembershipLoading(false);
+          return;
+        }
+        setMembershipFetchFailed(true);
+        setMembershipErrorStatus(membersResult.status || null);
+        setMembershipErrorMessage(typeof membersData.error === "string" ? membersData.error : "");
+        setMembershipLoading(false);
+        return;
+      }
+      const nextInvites = Array.isArray(data.invites) ? (data.invites as Invite[]) : (viewRef.current?.invites ?? []);
       const nextTenure = data.adminTenure ? (data.adminTenure as AdminTenure) : null;
       const nextDelivery = data.delivery ? (data.delivery as InviteDeliveryMode) : null;
-      if (!response.ok) setMessage(data.error);
+      if (!invitesResult.ok && typeof data.error === "string") setMessage(data.error);
 
-      const membersData = await membersResponse.json();
-      if (["auth", "reauth", "forbidden"].includes(classifyLoadFailure({ status: membersResponse.status, message: membersData.error }))) {
-        denied(membersResponse.status, membersData.error ?? "Could not load members");
-        return;
-      }
-
-      let nextMembers: Member[] = [];
-      if (membersResponse.ok) {
-        nextMembers = Array.isArray(membersData.members) ? membersData.members : [];
+      let nextMembers: Member[] = viewRef.current?.members ?? [];
+      const membersLoaded = membersResult.ok;
+      if (membersLoaded) {
+        nextMembers = Array.isArray(membersData.members) ? (membersData.members as Member[]) : [];
         setActor({
           userId: typeof membersData.actorUserId === "string" ? membersData.actorUserId : null,
           role: typeof membersData.actorRole === "string" ? membersData.actorRole : null,
@@ -195,19 +232,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         setMembershipFetchFailed(false);
         setMembershipErrorStatus(null);
         setMembershipErrorMessage("");
-      } else if (hadCache || viewRef.current) {
-        setFromCache(true);
-        setMessage("Could not refresh the people list. Showing the last copy on this device.");
-        setMembershipFetchFailed(false);
-        setMembershipLoading(false);
-        return;
       } else {
-        setMembers([]);
+        // The invite form still works; only People shows Retry.
         setMembershipFetchFailed(true);
-        setMembershipErrorStatus(membersResponse.status);
-        setMembershipErrorMessage(membersData.error ?? "Could not load members");
-        setMembershipLoading(false);
-        return;
+        setMembershipErrorStatus(membersResult.status || null);
+        setMembershipErrorMessage(typeof membersData.error === "string" ? membersData.error : "");
       }
 
       const [accessResponse, providerResponse] = await Promise.all([
@@ -229,14 +258,15 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         deliveryMode: nextDelivery,
         hubAccessByUser:
           membersData.hubAccessByUser && typeof membersData.hubAccessByUser === "object"
-            ? membersData.hubAccessByUser
-            : {},
+            ? (membersData.hubAccessByUser as Record<string, HubAccessRow[]>)
+            : (viewRef.current?.hubAccessByUser ?? {}),
       };
       applySnapshot(snapshot);
       setFromCache(false);
       setCachedAt(null);
       setMembershipLoading(false);
-      await persistTeamAdminSnapshot(orgId, snapshot);
+      // Only a complete copy is kept on the phone: a failed people list must not replace it.
+      if (membersLoaded && invitesResult.ok) await persistTeamAdminSnapshot(orgId, snapshot);
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
@@ -296,7 +326,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       const data = (await response.json().catch(() => ({}))) as { error?: string };
       setMessage(
         response.ok
-          ? `${member.name || member.email} is no longer on the team.`
+          ? `${member.name || member.email} is no longer on the team. We let them know.`
           : (data.error ?? "That didn't save. Try again."),
       );
       if (response.ok) await load();
@@ -312,18 +342,14 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     const inviteRole = again?.role ?? role;
     // Several addresses pasted at once (commas, spaces, new lines): one invite each, same role,
     // and every link in one list to copy.
-    const many = again ? [] : inviteEmail.split(/[\s,;]+/).map((entry) => entry.trim()).filter(Boolean);
-    // Checked here, by name: a typo came back from the server as "Request fields are invalid."
-    const notEmails = (many.length ? many : [inviteEmail.trim()]).filter(
-      (entry) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(entry),
-    );
-    if (!again && notEmails.length) {
-      setInviteNotice({
-        tone: "error",
-        message: `${notEmails.map((entry) => `"${entry}"`).join(", ")} ${
-          notEmails.length === 1 ? "isn't a full email address" : "aren't full email addresses"
-        }, like name@school.org.`,
-      });
+    const many = again ? [] : splitInviteEmails(inviteEmail);
+    // Checked here, by name, with the same rule as the server (invite-email-address.ts): a typo
+    // or a non-ASCII address came back from the server as "Request fields are invalid."
+    const problems = (many.length ? many : [inviteEmail.trim()])
+      .map((entry) => inviteEmailProblem(entry))
+      .filter((problem): problem is string => Boolean(problem));
+    if (!again && problems.length) {
+      setInviteNotice({ tone: "error", message: problems.join(" ") });
       return;
     }
     const typos = (many.length ? many : [inviteEmail.trim()])
@@ -355,18 +381,25 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       const response = await fetch("/api/organizations/invites", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, email: inviteEmail, role: inviteRole }),
+        body: JSON.stringify({ orgId, email: inviteEmail.trim(), role: inviteRole, expiresInHours: lifetimeHours }),
       });
-      const data = (await response.json()) as {
+      const data = (await response.json().catch(() => ({}))) as {
         id?: string;
         inviteUrl?: string;
         emailSent?: boolean;
         delivery?: InviteDeliveryMode;
         emailError?: string;
         error?: string;
+        code?: string;
+        userId?: string;
       };
       if (!response.ok) {
-        setInviteNotice({ tone: "error", message: data.error ?? "Could not create the invite." });
+        // Already on the team: say who and as what, and open their Access in one tap (QA A3-12).
+        setInviteNotice({
+          tone: "error",
+          message: data.error ?? "Could not create the invite.",
+          memberUserId: data.code === "already_member" && data.userId ? data.userId : null,
+        });
         return;
       }
       const result = inviteSendResultCopy({
@@ -396,46 +429,38 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     }
   }
 
+  /**
+   * A pasted list is one request (the server makes each invite on its own), so 20 addresses no
+   * longer hit the limit at the 16th, and the addresses that didn't go stay in the field to fix
+   * or send again instead of vanishing with the ones that did (QA A3-11).
+   */
   async function sendInvites(emails: string[], inviteRole: string) {
     setInviteBusy(true);
     setInviteNotice(null);
-    const made: Array<{ email: string; id: string; url: string }> = [];
-    const failed: string[] = [];
-    let delivery: InviteDeliveryMode | undefined;
     try {
-      for (const address of emails) {
+      let results: BulkInviteResult[] = [];
+      let requestError: string | null = null;
+      try {
         const response = await fetch("/api/organizations/invites", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orgId, email: address, role: inviteRole }),
+          body: JSON.stringify({ orgId, emails, role: inviteRole, expiresInHours: lifetimeHours }),
         });
-        const data = (await response.json().catch(() => ({}))) as {
-          id?: string;
-          inviteUrl?: string;
-          delivery?: InviteDeliveryMode;
-          error?: string;
-        };
-        if (response.ok && data.id && data.inviteUrl) {
-          made.push({ email: address, id: data.id, url: data.inviteUrl });
-          delivery = data.delivery ?? delivery;
-        } else {
-          failed.push(`${address} (${data.error ?? "could not be invited"})`);
-        }
+        const data = (await response.json().catch(() => ({}))) as { results?: BulkInviteResult[]; error?: string };
+        if (Array.isArray(data.results)) results = data.results;
+        else requestError = data.error ?? "Could not create the invites. Try again.";
+      } catch {
+        requestError = "Couldn't reach Vantage. Your list is still here. Try again.";
       }
-      setInviteLinks((current) => ({ ...current, ...Object.fromEntries(made.map((row) => [row.id, row.url])) }));
-      const sent = !inviteEmailIsOff(delivery) && delivery !== "failed";
-      setInviteNotice({
-        tone: failed.length ? "warn" : "ok",
-        message:
-          `${made.length} ${made.length === 1 ? "invite" : "invites"} ready.` +
-          (sent ? " We emailed each of them a link." : " Email is off here, so copy the links below and send them yourself.") +
-          (failed.length ? ` Not invited: ${failed.join("; ")}.` : ""),
-        links: made,
-      });
-      if (made.length) {
-        setEmail("");
-        setRole("scout");
+      if (requestError) {
+        setInviteNotice({ tone: "error", message: requestError });
+        return;
       }
+      const outcome = bulkInviteOutcome(results);
+      setInviteLinks((current) => ({ ...current, ...Object.fromEntries(outcome.made.map((row) => [row.id, row.url])) }));
+      setInviteNotice({ tone: outcome.tone, message: outcome.message, links: outcome.made });
+      setEmail(outcome.keep.join(", "));
+      if (!outcome.keep.length) setRole("scout");
       await load();
     } finally {
       setInviteBusy(false);
@@ -501,7 +526,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     }
   }
 
-  async function reviewAccess(requestId: string, decision: "approved" | "declined", role: "scout" | "viewer" = "viewer") {
+  async function reviewAccess(
+    requestId: string,
+    decision: "approved" | "declined",
+    role: "admin" | "scout" | "viewer" = "viewer",
+  ) {
     const response = await fetch("/api/organizations/access-requests", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -647,6 +676,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         setEmail={setEmail}
         role={role}
         setRole={setRole}
+        lifetimeHours={lifetimeHours}
+        setLifetimeHours={setLifetimeHours}
+        canInviteMentor={actor.role === "owner"}
         emailRef={emailRef}
         inviteBusy={inviteBusy}
         inviteNotice={inviteNotice}
@@ -657,6 +689,10 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         onSend={(event) => void sendInvite(event)}
         onCopyLink={(id, url) => void copyInviteLink(id, url)}
         onAct={(inviteId, action) => void act(inviteId, action)}
+        onOpenMember={(userId) => {
+          const member = members.find((row) => row.userId === userId);
+          if (member) setAccessTarget(member);
+        }}
       />
 
       {/* Inviting is this page's main job, so it comes first; the team code is the other way in. */}
@@ -665,6 +701,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       <TeamAdminAccessPanel
         accessRequests={accessRequests}
         message=""
+        canApproveMentor={actor.role === "owner"}
         onReview={(requestId, decision, reviewRole) => void reviewAccess(requestId, decision, reviewRole)}
       />
 
@@ -734,7 +771,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           removeTarget
             ? {
                 title: `Remove ${removeTarget.name || removeTarget.email} from the team?`,
-                body: "They lose access to this team straight away. Their account stays theirs, and what they did stays with the team. You can invite them again later.",
+                body: "They lose access to this team straight away, and we tell them they were removed. Their account stays theirs, and what they did stays with the team. You can invite them again later.",
                 confirmLabel: "Remove from team",
                 tone: "destructive",
               }

@@ -15,6 +15,7 @@ import {
   inviteProfileHref,
   inviteProfileRedirect,
   inviteSignInHref,
+  inviteTeamName,
   type InviteFlowKind,
   type InvitePreview,
 } from "../../lib/invite";
@@ -34,11 +35,13 @@ type PreviewResponse = {
   signedIn?: boolean;
   emailMismatch?: boolean;
   sessionEmail?: string | null;
+  /** The token was replaced by a newer invite to the same address (0721). */
+  replaced?: { team: string | null } | null;
   error?: string;
 };
 
 function badgeClass(kind: InviteFlowKind): string {
-  if (kind === "expired" || kind === "revoked" || kind === "email_mismatch") return "warn";
+  if (kind === "expired" || kind === "revoked" || kind === "replaced" || kind === "email_mismatch") return "warn";
   if (kind === "invalid" || kind === "error") return "danger";
   return "";
 }
@@ -47,12 +50,16 @@ function NextActions({
   kind,
   orgId,
   token,
+  signedIn,
+  isInvitee,
 }: {
   kind: InviteFlowKind;
   orgId?: string | null;
   token: string;
+  signedIn: boolean;
+  isInvitee: boolean;
 }) {
-  const actions = inviteNextActions({ kind, orgId, token });
+  const actions = inviteNextActions({ kind, orgId, token, signedIn, isInvitee });
   if (actions.length === 0) return null;
   return (
     <section className="invite-next-actions" aria-label="Next steps">
@@ -60,8 +67,9 @@ function NextActions({
         {actions.map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
             <div>
-              {/* The action's own name is the link; a row of "Open" links said nothing. */}
-              <a className="invite-next-link" href={action.href}>
+              {/* The action's own name is the link; a row of "Open" links said nothing. The main
+                  step is a button ("Open Home" was a small text link). */}
+              <a className={action.primary ? "signin-submit" : "invite-next-link"} href={action.href}>
                 {action.label}
               </a>
               <span>{action.detail}</span>
@@ -81,8 +89,9 @@ function InviteIdentity({ preview }: { preview: InvitePreview }) {
       <strong>{formatInviteTeamIdentity({ ...preview, role: "" })}</strong>
       <div className="invite-team-meta">
         <div>
-          <span>ROLE</span>
-          <strong>{formatInviteRole(preview.role) ?? preview.role}</strong>
+          {/* The access they get, in the role words every screen uses. */}
+          <span>ACCESS</span>
+          <strong>{formatInviteRole(preview.role) ?? "Member"}</strong>
         </div>
         <div>
           <span>SENT TO</span>
@@ -121,6 +130,8 @@ export default function InviteClient() {
   const [authRequired, setAuthRequired] = useState(false);
   const [emailMismatch, setEmailMismatch] = useState(false);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState(false);
+  const [replacedTeam, setReplacedTeam] = useState<{ team: string | null } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [previewAttempt, setPreviewAttempt] = useState(0);
 
@@ -170,11 +181,14 @@ export default function InviteClient() {
     setAuthRequired(false);
     setEmailMismatch(false);
     setSessionEmail(null);
+    setReplacedTeam(null);
     void fetch(`/api/invites/preview?token=${encodeURIComponent(token)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) })
       .then(async (response) => {
         const data = (await response.json()) as PreviewResponse;
         if (!active) return;
         setSessionEmail(data.sessionEmail ?? null);
+        setSignedIn(data.signedIn === true);
+        setReplacedTeam(data.replaced ?? null);
         setLegalRequired(data.legalRequired !== false);
         setProfileRequired(data.profileRequired === true);
         setOnboardingComplete(typeof data.onboardingComplete === "boolean" ? data.onboardingComplete : null);
@@ -225,8 +239,16 @@ export default function InviteClient() {
     emailMismatch,
     preview: preview ?? null,
     error: loadError,
+    replaced: Boolean(replacedTeam),
   });
-  const empty = inviteEmptyCopy(kind, loadError);
+  // Dead links name the team (the preview has it, or the replaced token's team); a used link
+  // tells only the signed-in person it was for that they joined (QA A3-09, A3-10).
+  const isInvitee = signedIn && !emailMismatch && Boolean(preview);
+  const empty = inviteEmptyCopy(kind, kind === "replaced" ? null : loadError, {
+    team: replacedTeam?.team ?? inviteTeamName(preview ?? null),
+    signedIn,
+    isInvitee,
+  });
   const canAccept = !profileRequired && inviteCanAccept({
     termsAccepted,
     privacyAccepted,
@@ -412,16 +434,11 @@ export default function InviteClient() {
             ) : null}
             {kind === "email_mismatch" ? (
               <>
-                <div className="invite-security-note">
-                  <b aria-hidden="true">!</b>
-                  <p>
-                    <strong>Wrong account for this invite</strong>
-                    <span>
-                      You are signed in as {sessionEmail || "a different email"}. This invite is for{" "}
-                      {preview?.email || "another address"}.
-                    </span>
-                  </p>
-                </div>
+                {/* The heading already says "different email"; this line says which two. */}
+                <p className="onboarding-sub">
+                  You are signed in as {sessionEmail || "a different email"}. This invite is for{" "}
+                  {preview?.email || "another address"}.
+                </p>
                 <div className="invite-actions">
                   <button
                     type="button"
@@ -440,7 +457,7 @@ export default function InviteClient() {
 
         {/* Not while loading: "Retry invitation" sat under "Checking invite…" on every normal open. */}
         {kind !== "ready" && kind !== "loading" && kind !== "auth_required" && kind !== "email_mismatch" ? (
-          <NextActions kind={kind} orgId={preview?.orgId} token={token} />
+          <NextActions kind={kind} orgId={preview?.orgId} token={token} signedIn={signedIn} isInvitee={isInvitee} />
         ) : null}
       </section>
     </main>

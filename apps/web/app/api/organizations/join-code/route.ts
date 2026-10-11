@@ -152,18 +152,25 @@ export async function POST(request: Request) {
             joinRole: isJoinCodeRole(state?.joinRole) ? state.joinRole : "viewer",
           };
         }
-        const pin = await setTeamJoinCode(client, body.orgId, body.pin, { enable: true, role: body.role });
+        // A new code (or the first one) is on, except when the only change asked for was the
+        // access joiners get: that makes the code but leaves it off.
+        const enable = body.enabled === true || body.pin !== undefined || body.role === undefined;
+        const pin = await setTeamJoinCode(client, body.orgId, body.pin, { enable, role: body.role });
         await client.query(
           "INSERT INTO membership_audit_events(org_id,actor_user_id,action) VALUES($1,$2,'team.join_code.rotated')",
           [body.orgId, userId],
         );
-        const role = (
-          await client.query<{ joinRole: string }>(
-            `SELECT join_role::text AS "joinRole" FROM team_join_codes WHERE org_id=$1`,
+        const saved = (
+          await client.query<{ joinRole: string; enabled: boolean }>(
+            `SELECT join_role::text AS "joinRole", enabled FROM team_join_codes WHERE org_id=$1`,
             [body.orgId],
           )
-        ).rows[0]?.joinRole;
-        return { pin, enabled: true, joinRole: isJoinCodeRole(role) ? role : "viewer" };
+        ).rows[0];
+        return {
+          pin,
+          enabled: saved?.enabled ?? enable,
+          joinRole: isJoinCodeRole(saved?.joinRole) ? saved.joinRole : "viewer",
+        };
       }),
     );
   } catch (error) {

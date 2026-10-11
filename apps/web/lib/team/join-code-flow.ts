@@ -1,4 +1,23 @@
+import { ROLE_LABELS } from "@vantage/core/role-words";
 import { inviteSignInHref } from "../invite/invite-flow";
+
+/**
+ * Team admin's sentence for the join code: whether it is on, and what joiners get, in the role
+ * words. The code used to be on for every new team, hidden in a closed panel, with nothing
+ * saying that anyone with it joins (QA A3-01).
+ */
+export function joinCodeAccessSentence(state: { enabled: boolean; joinRole?: "scout" | "viewer"; teamNumber?: number }): string {
+  const team = state.teamNumber ? `team number ${state.teamNumber}` : "your team number";
+  const role = state.joinRole === "scout" ? "scout" : "viewer";
+  if (!state.enabled) {
+    return `Off. Turn it on to let people join with ${team} and a six-digit code instead of an email invite.`;
+  }
+  return (
+    `On. Anyone with ${team} and this code can join after verifying their email, as ${ROLE_LABELS[role]}` +
+    (role === "viewer" ? " (can look, can't change) until you change their access." : ".") +
+    " People who say they're a parent always join as Parent or guest. You get a notice each time someone joins."
+  );
+}
 
 /** "You're already on <team>": the team, and Home on it. */
 export type TeamJoinMember = { orgId: string; orgName: string | null; teamNumber: number; href: string };

@@ -1,5 +1,7 @@
 /** Soft-UI helpers for `/invite` accept — exact-email invites, never DEMO membership. */
 
+import { isAccessRole, roleLabel } from "@vantage/core/role-words";
+
 export const PENDING_INVITE_STORAGE_KEY = "vantage.pendingInviteToken";
 
 export type InvitePreviewStatus =
@@ -18,6 +20,8 @@ export type InviteFlowKind =
   | "expired"
   | "accepted"
   | "revoked"
+  /** A resend or "new link" replaced this token; the team sent a newer one (0721). */
+  | "replaced"
   | "ready"
   | "error";
 
@@ -61,11 +65,9 @@ export function normalizeInviteStatus(status: string | null | undefined): Invite
 export function formatInviteRole(role: string | null | undefined): string | null {
   if (!role?.trim()) return null;
   const normalized = role.trim().toLowerCase();
-  // Access and a person's team job are separate: a student may administer a team.
-  if (normalized === "owner") return "Owner";
-  if (normalized === "admin") return "Team admin";
-  if (normalized === "scout") return "Team member";
-  if (normalized === "viewer") return "View only";
+  // The one set of role words (@vantage/core/role-words): Owner, Mentor or coach, Student,
+  // Parent or guest. The invite page said "Team member" where the shell said "Student".
+  if (isAccessRole(normalized)) return roleLabel(normalized);
   if (normalized === "mentor") return "Mentor";
   if (normalized === "member") return "Member";
   return role.trim();
@@ -173,6 +175,8 @@ export function classifyInviteFlow(input: {
   emailMismatch?: boolean;
   preview: InvitePreview | null | undefined;
   error?: string | null;
+  /** The link's token was replaced by a newer invite to the same address. */
+  replaced?: boolean;
 }): InviteFlowKind {
   // Loading is checked first: a bare `/invite` may still be recovering the
   // stashed token, and flashing "link incomplete" at that moment is a lie.
@@ -192,14 +196,51 @@ export function classifyInviteFlow(input: {
     if (status === "revoked") return "revoked";
     return "invalid";
   }
+  if (input.replaced) return "replaced";
   if (input.emailMismatch) return "email_mismatch";
   if (input.authRequired) return "auth_required";
   if (input.error?.trim()) return "error";
   return "invalid";
 }
 
+/**
+ * What the invite page knows beyond the kind: the team the invite was for (the preview names
+ * it even when the link is dead), whether someone is signed in, and whether they are the
+ * person it was for. Expired, cancelled and replaced links never named the team, so a parent
+ * with children on two teams could not tell which one's invite had expired (QA A3-10).
+ */
+export type InvitePageContext = {
+  team?: string | null;
+  signedIn?: boolean;
+  /** Signed in as the address the invite was sent to. */
+  isInvitee?: boolean;
+};
+
+/** "Team 9301 · QA 3 Alpha" from a preview, or null. */
+export function inviteTeamName(
+  preview: Pick<InvitePreview, "orgName" | "teamNumber"> | null | undefined,
+): string | null {
+  if (!preview) return null;
+  const identity = formatInviteTeamIdentity({ ...preview, role: "" });
+  return identity === "Your team" ? null : identity;
+}
+
 /** Soft-UI empty / setup copy — never invents a joinable team. */
-export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): InviteEmptyCopy {
+export function inviteEmptyCopy(
+  kind: InviteFlowKind,
+  detail?: string | null,
+  context: InvitePageContext = {},
+): InviteEmptyCopy {
+  const team = context.team?.trim() || null;
+  if (kind === "replaced") {
+    return {
+      kind,
+      eyebrow: "TEAM INVITATION",
+      title: "A newer invite replaced this link",
+      description: `${team ?? "The team"} sent a newer invite to this address, so this link stopped working. Open the most recent invite email from Vantage, or ask the person who invited you.`,
+      badge: "",
+    };
+  }
   if (kind === "loading") {
     return {
       kind,
@@ -235,33 +276,46 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
   if (kind === "email_mismatch") {
     return {
       kind,
-      eyebrow: "WRONG ACCOUNT",
+      // Said once: a "WRONG EMAIL" pill, a "WRONG ACCOUNT" eyebrow, this heading and a warning
+      // box said the same thing four times (QA A3-28).
+      eyebrow: "TEAM INVITATION",
       title: "You're signed in with a different email",
       description:
         detail?.trim() ||
         "Sign out, then sign in with the address this invite was sent to.",
-      badge: "Wrong email",
+      badge: "",
     };
   }
   if (kind === "expired") {
     return {
       kind,
       eyebrow: "INVITE EXPIRED",
-      title: "This invitation has expired",
+      title: team ? `Your invite to ${team} has expired` : "This invitation has expired",
       description:
         detail?.trim() ||
-        "Ask a team owner or admin to send a new invite to your email.",
+        "Ask the person who invited you to send a new one. Invites work for a day to a week, as the team chose.",
       badge: "Expired",
     };
   }
   if (kind === "accepted") {
+    // A used link told a signed-out stranger "You are on the team"; only the person it was for,
+    // signed in, is told they joined (QA A3-10).
+    if (context.signedIn && context.isInvitee) {
+      return {
+        kind,
+        eyebrow: "TEAM INVITATION",
+        title: team ? `You already joined ${team}` : "You already used this invite",
+        description: "Home opens on your team.",
+        badge: "",
+      };
+    }
     return {
       kind,
       eyebrow: "TEAM INVITATION",
       title: "This invite was already used",
-      description:
-        detail?.trim() ||
-        "If you already joined, choose your team. Otherwise ask an owner for a fresh invite.",
+      description: context.signedIn
+        ? "It was used by a different account. Ask the team for an invite to your own email."
+        : "Each invite link works once. If it was yours, sign in with that email. Otherwise ask the team for a new invite.",
       badge: "",
     };
   }
@@ -270,8 +324,8 @@ export function inviteEmptyCopy(kind: InviteFlowKind, detail?: string | null): I
       kind,
       // Said once: a "Revoked" pill, an "INVITE REVOKED" eyebrow and the heading said it three times.
       eyebrow: "TEAM INVITATION",
-      title: "This invite was cancelled",
-      description: detail?.trim() || "Ask your team for a new one.",
+      title: team ? `${team} cancelled this invite` : "This invite was cancelled",
+      description: detail?.trim() || "If you still want to join, ask the person who invited you for a new one.",
       badge: "",
     };
   }
@@ -303,6 +357,8 @@ export function inviteNextActions(input: {
   kind: InviteFlowKind;
   orgId?: string | null;
   token?: string | null;
+  signedIn?: boolean;
+  isInvitee?: boolean;
 }): InviteNextAction[] {
   const token = input.token?.trim() || "";
   const inviteReturn = token ? `/invite?token=${encodeURIComponent(token)}` : "/invite";
@@ -328,19 +384,33 @@ export function inviteNextActions(input: {
   }
 
   if (input.kind === "accepted") {
-    const homeHref = input.orgId ? `/dashboard?orgId=${encodeURIComponent(input.orgId)}` : "/dashboard";
+    if (input.signedIn && input.isInvitee) {
+      const homeHref = input.orgId ? `/dashboard?orgId=${encodeURIComponent(input.orgId)}` : "/dashboard";
+      return [
+        {
+          id: "home",
+          label: "Open Home",
+          detail: "Home shows what to do first on your team.",
+          href: homeHref,
+          primary: true,
+        },
+      ];
+    }
+    if (input.signedIn) return [];
     return [
       {
-        id: "home",
-        label: "Open Home",
-        detail: "You are on the team — Home shows your first week.",
-        href: homeHref,
+        id: "signin",
+        label: "Sign in",
+        detail: "If this invite was yours, sign in with that email and you land on your team.",
+        href: "/signin",
         primary: true,
       },
     ];
   }
 
-  if (input.kind === "expired" || input.kind === "revoked" || input.kind === "invalid") {
+  if (input.kind === "expired" || input.kind === "revoked" || input.kind === "invalid" || input.kind === "replaced") {
+    // "Already joined? Sign in" made no sense to someone already signed in.
+    if (input.signedIn) return [];
     return [
       {
         id: "signin",

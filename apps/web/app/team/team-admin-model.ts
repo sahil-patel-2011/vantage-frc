@@ -84,6 +84,8 @@ export type InviteNotice = {
   undo?: { label: string; run: () => void } | null;
   /** Several invites made at once: one line per person, each with its link. */
   links?: Array<{ email: string; id: string; url: string }>;
+  /** Already on the team: a "Change their access" button opens Access for this member. */
+  memberUserId?: string | null;
 };
 
 /** Last IndexedDB copy of Team admin membership — never invented counts. */

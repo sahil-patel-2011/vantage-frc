@@ -363,6 +363,29 @@ export async function peekOrganizationInvite(
   };
 }
 
+/**
+ * An invite link whose token was replaced by a resend or "Get a new link" (0721): which team,
+ * so the old link can say a newer one was sent instead of "the link may be cut off" (A3-09).
+ * Null for any other token, and on a database without 0721. Call it on a client that is not
+ * inside a transaction (a failure here would abort one).
+ */
+export async function peekReplacedInvite(
+  client: PoolClient,
+  token: string,
+): Promise<{ orgName: string; teamNumber: number | null; status: string } | null> {
+  try {
+    const row = (
+      await client.query<{ orgName: string; teamNumber: number | null; status: string }>(
+        `SELECT org_name AS "orgName", team_number AS "teamNumber", status FROM peek_replaced_invite($1)`,
+        [token],
+      )
+    ).rows[0];
+    return row ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function acceptOrganizationInvite(
   client: PoolClient,
   actorUserId: string,
