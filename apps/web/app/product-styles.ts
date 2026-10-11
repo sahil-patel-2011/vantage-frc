@@ -19,6 +19,8 @@ import "./apple-polish-product.css";
 import "./product-motion.css";
 // The complete product material system, including desktop navigation.
 import "./macos-product.css";
+// After macos-product.css on purpose: press feedback, the sliding segment and rows easing in.
+import "./motion-polish.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

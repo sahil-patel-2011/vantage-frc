@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 
 export type SoftTab = {
   id: string;
@@ -49,6 +49,36 @@ export function TabBar({
     if (own.left < box.left) nav.scrollLeft -= box.left - own.left + 16;
     else if (own.right > box.right) nav.scrollLeft += own.right - box.right + 16;
   }, [value]);
+  // The selected segment's background slides between tabs instead of jumping (pill variant).
+  // Measured, so it follows any label width; until the first measure the selected tab keeps its
+  // own background, so nothing depends on JavaScript to read correctly.
+  useLayoutEffect(() => {
+    const nav = strip.current;
+    if (!nav || variant !== "pill") return;
+    const place = () => {
+      const tab = nav.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+      if (!tab) {
+        delete nav.dataset.glide;
+        return;
+      }
+      nav.style.setProperty("--glide-x", `${tab.offsetLeft}px`);
+      nav.style.setProperty("--glide-y", `${tab.offsetTop}px`);
+      nav.style.setProperty("--glide-w", `${tab.offsetWidth}px`);
+      nav.style.setProperty("--glide-h", `${tab.offsetHeight}px`);
+      // First placement lands without sliding in from the left edge; later ones slide.
+      if (!nav.dataset.glide) {
+        nav.dataset.glide = "placed";
+        requestAnimationFrame(() => {
+          if (nav.dataset.glide === "placed") nav.dataset.glide = "on";
+        });
+      }
+    };
+    place();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(place);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [value, variant, tabs.length]);
   const tabList = (
     <nav
       ref={strip}
@@ -67,6 +97,7 @@ export function TabBar({
         enabled[next]?.click();
       }}
     >
+      {variant === "pill" ? <span className="soft-tab-glider" aria-hidden="true" /> : null}
       {tabs.map((tab) => {
         const selected = tab.id === value;
         return (
