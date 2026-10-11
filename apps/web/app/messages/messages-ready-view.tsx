@@ -336,16 +336,18 @@ export function MessagesReadyView({
             {teamChatEnabled ? (
               <div className="messages-sidebar-head">
                 <span className="messages-sidebar-title">Chats</span>
-                <button
-                  type="button"
-                  className="messages-new-dm"
-                  onClick={() => void openMemberPicker()}
-                  disabled={sending}
-                  title="New message"
-                >
-                  <ComposeIcon />
-                  <span className="messages-btn-label">New message</span>
-                </button>
+                {viewOnly ? null : (
+                  <button
+                    type="button"
+                    className="messages-new-dm"
+                    onClick={() => void openMemberPicker()}
+                    disabled={sending}
+                    title="New message"
+                  >
+                    <ComposeIcon />
+                    <span className="messages-btn-label">New message</span>
+                  </button>
+                )}
               </div>
             ) : null}
             {teamChatEnabled ? (
