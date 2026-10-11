@@ -11,6 +11,7 @@ import { isKnownAppPath } from "./lib/nav/app-route-roots";
 import { REMEMBERED_TEAM_COOKIE, TEAM_SCOPED_PAGES, isTeamId, teamPageRedirect } from "./lib/nav/remembered-team";
 import { pendingProvisioningTeam, requestedProvisioningTeam } from "./lib/provisioning/request-gate";
 import { noteDatabaseFailure } from "./lib/outage/note";
+import { SIGNED_OUT_MESSAGE } from "./lib/security/signed-out";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -129,7 +130,11 @@ const MARKETING_ALIASES: Record<string, string> = {
   // The URLs people guess for signing in. /login was the 404 page.
   "/login": "/signin",
   "/log-in": "/signin",
-  "/contact": "mailto:vantagefrc@gmail.com",
+  // The footer's contact column, with the address written out: a mailto: redirect left a laptop
+  // with no mail app on a blank page.
+  "/contact": "/#contact",
+  // The page is called "Cost" everywhere a person reads it.
+  "/cost": "/pricing",
   "/about": "/for-teams",
 };
 const PUBLIC_FILE = /\.(?:avif|css|gif|ico|jpe?g|js|json|map|png|svg|txt|webmanifest|webp|woff2?|xml)$/i;
@@ -356,7 +361,8 @@ export async function proxy(request: NextRequest) {
     if (pathname === "/signin" || pathname === "/sign-in") return NextResponse.next();
     // Fetch follows redirects: a sign-in page would become a misleading 200
     // instead of letting product screens recognize an expired session.
-    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    // The same sentence the routes use (e.g. /api/onboarding), so a signed-out answer reads one way.
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: SIGNED_OUT_MESSAGE }, { status: 401 });
     // An address that is no page at all gets the 404, not a sign-in form that leads nowhere.
     if (!isKnownAppPath(pathname)) return NextResponse.next();
     return signInRedirect(request);

@@ -6,6 +6,7 @@ import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from ".
 import { parseSecureJson, securityErrorResponse } from "../../../lib/security/request";
 import { ensureFirstOwnerTeamDefaults } from "../../../lib/provisioning/owner-defaults";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import { SIGNED_OUT_MESSAGE } from "../../../lib/security/signed-out";
 
 const mutationLimiter = createRateLimiter({ limit: 30, windowMs: 10 * 60_000, namespace: "onboarding" });
 
@@ -77,7 +78,7 @@ function privateJson(value: unknown, init?: ResponseInit) {
 
 export async function GET() {
   const current = await session();
-  if (!current) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
+  if (!current) return Response.json({ error: SIGNED_OUT_MESSAGE }, { status: 401 });
   try {
     const state = await withRls({ userId: current.user.id }, (client) =>
       getOnboardingState(client, current.user.id),
@@ -93,7 +94,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const current = await session();
-  if (!current) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
+  if (!current) return Response.json({ error: SIGNED_OUT_MESSAGE }, { status: 401 });
   try {
     const key = `${current.user.id}:${anonymizeIp(clientIp(request))}`;
     if (!(await mutationLimiter.allow(key))) return rateLimitedResponse("Too many onboarding changes. Wait a moment and try again.");
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const current = await session();
-  if (!current) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
+  if (!current) return Response.json({ error: SIGNED_OUT_MESSAGE }, { status: 401 });
   try {
     const key = `${current.user.id}:${anonymizeIp(clientIp(request))}`;
     if (!(await mutationLimiter.allow(key))) return rateLimitedResponse("Too many onboarding changes. Wait a moment and try again.");
