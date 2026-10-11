@@ -299,23 +299,14 @@ export default function FilesClient() {
       description={MEDIA_ENABLED ? "One place for the team's videos, CAD exports, print files, flyers and paperwork — and a private space of your own." : "Team documents, CAD exports and paperwork. Photo and video uploads are temporarily paused."}
     >
       <div className="drive-header-actions">
-        <div className="drive-layout-toggle" role="group" aria-label="Layout">
-          <Button
-            type="button"
-            variant="secondary"
-            aria-pressed={layout === "grid"}
-            onClick={() => setLayout("grid")}
-          >
+        {/* A two-way choice reads as one segmented control, with the current layout raised. */}
+        <div className="drive-layout-toggle kit-segment" role="group" aria-label="Layout">
+          <button type="button" aria-pressed={layout === "grid"} onClick={() => setLayout("grid")}>
             Grid
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            aria-pressed={layout === "list"}
-            onClick={() => setLayout("list")}
-          >
+          </button>
+          <button type="button" aria-pressed={layout === "list"} onClick={() => setLayout("list")}>
             List
-          </Button>
+          </button>
         </div>
         {canUpload ? (
           <Button
@@ -360,7 +351,7 @@ export default function FilesClient() {
   );
 
   return (
-    <main className="app-page drive-page">
+    <main className="module-page drive-page">
       {header}
       {related}
       <OfflineBanner feature="Files" fromCache={fromCache} cachedAt={cachedAt} />

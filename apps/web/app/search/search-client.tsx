@@ -239,7 +239,7 @@ export default function SearchClient() {
       : null;
 
   return (
-    <div className="app-page" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <main className="module-page search-page" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <PageHeader
         title="Search"
         description="One box across help tutorials, build tasks, inventory, community impact, and team knowledge."
@@ -369,6 +369,6 @@ export default function SearchClient() {
           description="Results span every team feature you have access to, ranked by recency."
         />
       ) : null}
-    </div>
+    </main>
   );
 }

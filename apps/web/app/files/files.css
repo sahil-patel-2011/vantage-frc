@@ -13,8 +13,11 @@
 }
 
 .drive-layout-toggle {
-  display: inline-flex;
-  gap: 4px;
+  display: inline-grid;
+}
+
+.drive-layout-toggle button {
+  min-width: 64px;
 }
 
 /* The scoping paragraph is deliberately prominent: it is the thing that makes

@@ -43,11 +43,12 @@ describe("leftover Files / tags / cutoff student chrome", () => {
 });
 
 describe("Files and Drive-team tags keep one primary", () => {
-  it("Files header Upload is the only primary; Grid/List stay secondary", () => {
+  it("Files header Upload is the only primary; Grid/List are a segmented control", () => {
     const src = readFileSync(join(WEB, "app/files/files-client.tsx"), "utf8");
-    const header = src.slice(src.indexOf("drive-layout-toggle"), src.indexOf("Upload files") + 120);
-    expect(header).toMatch(/variant="secondary"/);
-    expect(header).not.toMatch(/layout === "grid" \? "primary"/);
+    const toggle = src.slice(src.indexOf("drive-layout-toggle"), src.indexOf("{canUpload ?"));
+    expect(toggle).toMatch(/kit-segment/);
+    expect(toggle).toMatch(/aria-pressed=\{layout === "grid"\}/);
+    expect(toggle).not.toMatch(/primary/);
     expect(src).toMatch(/Upload files/);
     // Tolerate the formatter putting the attributes on their own lines — the
     // point is that Upload is a primary <Button type="button">, not how it wraps.

@@ -244,6 +244,13 @@ function SubsystemCard({
   );
 }
 
+/** "competition" is the stored label; people read "Competition robot". Custom labels show as typed. */
+function robotName(label: string): string {
+  if (label === "competition") return "Competition robot";
+  if (label === "practice") return "Practice robot";
+  return label;
+}
+
 export default function RobotClient() {
   const [view, setView] = useState<BlueprintView | null>(null);
   const [error, setError] = useState("");
@@ -435,13 +442,16 @@ export default function RobotClient() {
           </p>
         </div>
         <div className="robot-header-actions">
-          <select value={robotLabel} aria-label="Robot" onChange={(event) => setRobotLabel(event.target.value)}>
-            {robotLabels.map((label) => (
-              <option key={label} value={label}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <label className="inline-field-label">
+            Robot
+            <select value={robotLabel} onChange={(event) => setRobotLabel(event.target.value)}>
+              {robotLabels.map((label) => (
+                <option key={label} value={label}>
+                  {robotName(label)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </header>
 
@@ -473,7 +483,7 @@ export default function RobotClient() {
       {robotSubsystems.length === 0 ? (
         <EmptyState
           className="robot-empty"
-          title={`No subsystems yet for “${robotLabel}”`}
+          title={`No subsystems yet for ${robotName(robotLabel) === robotLabel ? `“${robotLabel}”` : `the ${robotLabel} robot`}`}
           description="Seed the standard FRC set (drivetrain, intake, scorer…) and then link each to its CAD, code, and strategy."
         >
           <Button variant="primary" type="button" disabled={busy} onClick={() => void run({ action: "seed_subsystems", orgId, robotLabel }, "seed")}>

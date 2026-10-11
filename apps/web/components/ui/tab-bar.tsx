@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, useRef, type ReactNode } from "react";
 
 export type SoftTab = {
   id: string;
@@ -35,8 +37,21 @@ export function TabBar({
   variant = "pill",
 }: TabBarProps) {
   const shell = variant === "toolbar" ? "soft-tab-toolbar" : "soft-tab-bar";
+  const strip = useRef<HTMLElement>(null);
+  // On a phone the strip scrolls sideways, and opening Competition on "Match plan" showed the
+  // selected tab cut off at the edge ("Matc"). Bring it into view: the strip only, never the page.
+  useEffect(() => {
+    const nav = strip.current;
+    const tab = nav?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    if (!nav || !tab || nav.scrollWidth <= nav.clientWidth) return;
+    const box = nav.getBoundingClientRect();
+    const own = tab.getBoundingClientRect();
+    if (own.left < box.left) nav.scrollLeft -= box.left - own.left + 16;
+    else if (own.right > box.right) nav.scrollLeft += own.right - box.right + 16;
+  }, [value]);
   const tabList = (
     <nav
+      ref={strip}
       className={[shell, className].filter(Boolean).join(" ")}
       role="tablist"
       aria-label={ariaLabel}
