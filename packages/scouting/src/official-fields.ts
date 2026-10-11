@@ -24,7 +24,7 @@ export function officialComparisonForField(field: FieldDefinition): OfficialFiel
   const setting = field.config?.officialComparison;
   if (setting !== undefined && !isOfficialComparisonMode(setting)) return { kind: null, source: "none", message: "Choose a supported official comparison in Forms." };
   if (setting === "none") return { kind: null, source: "configured", message: "Official checking is off for this question." };
-  let kind: RobotComparisonKind | null = null;
+  let kind: RobotComparisonKind | null;
   let source: OfficialFieldComparison["source"] = "convention";
   if (setting === "climb" || setting === "mobility" || setting === "foul") { kind = setting; source = "configured"; }
   else if (isOutcomeObservationOnlyKey(field.key) || field.config?.role === "none") {
