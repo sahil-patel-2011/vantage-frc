@@ -84,8 +84,8 @@ export function LogisticsTripsPanel({
           <input name="eventKey" aria-label="Event code" placeholder="Event code, e.g. 2026gacmp (optional)" />
           <input name="venueName" aria-label="Venue name" placeholder="Venue name" />
           <input name="venueAddress" aria-label="Venue address" placeholder="Venue address" />
-          <input name="startsOn" type="date" aria-label="Trip starts" />
-          <input name="endsOn" type="date" aria-label="Trip ends" />
+          <label className="inline-field-label">Trip starts<input name="startsOn" type="date" /></label>
+          <label className="inline-field-label">Trip ends<input name="endsOn" type="date" /></label>
           <textarea name="travelNotes" aria-label="Travel notes" placeholder="Travel notes" rows={2} />
           <textarea name="transportNotes" aria-label="Transport notes" placeholder="Transport notes" rows={2} />
           <button type="submit" disabled={!act || busy}>
@@ -182,8 +182,8 @@ export function LogisticsTripsPanel({
                 <input name="address" aria-label="Address" placeholder="Address" />
                 <input name="phone" aria-label="Phone" placeholder="Phone" />
                 <input name="confirmationCode" aria-label="Confirmation code" placeholder="Confirmation code" />
-                <input name="checkInAt" aria-label="Hotel check-in" type="datetime-local" />
-                <input name="checkOutAt" aria-label="Hotel check-out" type="datetime-local" />
+                <label className="inline-field-label">Hotel check-in<input name="checkInAt" type="datetime-local" /></label>
+                <label className="inline-field-label">Hotel check-out<input name="checkOutAt" type="datetime-local" /></label>
                 <textarea name="roomBlockNotes" aria-label="Room block notes" placeholder="Room block notes" rows={2} />
                 <button type="submit" disabled={!act || busy}>
                   Add hotel
@@ -272,7 +272,7 @@ export function LogisticsTripsPanel({
                   ))}
                 </select>
                 <input name="title" aria-label="Title" placeholder="Title (optional)" />
-                <input name="startsAt" aria-label="Start time" type="datetime-local" required />
+                <label className="inline-field-label">Start time<input name="startsAt" type="datetime-local" required /></label>
                 <input name="meetingPoint" aria-label="Meeting point" placeholder="Meeting point" />
                 <input name="location" aria-label="Location" placeholder="Location" />
                 <button type="submit" disabled={!act || busy}>

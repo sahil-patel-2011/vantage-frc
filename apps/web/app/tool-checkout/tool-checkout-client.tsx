@@ -537,7 +537,10 @@ function CheckoutButton({
           required
         />
       )}
-      <input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)} />
+      <label className="inline-field-label">
+        Due back
+        <input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)} />
+      </label>
       <Button variant="primary" type="submit" disabled={busy || !canConfirm}>
         Confirm
       </Button>

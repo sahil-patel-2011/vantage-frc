@@ -221,8 +221,8 @@ export function LogisticsManagePanel({
           </select>
           <input name="mentorName" aria-label="Mentor display name" placeholder="Display name override" />
           <input name="phone" aria-label="Phone" placeholder="Phone" />
-          <input name="startsAt" aria-label="Start time" type="datetime-local" required />
-          <input name="endsAt" aria-label="End time" type="datetime-local" />
+          <label className="inline-field-label">Start time<input name="startsAt" type="datetime-local" required /></label>
+          <label className="inline-field-label">End time<input name="endsAt" type="datetime-local" /></label>
           <input name="locationNote" aria-label="Location" placeholder="Location (pit, hotel lobby…)" />
           <textarea name="notes" aria-label="Notes" placeholder="Notes" rows={2} />
           <button type="submit" disabled={!act || busy}>

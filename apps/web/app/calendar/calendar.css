@@ -49,7 +49,8 @@
 .cal-seed summary{font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}
 .cal-seed-body{display:grid;gap:10px;padding-top:12px}
 .cal-seed-body p{margin:0;font-size:12px}
-.cal-seed-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cal-seed-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.cal-seed-date{display:grid;gap:4px;font-size:13px;font-weight:600}
 .cal-template-pick{display:grid;gap:6px;font-size:12px;font-weight:600;color:var(--muted)}
 .cal-template-pick select{font-weight:500}
 .cal-template-desc{max-width:52rem}

@@ -416,6 +416,17 @@
   .biz-detail-link > a {
     min-height: 44px;
     padding: 6px 10px;
+    /* On touch each link is already a padded target, so it reads as a chip; the dots, which
+       sat inside the padding, started every wrapped line with a stray "·". */
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+  .product-hub-related > a + a::before,
+  .admin-related > a + a::before,
+  .settings-inline-links > a + a::before,
+  .biz-detail-link > a + a::before {
+    display: none;
   }
 }
 

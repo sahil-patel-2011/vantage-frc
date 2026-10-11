@@ -787,13 +787,16 @@ function ReadyCalendar({
           </label>
           {selectedTemplate ? <p className="app-muted cal-template-desc">{selectedTemplate.description}</p> : null}
           <div className="cal-seed-row">
-            <input
-              type="date"
-              value={kickoff}
-              disabled={busy}
-              aria-label="Kickoff date"
-              onChange={(event) => setKickoff(event.target.value)}
-            />
+            {/* A visible name: the box alone said only "mm/dd/yyyy". */}
+            <label className="cal-seed-date">
+              Kickoff date
+              <input
+                type="date"
+                value={kickoff}
+                disabled={busy}
+                onChange={(event) => setKickoff(event.target.value)}
+              />
+            </label>
             <Button variant="primary" type="button" disabled={busy || !kickoff} onClick={() => void run({ action: "seed_season", orgId, kickoffDate: kickoff, templateId }, "seed") }>
               Use this template
             </Button>
