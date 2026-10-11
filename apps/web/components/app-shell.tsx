@@ -39,7 +39,7 @@ import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
 import { listenInboxUpdates } from "../lib/notifications/inbox-events";
 import { watchSessionBoundary } from "../lib/offline/identity";
-import { isKnownAppPath } from "../lib/nav/app-route-roots";
+import { pathnameIsBareShell } from "../lib/nav/shell-body-class";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import { NextActionsDedupe } from "./next-actions-dedupe";
 import {
@@ -209,8 +209,8 @@ export default function AppShell() {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
     setOrgId(id);
-    document.body.classList.add("has-app-shell");
-    return () => document.body.classList.remove("has-app-shell");
+    // has-app-shell, shell-bare and shell-onboarding are on <body> in the server HTML
+    // (components/app-body.tsx), so the first paint is already this frame.
   }, [pathname, locationTick]);
 
   useEffect(() => {
@@ -541,18 +541,10 @@ export default function AppShell() {
 
   // Onboarding is a short, focused flow: its tabs and shortcuts only bounced back to it.
   const onboarding = pathname === "/onboarding";
-  useEffect(() => {
-    document.body.classList.toggle("shell-onboarding", onboarding);
-    return () => document.body.classList.remove("shell-onboarding");
-  }, [onboarding]);
   // The invite landing and the 404 keep the product's styles but not its chrome: the person
   // there usually has no account yet, or took a wrong turn, and a team switcher reading
   // "No team selected" plus a tab bar of sign-in walls only looked broken.
-  const bare = pathname === "/invite" || pathname === "/join-team" || pathname === "/access-unavailable" || !isKnownAppPath(pathname);
-  useEffect(() => {
-    document.body.classList.toggle("shell-bare", bare);
-    return () => document.body.classList.remove("shell-bare");
-  }, [bare]);
+  const bare = pathnameIsBareShell(pathname);
   const isHubRoot = isHubRootPath(pathname);
   const showBack = showBackForPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
