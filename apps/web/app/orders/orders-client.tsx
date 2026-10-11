@@ -235,7 +235,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
     const missingBuyLinkCount = live.orders.filter((o) => o.status === "approved" && !o.itemUrl).length;
     return {
       orgId: live.orgId,
-      isAdmin: live.isAdmin,
+      isAdmin: live.canManageFinances,
       orderCount: live.orders.length,
       pendingCount: live.metrics.pending,
       readyToBuyCount: live.metrics.readyToBuy,
@@ -351,7 +351,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
             />
           ) : null}
           {live!.financeAiEnabled && live!.aiSummary ? <AiSummaryPanel summary={live!.aiSummary} /> : null}
-          {live!.isAdmin && live!.metrics.pending > 0 ? (
+          {live!.canManageFinances && live!.metrics.pending > 0 ? (
             <p className="orders-info" role="status">
               {live!.metrics.pending} line{live!.metrics.pending === 1 ? "" : "s"} awaiting your approval before a
               buy link is unlocked.
@@ -359,6 +359,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
           ) : null}
           {/* One button to log a purchase; the form was a full page section between the numbers and
               the lines that needed approving. Open straight away on an empty sheet. */}
+          {live!.canRequest !== false ? (
           <details className="orders-add" open={live!.orders.length === 0 || undefined}>
             <summary className="app-button primary is-primary">Add a purchase</summary>
             <SubmitForm
@@ -370,6 +371,9 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
               onCreated={() => load()}
             />
           </details>
+          ) : (
+            <p className="orders-quiet">You have view-only access, so you can look at orders but not ask for one.</p>
+          )}
           <OrdersList view={live!} busy={busy} mutate={mutate} />
         </>
       )}
@@ -447,7 +451,7 @@ function OrdersList({ view, busy, mutate }: { view: LiveView; busy: boolean; mut
       {/* An empty "Needs approval" card took a screen's height to say nothing; mentors see it when a
           line is waiting. */}
       {pending.length === 0 ? (
-        view.isAdmin ? <p className="orders-quiet">Nothing waiting for approval.</p> : null
+        view.canManageFinances ? <p className="orders-quiet">Nothing waiting for approval.</p> : null
       ) : (
       <section className="soft-panel">
         <h2>
@@ -539,7 +543,7 @@ function OrderCard({
 }) {
   const canBuy =
     showBuyPanel(order.status) &&
-    (view.isAdmin ||
+    (view.canManageFinances ||
       order.buyerUserId === view.currentUserId ||
       (!order.buyerUserId && order.requestedBy === view.currentUserId));
 
@@ -571,19 +575,19 @@ function OrderCard({
         {order.reviewNotes ? <span>Note: {order.reviewNotes}</span> : null}
       </div>
 
-      {order.status === "pending" && !view.isAdmin ? (
-        <p className="orders-waiting app-muted">Waiting on a mentor to approve this line before a buy link unlocks.</p>
+      {order.status === "pending" && !view.canManageFinances ? (
+        <p className="orders-waiting app-muted">Waiting on a finance manager to approve this line before a buy link unlocks.</p>
       ) : null}
 
       {showBuyPanel(order.status) ? (
         <BuyPanel order={order} canBuy={canBuy} busy={busy} mutate={mutate} />
       ) : null}
 
-      {view.isAdmin && order.status === "pending" ? (
+      {view.canManageFinances && order.status === "pending" ? (
         <AdminReview order={order} buyerOptions={buyerOptions} busy={busy} mutate={mutate} />
       ) : null}
 
-      {view.isAdmin && (order.status === "approved" || order.status === "ordered") && !order.buyerUserId ? (
+      {view.canManageFinances && (order.status === "approved" || order.status === "ordered") && !order.buyerUserId ? (
         <AssignBuyer order={order} buyerOptions={buyerOptions} busy={busy} mutate={mutate} />
       ) : null}
 

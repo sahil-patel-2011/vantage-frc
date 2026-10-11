@@ -18,6 +18,7 @@ import {
   type InviteDeliveryMode,
 } from "../../lib/team/team-invites";
 import { MemberAccessPanel, type HubAccessRow } from "./admin/member-access-panel";
+import { MoneyManagersLine } from "./admin/money-managers-line";
 import { TeamAdminAccessPanel } from "./team-admin-access";
 import { TeamAdminInvitesPanel } from "./team-admin-invites";
 import { TeamJoinCode } from "./team-join-code";
@@ -688,6 +689,9 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           ) : null}
         </EmptyState>
       ) : (
+        <>
+        {/* Who can change the team's money (0714) — the owner and the people they chose. */}
+        <MoneyManagersLine orgId={orgId} version={message} />
         <TeamAdminPeople
           members={members}
           actorUserId={actor.userId}
@@ -698,6 +702,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           onRemove={(member) => setRemoveTarget(member)}
           onStepDown={() => setStepDownOpen(true)}
         />
+        </>
       )}
 
       <TeamAdminProvidersPanel

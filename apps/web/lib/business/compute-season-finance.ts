@@ -1,5 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { seasonFinanceNextActions, type SeasonFinanceNextAction } from "./season-finance-next-actions";
+import { canManageFinances } from "../finance/finance-managers";
 
 export const FUNDING_KINDS = [
   "school",
@@ -115,7 +116,13 @@ export type SeasonFinanceView =
       orgName: string;
       teamNumber: number | null;
       role: string;
+      /**
+       * True for finance managers only (0714: the owner, plus people the owner
+       * chose to manage money). Every write on this desk is a money write, so
+       * this is the same value as canManageFinances.
+       */
       canManageFinance: boolean;
+      canManageFinances: boolean;
       seasonYear: number;
       seasons: number[];
       operatingBudgetCents: number;
@@ -286,7 +293,8 @@ export async function computeSeasonFinanceView(
   if (!org) return setup("Choose your team to plan season funding, purchases, and sponsorships.", null, seasonYear);
 
   const orgId = org.orgId;
-  const canManageFinance = org.role === "owner" || org.role === "admin";
+  // Not a role check: admins are not finance managers by role since 0714.
+  const canManageFinance = await canManageFinances(client, orgId);
 
   try {
     const [
@@ -471,6 +479,7 @@ export async function computeSeasonFinanceView(
       teamNumber: org.teamNumber,
       role: org.role,
       canManageFinance,
+      canManageFinances: canManageFinance,
       seasonYear,
       seasons: seasonsResult.rows.map((row) => row.seasonYear),
       operatingBudgetCents,

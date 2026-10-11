@@ -179,7 +179,7 @@ const KEYWORDS: Record<string, string[]> = {
   // The words a mentor types when they mean the one season total, not the
   // per-category panel: "can we afford this", "what is left".
   "business:season-budget": [
-    "season budget", "mentor budget", "budget access", "can we afford",
+    "season budget", "mentor budget", "budget access", "manage money", "who manages money", "can we afford",
     "what is left", "money left", "registration fee", "event fee",
   ],
   "business:part-requests": [

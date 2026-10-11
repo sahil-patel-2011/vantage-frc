@@ -31,6 +31,12 @@ import {
   statusForPipelineStage,
 } from "../../../lib/sponsor-pipeline";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import {
+  FINANCE_MANAGER_REQUIRED,
+  assertFinanceManager,
+  financeManagerRecipientIds,
+  isFinanceGuardRefusal,
+} from "../../../lib/finance/finance-managers";
 
 type JsonBody = Record<string, unknown>;
 
@@ -104,6 +110,13 @@ async function membership(client: PoolClient, orgId: string, userId: string) {
 
 function requireAdmin(member: { admin: boolean }) {
   if (!member.admin) throw new Error("A team owner or admin must complete this finance action");
+}
+
+/** Viewers can look but not change anything, including asking for purchases. */
+function requireNotViewer(member: { role: string }) {
+  if (member.role === "viewer") {
+    throw new Error("You have view-only access, so you can't submit this. Ask an owner for access.");
+  }
 }
 
 async function audit(
@@ -188,7 +201,7 @@ export async function POST(request: Request) {
 
       switch (action) {
         case "save-budget": {
-          requireAdmin(member);
+          await assertFinanceManager(client, orgId);
           await client.query(
             `INSERT INTO finance_season_settings(
                org_id, season_year, operating_budget_usd, fundraising_goal_usd, notes, updated_by
@@ -214,7 +227,7 @@ export async function POST(request: Request) {
           break;
         }
         case "add-category": {
-          requireAdmin(member);
+          await assertFinanceManager(client, orgId);
           const name = text(body.name, 120);
           if (!name) throw new Error("Category name is required");
           const inserted = await client.query<{ id: string }>(
@@ -236,6 +249,7 @@ export async function POST(request: Request) {
           break;
         }
         case "submit-purchase": {
+          requireNotViewer(member);
           const itemName = text(body.itemName, 240);
           const purpose = text(body.purpose, 2_000);
           const categoryId = text(body.categoryId, 64);
@@ -258,15 +272,12 @@ export async function POST(request: Request) {
           await audit(client, { orgId, userId: session.user.id, action, entityType: "purchase_request", entityId });
           if (entityId) {
             const total = Math.round((quantity * unitCost + shipping) * 100) / 100;
-            const admins = await client.query<{ userId: string }>(
-              `SELECT user_id AS "userId" FROM memberships
-               WHERE org_id = $1 AND role IN ('owner', 'admin') AND user_id <> $2`,
-              [orgId, session.user.id],
-            );
+            // The people who can approve it: the finance managers (0714).
+            const reviewers = await financeManagerRecipientIds(client, orgId, session.user.id);
             const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(entityId)}&season=${seasonYear}`;
-            for (const adminRow of admins.rows) {
+            for (const reviewerId of reviewers) {
               await emitPreferredNotification(client, {
-                userId: adminRow.userId,
+                userId: reviewerId,
                 orgId,
                 type: "purchase_request_submitted",
                 payload: {
@@ -281,7 +292,7 @@ export async function POST(request: Request) {
           break;
         }
         case "set-purchase-status": {
-          requireAdmin(member);
+          await assertFinanceManager(client, orgId);
           const purchaseId = text(body.purchaseId, 64);
           const status = choice<PurchaseStatus>(PURCHASE_STATUSES, body.status);
           if (!purchaseId || !status || status === "submitted") throw new Error("A purchase and review status are required");
@@ -481,7 +492,8 @@ export async function POST(request: Request) {
           break;
         }
         case "add-contribution": {
-          requireAdmin(member);
+          // Recording money a sponsor gave is a finance write (0714).
+          await assertFinanceManager(client, orgId);
           const sponsorId = text(body.sponsorId, 64);
           const receivedOn = date(body.receivedOn);
           if (!sponsorId || !receivedOn) throw new Error("Sponsor and received date are required");
@@ -623,7 +635,8 @@ export async function POST(request: Request) {
           const purpose = text(body.purpose, 4_000);
           if (!funder || !title || !purpose) throw new Error("Funder, grant title, and purpose are required");
           const grantStatus = choice<GrantStatus>(GRANT_STATUSES, body.status) ?? "researching";
-          if (grantStatus === "awarded" && !member.admin) requireAdmin(member);
+          // Recording an award is recording income: finance managers only (0714).
+          if (grantStatus === "awarded") await assertFinanceManager(client, orgId);
           const opportunity = await client.query<{ id: string }>(
             `INSERT INTO grant_opportunities(
                org_id, name, funder, description, deadline, eligibility_notes, application_url, created_by
@@ -654,7 +667,15 @@ export async function POST(request: Request) {
           const status = choice<GrantStatus>(GRANT_STATUSES, body.status);
           if (!grantId || !status) throw new Error("Grant and status are required");
           const awardedCents = cents(body.awardedCents);
-          if ((status === "awarded" || awardedCents > 0) && !member.admin) requireAdmin(member);
+          const previous = await client.query<{ status: string }>(
+            `SELECT status::text AS status FROM grant_applications WHERE id = $1 AND org_id = $2`,
+            [grantId, orgId],
+          );
+          // Moving a grant into or out of "awarded", or naming an awarded amount,
+          // changes the team's income: finance managers only (0714).
+          if (status === "awarded" || awardedCents > 0 || previous.rows[0]?.status === "awarded") {
+            await assertFinanceManager(client, orgId);
+          }
           const dbStatus = grantDbStatus[status];
           const updated = await client.query<{
             grantOpportunityId: string | null;
@@ -756,9 +777,12 @@ export async function POST(request: Request) {
     });
     return Response.json(result, { status: 201 });
   } catch (error) {
+    if (isFinanceGuardRefusal(error)) {
+      return Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 });
+    }
     const message = publicErrorMessage(error, "Business portal request failed");
     const status =
-      /access denied|owner or admin|do not have access|membership required|Sponsor tools are disabled/i.test(
+      /access denied|owner or admin|do not have access|membership required|Sponsor tools are disabled|view-only access/i.test(
         message,
       )
         ? 403

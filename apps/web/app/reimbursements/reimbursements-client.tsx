@@ -5,7 +5,8 @@
  *
  * Three jobs, top to bottom:
  *  1. File a claim: amount, what it was for, and a PDF receipt document.
- *  2. Work the queue: approve, deny, mark paid. Only an owner/admin sees those
+ *  2. Work the queue: approve, deny, mark paid. Only a finance manager (0714 —
+ *     the team owner, or someone the owner chose to manage money) sees those
  *     buttons, and only a PAID claim moves the team's balance.
  *  3. "Season money at a glance": budget versus actual by category, and the
  *     one-file season financial report a treasurer hands to next year's.
@@ -413,6 +414,12 @@ export default function ReimbursementsClient() {
             </div>
           </dl>
 
+          {ready.canFile === false ? (
+            <Panel>
+              <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>File a claim</h2>
+              <p className="rb-meta">You have view-only access, so you can&rsquo;t file a reimbursement claim.</p>
+            </Panel>
+          ) : (
           <Panel>
             <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>File a claim</h2>
             <div className="rb-form">
@@ -483,6 +490,7 @@ export default function ReimbursementsClient() {
               </p>
             </div>
           </Panel>
+          )}
 
           <Panel>
             <h2 style={{ margin: "0 0 12px", fontSize: 16 }}>

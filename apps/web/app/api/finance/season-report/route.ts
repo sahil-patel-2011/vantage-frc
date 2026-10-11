@@ -2,7 +2,7 @@ import { withRls } from "@vantage/db";
 import { csvFileName, toCsv } from "../../../../lib/export/to-csv";
 import { isUuid } from "../../../../lib/finance/reimbursements";
 import { computeSeasonReport, SEASON_REPORT_COLUMNS } from "../../../../lib/finance/season-report";
-import { requireOrgAdmin, requireTenantSession, tenantErrorResponse } from "../../../../lib/tenant-org-access";
+import { requireFinanceManager, requireTenantSession, tenantErrorResponse } from "../../../../lib/tenant-org-access";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -11,7 +11,8 @@ export const maxDuration = 60;
  * The season financial report — one CSV of the complete unified ledger with a
  * running balance, for handing the books to next year's treasurer.
  *
- * OWNER/ADMIN ONLY. The rest of the finance surface is member-readable, but a
+ * FINANCE MANAGERS ONLY (0714: the owner plus the people the owner chose to
+ * manage money). The rest of the finance surface is member-readable, but a
  * single file containing every dollar the team has ever moved is a different
  * thing to hand out than a balance tile, and it is the one export that leaves
  * the app entirely.
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
 
   try {
     const { report, orgLabel } = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      await requireOrgAdmin(client, orgId, session.user.id);
+      await requireFinanceManager(client, orgId, session.user.id);
       const org = await client.query<{ label: string | null }>(
         `SELECT COALESCE(NULLIF(team_number::text, ''), name) AS label
          FROM organizations WHERE id = $1::uuid`,

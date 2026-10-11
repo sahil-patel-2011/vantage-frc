@@ -160,7 +160,14 @@ export type BusinessView = {
   orgName: string;
   teamNumber: number | null;
   role: string;
+  /** Owner/admin: runs the sponsor pipeline, grants and placements. */
   canManageFinance: boolean;
+  /**
+   * Finance manager (0714): the owner, or someone the owner chose to manage
+   * money. Gates every money write — budgets, categories, purchase decisions,
+   * sponsor contributions, grant awards.
+   */
+  canManageFinances: boolean;
   seasonYear: number;
   seasons: number[];
   teamAffiliation?: "private_school" | "public_school" | "community" | null;

@@ -10,6 +10,8 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 
 type Program = {
+  /** Finance manager (0714): may record or waive a sponsor's payment. */
+  canManageFinances?: boolean;
   settings: { publicId: string; storefrontEnabled: boolean; paymentUrl: string | null; pitch: string } | null;
   packages: Array<{
     id: string;
@@ -665,7 +667,8 @@ export function PartnerPlacementsPanel({
                 </div>
                 {canManage ? (
                   <div className="placement-actions">
-                    {campaign.paymentStatus === "pending" ? (
+                    {/* Recording or waiving a payment is a money decision (0714). */}
+                    {campaign.paymentStatus === "pending" && program.canManageFinances ? (
                       <>
                         <button type="button" onClick={() => void mutate({ action: "mark-paid", campaignId: campaign.id })}>
                           Record payment

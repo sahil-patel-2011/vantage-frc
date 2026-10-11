@@ -23,6 +23,51 @@ Money-bearing tables and the code that reads/writes them:
 | `vendors` | `0126_vendors.sql` | none, but see Finding F2 |
 | `finance_funding_sources`, `finance_purchase_log` | `0434_season_finance_desk.sql` | `planned_usd`, `received_usd`, `amount_usd` |
 
+## Who can manage money (since `0714_finance_managers.sql`)
+
+Some teams are privately funded, some are sponsored, some are school-run — every one of them needs to
+choose exactly who may change the team's money. Vantage has **one money permission**: the existing
+`manage_budget` capability, shown in the product as **Manage money** ("Can manage money — budgets,
+spending, reimbursements, sponsors' contributions, fundraiser proceeds, grant allocations").
+
+**Finance managers** are the team **owner** (always) plus the **admins and team members the owner
+chose**. Admins are *not* finance managers by role. One SQL function answers the question everywhere:
+`can_manage_finances(org_id)` (SECURITY DEFINER, `search_path` pinned, EXECUTE only for
+`vantage_app`/`vantage_worker`); `has_org_capability(org, 'manage_budget')` delegates to it.
+
+| Who | Reads money | Asks (purchase/part/order request, own reimbursement claim, fundraiser event without proceeds) | Changes money |
+| --- | --- | --- | --- |
+| Owner | yes | yes | **yes, always** |
+| Team admin with Manage money | yes | yes | **yes** |
+| Team member with Manage money | yes | yes | **yes** |
+| Team admin without it | yes (not the season budget or other people's claims) | yes | no |
+| Team member without it | yes (not the season budget or other people's claims) | yes | no |
+| View only | yes (same limits) | **no** | no |
+
+"Changes money" covers: season budget and category budgets, spending categories, season costs and
+subscriptions, the Money desk (funding sources, purchase log, mark repaid), the ledger
+(`finance_transactions`, except non-counting BOM estimates), approving/rejecting/re-pricing purchase,
+part and order requests and assigning buyers, reviewing and paying reimbursements, recording sponsor
+contributions, recording or reversing fundraiser proceeds, recording grant awards and grant spend
+allocations, partner-placement payment status, and the season financial report.
+
+**Choosing:** only an owner (or the platform admin recovering a team) can grant or revoke it, from
+Team admin › a person › Access › Money (`POST /api/finance/managers`). Nobody can grant it to
+themselves. A view-only person can't hold it — the owner changes their access to Team member or Team
+admin first; the database refuses it either way. Becoming view-only, or leaving the team, removes it.
+Every member can see who manages money (`GET /api/finance/managers`, and the "Who manages money: …"
+line on Team admin and the Money tab).
+
+**Enforced twice.** RLS policies on every money table call `can_manage_finances(org_id)`; three
+column/transition rules that a policy cannot express are triggers (`purchase_request_decision_guard`,
+`fundraiser_events_proceeds_guard`, `sponsor_contributions_money_guard`, plus grant-award and
+partner-payment guards). Every money route also checks first and answers with one sentence: *"Only
+people your team owner chose can change money. Ask an owner for access."* (HTTP 403). Purchase and
+reimbursement notifications go to finance managers, not to every admin.
+
+**Existing teams:** the migration granted Manage money to every admin who existed when it ran, in the
+oldest owner's name, so nothing stopped working on upgrade. Owners can revoke it per person.
+
 ## 1. Tenant isolation (RLS) — verified table by table
 
 Row Level Security is the security model, not a convenience. Product code reaches the database only
@@ -71,9 +116,10 @@ import the worker client — `@vantage/db/admin` is blocked by `no-restricted-im
   The new `GET /api/finance/balance` (`apps/web/app/api/finance/balance/route.ts`) follows the same
   convention: session → `withRls({userId, orgId})` → `requireOrgMember` → parameterized reads, and
   degrades to `{status:"setup_required"}` (HTTP 200) when the database is unreachable.
-- Write convention: owner/admin enforced twice — in route code
-  (`apps/web/app/api/business/finance/route.ts` line 69 checks the membership role before any write)
-  and independently by the DB policies above, so a route bug alone cannot cross the role boundary.
+- Write convention: **finance managers** (see "Who can manage money") enforced twice — in route code
+  (`requireFinanceManager` / `assertFinanceManager`, e.g. `apps/web/app/api/business/finance/route.ts`
+  asks `can_manage_finances` before any write) and independently by the DB policies, so a route bug
+  alone cannot cross the boundary. (Before 0714 this was owner/admin by role.)
 - Sponsor surfaces additionally honor the org funding profile via `requireSponsorsMember` /
   `assertSponsorsAllowed` (`apps/web/lib/tenant-org-access.ts`; `organizations.sponsors_allowed`).
 - All finance SQL in reviewed routes is parameterized (`$1::uuid`, `= ANY(...)`); no string-built

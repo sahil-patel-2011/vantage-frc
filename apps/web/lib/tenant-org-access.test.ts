@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
 import {
+  FINANCE_MANAGER_REQUIRED,
   isWrongOrgDenied,
+  requireFinanceManager,
   requireGrantApplicationInOrg,
   requireGrantOpportunityInOrg,
   requireOrgAdmin,
@@ -99,6 +101,57 @@ describe("tenant isolation — wrong orgId denied", () => {
   it("maps legacy access-denied Error strings to 403", () => {
     const response = tenantErrorResponse(new Error("Organization access denied"));
     expect(response.status).toBe(403);
+  });
+});
+
+describe("finance managers (0714)", () => {
+  /** A client whose membership row and can_manage_finances() answer are set per test. */
+  function financeClient(role: string | null, allowed: boolean): PoolClient {
+    return {
+      query: vi.fn(async (sql: string) => {
+        if (sql.includes("can_manage_finances")) return { rowCount: 1, rows: [{ allowed }] };
+        if (sql.includes("FROM memberships")) return role ? { rowCount: 1, rows: [{ role }] } : { rowCount: 0, rows: [] };
+        return { rowCount: 0, rows: [] };
+      }),
+    } as unknown as PoolClient;
+  }
+
+  it("lets the owner and a granted member through", async () => {
+    await expect(requireFinanceManager(financeClient("owner", true), ORG_A, USER)).resolves.toMatchObject({
+      role: "owner",
+      financeManager: true,
+    });
+    await expect(requireFinanceManager(financeClient("scout", true), ORG_A, USER)).resolves.toMatchObject({
+      role: "scout",
+      financeManager: true,
+    });
+  });
+
+  it("refuses an admin the owner did not choose — admins are not finance managers by role", async () => {
+    const client = financeClient("admin", false);
+    await expect(requireFinanceManager(client, ORG_A, USER)).rejects.toMatchObject({
+      status: 403,
+      message: FINANCE_MANAGER_REQUIRED,
+    });
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining("can_manage_finances($1::uuid)"), [ORG_A]);
+  });
+
+  it("still refuses a non-member before asking about money", async () => {
+    await expect(requireFinanceManager(financeClient(null, true), ORG_B, USER)).rejects.toMatchObject({
+      status: 403,
+      message: "Organization access denied",
+    });
+  });
+
+  it("turns a 0714 guard refusal into the plain sentence with 403", async () => {
+    const response = tenantErrorResponse(
+      new Error("Only a finance manager can decide a purchase request. Ask an owner for access."),
+    );
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: FINANCE_MANAGER_REQUIRED,
+      reason: "not_finance_manager",
+    });
   });
 });
 

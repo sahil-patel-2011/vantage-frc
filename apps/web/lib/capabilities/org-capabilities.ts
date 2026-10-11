@@ -16,9 +16,18 @@
  *
  * Every query runs on the PoolClient from withRls, under the caller's own
  * `app.user_id`. org_id always comes from `resolveMembership`, never a body.
+ *
+ * 0714 changed `manage_budget` into "Manage money": only the OWNER grants it,
+ * only to an admin or team member, and admins no longer hold it by role. Its
+ * checks go through can_manage_finances() (lib/finance/finance-managers.ts).
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import {
+  MANAGE_MONEY_VIEWER_REFUSAL,
+  canManageFinances,
+  manageMoneyGrantability,
+} from "../finance/finance-managers";
 
 /** The two this feature owns. The other four (0049) are managed by /team/admin. */
 export const FEATURE_CAPABILITIES = ["manage_budget", "edit_docs"] as const;
@@ -29,13 +38,14 @@ export function isFeatureCapability(value: unknown): value is FeatureCapability 
 }
 
 export const CAPABILITY_LABELS: Record<FeatureCapability, string> = {
-  manage_budget: "Budget access",
+  // 0714: the one money permission. The enum value keeps its 0620 name.
+  manage_budget: "Manage money",
   edit_docs: "Doc editing",
 };
 
 /** Who may hand each one out. Mirrors the two RLS write policies exactly. */
 export const CAPABILITY_GRANTED_BY: Record<FeatureCapability, string> = {
-  manage_budget: "Owners and admins",
+  manage_budget: "The team owner only",
   edit_docs: "The team owner only",
 };
 
@@ -117,8 +127,13 @@ export async function hasCapability(
   return result.rows[0]?.allowed === true;
 }
 
+/**
+ * "Manage money" (0714): the owner, or someone the owner granted it. Admins are
+ * NOT included by role — has_org_capability(…, 'manage_budget') delegates to
+ * can_manage_finances() since 0714, and this calls that function directly.
+ */
 export function canManageBudget(client: PoolClient, orgId: string): Promise<boolean> {
-  return hasCapability(client, orgId, "manage_budget");
+  return canManageFinances(client, orgId);
 }
 
 export function canEditDocs(client: PoolClient, orgId: string): Promise<boolean> {
@@ -184,25 +199,48 @@ export async function grantCapability(
   if (input.targetUserId === input.actorUserId) {
     throw new CapabilityError(
       400,
-      "You cannot grant a role to yourself. Owners and admins already hold it anyway.",
+      input.capability === "manage_budget"
+        ? "You cannot give yourself Manage money. Owners already manage money."
+        : "You cannot grant a role to yourself. Owners and admins already hold it anyway.",
       "self_grant",
     );
   }
 
-  const target = await client.query(
-    `SELECT 1 FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+  const target = await client.query<{ role: string }>(
+    `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
     [input.orgId, input.targetUserId],
   );
   if (!target.rowCount) {
     throw new CapabilityError(400, "That person is not on this team.", "not_a_member");
   }
+  if (input.capability === "manage_budget") {
+    // Same rule as the 0714 trigger, said before the database has to say it.
+    const verdict = manageMoneyGrantability(target.rows[0]!.role);
+    if (!verdict.grantable) {
+      throw new CapabilityError(400, verdict.reason ?? MANAGE_MONEY_VIEWER_REFUSAL, "not_grantable");
+    }
+  }
 
-  const inserted = await client.query(
-    `INSERT INTO membership_capabilities (org_id, user_id, capability, granted_by)
-     VALUES ($1::uuid, $2::uuid, $3::org_capability, $4::uuid)
-     ON CONFLICT (org_id, user_id, capability) DO NOTHING`,
-    [input.orgId, input.targetUserId, input.capability, input.actorUserId],
-  );
+  let inserted: { rowCount: number | null };
+  try {
+    inserted = await client.query(
+      `INSERT INTO membership_capabilities (org_id, user_id, capability, granted_by)
+       VALUES ($1::uuid, $2::uuid, $3::org_capability, $4::uuid)
+       ON CONFLICT (org_id, user_id, capability) DO NOTHING`,
+      [input.orgId, input.targetUserId, input.capability, input.actorUserId],
+    );
+  } catch (error) {
+    if (/row-level security/i.test(error instanceof Error ? error.message : "")) {
+      throw new CapabilityError(
+        403,
+        input.capability === "manage_budget"
+          ? "Only the team owner can choose who manages money."
+          : "You are not allowed to grant that role.",
+        "not_allowed",
+      );
+    }
+    throw error;
+  }
 
   // DO NOTHING hides an RLS refusal behind the same zero-row result as an
   // already-granted row, so say which one actually happened.
@@ -241,20 +279,22 @@ export async function revokeCapability(
 
 /**
  * Members a grant could be handed to: on the team, without the capability
- * already, and not an owner/admin (who hold it implicitly, so granting them a
- * row would be a control that changes nothing).
+ * already, and not someone who holds it implicitly (granting them a row would be
+ * a control that changes nothing). For "Manage money" that means admins and team
+ * members — owners always hold it, and view-only people can't (0714).
  */
 export async function grantableMembers(
   client: PoolClient,
   orgId: string,
   capability: FeatureCapability,
 ): Promise<Array<{ userId: string; name: string; email: string; role: OrgRole }>> {
+  const roles: OrgRole[] = capability === "manage_budget" ? ["admin", "scout"] : ["scout", "viewer"];
   const result = await client.query<{ userId: string; name: string; email: string; role: OrgRole }>(
     `SELECT m.user_id::text AS "userId", u.name, u.email, m.role::text AS role
        FROM memberships m
        JOIN users u ON u.id = m.user_id
       WHERE m.org_id = $1::uuid
-        AND m.role NOT IN ('owner', 'admin')
+        AND m.role::text = ANY($3::text[])
         AND NOT EXISTS (
           SELECT 1 FROM membership_capabilities c
            WHERE c.org_id = m.org_id AND c.user_id = m.user_id
@@ -262,24 +302,29 @@ export async function grantableMembers(
         )
       ORDER BY u.name, u.email
       LIMIT 300`,
-    [orgId, capability],
+    [orgId, capability, roles],
   );
   return result.rows;
 }
 
-/** Owners and admins — the people who hold every capability without a grant. */
+/**
+ * The people who hold a capability without a grant row: owners and admins for
+ * edit_docs, owners only for "Manage money" (0714 — admins are not implicit).
+ */
 export async function implicitHolders(
   client: PoolClient,
   orgId: string,
+  capability: FeatureCapability = "edit_docs",
 ): Promise<Array<{ userId: string; name: string; email: string; role: OrgRole }>> {
+  const roles: OrgRole[] = capability === "manage_budget" ? ["owner"] : ["owner", "admin"];
   const result = await client.query<{ userId: string; name: string; email: string; role: OrgRole }>(
     `SELECT m.user_id::text AS "userId", u.name, u.email, m.role::text AS role
        FROM memberships m
        JOIN users u ON u.id = m.user_id
-      WHERE m.org_id = $1::uuid AND m.role IN ('owner', 'admin')
+      WHERE m.org_id = $1::uuid AND m.role::text = ANY($2::text[])
       ORDER BY CASE m.role WHEN 'owner' THEN 0 ELSE 1 END, u.name
       LIMIT 100`,
-    [orgId],
+    [orgId, roles],
   );
   return result.rows;
 }

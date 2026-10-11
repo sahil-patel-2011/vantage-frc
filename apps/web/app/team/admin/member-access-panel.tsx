@@ -8,8 +8,13 @@
  * The panel only collects the choices; every change still goes through the
  * same APIs (and so the same RLS and capability checks) as before:
  *   - role, hub access, extra powers → PATCH /api/organizations/members
- *   - budget access                  → POST  /api/budget (grant/revoke)
+ *   - Manage money (owner only)      → POST  /api/finance/managers (grant/revoke)
  *   - presets                        → POST  /api/organizations/role-profiles (apply)
+ *
+ * "Manage money" (0714) is the one money permission: the owner always has it,
+ * and only the owner hands it to an admin or team member. Everyone else sees who
+ * manages money, read-only. A view-only person can't hold it — the owner changes
+ * their access first, and the database refuses it either way.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -18,6 +23,11 @@ import { CLIENT_HUB_IDS, type ClientHubId } from "../../../lib/nav/hub-access-fi
 import { PRODUCT_HUBS } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { PROFILE_CAPABILITIES, PROFILE_HUBS } from "../../../lib/team/role-profile-copy";
+import {
+  MANAGE_MONEY_DESCRIPTION,
+  MANAGE_MONEY_LABEL,
+  MANAGE_MONEY_VIEWER_REFUSAL,
+} from "../../../lib/finance/finance-managers";
 import "./member-access.css";
 
 export type AccessMember = {
@@ -144,9 +154,9 @@ export function MemberAccessPanel({
   const [caps, setCaps] = useState<string[]>([]);
   const [hubs, setHubs] = useState<HubDraft>({ open: [...CLIENT_HUB_IDS], tabs: {} });
   const [tabsOpenFor, setTabsOpenFor] = useState<ClientHubId | null>(null);
-  const [budgetKnown, setBudgetKnown] = useState(false);
-  const [budgetGranted, setBudgetGranted] = useState(false);
-  const [budgetDraft, setBudgetDraft] = useState(false);
+  // Who manages money, and whether this actor (an owner) may change it.
+  const [money, setMoney] = useState<{ canChoose: boolean; granted: boolean; summary: string } | null>(null);
+  const [moneyDraft, setMoneyDraft] = useState(false);
   const [presets, setPresets] = useState<Preset[]>([]);
   const [preset, setPreset] = useState("");
   const [busy, setBusy] = useState(false);
@@ -162,27 +172,30 @@ export function MemberAccessPanel({
     setTabsOpenFor(null);
     setPreset("");
     setError("");
-    setBudgetKnown(false);
+    setMoney(null);
+    setMoneyDraft(false);
     let cancelled = false;
-    // Budget access and presets only matter for people who aren't owners or mentors.
+    // Manage money and presets only matter for people who aren't owners.
     if (member.role === "owner") return;
     void (async () => {
       try {
-        const [budgetResponse, presetResponse] = await Promise.all([
-          fetch(`/api/budget?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" }),
+        const [moneyResponse, presetResponse] = await Promise.all([
+          fetch(`/api/finance/managers?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" }),
           fetch(`/api/organizations/role-profiles?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" }),
         ]);
         if (cancelled) return;
-        if (budgetResponse.ok) {
-          const data = (await budgetResponse.json()) as {
-            canGrantAccess?: boolean;
-            grants?: Array<{ userId: string }>;
+        if (moneyResponse.ok) {
+          const data = (await moneyResponse.json()) as {
+            canChoose?: boolean;
+            summary?: string;
+            managers?: Array<{ userId: string; via: string }>;
           };
-          if (!cancelled && data.canGrantAccess) {
-            const granted = (data.grants ?? []).some((grant) => grant.userId === member.userId);
-            setBudgetGranted(granted);
-            setBudgetDraft(granted);
-            setBudgetKnown(true);
+          if (!cancelled) {
+            const granted = (data.managers ?? []).some(
+              (manager) => manager.userId === member.userId && manager.via === "granted",
+            );
+            setMoney({ canChoose: data.canChoose === true, granted, summary: data.summary ?? "" });
+            setMoneyDraft(granted);
           }
         }
         if (presetResponse.ok) {
@@ -291,21 +304,24 @@ export function MemberAccessPanel({
               : `They can open ${hubs.open.map((id) => hubLabel(id).label).join(", ")}.`,
           );
         }
-        if (budgetKnown && budgetDraft !== budgetGranted) {
-          const response = await fetch(`/api/budget?orgId=${encodeURIComponent(orgId)}`, {
+      }
+      // Manage money is the owner's call and applies to admins and team members.
+      // Saved after the role so "make them a team member and let them manage
+      // money" works in one go; a view-only person loses it in the database.
+      if (money?.canChoose && !isOwnerRow) {
+        if (role === "viewer") {
+          if (money.granted) changed.push("View-only people can't manage money, so that was turned off.");
+        } else if (moneyDraft !== money.granted) {
+          const response = await fetch(`/api/finance/managers?orgId=${encodeURIComponent(orgId)}`, {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              orgId,
-              action: budgetDraft ? "grant-budget-access" : "revoke-budget-access",
-              userId: member.userId,
-            }),
+            body: JSON.stringify({ orgId, action: moneyDraft ? "grant" : "revoke", userId: member.userId }),
           });
           if (!response.ok) {
             const data = (await response.json().catch(() => ({}))) as { error?: string };
-            return setError(data.error ?? "Budget access didn't save. Try again.");
+            return setError(data.error ?? "Manage money didn't save. Try again.");
           }
-          changed.push(budgetDraft ? "They can see the season budget." : "They can no longer see the season budget.");
+          changed.push(moneyDraft ? "They can manage money." : "They can no longer manage money.");
         }
       }
       await onSaved(changed.length ? `Saved. ${changed.join(" ")}` : "No changes to save.");
@@ -348,9 +364,37 @@ export function MemberAccessPanel({
           ) : null}
         </fieldset>
 
+        {!isOwnerRow && money ? (
+          <section className="member-access-money" aria-labelledby={`money-${member.userId}`}>
+            <h3 id={`money-${member.userId}`}>Money</h3>
+            {!money.canChoose ? (
+              <p className="app-muted">
+                {money.granted ? "They manage money." : "They don’t manage money."} Only the team owner
+                chooses who does.
+              </p>
+            ) : role === "viewer" ? (
+              <p className="app-muted">{MANAGE_MONEY_VIEWER_REFUSAL}</p>
+            ) : (
+              <label className="member-access-check">
+                <input
+                  type="checkbox"
+                  disabled={busy}
+                  checked={moneyDraft}
+                  onChange={(event) => setMoneyDraft(event.target.checked)}
+                />
+                <span>
+                  <strong>{MANAGE_MONEY_LABEL}</strong>
+                  <small>{MANAGE_MONEY_DESCRIPTION}</small>
+                </span>
+              </label>
+            )}
+            {money.summary ? <p className="app-muted member-access-note">{money.summary}</p> : null}
+          </section>
+        ) : null}
+
         {limited ? (
           <details className="member-access-advanced">
-            <summary>Advanced: sections, extra powers{budgetKnown ? " and budget" : ""}</summary>
+            <summary>Advanced: sections and extra powers</summary>
             {/* A job preset is the advanced way in: before Advanced it read as a second kind of role next to Student / Mentor / Parent. */}
             {presets.length > 0 ? (
               <div className="member-access-preset">
@@ -461,23 +505,6 @@ export function MemberAccessPanel({
               })}
             </section>
 
-            {budgetKnown ? (
-              <section aria-labelledby={`budget-${member.userId}`}>
-                <h3 id={`budget-${member.userId}`}>Season budget</h3>
-                <label className="member-access-check">
-                  <input
-                    type="checkbox"
-                    disabled={busy}
-                    checked={budgetDraft}
-                    onChange={(event) => setBudgetDraft(event.target.checked)}
-                  />
-                  <span>
-                    <strong>Can see and change the season budget</strong>
-                    <small>Owners and mentors always can.</small>
-                  </span>
-                </label>
-              </section>
-            ) : null}
             <p className="app-muted member-access-note">
               Custom roles like &ldquo;Scouting lead&rdquo; live on{" "}
               <a href={withOrgHref("/team/admin/presets", orgId)}>Custom roles</a>.

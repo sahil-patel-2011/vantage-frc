@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import { describeBudgetLine, type BudgetLine } from "../../../lib/finance/budget-vs-actual";
 import { validateBuySheet } from "../../../lib/finance/buy-sheet";
-import { fetchProductSession } from "../../../lib/nav/product-session";
-import { strategyCanSync } from "../../../lib/strategy/strategy-related";
+import { FINANCE_MANAGER_REQUIRED } from "../../../lib/finance/finance-managers";
 import { formatSponsorUsd, sponsorPageTotals, teamContributionTotalUsd } from "../../../lib/sponsors/totals";
 
 type Category = {
@@ -68,19 +67,10 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
   const [sponsorLines, setSponsorLines] = useState<Array<{ id: string; name: string; amountUsd: number }>>([]);
   const emptyRequestForm = { title: "", itemUrl: "", quantity: "1", unitCostUsd: "", categoryId: "", vendorId: "", justification: "", neededBy: "", inventoryItemId: "" };
   const [requestForm, setRequestForm] = useState(emptyRequestForm);
+  // Finance manager (0714): the owner, or someone the owner chose to manage
+  // money. Read from the API, which asks the same SQL function RLS uses — not
+  // inferred from the role, because admins are not finance managers by role.
   const [canManage, setCanManage] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void fetchProductSession(orgId).then((session) => {
-      if (cancelled) return;
-      const role = session?.memberships?.find((member) => member.orgId === orgId)?.role ?? session?.role;
-      setCanManage(strategyCanSync(role));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [orgId]);
 
   async function load() {
     const [budgetRes, requestsRes, summaryRes, vendorsRes, inventoryRes, contributionsRes, budgetVsActualRes, sponsorsRes] = await Promise.all([
@@ -99,6 +89,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
     const vendorsData = await vendorsRes.json();
     const inventoryData = inventoryRes.ok ? await inventoryRes.json() : null;
     setCategories(budgetData.categories ?? []);
+    setCanManage(budgetData.canManageFinances === true);
     setRequests(requestsData.requests ?? []);
     setVendors(Array.isArray(vendorsData.vendors) ? vendorsData.vendors : []);
     setCatalogItems(catalogItemsFromInventory(inventoryData));
@@ -247,7 +238,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
         ) : (
           <section className="intel-panel">
             <span className="eyebrow">SET A CATEGORY BUDGET</span>
-            <p>An owner or admin sets category budgets. You can still submit a purchase request.</p>
+            <p>{FINANCE_MANAGER_REQUIRED} You can still submit a purchase request below.</p>
           </section>
         )}
         <section className="intel-panel">
@@ -305,7 +296,7 @@ export default function FinanceClient({ orgId }: { orgId: string }) {
         </form>
         <section className="intel-panel invite-list">
           <span className="eyebrow">PURCHASE REQUESTS</span>
-          {!canManage ? <p>An owner or admin reviews purchase requests.</p> : null}
+          {!canManage ? <p>A finance manager — the team owner or someone they chose — reviews purchase requests.</p> : null}
           {requests.length === 0 && <p>No requests yet.</p>}
           {requests.map((r) => (
             <article key={r.id}>

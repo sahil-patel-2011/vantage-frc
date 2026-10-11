@@ -1526,9 +1526,23 @@ export function createVantageToolRegistry(
             const requester = await client.query<{ name: string | null }>(`SELECT name FROM users WHERE id=$1`, [
               userId,
             ]);
+            // The people who can approve it: finance managers (0714) — the owner,
+            // plus admins/team members the owner granted "Manage money". Mirrors
+            // can_manage_finances(); apps/web/lib/finance/finance-managers.ts.
             const admins = await client.query<{ userId: string }>(
-              `SELECT user_id AS "userId" FROM memberships
-               WHERE org_id=$1 AND role IN ('owner','admin') AND user_id <> $2`,
+              `SELECT m.user_id AS "userId" FROM memberships m
+               WHERE m.org_id=$1::uuid AND m.user_id <> $2::uuid
+                 AND (
+                   m.role = 'owner'
+                   OR (
+                     m.role IN ('admin','scout')
+                     AND EXISTS (
+                       SELECT 1 FROM membership_capabilities c
+                        WHERE c.org_id = m.org_id AND c.user_id = m.user_id
+                          AND c.capability = 'manage_budget'::org_capability
+                     )
+                   )
+                 )`,
               [orgId, userId],
             );
             const href = `/orders?orgId=${encodeURIComponent(orgId)}&orderId=${encodeURIComponent(orderId)}`;
@@ -1556,7 +1570,7 @@ export function createVantageToolRegistry(
               totalCostUsd,
               status: "pending",
               href,
-              message: `Purchase request submitted for admin approval. Open ${href} to track it.`,
+              message: `Purchase request submitted for approval by a finance manager. Open ${href} to track it.`,
             });
           } catch (error) {
             return {

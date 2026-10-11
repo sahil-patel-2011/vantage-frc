@@ -11,6 +11,7 @@ export type OrdersNextAction = {
 
 export type OrdersNextActionContext = {
   orgId?: string | null;
+  /** True for a finance manager (0714) — the person who can approve. */
   isAdmin?: boolean;
   orderCount?: number;
   pendingCount?: number;
@@ -70,8 +71,8 @@ export function ordersNextActions(ctx: OrdersNextActionContext): OrdersNextActio
   } else if (pending > 0) {
     actions.push({
       id: "waiting",
-      label: "Waiting on mentor approval",
-      detail: `${pending} request${pending === 1 ? "" : "s"} still need an owner or admin before anyone can buy.`,
+      label: "Waiting on approval",
+      detail: `${pending} request${pending === 1 ? "" : "s"} still need a finance manager's approval before anyone can buy.`,
       href: withSeason(ordersHref),
       primary: true,
     });

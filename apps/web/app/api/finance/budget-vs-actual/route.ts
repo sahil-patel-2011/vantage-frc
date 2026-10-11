@@ -1,7 +1,12 @@
 import { withRls } from "@vantage/db";
 import { computeBudgetVsActual, type BudgetVsActualView } from "../../../../lib/finance/budget-vs-actual";
 import { currentSeasonYear, isUuid } from "../../../../lib/finance/reimbursements";
-import { requireOrgMember, requireTenantSession, tenantErrorResponse } from "../../../../lib/tenant-org-access";
+import {
+  canManageFinances,
+  requireOrgMember,
+  requireTenantSession,
+  tenantErrorResponse,
+} from "../../../../lib/tenant-org-access";
 
 export const runtime = "nodejs";
 
@@ -28,7 +33,8 @@ export async function GET(request: Request) {
   try {
     const view = await withRls({ userId: session.user.id, orgId }, async (client) => {
       await requireOrgMember(client, orgId, session.user.id);
-      return computeBudgetVsActual(client, orgId, seasonYear);
+      const view = await computeBudgetVsActual(client, orgId, seasonYear);
+      return { ...view, canManageFinances: await canManageFinances(client, orgId) };
     });
     return Response.json(view);
   } catch (error) {

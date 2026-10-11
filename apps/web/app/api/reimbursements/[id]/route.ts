@@ -13,6 +13,7 @@ import {
   type ReimbursementSummary,
 } from "../../../../lib/finance/reimbursements";
 import {
+  canManageFinances,
   requireOrgMember,
   requireTenantSession,
   TenantHttpError,
@@ -124,14 +125,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   try {
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const member = await requireOrgMember(client, orgId, session.user.id);
+      await requireOrgMember(client, orgId, session.user.id);
       const claim = await loadClaim(client, orgId, id);
-      const actor = member.admin ? "admin" : "member";
+      // The treasurer is a finance manager (0714), not every admin.
+      const treasurer = await canManageFinances(client, orgId);
+      const actor = treasurer ? "admin" : "member";
       const isOwnClaim = claim.memberUserId === session.user.id;
 
       // ---- edit path: the filer fixing their own draft before it is judged.
       if (!isReimbursementAction(requestedAction)) {
-        if (!isOwnClaim && !member.admin) throw new TenantHttpError(403, "You can only edit reimbursements you filed.");
+        if (!isOwnClaim && !treasurer) throw new TenantHttpError(403, "You can only edit reimbursements you filed.");
         if (claim.status !== "draft") {
           throw new TenantHttpError(409, "Only a draft reimbursement can be edited. Withdraw it first.");
         }

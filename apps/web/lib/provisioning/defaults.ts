@@ -21,7 +21,15 @@ export async function initializeTeamDefaults(client: PoolClient, orgId: string, 
         WHERE NOT EXISTS(SELECT 1 FROM scout_schemas WHERE org_id=$1::uuid AND year=$2 AND type=$3::scout_schema_type)
         ON CONFLICT(org_id,year,type,version) DO NOTHING`, [orgId, year, type, JSON.stringify(schema), owner.userId]);
     }
-    for (const name of ["Registration", "Robot parts", "Tools and equipment", "Travel", "Outreach", "Other"]) {
+    // Starter spending categories are money setup (0714): seeded by a finance
+    // manager (the owner claiming the team) or by the background worker, which
+    // runs with no person attached. An admin resuming setup skips them rather
+    // than failing the whole step; the worker's own run adds them.
+    const seedsMoney = (await client.query<{ allowed: boolean }>(
+      `SELECT (COALESCE(current_setting('app.user_id', true), '') = '' OR can_manage_finances($1::uuid)) AS allowed`,
+      [orgId],
+    )).rows[0]?.allowed === true;
+    for (const name of seedsMoney ? ["Registration", "Robot parts", "Tools and equipment", "Travel", "Outreach", "Other"] : []) {
       await client.query("INSERT INTO finance_categories(org_id,season_year,name) VALUES($1::uuid,$2,$3) ON CONFLICT(org_id,season_year,name) DO NOTHING", [orgId, year, name]);
     }
     await client.query(`INSERT INTO dashboards(org_id,owner_user_id,name,scope,is_active,layout,created_by)

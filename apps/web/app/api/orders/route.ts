@@ -12,6 +12,7 @@ import {
   type OrdersView,
 } from "../../../lib/orders/compute-orders";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import { FINANCE_MANAGER_REQUIRED, isFinanceAccessDenied } from "../../../lib/finance/finance-managers";
 
 export type { OrdersView };
 
@@ -178,8 +179,11 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    if (isFinanceAccessDenied(error)) {
+      return Response.json({ error: FINANCE_MANAGER_REQUIRED, reason: "not_finance_manager" }, { status: 403 });
+    }
     const message = publicErrorMessage(error, "Purchase request failed");
-    const status = message === "forbidden" ? 403 : 400;
+    const status = message === "forbidden" || /view-only access/.test(message) ? 403 : 400;
     return Response.json(
       { error: message === "forbidden" ? "Organization access denied" : message },
       { status },
