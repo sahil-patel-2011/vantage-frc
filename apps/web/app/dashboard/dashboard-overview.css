@@ -73,7 +73,7 @@
 .dash-home-tasks h2 { margin: 0; font-size: 19px; }
 .dash-home-tasks header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
 .dash-scout-card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
-.dash-scout-card > a { color: var(--accent); font-weight: 600; font-size: 14px; }
+.dash-scout-card > a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font-weight: 600; font-size: 14px; }
 .dash-coverage-progress { margin: 14px 0; }
 .dash-coverage-progress > div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 .dash-coverage-progress progress { width: 100%; height: 8px; border: 0; accent-color: var(--accent); }

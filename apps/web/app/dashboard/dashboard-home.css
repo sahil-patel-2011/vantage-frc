@@ -399,7 +399,8 @@ body.has-app-shell .dash-home .dash-widget .soft-empty-compact { padding: 10px 0
 .dash-widget-open svg { width: 15px; height: 15px; flex: none; color: var(--muted); }
 .dash-widget-open:hover { color: var(--accent); }
 .dash-widget-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-@media (pointer: coarse) { .dash-widget-open { min-height: 44px; } }
+/* A thumb gets the full 44px: the card-title link and the strip's travel link were 36 and 32. */
+@media (pointer: coarse) { .dash-widget-open, .dash-home .dash-role-strip-head > a { min-height: 44px; } }
 
 /* Phone cards use the same reading rhythm without desktop padding. */
 @media (max-width: 640px) {
