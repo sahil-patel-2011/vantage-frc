@@ -9,6 +9,54 @@ import { HIDDEN_ON_HOME_SHORT, type HiddenOnHomeReason } from "../../lib/dashboa
 import { widgetLockReason } from "./dashboard-canvas";
 import type { BoardMeta, BoardState, PaletteRow } from "./dashboard-board-types";
 
+/**
+ * Where the team's unfinished setup checklist sits on Home.
+ *
+ * - "now": the "what to do now" card is free — nothing more pressing, or what it would say is
+ *   already a card on the board — so it *is* the next setup step, its button the screen's one
+ *   primary and the other steps progress.
+ * - "card": a match, duty or calendar item leads Home; the checklist waits below it as its own
+ *   card, its button secondary so the screen still has one primary.
+ * - null: setup is finished or dismissed (or there is no team), and nothing setup-shaped shows.
+ *
+ * Home used to compute the hero and then pass `null` for it, while the first-week card stepped
+ * aside because the hero existed — so an owner at "3 of 4 done" saw no setup steps at all,
+ * after onboarding promised "Home keeps these steps until they're done".
+ */
+export type HomeSetupPlacement = "now" | "card" | null;
+
+export function homeSetupSurfaces(input: {
+  orgId: string;
+  /** The team's setup checklist still has an open step (setupHeroFrom found one). */
+  setupOpen: boolean;
+  /** "What to do now" has nothing more pressing than setup. */
+  nowQuiet: boolean;
+  /** A match is coming up and the Next match card on the board leads Home. */
+  matchCardLeads: boolean;
+  /** "What to do now" is the team's tasks, and the Team tasks card is on the board. */
+  taskCardLeads?: boolean;
+  /** No event or match source yet: the compact competition prompt would show. */
+  sharedSetupPrompt: boolean;
+}): { setup: HomeSetupPlacement; nowCard: boolean; setupBannerAllowed: boolean } {
+  // "Open tasks" over the Team tasks card was the same list behind two buttons, so the card
+  // leads and the hero is free; a match leads too, but the setup step still waits for it.
+  const taskCardLeads = Boolean(input.taskCardLeads) && !input.matchCardLeads;
+  const heroFree = (input.nowQuiet || taskCardLeads) && !input.matchCardLeads;
+  const setup: HomeSetupPlacement = !input.orgId || !input.setupOpen ? null : heroFree ? "now" : "card";
+  return {
+    setup,
+    // A quiet "Nothing you have to do" card stays off when the competition prompt is the thing
+    // to do; it is on whenever it carries the setup step or something no card already shows.
+    nowCard: Boolean(
+      input.orgId && !input.matchCardLeads &&
+      (setup === "now" || (!taskCardLeads && (!input.nowQuiet || !input.sharedSetupPrompt))),
+    ),
+    // The team checklist already has "Pick your event"; a second setup banner beside it was a
+    // second list of the same steps.
+    setupBannerAllowed: setup === null,
+  };
+}
+
 /** A saved Setup widget already offers the same action as the setup banner. */
 export function showStandaloneSetupBanner(input: {
   editing: boolean;
@@ -283,7 +331,10 @@ export function homeNowFromWidgets(input: {
   const todoItems = Array.isArray(todoData?.items) ? todoData.items.length : 0;
   const openTodos =
     typeof todoData?.open === "number" && Number.isFinite(todoData.open) ? Number(todoData.open) : todoItems;
-  const mineTodos = typeof todoData?.mine === "number" && Number.isFinite(todoData.mine) ? Number(todoData.mine) : 0;
+  // The snapshot sends `mineOpen`; reading only `mine` called a task assigned to you "One open
+  // team task".
+  const mineRaw = todoData?.mineOpen ?? todoData?.mine;
+  const mineTodos = typeof mineRaw === "number" && Number.isFinite(mineRaw) ? Number(mineRaw) : 0;
   const hours = byType("hours_month");
   const clockedIn = hours?.openSession === true;
   const scoutRaw = myDay?.scoutDuty as

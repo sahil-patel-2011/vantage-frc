@@ -10,9 +10,10 @@ import { SetupProgress, type SetupHero } from "./first-week-card";
  *
  * While it does not know yet it is a grey shape with no words — it used to say
  * "Nothing you have to do right now" first and then change its mind. While the
- * team's setup is unfinished and nothing more pressing is on, it is the next
- * setup step itself, with its button and a small progress list, instead of a
- * card pointing at a second card with the same list in it.
+ * team's setup is unfinished and Home gives it this card (homeSetupSurfaces:
+ * nothing more pressing is on), it is the next setup step itself, with its
+ * button and a small progress list, instead of a card pointing at a second
+ * card with the same list in it.
  */
 export function DashboardNowCard({
   now,
@@ -38,8 +39,7 @@ export function DashboardNowCard({
       </section>
     );
   }
-  const setupIsNext = Boolean(setupHero && now.quiet);
-  if (setupHero && setupIsNext) {
+  if (setupHero) {
     return (
       <section className="dash-now dash-now-setup" aria-label="What to do now" data-testid="dash-now" {...dim}>
         <div className="dash-now-main">
