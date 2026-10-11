@@ -3,9 +3,23 @@ import {
   formatInviteRowMeta,
   formatInviteRowStatus,
   inviteDeliveryBanner,
+  inviteLinkButtonLabels,
   inviteSendResultCopy,
   normalizeInviteRowStatus,
 } from "./team-invites";
+
+describe("inviteLinkButtonLabels", () => {
+  const base = { email: "sam@example.test", hasLink: false, copied: false, confirmingNewLink: false };
+  it("starts every accessible name with the words on the button (WCAG 2.5.3)", () => {
+    for (const state of [base, { ...base, hasLink: true }, { ...base, copied: true }, { ...base, confirmingNewLink: true }]) {
+      const { label, accessibleName } = inviteLinkButtonLabels(state);
+      expect(accessibleName.startsWith(label)).toBe(true);
+      expect(accessibleName).toContain("sam@example.test");
+    }
+    expect(inviteLinkButtonLabels(base)).toEqual({ label: "Get a new link", accessibleName: "Get a new link for sam@example.test" });
+    expect(inviteLinkButtonLabels({ ...base, hasLink: true }).label).toBe("Copy link");
+  });
+});
 
 describe("team invite ledger helpers", () => {
   it("formats role and status without raw enums", () => {
