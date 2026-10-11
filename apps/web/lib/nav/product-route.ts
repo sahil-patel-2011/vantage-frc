@@ -23,6 +23,18 @@ const APP_SHELL_EXEMPT_EXACT = new Set([
 ]);
 
 /**
+ * The way in: signing in, an invite, joining by code, onboarding, and the "can't open this"
+ * page. Some keep a frame of product chrome, but the person there is signed out or has not
+ * finished their profile, so the signed-in APIs (/api/me, /api/branding,
+ * /api/navigation/preferences, /api/theme) answer 401/403. Nothing on these pages calls them.
+ */
+const ENTRY_SCREENS = new Set(["/signin", "/sign-in", "/invite", "/join-team", "/onboarding", "/access-unavailable"]);
+
+export function pathnameIsEntryScreen(pathname: string): boolean {
+  return ENTRY_SCREENS.has(pathname.replace(/\/+$/, "") || "/");
+}
+
+/**
  * Product chrome (drawer, island, appearance runtime) — not marketing, not
  * sign-in, not pit TV, not a public form or sponsor storefront.
  */

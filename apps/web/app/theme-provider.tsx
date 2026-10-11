@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import PaidSessionSplash from "../components/paid-session-splash";
 import AppearanceRuntime from "../lib/branding/appearance-runtime";
-import { pathnameUsesAppShell } from "../lib/nav/product-route";
+import { pathnameIsEntryScreen, pathnameUsesAppShell } from "../lib/nav/product-route";
 
 const AppShell = dynamic(() => import("../components/app-shell"), { ssr: true });
 
@@ -171,6 +171,9 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const productRoute = pathnameUsesAppShell(pathname);
+  // Sign-in, invites, join-by-code and onboarding keep a frame of chrome, but the person there
+  // is signed out or mid-onboarding: /api/theme and /api/branding would only answer 401/403.
+  const entryScreen = pathnameIsEntryScreen(pathname);
 
   useEffect(() => {
     // The product palette arrives with the shell; public pages use their own palette.
@@ -225,6 +228,12 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       markReady();
     };
 
+    // No server copy to ask on an entry screen: this device's choice (or the default) stands.
+    if (entryScreen) {
+      settle(null);
+      return () => { cancelled = true; };
+    }
+
     void fetch("/api/theme")
       .then(async (response) => response.ok ? response.json() as Promise<{ theme?: Theme; persisted?: boolean }> : null)
       .then((result) => {
@@ -236,12 +245,12 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       .catch(() => settle(null));
 
     return () => { cancelled = true; };
-  }, [productRoute]);
+  }, [productRoute, entryScreen]);
 
   return (
     <>
       {/* Team accent + personal density/motion, applied on <html> next to the theme. */}
-      {productRoute && <AppearanceRuntime />}
+      {productRoute && !entryScreen && <AppearanceRuntime />}
       {/* Before the content, because AppShell renders the "Skip to main content"
           link. After the content it was the last thing in the tab order — you
           had to tab through the whole page to reach the link that skips it. The
@@ -249,7 +258,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
           change what paints on top. */}
       {productRoute && <AppShell />}
       <div id="main-content">{children}</div>
-      {productRoute && <PaidSessionSplash />}
+      {productRoute && !entryScreen && <PaidSessionSplash />}
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FEATURE_API_TIMEOUT_MS } from "./resolve-org";
-import { fetchProductSession, invalidateProductSession, productSessionUrl } from "./product-session";
+import { fetchProductSession, invalidateProductSession, productSessionUnreachable, productSessionUrl } from "./product-session";
+import { requestMe } from "./me-request";
 
 describe("productSessionUrl", () => {
   it("scopes the session to a team when one is known", () => {
@@ -44,6 +45,26 @@ describe("fetchProductSession", () => {
     expect(starts).toBe(1);
     expect(a?.orgId).toBe("org-1");
     expect(b?.orgId).toBe("org-1");
+  });
+
+  it("shares one /api/me request with requestMe callers on the same page", async () => {
+    const fetchSpy = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ userId: "u1", orgId: "org-1" }) }));
+    vi.stubGlobal("fetch", fetchSpy);
+    const [shell, hook] = await Promise.all([fetchProductSession("org-1"), requestMe("org-1")]);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(shell?.userId).toBe("u1");
+    expect(hook.data).toEqual({ userId: "u1", orgId: "org-1" });
+  });
+
+  it("reads a 503 as unreachable, not signed out, and asks again next time", async () => {
+    const fetchSpy = vi.fn(async () => ({ ok: false, status: 503, json: async () => ({ error: "down" }) }));
+    vi.stubGlobal("fetch", fetchSpy);
+    await expect(fetchProductSession("org-1")).resolves.toBeNull();
+    expect(productSessionUnreachable()).toBe(true);
+    invalidateProductSession();
+    fetchSpy.mockImplementation(async () => ({ ok: true, status: 200, json: async () => ({ userId: "u1" }) }));
+    await expect(fetchProductSession("org-1")).resolves.toEqual({ userId: "u1" });
+    expect(productSessionUnreachable()).toBe(false);
   });
 
   it("aborts hung /api/me reads so Home is not stuck waiting for a session", async () => {

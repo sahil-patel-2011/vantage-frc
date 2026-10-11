@@ -1,5 +1,4 @@
-import { FEATURE_API_TIMEOUT_MS } from "./resolve-org";
-import { sessionOrgId } from "./me-request";
+import { forgetMe, requestMe, sessionOrgId } from "./me-request";
 
 /** One in-flight /api/me read shared by AppShell, Home, and other product pages. */
 
@@ -43,8 +42,10 @@ export function productSessionUrl(orgId?: string | null): string {
   return id ? `/api/me?orgId=${encodeURIComponent(id)}` : "/api/me";
 }
 
+/** Drops the cached answer and any offline wait: Retry, sign-out and team switches ask again. */
 export function invalidateProductSession() {
   cache = null;
+  forgetMe();
 }
 
 /**
@@ -64,18 +65,21 @@ export function fetchProductSession(orgId?: string | null): Promise<ProductSessi
     return cache.data !== undefined ? Promise.resolve(cache.data) : cache.promise;
   }
 
-  const promise = fetch(productSessionUrl(key), {
-    cache: "no-store",
-    signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-  })
-    .then(async (response) => {
-      lastSessionUnreachable = response.status >= 500;
-      return response.ok ? ((await response.json()) as ProductSession) : null;
-    })
-    .then((data) => {
+  // The same request `requestMe` callers share: the shell and the hooks that read /api/me on
+  // one page used to make two identical calls, and it carries the offline backoff.
+  const promise = requestMe(key || null)
+    .then((result) => {
+      const unreachable = result.status === 0 || result.status >= 500;
+      lastSessionUnreachable = unreachable;
+      const data = result.ok ? (result.data as ProductSession | null) : null;
       if (cache?.promise === promise) {
-        cache.data = data;
-        cache.at = Date.now();
+        // An unanswered read is not kept: the next one asks requestMe, which spaces retries out
+        // and lets the first read after reconnecting through.
+        if (unreachable) cache = null;
+        else {
+          cache.data = data;
+          cache.at = Date.now();
+        }
       }
       return data;
     })

@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { pathnameUsesAppShell } from "./product-route";
+import { pathnameIsEntryScreen, pathnameUsesAppShell } from "./product-route";
+
+describe("pathnameIsEntryScreen", () => {
+  it("covers the ways in, where signed-in APIs would only answer 401/403", () => {
+    for (const path of ["/signin", "/sign-in", "/invite", "/join-team", "/onboarding", "/onboarding/", "/access-unavailable"]) {
+      expect(pathnameIsEntryScreen(path)).toBe(true);
+    }
+  });
+  it("leaves product pages, including the claim and setup pages of signed-in people, alone", () => {
+    for (const path of ["/", "/dashboard", "/claim", "/team-setup", "/team/admin", "/invites", "/onboarding-buddy"]) {
+      expect(pathnameIsEntryScreen(path)).toBe(false);
+    }
+  });
+});
 
 describe("pathnameUsesAppShell", () => {
   it("keeps marketing, sign-in, and the offline boot shell-free", () => {

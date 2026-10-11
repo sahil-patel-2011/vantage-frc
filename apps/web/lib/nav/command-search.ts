@@ -453,6 +453,28 @@ function tabContext(hub: ProductHubDef, tab: HubTabDef): string {
 }
 
 /**
+ * The platform console (/admin: add teams, owners, the waitlist). Never part of the member
+ * catalog: `commandCatalogFor` adds it only when /api/me says this person is a platform admin,
+ * and the page itself still checks a platform_admins row. "Admin console" leads with the word
+ * people type, so Ctrl-K "admin" finds it above the team's own admin pages.
+ */
+export const PLATFORM_ADMIN_COMMAND: CommandEntry = {
+  id: "platform-admin",
+  label: "Admin console",
+  context: "Platform admin",
+  href: "/admin",
+  kind: "destination",
+  keywords: ["admin", "admin console", "platform admin", "platform", "all teams", "add a team", "create team", "provision", "owners", "waitlist"],
+  featured: true,
+};
+
+/** This person's palette: the member catalog, plus the admin console for platform admins only. */
+export function commandCatalogFor(access: { platformAdmin?: boolean | null }): CommandEntry[] {
+  const entries = commandCatalog();
+  return access.platformAdmin === true ? [PLATFORM_ADMIN_COMMAND, ...entries] : entries;
+}
+
+/**
  * Every place a member can go, with context and synonyms. Derived from
  * PRODUCT_HUBS so a new tab is searchable the moment it is added.
  */
