@@ -11,7 +11,18 @@
  * logged on the server where someone can act on it.
  */
 
+import { isViewOnlyRefusal, VIEW_ONLY_MESSAGE, VIEW_ONLY_REASON } from "@vantage/db/view-only";
+
 const SQLSTATE = /^[0-9A-Z]{5}$/;
+
+/**
+ * The 403 a route returns when a View only member tried to change something, or
+ * null for any other error. Routes with their own catch call this first.
+ */
+export function viewOnlyResponse(error: unknown): Response | null {
+  if (!isViewOnlyRefusal(error)) return null;
+  return Response.json({ error: VIEW_ONLY_MESSAGE, reason: VIEW_ONLY_REASON }, { status: 403 });
+}
 
 export function isDatabaseError(error: unknown): boolean {
   const code = (error as { code?: unknown } | null)?.code;
@@ -39,6 +50,9 @@ export function isPlainMessage(message: string): boolean {
 
 export function publicErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof Error)) return fallback;
+  // A View only member's refused write (0715) is the one database refusal the
+  // page should read verbatim: it says why and who can change it.
+  if (isViewOnlyRefusal(error)) return VIEW_ONLY_MESSAGE;
   if (isDatabaseError(error)) {
     console.error("[api] database error", (error as { code?: string }).code, error.message);
     return fallback;

@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { createDrizzle } from "./drizzle-client";
 import { resolveAppDatabaseUrl } from "./postgres-url";
+import { explainWriteRefusal } from "./view-only";
 
 const connectionString = resolveAppDatabaseUrl();
 
@@ -46,12 +47,15 @@ export async function withRls<T>(
       throw error.publicError;
     }
     await client.query("ROLLBACK");
-    throw error;
+    // A View only member's refused write (0715) leaves as ViewOnlyError: one
+    // sentence and a 403, not a database error the route hides behind "failed".
+    throw await explainWriteRefusal(client, context, error);
   } finally {
     client.release();
   }
 }
 
 export * from "./savepoint";
+export * from "./view-only";
 export * from "./schema";
 export * from "./postgres-url";
