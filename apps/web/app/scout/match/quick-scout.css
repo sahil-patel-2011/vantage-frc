@@ -313,3 +313,15 @@
 .qs-section.qs-pit-group{background:none;border:0;padding:0}
 .qs-pit-group h2{font-size:15px;color:var(--muted);text-transform:none;padding:4px 4px 0}
 @media (prefers-reduced-motion:reduce){.qs-meter i{transition:none}}
+
+/* Not counted yet: a "+" in the team colour that says "start here", not a grey bar. */
+.qs-counter:not(.has-value) .qs-counter-value{font-weight:500;font-size:40px;color:var(--qs-team,var(--accent))}
+.qs-counter:not(.has-value) .qs-counter-hint{color:var(--muted)}
+/* The save bar's secondary link stays on one line beside Save. */
+.qs-save-bar .qs-link{white-space:nowrap;font-weight:600}
+/* "Check what you recorded" opens like a list row: a chevron, not a bare line of text. */
+.qs-summary summary{list-style:none;justify-content:space-between}
+.qs-summary summary::-webkit-details-marker{display:none}
+.qs-summary summary::after{content:"";width:8px;height:8px;margin-right:4px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-2px,-2px);transition:transform .16s ease}
+.qs-summary[open] summary::after{transform:rotate(225deg) translate(-2px,-2px)}
+@media(prefers-reduced-motion:reduce){.qs-summary summary::after{transition:none}}

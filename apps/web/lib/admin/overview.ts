@@ -58,6 +58,12 @@ export function describeAdminAction(row: { action: string; payload: Record<strin
       return `Deleted ${team}`;
     case "organization.owner_link_reissued":
       return `Made a new owner link for ${team}`;
+    case "team_request.approved":
+      return `Approved ${team}'s request to join Vantage`;
+    case "team.banned":
+      return `Banned ${team}`;
+    case "team.unbanned":
+      return `Lifted the ban on ${team}`;
     default:
       return row.action.replace(/[._]/g, " ");
   }
@@ -89,6 +95,14 @@ export async function loadAdminOverview(client: PoolClient) {
       )
     ).rows,
   );
+
+  // Requests to put a team on Vantage (0733). Null before that migration: "couldn't load", not 0.
+  const teamRequests = await part(client, async () => {
+    const result = await client.query<{ pending: number }>(
+      `SELECT count(*)::int AS pending FROM team_setup_requests WHERE status = 'pending'`,
+    );
+    return { pending: result.rows[0]?.pending ?? 0 };
+  });
 
   const credits = await part(client, () => loadAiCreditOverview(client));
   const giftsNeedingEye: AdminGift[] = (credits?.gifts ?? []).filter(
@@ -139,6 +153,7 @@ export async function loadAdminOverview(client: PoolClient) {
     newFeedback,
     waitlist,
     teamsWaiting,
+    teamRequests,
     credits: credits
       ? {
           setupRequired: credits.setupRequired,

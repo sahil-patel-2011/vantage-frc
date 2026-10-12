@@ -135,3 +135,8 @@ body.has-app-shell .dash-home .dash-stat-row strong, body.has-app-shell .dash-ho
 }
 @media (prefers-reduced-motion: reduce) { .dash-workspace-action { transition: none; } }
 html[data-motion="reduced"] .dash-workspace-action { transition: none; }
+
+/* "Your overview" and its Edit share one line, as a list heading does: the title side took the
+   whole width (flex-basis 100%), so on a phone Edit dropped to a line of its own. */
+.dash-home .dash-board-heading .dash-board-identity { flex: 1 1 auto; min-width: 0; }
+.dash-home .dash-board-heading .dash-board-tools { flex: none; width: auto; }

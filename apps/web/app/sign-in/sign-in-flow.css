@@ -473,3 +473,26 @@ p.signin-expiry { font-size: 14px; color: var(--ink); margin: 4px 0 0; font-vari
 
 /* A network rate limit: a calm status with a live countdown, not a red error on the boxes. */
 .signin-code-wait { margin: 8px 0 0; color: var(--muted); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------------ *
+ * Calm pass (matches onboarding). The secondary ways in sit together
+ * under a hairline instead of floating 60px apart, and the waitlist
+ * line reads as one sentence: its inline link no longer stretches the
+ * line box to a 44px button.
+ * ------------------------------------------------------------------ */
+main.signin-page .signin-card h1 { color: var(--ink); letter-spacing: -0.022em; }
+.signin-email-hint { margin: 2px 0 0; }
+.signin-footer {
+  gap: 0;
+  margin-top: 18px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 8%, var(--line));
+}
+.signin-footer-modes { gap: 0 16px; }
+.signin-footer-modes .signin-link { padding: 0; color: var(--muted); font-weight: 600; }
+.signin-footer-modes .signin-link:hover:not(:disabled) { color: var(--ink); }
+.signin-waitlist { margin-top: 10px; gap: 12px; line-height: 1.5; }
+.signin-waitlist > span a { display: inline; min-height: 0; }
+@media (max-width: 520px) {
+  .signin-footer-modes { flex-direction: column; align-items: flex-start; gap: 0; }
+}

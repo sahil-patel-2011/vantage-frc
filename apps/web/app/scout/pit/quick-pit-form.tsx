@@ -269,7 +269,7 @@ export function QuickPitForm({
 
       <div className="qs-save-bar">
         <a className="qs-link" href={fullFormHref}>
-          Open the full form
+          Full form
         </a>
         <button type="button" className="qs-primary qs-save" onClick={() => void save()} disabled={saving}>
           {saving ? "Saving…" : "Save pit visit"}
