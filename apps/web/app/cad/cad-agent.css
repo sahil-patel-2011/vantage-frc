@@ -330,7 +330,7 @@
   align-items: baseline;
 }
 .cad-task-status {
-  font: 600 10px/1.4 var(--font-source-sans), ui-sans-serif;
+  font: 600 11px/1.4 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--muted);

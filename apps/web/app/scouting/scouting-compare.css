@@ -64,7 +64,7 @@
 }
 .scmp-total small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 .scmp-remove {
   width: 24px;
@@ -83,7 +83,7 @@
 .scmp-lead {
   margin: 0;
   color: var(--positive);
-  font: 700 10.5px var(--font-source-sans), ui-sans-serif;
+  font: 700 11px var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -104,7 +104,7 @@
 }
 .scmp-phase-label {
   color: var(--muted);
-  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  font: 700 11px var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -156,7 +156,7 @@
 }
 .scmp-facts dt {
   color: var(--muted);
-  font: 700 9.5px var(--font-source-sans), ui-sans-serif;
+  font: 700 11px var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -196,7 +196,7 @@
 }
 .scmp-alliance-figures small {
   color: var(--muted);
-  font: 600 10px var(--font-source-sans), ui-sans-serif;
+  font: 600 11px var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }

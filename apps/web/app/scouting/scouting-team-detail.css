@@ -29,7 +29,7 @@
 .std-kicker {
   display: block;
   color: var(--muted);
-  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  font: 700 11px var(--font-source-sans), ui-sans-serif;
   letter-spacing: var(--tracking-kicker, .08em);
   text-transform: uppercase;
 }
@@ -49,7 +49,7 @@
 }
 .std-score small {
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: 11px;
 }
 .std-headline {
   margin: 0;
@@ -100,7 +100,7 @@
 }
 .std-stats dt {
   color: var(--muted);
-  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  font: 700 11px var(--font-source-sans), ui-sans-serif;
   letter-spacing: .04em;
   text-transform: uppercase;
 }

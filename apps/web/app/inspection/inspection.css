@@ -25,14 +25,14 @@
 .insp-req{font-size:13px;min-width:0}
 .insp-item.s-pass .insp-req{color:var(--muted)}
 .insp-item.s-fail .insp-req{color:var(--critical);font-weight:600}
-.insp-custom{font-style:normal;margin-left:6px;padding:1px 6px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase}
+.insp-custom{font-style:normal;margin-left:6px;padding:1px 6px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase}
 .insp-buttons{display:flex;align-items:center;gap:5px;flex:none}
 /* Pass/fail/N-A are the primary tap targets on a pit tablet — keep them full size. */
 .insp-btn{min-width:44px;min-height:44px;padding:4px 10px;border-radius:var(--radius-xs);border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:11px;font-weight:800;cursor:pointer}
 .insp-btn.pass.active{color:#fff;background:var(--positive-fill);border-color:var(--positive-fill)}
 .insp-btn.fail.active{color:#fff;background:var(--critical-fill);border-color:var(--critical-fill)}
 .insp-btn.na.active{color:var(--ink);background:var(--surface-2);border-color:var(--muted)}
-.insp-meta{color:var(--muted);font-size:10px}
+.insp-meta{color:var(--muted);font-size:11px}
 .insp-note-form{display:flex;gap:8px}
 .insp-note-form input{flex:1}
 .insp-add h2{margin:0 0 10px;font-size:var(--title-3)}
@@ -68,4 +68,4 @@
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
-.aii-meta{color:var(--muted);font-size:10px}
+.aii-meta{color:var(--muted);font-size:11px}

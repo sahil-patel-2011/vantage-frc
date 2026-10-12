@@ -87,7 +87,7 @@
 
 .help-tip-eyebrow {
   color: var(--accent);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -152,7 +152,7 @@
 
 .help-tip-fact > span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;

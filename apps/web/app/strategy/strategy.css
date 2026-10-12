@@ -169,7 +169,7 @@
 
 .lever-list b i {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -190,7 +190,7 @@
   background: var(--accent-soft);
   /* --accent-ink is the text colour on a filled accent: on the soft tint it was near white. */
   color: var(--accent);
-  font-size: 10px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 600;
   letter-spacing: 0.04em;

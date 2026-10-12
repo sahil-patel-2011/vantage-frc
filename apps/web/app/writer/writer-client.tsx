@@ -280,7 +280,7 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
       {!view ? (
         fetchFailed ? (
         <section className="app-card soft-panel writer-setup" role="status">
-          {errorCopy.badge ? <span className="app-badge setup">{errorCopy.badge}</span> : null}
+          {errorCopy.badge ? <span className="app-badge error">{errorCopy.badge}</span> : null}
           <h2>{errorCopy.title}</h2>
           <p className="app-muted">{errorCopy.description}</p>
           <Button variant="secondary" type="button" onClick={() => void load()}>

@@ -338,7 +338,7 @@
 }
 
 .sfb-identity-lock .eyebrow {
-  font: 700 10px / 1 var(--font-source-sans), ui-sans-serif;
+  font: 700 11px / 1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--accent);
@@ -511,7 +511,7 @@
   min-height: 22px;
   padding: 0 8px;
   border-radius:var(--radius-pill);
-  font: 700 10px / 1 var(--font-source-sans), ui-sans-serif;
+  font: 700 11px / 1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   border: 1px solid var(--line);

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FINANCE_IN_AI_ACK_VERSION } from "@vantage/billing/ai-policy";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { hubHref } from "../../lib/nav/hubs";
+import { statusBadgeClass } from "../../components/ui/empty-state";
 
 type PolicySnapshot = {
   financeInAiEnabled: boolean;
@@ -187,7 +188,7 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
 
       {blocked ? (
         <div className="app-card soft-panel product-hub-setup" role="status">
-          {copy.badge ? <span className="app-badge setup">{copy.badge}</span> : null}
+          {copy.badge ? <span className={statusBadgeClass(copy.badge)}>{copy.badge}</span> : null}
           <h2>{copy.title}</h2>
           <p className="app-muted">{copy.description}</p>
           {shell === "error" ? (
@@ -219,7 +220,7 @@ export function FinanceInAiPanel({ orgId }: { orgId: string }) {
             </p>
             {shell === "empty" ? (
               <p className="app-muted" role="status">
-                <span className="app-badge setup">{copy.badge}</span> {copy.description}
+                <span className={statusBadgeClass(copy.badge)}>{copy.badge}</span> {copy.description}
               </p>
             ) : null}
             {policy?.financeInAiAcceptedAt ? (

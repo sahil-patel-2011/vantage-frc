@@ -19,7 +19,7 @@
 .export-domain{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg)}
 .export-domain strong{display:block;font-size:13px}
 .export-domain small{display:block;color:var(--muted);font-size:11px;line-height:1.45}
-.export-domain .prov{display:block;margin-top:4px;font-size:10px;color:var(--accent)}
+.export-domain .prov{display:block;margin-top:4px;font-size:11px;color:var(--accent)}
 .export-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
 .export-exclude{margin:0;padding-left:18px;display:grid;gap:6px;color:var(--muted);font-size:13px;line-height:1.45}
 .export-empty{display:grid;gap:8px;padding:8px 0}

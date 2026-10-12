@@ -46,7 +46,7 @@
   border-bottom: none;
 }
 .cad-activity-source {
-  font: 700 10px/1 var(--font-source-sans), ui-sans-serif;
+  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 4px 7px;
@@ -284,7 +284,7 @@
   padding: 3px 7px;
   border-radius:var(--radius-pill);
   border: 1px solid currentColor;
-  font: 700 10px/1 var(--font-source-sans), ui-sans-serif;
+  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;

@@ -16,7 +16,7 @@
 .visit-subform h4{font-size:var(--title-4);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .visit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
 .visit-field{display:grid;gap:4px;min-width:0;color:var(--muted)}
-.visit-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.visit-field>span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .visit-field.wide{grid-column:1/-1}
 .visit-form-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
 .visit-form-hint{color:var(--muted);font-size:12px;line-height:1.35}

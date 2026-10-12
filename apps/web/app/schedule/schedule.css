@@ -55,7 +55,7 @@
 .sched-dot.blue{background:var(--accent)}
 .sched-team{color:var(--ink);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 .sched-team.us{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
-.sched-us{padding:1px 6px;border-radius:var(--radius-pill);font-size:9px;font-weight:800;font-style:normal;letter-spacing:.06em}
+.sched-us{padding:1px 6px;border-radius:var(--radius-pill);font-size:11px;font-weight:800;font-style:normal;letter-spacing:.06em}
 .sched-us.red{color:var(--critical);border:1px solid var(--critical)}
 .sched-us.blue{color:var(--accent);border:1px solid var(--accent)}
 .sched-vs{color:var(--muted);font-size:11px;text-transform:uppercase}
@@ -92,7 +92,7 @@
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
-.aii-meta{color:var(--muted);font-size:10px}
+.aii-meta{color:var(--muted);font-size:11px}
 
 /* ---- One match timeline (tl-*) -------------------------------------------
    Phone-first: each match is a card with a header line (label, times, result)

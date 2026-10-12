@@ -28,7 +28,7 @@
   display: block;
   margin: 4px 0 10px;
   color: var(--accent);
-  font: 700 9px var(--font-ibm-mono), monospace;
+  font: 700 11px var(--font-ibm-mono), monospace;
   letter-spacing: 0.13em;
 }
 
@@ -56,7 +56,7 @@
 
 .invite-team-identity > span {
   color: var(--muted);
-  font: 700 8px var(--font-ibm-mono), monospace;
+  font: 700 11px var(--font-ibm-mono), monospace;
   letter-spacing: 0.1em;
 }
 
@@ -84,7 +84,7 @@
 
 .invite-team-meta span {
   color: var(--muted);
-  font: 700 8px var(--font-ibm-mono), monospace;
+  font: 700 11px var(--font-ibm-mono), monospace;
   letter-spacing: 0.08em;
 }
 
@@ -143,7 +143,7 @@
   border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
   background: var(--bg);
   color: color-mix(in srgb, var(--accent) 30%, var(--ink));
-  font: 700 10px var(--font-ibm-mono), monospace;
+  font: 700 11px var(--font-ibm-mono), monospace;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }

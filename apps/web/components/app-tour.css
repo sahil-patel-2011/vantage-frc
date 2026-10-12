@@ -89,7 +89,7 @@
 .tour-progress {
   display: block;
   color: var(--accent);
-  font: 800 10px/1 var(--font-source-sans), ui-sans-serif;
+  font: 800 11px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }

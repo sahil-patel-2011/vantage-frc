@@ -22,7 +22,7 @@
 .inventory-new-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .inventory-field{display:grid;gap:5px;min-width:0;color:var(--muted)}
 .inventory-field.grow{grid-column:1/-1}
-.inventory-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.inventory-field>span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .inventory-items{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 .inventory-list-empty{padding:8px 2px}
 .inventory-item{display:grid;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm)}
@@ -31,7 +31,7 @@
 .inventory-item-id{display:grid;gap:4px;min-width:0}
 .inventory-item-id strong{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inventory-item-tags{display:flex;flex-wrap:wrap;gap:6px}
-.inventory-item-tags em{font-style:normal;padding:2px 7px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:10px;font-weight:700;color:var(--muted)}
+.inventory-item-tags em{font-style:normal;padding:2px 7px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-pill);font-size:11px;font-weight:700;color:var(--muted)}
 .inventory-item-tags em.loc{color:var(--accent)}
 .inventory-item-tags em.low-tag{color:var(--critical);border-color:var(--warning)}
 .inventory-item-tags em.arch-tag{opacity:.7}
@@ -39,7 +39,7 @@
 .inventory-item-qty button{width:30px;height:30px;padding:0;font-size:18px;line-height:1;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs);cursor:pointer}
 .inventory-item-qty button:hover{border-color:var(--accent)}
 .inventory-item-qty b{display:grid;justify-items:center;min-width:52px;font-size:20px;line-height:1.05;font-variant-numeric:tabular-nums}
-.inventory-item-qty b span{color:var(--muted);font-size:9px;font-weight:600}
+.inventory-item-qty b span{color:var(--muted);font-size:11px;font-weight:600}
 .inventory-item-actions{display:flex;gap:10px}
 .inventory-adjust,.inventory-edit{display:flex;flex-wrap:wrap;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
 .inventory-adjust input[type=number]{width:90px}
@@ -108,4 +108,4 @@
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
-.aii-meta{color:var(--muted);font-size:10px}
+.aii-meta{color:var(--muted);font-size:11px}

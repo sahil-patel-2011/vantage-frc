@@ -110,7 +110,7 @@ function JournalEntryCard({ entry }: { entry: DreamJournalEntry }) {
   const status = statusLine(entry);
   const badge =
     entry.status === "error"
-      ? { className: "app-badge setup", text: "Run failed" }
+      ? { className: "app-badge error", text: "Run failed" }
       : entry.status === "no_activity"
         ? { className: "app-badge", text: "Quiet day" }
         : entry.status === "no_ai_fallback"
@@ -150,7 +150,7 @@ function ErrorStreakBanner({ entries }: { entries: DreamJournalEntry[] }) {
   const checks = errorStreakChecklist(streak.errorClass);
   return (
     <section className="dream-error-streak app-card soft-panel" role="alert">
-      <span className="app-badge setup">Dreaming is failing</span>
+      <span className="app-badge error">Dreaming is failing</span>
       <h3>
         {streak.count} nights in a row failed ({streak.since} → {streak.latest})
       </h3>

@@ -31,7 +31,7 @@
   display:inline-flex;align-items:baseline;gap:6px;padding:8px 12px;border-radius:var(--radius-sm);
   background:var(--surface-2);border:1px solid var(--line);font-variant-numeric:tabular-nums;
 }
-.signoff-readiness .score em{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.signoff-readiness .score em{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .signoff-readiness .score strong{font-size:1.75rem;line-height:1}
 .signoff-readiness .score.empty strong{color:var(--muted);font-size:1.5rem}
 .signoff-recs{margin:0;padding:0;list-style:none;display:grid;gap:6px}
@@ -63,7 +63,7 @@
 .signoff-badge{
   display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:var(--radius-pill);
   border:1px solid var(--line);background:var(--surface-2);color:var(--muted);
-  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
 }
 .signoff-badge.signed_off,.signoff-badge.approved{color:#245f46;background:#eaf5ef;border-color:#93bda9}
 .signoff-badge.in_progress,.signoff-badge.pending{color:#1f3f8a;background:#e8eefc;border-color:#a8bbe8}

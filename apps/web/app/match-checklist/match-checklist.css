@@ -44,7 +44,7 @@
 .mcl-run-who h3{margin:0;font-size:var(--title-3);letter-spacing:var(--tracking-tight)}
 .mcl-run-meta{color:var(--muted);font-size:12px}
 .mcl-badges{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.mcl-badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface-2);color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.mcl-badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface-2);color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .mcl-badge.ready{color:var(--positive);background:color-mix(in srgb,var(--positive) 12%,var(--surface));border-color:color-mix(in srgb,var(--positive) 40%,var(--line))}
 .mcl-badge.open{color:var(--warning);background:color-mix(in srgb,var(--warning) 12%,var(--surface));border-color:color-mix(in srgb,var(--warning) 40%,var(--line))}
 .mcl-badge.bumper.red{color:var(--mcl-red-ink);background:var(--mcl-red-bg);border-color:var(--mcl-red-line)}

@@ -73,7 +73,7 @@
   border: 1px solid var(--line);
   background: var(--bg);
   color: var(--muted);
-  font: 700 10px var(--font-source-sans), ui-sans-serif;
+  font: 700 11px var(--font-source-sans), ui-sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   width: max-content;

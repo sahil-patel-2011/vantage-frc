@@ -31,7 +31,7 @@ export function Freshness({ updatedAt, staleAfterMs, fetchStatus = "idle", class
 
   if (fetchStatus === "error") {
     return (
-      <span className={["app-badge", "setup", className].filter(Boolean).join(" ")} title="Last refresh failed">
+      <span className={["app-badge", "error", className].filter(Boolean).join(" ")} title="Last refresh failed">
         Refresh failed
       </span>
     );

@@ -371,7 +371,7 @@
 .marketing-lux .mk-explore { display: flex; justify-content: space-between; width: 100%; margin-top: 16px; font-size: 13px; font-weight: 600; color: #0e6872; }
 .marketing-lux .mk-workflow-preview { border: 1px solid #dce6e7; border-radius: 20px; padding: 22px; background: #f4f8f8; }
 .marketing-lux .mk-workflow-preview > p { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin: 0; font-size: 11px; color: #52616c; }
-.marketing-lux .mk-workflow-preview > p > span { font-size: 10px; }
+.marketing-lux .mk-workflow-preview > p > span { font-size: 11px; }
 .marketing-lux .mk-workflow-preview :is(h2, h3) { margin: 14px 0 20px; font-size: 22px; letter-spacing: -.02em; line-height: 1.2; }
 .marketing-lux .mk-workflow-preview dl { margin: 0; }
 .marketing-lux .mk-workflow-preview dl > div { padding: 12px 0; border-top: 1px solid #dce6e7; }

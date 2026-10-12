@@ -18,6 +18,7 @@ import {
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import "./ai-policy.css";
+import { statusBadgeClass } from "../../../components/ui/empty-state";
 
 type PolicyForm = {
   featureAllowlistEnabled: boolean;
@@ -362,7 +363,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
 
       {blocked ? (
         <section className="app-card soft-panel product-hub-setup" role="status">
-          {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
+          {shellCopy.badge ? <span className={statusBadgeClass(shellCopy.badge)}>{shellCopy.badge}</span> : null}
           <h2>{shellCopy.title}</h2>
           <p className="app-muted">{shellCopy.description}</p>
           <NextActions orgId={orgId} shell={shell} />
@@ -445,7 +446,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
 
           {showEmptyBanner ? (
             <section className="app-card soft-panel product-hub-setup" role="status">
-              {shellCopy.badge ? <span className="app-badge setup">{shellCopy.badge}</span> : null}
+              {shellCopy.badge ? <span className={statusBadgeClass(shellCopy.badge)}>{shellCopy.badge}</span> : null}
               <h2>{shellCopy.title}</h2>
               <p className="app-muted">{shellCopy.description}</p>
             </section>
