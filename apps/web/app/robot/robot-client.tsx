@@ -310,7 +310,9 @@ function robotName(label: string): string {
   return label;
 }
 
-export default function RobotClient() {
+export default function RobotClient({ embedded = false }: { embedded?: boolean } = {}) {
+  // Inside the Build hub the hub is the page: its title and tabs stay, so this is a section.
+  const Root = embedded ? "section" : "main";
   const [view, setView] = useState<BlueprintView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -439,10 +441,10 @@ export default function RobotClient() {
         )
       : null;
     return (
-      <main className="module-page robot-page">
+      <Root className={`module-page robot-page${embedded ? " is-embedded" : ""}`}>
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Build / Robot</span>
+            <span className="breadcrumbs"><a href={withOrgHref("/build", null)}>Build</a> / Robot</span>
             <h1>Robot Blueprint</h1>
           </div>
         </header>
@@ -465,16 +467,16 @@ export default function RobotClient() {
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page robot-page">
+      <Root className={`module-page robot-page${embedded ? " is-embedded" : ""}`}>
         <header className="app-page-header">
           <div>
-            <span className="breadcrumbs">Build / Robot</span>
+            <span className="breadcrumbs"><a href={withOrgHref("/build", view?.context?.orgId ?? null)}>Build</a> / Robot</span>
             <h1>Robot Blueprint</h1>
             <p>Every subsystem linked to its CAD, code, strategy priority, and live ops data.</p>
           </div>
@@ -485,7 +487,7 @@ export default function RobotClient() {
             Choose your team
           </Button>
         </EmptyState>
-      </main>
+      </Root>
     );
   }
 
@@ -494,10 +496,10 @@ export default function RobotClient() {
   const busy = busyKey != null;
 
   return (
-    <main className="module-page robot-page">
+    <Root className={`module-page robot-page${embedded ? " is-embedded" : ""}`}>
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Build / Robot</span>
+          <span className="breadcrumbs"><a href={withOrgHref("/build", view?.context?.orgId ?? null)}>Build</a> / Robot</span>
           <h1>Robot Blueprint</h1>
           <p>
             Every part of the robot for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — CAD, code, strategy, and ops per
@@ -601,6 +603,6 @@ export default function RobotClient() {
         <AskAiButton orgId={orgId} skill="robot-review" prompt="Which subsystem is furthest behind?" />
         <p>Blueprint review: the weakest subsystems and what to close before the next event.</p>
       </div>
-    </main>
+    </Root>
   );
 }

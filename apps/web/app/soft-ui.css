@@ -1248,11 +1248,13 @@ body.has-app-shell .intel-actions button{
   border-radius:var(--radius-sm)!important;
   min-height:var(--control-h);
 }
-body.has-app-shell .app-button:not(.secondary):not(.ghost):not(.danger),
-body.has-app-shell .primary-action,
-body.has-app-shell .quick.primary,
-body.has-app-shell .compare-panel button,
-body.has-app-shell .intel-actions>button{
+/* Not when disabled: this !important fill kept a disabled Add looking like the next step
+   (UX audit). Disabled buttons take the flat, muted style in shell-clarity.css. */
+body.has-app-shell .app-button:not(.secondary):not(.ghost):not(.danger):not(:disabled):not([aria-disabled="true"]),
+body.has-app-shell .primary-action:not(:disabled):not([aria-disabled="true"]),
+body.has-app-shell .quick.primary:not(:disabled),
+body.has-app-shell .compare-panel button:not(:disabled),
+body.has-app-shell .intel-actions>button:not(:disabled){
   /* --accent-ink, not a leftover white: the dark accent is a light blue and
      white on it measures 2.7:1. The token flips to near-black in dark mode. */
   color:var(--accent-ink)!important;
@@ -1261,7 +1263,7 @@ body.has-app-shell .intel-actions>button{
   font-weight:600;
   box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 10%,transparent);
 }
-body.has-app-shell .app-button.secondary{
+body.has-app-shell .app-button.secondary:not(:disabled):not([aria-disabled="true"]){
   color:var(--ink)!important;background:var(--surface)!important;border:1px solid var(--line)!important;box-shadow:none!important;
 }
 /* R4 on an empty screen. While a page's empty state offers the primary action ("New

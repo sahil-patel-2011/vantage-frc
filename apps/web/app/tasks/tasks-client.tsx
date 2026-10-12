@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -326,15 +326,24 @@ function CreateTaskForm({ busy, mutate }: { view: LiveView; busy: boolean; mutat
     [],
   );
   const [form, setForm] = useState(empty);
-  const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
+  // Said beside the field, not a disabled button that looked ready to press (UX audit).
+  const [titleMissing, setTitleMissing] = useState(false);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const set = (key: keyof typeof form) => (event: { target: { value: string } }) => {
+    if (key === "title" && event.target.value.trim()) setTitleMissing(false);
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  };
 
   return (
     <Panel
       as="form"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!form.title.trim()) return;
+        if (!form.title.trim()) {
+          setTitleMissing(true);
+          titleRef.current?.focus();
+          return;
+        }
         mutate({
           action: "create-task",
           title: form.title,
@@ -351,7 +360,17 @@ function CreateTaskForm({ busy, mutate }: { view: LiveView; busy: boolean; mutat
       <h2 style={{ margin: 0 }}>Add task</h2>
       <FormGrid min={150}>
         <FormRow label="Title" wide>
-          <input value={form.title} onChange={set("title")} placeholder="Mount the intake rollers" required />
+          <input
+            ref={titleRef}
+            value={form.title}
+            onChange={set("title")}
+            placeholder="Mount the intake rollers"
+            aria-invalid={titleMissing || undefined}
+            aria-describedby={titleMissing ? "task-title-error" : undefined}
+          />
+          {titleMissing ? (
+            <small id="task-title-error" className="field-error" role="alert">Give the task a title, then add it.</small>
+          ) : null}
         </FormRow>
         <FormRow label="Subsystem">
           <input value={form.subsystem} onChange={set("subsystem")} list="subsystem-options" placeholder="general" />
@@ -381,7 +400,7 @@ function CreateTaskForm({ busy, mutate }: { view: LiveView; busy: boolean; mutat
         </FormRow>
       </FormGrid>
       <div>
-        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>
+        <Button variant="primary" type="submit" disabled={busy}>
           Add task
         </Button>
       </div>

@@ -36,9 +36,9 @@
 
 .paid-splash-brand {
   margin: 0;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  font: 650 11px/1 var(--font-ibm-mono, ui-monospace, monospace);
+  letter-spacing:0;
+  text-transform:none;
+  font:600 12px/1 var(--font-sans);
   color: var(--muted);
   opacity: 0;
   animation: paid-splash-rise 0.5s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -83,9 +83,9 @@
 
 .paid-splash-hint {
   margin: 10px 0 0;
-  font: 500 0.78rem/1.2 var(--font-ibm-mono, ui-monospace, monospace);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font:600 0.78rem/1.2 var(--font-sans);
+  letter-spacing:0;
+  text-transform:none;
   color: color-mix(in srgb, var(--muted) 85%, transparent);
   opacity: 0;
   animation: paid-splash-rise 0.45s 0.55s ease both;

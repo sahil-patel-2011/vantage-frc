@@ -121,7 +121,7 @@ export function eventDaySetupSteps(
     canSetEvent
       ? {
           id: "team-data",
-          label: "Set the event you’re at",
+          label: "Set active event",
           detail: "Pull the match schedule for the event you’re at.",
           href: withOrgHref("/team/data", orgId),
         }

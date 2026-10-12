@@ -9,7 +9,7 @@
 .onboarding-flow-header{text-align:center}.onboarding-flow-header>span{display:block;margin:4px 0 10px;color:var(--accent);font:700 11px var(--font-ibm-mono),monospace;letter-spacing:.13em}.onboarding-flow-header h1{max-width:560px;margin-inline:auto;font-size:clamp(27px,5vw,38px);line-height:1.02}.onboarding-flow-header .onboarding-sub{max-width:570px;margin:12px auto 22px}
 
 .onboarding-progress-block{display:grid;gap:10px;margin:0 0 22px}
-.onboarding-progress-label{margin:0;text-align:center;color:var(--accent);font:700 11px var(--font-ibm-mono),monospace;letter-spacing:.08em;text-transform:uppercase}
+.onboarding-progress-label{margin:0;text-align:center;color:var(--accent);font:600 12px var(--font-sans);letter-spacing:0;text-transform:none}
 .onboarding-step-hint{margin:0 auto;max-width:460px;text-align:center;color:var(--muted);font-size:12px;line-height:1.45}
 .onboarding-steps-simple{grid-template-columns:repeat(3,1fr);max-width:420px;margin-inline:auto;margin-bottom:0}.onboarding-steps-simple li{position:relative}.onboarding-steps-simple li+li:before{content:"";position:absolute;right:calc(50% + 17px);top:13px;left:calc(-50% + 17px);height:1px;background:var(--line)}.onboarding-steps-simple li.done+li.done:before,.onboarding-steps-simple li.done+li.current:before{background:var(--accent)}
 .onboarding-steps-simple li.done,.onboarding-steps-simple li.current{color:var(--accent)}
@@ -31,7 +31,7 @@
 
 .onboarding-load-shell{display:grid;gap:16px;padding:18px;border:1px dashed var(--line);border-radius:var(--radius);background:var(--bg);text-align:center}
 .onboarding-load-shell.loading{border-style:solid;border-color:var(--line)}
-.onboarding-load-badge{justify-self:center;display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:var(--radius-pill);background:var(--surface-2);color:var(--ink);font:700 11px var(--font-ibm-mono),monospace;letter-spacing:.08em;text-transform:uppercase}
+.onboarding-load-badge{justify-self:center;display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:var(--radius-pill);background:var(--surface-2);color:var(--ink);font:600 12px var(--font-sans);letter-spacing:0;text-transform:none}
 .onboarding-load-badge.setup{background:var(--warning-soft);color:var(--warning)}
 .onboarding-membership-blurb{display:grid;gap:4px;margin:0;text-align:left}.onboarding-membership-blurb strong{font-size:13px}.onboarding-membership-blurb span{color:var(--muted);font-size:12px;line-height:1.45}
 .onboarding-load-progress{margin:0;color:var(--muted);font-size:12px}
@@ -145,7 +145,7 @@
 .onboarding-landing-list div{display:grid;gap:3px}
 .onboarding-landing-list strong{font-size:14px;line-height:1.25}
 .onboarding-landing-list span{color:var(--muted);font-size:12px;line-height:1.4}
-.onboarding-landing-list em{color:var(--muted);font:600 11px var(--font-ibm-mono),monospace;font-style:normal;letter-spacing:.04em;text-transform:uppercase}
+.onboarding-landing-list em{color:var(--muted);font:600 12px var(--font-sans);font-style:normal;letter-spacing:0;text-transform:none}
 
 /* Every button/link in the flow is a real thumb target. */
 .onboarding-actions .signin-submit,.onboarding-actions .signin-link,.onboarding-pending-actions .signin-submit,.onboarding-pending-actions .signin-link{min-height:44px}

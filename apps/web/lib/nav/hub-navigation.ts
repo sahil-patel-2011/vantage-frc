@@ -27,6 +27,9 @@ export function hubPageTitle(hub: ProductHubDef, tab: string): string {
   }
   // The Robot workbench root is the failure log; its page says so (Team › Work calls it the same).
   if (hub.id === "build" && tab === "fmea") return "Failure notes";
+  // The title matches the tab that was pressed ("Robot", not the blueprint's own name).
+  const buildSection = hub.id === "build" ? BUILD_SECTIONS.find(section => section.id === tab) : undefined;
+  if (buildSection) return buildSection.label;
   return hub.tabs.find(section => section.id === tab)?.label ?? hub.title;
 }
 /** Common follow-up actions instead of a second navigation catalog. */
