@@ -22,6 +22,7 @@ export type OutageCode =
   | "database_missing"
   | "connection_lost"
   | "not_configured"
+  | "backup_mode"
   | "unknown";
 
 export type OutageClassification = {
@@ -298,6 +299,18 @@ export function classifyDatabaseFailure(
 ): OutageClassification {
   const facts = collectFacts(error);
   const text = facts.messages.join(" \n ");
+
+  // VANTAGE_BACKUP_MODE (packages/db/src/backup-mode.ts): disconnected on purpose, not broken.
+  if (facts.codes.includes("VANTAGE_BACKUP_MODE")) {
+    return result(
+      "backup_mode",
+      "Backup mode is on",
+      "VANTAGE_BACKUP_MODE is set, so Vantage connects to no database on purpose and teams use their Google Sheets copy.",
+      "When the NAS is connected, remove VANTAGE_BACKUP_MODE in Vercel → Settings → Environment Variables and redeploy.",
+      facts,
+      "VANTAGE_BACKUP_MODE",
+    );
+  }
 
   for (const code of facts.codes) {
     if (isSqlState(code)) {

@@ -1,0 +1,51 @@
+/* Backup mode notice on /signin (backup-mode-notice.tsx); the card itself is join-team.css. */
+.backup-notice-status {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.backup-notice-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--warning, #c98a00);
+}
+.backup-notice h1 {
+  margin-top: 12px;
+}
+.backup-notice-links {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+.backup-notice-links .app-button,
+.backup-notice > p > .app-button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+}
+.backup-notice-hint {
+  margin: 16px 0 0;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+.backup-notice-facts {
+  margin: 20px 0;
+  padding: 16px 16px 16px 32px;
+  border-radius: var(--radius-md, 14px);
+  background: var(--bg);
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.backup-notice-facts li + li {
+  margin-top: 6px;
+}

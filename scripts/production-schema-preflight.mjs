@@ -41,9 +41,20 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0729_more_pinned_apps.sql",
 ];
 
+export const BACKUP_MODE_BUILD_NOTE =
+  "Backup mode (VANTAGE_BACKUP_MODE): this deployment connects to no database, so the schema check is skipped. Unset it and redeploy once the NAS is connected; the check then runs again.";
+
+/** VANTAGE_BACKUP_MODE (packages/db/src/backup-mode.ts): the app connects to no database at all. */
+export function isBackupModeEnv(env = process.env) {
+  return ["1", "true", "on", "yes"].includes(String(env.VANTAGE_BACKUP_MODE ?? "").trim().toLowerCase());
+}
+
 /** Read-only deployment gate. Local/CI builds never acquire database access. */
 export async function checkProductionSchema({ env = process.env, createPool = options => new pg.Pool(options) } = {}) {
   if (env.VERCEL_ENV !== "production") return { checked: false };
+  // Backup mode deploys an app that never opens a database connection, so there is no schema to
+  // check, and the build must not connect either. Said out loud in the build log, never silent.
+  if (isBackupModeEnv(env)) return { checked: false, backupMode: true };
   const url = env.DATABASE_ADMIN_URL || env.DATABASE_URL_UNPOOLED || env.POSTGRES_URL_NON_POOLING;
   if (!url) throw new Error("Production schema check needs the configured migration connection. Apply migrations before deployment.");
   let hostname;
@@ -78,7 +89,13 @@ export async function checkProductionSchema({ env = process.env, createPool = op
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     const result = await checkProductionSchema();
-    console.log(result.checked ? `Production schema verified: ${result.migrations} required migrations.` : "Schema deployment check skipped outside Vercel production.");
+    console.log(
+      result.checked
+        ? `Production schema verified: ${result.migrations} required migrations.`
+        : result.backupMode
+          ? BACKUP_MODE_BUILD_NOTE
+          : "Schema deployment check skipped outside Vercel production.",
+    );
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Production schema verification failed.");
     process.exitCode = 1;

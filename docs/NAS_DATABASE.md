@@ -256,6 +256,34 @@ ciphertext. Without the store, each Vercel server keeps its own memory: the aler
 arrives (possibly once from each server that noticed, capped at a few an hour), but the console
 can only email you, not everyone, and the banner may not show on every server.
 
+## Backup mode (no database until the NAS is connected)
+
+`VANTAGE_BACKUP_MODE=1` runs Vantage exactly as it would if the NAS lost its connection, on
+purpose and for as long as you like: before the NAS exists, or while it is being moved.
+
+- **Nothing connects to a database.** Every connection Vantage would open
+  (`packages/db/src/pool.ts`) is replaced by one that refuses at once, whatever `DATABASE_*` still
+  holds, so no database is read, written, deleted from or billed. Turning the mode off later
+  finds the data exactly as it was.
+- **The public site works:** home, Features, Cost, the desktop download, Privacy and Terms.
+- **The waitlist still takes names.** Each request is emailed to `PLATFORM_OWNER_EMAIL` (through
+  the configured Gmail SMTP or Resend) instead of saved; add them once the NAS is up. Without
+  email set up, the form asks people to email you instead.
+- **Sign-in is paused.** Accounts, sessions and teams live in the database, so `/signin` says
+  Vantage is running from its backup and opens the team's Google Sheets copy (the links each
+  device remembered while Vantage worked; otherwise it says where the copy lives). Every page or
+  API that needs data goes there, or answers `503 {"code":"backup_mode"}`.
+- **Scouting entries already saved on a phone** stay on it and send when Vantage is back.
+- **No outage emails.** It is a choice, not an outage: `/api/health` answers
+  `503 {"database":"backup_mode"}`, `/api/status` shows the backup notice, and nothing is
+  reported to the outage tracker.
+- **Deployments skip the schema check** and say so in the build log
+  (`scripts/production-schema-preflight.mjs`).
+
+To end it: connect the NAS (steps 1–4), apply the migrations, remove `VANTAGE_BACKUP_MODE` in
+Vercel → Settings → Environment Variables, and redeploy. The schema check runs again on that
+build.
+
 ## Checklist
 
 - [ ] UPS on the NAS and router

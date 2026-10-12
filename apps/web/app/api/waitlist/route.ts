@@ -7,6 +7,7 @@ import {
   waitlistSchema,
 } from "../../../lib/marketing/waitlist";
 import { waitlistUnavailableMessage } from "../../../lib/marketing/waitlist-copy";
+import { WaitlistEmailUnavailableError } from "../../../lib/marketing/waitlist-email-store";
 
 export const runtime = "nodejs";
 const limiter = createRateLimiter();
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     console.info("waitlist_submission", { outcome: "accepted", requestKey });
     return NextResponse.json({ ok: true });
   } catch (error) {
-    if (error instanceof WaitlistUnavailableError) {
+    if (error instanceof WaitlistUnavailableError || error instanceof WaitlistEmailUnavailableError) {
       console.info("waitlist_submission", { outcome: "setup_required", requestKey });
       return setupRequiredResponse();
     }

@@ -49,4 +49,23 @@ describe("GET /api/status", () => {
     });
     expect(await (await GET()).json()).toEqual({ limited: false });
   });
+
+  it("in backup mode is always limited with the backup message, without reading the store", async () => {
+    vi.stubEnv("VANTAGE_BACKUP_MODE", "1");
+    try {
+      setOutageStoreForTests({
+        kind: "upstash",
+        get: async () => {
+          throw new Error("backup mode must not read the outage store");
+        },
+        set: async () => false,
+        delete: async () => undefined,
+      });
+      const body = await (await GET()).json();
+      expect(body).toMatchObject({ limited: true, since: "backup-mode" });
+      expect(body.message).toMatch(/Google Sheets copy/);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });

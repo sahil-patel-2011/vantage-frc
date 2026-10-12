@@ -9,6 +9,7 @@
     "./admin": "./src/admin.ts",
     "./auth": "./src/auth.ts",
     "./pool": "./src/pool.ts",
+    "./backup-mode": "./src/backup-mode.ts",
     "./postgres-url": "./src/postgres-url.ts",
     "./billing": "./src/billing.ts",
     "./display": "./src/display.ts",

@@ -1,3 +1,4 @@
+import { BACKUP_MODE_MESSAGE, isBackupMode } from "@vantage/db/backup-mode";
 import { cachedPublicStatus } from "../../../lib/outage/notice";
 import { getOutageStore } from "../../../lib/outage/status-store";
 
@@ -10,7 +11,10 @@ export const dynamic = "force-dynamic";
  * that is when the app needs it. Cached for up to 30 s at the edge and 10 s in this instance.
  */
 export async function GET() {
-  const status = await cachedPublicStatus(getOutageStore());
+  // Backup mode is a standing notice of its own: no console, no store, always on while it lasts.
+  const status = isBackupMode()
+    ? { limited: true, message: BACKUP_MODE_MESSAGE, since: "backup-mode" }
+    : await cachedPublicStatus(getOutageStore());
   return Response.json(status, {
     headers: { "cache-control": "public, max-age=15, s-maxage=30, stale-while-revalidate=30" },
   });

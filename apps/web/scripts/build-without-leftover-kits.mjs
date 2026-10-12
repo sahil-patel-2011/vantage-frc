@@ -10,10 +10,11 @@ import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkProductionSchema } from "../../../scripts/production-schema-preflight.mjs";
+import { BACKUP_MODE_BUILD_NOTE, checkProductionSchema } from "../../../scripts/production-schema-preflight.mjs";
 
 try {
-  await checkProductionSchema();
+  const schema = await checkProductionSchema();
+  if (schema.backupMode) console.warn(BACKUP_MODE_BUILD_NOTE);
 } catch (error) {
   console.error(error instanceof Error ? error.message : "Production schema verification failed.");
   process.exit(1);

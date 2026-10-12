@@ -1,3 +1,4 @@
+import { isBackupMode } from "@vantage/db/backup-mode";
 import { probeDatabase, reportProbeOutcome } from "../../../lib/outage/probe";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,11 @@ export const dynamic = "force-dynamic";
  * using the app (docs/NAS_DATABASE.md, "When the NAS goes down").
  */
 export async function GET() {
+  // Backup mode: no database on purpose. Still a 503 (the database really isn't there), but it
+  // says why, so a monitor's owner isn't left guessing, and nothing is probed or reported.
+  if (isBackupMode()) {
+    return Response.json({ ok: false, database: "backup_mode" }, { status: 503, headers: { "cache-control": "no-store" } });
+  }
   const probe = await probeDatabase();
   reportProbeOutcome(probe, "api/health");
   const ok = probe.ok;
