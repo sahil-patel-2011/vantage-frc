@@ -110,6 +110,26 @@ async function recordProvisioningFailure(orgId: string) {
   } finally { client.release(); }
 }
 
+/**
+ * The same phases without Vercel Workflow (lib/workflows/durable.ts): one pass, no step retries.
+ * A failure is recorded, and "Retry to resume" picks up from the saved progress.
+ */
+export async function runTeamProvisioningInline(orgId: string) {
+  try {
+    for (const phase of PROVISIONING_PHASES) {
+      if (phase.id === "sheets") {
+        for (const workbook of WORKSPACE_WORKBOOK_NAMES) {
+          if ((await provisionPhase(orgId, "sheets", workbook)) === GOOGLE_NOT_CONNECTED) return;
+        }
+      }
+      if ((await provisionPhase(orgId, phase.id)) === GOOGLE_NOT_CONNECTED) return;
+    }
+  } catch (error) {
+    await recordProvisioningFailure(orgId);
+    throw error;
+  }
+}
+
 export async function teamProvisioningWorkflow(orgId: string) {
   "use workflow";
   try {

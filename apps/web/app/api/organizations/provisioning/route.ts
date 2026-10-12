@@ -27,6 +27,16 @@ export async function GET(request: Request) {
         AND has_org_role(org_id,ARRAY['owner','admin']::org_role[])`, [orgId, job.error, job.workflowRunId]));
     }
   }
+  // A setup run without Vercel Workflow (lib/workflows/durable.ts) has no run to ask; one that
+  // has not moved for 10 minutes ended with its function, so offer "Retry to resume".
+  if (job && !job.workflowRunId && (job.state === "queued" || job.state === "running") && Date.now() - Date.parse(job.updatedAt) > 10 * 60_000) {
+    job.state = "failed";
+    job.error = "Background setup stopped. Retry to resume your saved progress.";
+    await withRls({ userId: session.user.id, orgId: orgId! }, client => client.query(`UPDATE team_provisioning_jobs
+      SET state='failed',retry_after_at=NULL,error=$2,updated_at=now() WHERE org_id=$1::uuid
+      AND state IN ('queued','running') AND workflow_run_id IS NULL AND updated_at<now()-interval '10 minutes'
+      AND has_org_role(org_id,ARRAY['owner','admin']::org_role[])`, [orgId, job.error]));
+  }
   if (job) delete job.workflowRunId;
   return Response.json(job ?? { error: "Team setup not found." }, { status: job ? 200 : 404, headers: { "cache-control": "private, no-store" } });
 }

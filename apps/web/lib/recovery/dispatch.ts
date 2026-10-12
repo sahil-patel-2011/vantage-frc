@@ -1,6 +1,8 @@
 import { start } from "workflow/api";
 import { recoveryJournalReadiness } from "./readiness";
 import { recoveryJournalWorkflow } from "./workflow";
+import { exportRecoveryJournal } from "./journal";
+import { durableWorkflowsEnabled } from "../workflows/durable";
 
 export type RecoveryDispatch =
   | { accepted: true; runId: string }
@@ -18,6 +20,11 @@ export type RecoveryDispatch =
 export async function dispatchRecoveryJournal(): Promise<RecoveryDispatch> {
   const readiness = await recoveryJournalReadiness();
   if (readiness !== "ready") return { accepted: false, reason: readiness };
+  // Without Vercel Workflow: one export, here (callers already run this after the response).
+  if (!durableWorkflowsEnabled()) {
+    await exportRecoveryJournal();
+    return { accepted: true, runId: "inline" };
+  }
   const run = await start(recoveryJournalWorkflow, []);
   return { accepted: true, runId: run.runId };
 }

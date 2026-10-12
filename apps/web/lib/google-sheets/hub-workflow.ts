@@ -63,6 +63,17 @@ async function finishReadableSync(orgId: string, generation: string, failed = fa
   } finally { client.release(); }
 }
 
+/** The same sync without Vercel Workflow (lib/workflows/durable.ts): one pass, no step retries. */
+export async function runReadableHubSyncInline(orgId: string, generation: string) {
+  try {
+    for (const name of WORKSPACE_WORKBOOK_NAMES) await refreshWorkspace(orgId, generation, name);
+    await finishReadableSync(orgId, generation);
+  } catch (error) {
+    await finishReadableSync(orgId, generation, true);
+    throw error;
+  }
+}
+
 export async function readableHubWorkflow(orgId: string, generation: string) {
   "use workflow";
   try {
