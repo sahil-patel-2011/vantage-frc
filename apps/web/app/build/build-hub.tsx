@@ -5,6 +5,7 @@ import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from
 import "../product-hub.css";
 import "../code/code.css";
 import "../kickoff/kickoff.css";
+import "../robot/robot.css";
 
 const KickoffClient = dynamic(() => import("../kickoff/kickoff-client"), { ssr: false, loading: HubPanelSkeleton });
 const CadWorkspace = dynamic(() => import("../cad/cad-client"), { ssr: false, loading: HubPanelSkeleton });
@@ -15,9 +16,10 @@ const PrototypeTrackerClient = dynamic(() => import("../prototype-tracker/protot
   loading: HubPanelSkeleton,
 });
 const BatteriesClient = dynamic(() => import("../batteries/batteries-client"), { ssr: false, loading: HubPanelSkeleton });
+const RobotClient = dynamic(() => import("../robot/robot-client"), { ssr: false, loading: HubPanelSkeleton });
 
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
-const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad"] as const;
+const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad", "robot"] as const;
 
 export default function BuildHub({ initialTab }: { initialTab?: string | null }) {
   return (
@@ -55,6 +57,14 @@ export default function BuildHub({ initialTab }: { initialTab?: string | null })
           return (
             <HubOrgGate orgId={orgId} label={tab === "bugbot" ? "AI Bugbot" : "Code"}>
               {(id) => <CodeClient orgId={id} embedded focusBugbot={tab === "bugbot"} />}
+            </HubOrgGate>
+          );
+        }
+        if (tab === "robot") {
+          // In the hub, so the Kickoff · CAD · Code · Robot tabs stay (it used to open /robot alone).
+          return (
+            <HubOrgGate orgId={orgId} label="Robot">
+              {() => <RobotClient embedded />}
             </HubOrgGate>
           );
         }

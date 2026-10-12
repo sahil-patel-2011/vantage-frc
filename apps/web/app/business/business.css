@@ -450,15 +450,15 @@
   margin-top: 14px;
 }
 
+/* Sentence-case labels, like every other form: the dense ALL-CAPS labels on Outreach and
+   Grants were hard to scan (UX audit). */
 .biz-field {
   display: grid;
   align-content: start;
-  gap: 5px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .biz-field.wide {

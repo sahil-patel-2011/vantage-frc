@@ -143,9 +143,9 @@
   border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
   background: var(--bg);
   color: color-mix(in srgb, var(--accent) 30%, var(--ink));
-  font: 700 11px var(--font-ibm-mono), monospace;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font:600 12px var(--font-sans);
+  letter-spacing:0;
+  text-transform:none;
 }
 
 .invite-empty-badge.warn {

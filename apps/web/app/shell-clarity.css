@@ -230,3 +230,16 @@ body.has-app-shell .soft-avatar.soft-avatar-btn img {
   body.has-app-shell .soft-focus-rail nav a { min-height: 44px; }
   body.has-app-shell .soft-focus-collapse { width: 44px; height: 44px; }
 }
+
+/* An inline field message: what is missing, under the field it is about. */
+body.has-app-shell .field-error {
+  display: block;
+  margin-top: 6px;
+  color: color-mix(in srgb, var(--critical) 84%, var(--ink));
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+body.has-app-shell [aria-invalid="true"]:is(input, select, textarea) {
+  border-color: var(--critical);
+}

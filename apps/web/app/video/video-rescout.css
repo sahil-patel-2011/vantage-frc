@@ -41,9 +41,9 @@
 .vid-kpis span,
 .vid-kpis small {
   color: var(--muted);
-  font: 700 11px/1.2 var(--font-ibm-mono), ui-monospace, monospace;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font:600 12px/1.2 var(--font-sans);
+  letter-spacing:0;
+  text-transform:none;
 }
 .vid-kpis strong {
   font-size: clamp(24px, 3.6vw, 32px);
