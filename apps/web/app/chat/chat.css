@@ -750,3 +750,18 @@
     grid-template-columns: 1fr;
   }
 }
+/* The header's two quiet actions sit in one row at every width. */
+.ask-page .ask-head .ch-header-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px 8px;
+}
+/* Phones: one starter per group keeps the empty state short and the message box in reach. */
+@media (max-width: 720px) {
+  .ask-groups .ask-group li:nth-child(n + 2) {
+    display: none;
+  }
+}

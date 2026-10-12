@@ -87,13 +87,24 @@ describe("Sponsorships skill: who to ask next", () => {
   });
 
   it("puts a high renewal risk first within the same urgency", () => {
+    const lapsed = { status: "lapsed" as const, pipelineStage: "renewal" as const, lifetimeCents: 10_000 };
     const ranked = rankSponsorAsks({
-      sponsors: [sponsor({ id: "x", name: "Alpha" }), sponsor({ id: "y", name: "Zulu" })],
+      sponsors: [sponsor({ id: "x", name: "Alpha", ...lapsed }), sponsor({ id: "y", name: "Zulu", ...lapsed })],
       reminders: [],
       renewalRisk: new Map([["y", "high"]]),
       now: NOW,
     });
     expect(ranked.map((row) => row.name)).toEqual(["Zulu", "Alpha"]);
+  });
+
+  it("never calls a prospect a renewal risk — it has nothing to renew", () => {
+    const ranked = rankSponsorAsks({
+      sponsors: [sponsor({ id: "p", name: "Prospect Co" })],
+      reminders: [],
+      renewalRisk: new Map([["p", "high"]]),
+      now: NOW,
+    });
+    expect(ranked[0]?.renewalRisk).toBeNull();
   });
 
   it("returns nothing for a team with no records — no made-up suggestions", () => {

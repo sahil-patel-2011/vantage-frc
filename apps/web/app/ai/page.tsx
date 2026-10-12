@@ -7,6 +7,8 @@ type Props = {
     tab?: string;
     skill?: string;
     prompt?: string;
+    /** Home's Ask AI card sends its question as `q`. */
+    q?: string;
     from?: string;
     about?: string;
     sponsorId?: string;
@@ -36,7 +38,7 @@ export default async function AiPage({ searchParams }: Props) {
   const { tab, ...rest } = await searchParams;
   const ask: AskAiParams = {
     skill: rest.skill ?? null,
-    prompt: rest.prompt ?? "",
+    prompt: rest.prompt ?? rest.q ?? "",
     from: rest.from ?? null,
     about: rest.about ?? null,
     sponsorId: rest.sponsorId ?? null,

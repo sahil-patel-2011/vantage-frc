@@ -80,7 +80,8 @@ describe("one icon per meaning (A6-23)", () => {
     expect(read("lib/nav/product-nav.ts")).not.toMatch(/label: "Ask AI", icon: "bolt"/);
     // The top bar's Ask AI is the shared page-aware link (components/ask-ai-button.tsx).
     expect(read("components/app-shell-topbar.tsx")).toMatch(/<AskAiTopbarLink\b/);
-    expect(read("components/ask-ai-button.tsx")).toMatch(/aria-label="Ask AI"[\s\S]{0,600}<Icon name="sparkles" \/>/);
+    expect(read("components/ask-ai-button.tsx")).toMatch(/aria-label=\{label \? undefined : "Ask AI"\}[\s\S]{0,600}<Icon name="sparkles" \/>/);
+    expect(read("components/app-shell-sidebar.tsx")).toMatch(/<AskAiTopbarLink orgId=\{orgId \|\| null\} label="Ask AI" \/>/);
     expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/help", label: "Help", icon: "book"/);
     expect(read("lib/nav/settings-nav.ts")).toMatch(/label: "Security", href: "\/security", icon: "shield"/);
     expect(read("components/app-shell-account-menu.tsx")).toMatch(/<Icon name="shield" \/><span>Platform admin<\/span>/);

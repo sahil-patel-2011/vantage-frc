@@ -280,7 +280,9 @@ const sponsorships: Executor = async (ctx, skill) => {
   const lead = askNext[0];
   return output(skill, ctx, {
     status: "ok",
-    summary: lead ? `Ask next: ${lead.name} — ${lead.reason}.` : `${data.sponsorCount} sponsor record${data.sponsorCount === 1 ? "" : "s"}; nothing is due right now.`,
+    summary: lead
+      ? `${askNext.length} sponsor${askNext.length === 1 ? "" : "s"} to act on — start with ${lead.name}.`
+      : `${data.sponsorCount} sponsor record${data.sponsorCount === 1 ? "" : "s"}; nothing is due right now.`,
     highlights: highlights.length ? highlights : ["Nothing is overdue. Every sponsor is up to date."],
     data,
   });

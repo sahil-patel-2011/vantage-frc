@@ -118,7 +118,7 @@ describe("Ask AI skill executors", () => {
     const { client } = fakeClient();
     const result = await runAiSkill("sponsorships", ctx(client, "Draft a renewal email to Acme Robotics"));
     expect(result?.status).toBe("ok");
-    expect(result?.summary).toBe("Ask next: Acme Robotics — Renewal outreach due Oct 1.");
+    expect(result?.summary).toBe("1 sponsor to act on — start with Acme Robotics.");
     expect(result?.highlights[0]).toBe("Ask next: Acme Robotics — Renewal outreach due Oct 1 · renewal risk high");
     expect(result?.highlights.some((line) => line.includes("Boeing"))).toBe(true);
     const data = result?.data as { focusSponsor: { name: string; contactName: string } & Record<string, unknown> };

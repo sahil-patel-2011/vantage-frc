@@ -69,6 +69,10 @@ export function shortDate(value: string | null): string | null {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
+function hasGiven(sponsor: Sponsor): boolean {
+  return sponsor.lifetimeCents > 0 || sponsor.pipelineStage === "active" || sponsor.pipelineStage === "renewal" || sponsor.status === "active" || sponsor.status === "lapsed";
+}
+
 /**
  * Who to ask next, most urgent first: thank-yous and renewals that are due, overdue follow-ups,
  * pledges not yet received, past sponsors who haven't given this season, stalled asks, sponsors
@@ -96,7 +100,9 @@ export function rankSponsorAsks(input: {
     stage: pipelineStageLabel(sponsor.pipelineStage),
     contactName: sponsor.contactName,
     recordedAmount: dollarsOrNull(sponsor.pledgedCents) ?? dollarsOrNull(sponsor.askCents),
-    renewalRisk: input.renewalRisk?.get(sponsor.id) ?? null,
+    // Renewal risk only means something for a sponsor who has given or is active; a prospect
+    // with no history would always read "high".
+    renewalRisk: hasGiven(sponsor) ? (input.renewalRisk?.get(sponsor.id) ?? null) : null,
   });
 
   for (const reminder of input.reminders) {
