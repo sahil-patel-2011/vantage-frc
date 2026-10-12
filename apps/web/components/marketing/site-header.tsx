@@ -114,13 +114,14 @@ export function MarketingRouteActions({
         {primary.label}
       </a>
       {signIn && !signedIn ? (
-        <a className="text-link" href="/signin">
+        // The same blue link with a chevron as Home and Features; this one was teal (UX audit).
+        <a className="mx-link" href="/signin">
           Already invited? Sign in
         </a>
       ) : null}
       {companion ? (
         <a
-          className={companion.variant === "secondary" ? "button secondary" : "text-link"}
+          className={companion.variant === "secondary" ? "button secondary" : "mx-link"}
           href={companion.href}
         >
           {companion.label}
