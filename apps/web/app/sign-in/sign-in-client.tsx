@@ -10,6 +10,7 @@ import {
   canSubmitCode,
   canRetrySubmittedCode,
   classifyOtpFailure,
+  isCodeRejection,
   clearPendingCode,
   clearRememberedAccount,
   codeSecondsRemaining,
@@ -208,6 +209,7 @@ export default function SignInClient({
             now: Date.now(),
             failure: classifyOtpFailure({
               channel: "email-otp",
+              stage: "send",
               status: response.status,
               code: payload.code,
               message: payload.message ?? status.emailOtpReason,
@@ -237,7 +239,7 @@ export default function SignInClient({
         dispatch({
           type: "send_failed",
           now: Date.now(),
-          failure: classifyOtpFailure({ channel: "email-otp", networkError: true }),
+          failure: classifyOtpFailure({ channel: "email-otp", stage: "send", networkError: true }),
         });
         return false;
       } finally {
@@ -264,6 +266,8 @@ export default function SignInClient({
         const payload = (await response.json().catch(() => ({}))) as {
           error?: string;
           expiresInSeconds?: number;
+          resendInSeconds?: number;
+          alreadySent?: boolean;
         };
         if (!response.ok) {
           dispatch({
@@ -271,6 +275,7 @@ export default function SignInClient({
             now: Date.now(),
             failure: classifyOtpFailure({
               channel: "email-2fa",
+              stage: "send",
               status: response.status,
               message: payload.error ?? status.emailOtpReason,
               retryAfterSeconds: parseRetryAfterSeconds(response.headers),
@@ -287,14 +292,15 @@ export default function SignInClient({
           now: sentAt,
           emailHint: options?.emailHint ?? undefined,
           expiresInSeconds: Number(payload.expiresInSeconds ?? DEFAULT_CODE_TTL_SECONDS),
-          resent: options?.resent,
+          cooldownSeconds: typeof payload.resendInSeconds === "number" ? payload.resendInSeconds : undefined,
+          resent: options?.resent && !payload.alreadySent,
         });
         return true;
       } catch {
         dispatch({
           type: "send_failed",
           now: Date.now(),
-          failure: classifyOtpFailure({ channel: "email-2fa", networkError: true }),
+          failure: classifyOtpFailure({ channel: "email-2fa", stage: "send", networkError: true }),
         });
         return false;
       } finally {
@@ -793,8 +799,9 @@ export default function SignInClient({
             code={flow.code}
             codeRef={codeRef}
             emailAvailable={emailAvailable}
-            // A rate limit is not a wrong code: the boxes stay neutral, not red.
-            invalid={Boolean(flow.failure) && flow.failure?.kind !== "rate_limited"}
+            // Red boxes only for a code that was typed and refused. A failed send, a rate limit or a
+            // network error is not the person's mistake, so the boxes stay neutral.
+            invalid={isCodeRejection(flow.failure)}
             failureMessage={flow.failure?.message ?? null}
             failureKind={flow.failure?.kind ?? null}
             retryAfterSeconds={flow.failure?.kind === "rate_limited" ? Math.max(0, Math.ceil(((flow.verifyAvailableAt ?? flow.resendAvailableAt ?? clock) - clock) / 1000)) : null}

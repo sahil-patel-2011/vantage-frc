@@ -334,6 +334,11 @@ export function signInStepCopy(
 
 type FailureInput = {
   channel: SignInChannel;
+  /**
+   * "send" when asking for a code failed. Nobody has typed a code then, so the answer is never
+   * "that code doesn't match": a failed send of the second-factor code once showed exactly that.
+   */
+  stage?: "send" | "verify";
   /** HTTP status; omit for a thrown fetch (offline, DNS, aborted). */
   status?: number | null;
   /** Better Auth error code — `INVALID_OTP`, `OTP_EXPIRED`, `TOO_MANY_ATTEMPTS`. */
@@ -394,6 +399,8 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
       retryAfterSeconds,
     };
   }
+
+  if (input.stage === "send") return classifySendFailure(input, text);
 
   if (/OTP_EXPIRED|expired/i.test(text)) {
     return { kind: "expired", message: EXPIRED_MESSAGE, keepDigits: true, needsNewCode: true };
@@ -466,6 +473,37 @@ export function classifyOtpFailure(input: FailureInput): OtpFailure {
     keepDigits: true,
     needsNewCode: false,
   };
+}
+
+const SEND_FAILED_MESSAGE = "We couldn’t send your code. Wait a moment, then tap Send a new code.";
+
+/** Asking for a code failed: say why, never blame a code nobody typed. */
+function classifySendFailure(input: FailureInput, text: string): OtpFailure {
+  if (/waitlist|WAITLIST_ONLY/i.test(text)) {
+    return { kind: "not_authorized", message: WAITLIST_ONLY_MESSAGE, keepDigits: false, needsNewCode: true };
+  }
+  if (input.status === 401 || input.status === 403 || /unauthorized|forbidden/i.test(text)) {
+    return {
+      kind: "not_authorized",
+      message: "That sign-in isn’t authorized. Start again from your email.",
+      keepDigits: false,
+      needsNewCode: true,
+    };
+  }
+  if (/unavailable|not configured|RESEND|AUTH_EMAIL_FROM|DATABASE_/i.test(text)) {
+    return {
+      kind: "unavailable",
+      message: "Email codes are off right now. Nothing was sent. Try Google, or ask the person who invited you.",
+      keepDigits: true,
+      needsNewCode: false,
+    };
+  }
+  return { kind: "unknown", message: SEND_FAILED_MESSAGE, keepDigits: true, needsNewCode: false };
+}
+
+/** A code was typed and refused: the only failures that turn the code boxes red. */
+export function isCodeRejection(failure: OtpFailure | null | undefined): boolean {
+  return failure?.kind === "wrong_code" || failure?.kind === "expired" || failure?.kind === "too_many_attempts";
 }
 
 /**

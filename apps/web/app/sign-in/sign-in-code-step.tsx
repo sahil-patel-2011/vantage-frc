@@ -97,7 +97,7 @@ export function SignInCodeStep({
       ) : null}
 
       {/* Right under the boxes, not below the timer: an uninvited visitor otherwise waited out
-          the five-minute clock before reading why nothing came. It appears once a new code could
+          the code clock before reading why nothing came. It appears once a new code could
           be sent (showCodeHelp), not from the first second: nearly everyone here was invited, and
           "you're probably not invited" alarmed them while their email was on its way. */}
       {inviteHelp ? (

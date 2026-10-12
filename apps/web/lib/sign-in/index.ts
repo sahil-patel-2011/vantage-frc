@@ -51,6 +51,7 @@ export {
   canSubmitCode,
   canRetrySubmittedCode,
   classifyOtpFailure,
+  isCodeRejection,
   codeSecondsRemaining,
   initialSignInState,
   inviteReturnPath,

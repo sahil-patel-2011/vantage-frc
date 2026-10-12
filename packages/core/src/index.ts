@@ -65,7 +65,7 @@ function googleSocialProvider(callbackOrigin: string | null) {
  * tries" on their first press, so it is sized for a room of about thirty.
  */
 export const OTP_POLICY = {
-  expiresInSeconds: 300,
+  expiresInSeconds: 30 * 60,
   allowedAttempts: 5,
   requestWindowSeconds: 60,
   requestLimit: 40,
