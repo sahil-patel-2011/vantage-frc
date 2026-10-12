@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "./icon";
+import { AskAiTopbarLink } from "./ask-ai-button";
 import { islandTabIsActive } from "./app-shell-model";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import { mainMenuSearch } from "../lib/nav/main-menu";
@@ -52,7 +53,9 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
       </a>)}
     </nav>
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
-      {[{ href: "/ai?tab=chat", label: "Ask AI", icon: "sparkles" as const }, { href: "/help", label: "Help", icon: "book" as const }, { href: "/account", label: "Account", icon: "gear" as const }]
+      {/* Ask AI opens on the current page's skill, the same link as the top bar's (lib/ai-skills). */}
+      {allowed("/ai?tab=chat") ? <AskAiTopbarLink orgId={orgId || null} label="Ask AI" /> : null}
+      {[{ href: "/help", label: "Help", icon: "book" as const }, { href: "/account", label: "Account", icon: "gear" as const }]
         .filter(item => allowed(item.href)).map(item => <a key={item.href} data-tour={item.href.startsWith("/ai?") ? "ask-ai" : undefined} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav>
   </aside>;
