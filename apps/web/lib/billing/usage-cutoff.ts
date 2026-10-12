@@ -11,6 +11,7 @@ export type CutoffReason =
   | "spend_cap"
   | "org_budget"
   | "kill_switch"
+  | "member_ai_off"
   | "payg_required"
   | "sponsored_promo_expired";
 
@@ -70,6 +71,7 @@ export const CUTOFF_ERROR_CODES = [
   "spend_cap",
   "kill_switch",
   "org.kill_switch",
+  "member.ai_off",
   "sponsored_allowance_exhausted",
   "sponsored_promo_expired",
   "budget_limit_exceeded",
@@ -183,6 +185,8 @@ export function cutoffCheckoutVisible(canCheckout: boolean | undefined, role?: s
 export function cutoffCtas(alert: UsageCutoffAlert, orgId: string): CutoffCta[] {
   const budgetsHref = cutoffBudgetsHref(orgId);
   const aiKeysHref = cutoffAiKeysHref(orgId);
+  // Only an owner or admin can turn it back on, and not from anything this person can open.
+  if (alert.reason === "member_ai_off") return [];
   if (alert.reason === "kill_switch" || alert.reason === "org_budget" || alert.reason === "spend_cap") {
     return [{ id: "budgets", label: "Open AI limits", href: budgetsHref }];
   }
@@ -208,7 +212,11 @@ export function messageForCutoffError(
   let reason: CutoffReason = "allowance";
   let { title, body } = NEEDS_KEY;
 
-  if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
+  if (match("ai_off")) {
+    reason = "member_ai_off";
+    title = "AI is off for you";
+    body = "An owner or admin turned AI off for your account on this team. Ask them if you need it back.";
+  } else if (match("kill_switch") || match("billingdisabled") || match("billing_disabled")) {
     reason = "kill_switch";
     title = "AI is paused";
     body = "An owner or mentor paused AI for the team. They can turn it back on under AI limits.";

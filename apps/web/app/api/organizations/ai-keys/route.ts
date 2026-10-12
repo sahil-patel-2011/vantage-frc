@@ -7,6 +7,7 @@ import {
   AI_HORDE_MODELS,
   isAiHordeEnabled,
   isAiHordeModel,
+  teamDefaultRouting,
   validateOpenAiCompatibleBaseUrl,
 } from "@vantage/agent";
 import { createKms, encryptSecret } from "@vantage/billing";
@@ -163,7 +164,16 @@ async function loadLocalConnector(client: Parameters<Parameters<typeof withRls>[
   };
 }
 
-async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]>[0], orgId: string) {
+/**
+ * The team's saved routing choice. A team that never saved one is shown the model it starts on
+ * (teamDefaultRouting: Claude Haiku 5.5 when it has an Anthropic key), the same answer the chat
+ * resolver uses.
+ */
+async function loadRoutingPrefs(
+  client: Parameters<Parameters<typeof withRls>[1]>[0],
+  orgId: string,
+  keyProviders: readonly string[],
+) {
   // org_byok_routing_prefs may predate its migration, so automode is the right
   // default — but the plain catch aborted the transaction, so the key list this
   // route loads next came back empty and the page said "no keys configured".
@@ -190,7 +200,7 @@ async function loadRoutingPrefs(client: Parameters<Parameters<typeof withRls>[1]
         [orgId],
       )
     ).rows[0];
-    if (!row) return defaults;
+    if (!row) return { ...defaults, ...teamDefaultRouting(keyProviders) };
     return {
       mode: row.mode === "fixed" ? ("fixed" as const) : ("automode" as const),
       // Through canonicalByokModelId: a saved id for a model the provider has since retired
@@ -246,7 +256,11 @@ export async function GET(request: Request) {
 
       const [localConnector, routing] = await Promise.all([
         loadLocalConnector(client, orgId!),
-        loadRoutingPrefs(client, orgId!),
+        loadRoutingPrefs(
+          client,
+          orgId!,
+          rows.filter((row) => row.enabled).map((row) => row.provider),
+        ),
       ]);
 
       // The caller's own personal keys (RLS restricts rows to user_id = caller).
@@ -289,6 +303,7 @@ export async function GET(request: Request) {
           label: m.label,
           tier: m.tier,
           tierLabel: m.tierLabel,
+          ...(m.fixedOnly ? { fixedOnly: true } : {}),
         })),
       };
     });

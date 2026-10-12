@@ -122,7 +122,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       setRoutingDraft({
         mode: "automode",
         fixedModelId: data.modelOptions[0]?.id ?? null,
-        enabledModelIds: data.modelOptions.map((m) => m.id),
+        enabledModelIds: data.modelOptions.filter((m) => !m.fixedOnly).map((m) => m.id),
       });
     }
   }

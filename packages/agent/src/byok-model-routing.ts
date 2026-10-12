@@ -34,7 +34,16 @@ export type ByokModelOption = {
    * that pays for it picks it on purpose (Fixed model).
    */
   paidKeyOnly?: boolean;
+  /**
+   * How hard the model thinks before answering (Anthropic `output_config.effort`). Only set on
+   * models that take it; the request leaves it out otherwise.
+   */
+  effort?: ByokEffort;
+  /** A variant a team picks on purpose (Fixed model). Automode keeps to the default variant. */
+  fixedOnly?: boolean;
 };
+
+export type ByokEffort = "low" | "medium" | "high";
 
 export const BYOK_MODEL_OPTIONS: readonly ByokModelOption[] = [
   {
@@ -87,15 +96,44 @@ export const BYOK_MODEL_OPTIONS: readonly ByokModelOption[] = [
     inputPerMillionUsd: 3,
     outputPerMillionUsd: 15,
   },
+  // Claude Haiku 5.5 replaced Claude Haiku 4.5 ($1 / $5). Its list rate is $0.10 / $0.50 for
+  // prompts up to 100K tokens ($0.50 / $2.50 above); a Vantage chat prompt stays well under that.
+  // Checked 2026-10-12. Medium effort is the default; Low and High are there to pick on purpose
+  // (faster and cheaper, or more careful), at the same per-token rate.
   {
-    id: "anthropic:claude-haiku-4-5",
+    id: "anthropic:claude-haiku-5-5",
     provider: "anthropic",
-    modelId: "claude-haiku-4-5",
-    label: "Claude Haiku 4.5",
+    modelId: "claude-haiku-5-5",
+    label: "Claude Haiku 5.5",
     tier: "fast",
     tierLabel: "Fast / light",
-    inputPerMillionUsd: 1,
-    outputPerMillionUsd: 5,
+    inputPerMillionUsd: 0.1,
+    outputPerMillionUsd: 0.5,
+    effort: "medium",
+  },
+  {
+    id: "anthropic:claude-haiku-5-5@low",
+    provider: "anthropic",
+    modelId: "claude-haiku-5-5",
+    label: "Claude Haiku 5.5 · Low effort",
+    tier: "fast",
+    tierLabel: "Fast / light",
+    inputPerMillionUsd: 0.1,
+    outputPerMillionUsd: 0.5,
+    effort: "low",
+    fixedOnly: true,
+  },
+  {
+    id: "anthropic:claude-haiku-5-5@high",
+    provider: "anthropic",
+    modelId: "claude-haiku-5-5",
+    label: "Claude Haiku 5.5 · High effort",
+    tier: "fast",
+    tierLabel: "Fast / light",
+    inputPerMillionUsd: 0.1,
+    outputPerMillionUsd: 0.5,
+    effort: "high",
+    fixedOnly: true,
   },
   // Google rows re-checked against the live API and ai.google.dev pricing on 2026-10-03:
   // gemini-2.5-pro and gemini-2.0-flash answer 404 "no longer available". Pro has no free
@@ -155,10 +193,27 @@ export const GOOGLE_FREE_TIER_INPUT_TPM = 250_000;
 const RETIRED_BYOK_MODEL_IDS: Record<string, string> = {
   "google:gemini-2.5-pro": "google:gemini-3.1-pro-preview",
   "google:gemini-2.0-flash": "google:gemini-3.8-flash",
+  "anthropic:claude-haiku-4-5": "anthropic:claude-haiku-5-5",
 };
 
 export function canonicalByokModelId(id: string): string {
   return RETIRED_BYOK_MODEL_IDS[id] ?? id;
+}
+
+/** The model a team starts on until it saves its own choice under Team → AI API keys. */
+export const TEAM_DEFAULT_MODEL_ID = "anthropic:claude-haiku-5-5";
+
+/**
+ * Routing for a team that has never saved a choice: Claude Haiku 5.5 at Medium effort when the
+ * team can reach Anthropic, and Automode over every model it can reach otherwise.
+ */
+export function teamDefaultRouting(availableProviders: readonly string[]): {
+  mode: "fixed" | "automode";
+  fixedModelId: string | null;
+} {
+  return availableProviders.includes("anthropic")
+    ? { mode: "fixed", fixedModelId: TEAM_DEFAULT_MODEL_ID }
+    : { mode: "automode", fixedModelId: null };
 }
 
 /** Fixed label for the Ollama / LM Studio org_provider_configs row. */
@@ -216,9 +271,10 @@ export function pickByokModelForFeature(input: {
   const catalog = BYOK_MODEL_OPTIONS.filter((m) => available.has(m.provider));
   if (!catalog.length) return null;
 
-  // Only a deliberate Fixed pick reaches a model with no free tier.
-  const freeTier = catalog.filter((m) => !m.paidKeyOnly);
-  const automatic = freeTier.length ? freeTier : catalog;
+  // Only a deliberate Fixed pick reaches a model with no free tier, or an effort variant.
+  const pickable = catalog.filter((m) => !m.fixedOnly);
+  const freeTier = pickable.filter((m) => !m.paidKeyOnly);
+  const automatic = freeTier.length ? freeTier : pickable.length ? pickable : catalog;
 
   if (input.mode === "fixed") {
     const fixedId = input.fixedModelId ? canonicalByokModelId(input.fixedModelId) : null;

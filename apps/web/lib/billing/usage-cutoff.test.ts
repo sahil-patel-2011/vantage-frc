@@ -139,3 +139,12 @@ describe("resolveCutoffErrorCode (chat / agent)", () => {
     expect(resolveCutoffErrorCode(402, {})).toBe("usage_hard_cutoff");
   });
 });
+
+describe("member AI off", () => {
+  it("tells the person AI is off for them, with nothing they can open to change it", () => {
+    const message = messageForCutoffError("API budget limit reached (member.ai_off).", "org-1");
+    expect(message.title).toBe("AI is off for you");
+    expect(message.ctas).toEqual([]);
+    expect(isCutoffError("API budget limit reached (member.ai_off).")).toBe(true);
+  });
+});

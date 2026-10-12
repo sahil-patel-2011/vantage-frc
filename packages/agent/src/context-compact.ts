@@ -7,7 +7,15 @@
 import type { ChatAdapter, ContextItem } from "./index";
 
 export const LOCAL_CONTEXT_TOKEN_BUDGET = 2_800;
-export const CLOUD_CONTEXT_TOKEN_BUDGET = 8_000;
+/**
+ * Hosted Claude and OpenAI models get room for the whole picture: scouting, files and tool
+ * results arrive intact rather than folded into excerpts. Kept, with the history below, under
+ * 100K tokens a call, where Claude's long-context pricing starts. Prompt caching makes the
+ * repeated part cheap.
+ */
+export const CLOUD_CONTEXT_TOKEN_BUDGET = 48_000;
+/** Gemini over its free tier: one turn has to fit GOOGLE_TURN_INPUT_RESERVE (resolve-chat-adapter). */
+export const GEMINI_CONTEXT_TOKEN_BUDGET = 8_000;
 
 export function estimateItemTokens(item: Pick<ContextItem, "content">): number {
   return Math.max(1, Math.ceil(item.content.length / 4));
@@ -17,7 +25,7 @@ export function contextTokenBudgetForAdapter(adapter: Pick<ChatAdapter, "provide
   const provider = adapter.provider.toLowerCase();
   const model = adapter.model.toLowerCase();
   // Gemini is reached over the OpenAI-compatible protocol but is not a small local model.
-  if (model.startsWith("gemini")) return CLOUD_CONTEXT_TOKEN_BUDGET;
+  if (model.startsWith("gemini")) return GEMINI_CONTEXT_TOKEN_BUDGET;
   if (
     provider === "openai-compatible" ||
     provider === "local" ||
@@ -27,6 +35,21 @@ export function contextTokenBudgetForAdapter(adapter: Pick<ChatAdapter, "provide
     return LOCAL_CONTEXT_TOKEN_BUDGET;
   }
   return CLOUD_CONTEXT_TOKEN_BUDGET;
+}
+
+export type ChatHistoryBudget = { maxTurns: number; maxChars: number };
+
+/** Small local models and Gemini's free tier keep the short window. */
+export const SHORT_CHAT_HISTORY: ChatHistoryBudget = { maxTurns: 16, maxChars: 12_000 };
+/** Hosted Claude and OpenAI keep the conversation verbatim (about 40K tokens). */
+export const CLOUD_CHAT_HISTORY: ChatHistoryBudget = { maxTurns: 200, maxChars: 160_000 };
+
+export function chatHistoryBudgetForAdapter(
+  adapter: Pick<ChatAdapter, "provider" | "model">,
+): ChatHistoryBudget {
+  return contextTokenBudgetForAdapter(adapter) === CLOUD_CONTEXT_TOKEN_BUDGET
+    ? CLOUD_CHAT_HISTORY
+    : SHORT_CHAT_HISTORY;
 }
 
 function excerpt(text: string, max = 280): string {
@@ -93,8 +116,8 @@ export function compactChatTurns(
   history: CompactableTurn[],
   options?: { maxTurns?: number; maxChars?: number },
 ): { history: CompactableTurn[]; summary: string | null } {
-  const maxTurns = options?.maxTurns ?? 16;
-  const maxChars = options?.maxChars ?? 12_000;
+  const maxTurns = options?.maxTurns ?? SHORT_CHAT_HISTORY.maxTurns;
+  const maxChars = options?.maxChars ?? SHORT_CHAT_HISTORY.maxChars;
   const chars = history.reduce((sum, turn) => sum + turn.content.length, 0);
   if (history.length <= maxTurns && chars <= maxChars) {
     return { history, summary: null };

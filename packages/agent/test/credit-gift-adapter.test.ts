@@ -155,8 +155,8 @@ describe("CreditGiftChatAdapter", () => {
   });
 
   it("never lets concurrent calls spend more than the gift", async () => {
-    // Each call's worst case is about $0.0186 here; $0.10 covers five of them, not twenty.
-    const memory = memoryLedger(0.1);
+    // Each call's worst case is about $0.168 here (16,000 output tokens); $1 covers five, not twenty.
+    const memory = memoryLedger(1);
     // Providers report the most a call could cost, the adversarial case for the cap.
     const fetchImpl = vi.fn(async () => anthropicResponse(4000, 1024));
     const adapter = giftAdapter(memory.ledger, fetchImpl as never);
@@ -165,7 +165,7 @@ describe("CreditGiftChatAdapter", () => {
     expect(served).toBeGreaterThan(0);
     expect(served).toBeLessThan(20);
     expect(fetchImpl).toHaveBeenCalledTimes(served);
-    expect(memory.spent()).toBeLessThanOrEqual(0.1 + 1e-12);
+    expect(memory.spent()).toBeLessThanOrEqual(1 + 1e-12);
     for (const outcome of outcomes) {
       if (outcome.status === "rejected") expect(outcome.reason).toBeInstanceOf(UsageHardCutoffError);
     }
@@ -235,7 +235,7 @@ describe("CreditGiftChatAdapter", () => {
   });
 
   it("holds the cap across keys: concurrent calls served by different keys never pass the gift", async () => {
-    const memory = memoryLedger(0.1);
+    const memory = memoryLedger(1);
     let turn = 0;
     // Alternate keys refuse, so the calls that run are served by k2 as often as by k1.
     const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
@@ -246,7 +246,7 @@ describe("CreditGiftChatAdapter", () => {
     const adapter = giftAdapter(memory.ledger, fetchImpl as never, ["k1", "k2"]);
     await Promise.allSettled(Array.from({ length: 20 }, () => adapter.complete(ask)));
     expect(new Set(memory.servedBy).size).toBe(2);
-    expect(memory.spent()).toBeLessThanOrEqual(0.1 + 1e-12);
+    expect(memory.spent()).toBeLessThanOrEqual(1 + 1e-12);
   });
 
   it("tells provider refusals (not billed) apart from timeouts and network errors (maybe billed)", () => {

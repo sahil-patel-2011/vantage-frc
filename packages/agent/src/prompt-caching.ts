@@ -58,6 +58,24 @@ export function applyAnthropicCacheControl(
 }
 
 /**
+ * The conversation so far is next turn's prefix too: mark its last message so a follow-up question
+ * reads the earlier turns from the cache instead of paying for them again. With the system-prompt
+ * marker that is two breakpoints. The new user turn (fresh context and question) stays after it,
+ * uncached, so it never breaks the prefix. Messages are otherwise sent exactly as given.
+ */
+export function anthropicHistoryWithCache<T extends { role: "user" | "assistant"; content: string }>(
+  history: T[],
+  enabled: boolean,
+): Array<T | { role: T["role"]; content: AnthropicContentBlock[] }> {
+  const last = history[history.length - 1];
+  if (!enabled || !last || !last.content.trim()) return history;
+  return [
+    ...history.slice(0, -1),
+    { role: last.role, content: [{ type: "text", text: last.content, cache_control: { type: "ephemeral" as const } }] },
+  ];
+}
+
+/**
  * OpenAI-style Chat Completions APIs cache automatically (>=1024-token
  * prefixes) and report hits via `usage.prompt_tokens_details.cached_tokens`;
  * there is no standard request field to opt in. Strict upstreams

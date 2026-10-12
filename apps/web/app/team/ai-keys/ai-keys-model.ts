@@ -14,6 +14,8 @@ export type ModelOption = {
   label: string;
   tier: string;
   tierLabel: string;
+  /** An effort variant (Claude Haiku 5.5 Low / High): a Fixed choice, never in the Automode pool. */
+  fixedOnly?: boolean;
 };
 
 export type LocalConnector = {

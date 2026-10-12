@@ -9,7 +9,7 @@ import {
   resolveOrgChatAdapter,
 } from "../src/resolve-chat-adapter";
 import { GOOGLE_FREE_TIER_INPUT_TPM } from "../src/byok-model-routing";
-import { CLOUD_CONTEXT_TOKEN_BUDGET, contextTokenBudgetForAdapter } from "../src/context-compact";
+import { contextTokenBudgetForAdapter, GEMINI_CONTEXT_TOKEN_BUDGET } from "../src/context-compact";
 
 type QueryResult<T> = { rows: T[]; rowCount: number };
 
@@ -258,9 +258,9 @@ describe("resolveOrgChatAdapter", () => {
   it("keeps a full minute of turns inside the free-tier input limit", () => {
     // The reserve must cover one turn's input, and ten turns a minute must fit under the limit.
     expect(contextTokenBudgetForAdapter({ provider: "openai-compatible", model: "gemini-3.8-flash" })).toBe(
-      CLOUD_CONTEXT_TOKEN_BUDGET,
+      GEMINI_CONTEXT_TOKEN_BUDGET,
     );
-    expect(CLOUD_CONTEXT_TOKEN_BUDGET).toBeLessThan(GOOGLE_TURN_INPUT_RESERVE);
+    expect(GEMINI_CONTEXT_TOKEN_BUDGET).toBeLessThan(GOOGLE_TURN_INPUT_RESERVE);
     expect(GOOGLE_TURN_INPUT_RESERVE * 10).toBeLessThan(GOOGLE_FREE_TIER_INPUT_TPM);
     const flash = { model: "gemini-3.8-flash", prices: { inputPerMillionUsd: 0.75, outputPerMillionUsd: 3.75 } };
     expect(orderGoogleModels(flash, () => 0).map((entry) => entry.model)).toEqual([
