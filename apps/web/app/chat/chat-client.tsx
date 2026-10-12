@@ -4,6 +4,7 @@ import { aiConnectionHref } from "../../lib/ai/connection";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AiActionProposals } from "../../components/ai-action-proposals";
+import { AiCreditLine } from "../../components/ai-credit-line";
 import { AiSponsorBranding } from "../../components/ai-sponsor-branding";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
@@ -566,6 +567,8 @@ export default function ChatClient({
         </div>
       </header>
 
+      {/* The team's free AI credit, if Vantage gave one (renders nothing otherwise). The one credit display. */}
+      <AiCreditLine orgId={orgId} />
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
       <SponsoredPromoBanner orgId={orgId} />
 
