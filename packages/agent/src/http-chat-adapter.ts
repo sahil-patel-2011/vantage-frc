@@ -255,7 +255,7 @@ export class HttpChatAdapter implements ChatAdapter {
         },
         body: JSON.stringify({
           model: this.model,
-          max_tokens: this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability),
+          ...anthropicOutputSettings(this.model, this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability)),
           system: systemBlocks,
           messages: [...history, { role: "user", content: userTurnWithContext(message, context) }],
           ...(tools.length
@@ -412,6 +412,20 @@ export class HttpChatAdapter implements ChatAdapter {
       cacheCostBasis: priced.cacheCostBasis,
     };
   }
+}
+
+/**
+ * Claude Haiku 5.5 thinks before it answers unless told otherwise, and that thinking counts
+ * against max_tokens: a 1,024-token chat cap could be spent before any text came back. Vantage's
+ * fast tier wants quick answers, so ask it to think little (effort "low", which also lets it skip
+ * thinking on simple asks) and leave room for the reply. Other models are sent exactly as before.
+ */
+export function anthropicOutputSettings(
+  model: string,
+  maxTokens: number,
+): { max_tokens: number; output_config?: { effort: "low" } } {
+  if (!/^claude-haiku-5/i.test(model.trim())) return { max_tokens: maxTokens };
+  return { max_tokens: Math.max(maxTokens, 4096), output_config: { effort: "low" } };
 }
 
 export function chatCompletionMaxTokens(capability: string): number {

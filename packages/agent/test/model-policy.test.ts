@@ -17,7 +17,7 @@ const allowAll: OrgModelPolicy = { mode: "allow_all", allowedModelIds: [] };
 const forceAuto: OrgModelPolicy = { mode: "force_auto", allowedModelIds: [] };
 const sonnetHaikuOnly: OrgModelPolicy = {
   mode: "allowlist",
-  allowedModelIds: ["anthropic:claude-sonnet-5", "anthropic:claude-haiku-4-5"],
+  allowedModelIds: ["anthropic:claude-sonnet-5", "anthropic:claude-haiku-5-5"],
 };
 
 describe("normalizeOrgModelPolicy", () => {
@@ -83,8 +83,8 @@ describe("applyModelPolicy — force_auto", () => {
 
 describe("applyModelPolicy — allowlist", () => {
   it("keeps an allowed pick as-is", () => {
-    expect(applyModelPolicy(sonnetHaikuOnly, "anthropic:claude-haiku-4-5", catalog)).toEqual({
-      modelId: "anthropic:claude-haiku-4-5",
+    expect(applyModelPolicy(sonnetHaikuOnly, "anthropic:claude-haiku-5-5", catalog)).toEqual({
+      modelId: "anthropic:claude-haiku-5-5",
       coerced: false,
       reason: "allowed",
     });
@@ -100,7 +100,7 @@ describe("applyModelPolicy — allowlist", () => {
 
   it("falls back to the best allowed model instead of erroring", () => {
     const decision = applyModelPolicy(sonnetHaikuOnly, "openai:gpt-4.1", catalog);
-    // Sonnet 5 (mid) outranks Haiku 4.5 (fast).
+    // Sonnet 5 (mid) outranks Haiku 5.5 (fast).
     expect(decision.modelId).toBe("anthropic:claude-sonnet-5");
     expect(decision.coerced).toBe(true);
     expect(decision.reason).toBe("fallback_best_allowed");
@@ -111,11 +111,11 @@ describe("applyModelPolicy — allowlist", () => {
       mode: "allowlist",
       // Both mid tier: gemini fetch not in mid; use sonnet-4 ($3) and sonnet-5 ($3),
       // plus two fast tier entries with different prices.
-      allowedModelIds: ["openai:gpt-4.1-mini", "anthropic:claude-haiku-4-5"],
+      allowedModelIds: ["openai:gpt-4.1-mini", "anthropic:claude-haiku-5-5"],
     };
     const decision = applyModelPolicy(policy, "google:gemini-3.1-pro-preview", catalog);
-    // Both allowed are fast tier; gpt-4.1-mini ($0.4/M) is cheaper than haiku ($1/M).
-    expect(decision.modelId).toBe("openai:gpt-4.1-mini");
+    // Both allowed are fast tier; Claude Haiku 5.5 ($0.1/M) is cheaper than gpt-4.1-mini ($0.4/M).
+    expect(decision.modelId).toBe("anthropic:claude-haiku-5-5");
     expect(decision.coerced).toBe(true);
   });
 
@@ -170,7 +170,7 @@ describe("policySelectableModelIds", () => {
   it("filters to allowed catalog ids for allowlist", () => {
     expect(policySelectableModelIds(sonnetHaikuOnly, catalog)).toEqual([
       "anthropic:claude-sonnet-5",
-      "anthropic:claude-haiku-4-5",
+      "anthropic:claude-haiku-5-5",
     ]);
   });
 });
@@ -185,15 +185,15 @@ describe("policyConstrainedPool", () => {
   it("intersects the enabled pool with the allowlist", () => {
     const pool = policyConstrainedPool(
       sonnetHaikuOnly,
-      ["anthropic:claude-haiku-4-5", "openai:gpt-4.1"],
+      ["anthropic:claude-haiku-5-5", "openai:gpt-4.1"],
       catalog,
     );
-    expect(pool).toEqual(["anthropic:claude-haiku-4-5"]);
+    expect(pool).toEqual(["anthropic:claude-haiku-5-5"]);
   });
 
   it("uses the whole allowlist when the intersection is empty", () => {
     const pool = policyConstrainedPool(sonnetHaikuOnly, ["openai:gpt-4.1"], catalog);
-    expect(pool).toEqual(["anthropic:claude-sonnet-5", "anthropic:claude-haiku-4-5"]);
+    expect(pool).toEqual(["anthropic:claude-sonnet-5", "anthropic:claude-haiku-5-5"]);
   });
 });
 
@@ -258,12 +258,12 @@ describe("applyPolicyToRoutingPrefs", () => {
     const prefs = {
       mode: "automode" as const,
       fixedModelId: null,
-      enabledModelIds: ["openai:gpt-4.1", "anthropic:claude-haiku-4-5"],
+      enabledModelIds: ["openai:gpt-4.1", "anthropic:claude-haiku-5-5"],
     };
     expect(applyPolicyToRoutingPrefs(sonnetHaikuOnly, prefs, catalog)).toEqual({
       mode: "automode",
       fixedModelId: null,
-      enabledModelIds: ["anthropic:claude-haiku-4-5"],
+      enabledModelIds: ["anthropic:claude-haiku-5-5"],
     });
   });
 });

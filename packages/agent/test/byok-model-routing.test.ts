@@ -73,6 +73,22 @@ describe("BYOK automode routing", () => {
     expect(BYOK_MODEL_OPTIONS.map((m) => m.modelId)).not.toContain("gemini-2.0-flash");
   });
 
+  it("offers Claude Haiku 5.5 in place of Haiku 4.5, and keeps a saved Haiku 4.5 choice working", () => {
+    expect(BYOK_MODEL_OPTIONS.map((m) => m.modelId)).toContain("claude-haiku-5-5");
+    expect(BYOK_MODEL_OPTIONS.map((m) => m.modelId)).not.toContain("claude-haiku-4-5");
+    expect(findByokModelOption("anthropic:claude-haiku-4-5")?.modelId).toBe("claude-haiku-5-5");
+    const fixed = pickByokModelForFeature({
+      feature: "chat",
+      mode: "fixed",
+      fixedModelId: "anthropic:claude-haiku-4-5",
+      availableProviders: ["anthropic"],
+    });
+    expect(fixed?.modelId).toBe("claude-haiku-5-5");
+    expect(
+      estimateByokCostUsd({ provider: "anthropic", model: "claude-haiku-5-5", promptTokens: 1_000_000, completionTokens: 1_000_000 }),
+    ).toBeCloseTo(0.6, 10);
+  });
+
   it("estimates cost from public list rates without inventing tokens", () => {
     const cost = estimateByokCostUsd({
       provider: "openai",

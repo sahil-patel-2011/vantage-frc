@@ -60,6 +60,7 @@ describe("classifyModelTier", () => {
       "gpt-4o-mini",
       "gpt-5-nano",
       "claude-haiku-4-5",
+      "claude-haiku-5-5",
       "gemini-2.0-flash",
       "gemini-2.5-flash",
       "gemini-3.8-flash",
