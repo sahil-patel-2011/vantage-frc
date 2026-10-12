@@ -15,9 +15,10 @@ const read = (path: string) => readFileSync(join(WEB, path), "utf8");
 describe("one filled button per view", () => {
   it("row actions on Tasks are secondary", () => {
     const todos = read("app/todos/todos-client.tsx");
-    // The button itself, not a comment that mentions it.
-    const markDone = todos.match(/<Button\b[^>]*>\s*Mark done\s*<\/Button>/)?.[0] ?? "";
-    expect(markDone).not.toBe("");
+    // The button itself (its label, then </Button>), not a comment that mentions it.
+    const label = todos.search(/>\s*Mark done\s*<\/Button>/);
+    expect(label).toBeGreaterThan(0);
+    const markDone = todos.slice(todos.lastIndexOf("<Button", label), label);
     expect(markDone).toMatch(/variant="secondary"/);
   });
 
