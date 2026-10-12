@@ -25,6 +25,8 @@ import "./motion-polish.css";
 import "./shell-clarity.css";
 // After everything: the menus (four-place dock, workspace list, bottom toolbar).
 import "./menu-polish.css";
+// No row of cross-links under page titles (everything they linked is in tabs, the menu or search).
+import "./header-strips.css";
 // After the menus: the search palette, "Your apps" (menu, sidebar) and its editor.
 import "./nav-pins-search.css";
 
