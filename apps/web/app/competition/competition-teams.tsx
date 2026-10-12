@@ -20,6 +20,6 @@ export default function CompetitionTeams({ orgId }: { orgId: string }) {
       }} />
     </div>
     {view === "scouting" ? <ScoutingTeamProfiles orgId={orgId} eventKey={null} /> : <IntelClient variant="scouting" embedded />}
-    <details className="team-sharing-settings"><summary>Share scouting with other teams</summary><ScoutingSharing orgId={orgId} /></details>
+    <details className="team-sharing-settings"><summary data-disclosure>Share scouting with other teams</summary><ScoutingSharing orgId={orgId} /></details>
   </section>;
 }

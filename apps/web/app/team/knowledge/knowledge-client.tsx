@@ -587,7 +587,9 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
       ) : null}
 
       {tab === "wiki" && ready ? (
-        <section className="kb-layout">
+        // No pages yet: one call to action, full width. The side pane said "Start season
+        // playbook" beside an empty state that said it again (UX audit).
+        <section className={`kb-layout${ready.pages.length === 0 && !creating ? " is-empty" : ""}`}>
           <aside className="kb-side">
             <div className="kb-side-head">
               {ready.pages.length === 0 ? (
@@ -928,7 +930,11 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
 
             {!creating && !ready.selected ? (
               ready.pages.length === 0 ? (
-                <EmptyState soft title="No pages yet">
+                <EmptyState
+                  soft
+                  title="No pages yet"
+                  description="Start with the season playbook: one page with sections for before the season, meetings, build, competition and after, ready for your team's real facts."
+                >
                   <Button type="button" variant="primary" disabled={busy} onClick={startSeasonPlaybook}>
                     Start season playbook
                   </Button>

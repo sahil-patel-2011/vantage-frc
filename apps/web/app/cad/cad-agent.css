@@ -380,3 +380,25 @@
 .product-hub--build .cad-agent {
   min-height: min(70vh, 780px);
 }
+
+/* The link status reads as a line of its own under the address, at body size: it sat squeezed
+   beside the button in 11px grey (UX audit). */
+.cad-agent-bar > .cad-agent-leds {
+  flex-basis: 100%;
+  gap: 6px 16px;
+  padding-bottom: 0;
+}
+.cad-agent-bar > .cad-agent-leds span {
+  font-size: 13px;
+}
+.cad-agent-bar > .cad-agent-leds span::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--muted) 55%, transparent);
+  vertical-align: 1px;
+}
+.cad-agent-bar > .cad-agent-leds span.on::before { background: var(--positive); }

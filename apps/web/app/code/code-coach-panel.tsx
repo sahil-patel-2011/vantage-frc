@@ -98,7 +98,7 @@ export function CodeCoachPanel({
               <Button variant="secondary" type="button" disabled={busy || !hasSource || !orgId} onClick={() => void runBugbot()}>
                 Run AI Bugbot
               </Button>
-              <Button variant="secondary" type="button" disabled={busy} onClick={() => { setContent(CODE_COACH_SAMPLE); setReview(null); setProposal(null); setMessage(null); }}>
+              <Button variant="ghost" type="button" disabled={busy} onClick={() => { setContent(CODE_COACH_SAMPLE); setReview(null); setProposal(null); setMessage(null); }}>
                 Reset sample
               </Button>
             </footer>
