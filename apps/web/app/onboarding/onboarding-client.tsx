@@ -11,6 +11,7 @@ import {
   emptyOnboardingDraft,
   isAdultRole,
   lookupTeamNumber,
+  missingAnswersBefore,
   onboardingAdvance,
   onboardingCanSubmit,
   onboardingGoBack,
@@ -19,6 +20,7 @@ import {
   onboardingErrorTarget,
   onboardingMembershipNote,
   onboardingProgressLabel,
+  onboardingStepComplete,
   resumeOnboardingStep,
   resumedFocus,
   roleAgeQuestion,
@@ -216,8 +218,10 @@ export default function OnboardingClient() {
       schoolFunded: data.orgSchoolFunded ?? current.schoolFunded,
       outsideGrants: data.orgOutsideGrants ?? current.outsideGrants,
       sponsorsAllowed: data.orgSponsorsAllowed ?? current.sponsorsAllowed,
-      termsAccepted: data.termsAcceptedAt ? true : current.termsAccepted,
-      privacyAccepted: data.privacyAcceptedAt ? true : current.privacyAccepted,
+      // Never ticked for the person: an agreement on file is shown as a date on Finish, and the
+      // boxes only appear when one is missing (QA audit: they came back pre-ticked).
+      termsAccepted: current.termsAccepted,
+      privacyAccepted: current.privacyAccepted,
       };
     });
   }, []);
@@ -345,7 +349,15 @@ export default function OnboardingClient() {
     privacyAcceptedAt: state?.privacyAcceptedAt,
   });
   const skipTeam = skipsTeamStep(context);
-  const stepMeta = useMemo(() => buildOnboardingStepMeta(step, { skipTeam }), [step, skipTeam]);
+  const stepMeta = useMemo(
+    () => buildOnboardingStepMeta(step, { skipTeam, complete: (id) => onboardingStepComplete(id, draft, context) }),
+    [step, skipTeam, draft, context],
+  );
+  /** Answers an earlier screen still needs, listed on Finish so the button never surprises. */
+  const earlierGaps = useMemo(
+    () => (step === "preferences" ? missingAnswersBefore("preferences", draft, context) : []),
+    [step, draft, context],
+  );
   const progressLabel = onboardingProgressLabel(step, { skipTeam });
   const membershipNote = onboardingMembershipNote(state?.accessStatus ?? "none", {
     preferredTeamNumber: state?.preferredTeamNumber ?? lookup.teamNumber,
@@ -382,6 +394,8 @@ export default function OnboardingClient() {
     if (mutationRef.current) return;
     const result = onboardingAdvance({ step, draft, error: null, errorField: null }, context);
     if (result.error) {
+      // A gap on an earlier screen reopens that screen with the message beside its field.
+      if (result.step !== step) setStep(result.step);
       showError(result.error, result.errorField);
       return;
     }
@@ -679,7 +693,10 @@ export default function OnboardingClient() {
               <ol className="onboarding-steps onboarding-steps-simple onboarding-progress-bar" aria-label="Onboarding progress">
                 {stepMeta.map((item) => (
                   <li key={item.id} className={item.phase} aria-current={item.phase === "current" ? "step" : undefined}>
-                    <span className="sr-only">{item.label}{item.phase === "done" ? " (done)" : ""}</span>
+                    <span className="sr-only">
+                      {item.label}
+                      {item.phase === "done" ? " (done)" : item.phase === "missing" ? " (needs an answer)" : ""}
+                    </span>
                   </li>
                 ))}
               </ol>
@@ -751,6 +768,11 @@ export default function OnboardingClient() {
             busy={busy}
             onBack={goBack}
             onSubmit={() => void advance()}
+            gaps={earlierGaps}
+            onFixGap={(gap) => {
+              setStep(gap.step);
+              showError(gap.message, gap.field);
+            }}
           />
         ) : null}
 

@@ -65,24 +65,47 @@ function useScrollToHash(pathname: string, search: string) {
 /** Who is looking and on which team, from the shared /api/me read (no extra request). */
 function useSettingsViewer(orgId: string) {
   const [session, setSession] = useState<ProductSession | null>(null);
+  // A read that never answered left "This team" as a bare heading for good. It is asked once
+  // more after a pause, then says so with a way to ask again.
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    void fetchProductSession(orgId || null)
-      .then((data) => {
-        if (!cancelled) setSession(data);
-      })
-      .catch(() => undefined);
+    setFailed(false);
+    const load = (retries: number): Promise<void> =>
+      fetchProductSession(orgId || null).then((data) => {
+        if (cancelled) return;
+        if (data) {
+          setSession(data);
+          return;
+        }
+        if (retries > 0) {
+          return new Promise<void>((resolve) => window.setTimeout(resolve, 800)).then(() =>
+            cancelled ? undefined : load(retries - 1),
+          );
+        }
+        setFailed(true);
+      });
+    void load(1);
     return () => {
       cancelled = true;
     };
-  }, [orgId]);
+  }, [orgId, attempt]);
   const teamId = orgId || session?.orgId || "";
   const membership = session?.memberships?.find((row) => row.orgId === teamId);
   const role = membership?.role ?? session?.role ?? null;
   const teamNumber = membership?.teamNumber ?? session?.teamNumber ?? null;
   const teamName = membership?.orgName ?? session?.orgName ?? null;
   const teamLabel = teamNumber ? `Team ${teamNumber}` : teamName || "";
-  return { ready: session !== null, role, teamId, teamLabel, platformAdmin: session?.platformAdmin === true };
+  return {
+    ready: session !== null,
+    failed: failed && session === null,
+    retry: () => setAttempt((count) => count + 1),
+    role,
+    teamId,
+    teamLabel,
+    platformAdmin: session?.platformAdmin === true,
+  };
 }
 
 /** Platform admin, from Settings: the console's parts, for people who run Vantage itself. */
@@ -131,6 +154,8 @@ export function SettingsList({
   role,
   teamLabel,
   ready,
+  failed = false,
+  onRetry,
   detailed = false,
 }: {
   items: SettingsNavItem[];
@@ -139,6 +164,8 @@ export function SettingsList({
   role: string | null;
   teamLabel: string;
   ready: boolean;
+  failed?: boolean;
+  onRetry?: () => void;
   detailed?: boolean;
 }) {
   const personal = items.filter((item) => item.scope === "personal");
@@ -174,6 +201,20 @@ export function SettingsList({
           </h2>
           {team.length ? (
             <ul className="settings-group">{team.map(row)}</ul>
+          ) : failed ? (
+            <p className="settings-group-note" role="status">
+              Couldn&apos;t load this team&apos;s settings.{" "}
+              {onRetry ? (
+                <button type="button" className="settings-retry" onClick={onRetry}>Try again</button>
+              ) : null}
+            </p>
+          ) : !ready ? (
+            // Rows the shape of the real ones while the role loads, not an empty heading.
+            <ul className="settings-group settings-group-loading" aria-busy="true" aria-label="Loading team settings">
+              {[0, 1, 2].map((index) => (
+                <li key={index}><span className="settings-row settings-row-skeleton" /></li>
+              ))}
+            </ul>
           ) : ready && !lead ? (
             <p className="settings-group-note">
               The team&apos;s settings are changed by its owner and its mentors or coaches. Ask one of them, or see the
@@ -211,6 +252,8 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
             role={viewer.role}
             teamLabel={viewer.teamLabel}
             ready={viewer.ready}
+            failed={viewer.failed}
+            onRetry={viewer.retry}
           />
         </aside>
         <div className="settings-pane">{children}</div>
@@ -238,6 +281,8 @@ export function SettingsHome() {
         role={viewer.role}
         teamLabel={viewer.teamLabel}
         ready={viewer.ready}
+        failed={viewer.failed}
+        onRetry={viewer.retry}
         detailed
       />
       {viewer.platformAdmin ? <PlatformSettings /> : null}

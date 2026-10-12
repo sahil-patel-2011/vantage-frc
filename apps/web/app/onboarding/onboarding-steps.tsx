@@ -39,6 +39,13 @@ function FormError({ message, errorField, inPlace }: { message: string; errorFie
   return <p id={ONBOARDING_ERROR_ID} className="onboarding-message invalid onboarding-form-error" role="alert">{message}</p>;
 }
 
+/** "October 12, 2026": the later of the two agreements on file, or null without both. */
+function agreementDate(termsAt: string | null | undefined, privacyAt: string | null | undefined): string | null {
+  const times = [termsAt, privacyAt].map((value) => (value ? Date.parse(value) : Number.NaN));
+  if (times.some((time) => Number.isNaN(time))) return null;
+  return new Date(Math.max(...times)).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+}
+
 /** aria props for a field that may be the one Continue stopped on. */
 function invalidProps(field: string, errorField: string | null) {
   return errorField === field ? { "aria-invalid": true as const, "aria-describedby": ONBOARDING_ERROR_ID } : {};
@@ -350,6 +357,8 @@ export function PreferencesForm({
   busy,
   onBack,
   onSubmit,
+  gaps,
+  onFixGap,
 }: {
   draft: OnboardingDraft;
   patch: (next: Partial<OnboardingDraft>) => void;
@@ -366,9 +375,15 @@ export function PreferencesForm({
   busy: boolean;
   onBack: () => void;
   onSubmit: () => void;
+  /** Answers an earlier screen still needs; each one opens its screen. */
+  gaps: ReadonlyArray<{ step: "profile" | "team" | "preferences"; field: string; message: string }>;
+  onFixGap: (gap: { step: "profile" | "team" | "preferences"; field: string; message: string }) => void;
 }) {
   // The owner the platform set this team up for is not joining someone else's team.
   const owner = state.workspaceRole === "owner" && (lookup.invited || lookup.joined);
+  const settled = owner || lookup.joined || lookup.invited;
+  const access = state.workspaceRole === "owner" ? "Owner" : state.workspaceRole === "admin" ? "Admin" : null;
+  const agreedOn = !legalNeeded ? agreementDate(state.termsAcceptedAt, state.privacyAcceptedAt) : null;
   return (
     <form
       className="onboarding-form"
@@ -377,9 +392,30 @@ export function PreferencesForm({
         onSubmit();
       }}
     >
+      {gaps.length ? (
+        // Listed before the button is pressed, each with the screen that fixes it. Finish used
+        // to look ready and then bounce back to an earlier screen without a word.
+        <div className="onboarding-gaps" role="status">
+          <strong>Still needed before you finish</strong>
+          <ul>
+            {gaps.map((gap) => (
+              <li key={`${gap.step}-${gap.field}`}>
+                <span>{gap.message}</span>
+                <button type="button" className="signin-link" onClick={() => onFixGap(gap)}>
+                  {gap.step === "profile" ? "Go to You" : "Go to Your team"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {/* A summary list, label on the left and answer on the right, like a settings screen. */}
       <dl className="onboarding-review-card onboarding-review-list" aria-label="Your answers">
         <div><dt>Team</dt><dd>{lookup.teamNumber ? `FRC ${lookup.teamNumber}` : "None yet"}</dd></div>
+        {/* What they can do on the team, beside what they are on it: "Student" under a
+            "You're the owner" header read like a mistake. */}
+        {access ? <div><dt>Team access</dt><dd>{access}</dd></div> : null}
         <div><dt>Role</dt><dd>{ROLES.find((option) => option.value === draft.teamRole)?.label ?? draft.teamRole}</dd></div>
         <div><dt>Specialty</dt><dd>{CREW_ROLES.find((option) => option.value === draft.crewRole)?.label ?? "Not sure yet"}</dd></div>
         <div><dt>Home opens on</dt><dd>{FOCUS_OPTIONS.find((option) => option.value === draft.primaryFocus)?.label}</dd></div>
@@ -475,6 +511,13 @@ export function PreferencesForm({
         </fieldset>
       </details>
 
+      {agreedOn ? (
+        <p className="onboarding-agreed">
+          You agreed to the <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a> and the{" "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> on {agreedOn}.
+        </p>
+      ) : null}
+
       {legalNeeded ? (
         <div className="onboarding-terms-block">
           <LegalAgreementCheckbox
@@ -492,8 +535,9 @@ export function PreferencesForm({
         </div>
       ) : null}
 
-      <div className="onboarding-security-note">
-        <b aria-hidden="true">✓</b>
+      {/* A tick only for what is already settled; a request still waiting is information. */}
+      <div className={`onboarding-security-note${settled ? "" : " info"}`}>
+        <b aria-hidden="true">{settled ? "✓" : "i"}</b>
         <p>
           <strong>
             {owner

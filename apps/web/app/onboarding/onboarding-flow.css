@@ -468,3 +468,15 @@ main.onboarding-page.onboarding-flow-page{
 .onboarding-flow-page .onboarding-security-note>b{background:var(--accent);color:#fff}
 .onboarding-flow-page .onboarding-security-note strong{font-size:14px}
 .onboarding-flow-page .onboarding-security-note span{color:var(--muted);font-size:13px}
+
+/* A step before this one that still needs an answer: amber, not filled like a finished one. */
+.onboarding-flow-page .onboarding-progress-bar li.missing{background:var(--warning,#b7791f)}
+/* A request still waiting is information, not a success. */
+.onboarding-flow-page .onboarding-security-note.info>b{background:color-mix(in srgb,var(--ink) 12%,var(--surface));color:var(--ink);font-style:italic;font-family:Georgia,serif}
+/* What an earlier screen still needs, above the summary on Finish. */
+.onboarding-flow-page .onboarding-gaps{display:grid;gap:8px;padding:14px 16px;border-radius:14px;background:var(--warning-soft,color-mix(in srgb,var(--warning,#b7791f) 10%,var(--surface)))}
+.onboarding-flow-page .onboarding-gaps strong{font-size:14px;color:var(--ink)}
+.onboarding-flow-page .onboarding-gaps ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.onboarding-flow-page .onboarding-gaps li{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:13px;line-height:1.45;color:var(--ink)}
+.onboarding-flow-page .onboarding-gaps .signin-link{flex:none;min-height:32px;padding:0;color:var(--accent);font-size:13px;font-weight:600}
+.onboarding-flow-page .onboarding-agreed{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
