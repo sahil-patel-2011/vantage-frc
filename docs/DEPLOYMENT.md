@@ -20,9 +20,12 @@ The only shipping web deployment is `apps/web` (`apps/marketing` is a redirect s
   `installCommand: npm install --legacy-peer-deps`, `buildCommand: npm run build --workspace=@vantage/web`,
   `outputDirectory: apps/web/.next`. Keep the Root Directory at the repo root so this file is the one
   Vercel reads.
-- **Preview Git deploys are off.** `git.deploymentEnabled` keeps only `main` (if a branch matches
-  both `**` and `main`, the `true` rule wins). `ignoreCommand` (`node scripts/vercel-ignore-build.mjs`)
-  is the fallback: exit 0 skip, exit 1 build. Do not call `deploy_to_vercel` from agents.
+- **Git pushes never build.** `git.deploymentEnabled` is off for every branch, and `ignoreCommand`
+  (`node scripts/vercel-ignore-build.mjs`) skips every build (exit 0) except the commit marked as the
+  release.
+- **To release a commit:** set the Vercel variable `VANTAGE_RELEASE_SHA` (Production) to its full
+  40-character SHA, then create one production deployment of that commit (dashboard Redeploy, the
+  API, or `vercel deploy --prod`). Only that commit builds; any other, or no mark, is skipped.
 - There is no second `apps/web/vercel.json` any more. It was inert (the Root Directory is the repo root) and a cron added to it once looked scheduled while never firing; the root file is the only cron source.
 - Node: `engines.node >= 22` (root `package.json`).
 - Production build is credential-free by design — no DB or auth env is needed to *build*. Auth constructs
