@@ -14,14 +14,15 @@ import {
 import dynamic from "next/dynamic";
 import {
   catalogEntry,
-  emptyHomeWidgets,
   inferWidgetSize,
+  isAlwaysShown,
   type DashboardWidgetLayout,
   type WidgetCatalogEntry,
   type WidgetSizeKey,
 } from "../../lib/dashboard/catalog";
 import { cellBox } from "../../lib/dashboard/grid-drag";
-import { HIDDEN_ON_HOME_COPY, type HiddenOnHomeReason } from "../../lib/dashboard/edit-mode";
+import { type HiddenOnHomeReason } from "../../lib/dashboard/edit-mode";
+import { readingOrder } from "../../lib/dashboard/board-order";
 import type { WidgetPayload } from "../../lib/dashboard/snapshot";
 import {
   type DashboardNextAction,
@@ -54,7 +55,7 @@ import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-ven
 import { homeHeaderDetail, homeNowFromWidgets, homeSetupSurfaces, showStandaloneSetupBanner } from "./dashboard-home-model";
 import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
-import { DashboardHiddenRow } from "./dashboard-hidden-row";
+import { DashboardCustomizeSheet, type CustomizeRow } from "./dashboard-customize-sheet";
 import { DashboardHomeHeader } from "./dashboard-home-header";
 import { DashboardBoardSwitcher } from "./dashboard-board-bar";
 import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
@@ -64,16 +65,8 @@ import { useHydrated } from "../../lib/ui/use-hydrated";
 import "./dashboard-edit.css";
 import "./dashboard-home.css";
 
-const DashboardEditDock = dynamic(
-  () => import("./dashboard-edit-dock").then((mod) => mod.DashboardEditDock),
-  { ssr: false },
-);
 const DashboardPreviewDock = dynamic(
   () => import("./dashboard-edit-dock").then((mod) => mod.DashboardPreviewDock),
-  { ssr: false },
-);
-const DashboardWidgetLibrary = dynamic(
-  () => import("./dashboard-widget-library").then((mod) => mod.DashboardWidgetLibrary),
   { ssr: false },
 );
 const PartnerPlacement = dynamic(() => import("../../components/partner-placement"), {
@@ -199,6 +192,7 @@ export function DashboardHomeView(props: {
   renameBoard: (id: string, name: string) => Promise<void> | void;
   deleteBoard: (id: string) => Promise<void> | void;
   addWidget: (type: DashboardWidgetLayout["type"]) => void;
+  moveWidget: (id: string, direction: "up" | "down") => void;
   setAlwaysShown: (id: string, always: boolean) => void;
   shareWithTeam: () => Promise<{ id: string; name: string } | null>;
   removeWidget: (id: string) => void;
@@ -251,7 +245,6 @@ export function DashboardHomeView(props: {
     saving,
     canShareOrg,
     canUndo,
-    canRedo,
     boardsOpen,
     renameId,
     renameDraft,
@@ -280,7 +273,6 @@ export function DashboardHomeView(props: {
     cheatOpen,
     shortcuts,
     proxyRef,
-    suppressClickRef,
     setCanvasNode,
     setCheatOpen,
     setBoardsOpen,
@@ -305,14 +297,13 @@ export function DashboardHomeView(props: {
     renameBoard,
     deleteBoard,
     addWidget,
+    moveWidget,
     setAlwaysShown,
     shareWithTeam,
     removeWidget,
     setWidgetSize,
     resetWidgetSize,
     onHandleKeyDown,
-    beginCardDrag,
-    beginPaletteDrag,
     onDragPointerMove,
     onDragPointerUp,
     onDragPointerCancel,
@@ -500,7 +491,6 @@ export function DashboardHomeView(props: {
     return () => window.removeEventListener("keydown", onKey);
   }, [editing, confirm, boardsOpen, dragging, grabbedId, libraryOpen, selectedId, setLibraryOpen, undo, redo, requestCancel]);
 
-  const closeLibrary = useCallback(() => setLibraryOpen(false), [setLibraryOpen]);
 
   if (!homeReady) return <DashboardHomeSkeleton greetingText={greetingText} />;
   if (props.accessStatus) {
@@ -516,7 +506,27 @@ export function DashboardHomeView(props: {
   const hiddenRows = editing
     ? layout.filter((item) => hiddenOnHome.has(item.i) && !displayLayout.some((shown) => shown.i === item.i))
     : [];
-  const emptyLabels = orgId && !editing ? emptyHomeWidgets(layout, widgets) : [];
+  // Edit Home's rows: the cards Home shows, in the order it shows them, then the ones it is
+  // leaving out right now.
+  const toCustomizeRow = (item: DashboardWidgetLayout): CustomizeRow => {
+    const saved = layout.find((row) => row.i === item.i) ?? item;
+    return {
+      id: item.i,
+      type: item.type,
+      label: catalogEntry(item.type)?.label ?? item.type,
+      icon: WIDGET_PICKER_ICON[item.type] ?? "grid",
+      size: inferWidgetSize(saved),
+      hiddenReason: hiddenOnHome.get(item.i) ?? null,
+      alwaysShown: isAlwaysShown(saved),
+    };
+  };
+  const customizeRows = editing
+    ? readingOrder(displayLayout).flatMap((id) => {
+        const item = displayLayout.find((row) => row.i === id);
+        return item ? [toCustomizeRow(item)] : [];
+      })
+    : [];
+  const customizeHidden = editing ? hiddenRows.map(toCustomizeRow) : [];
   const teamSetupCard = Boolean(setupHero);
   const sharedSetupPrompt = Boolean(orgId && widgetsLoaded && (dashShell === "setup" || dashShell === "tba"));
   const showsOverview = false;
@@ -645,18 +655,20 @@ export function DashboardHomeView(props: {
       {orgId || editing ? (
         <section
           ref={gridWrapRef}
-          className={`dash-grid-wrap${editing ? " editing" : ""}${dragging ? " dragging" : ""}${
+          className={`dash-grid-wrap${dragging ? " dragging" : ""}${
             drag?.kind === "add" ? " receiving-widget" : ""
           }`}
           aria-label="Home widgets"
           data-testid="dash-widget-grid"
-          data-dash-drag={editing ? "on" : "off"}
+          data-dash-drag="off"
         >
           {!editing ? (
             <header className="dash-board-heading">
               <div className="dash-board-identity">
                 <h2>{board?.scope === "org" ? "Team overview" : "Your overview"}</h2>
-                {orgId && meLoaded ? <DashboardBoardSwitcher
+                {/* Only when there is a board to choose: "My Home ▾" on its own was one more
+                    control above the cards for nothing. New and Manage boards stay in its menu. */}
+                {orgId && meLoaded && switcherBoards.length > 1 ? <DashboardBoardSwitcher
                   boards={switcherBoards} board={board} saving={saving} disabled={previewing}
                   onSwitch={(id) => void switchBoard(id)} onNew={() => setNewBoardOpen(true)}
                   onManage={() => { setRenameId(null); setBoardsOpen(true); }}
@@ -664,28 +676,17 @@ export function DashboardHomeView(props: {
                   onToggleQuietWidgets={props.onToggleQuietWidgets}
                 /> : null}
               </div>
+              {/* One quiet control, the way a list says "Edit" in its own heading. Home refreshes
+                  itself; the Refresh button lives on the "Synced" line under the cards. */}
               <div className="dash-board-tools">
-                <button type="button" onClick={props.onRefresh} disabled={props.refreshing}>
-                  {props.refreshing ? "Refreshing…" : "Refresh"}
-                </button>
                 {!previewing ? <button type="button" className="dash-board-customize"
                   ref={customizeRef}
                   data-testid="dash-customize" data-tour="customise"
                   aria-label="Edit Home — rearrange, add, or remove widgets" onClick={startEditing}>
-                  <Icon name="gear" />Customize
+                  Edit
                 </button> : null}
               </div>
             </header>
-          ) : null}
-          {editing ? (
-            <p className="dash-edit-hint" data-testid="dash-edit-hint">
-              {/* One column has no size button (every size is full width), so it is not mentioned. */}
-              {/* One board for every screen: a phone move used to rearrange the computer's Home
-                  without a word. */}
-              {cols === 1
-                ? "Drag to reorder. Use Size for card options."
-                : "Drag cards to reorder. Use Size to resize or remove a card."}
-            </p>
           ) : null}
           {snapFeedback ? (
             <output className="dash-snap-hud" aria-hidden="true">
@@ -757,19 +758,18 @@ export function DashboardHomeView(props: {
                     const label = catalogEntry(item.type)?.label ?? item.type;
                     const saved = layout.find((row) => row.i === item.i) ?? item;
                     const entry = catalogEntry(item.type);
-                    const hiddenReason = editing ? hiddenOnHome.get(item.i) : undefined;
                     return (
                       <DashboardGridItem
                         key={item.i}
                         item={item}
                         box={box}
                         label={label}
-                        editing={editing}
+                        editing={false}
                         isDragging={drag?.kind === "move" && drag.id === item.i}
                         isGrabbed={grabbedId === item.i}
-                        selected={editing && selectedId === item.i}
+                        selected={false}
                         isNew={highlightId === item.i}
-                        hiddenNote={hiddenReason ? HIDDEN_ON_HOME_COPY[hiddenReason] : null}
+                        hiddenNote={null}
                         currentSize={inferWidgetSize(saved)}
                         stretched={item.w > saved.w}
                         atDefault={!entry || (saved.w === entry.defaultW && saved.h === entry.defaultH)}
@@ -778,19 +778,9 @@ export function DashboardHomeView(props: {
                         tbaConfigured={tbaConfigured}
                         canOpenTeamData={canOpenTeamData}
                         onSelect={setSelectedId}
-                        onCardPointerDown={(event, target) => {
-                          if (!editing) return;
-                          const node = event.target as HTMLElement;
-                          if (node.closest("button, a, input, select, textarea")) return;
-                          // A mouse drags as soon as it moves; a finger has to
-                          // hold first, so a swipe still scrolls the page.
-                          beginCardDrag(event, target, event.pointerType === "mouse" ? "intent" : "longpress");
-                        }}
-                        onHandlePointerDown={(event, target) => {
-                          event.stopPropagation();
-                          setSelectedId(null);
-                          beginCardDrag(event, target, "immediate");
-                        }}
+                        // Edit Home's panel moves and resizes cards; the board is a preview.
+                        onCardPointerDown={() => {}}
+                        onHandlePointerDown={() => {}}
                         onDragPointerMove={onDragPointerMove}
                         onDragPointerUp={onDragPointerUp}
                         onDragPointerCancel={onDragPointerCancel}
@@ -804,26 +794,13 @@ export function DashboardHomeView(props: {
                 : null}
             </div>
           )}
-          <DashboardHiddenRow
-            rows={hiddenRows}
-            reasons={hiddenOnHome}
-            onAlwaysShow={(id) => setAlwaysShown(id, true)}
-            onRemove={removeWidget}
-          />
-          {/* Under the cards, not between the hero and them: a count of what is waiting,
-              named on hover, instead of a caption that read like a stray line. */}
-          {/* Only while editing, where it helps decide what to keep: on Home it was one more grey
-              line about cards nobody asked to see. */}
-          {emptyLabels.length && editing ? (
-            <p className="dash-empty-summary" role="status" title={`Empty right now: ${emptyLabels.join(", ")}`}>
-              {emptyLabels.length === 1
-                ? `${emptyLabels[0]} shows up here once it has something in it.`
-                : `${emptyLabels.length} more cards show up here once they have something in them.`}
-            </p>
-          ) : null}
           {!editing && !previewing && updatedAt && orgId && !fromCache ? (
             <p className="dash-sync-foot">
               Synced · {new Date(updatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+              {" · "}
+              <button type="button" className="dash-sync-refresh" onClick={props.onRefresh} disabled={props.refreshing}>
+                {props.refreshing ? "Refreshing…" : "Refresh"}
+              </button>
             </p>
           ) : null}
         </section>
@@ -857,24 +834,33 @@ export function DashboardHomeView(props: {
       ) : null}
 
       {editing ? (
-        <DashboardEditDock
+        <DashboardCustomizeSheet
+          rows={customizeRows}
+          hiddenRows={customizeHidden}
+          paletteRows={paletteEntries}
+          paletteIcon={(type) => WIDGET_PICKER_ICON[type] ?? "grid"}
+          waiting={!meLoaded || Boolean(onRetrySession)}
+          showSizes={cols > 1}
+          tab={libraryOpen ? "add" : "home"}
           saving={saving}
-          libraryOpen={libraryOpen}
-          canShareOrg={canShareOrg}
           canUndo={canUndo}
-          canRedo={canRedo}
-          onCancel={requestCancel}
-          onUndo={undo}
-          onRedo={redo}
-          onToggleLibrary={() => setLibraryOpen((open) => !open)}
+          canShareOrg={canShareOrg}
+          onTab={(next) => setLibraryOpen(next === "add")}
+          onAdd={(type) => addWidget(type)}
+          onRemove={removeWidget}
+          onResize={setWidgetSize}
+          onMove={moveWidget}
+          onAlwaysShow={setAlwaysShown}
           onTidy={tidyLayout}
           onPreview={() => {
             setEditing(false);
             setPreviewing(true);
             setLibraryOpen(false);
           }}
-          onReset={() => setConfirm({ kind: "reset" })}
           onSaveOrg={() => setConfirm({ kind: "team" })}
+          onReset={() => setConfirm({ kind: "reset" })}
+          onUndo={undo}
+          onCancel={requestCancel}
           onDone={() => void save("personal")}
         />
       ) : null}
@@ -910,30 +896,6 @@ export function DashboardHomeView(props: {
       />
 
       {!editing && !previewing && orgId ? <PartnerPlacement orgId={orgId} surface="dashboard_footer" title="Partners powering this season" /> : null}
-
-      {editing ? (
-        <DashboardWidgetLibrary
-          open={libraryOpen}
-          onClose={closeLibrary}
-          rows={paletteEntries}
-          waiting={!meLoaded || Boolean(onRetrySession)}
-          dragOut={drag?.kind === "add"}
-          onBeginDrag={beginPaletteDrag}
-          onDragPointerMove={onDragPointerMove}
-          onDragPointerUp={onDragPointerUp}
-          onDragPointerCancel={onDragPointerCancel}
-          onPick={(entry) => {
-            // A drag out of the sheet ends in a click on the same button.
-            if (suppressClickRef.current) {
-              suppressClickRef.current = false;
-              return;
-            }
-            // Same on every screen: the card goes on the board at once, the
-            // sheet closes, and the board scrolls to it and flashes it.
-            addWidget(entry.type);
-          }}
-        />
-      ) : null}
 
       <DashboardHomeDialogs
         confirm={confirm}

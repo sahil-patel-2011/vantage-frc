@@ -71,6 +71,12 @@ body.has-app-shell .feedback-fab:active {
   }
 }
 
+/* One floating card at a time: the Terms notice sits in the same corner and asks first. The
+   button comes back once it is answered (the account menu and Help still open Send feedback). */
+body.has-app-shell:has(.legal-update) .feedback-fab {
+  display: none;
+}
+
 /* A dialog or the menu is up: step aside (still focusable, so the dialog can hand focus back). */
 body.has-app-shell:has([role="dialog"][aria-modal="true"]:not(.tour-root)) .feedback-fab,
 body.has-app-shell.soft-nav-open .feedback-fab {

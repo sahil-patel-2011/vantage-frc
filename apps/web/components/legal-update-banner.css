@@ -30,6 +30,10 @@
 }
 /* The analytics question asks first; two cards stacked on the same spot covered each other. */
 body:has(.consent-banner) .legal-update { display: none; }
+/* Editing Home puts its own toolbar along the bottom (Cancel, Add widget, Done), and this card sat
+   on top of it: Add widget could not be pressed. It steps aside while editing and comes back
+   after Done. */
+body:has(.dash-editbar) .legal-update { display: none; }
 /* While it is up, the end of the page can still scroll clear of it. */
 body.has-app-shell:has(.legal-update) { padding-bottom: calc(176px + var(--safe-bottom, 0px)) !important; }
 .legal-update p { margin: 0; flex: 1 1 360px; }

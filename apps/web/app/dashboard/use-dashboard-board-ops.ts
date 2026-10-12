@@ -864,6 +864,24 @@ export function useDashboardBoardOps(input: {
     setAnnounce(`${label} moved ${describePlace(displayLayout, order, item.i)}.`);
   }
 
+  /** Edit Home's list: one place earlier or later in reading order, with Undo. */
+  function moveWidget(id: string, direction: "up" | "down") {
+    const order = readingOrder(displayLayout);
+    const at = order.indexOf(id);
+    const other = direction === "up" ? at - 1 : at + 1;
+    const item = displayLayout.find((row) => row.i === id);
+    const label = item ? catalogEntry(item.type)?.label ?? item.type : "Card";
+    if (at < 0 || other < 0 || other >= order.length) {
+      setAnnounce(`${label} is already ${direction === "up" ? "first" : "last"}.`);
+      return;
+    }
+    const next = [...order];
+    [next[at], next[other]] = [next[other]!, next[at]!];
+    record(layoutRef.current);
+    setLayout(applyOrder(layoutRef.current, next));
+    setAnnounce(`${label} moved ${direction === "up" ? "up" : "down"}, to place ${other + 1} of ${order.length}.`);
+  }
+
   function onHandleKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, item: DashboardWidgetLayout) {
     if (!editing) return;
     const label = catalogEntry(item.type)?.label ?? item.type;
@@ -902,6 +920,7 @@ export function useDashboardBoardOps(input: {
 
   return {
     addWidget,
+    moveWidget,
     tidyLayout,
     setAlwaysShown,
     shareWithTeam,

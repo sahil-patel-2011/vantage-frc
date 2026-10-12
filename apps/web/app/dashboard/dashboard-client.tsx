@@ -279,6 +279,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   const {
     addWidget,
+    moveWidget,
     tidyLayout,
     setAlwaysShown,
     shareWithTeam,
@@ -500,6 +501,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       renameBoard={renameBoard}
       deleteBoard={deleteBoard}
       addWidget={addWidget}
+      moveWidget={moveWidget}
       setAlwaysShown={setAlwaysShown}
       shareWithTeam={shareWithTeam}
       removeWidget={removeWidget}
