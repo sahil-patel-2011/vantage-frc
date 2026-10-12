@@ -132,6 +132,13 @@
 /* PageMain renders a <div> inside the hub's own <main> (one landmark per page). */
 .product-hub-panel > [data-page-main],
 .product-hub-panel > section.scout-page.is-embedded { display: contents; }
+/* A tool page shown as a hub tab keeps its own layout but not a second page inset: Code sat
+   28px right of the hub's title and tabs (UX audit). */
+.product-hub-panel > .module-page.is-embedded {
+  padding: 0;
+  margin-inline: 0;
+  max-width: none;
+}
 .product-hub-panel .team-ops-nav { display: none; }
 /* One row of links under a page title, not two. Where the header already carries the
    page's related tools, the Team-operations sibling strip (Practice · Attendance ·

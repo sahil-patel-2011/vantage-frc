@@ -137,11 +137,17 @@ export function AppShellTopbar({
                 its own breadcrumb and h1 already name it, and a title here made Safety, Hours,
                 Learn and Pit say their name three times in 150px. */}
             {isHubRoot || !showBack ? (
-              <TeamChip
-                label={orgLabel}
-                onOpen={onOpenTeams}
-                className="soft-topbar-title soft-topbar-org"
-              />
+              minimal ? (
+                // Onboarding has no team to switch to yet: the chooser sent the person straight
+                // back, which looked like the menu reloading the page.
+                <p className="soft-topbar-title soft-topbar-org">{orgLabel}</p>
+              ) : (
+                <TeamChip
+                  label={orgLabel}
+                  onOpen={onOpenTeams}
+                  className="soft-topbar-title soft-topbar-org"
+                />
+              )
             ) : (
               <>
                 <p className="soft-topbar-title">{title ?? "Vantage"}</p>

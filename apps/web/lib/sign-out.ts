@@ -5,6 +5,7 @@ import { PENDING_INVITE_STORAGE_KEY } from "./invite/invite-flow";
 import { ONBOARDING_ANSWERS_PREFIX } from "./onboarding/entry-journey";
 import { clearPendingCode, tabStorage } from "./sign-in/pending-code";
 import { browserStorage, clearRememberedAccount } from "./sign-in/remembered-account";
+import { forgetAccountMemory } from "./nav/shell-memory";
 
 /**
  * What the way in left on this device about the person: the address sign-in remembered, a code
@@ -15,6 +16,8 @@ import { browserStorage, clearRememberedAccount } from "./sign-in/remembered-acc
 export function forgetEntryTraces(): void {
   clearRememberedAccount(browserStorage());
   clearPendingCode(tabStorage());
+  // The avatar letter and team role the shell showed while loading.
+  forgetAccountMemory(browserStorage() as Pick<Storage, "removeItem"> | null);
   for (const store of [browserStorage(), tabStorage()]) {
     try {
       if (!store || !("length" in store)) continue;
