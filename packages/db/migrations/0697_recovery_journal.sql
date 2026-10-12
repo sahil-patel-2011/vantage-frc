@@ -1,6 +1,12 @@
 -- Transactional change capture. Application writes and their recovery events commit
 -- together. Export acknowledges individual IDs, never a high-water mark that could skip
 -- an earlier ID allocated by a transaction which commits later.
+--
+-- Capture covers the public schema, where every Vantage table lives. Other schemas belong to the
+-- host (Neon Auth; Supabase's auth, storage, realtime and vault), whose tables Vantage may not put
+-- triggers on: an all-schemas version of this file stopped a fresh Supabase install with
+-- "permission denied for table schema_migrations" (auth.schema_migrations). Databases that ran
+-- that version get the same definitions from 0732_recovery_capture_public_only.sql.
 CREATE TABLE recovery_events (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   transaction_id bigint NOT NULL,
@@ -52,7 +58,7 @@ DECLARE t record;
 BEGIN
   FOR t IN SELECT n.nspname AS schema_name,c.relname AS table_name FROM pg_class c
     JOIN pg_namespace n ON n.oid=c.relnamespace
-    WHERE n.nspname NOT IN ('pg_catalog','information_schema','neon_auth') AND n.nspname NOT LIKE 'pg_%'
+    WHERE n.nspname = 'public'
       AND c.relkind IN ('r','p') AND NOT c.relispartition
       AND c.relname NOT IN ('recovery_events','recovery_checkpoints')
   LOOP
@@ -72,7 +78,7 @@ SELECT n.nspname AS schema_name,c.relname AS table_name,
   EXISTS(SELECT 1 FROM pg_trigger t WHERE t.tgrelid=c.oid AND t.tgname='vantage_recovery_row' AND t.tgenabled='O') AS rows_covered,
   EXISTS(SELECT 1 FROM pg_trigger t WHERE t.tgrelid=c.oid AND t.tgname='vantage_recovery_truncate' AND t.tgenabled='O') AS truncation_covered
 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-WHERE n.nspname NOT IN ('pg_catalog','information_schema','neon_auth') AND n.nspname NOT LIKE 'pg_%'
+WHERE n.nspname = 'public'
   AND c.relkind IN ('r','p') AND NOT c.relispartition
   AND c.relname NOT IN ('recovery_events','recovery_checkpoints');
 REVOKE ALL ON recovery_coverage FROM PUBLIC;
