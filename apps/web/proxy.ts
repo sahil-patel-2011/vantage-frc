@@ -343,6 +343,7 @@ export async function proxy(request: NextRequest) {
   if (isBackupMode()) {
     const route = backupModeRoute(pathname);
     if (route === "pass") return NextResponse.next();
+    if (route === "signed_out") return NextResponse.json(null, { headers: { "cache-control": "no-store" } });
     if (route === "api_unavailable") {
       return NextResponse.json(
         { error: BACKUP_MODE_MESSAGE, code: "backup_mode" },

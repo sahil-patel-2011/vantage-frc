@@ -1,6 +1,7 @@
 /* Backup mode notice on /signin (backup-mode-notice.tsx); the card itself is join-team.css. */
 .backup-notice-status {
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: 8px;
   margin: 24px 0 0;

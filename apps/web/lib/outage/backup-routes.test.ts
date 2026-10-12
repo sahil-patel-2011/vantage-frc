@@ -15,14 +15,18 @@ describe("backup mode routes", () => {
   });
 
   it("keeps only the endpoints that never read the database", () => {
-    for (const path of ["/api/health", "/api/status", "/api/status/outage", "/api/status/outage/banner", "/api/waitlist", "/api/desktop/release"]) {
+    for (const path of ["/api/health", "/api/status", "/api/status/outage", "/api/status/outage/banner", "/api/waitlist", "/api/desktop/release", "/api/auth/status"]) {
       expect(backupModeRoute(path)).toBe("pass");
     }
     expect(backupModeRoute("/status/outage/open")).toBe("pass");
   });
 
+  it("tells the session probe nobody is signed in, rather than failing", () => {
+    expect(backupModeRoute("/api/auth/get-session")).toBe("signed_out");
+  });
+
   it("answers every other API with backup mode, sign-in included", () => {
-    for (const path of ["/api", "/api/me", "/api/auth/get-session", "/api/auth/email-otp/send-verification-otp", "/api/scouting/sync", "/api/teams/join", "/api/healthz", "/api/waitlisted"]) {
+    for (const path of ["/api", "/api/me", "/api/auth/sign-in/social", "/api/auth/email-otp/send-verification-otp", "/api/scouting/sync", "/api/teams/join", "/api/healthz", "/api/waitlisted"]) {
       expect(backupModeRoute(path)).toBe("api_unavailable");
     }
   });
