@@ -325,3 +325,13 @@
 .qs-summary summary::after{content:"";width:8px;height:8px;margin-right:4px;border:solid var(--muted);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-2px,-2px);transition:transform .16s ease}
 .qs-summary[open] summary::after{transform:rotate(225deg) translate(-2px,-2px)}
 @media(prefers-reduced-motion:reduce){.qs-summary summary::after{transition:none}}
+
+/* Lists of teams and robots read as one grouped list: rows divided by a hairline inside their
+   card, not a stack of separately bordered cards inside a card. */
+.qs-section .qs-list{gap:0}
+.qs-section .qs-list > li + li > .qs-row{border-top:1px solid color-mix(in srgb,var(--ink) 8%,var(--line))}
+.qs-section .qs-row{min-height:56px;padding:10px 4px;border:0;border-radius:0;background:transparent;transition:background-color var(--dur-tint,120ms) var(--ease-out,ease)}
+.qs-section .qs-row:active{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.qs-section .qs-row .qs-chevron{font-size:20px;line-height:1}
+@media(prefers-reduced-motion:reduce){.qs-section .qs-row{transition:none}}
+.qs-primary{font-weight:650}
