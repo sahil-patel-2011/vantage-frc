@@ -531,3 +531,132 @@
   .ai-keys-page .check-field input[type="checkbox"] { width: 22px; height: 22px; flex: none; }
   .ai-keys-page .related-strip a, .ai-keys-page .ai-keys-related a { min-height: 44px; display: inline-flex; align-items: center; }
 }
+
+/* ── The team's keys: one list, one "Add a key" form (ai-keys-team-list.tsx) ── */
+.ai-keys-list-wrap {
+  display: grid;
+  gap: 16px;
+  margin-top: 8px;
+}
+.ai-keys-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.ai-keys-list > li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 14px;
+}
+.ai-keys-list > li + li { border-top: 1px solid var(--line-soft); }
+.ai-keys-list > li[data-enabled="no"] .ai-keys-list-main { opacity: 0.6; }
+.ai-keys-list-main {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.ai-keys-list-main strong { font-size: 15px; font-weight: 600; }
+.ai-keys-list-main small { color: var(--muted); font-size: 13px; }
+.ai-keys-list-main .ai-keys-list-error { color: var(--danger, #d92d20); }
+.ai-keys-list-actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+}
+.ai-keys-list-state { color: var(--muted); font-size: 13px; }
+.ai-keys-list-empty { margin: 0; }
+.ai-keys-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+}
+.ai-keys-icon-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.ai-keys-icon-btn:disabled { opacity: 0.3; cursor: default; }
+.ai-keys-text-btn {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ai-keys-text-btn.is-danger { color: var(--danger, #d92d20); }
+.ai-keys-text-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--danger, #d92d20) 8%, transparent); }
+.ai-keys-text-btn:disabled { opacity: 0.45; cursor: default; }
+
+/* An iOS-style switch on a real checkbox (role=switch). */
+.ai-keys-switch { position: relative; display: inline-block; width: 44px; height: 26px; margin: 0 4px; }
+.ai-keys-switch input { position: absolute; inset: 0; z-index: 1; margin: 0; opacity: 0; cursor: pointer; }
+.ai-keys-switch input:disabled { cursor: default; }
+.ai-keys-switch span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  transition: background-color var(--dur-tint) var(--ease-out);
+}
+.ai-keys-switch span::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: translate var(--dur-move) var(--ease-spring);
+}
+.ai-keys-switch input:checked + span { background: var(--success, #16a34a); }
+.ai-keys-switch input:checked + span::after { translate: 18px 0; }
+.ai-keys-switch input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.ai-keys-add {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.ai-keys-add h3 { margin: 0; font-size: 16px; font-weight: 650; }
+.ai-keys-add-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.ai-keys-add label { display: grid; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.ai-keys-add :is(select, input) {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 400;
+}
+.ai-keys-add-hint { margin: -4px 0 0; font-size: 13px; }
+.ai-keys-add-actions { display: flex; justify-content: flex-end; }
+@media (max-width: 640px) {
+  .ai-keys-add-row { grid-template-columns: 1fr; }
+  .ai-keys-add :is(select, input) { min-height: 44px; font-size: 16px; }
+  .ai-keys-list > li { flex-wrap: wrap; }
+  .ai-keys-icon-btn { width: 44px; height: 44px; }
+}
