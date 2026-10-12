@@ -247,7 +247,7 @@ type RoutingPrefs = {
 
 const DEFAULT_MODELS: Record<"openai" | "anthropic" | "openai-compatible", string> = {
   openai: "gpt-4.1-mini",
-  anthropic: "claude-sonnet-4-20250514",
+  anthropic: "claude-haiku-5-5",
   "openai-compatible": "gpt-4.1-mini",
 };
 
@@ -255,11 +255,12 @@ const DEFAULT_PRICES: Record<"openai" | "anthropic" | "openai-compatible", Promp
   openai: { inputPerMillionUsd: 0.4, outputPerMillionUsd: 1.6 },
   // Anthropic's published cache rates: reads 0.1x input, writes 1.25x — without
   // them a plain BYOK key meters cached turns at full input price (over-report).
+  // Claude Haiku 5.5, the default model above.
   anthropic: {
-    inputPerMillionUsd: 3,
-    outputPerMillionUsd: 15,
-    cacheReadPerMillionUsd: 0.3,
-    cacheWritePerMillionUsd: 3.75,
+    inputPerMillionUsd: 0.1,
+    outputPerMillionUsd: 0.5,
+    cacheReadPerMillionUsd: 0.01,
+    cacheWritePerMillionUsd: 0.125,
   },
   "openai-compatible": { inputPerMillionUsd: 0.4, outputPerMillionUsd: 1.6 },
 };

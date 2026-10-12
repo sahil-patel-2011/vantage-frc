@@ -10,7 +10,7 @@
  * - BYOK pool: gpt-4.1 / gpt-4.1-mini, claude-opus-4 / claude-sonnet-4 /
  *   claude-sonnet-5 / claude-haiku-5-5, gemini-3.1-pro-preview / gemini-3.8-flash
  *   (packages/agent/src/byok-model-routing.ts).
- * - Hosted platform: claude-sonnet-4 / claude-opus-4 (hosted-platform-keys.ts).
+ * - Hosted platform: claude-haiku-5-5 (hosted-platform-keys.ts).
  * - Sponsored pool: mistral-small-latest, llama-3.1-8b-instant, llama3.1-8b,
  *   command-r-08-2024 (sponsored-provider-pool.ts).
  * - Local connectors (Ollama / LM Studio): llama / qwen / gemma / phi /

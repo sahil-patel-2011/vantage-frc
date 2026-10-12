@@ -16,12 +16,27 @@ export const LOCAL_CONTEXT_TOKEN_BUDGET = 2_800;
 export const CLOUD_CONTEXT_TOKEN_BUDGET = 48_000;
 /** Gemini over its free tier: one turn has to fit GOOGLE_TURN_INPUT_RESERVE (resolve-chat-adapter). */
 export const GEMINI_CONTEXT_TOKEN_BUDGET = 8_000;
+/**
+ * Agents (autonomous runs, CAD, coding, maintenance, bug triage) read far more than a chat turn:
+ * whole files, tool results and long plans. With their history this stays inside the 200K
+ * window of the smallest hosted Claude in the model list. On Claude Haiku 5.5 a prompt over
+ * 100K tokens is billed at its higher rate ($0.50 / $2.50 per million), still cents a call.
+ */
+export const AGENT_CONTEXT_TOKEN_BUDGET = 100_000;
+
+/** The capabilities that run as agents rather than as a chat turn. */
+export function isAgentCapability(capability?: string | null): boolean {
+  return /^(agent|cad|coding|maintenance|bugbot)/i.test((capability ?? "").trim());
+}
 
 export function estimateItemTokens(item: Pick<ContextItem, "content">): number {
   return Math.max(1, Math.ceil(item.content.length / 4));
 }
 
-export function contextTokenBudgetForAdapter(adapter: Pick<ChatAdapter, "provider" | "model">): number {
+export function contextTokenBudgetForAdapter(
+  adapter: Pick<ChatAdapter, "provider" | "model">,
+  capability?: string | null,
+): number {
   const provider = adapter.provider.toLowerCase();
   const model = adapter.model.toLowerCase();
   // Gemini is reached over the OpenAI-compatible protocol but is not a small local model.
@@ -34,7 +49,7 @@ export function contextTokenBudgetForAdapter(adapter: Pick<ChatAdapter, "provide
   ) {
     return LOCAL_CONTEXT_TOKEN_BUDGET;
   }
-  return CLOUD_CONTEXT_TOKEN_BUDGET;
+  return isAgentCapability(capability) ? AGENT_CONTEXT_TOKEN_BUDGET : CLOUD_CONTEXT_TOKEN_BUDGET;
 }
 
 export type ChatHistoryBudget = { maxTurns: number; maxChars: number };
@@ -43,13 +58,17 @@ export type ChatHistoryBudget = { maxTurns: number; maxChars: number };
 export const SHORT_CHAT_HISTORY: ChatHistoryBudget = { maxTurns: 16, maxChars: 12_000 };
 /** Hosted Claude and OpenAI keep the conversation verbatim (about 40K tokens). */
 export const CLOUD_CHAT_HISTORY: ChatHistoryBudget = { maxTurns: 200, maxChars: 160_000 };
+/** Agents keep a longer run verbatim (about 50K tokens). */
+export const AGENT_CHAT_HISTORY: ChatHistoryBudget = { maxTurns: 400, maxChars: 200_000 };
 
 export function chatHistoryBudgetForAdapter(
   adapter: Pick<ChatAdapter, "provider" | "model">,
+  capability?: string | null,
 ): ChatHistoryBudget {
-  return contextTokenBudgetForAdapter(adapter) === CLOUD_CONTEXT_TOKEN_BUDGET
-    ? CLOUD_CHAT_HISTORY
-    : SHORT_CHAT_HISTORY;
+  const budget = contextTokenBudgetForAdapter(adapter, capability);
+  if (budget === AGENT_CONTEXT_TOKEN_BUDGET) return AGENT_CHAT_HISTORY;
+  if (budget === CLOUD_CONTEXT_TOKEN_BUDGET) return CLOUD_CHAT_HISTORY;
+  return SHORT_CHAT_HISTORY;
 }
 
 function excerpt(text: string, max = 280): string {

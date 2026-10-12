@@ -283,7 +283,7 @@ export async function runAutonomousAgent(
       ];
       const context = compactContextItems(
         rawContext,
-        contextTokenBudgetForAdapter(adapter),
+        contextTokenBudgetForAdapter(adapter, "agent"),
       ).items;
 
       const message = buildStepMessage(goal, stepIndex, maxSteps);

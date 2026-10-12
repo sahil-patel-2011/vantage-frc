@@ -17,7 +17,7 @@ import {
   type PoolKeyEnvelope,
 } from "@vantage/billing";
 import type { ChatAdapter, ChatMessage, ChatToolDefinition, ContextItem } from "./index";
-import { chatCompletionMaxTokens, HttpChatAdapter, ProviderRateLimitError } from "./http-chat-adapter";
+import { chatCompletionMaxTokens, HttpChatAdapter, pricesForPrompt, ProviderRateLimitError } from "./http-chat-adapter";
 import { KeyFailoverChatAdapter, type FailoverKey } from "./key-failover-adapter";
 
 /**
@@ -90,7 +90,8 @@ export class CreditGiftChatAdapter implements ChatAdapter {
     const ceilingUsd = giftCallCeilingUsd({
       inputBytes: bounds.inputBytes,
       maxOutputTokens: bounds.maxOutputTokens,
-      prices: giftModel.prices,
+      // Bytes bound the prompt's tokens, so a long prompt is held at the long-prompt rate.
+      prices: pricesForPrompt(giftModel.modelId, giftModel.prices, bounds.inputBytes),
     });
     const hold = await ledger.reserve({
       giftId,
@@ -186,8 +187,9 @@ export async function resolveCreditGiftAdapter(
         fetchImpl: input.fetchImpl,
         providerLabel: family.provider,
         capability,
+        effort: giftModel.effort,
         // OpenAI-shaped calls get the same output room Anthropic chat calls carry.
-        maxOutputTokens: chatCompletionMaxTokens(capability),
+        maxOutputTokens: chatCompletionMaxTokens(capability, giftModel.modelId),
       }),
     });
   }

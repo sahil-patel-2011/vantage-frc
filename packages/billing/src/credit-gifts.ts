@@ -42,6 +42,8 @@ export type CreditGiftModel = {
   /** "everyday" answers most asks; "hard" is used for tasks the router classifies as hard. */
   role: "everyday" | "hard";
   prices: CreditGiftPrices;
+  /** Anthropic effort for models that take it (Claude Haiku 5.5). */
+  effort?: "low" | "medium" | "high";
 };
 
 export type CreditGiftFamilyInfo = {
@@ -61,21 +63,26 @@ export type CreditGiftFamilyInfo = {
 export const CREDIT_GIFT_FAMILIES: Readonly<Record<CreditGiftFamily, CreditGiftFamilyInfo>> = {
   claude: {
     id: "claude",
-    label: "Claude Sonnet 5.5 and Opus 5.5",
+    label: "Claude Haiku 5.5",
     provider: "anthropic",
     envKeys: ["ANTHROPIC_API_KEY"],
+    // One model for every ask: Medium effort by default, High for what the router calls hard.
+    // Rates are for prompts up to 100K tokens; longer prompts are billed at 5x
+    // (pricesForPrompt in packages/agent/src/http-chat-adapter.ts).
     models: [
       {
-        modelId: "claude-sonnet-5-5",
-        label: "Claude Sonnet 5.5",
+        modelId: "claude-haiku-5-5",
+        label: "Claude Haiku 5.5",
         role: "everyday",
-        prices: { inputPerMillionUsd: 2, outputPerMillionUsd: 10, cacheReadPerMillionUsd: 0.2, cacheWritePerMillionUsd: 2.5 },
+        effort: "medium",
+        prices: { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.5, cacheReadPerMillionUsd: 0.01, cacheWritePerMillionUsd: 0.125 },
       },
       {
-        modelId: "claude-opus-5-5",
-        label: "Claude Opus 5.5",
+        modelId: "claude-haiku-5-5",
+        label: "Claude Haiku 5.5 (High effort)",
         role: "hard",
-        prices: { inputPerMillionUsd: 4, outputPerMillionUsd: 20, cacheReadPerMillionUsd: 0.2, cacheWritePerMillionUsd: 5 },
+        effort: "high",
+        prices: { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.5, cacheReadPerMillionUsd: 0.01, cacheWritePerMillionUsd: 0.125 },
       },
     ],
   },

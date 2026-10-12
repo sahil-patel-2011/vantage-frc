@@ -299,10 +299,10 @@ describe("resolveCreditGiftAdapter", () => {
     env: { ANTHROPIC_API_KEY: "sk-ant-env" },
   };
 
-  it("builds the gift adapter over the operator's pool, Opus for hard asks", async () => {
+  it("builds the gift adapter over the operator's pool, Claude Haiku 5.5 for hard asks too", async () => {
     const client = giftClient(giftRow(), [poolRow(), poolRow({ keyId: "k2", label: "Spare", keyEnv: null, keyCiphertext: "c", keyNonce: "n", keyAuthTag: "t", encryptedDek: "d", kmsKeyId: "k" })]);
     const routing = await resolveCreditGiftAdapter(client as never, { ...base, usableOnly: true, difficulty: "hard" });
-    expect(routing?.adapter.model).toBe("claude-opus-5-5");
+    expect(routing?.adapter.model).toBe("claude-haiku-5-5");
     expect(client.sqls[0]).toContain("ai_credit_gift_for_org($1::uuid)");
     expect(client.sqls[1]).toContain("ai_credit_gift_keys($1::uuid)");
   });
@@ -349,7 +349,7 @@ describe("resolveOrgChatAdapterWithProvenance with a gift", () => {
         creditGiftLedger: memoryLedger(10).ledger,
       });
       expect(resolved.adapter).toBeInstanceOf(CreditGiftChatAdapter);
-      expect(resolved.provenance).toMatchObject({ provider: "anthropic", modelId: "claude-sonnet-5-5", source: "gift" });
+      expect(resolved.provenance).toMatchObject({ provider: "anthropic", modelId: "claude-haiku-5-5", source: "gift" });
       // The team's own keys were looked at first.
       const keys = queries.findIndex((sql) => sql.includes("org_llm_keys"));
       const gift = queries.findIndex((sql) => sql.includes("FROM ai_credit_gift_for_org"));

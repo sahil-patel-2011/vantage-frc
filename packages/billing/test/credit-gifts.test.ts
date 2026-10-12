@@ -56,18 +56,18 @@ describe("gift cap arithmetic", () => {
   });
 
   it("bounds a call by its bytes and output cap at the higher input rate", () => {
-    const sonnet = creditGiftModelFor("claude");
-    // 10,000 bytes + 1,024 framing tokens at the $2.50 cache-write rate, 1,024 output at $10.
-    const ceiling = giftCallCeilingUsd({ inputBytes: 10_000, maxOutputTokens: 1024, prices: sonnet.prices });
-    expect(ceiling).toBeCloseTo((11_024 * 2.5 + 1024 * 10) / 1e6, 6);
+    const haiku = creditGiftModelFor("claude");
+    // 10,000 bytes + 1,024 framing tokens at the $0.125 cache-write rate, 1,024 output at $0.50.
+    const ceiling = giftCallCeilingUsd({ inputBytes: 10_000, maxOutputTokens: 1024, prices: haiku.prices });
+    expect(ceiling).toBeCloseTo((11_024 * 0.125 + 1024 * 0.5) / 1e6, 6);
     // The bound is above what the same call costs at list price with every byte a token.
-    expect(ceiling).toBeGreaterThan((10_000 * 2 + 1024 * 10) / 1e6);
+    expect(ceiling).toBeGreaterThan((10_000 * 0.1 + 1024 * 0.5) / 1e6);
   });
 
-  it("uses Sonnet 5.5 for everyday asks and Opus 5.5 for hard ones", () => {
-    expect(creditGiftModelFor("claude").modelId).toBe("claude-sonnet-5-5");
-    expect(creditGiftModelFor("claude", "hard").modelId).toBe("claude-opus-5-5");
-    expect(CREDIT_GIFT_FAMILIES.claude.models.map((m) => m.prices.inputPerMillionUsd)).toEqual([2, 4]);
+  it("uses Claude Haiku 5.5 for every ask: Medium effort everyday, High for hard ones", () => {
+    expect(creditGiftModelFor("claude")).toMatchObject({ modelId: "claude-haiku-5-5", effort: "medium" });
+    expect(creditGiftModelFor("claude", "hard")).toMatchObject({ modelId: "claude-haiku-5-5", effort: "high" });
+    expect(CREDIT_GIFT_FAMILIES.claude.models.map((m) => m.prices.inputPerMillionUsd)).toEqual([0.1, 0.1]);
   });
 });
 

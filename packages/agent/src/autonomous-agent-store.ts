@@ -5,10 +5,11 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 
-export const MAX_GOAL_CHARS = 4000;
-export const MAX_ANSWER_CHARS = 16_000;
+/** Matches the column checks in 0731_agent_long_input_output.sql. */
+export const MAX_GOAL_CHARS = 100_000;
+export const MAX_ANSWER_CHARS = 400_000;
 export const MAX_SUMMARY_CHARS = 2000;
-export const MAX_EXCERPT_CHARS = 8000;
+export const MAX_EXCERPT_CHARS = 32_000;
 export const MAX_ERROR_CHARS = 2000;
 export const DEFAULT_MAX_STEPS = 8;
 

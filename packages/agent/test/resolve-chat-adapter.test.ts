@@ -477,7 +477,7 @@ describe("resolveOrgChatAdapter", () => {
     expect(adapter.model).toBe("petals-team/StableBeluga2");
   });
 
-  it("uses hosted Anthropic Sonnet for paid orgs when managed peek is empty", async () => {
+  it("uses hosted Claude Haiku 5.5 for paid orgs when managed peek is empty", async () => {
     process.env.ANTHROPIC_API_KEY = "sk-ant-hosted";
     const client = fakeClient([
       () => ({ rowCount: 0, rows: [] }),
@@ -495,10 +495,10 @@ describe("resolveOrgChatAdapter", () => {
     });
 
     expect(adapter.provider).toBe("anthropic");
-    expect(adapter.model).toBe("claude-sonnet-4-20250514");
+    expect(adapter.model).toBe("claude-haiku-5-5");
   });
 
-  it("uses hosted Anthropic Opus for paid CAD/code features", async () => {
+  it("uses hosted Claude Haiku 5.5 for paid CAD/code features too", async () => {
     process.env.ANTHROPIC_API_KEY = "sk-ant-hosted";
     const client = fakeClient([
       () => ({ rowCount: 0, rows: [] }),
@@ -515,7 +515,7 @@ describe("resolveOrgChatAdapter", () => {
       decrypt: async () => "unused",
     });
 
-    expect(adapter.model).toBe("claude-opus-4-20250514");
+    expect(adapter.model).toBe("claude-haiku-5-5");
   });
 
   it("prefers org BYOK over platform OpenRouter and Anthropic keys", async () => {
