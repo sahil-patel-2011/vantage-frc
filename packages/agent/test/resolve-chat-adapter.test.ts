@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpChatAdapter } from "../src/http-chat-adapter";
 import { ModelFallbackChatAdapter } from "../src/model-fallback-adapter";
+import { KeyFailoverChatAdapter } from "../src/key-failover-adapter";
 import {
   ChatProviderResolutionError,
   GOOGLE_TURN_INPUT_RESERVE,
@@ -580,7 +581,7 @@ describe("resolveOrgChatAdapter", () => {
     ).rejects.toBeInstanceOf(ChatProviderResolutionError);
   });
 
-  it("personal OpenAI base URL overlays the team key when userId is set", async () => {
+  it("personal OpenAI base URL answers first when userId is set, with the team key as failover", async () => {
     const client = fakeClient([
       () => ({ rowCount: 0, rows: [] }),
       () => ({
@@ -625,9 +626,12 @@ describe("resolveOrgChatAdapter", () => {
       decrypt: async () => "local",
     });
 
-    expect(adapter).toBeInstanceOf(HttpChatAdapter);
+    // 0727: a member's keys come first and the team's are the failover, instead of the team's
+    // key being dropped whenever the member had one.
+    expect(adapter).toBeInstanceOf(KeyFailoverChatAdapter);
+    expect((adapter as KeyFailoverChatAdapter).keyCount).toBe(2);
     expect(adapter.provider).toBe("openai-compatible");
     expect(adapter.model).toBe("llama3.2");
-    expect((adapter as HttpChatAdapter).baseUrl).toBe("http://127.0.0.1:11434/v1");
+    expect((adapter as KeyFailoverChatAdapter).baseUrl).toBe("http://127.0.0.1:11434/v1");
   });
 });

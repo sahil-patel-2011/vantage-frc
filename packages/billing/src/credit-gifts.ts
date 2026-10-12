@@ -2,10 +2,11 @@
  * AI credit a platform admin gifts a team, paid from the operator's own provider keys.
  *
  * The rules (migration 0727):
- * - A gift is a dollar amount on one model family, funded by an environment key the operator
- *   names (ANTHROPIC_API_KEY, or VANTAGE_GIFT_ANTHROPIC_<LABEL> for more than one) or by a key in
- *   the encrypted platform vault. The key never leaves the server and is never stored in plain
- *   text.
+ * - A gift is a dollar amount on one model family, paid from the operator's key pool for that
+ *   provider (`platform_provider_keys`): any number of keys, each an encrypted vault key or a
+ *   provider-key environment variable named by the operator (ANTHROPIC_API_KEY, or
+ *   VANTAGE_GIFT_ANTHROPIC_<LABEL> for more than one), tried in the operator's order. A key never
+ *   leaves the server and is never stored in plain text.
  * - Spend is summed from the gift's own ledger (`ai_credit_gift_ledger`), never a counter.
  * - Before each provider call the call's worst-case cost is reserved in its own short, committed
  *   transaction that holds the gift row lock (`reserve_ai_credit_gift`). A call that could cross
@@ -131,40 +132,17 @@ function envValue(env: NodeJS.ProcessEnv, name: string): string {
   return value === "[SENSITIVE]" ? "" : value;
 }
 
-export type GiftFundingKey = {
-  /** `env:NAME` or `vault:<uuid>` — what the admin picks. */
-  ref: string;
-  source: "env" | "vault";
-  family: CreditGiftFamily;
-  /** Shown to platform admins only: the env var name or the vault label. Never the value. */
-  label: string;
-  configured: boolean;
-};
+/** Every provider-key environment name a pool row may reference for this family's provider. */
+export function giftEnvKeyNames(family: CreditGiftFamily, env: NodeJS.ProcessEnv = process.env): string[] {
+  const info = CREDIT_GIFT_FAMILIES[family];
+  const names = new Set<string>(info.envKeys);
+  for (const name of Object.keys(env)) if (EXTRA_KEY_PATTERN[info.provider].test(name)) names.add(name);
+  return [...names].sort();
+}
 
-/**
- * The operator's provider keys a gift can draw on: every standard or VANTAGE_GIFT_* env name
- * that is set (names only, never values), plus enabled vault keys passed in by the caller.
- */
-export function listGiftFundingKeys(
-  env: NodeJS.ProcessEnv = process.env,
-  vault: Array<{ id: string; provider: string; label: string }> = [],
-): GiftFundingKey[] {
-  const keys: GiftFundingKey[] = [];
-  for (const info of Object.values(CREDIT_GIFT_FAMILIES)) {
-    const names = new Set<string>(info.envKeys);
-    for (const name of Object.keys(env)) if (EXTRA_KEY_PATTERN[info.provider].test(name)) names.add(name);
-    for (const name of [...names].sort()) {
-      const configured = Boolean(envValue(env, name));
-      // Standard names are listed even when unset, so the page can say which one to add.
-      if (!configured && !info.envKeys.includes(name)) continue;
-      keys.push({ ref: `env:${name}`, source: "env", family: info.id, label: name, configured });
-    }
-    for (const row of vault) {
-      if (providerFamily(row.provider) !== info.id) continue;
-      keys.push({ ref: `vault:${row.id}`, source: "vault", family: info.id, label: `${row.label} (vault)`, configured: true });
-    }
-  }
-  return keys;
+/** Whether an env-referenced pool key has a value on this deployment (never the value itself). */
+export function giftEnvKeyConfigured(name: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  return Boolean(envValue(env, name));
 }
 
 export function providerFamily(provider: string): CreditGiftFamily | null {
@@ -282,16 +260,6 @@ export type ActiveCreditGift = {
   amountUsd: number;
   spentUsd: number;
   expiresAt: string | null;
-  keySource: "env" | "vault";
-  keyEnv: string | null;
-  vault: {
-    provider: string;
-    keyCiphertext: string;
-    keyNonce: string;
-    keyAuthTag: string;
-    encryptedDek: string;
-    kmsKeyId: string;
-  } | null;
 };
 
 /** Whether a gift still has enough left to try a call (a smaller balance counts as used up). */
@@ -310,19 +278,9 @@ export async function loadActiveCreditGift(client: PoolClient, orgId: string): P
     amountUsd: string;
     spentUsd: string;
     expiresAt: string | null;
-    keySource: string;
-    keyEnv: string | null;
-    vaultProvider: string | null;
-    keyCiphertext: string | null;
-    keyNonce: string | null;
-    keyAuthTag: string | null;
-    encryptedDek: string | null;
-    kmsKeyId: string | null;
   }>(
     `SELECT gift_id AS "giftId", family, amount_usd::text AS "amountUsd", spent_usd::text AS "spentUsd",
-            expires_at::text AS "expiresAt", key_source AS "keySource", key_env AS "keyEnv",
-            vault_provider AS "vaultProvider", key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
-            key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek", kms_key_id AS "kmsKeyId"
+            expires_at::text AS "expiresAt"
        FROM ai_credit_gift_for_org($1::uuid)`,
     [orgId],
   );
@@ -334,12 +292,49 @@ export async function loadActiveCreditGift(client: PoolClient, orgId: string): P
     amountUsd: Number(row.amountUsd),
     spentUsd: Number(row.spentUsd),
     expiresAt: row.expiresAt,
-    keySource: row.keySource === "vault" ? "vault" : "env",
+  };
+}
+
+export type PoolKeyEnvelope = {
+  keyCiphertext: string;
+  keyNonce: string;
+  keyAuthTag: string;
+  encryptedDek: string;
+  kmsKeyId: string;
+};
+
+/** One switched-on key in the operator's pool for a gift, in order. Server-side only. */
+export type GiftPoolKey = {
+  keyId: string;
+  label: string;
+  keyEnv: string | null;
+  envelope: PoolKeyEnvelope | null;
+};
+
+export async function loadCreditGiftKeys(client: PoolClient, giftId: string): Promise<GiftPoolKey[]> {
+  const result = await client.query<{
+    keyId: string;
+    label: string;
+    keyEnv: string | null;
+    keyCiphertext: string | null;
+    keyNonce: string | null;
+    keyAuthTag: string | null;
+    encryptedDek: string | null;
+    kmsKeyId: string | null;
+  }>(
+    `SELECT key_id AS "keyId", label, key_env AS "keyEnv", key_ciphertext AS "keyCiphertext",
+            key_nonce AS "keyNonce", key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
+            kms_key_id AS "kmsKeyId"
+       FROM ai_credit_gift_keys($1::uuid)`,
+    [giftId],
+  );
+  return result.rows.map((row) => ({
+    keyId: row.keyId,
+    label: row.label,
     keyEnv: row.keyEnv,
-    vault:
-      row.vaultProvider && row.keyCiphertext && row.keyNonce && row.keyAuthTag && row.encryptedDek && row.kmsKeyId
+    envelope:
+      row.keyCiphertext && row.keyNonce && row.keyAuthTag && row.encryptedDek && row.kmsKeyId
         ? {
-            provider: row.vaultProvider,
             keyCiphertext: row.keyCiphertext,
             keyNonce: row.keyNonce,
             keyAuthTag: row.keyAuthTag,
@@ -347,25 +342,26 @@ export async function loadActiveCreditGift(client: PoolClient, orgId: string): P
             kmsKeyId: row.kmsKeyId,
           }
         : null,
-  };
+  }));
 }
 
 /**
- * The provider key that funds a gift, or null when it is not available on this deployment (the
- * env var is unset or not a provider-key name, or the vault key was removed). Server-side only.
+ * The secret behind one pool key, or null when it is not usable on this deployment (its env var
+ * is unset or not a provider-key name, or the envelope does not decrypt). Server-side only.
  */
-export async function resolveCreditGiftKey(
-  gift: ActiveCreditGift,
-  decryptVault: (vault: NonNullable<ActiveCreditGift["vault"]>) => Promise<string>,
+export async function resolvePoolKeySecret(
+  family: CreditGiftFamily,
+  key: GiftPoolKey,
+  decrypt: (envelope: PoolKeyEnvelope) => Promise<string>,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<string | null> {
-  if (gift.keySource === "env") {
-    if (!gift.keyEnv || !isAllowedGiftEnvKey(gift.family, gift.keyEnv)) return null;
-    return envValue(env, gift.keyEnv) || null;
+  if (key.keyEnv) {
+    if (!isAllowedGiftEnvKey(family, key.keyEnv)) return null;
+    return envValue(env, key.keyEnv) || null;
   }
-  if (!gift.vault || providerFamily(gift.vault.provider) !== gift.family) return null;
+  if (!key.envelope) return null;
   try {
-    return (await decryptVault(gift.vault)).trim() || null;
+    return (await decrypt(key.envelope)).trim() || null;
   } catch {
     return null;
   }
@@ -389,7 +385,11 @@ export type CreditGiftLedger = {
     promptTokens: number;
     completionTokens: number;
     released: boolean;
+    /** The pool key that answered, recorded on the ledger row (id only; the label is looked up). */
+    keyId?: string | null;
   }): Promise<GiftAlert | null>;
+  /** A pool key turned the call away: mark it degraded for module health. */
+  noteKeyFailure(input: { giftId: string; keyId: string; reason: string }): Promise<void>;
 };
 
 type CommittedRunner = <T>(work: (client: PoolClient) => Promise<T>) => Promise<T>;
@@ -419,17 +419,27 @@ export function createCreditGiftLedger(
     async settle(input) {
       return run(async (client) => {
         const result = await client.query<{ alert: string | null }>(
-          `SELECT settle_ai_credit_gift($1::uuid, $2::numeric, $3::int, $4::int, $5::boolean) AS alert`,
+          `SELECT settle_ai_credit_gift($1::uuid, $2::numeric, $3::int, $4::int, $5::boolean, $6::uuid) AS alert`,
           [
             input.holdId,
             Math.max(0, input.costUsd).toFixed(6),
             Math.max(0, Math.floor(input.promptTokens)),
             Math.max(0, Math.floor(input.completionTokens)),
             input.released,
+            input.keyId ?? null,
           ],
         );
         const alert = result.rows[0]?.alert;
         return alert === "80" || alert === "exhausted" ? alert : null;
+      });
+    },
+    async noteKeyFailure(input) {
+      await run(async (client) => {
+        await client.query(`SELECT note_platform_key_failure($1::uuid, $2::uuid, $3::text)`, [
+          input.giftId,
+          input.keyId,
+          input.reason.slice(0, 300),
+        ]);
       });
     },
   };

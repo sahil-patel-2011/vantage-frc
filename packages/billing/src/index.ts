@@ -317,8 +317,12 @@ export async function detectOrgByokKeySource(
       return "byo";
     }
   }
+  // A switched-off key (0727) is not a usable path; read through to_jsonb so a database
+  // without that column answers as before.
   const keys = await client.query(
-    `SELECT 1 FROM org_llm_keys WHERE org_id = $1::uuid LIMIT 1`,
+    `SELECT 1 FROM org_llm_keys k
+      WHERE k.org_id = $1::uuid AND COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true)
+      LIMIT 1`,
     [orgId],
   );
   if (keys.rows.length > 0) return "byo";

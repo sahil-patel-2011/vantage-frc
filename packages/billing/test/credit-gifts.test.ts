@@ -9,17 +9,18 @@ import {
   evaluateGiftReservation,
   formatGiftUsd,
   giftCallCeilingUsd,
+  giftEnvKeyNames,
   isAllowedGiftEnvKey,
-  listGiftFundingKeys,
   meteredAI,
+  noteServedKey,
   reservationUsd,
-  resolveCreditGiftKey,
+  resolvePoolKeySecret,
   sendCreditGiftAlertEmail,
   setCreditGiftAlertMailer,
   teamCreditGiftLine,
   usdToMicrosCeil,
   UsageHardCutoffError,
-  type ActiveCreditGift,
+  type GiftPoolKey,
 } from "../src";
 
 describe("gift cap arithmetic", () => {
@@ -79,37 +80,27 @@ describe("gift funding keys", () => {
     expect(isAllowedGiftEnvKey("openai", "DATABASE_ADMIN_URL")).toBe(false);
   });
 
-  it("lists names and whether they are set, never values", () => {
-    const keys = listGiftFundingKeys(
-      { ANTHROPIC_API_KEY: "sk-ant-secret", VANTAGE_GIFT_ANTHROPIC_SPARE: "sk-ant-2", OPENAI_API_KEY: "" },
-      [{ id: "11111111-1111-4111-8111-111111111111", provider: "anthropic", label: "Operator vault" }],
-    );
-    const claude = keys.filter((key) => key.family === "claude");
-    expect(claude.map((key) => key.ref)).toEqual([
-      "env:ANTHROPIC_API_KEY",
-      "env:VANTAGE_GIFT_ANTHROPIC_SPARE",
-      "vault:11111111-1111-4111-8111-111111111111",
-    ]);
-    expect(keys.find((key) => key.ref === "env:OPENAI_API_KEY")?.configured).toBe(false);
-    expect(JSON.stringify(keys)).not.toContain("sk-ant");
+  it("lists the provider-key env names a pool row may use, standard and extra", () => {
+    expect(
+      giftEnvKeyNames("claude", { VANTAGE_GIFT_ANTHROPIC_SPARE: "x", VANTAGE_GIFT_OPENAI_ONE: "y", BETTER_AUTH_SECRET: "z" }),
+    ).toEqual(["ANTHROPIC_API_KEY", "VANTAGE_GIFT_ANTHROPIC_SPARE"]);
   });
 
-  it("resolves the funding key server-side and refuses a disallowed env name", async () => {
-    const gift: ActiveCreditGift = {
-      giftId: "g",
-      family: "claude",
-      amountUsd: 10,
-      spentUsd: 0,
-      expiresAt: null,
-      keySource: "env",
-      keyEnv: "ANTHROPIC_API_KEY",
-      vault: null,
+  it("resolves each pool key server-side and refuses a disallowed env name", async () => {
+    const envKey: GiftPoolKey = { keyId: "k1", label: "Main", keyEnv: "ANTHROPIC_API_KEY", envelope: null };
+    const sealed: GiftPoolKey = {
+      keyId: "k2",
+      label: "Spare",
+      keyEnv: null,
+      envelope: { keyCiphertext: "c", keyNonce: "n", keyAuthTag: "t", encryptedDek: "d", kmsKeyId: "k" },
     };
-    const decrypt = vi.fn(async () => "never");
-    expect(await resolveCreditGiftKey(gift, decrypt, { ANTHROPIC_API_KEY: " sk-1 " })).toBe("sk-1");
-    expect(await resolveCreditGiftKey({ ...gift, keyEnv: "BETTER_AUTH_SECRET" }, decrypt, { BETTER_AUTH_SECRET: "x" })).toBeNull();
-    expect(await resolveCreditGiftKey(gift, decrypt, {})).toBeNull();
-    expect(decrypt).not.toHaveBeenCalled();
+    const decrypt = vi.fn(async () => " sk-vault ");
+    expect(await resolvePoolKeySecret("claude", envKey, decrypt, { ANTHROPIC_API_KEY: " sk-1 " })).toBe("sk-1");
+    expect(await resolvePoolKeySecret("claude", { ...envKey, keyEnv: "BETTER_AUTH_SECRET" }, decrypt, { BETTER_AUTH_SECRET: "x" })).toBeNull();
+    expect(await resolvePoolKeySecret("claude", envKey, decrypt, {})).toBeNull();
+    expect(await resolvePoolKeySecret("claude", sealed, decrypt, {})).toBe("sk-vault");
+    expect(await resolvePoolKeySecret("claude", sealed, async () => { throw new Error("KMS key mismatch"); }, {})).toBeNull();
+    expect(decrypt).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -135,14 +126,22 @@ describe("gift ledger transactions", () => {
     expect(runs).toBe(1);
   });
 
-  it("reports only the alerts the database fired", async () => {
+  it("settles with the key that answered and reports only the alerts the database fired", async () => {
+    const calls: Array<{ sql: string; params: unknown[] }> = [];
     const client = {
-      async query() {
+      async query(sql: string, params: unknown[]) {
+        calls.push({ sql, params });
         return { rows: [{ alert: "exhausted" }], rowCount: 1 };
       },
     } as unknown as PoolClient;
     const ledger = createCreditGiftLedger({ userId: "u", orgId: "o" }, (work) => work(client));
-    expect(await ledger.settle({ holdId: "h", costUsd: 0.5, promptTokens: 1, completionTokens: 2, released: false })).toBe("exhausted");
+    expect(
+      await ledger.settle({ holdId: "h", costUsd: 0.5, promptTokens: 1, completionTokens: 2, released: false, keyId: "k2" }),
+    ).toBe("exhausted");
+    expect(calls[0]!.params).toEqual(["h", "0.500000", 1, 2, false, "k2"]);
+    await ledger.noteKeyFailure({ giftId: "g", keyId: "k1", reason: "Rate limited by the provider (429)" });
+    expect(calls[1]!.sql).toContain("note_platform_key_failure($1::uuid, $2::uuid, $3::text)");
+    expect(calls[1]!.params).toEqual(["g", "k1", "Rate limited by the provider (429)"]);
   });
 });
 
@@ -182,6 +181,41 @@ describe("gift refusals", () => {
 });
 
 describe("meteredAI for a gift-funded call", () => {
+  it("records which key answered, by id and label, never the secret", async () => {
+    const inserts: unknown[][] = [];
+    const client = {
+      async query(sql: string, params?: unknown[]) {
+        if (sql.includes("pg_try_advisory_xact_lock")) return { rows: [{ locked: true }], rowCount: 1 };
+        if (sql.includes("INSERT INTO ai_usage_events")) inserts.push(params ?? []);
+        if (sql.includes("FROM org_billing")) {
+          return {
+            rows: [{ tier: "free", credit_cap_usd: "0", kill_switch: false, period_start: new Date("2026-01-01"), period_end: new Date("2027-01-01") }],
+            rowCount: 1,
+          };
+        }
+        return { rows: [], rowCount: 0 };
+      },
+    } as unknown as PoolClient;
+    await meteredAI({
+      client,
+      orgId: "org",
+      userId: "user",
+      feature: "chat",
+      requestId: "served-key",
+      estimatedCostUsd: 0.01,
+      provider: CREDIT_GIFT_PROVIDER,
+      model: "claude-sonnet-5-5",
+      invoke: async () => {
+        // What the key-failover adapter does when the second key answers.
+        noteServedKey({ id: "k2", label: "Spare", scope: "platform" });
+        return { value: "ok", promptTokens: 1, completionTokens: 1, costUsd: 0.001, model: "claude-sonnet-5-5", provider: "anthropic" };
+      },
+    });
+    const metadata = JSON.parse(String(inserts[0]![11]));
+    expect(metadata.servedKey).toEqual({ id: "k2", label: "Spare", scope: "platform" });
+    expect(JSON.stringify(inserts[0])).not.toMatch(/sk-/);
+  });
+
   function freeClient() {
     const queries: string[] = [];
     const inserts: unknown[][] = [];

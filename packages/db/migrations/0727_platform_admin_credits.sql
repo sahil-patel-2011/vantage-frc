@@ -160,9 +160,8 @@ GRANT EXECUTE ON FUNCTION platform_admin_transfer(text) TO vantage_app;
 -- ---------------------------------------------------------------------------------------------
 --
 -- A platform admin gives a team a dollar amount of AI on a model family (Claude, OpenAI, Gemini),
--- paid from the operator's own provider key: an environment variable referenced by name, or a
--- key in the encrypted platform vault (platform_provider_keys, Model control). No key is ever
--- stored here in plain text.
+-- paid from the operator's own key pool for that provider (section 2a). No key is ever stored
+-- here in plain text, and no key ever reaches a browser.
 --
 -- The cap is enforced from the gift's own ledger, never a counter: spent = settled costs plus
 -- open holds. Before each provider call the runtime reserves the call's worst-case cost
@@ -174,15 +173,123 @@ GRANT EXECUTE ON FUNCTION platform_admin_transfer(text) TO vantage_app;
 -- Usage rows paid from a gift. Added alone: a new enum value is usable once this commits.
 ALTER TYPE key_source ADD VALUE IF NOT EXISTS 'gift';
 
+-- 2a. The operator's key pool. platform_provider_keys (0006, Model control) held one encrypted
+-- key per row; it now holds any number per provider, each with a label, an order (priority,
+-- lowest first) and an on/off switch (disabled_at, as before). A row is either an encrypted key
+-- (the envelope columns) or a reference by name to a provider-key environment variable on the
+-- deployment (key_env), never both. Routing tries a provider's keys in order and moves to the
+-- next on a rate limit, a provider error or a rejected key; the failing key is marked degraded
+-- with a reason (never the secret) for module health.
+ALTER TABLE platform_provider_keys
+  ADD COLUMN priority integer NOT NULL DEFAULT 100,
+  ADD COLUMN key_env text,
+  ADD COLUMN degraded_at timestamptz,
+  ADD COLUMN degraded_reason text;
+ALTER TABLE platform_provider_keys
+  ALTER COLUMN key_ciphertext DROP NOT NULL,
+  ALTER COLUMN key_nonce DROP NOT NULL,
+  ALTER COLUMN key_auth_tag DROP NOT NULL,
+  ALTER COLUMN encrypted_dek DROP NOT NULL,
+  ALTER COLUMN kms_key_id DROP NOT NULL;
+ALTER TABLE platform_provider_keys
+  -- Only provider-key names: a pool row can never point the runtime at another secret.
+  ADD CONSTRAINT platform_provider_keys_env_name CHECK (key_env IS NULL OR key_env ~
+    '^(ANTHROPIC_API_KEY|OPENAI_API_KEY|GOOGLE_AI_API_KEY|GEMINI_API_KEY|VANTAGE_GIFT_(ANTHROPIC|OPENAI|GOOGLE)_[A-Z0-9_]{1,40})$'),
+  ADD CONSTRAINT platform_provider_keys_one_source CHECK (
+    (key_env IS NOT NULL AND key_ciphertext IS NULL)
+    OR (key_env IS NULL AND key_ciphertext IS NOT NULL AND key_nonce IS NOT NULL AND key_auth_tag IS NOT NULL
+        AND encrypted_dek IS NOT NULL AND kms_key_id IS NOT NULL)),
+  ADD CONSTRAINT platform_provider_keys_reason_length CHECK (degraded_reason IS NULL OR char_length(degraded_reason) <= 300);
+CREATE INDEX platform_provider_keys_order_idx ON platform_provider_keys(provider, priority, created_at)
+  WHERE disabled_at IS NULL;
+
+-- The paid-tier managed peek (0096) only ever wanted an encrypted key: an env reference has no
+-- ciphertext to decrypt. Same signature; it now follows the pool order too.
+CREATE OR REPLACE FUNCTION peek_managed_chat_provider(p_org_id uuid)
+RETURNS TABLE (
+  provider text,
+  model text,
+  key_ciphertext text,
+  key_nonce text,
+  key_auth_tag text,
+  encrypted_dek text,
+  kms_key_id text,
+  key_id uuid,
+  input_price_per_million_usd numeric,
+  output_price_per_million_usd numeric,
+  cache_read_price_per_million_usd numeric,
+  cache_write_price_per_million_usd numeric
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT is_org_member(p_org_id) THEN
+    RETURN;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM org_billing b
+    WHERE b.org_id = p_org_id AND b.tier IS DISTINCT FROM 'free'
+  ) THEN
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    k.provider,
+    m.provider_model_id AS model,
+    k.key_ciphertext,
+    k.key_nonce,
+    k.key_auth_tag,
+    k.encrypted_dek,
+    k.kms_key_id,
+    k.id AS key_id,
+    m.input_price_per_million_usd,
+    m.output_price_per_million_usd,
+    m.cache_read_price_per_million_usd,
+    m.cache_write_price_per_million_usd
+  FROM platform_provider_keys k
+  JOIN LATERAL (
+    SELECT
+      c.provider_model_id,
+      c.input_price_per_million_usd,
+      c.output_price_per_million_usd,
+      c.cache_read_price_per_million_usd,
+      c.cache_write_price_per_million_usd,
+      c.routing_weight
+    FROM model_catalog c
+    WHERE c.enabled = true
+      AND c.provider_model_id IS NOT NULL
+      AND c.provider = k.provider
+      AND COALESCE(c.funding_mode, 'managed_paid') = 'managed_paid'
+      AND c.provider IN ('openai', 'anthropic')
+    ORDER BY
+      CASE WHEN 'chat' = ANY (c.capabilities) THEN 0 ELSE 1 END,
+      c.routing_weight DESC,
+      c.updated_at DESC
+    LIMIT 1
+  ) m ON true
+  WHERE k.disabled_at IS NULL
+    AND k.key_ciphertext IS NOT NULL
+    AND k.provider IN ('openai', 'anthropic')
+  ORDER BY k.priority, k.created_at
+  LIMIT 1;
+END;
+$$;
+
+-- The provider a gift family is paid by.
+CREATE FUNCTION ai_credit_family_provider(p_family text)
+RETURNS text LANGUAGE sql IMMUTABLE AS $$
+  SELECT CASE p_family WHEN 'claude' THEN 'anthropic' WHEN 'gemini' THEN 'google' ELSE p_family END
+$$;
+
 CREATE TABLE ai_credit_gifts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   family text NOT NULL CHECK (family IN ('claude', 'openai', 'gemini')),
   amount_usd numeric(12,6) NOT NULL CHECK (amount_usd > 0 AND amount_usd <= 1000),
-  -- Where the money comes from: an env var by name, or a vault key (envelope-encrypted).
-  key_source text NOT NULL CHECK (key_source IN ('env', 'vault')),
-  key_env text CHECK (key_env IS NULL OR key_env ~ '^[A-Z][A-Z0-9_]{1,63}$'),
-  vault_key_id uuid REFERENCES platform_provider_keys(id) ON DELETE SET NULL,
   note text CHECK (note IS NULL OR char_length(note) <= 280),
   expires_at timestamptz,
   granted_by uuid NOT NULL REFERENCES users(id),
@@ -192,7 +299,6 @@ CREATE TABLE ai_credit_gifts (
   -- When the team was told; alert state, not a balance.
   alerted_80_at timestamptz,
   alerted_exhausted_at timestamptz,
-  CHECK (key_source <> 'env' OR key_env IS NOT NULL),
   CHECK (expires_at IS NULL OR expires_at > granted_at)
 );
 CREATE INDEX ai_credit_gifts_org_idx ON ai_credit_gifts(org_id, granted_at DESC);
@@ -211,20 +317,26 @@ CREATE TABLE ai_credit_gift_ledger (
   cost_usd numeric(12,6) CHECK (cost_usd IS NULL OR cost_usd >= 0),
   prompt_tokens integer CHECK (prompt_tokens IS NULL OR prompt_tokens >= 0),
   completion_tokens integer CHECK (completion_tokens IS NULL OR completion_tokens >= 0),
+  -- Which pool key answered (by id and label; never the secret). Spend is counted per gift
+  -- whichever key served it.
+  key_id uuid REFERENCES platform_provider_keys(id) ON DELETE SET NULL,
+  key_label text CHECK (key_label IS NULL OR char_length(key_label) <= 120),
   created_at timestamptz NOT NULL DEFAULT now(),
   settled_at timestamptz
 );
 CREATE INDEX ai_credit_gift_ledger_gift_idx ON ai_credit_gift_ledger(gift_id, state);
 CREATE INDEX ai_credit_gift_ledger_org_idx ON ai_credit_gift_ledger(org_id, created_at DESC);
+CREATE INDEX ai_credit_gift_ledger_key_idx ON ai_credit_gift_ledger(key_id) WHERE key_id IS NOT NULL;
 
 ALTER TABLE ai_credit_gifts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_credit_gift_ledger ENABLE ROW LEVEL SECURITY;
--- The gift row names the operator's key (an env var or a vault id): platform admins only. A team
--- reads its own gifts through ai_credit_gift_summary(), which leaves the key out.
+-- Gift rows are the operator's records: platform admins read them. A team reads its own gifts
+-- through ai_credit_gift_summary().
 CREATE POLICY ai_credit_gifts_platform_read ON ai_credit_gifts FOR SELECT TO vantage_app
   USING (is_platform_admin());
 CREATE POLICY ai_credit_gifts_worker ON ai_credit_gifts TO vantage_worker USING (true) WITH CHECK (true);
--- The ledger holds no key material: the team sees its own spend by model.
+-- The ledger holds no key material (a pool key's id and label at most): the team sees its own
+-- spend by model. The team-facing route reads neither key column.
 CREATE POLICY ai_credit_gift_ledger_read ON ai_credit_gift_ledger FOR SELECT TO vantage_app
   USING (is_org_member(org_id) OR is_platform_admin());
 CREATE POLICY ai_credit_gift_ledger_worker ON ai_credit_gift_ledger TO vantage_worker USING (true) WITH CHECK (true);
@@ -326,15 +438,14 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION ai_credit_gift_alert_due(uuid) FROM PUBLIC;
 
--- Give a team AI credit. Platform admins only.
+-- Give a team AI credit. Platform admins only. It is paid from the operator's pool for the
+-- family's provider, so the pool needs at least one key switched on.
 CREATE FUNCTION grant_ai_credit_gift(
-  p_org uuid, p_family text, p_amount numeric, p_key_source text, p_key_env text,
-  p_vault_key uuid, p_expires timestamptz, p_note text)
+  p_org uuid, p_family text, p_amount numeric, p_expires timestamptz, p_note text)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   actor uuid := current_app_user_id();
   new_id uuid;
-  vault_provider text;
 BEGIN
   IF actor IS NULL OR NOT is_platform_admin() THEN
     RAISE EXCEPTION 'Not found' USING ERRCODE = '42501', DETAIL = 'vantage:not_platform_admin';
@@ -342,30 +453,23 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM organizations WHERE id = p_org) THEN
     RAISE EXCEPTION 'Team not found' USING ERRCODE = 'P0002', DETAIL = 'vantage:not_found';
   END IF;
-  IF p_key_source = 'vault' THEN
-    SELECT provider INTO vault_provider FROM platform_provider_keys WHERE id = p_vault_key AND disabled_at IS NULL;
-    IF vault_provider IS NULL THEN
-      RAISE EXCEPTION 'That key is not in the vault' USING ERRCODE = 'P0002', DETAIL = 'vantage:key_missing';
-    END IF;
-    IF lower(vault_provider) <> (CASE p_family WHEN 'claude' THEN 'anthropic' WHEN 'gemini' THEN 'google' ELSE p_family END) THEN
-      RAISE EXCEPTION 'That key is for a different provider' USING ERRCODE = '22023', DETAIL = 'vantage:key_provider';
-    END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM platform_provider_keys
+     WHERE lower(provider) = ai_credit_family_provider(p_family) AND disabled_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'No key in the pool can pay for this' USING ERRCODE = 'P0002', DETAIL = 'vantage:key_missing';
   END IF;
-  INSERT INTO ai_credit_gifts(org_id, family, amount_usd, key_source, key_env, vault_key_id, note, expires_at, granted_by)
-  VALUES (p_org, p_family, round(p_amount, 6), p_key_source,
-          CASE WHEN p_key_source = 'env' THEN p_key_env END,
-          CASE WHEN p_key_source = 'vault' THEN p_vault_key END,
-          NULLIF(btrim(COALESCE(p_note, '')), ''), p_expires, actor)
+  INSERT INTO ai_credit_gifts(org_id, family, amount_usd, note, expires_at, granted_by)
+  VALUES (p_org, p_family, round(p_amount, 6), NULLIF(btrim(COALESCE(p_note, '')), ''), p_expires, actor)
   RETURNING id INTO new_id;
   INSERT INTO admin_actions(actor_user_id, action, target_org_id, payload)
     VALUES (actor, 'ai_credit.gifted', p_org, jsonb_build_object(
-      'giftId', new_id, 'family', p_family, 'amountUsd', round(p_amount, 6),
-      'keySource', p_key_source, 'expiresAt', p_expires));
+      'giftId', new_id, 'family', p_family, 'amountUsd', round(p_amount, 6), 'expiresAt', p_expires));
   PERFORM ai_credit_gift_notify(new_id, 'granted');
   RETURN new_id;
 END $$;
-REVOKE ALL ON FUNCTION grant_ai_credit_gift(uuid, text, numeric, text, text, uuid, timestamptz, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION grant_ai_credit_gift(uuid, text, numeric, text, text, uuid, timestamptz, text) TO vantage_app;
+REVOKE ALL ON FUNCTION grant_ai_credit_gift(uuid, text, numeric, timestamptz, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION grant_ai_credit_gift(uuid, text, numeric, timestamptz, text) TO vantage_app;
 
 -- End a gift early. What was spent stays on the ledger.
 CREATE FUNCTION revoke_ai_credit_gift(p_gift uuid)
@@ -391,30 +495,66 @@ END $$;
 REVOKE ALL ON FUNCTION revoke_ai_credit_gift(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION revoke_ai_credit_gift(uuid) TO vantage_app;
 
--- The gift Ask AI should draw on for this team right now, with what funds it. Members only. The
--- vault ciphertext is decrypted server-side (createKms), the same as peek_managed_chat_provider;
--- nothing here reaches a browser. A usable gift (more than a short reply's worth left) comes
--- first; an exhausted one is still returned so the refusal can say the credit is used up.
+-- The gift Ask AI should draw on for this team right now. Members only. A usable gift (more than
+-- a short reply's worth left) comes first; an exhausted one is still returned so the refusal can
+-- say the credit is used up.
 CREATE FUNCTION ai_credit_gift_for_org(p_org uuid)
-RETURNS TABLE (
-  gift_id uuid, family text, amount_usd numeric, spent_usd numeric, expires_at timestamptz,
-  key_source text, key_env text, vault_provider text, key_ciphertext text, key_nonce text,
-  key_auth_tag text, encrypted_dek text, kms_key_id text)
+RETURNS TABLE (gift_id uuid, family text, amount_usd numeric, spent_usd numeric, expires_at timestamptz)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   IF NOT is_org_member(p_org) THEN RETURN; END IF;
   RETURN QUERY
-    SELECT g.id, g.family, g.amount_usd, s.spent, g.expires_at, g.key_source, g.key_env,
-           k.provider, k.key_ciphertext, k.key_nonce, k.key_auth_tag, k.encrypted_dek, k.kms_key_id
+    SELECT g.id, g.family, g.amount_usd, s.spent, g.expires_at
       FROM ai_credit_gifts g
       CROSS JOIN LATERAL (SELECT ai_credit_gift_spent(g.id) AS spent) s
-      LEFT JOIN platform_provider_keys k ON k.id = g.vault_key_id AND k.disabled_at IS NULL
      WHERE g.org_id = p_org AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at > now())
      ORDER BY (g.amount_usd - s.spent >= 0.05) DESC, g.expires_at ASC NULLS LAST, g.granted_at
      LIMIT 1;
 END $$;
 REVOKE ALL ON FUNCTION ai_credit_gift_for_org(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ai_credit_gift_for_org(uuid) TO vantage_app;
+
+-- The pool keys that pay for one active gift, in order, switched-on only. For a member of the
+-- gift's team, server-side: an env row returns its variable's name and an encrypted row its
+-- envelope, which the server decrypts (createKms) the same as peek_managed_chat_provider.
+CREATE FUNCTION ai_credit_gift_keys(p_gift uuid)
+RETURNS TABLE (key_id uuid, label text, key_env text, key_ciphertext text, key_nonce text,
+               key_auth_tag text, encrypted_dek text, kms_key_id text)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  g ai_credit_gifts%ROWTYPE;
+BEGIN
+  SELECT * INTO g FROM ai_credit_gifts WHERE id = p_gift;
+  IF g.id IS NULL OR NOT is_org_member(g.org_id) OR g.revoked_at IS NOT NULL
+     OR (g.expires_at IS NOT NULL AND g.expires_at <= now()) THEN
+    RETURN;
+  END IF;
+  RETURN QUERY
+    SELECT k.id, k.label, k.key_env, k.key_ciphertext, k.key_nonce, k.key_auth_tag, k.encrypted_dek, k.kms_key_id
+      FROM platform_provider_keys k
+     WHERE lower(k.provider) = ai_credit_family_provider(g.family) AND k.disabled_at IS NULL
+     ORDER BY k.priority, k.created_at;
+END $$;
+REVOKE ALL ON FUNCTION ai_credit_gift_keys(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ai_credit_gift_keys(uuid) TO vantage_app;
+
+-- A pool key turned a gift's call away (rate limit, provider error, rejected key): mark it
+-- degraded for module health. Only a member of a team with an active gift on that provider may
+-- report it, and only a reason the runtime wrote (never the key). A degraded key keeps its
+-- place in the order: the mark informs the operator, it does not take a key out of rotation.
+CREATE FUNCTION note_platform_key_failure(p_gift uuid, p_key uuid, p_reason text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  g ai_credit_gifts%ROWTYPE;
+BEGIN
+  SELECT * INTO g FROM ai_credit_gifts WHERE id = p_gift;
+  IF g.id IS NULL OR NOT is_org_member(g.org_id) OR g.revoked_at IS NOT NULL THEN RETURN; END IF;
+  UPDATE platform_provider_keys
+     SET degraded_at = now(), degraded_reason = left(COALESCE(NULLIF(btrim(p_reason), ''), 'Request failed'), 300)
+   WHERE id = p_key AND lower(provider) = ai_credit_family_provider(g.family);
+END $$;
+REVOKE ALL ON FUNCTION note_platform_key_failure(uuid, uuid, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION note_platform_key_failure(uuid, uuid, text) TO vantage_app;
 
 -- What a team sees about its gifts: amounts, spend, dates and the note. Never the key.
 CREATE FUNCTION ai_credit_gift_summary(p_org uuid)
@@ -476,11 +616,14 @@ REVOKE ALL ON FUNCTION reserve_ai_credit_gift(uuid, numeric, text, text) FROM PU
 GRANT EXECUTE ON FUNCTION reserve_ai_credit_gift(uuid, numeric, text, text) TO vantage_app;
 
 -- Settle a hold at the call's real cost (or release it at zero when the provider refused the
--- call). Returns the alert that fired, if any: '80' or 'exhausted', for the email follow-up.
-CREATE FUNCTION settle_ai_credit_gift(p_hold uuid, p_cost numeric, p_prompt integer, p_completion integer, p_released boolean)
+-- call), recording which pool key answered. A key that answered is healthy again. Returns the
+-- alert that fired, if any: '80' or 'exhausted', for the email follow-up.
+CREATE FUNCTION settle_ai_credit_gift(
+  p_hold uuid, p_cost numeric, p_prompt integer, p_completion integer, p_released boolean, p_key uuid)
 RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   hold ai_credit_gift_ledger%ROWTYPE;
+  served_label text;
 BEGIN
   IF current_app_user_id() IS NULL THEN RAISE EXCEPTION 'Sign in first' USING ERRCODE = '42501'; END IF;
   SELECT * INTO hold FROM ai_credit_gift_ledger WHERE id = p_hold;
@@ -489,18 +632,73 @@ BEGIN
   END IF;
   PERFORM 1 FROM ai_credit_gifts WHERE id = hold.gift_id FOR UPDATE;
   IF hold.state <> 'held' THEN RETURN NULL; END IF;
+  IF p_key IS NOT NULL THEN
+    SELECT label INTO served_label FROM platform_provider_keys WHERE id = p_key;
+  END IF;
   UPDATE ai_credit_gift_ledger
      SET state = CASE WHEN p_released THEN 'released' ELSE 'settled' END,
          cost_usd = CASE WHEN p_released THEN 0 ELSE round(GREATEST(COALESCE(p_cost, 0), 0), 6) END,
          prompt_tokens = GREATEST(COALESCE(p_prompt, 0), 0),
          completion_tokens = GREATEST(COALESCE(p_completion, 0), 0),
+         key_id = CASE WHEN served_label IS NULL THEN NULL ELSE p_key END,
+         key_label = left(served_label, 120),
          settled_at = now()
    WHERE id = p_hold;
   IF p_released THEN RETURN NULL; END IF;
+  IF served_label IS NOT NULL THEN
+    UPDATE platform_provider_keys SET last_used_at = now(), degraded_at = NULL, degraded_reason = NULL
+     WHERE id = p_key;
+  END IF;
   RETURN ai_credit_gift_alert_due(hold.gift_id);
 END $$;
-REVOKE ALL ON FUNCTION settle_ai_credit_gift(uuid, numeric, integer, integer, boolean) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION settle_ai_credit_gift(uuid, numeric, integer, integer, boolean) TO vantage_app;
+REVOKE ALL ON FUNCTION settle_ai_credit_gift(uuid, numeric, integer, integer, boolean, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION settle_ai_credit_gift(uuid, numeric, integer, integer, boolean, uuid) TO vantage_app;
+
+-- ---------------------------------------------------------------------------------------------
+-- 2b. More than one key per provider for teams and members
+-- ---------------------------------------------------------------------------------------------
+--
+-- org_llm_keys never had a unique provider, but the API replaced the key on every save, and
+-- member_llm_keys allowed one per member per provider (0496). Both now keep any number, each
+-- with its label (already there), an order and an on/off switch, and the same failover as the
+-- operator's pool. Existing rows keep working: they are switched on at the default order.
+ALTER TABLE org_llm_keys
+  ADD COLUMN priority integer NOT NULL DEFAULT 100,
+  ADD COLUMN enabled boolean NOT NULL DEFAULT true,
+  ADD COLUMN last_error_at timestamptz,
+  ADD COLUMN last_error text CHECK (last_error IS NULL OR char_length(last_error) <= 200);
+ALTER TABLE member_llm_keys
+  ADD COLUMN priority integer NOT NULL DEFAULT 100,
+  ADD COLUMN enabled boolean NOT NULL DEFAULT true,
+  ADD COLUMN last_error_at timestamptz,
+  ADD COLUMN last_error text CHECK (last_error IS NULL OR char_length(last_error) <= 200);
+ALTER TABLE member_llm_keys DROP CONSTRAINT IF EXISTS member_llm_keys_org_id_user_id_provider_key;
+CREATE INDEX org_llm_keys_order_idx ON org_llm_keys(org_id, provider, priority, created_at);
+CREATE INDEX member_llm_keys_order_idx ON member_llm_keys(org_id, user_id, provider, priority, created_at);
+
+-- What happened when a team or member key was tried: it answered (last used) or the provider
+-- turned it away (the reason, never the key). Whoever's turn it was may record it, which the
+-- request role cannot do on a team key unless it is an owner or admin.
+CREATE FUNCTION note_llm_key_result(p_scope text, p_key uuid, p_ok boolean, p_reason text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF current_app_user_id() IS NULL THEN RETURN; END IF;
+  IF p_scope = 'org' THEN
+    UPDATE org_llm_keys
+       SET last_used_at = CASE WHEN p_ok THEN now() ELSE last_used_at END,
+           last_error_at = CASE WHEN p_ok THEN NULL ELSE now() END,
+           last_error = CASE WHEN p_ok THEN NULL ELSE left(COALESCE(NULLIF(btrim(p_reason), ''), 'Request failed'), 200) END
+     WHERE id = p_key AND is_org_member(org_id);
+  ELSIF p_scope = 'member' THEN
+    UPDATE member_llm_keys
+       SET last_used_at = CASE WHEN p_ok THEN now() ELSE last_used_at END,
+           last_error_at = CASE WHEN p_ok THEN NULL ELSE now() END,
+           last_error = CASE WHEN p_ok THEN NULL ELSE left(COALESCE(NULLIF(btrim(p_reason), ''), 'Request failed'), 200) END
+     WHERE id = p_key AND user_id = current_app_user_id();
+  END IF;
+END $$;
+REVOKE ALL ON FUNCTION note_llm_key_result(text, uuid, boolean, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION note_llm_key_result(text, uuid, boolean, text) TO vantage_app;
 
 -- ---------------------------------------------------------------------------------------------
 -- 3. Job signals for module health (platform admins only)

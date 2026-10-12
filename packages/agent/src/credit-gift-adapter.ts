@@ -8,23 +8,28 @@ import {
   creditGiftUsable,
   giftCallCeilingUsd,
   loadActiveCreditGift,
-  resolveCreditGiftKey,
+  loadCreditGiftKeys,
+  resolvePoolKeySecret,
   sendCreditGiftAlertEmail,
   type ActiveCreditGift,
   type CreditGiftLedger,
   type CreditGiftModel,
+  type PoolKeyEnvelope,
 } from "@vantage/billing";
 import type { ChatAdapter, ChatMessage, ChatToolDefinition, ContextItem } from "./index";
 import { HttpChatAdapter, ProviderRateLimitError } from "./http-chat-adapter";
+import { KeyFailoverChatAdapter, type FailoverKey } from "./key-failover-adapter";
 
 /**
  * Ask AI paid from AI credit a platform admin gifted the team (migration 0727).
  *
  * Every call reserves its worst-case cost against the gift's ledger before the provider sees
- * it, in a short transaction of its own, and settles at the real cost afterwards. The wrapped
- * adapter is the only holder of the operator's key, and this class is the only way to it, so
- * the cap holds on every path that reaches the key: the chat, the ~50 feature helpers that
- * resolve an adapter, and a subscription bridge falling back mid-turn.
+ * it, in a short transaction of its own, and settles at the real cost afterwards, whichever of
+ * the operator's pool keys answered (the keys fail over in the operator's order inside one
+ * reservation; a key the provider turns away was not billed). The wrapped adapters are the only
+ * holders of the operator's keys, and this class is the only way to them, so the cap holds on
+ * every path that reaches a key: the chat, the feature helpers that resolve an adapter, and a
+ * subscription bridge falling back mid-turn.
  */
 
 const GOOGLE_OPENAI_COMPAT_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
@@ -53,7 +58,7 @@ export class CreditGiftChatAdapter implements ChatAdapter {
 
   constructor(
     private readonly options: {
-      inner: HttpChatAdapter;
+      inner: KeyFailoverChatAdapter;
       giftModel: CreditGiftModel;
       giftId: string;
       orgId: string;
@@ -104,6 +109,8 @@ export class CreditGiftChatAdapter implements ChatAdapter {
     try {
       result = await inner.complete(input);
     } catch (error) {
+      // Every key failing over to the next ends here with the last provider refusal: nothing
+      // was billed. Anything else may have been.
       const released = providerDidNotBill(error);
       await ledger
         .settle({ holdId: hold.holdId, costUsd: released ? 0 : ceilingUsd, promptTokens: 0, completionTokens: 0, released })
@@ -118,6 +125,7 @@ export class CreditGiftChatAdapter implements ChatAdapter {
         promptTokens: result.promptTokens,
         completionTokens: result.completionTokens,
         released: false,
+        keyId: inner.servedKey?.id ?? null,
       });
       if (alert) {
         await sendCreditGiftAlertEmail({ orgId: this.options.orgId, userId: this.options.userId, giftId, alert });
@@ -137,8 +145,9 @@ export type CreditGiftRouting = {
 
 /**
  * The gift-funded adapter for this team, or null when it has no gift this deployment can pay
- * for. `usableOnly` skips a used-up gift (so a team with other free AI keeps it); without it a
- * used-up gift is still returned, so the refusal can say the free credit is used up.
+ * for (no pool key with a usable secret). `usableOnly` skips a used-up gift (so a team with
+ * other free AI keeps it); without it a used-up gift is still returned, so the refusal can say
+ * the free credit is used up.
  */
 export async function resolveCreditGiftAdapter(
   client: PoolClient,
@@ -149,7 +158,7 @@ export async function resolveCreditGiftAdapter(
     difficulty?: string;
     promptCachingEnabled: boolean;
     fetchImpl?: typeof fetch;
-    decryptVault: (vault: NonNullable<ActiveCreditGift["vault"]>) => Promise<string>;
+    decryptVault: (envelope: PoolKeyEnvelope) => Promise<string>;
     ledger?: CreditGiftLedger;
     usableOnly: boolean;
     env?: NodeJS.ProcessEnv;
@@ -159,23 +168,37 @@ export async function resolveCreditGiftAdapter(
   const gift = await loadActiveCreditGift(client, input.orgId);
   if (!gift) return null;
   if (input.usableOnly && !creditGiftUsable(gift)) return null;
-  const apiKey = await resolveCreditGiftKey(gift, input.decryptVault, input.env);
-  if (!apiKey) return null;
 
   const family = CREDIT_GIFT_FAMILIES[gift.family];
   const giftModel = creditGiftModelFor(gift.family, input.difficulty);
   const capability = input.feature ?? "chat";
-  const inner = new HttpChatAdapter({
-    provider: family.provider === "anthropic" ? "anthropic" : family.provider === "openai" ? "openai" : "openai-compatible",
-    model: giftModel.modelId,
-    apiKey,
-    baseUrl: family.provider === "google" ? GOOGLE_OPENAI_COMPAT_BASE : undefined,
-    promptCachingEnabled: input.promptCachingEnabled,
-    prices: giftModel.prices,
-    fetchImpl: input.fetchImpl,
-    providerLabel: family.provider,
-    capability,
-    maxOutputTokens: giftOutputCap(capability),
+  const keys: FailoverKey[] = [];
+  for (const key of await loadCreditGiftKeys(client, gift.giftId)) {
+    const apiKey = await resolvePoolKeySecret(gift.family, key, input.decryptVault, input.env);
+    if (!apiKey) continue;
+    keys.push({
+      id: key.keyId,
+      label: key.label,
+      scope: "platform",
+      adapter: new HttpChatAdapter({
+        provider: family.provider === "anthropic" ? "anthropic" : family.provider === "openai" ? "openai" : "openai-compatible",
+        model: giftModel.modelId,
+        apiKey,
+        baseUrl: family.provider === "google" ? GOOGLE_OPENAI_COMPAT_BASE : undefined,
+        promptCachingEnabled: input.promptCachingEnabled,
+        prices: giftModel.prices,
+        fetchImpl: input.fetchImpl,
+        providerLabel: family.provider,
+        capability,
+        maxOutputTokens: giftOutputCap(capability),
+      }),
+    });
+  }
+  if (!keys.length) return null;
+
+  const ledger = input.ledger ?? createCreditGiftLedger({ userId: input.userId, orgId: input.orgId });
+  const inner = new KeyFailoverChatAdapter(keys as [FailoverKey, ...FailoverKey[]], async (result) => {
+    if (!result.ok) await ledger.noteKeyFailure({ giftId: gift.giftId, keyId: result.key.id, reason: result.reason ?? "Request failed" });
   });
   const adapter = new CreditGiftChatAdapter({
     inner,
@@ -184,7 +207,7 @@ export async function resolveCreditGiftAdapter(
     orgId: input.orgId,
     userId: input.userId,
     feature: capability,
-    ledger: input.ledger ?? createCreditGiftLedger({ userId: input.userId, orgId: input.orgId }),
+    ledger,
   });
   return { gift, adapter };
 }

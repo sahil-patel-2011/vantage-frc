@@ -8,6 +8,7 @@ import {
   type GiftReserveResult,
 } from "@vantage/billing";
 import { CreditGiftChatAdapter, providerDidNotBill, resolveCreditGiftAdapter } from "../src/credit-gift-adapter";
+import { KeyFailoverChatAdapter } from "../src/key-failover-adapter";
 import { HttpChatAdapter, ProviderRateLimitError } from "../src/http-chat-adapter";
 import { ChatUpstreamTimeoutError } from "../src/chat-timeout";
 import { resolveOrgChatAdapterWithProvenance } from "../src/resolve-chat-adapter";
@@ -30,7 +31,12 @@ function memoryLedger(amountUsd: number) {
   const spent = () =>
     spentSettled + [...holds.values()].filter((h) => h.state === "held").reduce((sum, h) => sum + h.reserved, 0);
   const refused: number[] = [];
+  const failures: Array<{ keyId: string; reason: string }> = [];
+  const servedBy: Array<string | null> = [];
   const ledger: CreditGiftLedger = {
+    noteKeyFailure: async (input) => {
+      failures.push({ keyId: input.keyId, reason: input.reason });
+    },
     reserve: (input) =>
       serialized(async (): Promise<GiftReserveResult> => {
         // Yield, as a real round trip would, so concurrent callers interleave.
@@ -49,11 +55,14 @@ function memoryLedger(amountUsd: number) {
         const hold = holds.get(input.holdId);
         if (!hold || hold.state !== "held") return null;
         hold.state = input.released ? "released" : "settled";
-        if (!input.released) spentSettled += input.costUsd;
+        if (!input.released) {
+          spentSettled += input.costUsd;
+          servedBy.push(input.keyId ?? null);
+        }
         return amountUsd - spentSettled < 0.05 ? ("exhausted" as const) : null;
       }),
   };
-  return { ledger, spent, refused, settled: () => spentSettled };
+  return { ledger, spent, refused, failures, servedBy, settled: () => spentSettled };
 }
 
 function anthropicResponse(inputTokens: number, outputTokens: number) {
@@ -66,26 +75,41 @@ function anthropicResponse(inputTokens: number, outputTokens: number) {
   );
 }
 
-function giftAdapter(ledger: CreditGiftLedger, fetchImpl: typeof fetch) {
-  const prices = { inputPerMillionUsd: 2, outputPerMillionUsd: 10, cacheReadPerMillionUsd: 0.2, cacheWritePerMillionUsd: 2.5 };
-  const inner = new HttpChatAdapter({
+const PRICES = { inputPerMillionUsd: 2, outputPerMillionUsd: 10, cacheReadPerMillionUsd: 0.2, cacheWritePerMillionUsd: 2.5 };
+
+function keyAdapter(apiKey: string, fetchImpl: typeof fetch) {
+  return new HttpChatAdapter({
     provider: "anthropic",
     model: "claude-sonnet-5-5",
-    apiKey: "sk-ant-test",
+    apiKey,
     promptCachingEnabled: false,
-    prices,
+    prices: PRICES,
     fetchImpl,
     capability: "chat",
   });
+}
+
+/** A gift adapter over a pool of keys; `fetchImpl` sees which key each request carried. */
+function giftAdapter(ledger: CreditGiftLedger, fetchImpl: typeof fetch, keyIds: string[] = ["k1"]) {
+  const inner = new KeyFailoverChatAdapter(
+    keyIds.map((id) => ({ id, label: `Key ${id}`, scope: "platform" as const, adapter: keyAdapter(`sk-ant-${id}`, fetchImpl) })) as never,
+    async (result) => {
+      if (!result.ok) await ledger.noteKeyFailure({ giftId: "gift-1", keyId: result.key.id, reason: result.reason ?? "" });
+    },
+  );
   return new CreditGiftChatAdapter({
     inner,
-    giftModel: { modelId: "claude-sonnet-5-5", label: "Claude Sonnet 5.5", role: "everyday", prices },
+    giftModel: { modelId: "claude-sonnet-5-5", label: "Claude Sonnet 5.5", role: "everyday", prices: PRICES },
     giftId: "gift-1",
     orgId: "org-1",
     userId: "user-1",
     feature: "chat",
     ledger,
   });
+}
+
+function keyOf(init?: RequestInit): string {
+  return String((init?.headers as Record<string, string> | undefined)?.["x-api-key"] ?? "");
 }
 
 const ask = { message: "Which teams should we pick?", context: [] };
@@ -167,11 +191,62 @@ describe("CreditGiftChatAdapter", () => {
     const ledger: CreditGiftLedger = {
       reserve: async () => ({ holdId: "h1", outcome: "held", amountUsd: 10, spentUsd: 8.1 }),
       settle: async () => "80",
+      noteKeyFailure: async () => undefined,
     };
     const mailer = vi.fn(async () => undefined);
     setCreditGiftAlertMailer(mailer);
     await giftAdapter(ledger, vi.fn(async () => anthropicResponse(100, 10)) as never).complete(ask);
     expect(mailer).toHaveBeenCalledWith({ orgId: "org-1", userId: "user-1", giftId: "gift-1", alert: "80" });
+  });
+
+  it("tries the operator's keys in order and fails over on 429, 5xx and a rejected key", async () => {
+    const memory = memoryLedger(10);
+    const seen: string[] = [];
+    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+      const key = keyOf(init);
+      seen.push(key);
+      if (key === "sk-ant-k1") return new Response("{}", { status: 429 });
+      if (key === "sk-ant-k2") return new Response("{}", { status: 502 });
+      if (key === "sk-ant-k3") return new Response("{}", { status: 401 });
+      return anthropicResponse(100, 10);
+    });
+    await giftAdapter(memory.ledger, fetchImpl as never, ["k1", "k2", "k3", "k4"]).complete(ask);
+    expect(seen).toEqual(["sk-ant-k1", "sk-ant-k2", "sk-ant-k3", "sk-ant-k4"]);
+    expect(memory.servedBy).toEqual(["k4"]);
+    expect(memory.failures.map((f) => f.keyId)).toEqual(["k1", "k2", "k3"]);
+    expect(memory.failures.map((f) => f.reason)).toEqual([
+      "Rate limited by the provider (429)",
+      "Provider error (502)",
+      "Key rejected by the provider (401)",
+    ]);
+    // The reasons say what happened, never which secret.
+    expect(JSON.stringify(memory.failures)).not.toContain("sk-ant");
+  });
+
+  it("does not fail over on a bad request or a timeout, which the next key would repeat or double-bill", async () => {
+    const memory = memoryLedger(10);
+    const seen: string[] = [];
+    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+      seen.push(keyOf(init));
+      return new Response("{}", { status: 400 });
+    });
+    await expect(giftAdapter(memory.ledger, fetchImpl as never, ["k1", "k2"]).complete(ask)).rejects.toThrow(/chat failed \(400/);
+    expect(seen).toEqual(["sk-ant-k1"]);
+  });
+
+  it("holds the cap across keys: concurrent calls served by different keys never pass the gift", async () => {
+    const memory = memoryLedger(0.1);
+    let turn = 0;
+    // Alternate keys refuse, so the calls that run are served by k2 as often as by k1.
+    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+      turn += 1;
+      if (keyOf(init) === "sk-ant-k1" && turn % 2 === 0) return new Response("{}", { status: 429 });
+      return anthropicResponse(4000, 1024);
+    });
+    const adapter = giftAdapter(memory.ledger, fetchImpl as never, ["k1", "k2"]);
+    await Promise.allSettled(Array.from({ length: 20 }, () => adapter.complete(ask)));
+    expect(new Set(memory.servedBy).size).toBe(2);
+    expect(memory.spent()).toBeLessThanOrEqual(0.1 + 1e-12);
   });
 
   it("tells provider refusals (not billed) apart from timeouts and network errors (maybe billed)", () => {
@@ -184,21 +259,34 @@ describe("CreditGiftChatAdapter", () => {
 });
 
 function giftRow(overrides: Record<string, unknown> = {}) {
+  return { giftId: "gift-1", family: "claude", amountUsd: "10", spentUsd: "0", expiresAt: null, ...overrides };
+}
+
+function poolRow(overrides: Record<string, unknown> = {}) {
   return {
-    giftId: "gift-1",
-    family: "claude",
-    amountUsd: "10",
-    spentUsd: "0",
-    expiresAt: null,
-    keySource: "env",
+    keyId: "k1",
+    label: "Main",
     keyEnv: "ANTHROPIC_API_KEY",
-    vaultProvider: null,
     keyCiphertext: null,
     keyNonce: null,
     keyAuthTag: null,
     encryptedDek: null,
     kmsKeyId: null,
     ...overrides,
+  };
+}
+
+/** Answers the gift lookup and the pool lookup; `pool` is the operator's ordered, switched-on keys. */
+function giftClient(gift = giftRow(), pool = [poolRow()]) {
+  const sqls: string[] = [];
+  return {
+    sqls,
+    query: vi.fn(async (sql: string) => {
+      sqls.push(sql);
+      if (sql.includes("ai_credit_gift_keys")) return { rows: pool, rowCount: pool.length };
+      if (sql.includes("ai_credit_gift_for_org")) return { rows: [gift], rowCount: 1 };
+      return { rows: [], rowCount: 0 };
+    }),
   };
 }
 
@@ -211,27 +299,27 @@ describe("resolveCreditGiftAdapter", () => {
     env: { ANTHROPIC_API_KEY: "sk-ant-env" },
   };
 
-  it("builds the gift adapter from the operator's env key, Opus for hard asks", async () => {
-    const sqls: string[] = [];
-    const client = {
-      query: vi.fn(async (sql: string) => {
-        sqls.push(sql);
-        return { rows: [giftRow()], rowCount: 1 };
-      }),
-    };
+  it("builds the gift adapter over the operator's pool, Opus for hard asks", async () => {
+    const client = giftClient(giftRow(), [poolRow(), poolRow({ keyId: "k2", label: "Spare", keyEnv: null, keyCiphertext: "c", keyNonce: "n", keyAuthTag: "t", encryptedDek: "d", kmsKeyId: "k" })]);
     const routing = await resolveCreditGiftAdapter(client as never, { ...base, usableOnly: true, difficulty: "hard" });
     expect(routing?.adapter.model).toBe("claude-opus-5-5");
-    expect(sqls[0]).toContain("ai_credit_gift_for_org($1::uuid)");
+    expect(client.sqls[0]).toContain("ai_credit_gift_for_org($1::uuid)");
+    expect(client.sqls[1]).toContain("ai_credit_gift_keys($1::uuid)");
+  });
+
+  it("skips a pool key with no usable secret, and gives up when none is left", async () => {
+    const client = giftClient(giftRow(), [poolRow({ keyEnv: "VANTAGE_GIFT_ANTHROPIC_UNSET" })]);
+    expect(await resolveCreditGiftAdapter(client as never, { ...base, usableOnly: true })).toBeNull();
   });
 
   it("skips a used-up gift when other free AI may answer, but keeps it for the refusal", async () => {
-    const client = { query: vi.fn(async () => ({ rows: [giftRow({ spentUsd: "9.99" })], rowCount: 1 })) };
+    const client = giftClient(giftRow({ spentUsd: "9.99" }));
     expect(await resolveCreditGiftAdapter(client as never, { ...base, usableOnly: true })).toBeNull();
     expect(await resolveCreditGiftAdapter(client as never, { ...base, usableOnly: false })).not.toBeNull();
   });
 
   it("does nothing without a signed-in member or a usable key", async () => {
-    const client = { query: vi.fn(async () => ({ rows: [giftRow()], rowCount: 1 })) };
+    const client = giftClient();
     expect(await resolveCreditGiftAdapter(client as never, { ...base, userId: undefined, usableOnly: true })).toBeNull();
     expect(client.query).not.toHaveBeenCalled();
     expect(await resolveCreditGiftAdapter(client as never, { ...base, env: {}, usableOnly: true })).toBeNull();
@@ -248,6 +336,7 @@ describe("resolveOrgChatAdapterWithProvenance with a gift", () => {
         queries.push(sql);
         if (sql.includes("FROM org_billing")) return { rows: [{ tier: "free", giftsReady: true }], rowCount: 1 };
         if (sql.includes("FROM ai_credit_gift_for_org")) return { rows: [giftRow()], rowCount: 1 };
+        if (sql.includes("FROM ai_credit_gift_keys")) return { rows: [poolRow()], rowCount: 1 };
         return { rows: [], rowCount: 0 };
       }),
     };
