@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { mediaKitAssetKindLabel } from "../../lib/media-kit";
 import type { MediaKitView } from "../../lib/media-kit/compute-media-kit";
 import {
@@ -357,6 +358,8 @@ export default function MediaKitClient() {
         title="Media Kit"
         description="Build a sponsor- and media-ready team media kit — logos, bio, mission, and a generated one-pager grounded only in what you've recorded."
       >
+        {/* One way into AI: Ask AI opens on this page's skill with its records. */}
+        <AskAiButton orgId={orgId} />
         <div className="media-kit-header-actions">
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

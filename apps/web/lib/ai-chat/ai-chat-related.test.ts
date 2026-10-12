@@ -75,7 +75,8 @@ describe("classifyAiChatShell + copy", () => {
     }
     expect(aiChatShellCopy("setup").badge).toBe("Needs setup");
     expect(aiChatShellCopy("setup").title).not.toMatch(/AI provider not configured/);
-    expect(aiChatShellCopy("ready").title).toBe("Chat");
+    expect(aiChatShellCopy("ready").title).toBe("Ask AI");
+    expect(aiChatShellCopy("empty").title).toBe("What can I help with?");
   });
 });
 

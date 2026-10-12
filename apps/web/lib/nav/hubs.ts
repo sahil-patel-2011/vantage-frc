@@ -447,12 +447,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     // live under Settings where configuration belongs. The hub page and every
     // /ai?tab= URL keep working.
     hidden: true,
-    description: "Chat, writer, agent, and controls — usage and memory live as tabs inside Controls.",
+    description: "Ask AI, and its controls — usage and memory live as tabs inside Controls.",
     defaultTab: "chat",
     tabs: [
-      { id: "chat", label: "Chat", legacyHref: "/chat" },
-      { id: "writer", label: "Writer", legacyHref: "/writer" },
-      { id: "agent", label: "Agent" },
+      // One assistant: Writer drafting and the Agent tab folded into Ask AI as its Writing
+      // skill and "Work on this in the background" (lib/ai-skills). /ai?tab=writer still opens
+      // the saved drafts, and /ai?tab=agent opens Ask AI in background mode.
+      { id: "chat", label: "Ask AI", legacyHref: "/chat" },
       { id: "budgets", label: "Controls", legacyHref: "/team/budgets" },
       ...nest("budgets", [
         { id: "memory", label: "Memory", legacyHref: "/team/ai-memory" },

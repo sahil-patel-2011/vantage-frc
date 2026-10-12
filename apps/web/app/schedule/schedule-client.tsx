@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ScheduleRelated } from "../../components/schedule-related";
 import { Button, EmptyState, Panel } from "../../components/ui";
@@ -923,12 +923,11 @@ export default function ScheduleClient() {
         </>
       )}
 
-      <AiInsightPanel
-        orgId={view.context.orgId ?? ""}
-        kind="model_accuracy"
-        title="Prediction accuracy"
-        description="How well the strategy model has called played matches — accuracy, calibration, and the biggest miss."
-      />
+      {/* One way into AI from every page: Ask AI on this page's skill (was an "Analyze" panel). */}
+      <div className="ask-ai-row">
+        <AskAiButton orgId={view.context.orgId ?? ""} skill="prediction-accuracy" prompt="How accurate have our predictions been?" />
+        <p>How well predictions have called played matches, and the biggest miss.</p>
+      </div>
     </main>
   );
 }

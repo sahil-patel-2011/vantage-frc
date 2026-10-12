@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AWARD_LABEL, IMPACT_ESSAY_AWARDS, awardLabel } from "../../lib/impact-essay";
 import type { ImpactEssayView } from "../../lib/impact-essay/compute-impact-essay";
@@ -364,6 +365,8 @@ export default function ImpactEssayClient() {
         title="FIRST Impact Essay Generator"
         description="Draft the Impact and Engineering Inspiration essays strictly from your logged outreach, hours, sponsors, and events — every claim cites a real record."
       >
+        {/* One way into AI: Ask AI opens on this page's skill with its records. */}
+        <AskAiButton orgId={orgId} />
         <div className="impact-essay-header-actions">
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

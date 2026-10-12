@@ -5,13 +5,7 @@ import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner
 import { OfflineBanner } from "../../components/offline-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { AIAttribution, EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
-import {
-  AI_EXPAND_IDLE,
-  expandedDisplay,
-  expandFailureState,
-  expandSuccessState,
-  type AiExpandState,
-} from "../../lib/ai-expand";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -564,37 +558,6 @@ function SnapshotsPanel({
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => void;
 }) {
-  // Optional metered AI expansion of the computed retrospective. The computed
-  // snapshot always renders; a missing model degrades to it with a setup note.
-  const [expand, setExpand] = useState<AiExpandState>(AI_EXPAND_IDLE);
-
-  const expandWithAi = async () => {
-    setExpand({ status: "loading" });
-    try {
-      const response = await fetch("/api/season-report", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId: view.orgId, seasonYear: view.seasonYear, action: "expand-narrative" }),
-      });
-      const data = (await response.json()) as Record<string, unknown>;
-      if (!response.ok) {
-        setExpand(
-          expandFailureState({
-            httpStatus: response.status,
-            code: typeof data.code === "string" ? data.code : null,
-            error: typeof data.error === "string" ? data.error : null,
-          }),
-        );
-        return;
-      }
-      setExpand(expandSuccessState(data));
-    } catch {
-      setExpand(expandFailureState({ httpStatus: 0, error: "network error" }));
-    }
-  };
-
-  const aiDisplay = expandedDisplay("", expand);
-
   return (
     <Panel id="season-report-snapshots">
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -604,8 +567,8 @@ function SnapshotsPanel({
         </Button>
       </header>
       <p className="app-muted">
-        Snapshots are computed deterministically from your logged entries.
-        &ldquo;Expand with AI&rdquo; is the optional metered model pass on top.
+        Snapshots are computed from your logged entries. To turn one into a story, use Ask AI — it reads the
+        same entries.
       </p>
       {view.summary.totalEntries === 0 ? (
         <p className="app-muted">Log at least one entry to generate a retrospective snapshot.</p>
@@ -658,24 +621,10 @@ function SnapshotsPanel({
               <AIAttribution kind="computed" feature="season_report" generatedAt={snapshot.createdAt} />
             </article>
           ))}
-          {expand.status === "ready" && aiDisplay.aiText ? (
-            <article className="app-card soft-panel" style={{ display: "grid", gap: 10 }}>
-              <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{aiDisplay.aiText}</p>
-              <AIAttribution
-                kind="ai"
-                feature="season_report"
-                generatedAt={expand.expansion.generatedAt}
-                onRegenerate={() => void expandWithAi()}
-              />
-            </article>
-          ) : (
-            <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
-              <Button variant="secondary" type="button" style={{ minHeight: 44 }} disabled={busy || expand.status === "loading"} onClick={() => void expandWithAi()}>
-                {expand.status === "loading" ? "Expanding…" : "Expand with AI"}
-              </Button>
-              {aiDisplay.note ? <p className="app-muted" style={{ margin: 0 }}>{aiDisplay.note}</p> : null}
-            </div>
-          )}
+          {/* One way into AI from every page (was "Expand with AI" here). */}
+          <div className="ask-ai-row">
+            <AskAiButton orgId={view.orgId} skill="season-report" prompt="Write the story of our season from this report" />
+          </div>
         </div>
       )}
     </Panel>

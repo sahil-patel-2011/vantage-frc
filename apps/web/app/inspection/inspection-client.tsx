@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { EmptyState, Button, askConfirm } from "../../components/ui";
 import {
   canDeleteAuthoredRow,
@@ -573,13 +573,11 @@ export default function InspectionClient() {
             </ul>
             {robotWeights.length === 0 ? <p className="app-muted">No weigh-ins yet for this robot.</p> : null}
           </article>
-          <AiInsightPanel
-            orgId={orgId}
-            kind="inspection_advisor"
-            robotLabel={robotLabel}
-            title="Inspection advisor"
-            description="Prioritized pass-inspection plan from your checklist, failures, and weigh-ins."
-          />
+          {/* One way into AI from every page: Ask AI on this page's skill (was an "Analyze" panel). */}
+          <div className="ask-ai-row">
+            <AskAiButton orgId={orgId} skill="inspection" prompt="What could fail us at inspection?" />
+            <p>Inspection plan from your checklist, failures and weigh-ins.</p>
+          </div>
         </section>
       </div>
     </main>

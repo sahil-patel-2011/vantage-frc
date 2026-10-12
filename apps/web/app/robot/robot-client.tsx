@@ -2,7 +2,7 @@
 import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, Button, useConfirm } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -596,13 +596,11 @@ export default function RobotClient() {
         <a href={withOrgHref("/hours", orgId)}>Hours</a>
       </nav>
 
-      <AiInsightPanel
-        orgId={orgId}
-        kind="robot_blueprint"
-        robotLabel={robotLabel}
-        title="Blueprint review"
-        description="AI read of the robot blueprint — weakest subsystems with their blockers, missing CAD/code/strategy links, and what to close before the next event."
-      />
+      {/* One way into AI from every page: Ask AI on this page's skill (was an "Analyze" panel). */}
+      <div className="ask-ai-row">
+        <AskAiButton orgId={orgId} skill="robot-review" prompt="Which subsystem is furthest behind?" />
+        <p>Blueprint review: the weakest subsystems and what to close before the next event.</p>
+      </div>
     </main>
   );
 }

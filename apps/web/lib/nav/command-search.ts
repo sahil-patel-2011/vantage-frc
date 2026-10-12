@@ -286,9 +286,10 @@ const KEYWORDS: Record<string, string[]> = {
   "build:decision-critic": ["decision", "critic", "second opinion", "review decision"],
 
   // --- AI ---
-  "ai:chat": ["ai", "chat", "assistant", "ask", "gpt", "claude", "question"],
-  "ai:writer": ["writer", "draft", "write", "essay", "grant writing", "compose"],
-  "ai:agent": ["agent", "autonomous", "research", "do it for me", "tool use"],
+  "ai:chat": [
+    "ai", "chat", "assistant", "ask", "gpt", "claude", "question", "ask ai",
+    "skills", "sponsor email", "who to ask", "agent", "autonomous", "background", "do it for me",
+  ],
   "ai:budgets": ["budgets", "controls", "spend cap", "limits", "chat limits", "credits"],
   "ai:memory": ["memory", "remember", "context", "ai memory"],
   "ai:governance": ["governance", "policy", "allowlist", "approvals", "rules"],

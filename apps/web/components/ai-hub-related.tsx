@@ -4,11 +4,12 @@
 import { hubHref } from "../lib/nav/hubs";
 import { withOrgHref } from "../lib/nav/product-nav";
 
+// Ask AI is one assistant: the former Agent tab is its "Work on this in the background" mode,
+// and Writer keeps the saved drafts it writes.
 const AI_TABS = [
-  { id: "chat", label: "Chat" },
-  { id: "agent", label: "Autonomous agent" },
+  { id: "chat", label: "Ask AI" },
   { id: "budgets", label: "Budgets" },
-  { id: "writer", label: "Writer" },
+  { id: "writer", label: "Saved drafts" },
   { id: "code", label: "Code assist" },
   { id: "memory", label: "Memory" },
   { id: "governance", label: "Governance" },

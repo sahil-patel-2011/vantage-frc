@@ -16,7 +16,8 @@ describe("one main menu", () => {
     expect(mainMenuSearch("/ai", "")).toBe("tab=chat");
     expect(mainMenuSearch("/competition", "tab=teams&orgId=team")).toBe("tab=teams&orgId=team");
     expect(mainMenuSearch("/dashboard", "orgId=team")).toBe("orgId=team");
-    expect(mainMenuSearch("/ai", "", href => href.endsWith("tab=writer"))).toBe("tab=writer");
+    // Writer folded into Ask AI; the next AI section a member may open is Controls.
+    expect(mainMenuSearch("/ai", "", href => href.endsWith("tab=budgets"))).toBe("tab=budgets");
     expect(mainMenuSearch("/ai", "", () => false)).toBe("");
   });
   it("lists every place once, so un-pinning Scout, My Day or Team resources never hides it", () => {

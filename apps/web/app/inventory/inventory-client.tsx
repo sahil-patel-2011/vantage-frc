@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
   summarizeInventory,
@@ -324,12 +324,11 @@ export default function InventoryClient() {
 
       <InventoryTipPanel />
 
-      <AiInsightPanel
-        orgId={readyOrgId}
-        kind="stock_advisor"
-        title="Stock advisor"
-        description="Reorder brief from low-stock thresholds and BOM shortfalls — what to buy before build hours are lost."
-      />
+      {/* One way into AI from every page: Ask AI on this page's skill (was an "Analyze" panel). */}
+      <div className="ask-ai-row">
+        <AskAiButton orgId={readyOrgId} skill="spares" prompt="What are we low on?" />
+        <p>What to reorder before build hours are lost, from low-stock levels and BOM shortfalls.</p>
+      </div>
     </main>
   );
 }

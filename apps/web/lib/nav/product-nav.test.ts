@@ -155,7 +155,7 @@ describe("product-nav", () => {
       expect(breadcrumbForPath("/media")).toBe("Media");
       expect(breadcrumbForPath("/media-kit")).toBe("Media / Kit");
     }
-    expect(breadcrumbForPath("/chat")).toBe("AI / Chat");
+    expect(breadcrumbForPath("/chat")).toBe("AI / Ask AI");
   });
 
   it("resolves hub tabs via PRODUCT_HUBS when not in the flat drawer", () => {

@@ -1,7 +1,7 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI shell kinds for `/ai?tab=chat` — never DEMO replies or invented tool rows. */
+/** Soft-UI shell kinds for Ask AI (`/ai`) — never DEMO replies or invented tool rows. */
 export type AiChatShellKind =
   | "loading"
   | "ready"
@@ -97,15 +97,15 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
     case "loading":
       return {
         kind,
-        title: "Loading assistant…",
-        description: "Checking your team's channels and memory settings for this team.",
+        title: "Opening Ask AI…",
+        description: "Loading your recent chats and the skills you can use on this team.",
       };
     case "auth_required":
       return {
         kind,
         badge: "Sign in",
-        title: "Sign in to use Chat",
-        description: "Sign in, then reopen Chat from the AI hub.",
+        title: "Sign in to use Ask AI",
+        description: "Sign in, then open Ask AI again from any page.",
       };
     case "setup":
       return {
@@ -119,23 +119,23 @@ export function aiChatShellCopy(kind: AiChatShellKind): AiChatEmptyCopy {
       return {
         kind,
         badge: "Start here",
-        title: "Pick or create a channel",
+        title: "What can I help with?",
         description:
-          "Private chats stay yours. Team-shared channels are visible to teammates. Tools run when you ask about a team or a match.",
+          "Ask about sponsors, grants, matches, scouting, the robot or running the team. Ask AI picks the right skill and answers from your team's own records.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Chat",
-        description: "A network or server issue blocked channels. Retry, or check Chat limits if Chat is paused.",
+        title: "Could not load Ask AI",
+        description: "A network or server problem stopped your chats from loading. Retry, or check Chat limits if Ask AI is paused.",
       };
     case "ready":
       return {
         kind,
-        title: "Chat",
+        title: "Ask AI",
         description:
-          "Ask about teams, matchups, and scout evidence. Tools cite what this team has actually recorded.",
+          "One assistant for your team. It picks a skill for each question and cites what your team has actually recorded.",
       };
     default: {
       const _exhaustive: never = kind;

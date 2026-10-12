@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { outreachKindLabel } from "../../lib/grant-report";
 import type { GrantReportView } from "../../lib/grant-report/compute-grant-report";
 import {
@@ -345,6 +346,8 @@ export default function GrantReportClient() {
         title="Grant Report"
         description="Post-grant impact reports generated from your team's own logged outreach and finance records."
       >
+        {/* One way into AI: Ask AI opens on this page's skill with its records. */}
+        <AskAiButton orgId={orgId} />
         <div className="grant-report-header-actions">
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

@@ -126,15 +126,14 @@ describe("product hubs", () => {
     expect(hubNestedTabs(build, "code").map((tab) => tab.id)).toContain("bugbot");
   });
 
-  it("keeps AI workbenches to chat, writer, agent, controls, and notes", () => {
+  it("keeps AI to one assistant plus its controls and notes — Writer and Agent folded into Ask AI", () => {
     const ai = hubById("ai");
     expect(hubPrimaryTabs(ai).map((tab) => tab.id)).toEqual([
       "chat",
-      "writer",
-      "agent",
       "budgets",
       "decisions",
     ]);
+    expect(ai.tabs.find((tab) => tab.id === "chat")?.label).toBe("Ask AI");
     expect(hubNestedTabs(ai, "budgets").map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["memory", "governance", "finance", "ai-keys"]),
     );

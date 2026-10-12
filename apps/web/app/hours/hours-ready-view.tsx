@@ -2,7 +2,7 @@
 import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useState } from "react";
-import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { Button, PageHeader, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { HOUR_KIND_LABELS, HOUR_KINDS, memberLeaderboard, summarizeHours, type HourKind } from "../../lib/build-hours";
@@ -379,13 +379,12 @@ export function HoursReadyView({
         </section>
       </div>
 
+      {/* One way into AI from every page: Ask AI on this page's skill (was an "Analyze" panel). */}
       {canAdmin ? (
-        <AiInsightPanel
-          orgId={orgId}
-          kind="engagement_digest"
-          title="Who to check in with"
-          description="Participation from logged hours — who is on track, and who has not clocked in."
-        />
+        <div className="ask-ai-row">
+          <AskAiButton orgId={orgId} skill="check-ins" prompt="Who should a mentor check in with?" />
+          <p>Who is on track with hours, and who hasn&apos;t clocked in lately.</p>
+        </div>
       ) : null}
     </main>
   );

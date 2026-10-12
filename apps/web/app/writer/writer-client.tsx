@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
-import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button, EmptyState, PageMain, askConfirm } from "../../components/ui";
+import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
+import { Button, EmptyState, PageMain, askConfirm } from "../../components/ui";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
@@ -28,7 +29,6 @@ import type {
   WriterProfile,
   WriterTone,
 } from "../../lib/writer/types";
-import { ConnectAiNotice } from "../../components/connect-ai-notice";
 import { writerNextActions } from "../../lib/writer/writer-next-actions";
 
 type LiveView = Extract<WriterView, { status: "live" }>;
@@ -254,12 +254,14 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
     <PageMain className="module-page writer-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">AI / Writing Assistant</span>
+          <span className="breadcrumbs">Playbook / Writer</span>
           <h1>Grant &amp; Sponsorship Writer</h1>
           <p>
-            Write grant answers and sponsor emails using your team profile. Review and edit each draft before sending.
+            Your team profile, templates and saved drafts. To draft with AI, use Ask AI — its drafts land here.
+            Review and edit each draft before sending.
           </p>
         </div>
+        {orgId ? <AskAiButton orgId={orgId} skill="writing" /> : null}
       </header>
 
       {orgId ? <AiHubRelated orgId={orgId} active="writer" /> : null}
@@ -329,11 +331,6 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
           ) : null}
           busy={busy}
           mutate={mutate}
-          setView={setView}
-          setError={setError}
-          setBusy={setBusy}
-          cutoffCode={cutoffCode}
-          setCutoffCode={setCutoffCode}
           canManageProfile={canManageProfile}
         />
       )}
@@ -346,22 +343,12 @@ function WriterWorkspace({
   seasonControl,
   busy,
   mutate,
-  setView,
-  setError,
-  setBusy,
-  cutoffCode,
-  setCutoffCode,
   canManageProfile,
 }: {
   view: LiveView;
   seasonControl: ReactNode;
   busy: boolean;
   mutate: Mutate;
-  setView: (view: WriterView) => void;
-  setError: (message: string) => void;
-  setBusy: (busy: boolean) => void;
-  cutoffCode: string | null;
-  setCutoffCode: (code: string | null) => void;
   canManageProfile: boolean;
 }) {
   const [profile, setProfile] = useState(() => toForm(view.profile));
@@ -404,11 +391,6 @@ function WriterWorkspace({
         seasonYear={view.seasonYear}
         busy={busy}
         mutate={mutate}
-        setView={setView}
-        setError={setError}
-        setBusy={setBusy}
-        cutoffCode={cutoffCode}
-        setCutoffCode={setCutoffCode}
       />
       <WriterNextActions
         orgId={view.orgId}
@@ -523,50 +505,11 @@ function ProfilePanel({
   );
 }
 
-type PitchResponse = WriterView & {
-  pitch?: {
-    subject: string | null;
-    body: string;
-    source: string;
-    kind: DraftKind;
-    runId: string;
-    provider: string;
-    model: string;
-    baseUrlOrigin?: string | null;
-    /** Which key paid for the call (org/hosted/…) — distinct from `source` above. */
-    keySource?: string | null;
-  };
-};
-
-type PitchErrorResponse = {
-  error?: string;
-  code?: string;
-  status?: string;
-  message?: string;
-  steps?: Array<{ id: string; label: string; detail: string; href: string }>;
-};
-
-function isPitchResponse(data: PitchResponse | PitchErrorResponse): data is PitchResponse {
-  return (
-    "status" in data &&
-    (data.status === "live" || data.status === "setup_required") &&
-    "orgId" in data &&
-    "seasonYear" in data
-  );
-}
-
 function Composer({
   liveProfile,
-  profileForm,
   orgId,
-  seasonYear,
   busy,
   mutate,
-  setView,
-  setError,
-  setBusy,
-  cutoffCode,
-  setCutoffCode,
 }: {
   liveProfile: WriterProfile;
   profileForm: ProfileForm;
@@ -574,11 +517,6 @@ function Composer({
   seasonYear: number;
   busy: boolean;
   mutate: Mutate;
-  setView: (view: WriterView) => void;
-  setError: (message: string) => void;
-  setBusy: (busy: boolean) => void;
-  cutoffCode: string | null;
-  setCutoffCode: (code: string | null) => void;
 }) {
   const [kind, setKind] = useState<DraftKind>("sponsorship_ask");
   const [sponsorName, setSponsorName] = useState("");
@@ -594,23 +532,12 @@ function Composer({
 
   const [subject, setSubject] = useState("");
   const [draftBody, setDraftBody] = useState("");
-  const [draftSource, setDraftSource] = useState<"template" | "ai" | null>(null);
-  const [aiMeta, setAiMeta] = useState<string | null>(null);
-  /** Set only for a real model draft — a template draft has no endpoint to name. */
-  const [aiProvenance, setAiProvenance] = useState<{
-    provider: string;
-    modelId: string;
-    baseUrlOrigin?: string | null;
-    source?: string | null;
-  } | null>(null);
+  const [draftSource, setDraftSource] = useState<"template" | null>(null);
   const [copied, setCopied] = useState(false);
-  const [providerSetup, setProviderSetup] = useState(false);
 
   const isGrant = kind === "grant";
 
   const generate = () => {
-    setCutoffCode(null);
-    setProviderSetup(false);
     if (isGrant) {
       const text = composeGrantAnswer(liveProfile, {
         prompt,
@@ -633,92 +560,15 @@ function Composer({
       setDraftBody(email.body);
     }
     setDraftSource("template");
-    setAiMeta(null);
-    setAiProvenance(null);
     setCopied(false);
   };
 
-  const generateWithAssistant = () => {
-    if (busy) return;
-    setBusy(true);
-    setError("");
-    setCutoffCode(null);
-    setProviderSetup(false);
-    void fetch("/api/writer", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        action: "ai-draft",
-        orgId,
-        seasonYear,
-        kind,
-        sponsorName: sponsorName || undefined,
-        contactName: contactName || undefined,
-        tier: tier || undefined,
-        askAmountUsd: askAmount || undefined,
-        priorAmountUsd: priorAmount || undefined,
-        senderName: senderName || undefined,
-        senderRole: senderRole || undefined,
-        prompt: prompt || undefined,
-        charLimit: charLimit || undefined,
-        focus,
-        teamName: profileForm.teamName || undefined,
-        teamNumber: profileForm.teamNumber || undefined,
-        region: profileForm.region || undefined,
-        mission: profileForm.mission || undefined,
-        achievements: profileForm.achievements || undefined,
-        fundingNeed: profileForm.fundingNeed || undefined,
-        fundingAskUsd: profileForm.fundingAskUsd || undefined,
-        tone: profileForm.tone,
-        save: true,
-      }),
-    })
-      .then(async (response) => {
-        const data = (await response.json()) as PitchResponse | PitchErrorResponse;
-        if (!response.ok || !isPitchResponse(data) || data.status === "setup_required") {
-          const cutoff = resolveCutoffErrorCode(response.status, {
-            code: "code" in data ? data.code : undefined,
-            error: "error" in data ? data.error : undefined,
-          });
-          if (cutoff) setCutoffCode(cutoff);
-          if (("code" in data && data.code === "setup_required") || data.status === "setup_required") {
-            setProviderSetup(true);
-            setError("");
-          } else if (!cutoff) {
-            setError("error" in data && data.error ? data.error : "Ask AI draft failed.");
-          }
-          return;
-        }
-        setView(data);
-        void persistWriterSnapshot(orgId, String(data.seasonYear), data);
-        if (data.pitch) {
-          setSubject(data.pitch.subject ?? "");
-          setDraftBody(data.pitch.body);
-          setDraftSource(data.pitch.source === "ai" ? "ai" : "template");
-          // The endpoint/model moved to <ModelProvenance> below, so the badge no
-          // longer repeats it. A template draft never gets provenance — nothing
-          // generated it.
-          setAiMeta(
-            data.pitch.source === "ai"
-              ? "Ask AI draft"
-              : `Template + your team’s business facts · usage logged (${data.pitch.provider})`,
-          );
-          setAiProvenance(
-            data.pitch.source === "ai"
-              ? {
-                  provider: data.pitch.provider,
-                  modelId: data.pitch.model,
-                  baseUrlOrigin: data.pitch.baseUrlOrigin ?? null,
-                  source: data.pitch.keySource ?? null,
-                }
-              : null,
-          );
-        }
-        setCopied(false);
-      })
-      .catch(() => setError("Network error — please try again."))
-      .finally(() => setBusy(false));
-  };
+  // Drafting with AI happens in Ask AI (Writing skill for grant answers, Sponsorships for sponsor
+  // emails — it knows the sponsor records). The details typed here become the question; nothing
+  // is sent until the person presses Send there.
+  const askAiPrompt = isGrant
+    ? `Answer this grant question in our team's voice${charLimit ? ` in under ${charLimit} characters` : ""}${focus !== "general" ? `, focusing on ${grantFocusLabel(focus).toLowerCase()}` : ""}: ${prompt || "[paste the funder's question]"}`
+    : `Draft a ${kindLabel(kind).toLowerCase()} to ${sponsorName || "[sponsor]"}${contactName ? ` for ${contactName}` : ""}${askAmount ? `, asking for $${askAmount}` : ""}${priorAmount ? `, mentioning their $${priorAmount} gift` : ""}${senderName ? `, signed ${senderName}${senderRole ? `, ${senderRole}` : ""}` : ""}.`;
 
   const copy = () => {
     const text = subject ? `Subject: ${subject}\n\n${draftBody}` : draftBody;
@@ -737,8 +587,6 @@ function Composer({
     <section className="app-card soft-panel writer-composer">
       <div className="writer-compose-form">
       <h2>Compose a draft</h2>
-      {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
-      {providerSetup ? <ConnectAiNotice orgId={orgId} /> : null}
       <label className="writer-format">
         <span>What are you writing?</span>
         <select value={kind} onChange={(event) => setKind(event.target.value as DraftKind)}>
@@ -793,23 +641,20 @@ function Composer({
         <Button variant="primary" type="button" onClick={generate} disabled={busy}>
           Create draft
         </Button>
-        <Button variant="secondary" type="button" onClick={generateWithAssistant} disabled={busy}>
-          {busy ? "Drafting…" : "Draft with AI"}
-        </Button>
-        <small className="app-muted">Uses only your team profile and business records.</small>
+        <AskAiButton
+          orgId={orgId}
+          skill={isGrant ? "writing" : "sponsorships"}
+          about={!isGrant && sponsorName ? sponsorName : undefined}
+          prompt={askAiPrompt}
+        />
+        <small className="app-muted">Templates use only your team profile. Ask AI also reads your sponsor records.</small>
       </div>
 
       </div>
       {draftBody ? (
         <div className="writer-draft-preview" >
           {draftSource ? (
-            <span className={`app-badge ${draftSource === "ai" ? "good" : "muted"}`}>
-              {draftSource === "ai" ? "AI draft" : "Template draft"}
-              {aiMeta ? ` · ${aiMeta}` : ""}
-            </span>
-          ) : null}
-          {draftSource === "ai" && aiProvenance ? (
-            <ModelProvenance meta={aiProvenance} />
+            <span className="app-badge muted">Template draft</span>
           ) : null}
           {!isGrant ? (
             <label style={{ display: "grid", gap: 4 }}>

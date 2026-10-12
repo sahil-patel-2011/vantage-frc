@@ -109,7 +109,7 @@ describe("home + competition polish for students this week", () => {
     expect([...VIDEO_RESCOUT_RELATED_INCLUDE]).toEqual(["scouting", "command"]);
   });
 
-  it("Chat empty has no next-actions neighbor; Pick clock empty is one Sync Team Data", () => {
+  it("Ask AI empty has no next-actions neighbor and one primary (Send); Pick clock empty is one Sync Team Data", () => {
     expect(aiChatNextActions({ orgId: "org-1", shell: "empty" })).toEqual([]);
     const emptyClock = pickClockNextActions({
       orgId: "org-1",
@@ -120,11 +120,14 @@ describe("home + competition polish for students this week", () => {
     expect(emptyClock).toHaveLength(1);
     expect(emptyClock[0]?.label).toBe("Sync Team Data");
 
+    // One assistant: the empty state is starters (quiet chips), and Send is the one primary.
     const chat = readFileSync(join(WEB, "app/chat/chat-client.tsx"), "utf8");
-    expect(chat).toMatch(/shell !== "empty"/);
-    expect(chat).toMatch(/New private chat/);
-    const emptyActions = chat.slice(chat.indexOf("ch-empty-actions"));
-    const emptyBlock = emptyActions.slice(0, emptyActions.indexOf("</div>") + 6);
-    expect(emptyBlock.match(/<Button\b/g) ?? []).toHaveLength(1);
+    const emptyBlock = chat.slice(chat.indexOf('className="ch-empty ask-empty"'), chat.indexOf("{thread ? ("));
+    expect(emptyBlock.match(/<Button\b/g) ?? []).toHaveLength(0);
+    expect(emptyBlock).not.toMatch(/Next actions/);
+    const formStart = chat.indexOf('<form className="ch-composer ask-composer"');
+    const composer = chat.slice(formStart, chat.indexOf("</form>", formStart));
+    expect(composer.match(/variant="primary"/g) ?? []).toHaveLength(1);
+    expect(composer).toMatch(/"Send"/);
   });
 });

@@ -3,6 +3,7 @@
 import { Icon } from "./icon";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import { AppShellAccountMenu } from "./app-shell-account-menu";
+import { AskAiTopbarLink } from "./ask-ai-button";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { VIEW_ONLY_CHIP_TITLE, isViewOnlyIn } from "../lib/nav/view-only";
 import type { Me, MembershipOption } from "./app-shell-model";
@@ -178,15 +179,8 @@ export function AppShellTopbar({
         {/* Nothing is queued before someone is on a team, and its 12-second check read /api/me,
             which answers 403 during onboarding. */}
         {minimal ? null : <ShellOutboxStatus orgId={orgId || null} />}
-        <a
-          className="soft-icon-btn soft-ask-ai"
-          data-tour="ask-ai"
-          href={withOrgHref("/ai?tab=chat", orgId || null)}
-          aria-label="Ask AI"
-          title="Ask AI — strategy, match predictions, design help"
-        >
-          <Icon name="sparkles" />
-        </a>
+        {/* One way into Ask AI from every page, opened on this page's skill (lib/ai-skills). */}
+        <AskAiTopbarLink className="soft-icon-btn soft-ask-ai" orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-notif"
           href={withOrgHref("/notifications", orgId || null)}

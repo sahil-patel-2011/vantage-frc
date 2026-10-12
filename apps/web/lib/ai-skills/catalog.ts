@@ -441,7 +441,7 @@ export const AI_SKILLS: readonly AiSkill[] = [
     purpose: "What went well, what broke, and what to carry into next time.",
     starters: ["Run a retro on our last event", "What lessons have we logged?"],
     reads: ["Retro sessions", "Learned items", "Hand-off notes"],
-    libModules: ["lib/retro"],
+    libModules: ["lib/retro", "lib/match-debrief"],
     keywords: /\b(retro(?:spective)?s?|post[- ]?mortem|what went (?:well|wrong)|lessons learned)\b/i,
     access: { minRole: "viewer", hub: "team" },
     home: { label: "Open Retro", path: "/retro" },
@@ -473,7 +473,8 @@ export const AI_SKILLS: readonly AiSkill[] = [
     reads: ["Logged hours", "Members"],
     libModules: ["lib/ai-insights (engagement_digest)", "lib/build-hours"],
     keywords: /\b(check in with|attendance|hours|who(?:'s| is) (?:behind|missing)|participation|engagement)\b/i,
-    access: { minRole: "viewer", hub: "team" },
+    // Each member's hours, by name: mentors' view, as on the Hours page.
+    access: { minRole: "admin", hub: "team" },
     home: { label: "Open Hours", path: "/hours" },
     pages: ["/hours", "/team?tab=hours", "/team?tab=attendance", "/attendance", "/mentor-hours", "/hours-self-view"],
     saveDraft: null,

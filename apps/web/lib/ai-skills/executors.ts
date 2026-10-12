@@ -22,6 +22,7 @@ import { computeInspectionCopilotView } from "../inspection-copilot/compute-insp
 import { computeJudgeSimView } from "../judge-sim/compute-judge-sim";
 import { computeKnowledgeGapView } from "../knowledge-gap/compute-knowledge-gap";
 import { computeMatchCopilotView } from "../match-copilot/compute-match-copilot";
+import { debriefTakeaways, type DebriefForCoach } from "../match-debrief";
 import { computeMatchingGiftFinderView } from "../matching-gift-finder/compute-matching-gift-finder";
 import { computeMediaKitView } from "../media-kit/compute-media-kit";
 import { computeMeetingAutopilotView } from "../meeting-autopilot/compute-meeting-autopilot";
@@ -432,6 +433,37 @@ const cad: Executor = async (ctx, skill) => {
   });
 };
 
+/** Retros, plus this season's match debriefs (the coach that used to sit on Match debrief). */
+const retros: Executor = async (ctx, skill) => {
+  const [retro, debriefs] = await Promise.all([
+    viewSkill([computeRetroView], "No retros yet. Start one after your next event.")(ctx, skill),
+    withSavepoint(
+      ctx.client,
+      async () =>
+        (
+          await ctx.client.query<DebriefForCoach>(
+            `SELECT d.match_label AS "matchLabel", d.result, d.points_scored AS "pointsScored", d.cycle_count AS "cycleCount",
+                    d.drivetrain_ok AS "drivetrainOk", d.mechanisms_ok AS "mechanismsOk", d.auto_ok AS "autoOk",
+                    d.what_worked AS "whatWorked", d.what_broke AS "whatBroke", d.action_items AS "actionItems"
+             FROM match_debriefs d
+             WHERE d.org_id = $1::uuid AND d.season_year = $2::int
+             ORDER BY d.created_at DESC LIMIT 40`,
+            [ctx.orgId, ctx.now.getUTCFullYear()],
+          )
+        ).rows,
+      [] as DebriefForCoach[],
+    ),
+  ]);
+  if (!debriefs.length) return retro;
+  const takeaways = debriefTakeaways(debriefs);
+  return output(skill, ctx, {
+    status: "ok",
+    summary: `${debriefs.length} match debrief${debriefs.length === 1 ? "" : "s"} this season. ${takeaways.split(/(?<=\.)\s/)[0] ?? ""}`.trim(),
+    highlights: [...takeaways.split(/\n+|(?<=\.)\s+/).map((line) => line.trim()).filter(Boolean).slice(0, 4), ...retro.highlights].slice(0, 8),
+    data: { matchDebriefs: boundForModel(debriefs), takeaways, retros: retro.data },
+  });
+};
+
 const judgingPractice = viewSkill([computeJudgeSimView, computeMockJudgingView], "No judging practice sessions yet. Run one in Judging practice and I can build on it.");
 
 const EXECUTORS: Record<string, Executor> = {
@@ -471,7 +503,7 @@ const EXECUTORS: Record<string, Executor> = {
   "parent-updates": parentUpdates,
   standups: viewSkill([computeStandupDigestView], "No stand-up notes today yet."),
   meetings: viewSkill([computeMeetingAutopilotView], "No open blockers, overdue tasks or open decisions — nothing for an agenda yet."),
-  retros: viewSkill([computeRetroView], "No retros yet. Start one after your next event."),
+  retros,
   "season-report": viewSkill([computeSeasonReportView], "Not enough logged this season for a report yet."),
   "check-ins": insightSkill("engagement_digest", "No hours logged yet, so there's no one to check in with."),
   "schedule-risk": insightSkill("schedule_risk", "No season milestones yet. Add them to the season calendar."),
