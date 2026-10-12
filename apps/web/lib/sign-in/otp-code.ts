@@ -2,7 +2,7 @@
  * Pure formatters for the 6-digit sign-in code step.
  *
  * The code length, TTL, and attempt budget mirror what the server actually
- * enforces: Better Auth `emailOTP({ otpLength: 6, expiresIn: 300 })` for the
+ * enforces: Better Auth `emailOTP({ otpLength: 6, expiresIn: 1800 })` for the
  * first factor and `POLICY` in `packages/core/src/email-2fa.ts` for the second.
  * Nothing here invents a code or a delivery state — it only shapes what the
  * user typed and what the API already told us.
@@ -10,16 +10,14 @@
 
 export const OTP_LENGTH = 6;
 
-/** `emailOTP({ expiresIn })` / `POLICY.expiresInSeconds` — both 300s today. */
-export const DEFAULT_CODE_TTL_SECONDS = 300;
+/** `emailOTP({ expiresIn })` / `EMAIL_2FA_POLICY.expiresInSeconds` — both 30 minutes. */
+export const DEFAULT_CODE_TTL_SECONDS = 30 * 60;
 
 /**
- * Local resend guard. The server's own floor is one minute
- * (`rateLimitedResponse` sends `retry-after: 60`, Better Auth sends
- * `X-Retry-After`), so this only stops accidental double taps; a real 429
- * replaces it with the server's number.
+ * One new code a minute. The second-factor route keeps the same minute itself and answers with
+ * the time left (`resendInSeconds`); a real 429 replaces this with the server's number.
  */
-export const DEFAULT_RESEND_COOLDOWN_SECONDS = 30;
+export const DEFAULT_RESEND_COOLDOWN_SECONDS = 60;
 
 /** Longest cooldown we will ever show, so a bad header cannot freeze the UI. */
 const MAX_RETRY_AFTER_SECONDS = 15 * 60;

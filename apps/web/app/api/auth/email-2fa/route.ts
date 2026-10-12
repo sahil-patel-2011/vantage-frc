@@ -1,5 +1,6 @@
 import {
   auth,
+  Email2faDeliveryError,
   isEmail2faEnforced,
   requestEmail2faCode,
   sessionHasEmail2fa,
@@ -48,6 +49,23 @@ export async function GET() {
   });
 }
 
+/**
+ * A failed send is never a 400: the sign-in screen reads a 400 as a wrong code, and nobody has
+ * typed one yet. It is Vantage's side, so a 503.
+ */
+function sendFailureResponse(error: unknown) {
+  // The address and code stay out of the log; the error's name and database code say enough.
+  const name = error instanceof Error ? error.name : "unknown";
+  const cause = error instanceof Email2faDeliveryError ? error.causeName : "";
+  const databaseCode =
+    error && typeof error === "object" && "code" in error ? String((error as { code?: unknown }).code ?? "") : "";
+  console.error(`[email-2fa] send failed: ${name}${cause ? ` (${cause})` : ""}${databaseCode ? ` db=${databaseCode}` : ""}`);
+  return privateJson(
+    { error: "We couldn't send your code. Wait a minute, then tap Send a new code.", code: "SEND_FAILED" },
+    { status: 503 },
+  );
+}
+
 export async function POST(request: Request) {
   const session = await currentSession();
   if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
@@ -59,12 +77,16 @@ export async function POST(request: Request) {
       if (!(await requestLimiter.allow(`${session.user.id}:${ipPart}`))) {
         return rateLimitedResponse("Too many verification emails. Wait a minute and try again.");
       }
-      const result = await requestEmail2faCode({
-        sessionId: session.session.id,
-        userId: session.user.id,
-        email: session.user.email,
-      });
-      return privateJson(result);
+      try {
+        const result = await requestEmail2faCode({
+          sessionId: session.session.id,
+          userId: session.user.id,
+          email: session.user.email,
+        });
+        return privateJson(result);
+      } catch (error) {
+        return sendFailureResponse(error);
+      }
     }
     if (body.action === "verify") {
       if (!(await verifyLimiter.allow(`${session.user.id}:${ipPart}`))) {

@@ -4,6 +4,7 @@ import {
   canSubmitCode,
   canRetrySubmittedCode,
   classifyOtpFailure,
+  isCodeRejection,
   codeSecondsRemaining,
   initialSignInState,
   inviteReturnPath,
@@ -65,7 +66,7 @@ describe("sign-in flow transitions", () => {
     // no second notice repeating it.
     expect(sent.notice).toBeNull();
     expect(signInStepCopy(sent).sub).toMatch(/if scout@team254\.org is on a Vantage team/i);
-    expect(codeSecondsRemaining(sent, NOW)).toBe(300);
+    expect(codeSecondsRemaining(sent, NOW)).toBe(1800);
 
     const typing = run(sent, { type: "code_changed", code: "40 29 17" });
     expect(typing.code).toBe("402917");
@@ -122,10 +123,10 @@ describe("resend cooldown math", () => {
       now: NOW,
       email: "scout@team254.org",
     });
-    expect(resendSecondsRemaining(sent, NOW)).toBe(30);
+    expect(resendSecondsRemaining(sent, NOW)).toBe(60);
     expect(canResendCode(sent, NOW)).toBe(false);
-    expect(canResendCode(sent, NOW + 29_000)).toBe(false);
-    expect(canResendCode(sent, NOW + 30_000)).toBe(true);
+    expect(canResendCode(sent, NOW + 59_000)).toBe(false);
+    expect(canResendCode(sent, NOW + 60_000)).toBe(true);
   });
 
   it("honours the server's retry-after over the local default", () => {
@@ -234,10 +235,10 @@ describe("expired vs wrong code", () => {
     const typos = run(sent, { type: "code_failed", now: NOW + 6_000, failure: wrong }, { type: "code_failed", now: NOW + 7_000, failure: wrong });
     expect(showCodeHelp(typos, NOW + 8_000, { resentOnce: false })).toBe(false);
     // Once the resend cooldown is over, or after asking for another code, the note appears.
-    expect(showCodeHelp(sent, NOW + 31_000, { resentOnce: false })).toBe(true);
+    expect(showCodeHelp(sent, NOW + 61_000, { resentOnce: false })).toBe(true);
     expect(showCodeHelp(sent, NOW + 5_000, { resentOnce: true })).toBe(true);
     // Never on the second factor (the account exists) or on the identity step.
-    expect(showCodeHelp({ ...sent, channel: "email-2fa" }, NOW + 31_000, { resentOnce: true })).toBe(false);
+    expect(showCodeHelp({ ...sent, channel: "email-2fa" }, NOW + 61_000, { resentOnce: true })).toBe(false);
     expect(showCodeHelp(initialSignInState(), NOW, { resentOnce: true })).toBe(false);
   });
 
@@ -404,5 +405,36 @@ describe("an address with no invite", () => {
     expect(failure.kind).toBe("not_authorized");
     expect(failure.message).toMatch(/invite/i);
     expect(failure.message).toMatch(/waitlist/i);
+  });
+});
+
+describe("a failed send is not a wrong code", () => {
+  it("never says the code doesn't match before one was typed", () => {
+    // The second-factor send once failed with a 400, and the screen opened on "That code doesn't match".
+    for (const status of [400, 500, 503]) {
+      const failure = classifyOtpFailure({ channel: "email-2fa", stage: "send", status, message: "Email verification failed." });
+      expect(failure.kind).not.toBe("wrong_code");
+      expect(failure.message).not.toMatch(/match/i);
+      expect(isCodeRejection(failure)).toBe(false);
+    }
+    const offline = classifyOtpFailure({ channel: "email-2fa", stage: "send", networkError: true });
+    expect(isCodeRejection(offline)).toBe(false);
+  });
+
+  it("keeps the wrong-code answer for a typed code", () => {
+    const failure = classifyOtpFailure({ channel: "email-2fa", status: 400, message: "That code is incorrect." });
+    expect(failure.kind).toBe("wrong_code");
+    expect(isCodeRejection(failure)).toBe(true);
+  });
+
+  it("starts the resend wait from the server's number", () => {
+    const sent = run(initialSignInState({ channel: "email-2fa" }), {
+      type: "code_sent",
+      now: NOW,
+      expiresInSeconds: 1500,
+      cooldownSeconds: 20,
+    });
+    expect(codeSecondsRemaining(sent, NOW)).toBe(1500);
+    expect(resendSecondsRemaining(sent, NOW)).toBe(20);
   });
 });

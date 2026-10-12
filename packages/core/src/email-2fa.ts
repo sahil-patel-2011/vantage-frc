@@ -1,9 +1,7 @@
 import { createHash, randomInt } from "node:crypto";
-import { createSqlPool } from "@vantage/db/pool";
-import { firstConfiguredEnv } from "@vantage/db/postgres-url";
 import { authDb } from "@vantage/db/auth";
 import { sessions, verifications } from "@vantage/db/schema";
-import { and, eq, gt, lt } from "drizzle-orm";
+import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { isEmailDeliveryConfigured, runtimeEnv } from "./access-policy";
 import {
   auditAuthEvent,
@@ -11,12 +9,21 @@ import {
   deterministicLocalOtp,
 } from "./email";
 
-const POLICY = {
-  expiresInSeconds: 300,
+export const EMAIL_2FA_POLICY = {
+  expiresInSeconds: 30 * 60,
   allowedAttempts: 5,
-  requestWindowSeconds: 60,
-  requestLimit: 5,
+  /** One new code a minute per sign-in. */
+  resendCooldownSeconds: 60,
 } as const;
+const POLICY = EMAIL_2FA_POLICY;
+
+/** The code was saved but the email could not be handed to the mail provider. */
+export class Email2faDeliveryError extends Error {
+  constructor(readonly causeName: string) {
+    super("We couldn't send the code email. Wait a minute and try again.");
+    this.name = "Email2faDeliveryError";
+  }
+}
 
 export function isEmail2faBypassEnabled() {
   return runtimeEnv("ENABLE_EMAIL_2FA_BYPASS") === "true";
@@ -30,6 +37,15 @@ export function isEmail2faEnforced() {
 
 export function sessionHasEmail2fa(session: { email2faVerifiedAt?: Date | string | null } | null | undefined) {
   return Boolean(session?.email2faVerifiedAt);
+}
+
+/** Seconds left before another code may be sent, given when the last one was. */
+export function resendWaitSeconds(lastSentAt: Date | string | null, now: number) {
+  if (!lastSentAt) return 0;
+  const sent = new Date(lastSentAt).getTime();
+  if (!Number.isFinite(sent)) return 0;
+  const left = Math.ceil((sent + POLICY.resendCooldownSeconds * 1000 - now) / 1000);
+  return Math.min(Math.max(left, 0), POLICY.resendCooldownSeconds);
 }
 
 function otpIdentifier(sessionId: string) {
@@ -47,23 +63,6 @@ function generateOtp(email: string) {
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
 }
 
-async function countRecentSends(userId: string) {
-  const connectionString = firstConfiguredEnv("DATABASE_AUTH_URL", "DATABASE_URL", "POSTGRES_URL");
-  if (!connectionString) return 0;
-  const pool = createSqlPool(connectionString, { max: 1 });
-  try {
-    const result = await pool.query<{ count: string }>(
-      `SELECT count(*)::text AS count FROM auth_audit_events
-       WHERE action = 'email_2fa.sent' AND user_id = $1
-         AND created_at > now() - ($2 || ' seconds')::interval`,
-      [userId, String(POLICY.requestWindowSeconds)],
-    );
-    return Number(result.rows[0]?.count ?? 0);
-  } finally {
-    await pool.end();
-  }
-}
-
 export async function requestEmail2faCode(input: {
   sessionId: string;
   userId: string;
@@ -73,14 +72,33 @@ export async function requestEmail2faCode(input: {
     return { sent: false as const, reason: "Email 2FA is not enforced (Resend not configured or bypass enabled)." };
   }
 
-  if ((await countRecentSends(input.userId)) >= POLICY.requestLimit) {
-    throw new Error("Too many verification emails. Wait a minute and try again.");
+  const identifier = otpIdentifier(input.sessionId);
+  // The wait is read from this sign-in's own code row, which the auth role owns. It used to count
+  // auth_audit_events, which that role may only append to: every send failed with "permission
+  // denied", no email went out, and the screen showed that failure as a wrong code.
+  const [previous] = await authDb
+    .select({ createdAt: verifications.createdAt, expiresAt: verifications.expiresAt })
+    .from(verifications)
+    .where(eq(verifications.identifier, identifier))
+    .orderBy(desc(verifications.createdAt))
+    .limit(1);
+  const now = Date.now();
+  const waitSeconds = resendWaitSeconds(previous?.createdAt ?? null, now);
+  const previousLeft = previous ? Math.floor((new Date(previous.expiresAt).getTime() - now) / 1000) : 0;
+  if (waitSeconds > 0 && previousLeft > 0) {
+    // A code went out under a minute ago (a reload, a second tab): that one still works, so say
+    // so instead of sending another or showing an error.
+    return {
+      sent: true as const,
+      alreadySent: true as const,
+      expiresInSeconds: previousLeft,
+      resendInSeconds: waitSeconds,
+    };
   }
 
   const provider = createEmailProvider();
   const code = generateOtp(input.email);
-  const expiresAt = new Date(Date.now() + POLICY.expiresInSeconds * 1000);
-  const identifier = otpIdentifier(input.sessionId);
+  const expiresAt = new Date(now + POLICY.expiresInSeconds * 1000);
 
   await authDb.delete(verifications).where(eq(verifications.identifier, identifier));
   await authDb.insert(verifications).values({
@@ -89,21 +107,33 @@ export async function requestEmail2faCode(input: {
     expiresAt,
   });
 
-  await provider.sendOtp({
-    email: input.email,
-    otp: code,
-    type: "sign-in",
-  });
+  try {
+    await provider.sendOtp({
+      email: input.email,
+      otp: code,
+      type: "sign-in",
+    });
+  } catch (error) {
+    // No code went out, so the wait must not block the retry.
+    await authDb.delete(verifications).where(eq(verifications.identifier, identifier));
+    throw new Email2faDeliveryError(error instanceof Error ? error.name : "unknown");
+  }
 
+  // The email is already out: a failed audit row must not tell the person nothing was sent.
   await auditAuthEvent({
     action: "email_2fa.sent",
     email: input.email,
     userId: input.userId,
     success: true,
     metadata: { sessionId: input.sessionId },
-  });
+  }).catch(() => undefined);
 
-  return { sent: true as const, expiresInSeconds: POLICY.expiresInSeconds };
+  return {
+    sent: true as const,
+    alreadySent: false as const,
+    expiresInSeconds: POLICY.expiresInSeconds,
+    resendInSeconds: POLICY.resendCooldownSeconds,
+  };
 }
 
 export async function verifyEmail2faCode(input: {

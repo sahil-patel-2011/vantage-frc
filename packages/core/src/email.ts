@@ -135,7 +135,7 @@ export class ResendEmailProvider implements EmailProvider {
       from: this.from,
       to: [message.email],
       subject: "Your Vantage verification code",
-      text: `Your Vantage verification code is ${message.otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
+      text: `Your Vantage verification code is ${message.otp}. It expires in 30 minutes. If you did not request this, you can ignore this email.`,
     });
   }
   async sendInvite(message: InviteEmail) {
@@ -203,7 +203,7 @@ export class GmailSmtpEmailProvider implements EmailProvider {
     await this.send(
       message.email,
       "Your Vantage verification code",
-      `Your Vantage verification code is ${message.otp}. It expires in 5 minutes. If you did not request this, you can ignore this email.`,
+      `Your Vantage verification code is ${message.otp}. It expires in 30 minutes. If you did not request this, you can ignore this email.`,
     );
   }
   async sendInvite(message: InviteEmail) {
