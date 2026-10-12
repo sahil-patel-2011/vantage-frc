@@ -2353,13 +2353,17 @@
   list-style: none;
 }
 
+/* The tabs inside each area, as a plain list: as grey pills they looked like buttons that did
+   nothing (UX audit). */
 .marketing-lux .mx-hub-tabs li {
-  padding: 4px 10px;
-  border-radius: 999px;
-  color: var(--mx-text);
-  background: #f1f3f6;
-  font-size: var(--mx-fs-xs);
-  font-weight: 600;
+  color: var(--mx-muted);
+  font-size: var(--mx-fs-small, 15px);
+  font-weight: 500;
+}
+.marketing-lux .mx-hub-tabs li + li::before {
+  content: "·";
+  margin-right: 6px;
+  color: var(--mx-line-strong);
 }
 
 .marketing-lux .mx-tools {
