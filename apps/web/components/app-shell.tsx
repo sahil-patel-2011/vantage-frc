@@ -63,6 +63,7 @@ import {
   type Me,
   type MembershipOption,
 } from "./app-shell-model";
+import { readRememberedInitial, readRememberedRoleCue, rememberInitial, rememberRoleCue } from "../lib/nav/shell-memory";
 
 const groups = PRODUCT_NAV_GROUPS;
 
@@ -110,6 +111,8 @@ export default function AppShell() {
   };
   const [me, setMe] = useState<Me>({});
   const [rememberedTeamLabel, setRememberedTeamLabel] = useState<string | null>(null);
+  const [rememberedRoleCue, setRememberedRoleCue] = useState<string | null>(null);
+  const [rememberedInitial, setRememberedInitial] = useState<string | null>(null);
   useEffect(() => {
     const label = teamLabelFor(me.teamNumber, me.orgName);
     const id = me.orgId ?? "";
@@ -234,6 +237,8 @@ export default function AppShell() {
     // Same render as the team id, so the label goes straight from the placeholder to the name
     // this device last showed for the team.
     setRememberedTeamLabel(readRememberedTeamLabel(safeLocalStorage(), id));
+    setRememberedRoleCue(readRememberedRoleCue(safeLocalStorage(), id));
+    setRememberedInitial(readRememberedInitial(safeLocalStorage()));
     // has-app-shell, shell-bare and shell-onboarding are on <body> in the server HTML
     // (components/app-body.tsx), so the first paint is already this frame.
   }, [pathname, locationTick]);
@@ -481,7 +486,12 @@ export default function AppShell() {
   }, [closePalette, openPalette, paletteOpen]);
 
   const accountLabel = accountLabelFor(me);
-  const initial = accountInitialFor(me);
+  // Until /api/me answers, the letter this device last showed rather than a generic person.
+  const loadedInitial = accountInitialFor(me);
+  const initial = me.userId ? loadedInitial : rememberedInitial ?? loadedInitial;
+  useEffect(() => {
+    if (me.userId) rememberInitial(safeLocalStorage(), loadedInitial);
+  }, [me.userId, loadedInitial]);
   const hubAccess = me.hubAccess ?? null;
   const sponsorsAllowed = me.sponsorsAllowed;
   const navHrefAllowed = useCallback(
@@ -539,7 +549,12 @@ export default function AppShell() {
   const title = shellTitleForPath(pathname, pathSearch);
   // One placeholder, then the real team: never "Your team" → "This team" → "Team 6925".
   const orgLabel = shellOrgLabel({ pathname, orgId, me, teamsLoaded, remembered: rememberedTeamLabel });
-  const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
+  // The same for the role under the team: "Owner" stays "Owner" instead of flashing "Your team".
+  const loadedRoleCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
+  const rolePlanCue = me.role ? loadedRoleCue : rememberedRoleCue ?? loadedRoleCue;
+  useEffect(() => {
+    if (me.role && me.orgId) rememberRoleCue(safeLocalStorage(), me.orgId, loadedRoleCue);
+  }, [me.role, me.orgId, loadedRoleCue]);
   // Every settings page is "Settings › Section", whichever page it is underneath.
   const crumbHint = isSettingsPath(pathname) ? "Settings" : breadcrumbForPath(pathname);
   // Not on Home: Home leads with its own next-match card, and the strip made it three times.

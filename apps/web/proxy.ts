@@ -11,7 +11,7 @@ import { isGoogleSheetsState } from "./lib/google-sheets/oauth-state";
 import { isKnownAppPath } from "./lib/nav/app-route-roots";
 import {
   REMEMBERED_TEAM_COOKIE,
-  TEAM_SCOPED_PAGES,
+  isTeamScopedPage,
   chooseMemberTeam,
   isTeamId,
   notOnTeamRedirect,
@@ -453,7 +453,7 @@ export async function proxy(request: NextRequest) {
   // An explicit team switch must reach the membership picker, without the remembered team
   // being injected or sending the person back to Home.
   const teamSwitch = pathname === "/workspace" && request.nextUrl.searchParams.has("next");
-  const needsTeams = pageRequest && !teamSwitch && (isTeamId(opened) || TEAM_SCOPED_PAGES.has(pathname));
+  const needsTeams = pageRequest && !teamSwitch && (isTeamId(opened) || isTeamScopedPage(pathname));
   // null: not read (or unreadable), so nothing is remembered and nobody is redirected on a guess.
   let memberTeams: string[] | null = null;
 
@@ -513,7 +513,7 @@ export async function proxy(request: NextRequest) {
       }
       return response;
     }
-    if (TEAM_SCOPED_PAGES.has(pathname) && memberTeams) {
+    if (isTeamScopedPage(pathname) && memberTeams) {
       // A remembered team the person has since left (or never joined) falls back to their own.
       const target = teamPageRedirect(new URL(request.url), chooseMemberTeam(memberTeams, remembered));
       if (target) return NextResponse.redirect(target, 307);

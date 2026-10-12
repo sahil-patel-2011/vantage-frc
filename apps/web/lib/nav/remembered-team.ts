@@ -15,6 +15,8 @@
  * which says so (notOnTeamRedirect).
  */
 
+import { isKnownAppPath } from "./app-route-roots";
+
 export const REMEMBERED_TEAM_COOKIE = "vantage-team";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -124,9 +126,52 @@ export function notOnTeamRedirect(url: URL): URL {
   return target;
 }
 
+/**
+ * Pages about the person or Vantage itself, never one team, and the steps before someone has a
+ * team. Nothing is filled in for them. Home reads the person's team itself, and it is where
+ * sign-in lands, so it is left alone too (one redirect fewer on every sign-in).
+ */
+const PERSONAL_PAGES = [
+  "/dashboard",
+  "/account",
+  "/admin",
+  "/claim",
+  "/consent",
+  "/desktop",
+  "/docs",
+  "/help",
+  "/invite",
+  "/join",
+  "/join-team",
+  "/migrate",
+  "/notifications/preferences",
+  "/offline",
+  "/offline-shell",
+  "/onboarding",
+  "/roadmap",
+  "/security",
+  "/settings",
+  "/support",
+  "/team-setup",
+];
+
+/**
+ * Whether a signed-in page is for one team. The list above was kept by hand and had fallen far
+ * behind: Build, Business, Calendar, Tasks and most hub tabs opened from a link without
+ * `?orgId=` showed "No team selected" (UX audit). Now every signed-in page is a team page unless
+ * it is one of the personal pages.
+ */
+export function isTeamScopedPage(pathname: string): boolean {
+  if (TEAM_SCOPED_PAGES.has(pathname)) return true;
+  if (pathname === "/" || pathname.includes(".") || pathname.startsWith("/api/")) return false;
+  // An address that is no page at all gets its 404 without a membership read.
+  if (!isKnownAppPath(pathname)) return false;
+  return !PERSONAL_PAGES.some((page) => pathname === page || pathname.startsWith(`${page}/`));
+}
+
 /** Where to send a team page that arrived without `?orgId=`, or null to render it as is. */
 export function teamPageRedirect(url: URL, teamId: string | null): URL | null {
-  if (!TEAM_SCOPED_PAGES.has(url.pathname) || url.searchParams.get("orgId") || !isTeamId(teamId)) return null;
+  if (!isTeamScopedPage(url.pathname) || url.searchParams.get("orgId") || !isTeamId(teamId)) return null;
   const target = new URL(url.toString());
   target.searchParams.set("orgId", teamId);
   return target;

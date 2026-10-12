@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chooseMemberTeam, notOnTeamRedirect, teamPageRedirect } from "./remembered-team";
+import { chooseMemberTeam, isTeamScopedPage, notOnTeamRedirect, teamPageRedirect } from "./remembered-team";
 
 const TEAM = "6925a000-0000-4000-8000-000000000001";
 
@@ -16,6 +16,23 @@ describe("teamPageRedirect", () => {
     expect(teamPageRedirect(new URL("https://x.test/dashboard"), TEAM)).toBeNull();
     expect(teamPageRedirect(new URL("https://x.test/team/admin"), "not-a-uuid")).toBeNull();
     expect(teamPageRedirect(new URL("https://x.test/team/admin"), null)).toBeNull();
+  });
+});
+
+describe("isTeamScopedPage", () => {
+  it("treats every signed-in page as a team page, hub tabs included", () => {
+    for (const path of ["/build", "/business", "/calendar", "/tasks", "/robot", "/team", "/scout/pit", "/competition"]) {
+      expect(isTeamScopedPage(path)).toBe(true);
+    }
+    const target = teamPageRedirect(new URL("https://x.test/build?tab=kickoff"), TEAM);
+    expect(target?.searchParams.get("orgId")).toBe(TEAM);
+    expect(target?.searchParams.get("tab")).toBe("kickoff");
+  });
+
+  it("leaves personal pages, platform admin and the steps before a team alone", () => {
+    for (const path of ["/", "/dashboard", "/account", "/account/teams", "/admin/teams", "/help/scouting", "/onboarding", "/invite", "/team-setup", "/security", "/settings", "/api/me", "/manifest.webmanifest"]) {
+      expect(isTeamScopedPage(path)).toBe(false);
+    }
   });
 });
 
