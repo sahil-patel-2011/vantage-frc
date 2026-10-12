@@ -61,4 +61,19 @@ describe("GET /api/health", () => {
     expect(state.failures[0]).toMatchObject({ source: "api/health", error: { code: "ECONNREFUSED" } });
     expect(state.healthy).toEqual([]);
   });
+
+  it("in backup mode answers 503 backup_mode at once, probing and reporting nothing", async () => {
+    vi.stubEnv("VANTAGE_BACKUP_MODE", "1");
+    try {
+      state.db = "refused";
+      const response = await GET();
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ ok: false, database: "backup_mode" });
+      await flush();
+      expect(state.failures).toEqual([]);
+      expect(state.healthy).toEqual([]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });

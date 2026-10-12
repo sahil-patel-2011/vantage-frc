@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { isBackupMode } from "@vantage/db/backup-mode";
 import { classifyDatabaseFailure, type OutageClassification, type OutageCode } from "./classify";
 import { NOTICE_KEY } from "./notice";
 import { readJson, writeJson, type OutageStore } from "./status-store";
@@ -406,6 +407,8 @@ function reporter(): Promise<OutageReporter> {
 
 /** Record that the database failed. Never throws; run it after the response. */
 export async function reportDatabaseFailure(error: unknown, source: string): Promise<void> {
+  // Backup mode (VANTAGE_BACKUP_MODE) is a choice, not an outage: no incident, no owner email.
+  if (isBackupMode()) return;
   try {
     await (await reporter()).reportFailure(error, source);
   } catch {
@@ -415,6 +418,7 @@ export async function reportDatabaseFailure(error: unknown, source: string): Pro
 
 /** Record that the database answered. Closes an open incident. Never throws. */
 export async function reportDatabaseHealthy(source: string): Promise<void> {
+  if (isBackupMode()) return;
   try {
     await (await reporter()).reportHealthy(source);
   } catch {

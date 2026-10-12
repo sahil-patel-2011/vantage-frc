@@ -1,5 +1,6 @@
 import { Pool as NeonPool } from "@neondatabase/serverless";
 import pg from "pg";
+import { DisconnectedPool, isBackupMode } from "./backup-mode";
 import {
   assertSafePostgresUrl,
   poolLimitsForUrl,
@@ -22,6 +23,8 @@ export function createRawSqlPool(
   connectionString: string,
   options?: SqlPoolOptions,
 ): NeonPool | pg.Pool {
+  // Backup mode (VANTAGE_BACKUP_MODE): nothing connects, whatever the URL says.
+  if (isBackupMode()) return new DisconnectedPool() as unknown as pg.Pool;
   assertSafePostgresUrl(connectionString);
   const limits = poolLimitsForUrl(connectionString);
   const max = options?.max ?? limits.max;

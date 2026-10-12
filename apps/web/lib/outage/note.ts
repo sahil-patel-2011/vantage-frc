@@ -1,3 +1,4 @@
+import { isBackupMode } from "@vantage/db/backup-mode";
 import { isDatabaseFailure } from "./classify";
 import { deferOutageWork } from "./defer";
 import { reportDatabaseFailure } from "./incident";
@@ -9,6 +10,8 @@ import { reportDatabaseFailure } from "./incident";
  */
 export function noteDatabaseFailure(error: unknown, source: string): void {
   try {
+    // Backup mode disconnects the database on purpose: that is not an outage to email about.
+    if (isBackupMode()) return;
     if (isDatabaseFailure(error)) deferOutageWork(() => reportDatabaseFailure(error, source));
   } catch {
     // Outage bookkeeping must never become the request's failure.

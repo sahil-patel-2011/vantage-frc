@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { LEGAL_DOC_VERSION } from "@vantage/core";
+import { isBackupMode } from "@vantage/db/backup-mode";
 import { createSqlPool } from "@vantage/db/pool";
 import { resolveMarketingDatabaseUrl } from "@vantage/db/postgres-url";
 import { waitlistUnavailableMessage } from "./waitlist-copy";
+import { EmailedWaitlistStore } from "./waitlist-email-store";
 
 export const DISCLOSURE_VERSION = `waitlist-${LEGAL_DOC_VERSION}`;
 
@@ -330,7 +332,7 @@ export class NeonWaitlistStore implements WaitlistStore {
 
 const globalStore = globalThis as typeof globalThis & { vantageWaitlist?: MemoryWaitlistStore };
 
-export type WaitlistBackend = "memory" | "postgres" | "unavailable";
+export type WaitlistBackend = "memory" | "postgres" | "email" | "unavailable";
 
 export { waitlistUnavailableCopy } from "./waitlist-copy";
 export { waitlistUnavailableMessage };
@@ -345,6 +347,8 @@ export function waitlistBackend(): WaitlistBackend {
   // vantage_ci URL. That URL is not a marketing database — do not INSERT
   // waitlist rows there (it 500s the public form).
   if (process.env.E2E_AUTH_FIXTURE === "1") return "memory";
+  // Backup mode (VANTAGE_BACKUP_MODE): no database at all, so each request is emailed to the owner.
+  if (isBackupMode()) return "email";
   if (resolveMarketingDatabaseUrl()) return "postgres";
   if (process.env.NODE_ENV === "production") return "unavailable";
   return "memory";
@@ -368,6 +372,8 @@ export function createWaitlistStore(): WaitlistStore {
       const url = resolveMarketingDatabaseUrl();
       return url ? new NeonWaitlistStore(url) : memory;
     }
+    case "email":
+      return new EmailedWaitlistStore();
     case "unavailable":
       throw new WaitlistUnavailableError();
     default: {

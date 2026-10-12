@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BackupModeError } from "@vantage/db/backup-mode";
 import { classifyDatabaseFailure, isDatabaseFailure, maskHost, scrubMessage } from "./classify";
 
 /** A Node system error the way `net.connect` produces one. */
@@ -12,6 +13,13 @@ function pgError(code: string, message = "server error") {
 }
 
 describe("classifyDatabaseFailure", () => {
+  it("backup mode: disconnected on purpose, says how to turn it off, and counts as unavailable", () => {
+    const result = classifyDatabaseFailure(new BackupModeError());
+    expect(result).toMatchObject({ code: "backup_mode", errorCode: "VANTAGE_BACKUP_MODE", host: null, detail: null });
+    expect(result.fix).toMatch(/remove VANTAGE_BACKUP_MODE/);
+    expect(isDatabaseFailure(new BackupModeError())).toBe(true);
+  });
+
   it("ECONNREFUSED: the NAS answers but Postgres isn't listening", () => {
     const result = classifyDatabaseFailure(systemError("ECONNREFUSED", { address: "203.0.113.9", port: 5432 }));
     expect(result.code).toBe("connection_refused");

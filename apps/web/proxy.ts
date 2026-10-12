@@ -1,5 +1,6 @@
 import { auth, getOnboardingGate, isEmail2faEnforced, sessionHasEmail2fa } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { BACKUP_MODE_MESSAGE, isBackupMode } from "@vantage/db/backup-mode";
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { onboardingReturnPath } from "./lib/onboarding/entry-journey";
@@ -19,6 +20,7 @@ import {
 import { memberTeamIds } from "./lib/nav/member-teams";
 import { pendingProvisioningTeam, requestedProvisioningTeam } from "./lib/provisioning/request-gate";
 import { noteDatabaseFailure } from "./lib/outage/note";
+import { backupModeRoute } from "./lib/outage/backup-routes";
 import { SIGNED_OUT_MESSAGE } from "./lib/security/signed-out";
 
 const PUBLIC_PAGES = new Set([
@@ -334,6 +336,22 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(paused, 307);
     }
     return NextResponse.json({ error: MEDIA_PAUSED_MESSAGE, code: "media_paused" }, { status: 403 });
+  }
+  // Backup mode (VANTAGE_BACKUP_MODE): there is no database, so no session to look up. The public
+  // site passes, an API call that needs data gets one clear 503, and every other page goes to
+  // the sign-in page, which explains backup mode (lib/outage/backup-routes.ts).
+  if (isBackupMode()) {
+    const route = backupModeRoute(pathname);
+    if (route === "pass") return NextResponse.next();
+    if (route === "api_unavailable") {
+      return NextResponse.json(
+        { error: BACKUP_MODE_MESSAGE, code: "backup_mode" },
+        { status: 503, headers: { "cache-control": "no-store", "retry-after": "300" } },
+      );
+    }
+    const notice = new URL("/signin", request.url);
+    notice.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return NextResponse.redirect(notice, { status: 307, headers: { "cache-control": "no-store" } });
   }
   const fixtureSession =
     process.env.NODE_ENV !== "production" &&

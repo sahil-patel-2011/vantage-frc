@@ -16,6 +16,20 @@ describe("production schema deployment gate", () => {
     }
     expect(db.createPool).not.toHaveBeenCalled();
   });
+  it("skips the check in backup mode without opening a connection, even with or without a URL", async () => {
+    const db = database();
+    for (const VANTAGE_BACKUP_MODE of ["1", "true", " ON "]) {
+      expect(await checkProductionSchema({ env: { ...production, VANTAGE_BACKUP_MODE }, createPool: db.createPool })).toEqual({ checked: false, backupMode: true });
+      expect(await checkProductionSchema({ env: { VERCEL_ENV: "production", VANTAGE_BACKUP_MODE }, createPool: db.createPool })).toEqual({ checked: false, backupMode: true });
+    }
+    expect(db.createPool).not.toHaveBeenCalled();
+  });
+  it("still checks production when backup mode is off or unrecognised", async () => {
+    for (const VANTAGE_BACKUP_MODE of ["", "0", "false", "off", "maybe"]) {
+      const db = database();
+      expect(await checkProductionSchema({ env: { ...production, VANTAGE_BACKUP_MODE }, createPool: db.createPool })).toEqual({ checked: true, migrations: REQUIRED_PRODUCTION_MIGRATIONS.length });
+    }
+  });
   it("fails before acquiring a connection when production configuration is missing", async () => {
     const db = database();
     await expect(checkProductionSchema({ env: { VERCEL_ENV: "production" }, createPool: db.createPool })).rejects.toThrow("configured migration connection");
