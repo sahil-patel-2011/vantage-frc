@@ -29,7 +29,7 @@ import {
 } from "../lib/nav/hub-access-filter";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
 import { commandCatalogFor } from "../lib/nav/command-search";
-import { settingsRoleTier } from "../lib/nav/settings-nav";
+import { isSettingsPath, settingsRoleTier } from "../lib/nav/settings-nav";
 import { pushAppNavigation, softNavigationTarget } from "../lib/nav/soft-navigation";
 import { fetchProductSession } from "../lib/nav/product-session";
 import { pathnameIsEntryScreen } from "../lib/nav/product-route";
@@ -536,11 +536,12 @@ export default function AppShell() {
   const isHubRoot = isHubRootPath(pathname);
   const showBack = showBackForPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
-  const title = shellTitleForPath(pathname);
+  const title = shellTitleForPath(pathname, pathSearch);
   // One placeholder, then the real team: never "Your team" → "This team" → "Team 6925".
   const orgLabel = shellOrgLabel({ pathname, orgId, me, teamsLoaded, remembered: rememberedTeamLabel });
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
-  const crumbHint = breadcrumbForPath(pathname);
+  // Every settings page is "Settings › Section", whichever page it is underneath.
+  const crumbHint = isSettingsPath(pathname) ? "Settings" : breadcrumbForPath(pathname);
   // Not on Home: Home leads with its own next-match card, and the strip made it three times.
   // Not while scouting either: the match card there already says which match, and on a phone
   // the strip took ~105px from the counters.

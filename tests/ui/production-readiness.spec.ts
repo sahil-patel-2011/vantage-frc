@@ -5,7 +5,7 @@ for (const width of [390, 768]) test(`opening menu preserves an already focused 
   await page.setViewportSize({ width, height: 900 });
   await isolateUi(page, context);
   await page.goto(`/account?orgId=${orgId}`);
-  await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Profile", exact: true })).toBeVisible();
   await page.clock.install();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
   const opener = page.getByRole("button", { name: "Menu", exact: true });

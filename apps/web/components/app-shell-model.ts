@@ -8,6 +8,7 @@ import {
   type ProductNavGroup,
 } from "../lib/nav/product-nav";
 import type { CommandHit } from "../lib/nav/command-search";
+import { SETTINGS_HREF, isSettingsPath, settingsSectionLabel } from "../lib/nav/settings-nav";
 
 export type SearchHit = {
   title: string;
@@ -147,6 +148,9 @@ export function isHubRootPath(pathname: string): boolean {
 
 export function showBackForPath(pathname: string): boolean {
   if (isHubRootPath(pathname)) return false;
+  // Every settings page goes back to the Settings list (the list itself is a top-level place).
+  if (pathname === SETTINGS_HREF) return false;
+  if (isSettingsPath(pathname)) return true;
   return (
     pathname.startsWith("/account") ||
     pathname.startsWith("/team/") ||
@@ -160,8 +164,7 @@ export function showBackForPath(pathname: string): boolean {
 }
 
 export function backHrefForPath(pathname: string, orgId: string | null): string {
-  if (pathname.startsWith("/account")) return "/dashboard";
-  if (pathname.startsWith("/security")) return "/account";
+  if (pathname !== SETTINGS_HREF && isSettingsPath(pathname)) return withOrgHref(SETTINGS_HREF, orgId);
   if (pathname === "/support") return "/docs";
   if (pathname.startsWith("/docs/") || pathname === "/docs" || pathname.startsWith("/help/") || pathname === "/help") {
     return pathname === "/docs" || pathname === "/help" ? "/dashboard" : "/docs";
@@ -176,7 +179,12 @@ export function backHrefForPath(pathname: string, orgId: string | null): string 
   return "/dashboard";
 }
 
-export function shellTitleForPath(pathname: string): string | null {
+export function shellTitleForPath(pathname: string, search?: string | null): string | null {
+  // Settings pages are named as the Settings list names them ("Security", "Members and invites").
+  if (isSettingsPath(pathname)) {
+    const section = settingsSectionLabel(pathname, search);
+    if (section) return section;
+  }
   const fromNav = navTitleForPath(pathname);
   if (fromNav) return fromNav;
   if (pathname.startsWith("/account")) return "Account";

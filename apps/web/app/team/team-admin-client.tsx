@@ -627,7 +627,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
   const header = (
     <PageHeader
       breadcrumbs={teamSettingsBreadcrumb("people")}
-      title="Team admin"
+      title="Members and invites"
       description="Invite people and choose what each person can open."
     />
   );
@@ -706,7 +706,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       />
 
       {/* Inviting is this page's main job, so it comes first; the team code is the other way in. */}
-      <TeamJoinCode key={orgId} orgId={orgId} />
+      <div id="join-code" className="settings-anchor"><TeamJoinCode key={orgId} orgId={orgId} /></div>
 
       <TeamAdminAccessPanel
         accessRequests={accessRequests}
@@ -739,7 +739,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
       ) : (
         <>
         {/* Who can change the team's money (0714) — the owner and the people they chose. */}
-        <MoneyManagersLine orgId={orgId} version={message} />
+        <div id="money-managers" className="settings-anchor"><MoneyManagersLine orgId={orgId} version={message} /></div>
         <TeamAdminPeople
           members={members}
           actorUserId={actor.userId}

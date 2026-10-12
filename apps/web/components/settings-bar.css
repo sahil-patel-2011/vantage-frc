@@ -1,9 +1,0 @@
-/* Settings bar — one horizontal map of every settings surface.
-   Same chip language as the hub ToolStrip (product-hub.css), but it scrolls
-   horizontally with fade edges instead of wrapping, so at 360px the Personal
-   and Team groups stay one thumb-swipe row. Tokens only: --soft-* with
-   --app-* fallbacks keep light and dark both correct. */
-
-.settings-bar {
-  margin: 0 0 14px;
-}

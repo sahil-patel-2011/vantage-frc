@@ -173,7 +173,10 @@ for (const width of [390, 1440]) {
     await page.getByRole("button", { name: "Account menu", exact: true }).click();
     const menu = page.getByRole("menu", { name: "Account", exact: true });
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole("menuitem", { name: "Account", exact: true })).toBeVisible();
+    // One "Settings", not Account plus Team admin.
+    await expect(menu.getByRole("menuitem", { name: "Settings", exact: true })).toBeVisible();
+    await expect(menu.getByRole("menuitem", { name: "Account", exact: true })).toHaveCount(0);
+    await expect(menu.getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
     await expect(menu.getByRole("menuitem", { name: "Help", exact: true })).toBeVisible();
     await expect(menu.getByRole("menuitem", { name: "App manual", exact: true })).toHaveCount(0);
     await page.waitForFunction(() => document.getAnimations().every(animation => animation.effect?.getTiming().iterations === Infinity || animation.playState !== "running"));

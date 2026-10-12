@@ -292,7 +292,7 @@ export default function NotificationPreferencesClient() {
     return (
       <main className="module-page notif-prefs-page notif-page">
         <PageHeader
-          breadcrumbs="Account / Notifications"
+          breadcrumbs="Settings › Notifications"
           title="Notification preferences"
           description="Every notification switch in one place: your inbox, this device, and email."
         >
@@ -323,7 +323,7 @@ export default function NotificationPreferencesClient() {
   return (
     <main className="module-page notif-prefs-page notif-page">
       <PageHeader
-        breadcrumbs="Account / Notifications"
+        breadcrumbs="Settings › Notifications"
         title="Notification preferences"
         description="Every notification switch in one place: your inbox, this device, and email."
       >

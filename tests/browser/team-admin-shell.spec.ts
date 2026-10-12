@@ -10,7 +10,7 @@ test.beforeEach(async ({ context }) => {
 
 test("Team admin still loads after the panel split", async ({ page }) => {
   await page.goto("/team/admin");
-  await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Members and invites" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 
   const islandTeam = page.getByTestId("soft-island").getByRole("link", { name: "Team", exact: true });
@@ -19,7 +19,7 @@ test("Team admin still loads after the panel split", async ({ page }) => {
     const orgId = href ? new URL(href, page.url()).searchParams.get("orgId") : null;
     if (orgId) {
       await page.goto(`/team/admin?orgId=${encodeURIComponent(orgId)}`);
-      await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: "Members and invites" })).toBeVisible();
     }
   }
 

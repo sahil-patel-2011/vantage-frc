@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { type Me, type MembershipOption } from "./app-shell-model";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { SETTINGS_HREF } from "../lib/nav/settings-nav";
 import { Icon } from "./icon";
 import { FeedbackBugIcon } from "./feedback-bug-icon";
 import { openFeedback } from "../lib/feedback/feedback-open";
@@ -29,7 +30,6 @@ export function AppShellAccountMenu({
   orgLabel,
   rolePlanCue,
   orgId,
-  memberships,
   signingOut,
   onClose,
   onSignOut,
@@ -90,19 +90,12 @@ export function AppShellAccountMenu({
             <span className="soft-account-role">{rolePlanCue}</span>
           </div>
         </div>
-        {/* Settings owns the canonical list (SETTINGS_NAV): profile,
-            appearance, notifications, security, keys. Repeating two of
-            its rows here meant this menu had two ways to /account. */}
-        <a className="soft-account-destination" role="menuitem" href={withOrgHref("/account", orgId)} onClick={onClose}>
-          {/* The page it opens is titled Account, and the sidebar and menu panel say Account too. */}
-          <Icon name="gear" /><span>Account</span>
+        {/* One place for settings, yours and the team's (what your role allows): the same word
+            and the same page from this menu, the phone menu and the sidebar. Team admin is a
+            section of it ("Members and invites"), not a second menu item. */}
+        <a className="soft-account-destination" role="menuitem" href={withOrgHref(SETTINGS_HREF, orgId)} onClick={onClose}>
+          <Icon name="gear" /><span>Settings</span>
         </a>
-        {/* One tap to the team for the people who run it; it took Account first. */}
-        {memberships.some((row) => row.orgId === orgId && (row.role === "owner" || row.role === "admin")) ? (
-          <a className="soft-account-destination" role="menuitem" href={`/team/admin?orgId=${encodeURIComponent(orgId)}`} onClick={onClose}>
-            <Icon name="users" /><span>Team admin</span>
-          </a>
-        ) : null}
         {/* The help centre keeps the manual, tickets and bug reporting together. */}
         <a className="soft-account-destination" role="menuitem" href={withOrgHref("/help", orgId)} onClick={onClose}>
           <Icon name="book" /><span>Help</span>

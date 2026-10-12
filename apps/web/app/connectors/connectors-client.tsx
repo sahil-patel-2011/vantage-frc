@@ -220,7 +220,7 @@ export default function ConnectorsClient() {
     return (
       <main className="module-page connectors-page">
         <PageHeader
-          breadcrumbs="Settings / Connectors"
+          breadcrumbs="Settings › Connectors"
           title="Connectors"
           description={CONNECTORS_PAGE_LOADING}
         />

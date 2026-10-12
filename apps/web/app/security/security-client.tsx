@@ -214,7 +214,7 @@ export default function SecurityClient({
     return (
       <main className="module-page security-page">
         <PageHeader
-          breadcrumbs="Account / Security"
+          breadcrumbs="Settings › Security"
           title="Security"
           description="A second sign-in step with an app like Google Authenticator, and the devices you told us to remember."
         >
@@ -245,9 +245,9 @@ export default function SecurityClient({
   return (
         <main className="module-page security-page">
           <PageHeader
-            breadcrumbs="Account / Security"
+            breadcrumbs="Settings › Security"
             title="Security"
-            description="A second sign-in step with an app like Google Authenticator, the devices you told us to remember, and where you're signed in. Appearance and notifications are under Account."
+            description="A second sign-in step with an app like Google Authenticator, the devices you told us to remember, and where you're signed in."
           >
             <SecurityRelated orgId={orgId} />
           </PageHeader>

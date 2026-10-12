@@ -330,6 +330,18 @@ body.has-app-shell .soft-drawer .soft-drawer-toolbar {
     color: var(--ink);
     font-weight: 550;
   }
+  /* Ask AI, Help and Settings stay in view: with eight pins the list can outgrow a laptop
+     screen, and the footer used to scroll out of sight below it. */
+  .app-sidebar .app-sidebar-footer {
+    position: sticky;
+    bottom: -18px;
+    margin-bottom: -18px;
+    padding-bottom: 18px;
+    padding-top: 12px;
+    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--surface-2) 70%, var(--bg)) 12px);
+  }
+  .app-sidebar .app-sidebar-brand { margin-bottom: 20px; }
+  .app-sidebar .app-sidebar-team { margin-bottom: 20px; }
   .app-sidebar[data-collapsed="true"] .app-sidebar-label-row {
     justify-content: center;
   }

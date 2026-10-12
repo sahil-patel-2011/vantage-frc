@@ -300,7 +300,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
     <main className="module-page export-page">
       <header className="app-page-header">
         <div>
-          <span className="breadcrumbs">Team / Export Center</span>
+          <span className="breadcrumbs">Settings › Team data and export</span>
           <h1>Exports</h1>
           <p>
             Download your team&apos;s data, including AI chats, as spreadsheets (CSV) or one ZIP. Only your

@@ -80,9 +80,10 @@ test("menu destinations respect workspace and sponsor restrictions", async ({ pa
 });
 
 test("account and inbox filters remain task controls", async ({ page }) => {
-  await page.goto("/account"); const selector = page.getByRole("tablist", { name: "Account sections", exact: true });
-  await selector.getByRole("tab", { name: "Appearance", exact: true }).click();
-  await expect(selector.getByRole("tab", { name: "Appearance", exact: true })).toHaveAttribute("aria-selected", "true");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/account"); const selector = page.getByRole("navigation", { name: "Settings sections", exact: true });
+  await selector.getByRole("link", { name: "Appearance", exact: true }).click();
+  await expect(selector.getByRole("link", { name: "Appearance", exact: true })).toHaveAttribute("aria-current", "page");
   await page.goto("/notifications"); const filters = page.getByRole("combobox", { name: "Inbox filters", exact: true });
   await filters.selectOption("unread"); await expect(filters).toHaveValue("unread");
 });

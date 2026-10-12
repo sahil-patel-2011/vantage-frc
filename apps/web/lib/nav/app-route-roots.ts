@@ -214,6 +214,7 @@ export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   "season-report",
   "season-rollover",
   "security",
+  "settings",
   "shift-balancer",
   "shooter-table",
   "showcase",

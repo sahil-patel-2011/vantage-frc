@@ -6,6 +6,7 @@ import { islandTabIsActive } from "./app-shell-model";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import { mainMenuSearch } from "../lib/nav/main-menu";
 import type { PinDefinition } from "../lib/nav/pins";
+import { SETTINGS_HREF, isSettingsPath } from "../lib/nav/settings-nav";
 import { workspacePickerHref } from "../lib/workspace";
 import { tourTargetForHref } from "../lib/tour/tour-steps";
 
@@ -55,8 +56,8 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
       {/* Ask AI opens on the current page's skill, the same link as the top bar's (lib/ai-skills). */}
       {allowed("/ai?tab=chat") ? <AskAiTopbarLink orgId={orgId || null} label="Ask AI" /> : null}
-      {[{ href: "/help", label: "Help", icon: "book" as const }, { href: "/account", label: "Account", icon: "gear" as const }]
-        .filter(item => allowed(item.href)).map(item => <a key={item.href} data-tour={item.href.startsWith("/ai?") ? "ask-ai" : undefined} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
+      {[{ href: "/help", label: "Help", icon: "book" as const }, { href: SETTINGS_HREF, label: "Settings", icon: "gear" as const }]
+        .filter(item => allowed(item.href)).map(item => <a key={item.href} data-tour={item.href.startsWith("/ai?") ? "ask-ai" : undefined} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={(item.href === SETTINGS_HREF ? isSettingsPath(pathname) : pathname === item.href.split("?")[0]) ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav>
   </aside>;
 }

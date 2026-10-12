@@ -16,6 +16,7 @@ import {
   type HubTabDef,
   type ProductHubDef,
 } from "./hubs";
+import { SETTINGS_GROUP_LABELS, SETTINGS_HREF, SETTINGS_NAV } from "./settings-nav";
 
 export type CommandKind = "destination" | "action";
 
@@ -426,22 +427,65 @@ const STANDALONE: CommandEntry[] = [
   { id: "dev-setup", label: "Programming setup", context: "Team", href: "/dev-setup", kind: "destination", keywords: ["setup", "install", "laptop", "new programmer", "onboarding", "wpilib", "pathplanner", "homebrew", "git", "github", "student pack", "vs code", "claude", "cursor", "how do i start", "first day"], featured: true },
   { id: "subteams", label: "Subteam progress", context: "Team", href: "/subteams", kind: "destination", keywords: ["subteam", "subteams", "mechanical", "electrical", "programming", "cad", "pit crew", "drive team", "business", "who is on", "roster", "progress", "mentor view", "follow up"], featured: true },
   { id: "announcements", label: "Announcements", context: "Team", href: "/announcements", kind: "destination", keywords: ["announcement", "announcements", "notice", "post", "broadcast", "tell the team", "bulletin", "read receipt", "acknowledge"], featured: true },
-  { id: "account", label: "Account", context: "Settings", href: "/account", kind: "destination", keywords: ["account", "profile", "me", "settings", "preferences"] },
-  { id: "appearance", label: "Appearance & theme", context: "Settings", href: "/account?tab=appearance", kind: "destination", keywords: ["theme", "dark mode", "light mode", "appearance", "colors"] },
-  { id: "notifications", label: "Notifications", context: "Settings", href: "/notifications", kind: "destination", keywords: ["notifications", "alerts", "inbox", "unread"] },
-  { id: "security", label: "Security", context: "Settings", href: "/security", kind: "destination", keywords: ["security", "password", "2fa", "mfa", "sessions"] },
+  { id: "notifications", label: "Notifications", context: "Inbox", href: "/notifications", kind: "destination", keywords: ["notifications", "alerts", "inbox", "unread"] },
   // Nobody types "connector catalog". They type the provider's name, or the
   // thing that stopped working ("emails not sending", "no match data").
   { id: "connectors", label: "Connectors", context: "Settings", href: "/connectors", kind: "destination", keywords: ["connector", "connectors", "integration", "integrations", "connect", "github", "the blue alliance", "tba", "onshape", "discord", "slack", "stripe", "resend", "email delivery", "google sign in", "storage node", "fusion relay", "free relay", "raspberry pi", "api key", "oauth", "callback url", "redirect uri", "webhook", "not connected", "setup required", "token expired", "emails not sending", "no match data"], featured: true },
-  { id: "team-admin", label: "Team admin", context: "Settings", href: "/team/admin", kind: "destination", keywords: ["admin", "invite", "members", "roles", "permissions", "add someone"] },
-  { id: "exports", label: "Export data", context: "Settings", href: "/exports", kind: "destination", keywords: ["export", "download", "csv", "takeout", "backup"] },
   { id: "search", label: "Search", context: "Settings", href: "/search", kind: "destination", keywords: ["search", "find", "look up", "global search", "search tasks", "search parts"] },
   { id: "help", label: "Help", context: "Support", href: "/help", kind: "destination", keywords: ["help", "how do i", "support", "docs", "manual", "articles", "tutorial", "faq"] },
-  { id: "custom-access-roles", label: "Custom roles and scouting leads", context: "Team admin", href: "/team/admin/presets", kind: "destination", keywords: ["custom roles", "permissions", "scouting lead", "access presets", "delegate"] },
   { id: "app-manual", label: "App manual", context: "Support", href: "/docs", kind: "destination", keywords: ["manual", "app manual", "section guide", "section by section", "walkthrough", "how vantage works", "guide"] },
   { id: "support", label: "Contact support", context: "Support", href: "/support", kind: "destination", keywords: ["support", "contact", "problem", "stuck"] },
   { id: "report-bug", label: "Report a bug", context: "Support", href: "/report-bug", kind: "destination", keywords: ["bug", "broken", "report a problem", "feedback", "something is wrong", "glitch"] },
+  // Pages that were reachable only from the related-links rows at the top of other pages. Those
+  // rows are gone, so each is found by the words a student would type.
+  { id: "assembly-manual", label: "Assembly manual", context: "Build", href: "/assembly-manual", kind: "destination", keywords: ["assembly manual", "build book", "how to assemble", "assembly steps", "instructions"] },
+  { id: "auto-routines", label: "Auto routines", context: "Build › Code", href: "/auto-routines", kind: "destination", keywords: ["auto", "autos", "autonomous", "auto routines", "auto paths", "auton"] },
+  { id: "cad-connections", label: "CAD connections", context: "Build › CAD", href: "/cad/connections", kind: "destination", keywords: ["cad connections", "connect onshape", "connect fusion", "cad login", "link cad"] },
+  { id: "github", label: "GitHub", context: "Settings", href: "/connectors/github", kind: "destination", keywords: ["github", "connect github", "repository", "repo", "pull requests", "git"] },
+  { id: "control-map", label: "Control map", context: "Build", href: "/control-map", kind: "destination", keywords: ["control map", "controller", "buttons", "driver controls", "gamepad", "joystick", "bindings"] },
+  { id: "editor-pair", label: "Pair VS Code", context: "Build › Code", href: "/editor/pair", kind: "destination", keywords: ["vs code", "vscode", "pair editor", "editor", "extension", "connect editor"] },
+  { id: "data-export", label: "Data export", context: "Settings", href: "/exports", kind: "destination", keywords: ["export", "download", "csv", "zip", "backup", "takeout", "export data"] },
+  { id: "hours-kiosk", label: "Scan-in kiosk", context: "Team › Shop hours", href: "/hours/kiosk", kind: "destination", keywords: ["kiosk", "scan in", "sign in kiosk", "badge", "qr scan", "shop sign in", "clock in station"] },
+  { id: "inspection", label: "Robot inspection", context: "Competition", href: "/inspection", kind: "destination", keywords: ["inspection", "robot inspection", "inspect", "rules check", "weigh in", "inspection checklist"] },
+  { id: "inventory", label: "Inventory and BOM", context: "Build", href: "/inventory", kind: "destination", keywords: ["inventory", "bom", "bill of materials", "parts", "stock", "what parts do we have"] },
+  { id: "media", label: "Media", context: "Business", href: "/media", kind: "destination", keywords: ["media", "social media", "posts", "content", "instagram", "press"] },
+  { id: "media-kit", label: "Media kit", context: "Business", href: "/media-kit", kind: "destination", keywords: ["media kit", "logos", "brand", "press kit", "team photos for press"] },
+  { id: "media-library", label: "Media library", context: "Business", href: "/media-library", kind: "destination", keywords: ["media library", "photos", "videos", "pictures", "old photos"] },
+  { id: "offline", label: "Offline mode", context: "Help", href: "/offline", kind: "destination", keywords: ["offline", "no wifi", "no internet", "offline mode", "venue wifi", "works offline"] },
+  { id: "recognition", label: "Recognition", context: "Team", href: "/recognition", kind: "destination", keywords: ["recognition", "shout out", "kudos", "thank", "awards for members", "appreciation"] },
+  { id: "scout-crossval", label: "Scouting quality", context: "Competition › Scouting", href: "/scout-crossval", kind: "destination", keywords: ["scouting quality", "accuracy", "cross check", "bad data", "scout accuracy", "data quality"] },
+  { id: "scouting-lineup", label: "Scouting assignments", context: "Competition › Scouting", href: "/scouting/lineup", kind: "destination", keywords: ["scouting assignments", "lineup", "who scouts", "scout schedule", "rotation", "assign scouts"] },
+  { id: "strategy-draft", label: "Alliance board", context: "Competition › Strategy", href: "/strategy/draft", kind: "destination", keywords: ["alliance board", "draft", "pick board", "alliance selection", "picks"] },
+  { id: "alumni", label: "Alumni", context: "Team", href: "/team/alumni", kind: "destination", keywords: ["alumni", "graduates", "former members", "past members"] },
+  { id: "discord", label: "Discord", context: "Settings", href: "/team/discord", kind: "destination", keywords: ["discord", "discord bot", "connect discord", "chat bridge"] },
+  { id: "whats-new", label: "What’s new", context: "Help", href: "/whats-new", kind: "destination", keywords: ["whats new", "what's new", "updates", "release notes", "changelog", "new features"] },
+  { id: "slack", label: "Slack", context: "Settings", href: "/team/slack", kind: "destination", keywords: ["slack", "slack bot", "connect slack", "chat bridge"] },
 ];
+
+/**
+ * Settings, one row per section, named as the Settings list names them ("Members and invites",
+ * "Join code", "Delete team"), with the words people type for them ("invite", "dark mode",
+ * "API key"). Added before the other standalone rows, so where one of those covers the same page
+ * its words join this row instead of a second name for the place.
+ */
+const SETTINGS_COMMANDS: CommandEntry[] = [
+  { id: "settings", label: "Settings", context: "Vantage", href: SETTINGS_HREF, kind: "destination", keywords: ["settings", "preferences", "options", "account", "account settings", "team settings", "my account"], featured: true },
+  ...SETTINGS_NAV.map((item): CommandEntry => ({
+    id: `settings-${item.id}`,
+    label: item.label,
+    context: `Settings › ${SETTINGS_GROUP_LABELS[item.scope]}`,
+    href: item.href,
+    kind: "destination",
+    keywords: [...item.keywords],
+  })),
+];
+
+/** Team settings pages a member who doesn't run the team can't change (search leaves them out). */
+const TEAM_ONLY_SETTINGS_PATHS = new Set(
+  SETTINGS_NAV.filter((item) => item.scope === "team")
+    .map((item) => item.href.split(/[?#]/)[0]!)
+    .filter((path) => !SETTINGS_NAV.some((item) => item.scope === "personal" && item.href.split(/[?#]/)[0] === path)),
+);
 
 /** Verbs. These answer "I want to DO x" rather than "take me to x". */
 const ACTIONS: Array<Omit<CommandEntry, "kind">> = [
@@ -545,7 +589,7 @@ export function commandCatalog(): CommandEntry[] {
     }
   }
 
-  for (const entry of STANDALONE) add({ ...entry, keywords: [...entry.keywords] });
+  for (const entry of [...SETTINGS_COMMANDS, ...STANDALONE]) add({ ...entry, keywords: [...entry.keywords] });
 
   // Verbs last: where one points at a destination that already exists, its
   // phrasing is merged into that row rather than duplicating it.
@@ -676,6 +720,7 @@ export function isTeamAdminCommand(href: string): boolean {
   const query = bare.indexOf("?");
   const path = query === -1 ? bare : bare.slice(0, query);
   if (path === "/team/admin" || path.startsWith("/team/admin/")) return true;
+  if (TEAM_ONLY_SETTINGS_PATHS.has(path)) return true;
   if (path !== "/team") return false;
   return new URLSearchParams(bare.slice(query + 1)).get("tab") === "team-admin";
 }

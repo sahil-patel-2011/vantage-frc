@@ -31,7 +31,7 @@ export default async function TeamAdminPage({
       <main className="module-page team-admin-page soft-gate">
         <PageHeader
           breadcrumbs={teamSettingsBreadcrumb("people")}
-          title="Team admin"
+          title="Members and invites"
           description="Invite people, share your team join code, and choose what each person can open."
         />
         <EmptyState
@@ -59,7 +59,7 @@ export default async function TeamAdminPage({
   // say only "Team administrator access required", and the request reached nobody.
   if (!access?.allowed) return (
     <main className="module-page team-admin-page soft-gate">
-      <PageHeader title="Team admin" description="Manage your team's people and invitations." />
+      <PageHeader title="Members and invites" description="Manage your team's people and invitations." />
       <EmptyState
         title={access?.member ? "The team owner and mentors manage people" : "You're not on this team"}
         description={

@@ -30,6 +30,7 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page).toHaveURL(new RegExp(orgId));
     expect(new URL(page.url()).searchParams.has("reportId")).toBe(false);
     await expect(page.getByRole("heading", { name: "Practice scouting", exact: true })).toBeVisible();
+    // One Settings item, whatever the role; Team admin is a section of Settings, not a menu item.
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
@@ -54,29 +55,32 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).locator(".soft-account-org").first()).toContainText(marker);
-    await page.getByRole("menuitem", { name: "Account", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/settings\\?orgId=${orgId}`));
+    const settings = page.getByRole("navigation", { name: "Settings sections", exact: true });
+    await expect(settings.getByRole("link", { name: /^Profile/ })).toBeVisible({ timeout: 15_000 });
+    // Not running this team: its settings rows are not offered.
+    await expect(settings.getByRole("link", { name: /^Members and invites/ })).toHaveCount(0);
+    await settings.getByRole("link", { name: /^Profile/ }).click();
     await expect(page).toHaveURL(new RegExp(`/account\\?orgId=${orgId}`));
-    await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible({ timeout: 15_000 });
-    await page.getByRole("button", { name: "Account menu" }).click();
-    await expect(page.getByRole("menu", { name: "Account" }).getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
-    await page.keyboard.press("Escape");
+    await expect(page.getByRole("heading", { level: 1, name: "Profile", exact: true })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("region", { name: "This team", exact: true }).getByRole("link", { name: "Switch team", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Choose your team", exact: true })).toBeVisible();
     await page.locator(".workspace-org-pick a").filter({ hasText: "Team 6925" }).click();
     await expect(page).toHaveURL(new RegExp(`orgId=${homeOrg}`));
-    await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible({ timeout: 15_000 });
-    await page.getByRole("button", { name: "Account menu" }).click();
-    await expect(page.getByRole("menuitem", { name: "Team admin", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Profile", exact: true })).toBeVisible({ timeout: 15_000 });
+    // The owner of this team gets its settings: the column beside the page (desktop) or /settings.
+    if (width >= 900) await expect(page.getByRole("navigation", { name: "Settings sections", exact: true }).getByRole("link", { name: "Members and invites", exact: true })).toBeVisible();
     await page.reload();
     await expect(page).toHaveURL(new RegExp(`orgId=${homeOrg}`));
     await page.goBack();
     await expect(page.getByRole("heading", { name: "Choose your team", exact: true })).toBeVisible();
     await page.goBack();
     await expect(page).toHaveURL(new RegExp(`/account\\?orgId=${orgId}`));
-    await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "Profile", exact: true })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("button", { name: "Account menu" }).click();
     await expect(page.getByRole("menu", { name: "Account" }).locator(".soft-account-org").first()).toContainText(marker);
-    await expect(page.getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
+    if (width >= 900) await expect(page.getByRole("navigation", { name: "Settings sections", exact: true }).getByRole("link", { name: "Members and invites", exact: true })).toHaveCount(0);
   } finally {
     await pool.query("DELETE FROM free_scout_reports WHERE org_id=$1 AND payload->>'notes'=$2", [orgId, marker]);
     await pool.query("DELETE FROM organizations WHERE id=$1 AND name=$2", [orgId, marker]);

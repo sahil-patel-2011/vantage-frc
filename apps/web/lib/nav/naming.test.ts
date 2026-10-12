@@ -16,12 +16,12 @@ const read = (path: string) => readFileSync(join(WEB, path), "utf8");
 const tabLabel = (hub: Parameters<typeof hubById>[0], id: string) => hubById(hub).tabs.find((tab) => tab.id === id)?.label;
 
 describe("one name per destination", () => {
-  it("Account, everywhere it is linked", () => {
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/account", label: "Account"/);
-    expect(read("components/app-shell-account-menu.tsx")).toMatch(/<span>Account<\/span>/);
-    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/<Icon name="gear" \/><span>Account<\/span>/);
+  it("Settings: one word, one place, in the avatar menu, the phone menu and the sidebar", () => {
+    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: SETTINGS_HREF, label: "Settings"/);
+    expect(read("components/app-shell-account-menu.tsx")).toMatch(/href=\{withOrgHref\(SETTINGS_HREF, orgId\)\}[\s\S]{0,120}<span>Settings<\/span>/);
+    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/<Icon name="gear" \/><span>Settings<\/span>/);
     for (const file of ["components/app-shell-sidebar.tsx", "components/app-shell-account-menu.tsx", "components/app-shell-nav-panel.tsx"]) {
-      expect(read(file)).not.toMatch(/Personal settings|Account and settings|label: "Settings"/);
+      expect(read(file)).not.toMatch(/Personal settings|Account and settings|label: "Account"|<span>Account<\/span>|<span>Team admin<\/span>/);
     }
   });
 
@@ -52,14 +52,15 @@ describe("one name per destination", () => {
 });
 
 describe("two menus, no repeats", () => {
-  it("the hamburger menu goes places; who you are (Sign out, Team admin, Platform admin) is the avatar menu's", () => {
+  it("the hamburger menu goes places; who you are (Sign out, Platform admin) is the avatar menu's", () => {
     const panel = read("components/app-shell-nav-panel.tsx");
     const account = read("components/app-shell-account-menu.tsx");
     for (const label of ["Sign out", "Team admin", "Platform admin"]) {
       expect(panel).not.toMatch(new RegExp(`>${label}<`));
     }
     expect(account).toMatch(/"Signing out…" : "Sign out"/);
-    expect(account).toMatch(/<span>Team admin<\/span>/);
+    // Team admin is a section of Settings ("Members and invites"), not a second menu item.
+    expect(account).not.toMatch(/Team admin<\/span>/);
   });
 
   it("one \"Your apps\": the menu's top row, the sidebar's Pinned group and the bottom bar show the same pins", () => {

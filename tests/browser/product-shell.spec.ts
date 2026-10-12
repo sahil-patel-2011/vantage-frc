@@ -126,7 +126,8 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(drawer.getByRole("link", { name: "Competition", exact: true })).toHaveCount(0);
   await expect(drawer.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Forms", exact: true })).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: "Account", exact: true })).toHaveCount(1);
+  await expect(drawer.getByRole("link", { name: "Settings", exact: true })).toHaveCount(1);
+  await expect(drawer.getByRole("link", { name: "Account", exact: true })).toHaveCount(0);
   // Sign out lives in the avatar menu only; the menu is for going places.
   await expect(drawer.getByRole("button", { name: "Sign out" })).toHaveCount(0);
   await drawer.getByRole("combobox").fill("scout");
@@ -213,14 +214,16 @@ test("account keeps every setting reachable from one place", async ({ page, cont
   // sections at all — which is a real state, tested below, and not the one
   // this test is about.
   test.skip(!(await signInAs(context, "owner")), "no owner fixture on this box");
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/account");
-  await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Profile", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Loading account" })).toBeHidden({ timeout: 20_000 });
 
-  for (const label of [/^Security/, /^AI usage/, /^AI limits/, /^Connectors/]) await expect(page.getByRole("link", { name: label }).first()).toBeVisible();
-  const sections = page.getByRole("tablist", { name: "Account sections", exact: true });
-  for (const label of ["Profile", "Appearance", "Notifications"]) await expect(sections.getByRole("tab", { name: label, exact: true })).toHaveCount(1);
-  await sections.getByRole("tab", { name: "Appearance", exact: true }).click();
+  for (const label of [/^AI usage/, /^AI limits/]) await expect(page.getByRole("link", { name: label }).first()).toBeVisible();
+  // Every section is in the one Settings list beside the page.
+  const sections = page.getByRole("navigation", { name: "Settings sections", exact: true });
+  for (const label of ["Profile", "Appearance", "Notifications", "Security", "Connectors"]) await expect(sections.getByRole("link", { name: label, exact: true })).toHaveCount(1);
+  await sections.getByRole("link", { name: "Appearance", exact: true }).click();
   await expect(page.locator(".appearance-panel")).toBeVisible();
 });
 

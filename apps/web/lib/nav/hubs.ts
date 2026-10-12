@@ -196,7 +196,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // has a single answer instead of three half-answers.
         { id: "presence", label: "Presence", legacyHref: "/presence" },
         { id: "hours-self-view", label: "My hours", legacyHref: "/hours-self-view", featured: true },
-        { id: "team-admin", label: "Team admin", legacyHref: "/team/admin", featured: true },
+        // The Settings section of the same name ("Members and invites", lib/nav/settings-nav.ts).
+        { id: "team-admin", label: "Members and invites", legacyHref: "/team/admin", featured: true },
         { id: "my-kit", label: "My kit", legacyHref: "/my-kit" },
         { id: "mentor-hours", label: "Mentor hours", legacyHref: "/mentor-hours" },
         // The programming subteam's setup track. Sits with the other

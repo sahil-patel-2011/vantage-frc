@@ -4,6 +4,7 @@ import { type KeyboardEvent, type RefObject } from "react";
 import { Icon } from "./icon";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import type { PinDefinition } from "../lib/nav/pins";
+import { SETTINGS_HREF } from "../lib/nav/settings-nav";
 import { AppShellNavGroups } from "./app-shell-nav-groups";
 import { ShellSearchResults } from "./shell-search-results";
 import type { ShellSearch } from "./use-shell-search";
@@ -160,9 +161,9 @@ export function AppShellNavPanel({
         )}
         {/* The menu is for going places. Who you are (Team admin, Platform admin, Sign out) lives
             in the avatar menu at the top right, on every screen size, so neither repeats the other.
-            Your apps are edited from their own heading, so the toolbar keeps Account and Help. */}
+            Your apps are edited from their own heading, so the toolbar keeps Settings and Help. */}
         {!queryActive ? <footer className="soft-drawer-foot soft-drawer-toolbar" aria-label="Help and settings">
-          <a href={withOrgHref("/account", orgId)} onClick={closeNav}><Icon name="gear" /><span>Account</span></a>
+          <a href={withOrgHref(SETTINGS_HREF, orgId)} onClick={closeNav}><Icon name="gear" /><span>Settings</span></a>
           <a href={withOrgHref("/help", orgId)} onClick={closeNav}><Icon name="book" /><span>Help</span></a>
         </footer> : null}
       </aside>
