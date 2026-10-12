@@ -197,6 +197,37 @@ export function assertSafePostgresUrl(connectionString: string): void {
   }
 }
 
+/**
+ * Supabase's pooler answers on one host in two modes. Session mode (port 5432) gives every client
+ * its own server connection, capped at the project's pool size (15 on a small project): a page
+ * that loads a dozen API routes at once, across warm serverless instances, ran out and every
+ * extra request failed with "max clients reached in session mode". Transaction mode (port 6543)
+ * lends a server connection for one transaction at a time, which is all a request needs: withRls
+ * sets the tenant with SET LOCAL inside its own BEGIN/COMMIT, and no request query uses a named
+ * prepared statement.
+ *
+ * Request pools move to transaction mode. A pool that holds session state between statements
+ * (the provisioning workflow's session advisory locks) asks for `session`. DATABASE_POOL_MODE=session
+ * turns the switch off everywhere. Only the Supabase pooler host on its session port is touched:
+ * a direct db.<ref>.supabase.co connection, Neon, a NAS or localhost keep their URL.
+ */
+export const SUPABASE_SESSION_PORT = "5432";
+export const SUPABASE_TRANSACTION_PORT = "6543";
+
+export function pooledConnectionString(connectionString: string, mode: "transaction" | "session" = "transaction"): string {
+  if (mode === "session") return connectionString;
+  if ((process.env.DATABASE_POOL_MODE ?? "").trim().toLowerCase() === "session") return connectionString;
+  if (!connectionHost(connectionString).endsWith("pooler.supabase.com")) return connectionString;
+  try {
+    const url = new URL(connectionString);
+    if ((url.port || SUPABASE_SESSION_PORT) !== SUPABASE_SESSION_PORT) return connectionString;
+    url.port = SUPABASE_TRANSACTION_PORT;
+    return url.toString();
+  } catch {
+    return connectionString;
+  }
+}
+
 export function poolLimitsForUrl(connectionString: string): {
   max: number;
   idleTimeoutMillis: number;

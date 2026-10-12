@@ -131,3 +131,40 @@ describe("postgres host detection", () => {
     }
   });
 });
+
+describe("Supabase pooler mode", () => {
+  const session = "postgresql://vantage_app.ref:pw@aws-1-us-west-2.pooler.supabase.com:5432/postgres";
+
+  it("sends request pools through the transaction port", async () => {
+    const { pooledConnectionString } = await import("./postgres-url");
+    expect(pooledConnectionString(session)).toBe(
+      "postgresql://vantage_app.ref:pw@aws-1-us-west-2.pooler.supabase.com:6543/postgres",
+    );
+  });
+
+  it("keeps the session port when a pool asks for it or the operator turns it off", async () => {
+    const { pooledConnectionString } = await import("./postgres-url");
+    expect(pooledConnectionString(session, "session")).toBe(session);
+    const previous = process.env.DATABASE_POOL_MODE;
+    process.env.DATABASE_POOL_MODE = "session";
+    try {
+      expect(pooledConnectionString(session)).toBe(session);
+    } finally {
+      if (previous === undefined) delete process.env.DATABASE_POOL_MODE;
+      else process.env.DATABASE_POOL_MODE = previous;
+    }
+  });
+
+  it("leaves every other host alone", async () => {
+    const { pooledConnectionString } = await import("./postgres-url");
+    for (const url of [
+      "postgresql://postgres:pw@db.ref.supabase.co:5432/postgres",
+      "postgresql://u:pw@ep-x.us-east-2.aws.neon.tech/neondb",
+      "postgres://u:pw@localhost:5432/vantage",
+      "postgres://u:pw@nas.local:5432/vantage",
+      "postgresql://vantage_app.ref:pw@aws-1-us-west-2.pooler.supabase.com:6543/postgres",
+    ]) {
+      expect(pooledConnectionString(url)).toBe(url);
+    }
+  });
+});
