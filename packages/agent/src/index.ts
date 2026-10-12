@@ -291,6 +291,7 @@ export * from "./design-research";
 export * from "./task-finish";
 export * from "./untrusted";
 export * from "./action-proposals";
+export * from "./skill-output";
 
 /* Which FRC season the model is answering about — see game-context.ts. */
 export { gameContextLines, seasonLabel, type GameContextInput } from "./game-context";

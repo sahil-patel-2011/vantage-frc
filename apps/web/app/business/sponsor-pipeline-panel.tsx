@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { EmptyState, Button } from "../../components/ui";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
 import { sponsorCrmNextActions } from "../../lib/business/sponsor-crm-next-actions";
 import {
@@ -171,6 +172,11 @@ export function SponsorPipelinePanel({
 
   return (
     <div className="biz-stack">
+      {/* The one AI entry on Sponsors: Ask AI on its Sponsorships skill, which reads these records. */}
+      <div className="ask-ai-row">
+        <AskAiButton orgId={view.orgId} skill="sponsorships" />
+        <p>Who to ask next, renewal and thank-you emails, matching gifts — from the sponsors on this page.</p>
+      </div>
       {activeSponsors.length ? <NextActions view={view} /> : null}
 
       {hasFundraising ? (
@@ -272,6 +278,20 @@ export function SponsorPipelinePanel({
                     {reminder.message} · due {reminder.dueOn}
                   </span>
                 </div>
+                <AskAiButton
+                  orgId={view.orgId}
+                  skill="sponsorships"
+                  sponsorId={reminder.sponsorId}
+                  about={reminder.sponsorName}
+                  label="Draft email"
+                  prompt={
+                    reminder.kind === "thank_you"
+                      ? `Draft a thank-you email to ${reminder.sponsorName}`
+                      : reminder.kind === "renewal"
+                        ? `Draft a renewal email to ${reminder.sponsorName}`
+                        : `Draft a follow-up email to ${reminder.sponsorName}`
+                  }
+                />
                 {reminder.kind === "thank_you" ? (
                   <button
                     type="button"

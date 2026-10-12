@@ -2,6 +2,7 @@
 
 import { hubById, hubLegacyHref, isHubTab } from "../../lib/nav/hubs";
 import { URL_CHANGE_EVENT } from "../../lib/nav/url-change";
+import { formatUsdCents } from "../../lib/finance/format-usd";
 
 const BUSINESS_HUB = hubById("business");
 
@@ -63,8 +64,9 @@ export function writeTabToUrl(tab: Tab) {
   window.dispatchEvent(new Event(URL_CHANGE_EVENT));
 }
 
+/** The shared money format (lib/finance/format-usd): "$45", "$3.50", never "$1,234.5". */
 export function money(cents: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", ...wholeOrCents(cents) }).format(cents / 100);
+  return formatUsdCents(cents);
 }
 
 export function dollars(cents: number): string {
@@ -99,10 +101,4 @@ export function moneyWhenRecorded(cents: number): string {
 
 export function statusLabel(value: string): string {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-/** Whole dollars stay short ("$45"); anything else keeps its cents ("$3.50", not "$4"). */
-function wholeOrCents(cents: number): { minimumFractionDigits: number; maximumFractionDigits: number } {
-  const digits = Math.round(cents) % 100 === 0 ? 0 : 2;
-  return { minimumFractionDigits: digits, maximumFractionDigits: digits };
 }

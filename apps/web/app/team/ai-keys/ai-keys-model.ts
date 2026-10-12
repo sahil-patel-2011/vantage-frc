@@ -70,6 +70,8 @@ export type Payload = {
   canManage: boolean;
   keys: ByokKeyStatus[];
   memberKeys?: MemberKeyRow[];
+  /** Every team key, in the order AI tries them (migration 0727). Absent before it. */
+  keyList?: import("./ai-keys-team-list").TeamKeyRow[];
   providers: ProviderMeta[];
   localConnector?: LocalConnector;
   routing?: RoutingPrefs;

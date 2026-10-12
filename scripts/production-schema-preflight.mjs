@@ -11,6 +11,34 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // View only = read-only: request code calls is_org_viewer() (withRls, scouting sync).
   "0715_view_only_read_only.sql",
   "0716_github_pr_reviews.sql",
+  // Team lessons: /api/team-lessons reads and writes team_lessons, revisions and attempts.
+  "0717_team_lessons.sql",
+  // The outage console's contact list: /api/me (platform admins) and /api/admin/outage-contacts
+  // call list_service_notice_recipients().
+  "0718_service_notice_recipients.sql",
+  // Guided-track lead sign-offs: /api/guided and /api/guided/team read guided_signoffs.
+  "0719_guided_signoffs.sql",
+  // Team lifecycle: /api/organizations/lifecycle and /api/account/delete call leave_team(),
+  // delete_team(), team_has_live_subscription() and delete_my_account().
+  "0720_team_lifecycle.sql",
+  // Invites and roles: /api/teams/join calls team_code_join_retry_at(), invite acceptance calls
+  // my_invite_join_context(), /api/invites/preview calls peek_replaced_invite(), suggestions call
+  // suggest_team_invite(), and Team admin reads team_join_codes.join_role.
+  "0721_invites_and_roles.sql",
+  // Un-assign on the Assignments board: /api/scouting/coverage deletes scout_assignments rows.
+  "0722_scout_assignment_unassign.sql",
+  // Operations trust: /api/hours reads hour_logs.entry_source and correction columns; the
+  // two-person reimbursement rule, lead-only certifications and sign-off notices live in RLS.
+  "0723_operations_trust.sql",
+  // Send feedback: POST /api/feedback/bug writes bug_reports.kind and /api/admin/feedback filters on it.
+  "0726_feedback_kind.sql",
+  // Platform admin: /api/admin/platform-admins calls platform_admin_list/add/remove/transfer();
+  // AI credit gifts (/api/admin/ai-credits, /api/ai-credit, every Ask AI call via
+  // ai_credit_gift_for_org / reserve / settle) and /api/admin/health (platform_job_health).
+  "0727_platform_admin_credits.sql",
+  // "Your apps": /api/navigation/preferences reads and writes profiles.pinned_apps (it falls back
+  // to island_tabs without it, but then only a bar of exactly four can be saved).
+  "0729_more_pinned_apps.sql",
 ];
 
 /** Read-only deployment gate. Local/CI builds never acquire database access. */

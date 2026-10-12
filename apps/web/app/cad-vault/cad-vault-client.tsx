@@ -527,7 +527,8 @@ export default function CadVaultClient() {
               </select>
             </label>
           ) : null}
-          <span className="app-badge">{formatBytes(ready?.totalBytes ?? 0)} of 2 GB</span>
+          {/* Plain words, not a pill: in the header row it read as one more button. */}
+          <span className="cad-vault-storage">{formatBytes(ready?.totalBytes ?? 0)} of 2 GB used</span>
         </div>
       </CadVaultHeader>
       <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />

@@ -2,27 +2,40 @@
 
 import { aiConnectionHref } from "../../lib/ai/connection";
 
-import { useEffect, useState } from "react";
-import { AiHubRelated } from "../../components/ai-hub-related";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AiActionProposals } from "../../components/ai-action-proposals";
-import { AiAgentStatus } from "../../components/ai-agent-status";
+import { AiCreditLine } from "../../components/ai-credit-line";
+import { AiSponsorBranding } from "../../components/ai-sponsor-branding";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button, EmptyState, askConfirm } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState, PageMain, askConfirm } from "../../components/ui";
 import {
-  AI_CHAT_RELATED_INCLUDE,
   AI_CHAT_SCOPE_CARDS,
-  aiChatNextActions,
-  aiChatRelatedLinks,
   aiChatShellCopy,
   classifyAiChatShell,
   type AiChatShellKind,
 } from "../../lib/ai-chat/ai-chat-related";
+import {
+  aiSkillById,
+  canSaveSkillDraft,
+  pageLabelFor,
+  type AiSkillDraftKind,
+} from "../../lib/ai-skills/catalog";
+import { sponsorDraftKind } from "../../lib/ai-skills/sponsorships";
 import { hubHref } from "../../lib/nav/hubs";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
+import {
+  SkillChip,
+  SkillPreviewCard,
+  SkillStarters,
+  StarterGroups,
+  type SkillAvailabilityRow,
+  type SkillPreview,
+} from "./ask-ai-skills";
+import { BackgroundRunCard, backgroundRunLabel, useBackgroundWork } from "./background-work";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -48,15 +61,24 @@ type MemorySettings = {
   private: { enabled: boolean; tokenBudget: number };
   team: { enabled: boolean; tokenBudget: number; retentionDays: number } | null;
 };
-type ToolOutput = {
-  name: string;
-  status: string;
-  classification: string;
-  summary: string;
+type TurnSkill = { id: string; name: string; source: "pinned" | "keyword" | "model" };
+
+/** The page Ask AI was opened from: shown on the chip, sent to the skill as data. */
+export type AskAiPageContext = {
+  from?: string | null;
+  about?: string | null;
+  sponsorId?: string | null;
+  teamKey?: string | null;
+  matchKey?: string | null;
 };
 
+/** Tool references other than skills (skills get their own line). */
 function toolRefs(refs: SourceRef[] | null | undefined) {
-  return (refs ?? []).filter((ref) => ref.toolName || ref.type === "module_fact");
+  return (refs ?? []).filter((ref) => (ref.toolName || ref.type === "module_fact") && !ref.toolName?.startsWith("skill."));
+}
+
+function skillRefs(refs: SourceRef[] | null | undefined) {
+  return (refs ?? []).filter((ref) => ref.toolName?.startsWith("skill."));
 }
 
 function memoryRefs(refs: SourceRef[] | null | undefined) {
@@ -73,16 +95,14 @@ function bridgeRefs(refs: SourceRef[] | null | undefined) {
   );
 }
 
-function ChatRelatedStrip({ orgId }: { orgId: string }) {
-  const links = aiChatRelatedLinks(orgId, { include: [...AI_CHAT_RELATED_INCLUDE] });
-  return (
-    <nav className="product-hub-related ch-related" aria-label="Related AI and competition tools">
-      {links.map((link) => (
-        <a key={link.href} href={link.href}>{link.label}</a>
-      ))}
-    </nav>
-  );
-}
+const DRAFT_KIND_LABEL: Record<AiSkillDraftKind, string> = {
+  cold_intro: "Intro email",
+  sponsorship_ask: "Sponsorship ask",
+  renewal: "Renewal email",
+  thank_you: "Thank-you",
+  grant_followup: "Grant follow-up",
+  grant: "Grant answer",
+};
 
 function ChatStatusPrimary({
   shell,
@@ -123,39 +143,29 @@ function ChatStatusPrimary({
   }
 }
 
-function NextActions({ orgId, shell }: { orgId: string; shell: AiChatShellKind }) {
-  const actions = aiChatNextActions({ orgId, shell });
-  if (!actions.length) return null;
-  return (
-    <section className="ch-next-actions app-card soft-panel edc-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
+/**
+ * Ask AI — the one assistant. It picks a skill for each question (or keeps the one the person or
+ * the page chose), and every page opens it the same way. Writer drafting and the former Agent
+ * tab live here too: the Writing skill, and "Work on this in the background".
+ */
 export default function ChatClient({
   orgId,
   initialPrompt = "",
   source = "",
   contextId = "",
+  initialSkill = null,
+  page = {},
+  initialMode = null,
 }: {
   orgId: string;
   initialPrompt?: string;
   source?: string;
   contextId?: string;
+  /** Skill to open on (the page's skill, or ?skill=). */
+  initialSkill?: string | null;
+  page?: AskAiPageContext;
+  /** "background": open with "Work on this in the background" on (the former Agent tab). */
+  initialMode?: "background" | null;
 }) {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [thread, setThread] = useState<Thread | null>(null);
@@ -173,7 +183,6 @@ export default function ChatClient({
         ? "Opened from Kickoff with this year's game brief. Send when you are ready."
         : "",
   );
-  const [lastTools, setLastTools] = useState<ToolOutput[]>([]);
   const [privateBudget, setPrivateBudget] = useState(1200);
   const [teamBudget, setTeamBudget] = useState(1600);
   const [pendingEditorContextId, setPendingEditorContextId] = useState(contextId);
@@ -191,6 +200,25 @@ export default function ChatClient({
     message: string;
     steps: Array<{ id: string; label: string; detail: string; href: string }>;
   } | null>(null);
+  const [sending, setSending] = useState(false);
+
+  // Skills: which ones this member may use, the one pinned (chip / page), the one the last
+  // question used, and what it found when AI couldn't answer.
+  const [availability, setAvailability] = useState<SkillAvailabilityRow[] | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+  const [pinned, setPinned] = useState<string | null>(aiSkillById(initialSkill)?.id ?? null);
+  const [lastSkill, setLastSkill] = useState<TurnSkill | null>(null);
+  const [skillNotice, setSkillNotice] = useState<string | null>(null);
+  const [preview, setPreview] = useState<SkillPreview | null>(null);
+  const [answerPreviews, setAnswerPreviews] = useState<SkillPreview[]>([]);
+  const [newScope, setNewScope] = useState<"private" | "team">("private");
+  const [background, setBackground] = useState(initialMode === "background");
+  const bg = useBackgroundWork(orgId);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const fromLabel = pageLabelFor(page.from ?? null);
+  const shownSkillId = pinned ?? lastSkill?.id ?? null;
+  const viewOnly = role === "viewer";
 
   async function load(threadId?: string) {
     if (!threadId) {
@@ -209,6 +237,8 @@ export default function ChatClient({
     setThreads(data.threads ?? []);
     setMemories(data.memories ?? []);
     setPromptCachingEnabled(Boolean(data.promptCachingEnabled));
+    if (Array.isArray(data.skills)) setAvailability(data.skills);
+    if (typeof data.role === "string") setRole(data.role);
     if (data.memorySettings) {
       setMemorySettings(data.memorySettings);
       setPrivateBudget(data.memorySettings.private?.tokenBudget ?? 1200);
@@ -234,16 +264,22 @@ export default function ChatClient({
     };
   }, [orgId]);
 
-  async function newThread(nextScope: "private" | "team") {
+  // A pinned skill the member can't use falls back to choosing (and says so once).
+  useEffect(() => {
+    if (!pinned || !availability?.length) return;
+    const row = availability.find((entry) => entry.id === pinned);
+    if (row && !row.available) {
+      setSkillNotice(row.reason);
+      setPinned(null);
+    }
+  }, [availability, pinned]);
+
+  async function newThread(nextScope: "private" | "team", title?: string): Promise<Thread | null> {
+    const label = title?.trim() ? title.trim().slice(0, 60) : nextScope === "team" ? "Team strategy channel" : "Private chat";
     const response = await fetch("/api/agent", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        action: "thread",
-        orgId,
-        scope: nextScope,
-        title: nextScope === "team" ? "Team strategy channel" : "Private chat",
-      }),
+      body: JSON.stringify({ action: "thread", orgId, scope: nextScope, title: label }),
     });
     const data = await response.json();
     if (!response.ok) {
@@ -255,67 +291,122 @@ export default function ChatClient({
           steps: Array.isArray(data.steps) ? data.steps : [],
         });
       }
-      setStatus(data.error ?? "Could not create channel.");
-      return;
+      setStatus(data.error ?? "Could not start a chat.");
+      return null;
     }
     setCutoffCode(null);
     setProviderSetup(null);
-    const value = {
-      id: data.threadId,
-      title: nextScope === "team" ? "Team strategy channel" : "Private chat",
-      scope: nextScope,
-    };
+    const value: Thread = { id: data.threadId, title: label, scope: nextScope };
     setThread(value);
     setMessages([]);
-    setLastTools([]);
     await load();
+    return value;
+  }
+
+  function startOver() {
+    setThread(null);
+    setMessages([]);
+    setPreview(null);
+    setAnswerPreviews([]);
+    setNotSent(null);
+    setStatus("");
+    bg.close();
+    composerRef.current?.focus();
+  }
+
+  async function sendBackground(goal: string) {
+    setStatus("Working on it in the background — you can keep reading.");
+    const failure = await bg.start(goal);
+    if (failure) {
+      if (failure.cutoff) setCutoffCode(failure.cutoff);
+      setNotSent(failure.message);
+      setStatus("");
+      return;
+    }
+    setText("");
+    setStatus("Background work finished.");
   }
 
   async function send(event: React.FormEvent) {
     event.preventDefault();
-    if (!thread || !text.trim()) return;
-        setStatus("Looking up tools…");
+    const question = text.trim();
+    if (!question || sending) return;
     setCutoffCode(null);
     setProviderSetup(null);
     setNotSent(null);
-    const response = await fetch("/api/agent", {
+    setPreview(null);
+    setSkillNotice(null);
+    if (background) {
+      await sendBackground(question);
+      return;
+    }
+    setSending(true);
+    try {
+      const active = thread ?? (await newThread(viewOnly ? "private" : newScope, question));
+      if (!active) return;
+      setStatus("Looking at your team's records…");
+      const response = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "message",
+          orgId,
+          threadId: active.id,
+          scope: active.scope,
+          message: text,
+          skill: pinned,
+          page,
+          ...(pendingEditorContextId ? { editorContextId: pendingEditorContextId } : {}),
+        }),
+      });
+      const data = await response.json();
+      if (data.skill?.id) {
+        setLastSkill({ id: data.skill.id, name: data.skill.name, source: data.skill.source });
+      }
+      if (data.skillNotice) setSkillNotice(data.skillNotice);
+      if (!response.ok) {
+        const cutoff = resolveCutoffErrorCode(response.status, data);
+        if (cutoff) setCutoffCode(cutoff);
+        if (data.skillPreview) setPreview(data.skillPreview as SkillPreview);
+        if (data.code === "setup_required" || data.status === "setup_required") {
+          setNotSent(data.message ?? data.error ?? "AI isn't on for your team yet.");
+          setStatus("");
+          return;
+        }
+        setStatus(data.error ?? "Ask AI couldn't answer that just now.");
+        return;
+      }
+      setAnswerPreviews(Array.isArray(data.skillOutputs) ? (data.skillOutputs as SkillPreview[]) : []);
+      setStatus("");
+      if (pendingEditorContextId) setPendingEditorContextId("");
+      setText("");
+      await load(active.id);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function saveDraft(message: Message, previousQuestion: string) {
+    const skillId = skillRefs(message.sourceRefs)[0]?.toolName?.slice("skill.".length) ?? shownSkillId;
+    const skill = aiSkillById(skillId);
+    if (!skill?.saveDraft) return;
+    const kind: AiSkillDraftKind = skill.id === "sponsorships" ? sponsorDraftKind(previousQuestion) : skill.saveDraft;
+    const target = page.about?.trim() || null;
+    const response = await fetch("/api/writer", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        action: "message",
+        action: "save-draft",
         orgId,
-        threadId: thread.id,
-        scope: thread.scope,
-        message: text,
-        ...(pendingEditorContextId ? { editorContextId: pendingEditorContextId } : {}),
+        kind,
+        title: `${DRAFT_KIND_LABEL[kind]}${target ? ` — ${target}` : ""}`,
+        targetName: target ?? undefined,
+        body: message.content,
+        source: "ai",
       }),
     });
-    const data = await response.json();
-    if (!response.ok) {
-      const cutoff = resolveCutoffErrorCode(response.status, data);
-      if (cutoff) setCutoffCode(cutoff);
-      if (data.code === "setup_required" || data.status === "setup_required") {
-        setNotSent(data.message ?? data.error ?? "AI isn't on for your team yet.");
-        setStatus("");
-        return;
-      }
-      setStatus(data.error ?? "Agent request failed.");
-      return;
-    }
-    const tools = (data.toolOutputs ?? []) as ToolOutput[];
-    setLastTools(tools);
-    const toolLabel = tools.length
-      ? `${tools.length} tool${tools.length === 1 ? "" : "s"} (${tools.map((t) => t.name).join(", ")})`
-      : "no tools";
-    const cites = data.contextSources?.length ?? 0;
-    const bridge = (data.bridgeProvenance ?? []) as Array<{ label?: string; type?: string }>;
-    const bridgeLabel = bridge.length
-      ? ` · ${bridge.map((b) => b.label ?? b.type).join("; ")}`
-      : "";
-    setStatus(`Used ${toolLabel}; ${cites} provenance source${cites === 1 ? "" : "s"}${bridgeLabel}.`);
-    if (pendingEditorContextId) setPendingEditorContextId("");
-    setText("");
-    await load(thread.id);
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    setStatus(response.ok ? "Saved to your drafts. Open Writer to edit or send it." : (data.error ?? "That draft couldn't be saved."));
   }
 
   async function saveMemory(event: React.FormEvent) {
@@ -417,13 +508,19 @@ export default function ChatClient({
     if (response.ok) await load(thread?.id);
   }
 
+  function pickStarter(skillId: string | null, starter: string) {
+    if (skillId) setPinned(skillId);
+    setText(starter);
+    requestAnimationFrame(() => composerRef.current?.focus());
+  }
+
   const budgetsHref = hubHref("/ai", "budgets", orgId);
   const memoryHref = hubHref("/ai", "memory", orgId);
-  const strategyHref = hubHref("/competition", "strategy", orgId);
   const knowledgeHref = withOrgHref("/team?tab=knowledge", orgId);
   const usageHref = hubHref("/ai", "usage", orgId);
   const runsHref = withOrgHref("/team/ai-runs", orgId);
   const promptsHref = withOrgHref("/team/prompts", orgId);
+  const draftsHref = hubHref("/ai", "writer", orgId);
   const shell = classifyAiChatShell({
     loading,
     status: httpStatus,
@@ -441,37 +538,37 @@ export default function ChatClient({
   const showStatusShell =
     shell === "setup" || shell === "loading" || shell === "auth_required" || shell === "error";
   const connectionHref = aiConnectionHref(orgId);
+  const hasSide = threads.length > 0 || bg.runs.length > 0;
+  const conversationEmpty = !thread && !bg.selected;
+  const lastUserQuestion = useMemo(
+    () => [...messages].reverse().find((item) => item.role === "user")?.content ?? "",
+    [messages],
+  );
 
   return (
-    <main className="module-page ch-page">
-      <header className="app-page-header">
+    <PageMain className="module-page ch-page ask-page">
+      <header className="app-page-header ask-head">
         <div>
-          <span className="breadcrumbs">Ask AI / Chat</span>
-          <h1>Chat</h1>
-          <p>
-            Ask about teams, matchups, and scout evidence. Tools run when you mention a team or a match, and
-            answer from what your team has actually recorded.
-          </p>
+          <h1>Ask AI</h1>
+          <p>One assistant for your team. It picks the right skill for each question and answers from your team&apos;s own records.</p>
         </div>
         <div className="ch-header-actions">
-          {thread ? <span className={`app-badge ${thread.scope === "team" ? "setup" : "good"}`}>
-            {thread.scope === "team" ? "Team shared" : "Private"}
-          </span> : null}
-          {shell === "ready" ? (
-            <Button variant="secondary" type="button" className="ch-context-toggle" aria-expanded={contextOpen} onClick={() => setContextOpen((v) => !v)}>
+          <AiSponsorBranding />
+          {thread || bg.selected ? (
+            <Button variant="ghost" type="button" onClick={startOver}>
+              New chat
+            </Button>
+          ) : null}
+          {!blocked ? (
+            <Button variant="ghost" type="button" className="ch-context-toggle" aria-expanded={contextOpen} onClick={() => setContextOpen((v) => !v)}>
               {contextOpen ? "Hide chat settings" : "Chat settings"}
             </Button>
           ) : null}
         </div>
       </header>
 
-      <AiHubRelated orgId={orgId} active="chat" />
-      <ChatRelatedStrip orgId={orgId} />
-      <AiAgentStatus orgId={orgId} agents={["ask_ai", "web_research"]} className="ch-agent-status" />
-
-      {/* The settings links and the memory controls live behind "Chat settings" (one button), not
-          as nine links and a side panel around a single text box. */}
-
+      {/* The team's free AI credit, if Vantage gave one (renders nothing otherwise). The one credit display. */}
+      <AiCreditLine orgId={orgId} />
       <MeteredAiCutoffBanner orgId={orgId} errorCode={cutoffCode} compact />
       <SponsoredPromoBanner orgId={orgId} />
 
@@ -489,153 +586,157 @@ export default function ChatClient({
         </EmptyState>
       ) : null}
 
-      {shell === "ready" ? <NextActions orgId={orgId} shell={shell} /> : null}
-
-      {shell === "empty" ? (
-        <details className="ch-privacy">
-          <summary data-disclosure>Who can see a chat?</summary>
-          <div className="ch-scope">
-            {AI_CHAT_SCOPE_CARDS.map((card) => (
-              <article key={card.id}>
-                <h2>{card.title}</h2>
-                <p>{card.body}</p>
-              </article>
-            ))}
-          </div>
-        </details>
-      ) : null}
       {!blocked ? (
-      <div className="ch-layout" data-has-threads={threads.length > 0 || Boolean(thread)}>
-        {threads.length > 0 || thread ? <aside className="ch-sidebar" id="ch-channels" aria-label="Channels">
-          <div>
-            <span className="eyebrow">Channels</span>
-            <h2>Your threads</h2>
-          </div>
-          <div className="ch-thread-actions">
-            {shell !== "empty" ? (
-              <details className="ch-new-chat">
-                <summary data-disclosure>New chat</summary>
-                <Button variant="secondary" type="button" onClick={(event) => {
-                  event.currentTarget.closest("details")?.removeAttribute("open");
-                  void newThread("private");
-                }}>
-                  + Private chat
-                </Button>
-                <Button variant="secondary" type="button" onClick={(event) => {
-                  event.currentTarget.closest("details")?.removeAttribute("open");
-                  void newThread("team");
-                }}>
-                  + Team-shared chat
-                </Button>
-              </details>
+      <div className="ch-layout" data-has-threads={hasSide}>
+        {hasSide ? (
+          <aside className="ch-sidebar" id="ch-channels" aria-label="Recent chats">
+            {threads.length ? (
+              <>
+                <h2>Recent chats</h2>
+                <ul className="ch-thread-list">
+                  {threads.slice(0, 12).map((item) => (
+                    <li key={item.id}>
+                      <button
+                        className={thread?.id === item.id ? "active" : ""}
+                        type="button"
+                        onClick={() => {
+                          setThread(item);
+                          setPreview(null);
+                          setAnswerPreviews([]);
+                          bg.close();
+                          void load(item.id);
+                        }}
+                      >
+                        <span>{item.scope === "team" ? "Shared" : "Private"}</span>
+                        {item.title}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             ) : null}
-          </div>
-          <ul className="ch-thread-list">
-            {threads.map((item) => (
-              <li key={item.id}>
-                <button
-                  className={thread?.id === item.id ? "active" : ""}
-                  type="button"
-                  onClick={() => {
-                    setThread(item);
-                    setLastTools([]);
-                    void load(item.id);
-                  }}
-                >
-                  <span>{item.scope === "team" ? "Shared" : "Private"}</span>
-                  {item.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </aside> : null}
+            {bg.runs.length ? (
+              <>
+                <h2>Background work</h2>
+                <ul className="ch-thread-list">
+                  {bg.runs.slice(0, 6).map((run) => (
+                    <li key={run.id}>
+                      <button
+                        className={bg.selected?.run.id === run.id ? "active" : ""}
+                        type="button"
+                        onClick={() => {
+                          setThread(null);
+                          setMessages([]);
+                          void bg.open(run.id);
+                        }}
+                      >
+                        <span>{backgroundRunLabel(run)}</span>
+                        {run.goal.slice(0, 70)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </aside>
+        ) : null}
 
-        <section className="ch-main">
-          {!thread ? (
-            <div className="ch-empty">
-              <span className="app-badge setup">{shellCopy.badge ?? "Start here"}</span>
-              {/* h2, not h1. Inside the AI hub this page is a tab, the hub
-                  supplies the page's h1, and a second visible h1 makes the
-                  document outline say these are two separate pages. */}
-              <h2>{shell === "empty" ? shellCopy.title : "Pick or create a channel"}</h2>
-              <p>
-                {shell === "empty"
-                  ? shellCopy.description
-                  : "Private chats stay yours. Team channels are visible to every member."}
-              </p>
-              <div className="ch-empty-actions">
-                <Button variant="primary" type="button" onClick={() => void newThread("private")}>
-                  New private chat
-                </Button>
-              </div>
+        <section className="ch-main" aria-label="Conversation">
+          {conversationEmpty ? (
+            <div className="ch-empty ask-empty">
+              <h2>{aiChatShellCopy("empty").title}</h2>
+              <p>{aiChatShellCopy("empty").description}</p>
+              {pinned ? null : <StarterGroups availability={availability} onPick={(skillId, starter) => pickStarter(skillId, starter)} />}
+              {!viewOnly ? (
+                <details className="ch-privacy">
+                  <summary data-disclosure>{newScope === "team" ? "This chat will be shared with your team" : "Only you will see this chat"}</summary>
+                  <div className="ch-scope">
+                    {AI_CHAT_SCOPE_CARDS.map((card) => (
+                      <label key={card.id} className="ask-scope-option">
+                        <input
+                          type="radio"
+                          name="ask-scope"
+                          checked={newScope === card.id}
+                          onChange={() => setNewScope(card.id)}
+                        />
+                        <span>
+                          <strong>{card.title}</strong>
+                          <small>{card.body}</small>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </details>
+              ) : (
+                <p className="ask-viewonly-note">You&apos;re View only on this team, so your chats stay private and Ask AI won&apos;t change anything.</p>
+              )}
             </div>
-          ) : (
+          ) : null}
+
+          {thread ? (
             <>
               <header className="ch-thread-head">
                 <div>
                   <span className="eyebrow">
-                    {thread.scope === "team" ? "Team shared channel" : "Private channel"}
+                    {thread.scope === "team" ? "Shared with your team" : "Private chat"}
                   </span>
-                  {/* See above: the channel name is a heading within the
-                      page, not the name of the page. */}
+                  {/* The chat's name is a heading within the page, not the page's name. */}
                   <h2>{thread.title}</h2>
                 </div>
                 {thread.scope === "team" ? (
-                  <strong className="ch-shared-banner">Every message in this channel is shared</strong>
+                  <strong className="ch-shared-banner">Every message in this chat is shared</strong>
                 ) : null}
               </header>
 
-              <div className="ch-messages">
-                {messages.map((item) => {
+              <div className="ch-messages" aria-live="polite">
+                {messages.map((item, index) => {
                   const tools = toolRefs(item.sourceRefs);
+                  const skillsUsed = skillRefs(item.sourceRefs);
                   const memoriesUsed = memoryRefs(item.sourceRefs);
                   const bridgeUsed = bridgeRefs(item.sourceRefs);
+                  const usedSkill = aiSkillById(skillsUsed[0]?.toolName?.slice("skill.".length) ?? null);
+                  const question = [...messages.slice(0, index)].reverse().find((m) => m.role === "user")?.content ?? lastUserQuestion;
+                  const sourceCount = tools.length + memoriesUsed.length + bridgeUsed.length;
                   return (
                     <article className={`ch-msg ${item.role}`} key={item.id}>
                       <span>
-                        {item.role}
-                        {item.explicitlyShared ? " · shared" : " · private"}
+                        {item.role === "assistant" ? "Ask AI" : "You"}
+                        {usedSkill && item.role === "assistant" ? ` · ${usedSkill.name}` : ""}
+                        {item.explicitlyShared ? " · shared" : ""}
                       </span>
                       <p className="ch-msg-body">{item.content}</p>
-                      {item.role === "assistant" && tools.length > 0 ? (
-                        <div className="ch-tools" aria-label="Tool results">
-                          {tools.map((ref) => (
-                            <div
-                              className={`ch-tool status-${ref.status ?? "ok"}`}
-                              key={`${item.id}-${ref.id}`}
-                            >
-                              <strong>{ref.toolName ?? ref.id}</strong>
-                              <span>{ref.classification ?? "tool"}</span>
-                              <em>{ref.status === "empty" ? "empty" : ref.status ?? "ok"}</em>
-                              {ref.summary ? <p>{ref.summary}</p> : null}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      {item.role === "assistant" &&
-                      (tools.length > 0 || memoriesUsed.length > 0 || bridgeUsed.length > 0) ? (
-                        <ul className="ch-provenance" aria-label="Provenance citations">
-                          {bridgeUsed.map((ref) => (
-                            <li key={`cite-bridge-${item.id}-${ref.id}`}>
-                              {ref.summary ??
-                                (ref.type === "github_file"
-                                  ? `used GitHub path ${ref.id.replace(/^github:(?:tree:)?/, "")}`
-                                  : `used VS Code selection ${ref.id.replace(/^vscode:[^:]+:/, "")}`)}
-                            </li>
-                          ))}
-                          {tools.map((ref) => (
-                            <li key={`cite-tool-${item.id}-${ref.id}`}>
-                              {ref.toolName ?? ref.id}
-                              {ref.classification ? ` · ${ref.classification}` : ""}
-                              {ref.status === "empty" ? " · no rows" : ""}
-                            </li>
-                          ))}
-                          {memoriesUsed.map((ref) => (
-                            <li key={`cite-mem-${item.id}-${ref.id}`}>
-                              {ref.type.replace("_", " ")} · {ref.id.slice(0, 8)}
-                            </li>
-                          ))}
-                        </ul>
+                      {item.role === "assistant" && (sourceCount > 0 || skillsUsed.length > 0) ? (
+                        <details className="ask-sources">
+                          <summary data-disclosure>What I looked at</summary>
+                          <ul className="ch-provenance" aria-label="Provenance citations">
+                            {skillsUsed.map((ref) => (
+                              <li key={`cite-skill-${item.id}-${ref.id}`}>
+                                {aiSkillById(ref.toolName!.slice("skill.".length))?.name ?? ref.toolName}
+                                {ref.summary ? ` — ${ref.summary}` : ""}
+                              </li>
+                            ))}
+                            {bridgeUsed.map((ref) => (
+                              <li key={`cite-bridge-${item.id}-${ref.id}`}>
+                                {ref.summary ??
+                                  (ref.type === "github_file"
+                                    ? `used GitHub path ${ref.id.replace(/^github:(?:tree:)?/, "")}`
+                                    : `used VS Code selection ${ref.id.replace(/^vscode:[^:]+:/, "")}`)}
+                              </li>
+                            ))}
+                            {tools.map((ref) => (
+                              <li key={`cite-tool-${item.id}-${ref.id}`}>
+                                {ref.toolName ?? ref.id}
+                                {ref.summary ? ` — ${ref.summary}` : ""}
+                                {ref.status === "empty" ? " (no rows)" : ""}
+                              </li>
+                            ))}
+                            {memoriesUsed.map((ref) => (
+                              <li key={`cite-mem-${item.id}-${ref.id}`}>
+                                {ref.type.replace("_", " ")} · {ref.id.slice(0, 8)}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
                       ) : null}
                       {item.model ? (
                         <>
@@ -651,7 +752,12 @@ export default function ChatClient({
                           ) : null}
                         </>
                       ) : null}
-                      {item.role === "user" && thread.scope === "private" ? (
+                      {item.role === "assistant" && usedSkill && canSaveSkillDraft(usedSkill, role) ? (
+                        <Button variant="ghost" type="button" className="ch-promote" onClick={() => void saveDraft(item, question)}>
+                          Save as draft
+                        </Button>
+                      ) : null}
+                      {item.role === "user" && thread.scope === "private" && !viewOnly ? (
                         <Button variant="ghost" type="button" className="ch-promote" onClick={() => void promote(item.id)}>
                           Promote to team memory
                         </Button>
@@ -668,56 +774,94 @@ export default function ChatClient({
                 />
               ) : null}
 
-              <AiActionProposals orgId={orgId} refreshKey={messages.length} />
-
-              {lastTools.length > 0 ? (
-                <div className="ch-last-tools" aria-live="polite">
-                  <span className="eyebrow">Last turn tools</span>
-                  {lastTools.map((tool) => (
-                    <span key={`${tool.name}-${tool.summary}`} className={`ch-tool status-${tool.status}`}>
-                      <strong>{tool.name}</strong> · {tool.status}
-                    </span>
+              {answerPreviews.length ? (
+                <div className="ask-preview-row">
+                  {answerPreviews.map((row) => (
+                    <SkillPreviewCard key={row.skill} preview={row} />
                   ))}
                 </div>
               ) : null}
 
-              <form className="ch-composer" onSubmit={send}>
-                {thread.scope === "team" ? (
-                  <div className="ch-composer-note">Team shared · visible to members before send</div>
-                ) : null}
-                <textarea
-                  aria-label="Message"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Enter sends, as in every chat app; Shift+Enter adds a new line.
-                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                      e.preventDefault();
-                      e.currentTarget.form?.requestSubmit();
-                    }
-                  }}
-                  placeholder="Ask about team 254 scouting, qual 42 strategy…"
-                />
-                <div className="ch-composer-foot">
-                  <Button variant="primary" type="submit">
-                    Send
-                  </Button>
-                  {notSent ? (
-                    <p className="ch-status ch-not-sent" role="alert">
-                      <strong>Not sent.</strong> {notSent} <a href={aiConnectionHref(orgId)}>Connect AI</a>
-                    </p>
-                  ) : status ? (
-                    <p className="ch-status" role="status">
-                      {status}
-                    </p>
-                  ) : null}
-                </div>
-              </form>
+              <AiActionProposals orgId={orgId} refreshKey={messages.length} />
             </>
-          )}
+          ) : null}
+
+          {bg.selected ? <BackgroundRunCard run={bg.selected.run} steps={bg.selected.steps} onClose={bg.close} /> : null}
+
+          {preview ? (
+            <SkillPreviewCard
+              preview={preview}
+              lead={`AI couldn't answer, but here is what ${aiSkillById(preview.skill)?.name ?? "the skill"} found in your records`}
+            />
+          ) : null}
+
+          <form className="ch-composer ask-composer" onSubmit={send}>
+            <div className="ask-composer-top">
+              <SkillChip
+                skillId={shownSkillId}
+                chosenBy={pinned ? "pinned" : lastSkill ? "auto" : null}
+                fromLabel={pinned && pinned === aiSkillById(initialSkill)?.id ? fromLabel : null}
+                availability={availability}
+                onChange={(next) => {
+                  setPinned(next);
+                  if (!next) setLastSkill(null);
+                  setSkillNotice(null);
+                }}
+              />
+              {skillNotice ? <small className="ask-skill-notice">{skillNotice}</small> : null}
+            </div>
+            {pinned && conversationEmpty ? <SkillStarters skillId={pinned} onPick={(starter) => pickStarter(null, starter)} /> : null}
+            {thread?.scope === "team" ? (
+              <div className="ch-composer-note">Shared with your team · teammates see this message</div>
+            ) : null}
+            <textarea
+              ref={composerRef}
+              aria-label="Message"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter sends, as in every chat app; Shift+Enter adds a new line.
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  e.currentTarget.form?.requestSubmit();
+                }
+              }}
+              placeholder={
+                background
+                  ? "Give it a goal, e.g. Summarize the bumper rules from the official manual"
+                  : aiSkillById(shownSkillId)?.starters[0]
+                    ? `Ask anything — e.g. ${aiSkillById(shownSkillId)!.starters[0]}`
+                    : "Ask anything about your team, a match, sponsors, the robot…"
+              }
+            />
+            <div className="ch-composer-foot">
+              <label className="ask-bg-toggle">
+                <input type="checkbox" checked={background} onChange={(e) => setBackground(e.target.checked)} />
+                <span>Work on this in the background</span>
+              </label>
+              <Button variant="primary" type="submit" disabled={sending || bg.busy || !text.trim()}>
+                {sending || bg.busy ? "Working…" : "Send"}
+              </Button>
+            </div>
+            {notSent ? (
+              <p className="ch-status ch-not-sent" role="alert">
+                <strong>Not sent.</strong> {notSent} <a href={aiConnectionHref(orgId)}>Connect AI</a>
+              </p>
+            ) : status ? (
+              <p className="ch-status" role="status">
+                {status}
+                {status.startsWith("Saved to your drafts") ? (
+                  <>
+                    {" "}
+                    <a href={draftsHref}>Open drafts</a>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+          </form>
         </section>
 
-        {shell === "ready" ? (
+        {shell === "ready" || shell === "empty" ? (
         <aside className={`ch-context${contextOpen ? " open" : ""}`} aria-label="Chat settings">
           <nav className="ch-gov" aria-label="Chat settings links">
             <span className="ch-cache">
@@ -728,10 +872,10 @@ export default function ChatClient({
             <a href={budgetsHref}>Chat limits</a>
             <a href={memoryHref}>Memory</a>
             <a href={promptsHref}>Prompts</a>
-            <a href={strategyHref}>Strategy</a>
             <a href={usageHref}>Usage</a>
             <a href={runsHref}>AI runs</a>
             <a href={knowledgeHref}>Knowledge</a>
+            <a href={draftsHref}>Saved drafts</a>
           </nav>
           <div>
             <span className="eyebrow">Context</span>
@@ -847,6 +991,6 @@ export default function ChatClient({
         ) : null}
       </div>
       ) : null}
-    </main>
+    </PageMain>
   );
 }

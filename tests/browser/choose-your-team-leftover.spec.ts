@@ -14,7 +14,7 @@ test("All apps team chip and Chat never say Pick a team", async ({ page }) => {
 
   // The island's fifth "All" button is gone — it duplicated this one.
   await openNav(page);
-  const drawer = page.getByRole("complementary", { name: "Product navigation" });
+  const drawer = page.getByRole("dialog", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
   await expect(drawer).not.toContainText("Pick a team");
 

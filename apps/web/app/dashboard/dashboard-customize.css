@@ -1,0 +1,395 @@
+/*
+ * Edit Home (dashboard-customize-sheet.tsx). A side panel on a computer and a bottom sheet on a
+ * phone; the board behind it is a plain, live preview. Durations are vantage-fluid tokens, so
+ * nothing moves under reduced motion.
+ */
+
+.dash-customize {
+  position: fixed;
+  z-index: 120;
+  top: 76px;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, calc(100vw - 32px));
+  box-sizing: border-box;
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgb(15 23 42 / 0.16), 0 2px 8px rgb(15 23 42 / 0.06);
+  color: var(--ink);
+  outline: none;
+  animation: dash-customize-in var(--dur-move, 240ms) var(--ease-out, ease-out) both;
+}
+@keyframes dash-customize-in {
+  from { opacity: 0; translate: 12px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.dash-customize-head {
+  display: grid;
+  gap: 12px;
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.dash-customize-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Two tabs as one segmented control. */
+.dash-customize-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.dash-customize-tabs > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-tint) var(--ease-out), color var(--dur-tint) var(--ease-out);
+}
+.dash-customize-tabs > button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.12);
+}
+.dash-customize-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.dash-customize-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 8px 10px 16px;
+}
+
+.dash-customize-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dash-customize-list > li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  transition: background-color var(--dur-tint) var(--ease-out);
+}
+.dash-customize-list > li:hover {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+.dash-customize-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+.dash-customize-icon svg { width: 18px; height: 18px; }
+.dash-customize-name {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.dash-customize-name strong {
+  overflow: hidden;
+  font-size: 14.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dash-customize-name small {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.dash-customize-size select {
+  min-height: 36px;
+  padding: 0 28px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background-color: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+}
+.dash-customize-actions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+.dash-customize-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color var(--dur-tint) var(--ease-out), color var(--dur-tint) var(--ease-out),
+    scale var(--dur-press) var(--ease-spring);
+}
+.dash-customize-icon-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--ink);
+}
+.dash-customize-icon-btn:active:not(:disabled) { scale: 0.92; }
+.dash-customize-icon-btn:disabled { opacity: 0.3; cursor: default; }
+.dash-customize-icon-btn svg { width: 18px; height: 18px; }
+.dash-customize-icon-btn .is-up { rotate: -90deg; }
+.dash-customize-icon-btn .is-down { rotate: 90deg; }
+/* iOS's red minus: the one control here that takes something away. */
+.dash-customize-minus {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--danger, #d92d20);
+}
+.dash-customize-minus::after {
+  content: "";
+  position: absolute;
+  inset: 9px 5px;
+  border-radius: 1px;
+  background: #fff;
+}
+
+.dash-customize-sub {
+  margin: 18px 8px 4px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.dash-customize-note {
+  margin: 0 8px 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.dash-customize-list.is-quiet .dash-customize-icon {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--muted);
+}
+
+.dash-customize-link {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dash-customize-link:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.dash-customize-link.is-danger { color: var(--danger, #d92d20); }
+.dash-customize-link:disabled { opacity: 0.45; cursor: default; }
+.dash-customize-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 4px;
+  margin: 18px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line-soft);
+}
+.dash-customize-empty {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding: 16px 8px;
+  color: var(--muted);
+}
+.dash-customize-empty p { margin: 0; }
+
+.dash-customize-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 6px 4px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.dash-customize-search svg { width: 18px; height: 18px; flex: none; }
+.dash-customize-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+.dash-customize-group .dash-customize-list > li { align-items: flex-start; }
+.dash-customize-group .dash-customize-icon,
+.dash-customize-group .dash-customize-add,
+.dash-customize-group .dash-customize-state { margin-top: 2px; }
+.dash-customize-add {
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color var(--dur-tint) var(--ease-out), scale var(--dur-press) var(--ease-spring);
+}
+.dash-customize-add:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.dash-customize-add:active:not(:disabled) { scale: 0.95; }
+.dash-customize-state {
+  flex: none;
+  padding: 6px 4px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.dash-customize-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line-soft);
+}
+.dash-customize-spacer { flex: 1; }
+.dash-customize-btn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-tint) var(--ease-out), scale var(--dur-press) var(--ease-spring);
+}
+.dash-customize-btn:active:not(:disabled) { scale: 0.97; }
+.dash-customize-btn:disabled { opacity: 0.45; cursor: default; }
+.dash-customize-btn.is-icon { padding: 0; }
+.dash-customize-btn.is-icon svg { width: 20px; height: 20px; }
+.dash-customize-btn.is-primary {
+  min-width: 96px;
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+.dash-customize :is(button, select, input):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* While editing, the board is a plain preview: nothing on it is a control. */
+.dash-home.is-editing .dash-grid-wrap [data-testid="dash-grid-item"] {
+  pointer-events: none;
+}
+
+/* A wide screen has room for the board and the panel side by side. */
+@media (min-width: 1500px) {
+  body.has-app-shell:has(.dash-customize) .dash-home { padding-right: 460px; }
+}
+
+/* A phone: a bottom sheet over the bottom bar, the board peeking above it. */
+@media (max-width: 760px) {
+  .dash-customize {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 82dvh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: 0;
+    animation-name: dash-customize-up;
+  }
+  @keyframes dash-customize-up {
+    from { opacity: 0; translate: 0 24px; }
+    to { opacity: 1; translate: 0 0; }
+  }
+  .dash-customize-list > li { gap: 8px; }
+  .dash-customize-icon-btn { width: 44px; height: 44px; }
+  .dash-customize-size select { min-height: 44px; font-size: 16px; }
+  .dash-customize-search input { font-size: 16px; }
+}
+
+.dash-customize-inline {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dash-customize-inline:disabled { opacity: 0.5; cursor: default; }
+
+/* Rows on Home: name gets the room, then size and the three buttons; a note runs underneath. */
+.dash-customize-list > li[data-testid="dash-customize-row"] {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto auto;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+.dash-customize-rownote {
+  grid-column: 2 / -1;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.dash-customize-size select { width: 124px; }
+.dash-customize-actions .dash-customize-icon-btn { width: 32px; }
+@media (max-width: 760px) {
+  .dash-customize-actions .dash-customize-icon-btn { width: 44px; }
+}

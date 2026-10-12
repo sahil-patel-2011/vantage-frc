@@ -100,16 +100,23 @@ describe("hub chrome paths", () => {
     expect(showBackForPath("/docs/scouting")).toBe(true);
   });
 
-  it("sends Account back to Home and nested docs to the manual", () => {
-    expect(backHrefForPath("/account", null)).toBe("/dashboard");
+  it("sends every settings page back to the Settings list, and nested docs to the manual", () => {
+    expect(backHrefForPath("/account", null)).toBe("/settings");
+    expect(backHrefForPath("/connectors", null)).toBe("/settings");
+    expect(backHrefForPath("/team/admin", "org-1")).toBe("/settings?orgId=org-1");
+    expect(backHrefForPath("/messages/moderation", "org-1")).toBe("/settings?orgId=org-1");
+    expect(showBackForPath("/settings")).toBe(false);
+    expect(showBackForPath("/connectors")).toBe(true);
     expect(backHrefForPath("/docs/scouting", null)).toBe("/docs");
-    expect(backHrefForPath("/team/admin", "org-1")).toContain("/team");
   });
 
-  it("titles Account / App manual when the nav catalog has no match", () => {
-    expect(shellTitleForPath("/account")).toBe("Account");
+  it("names settings pages as the Settings list does, and App manual when the nav catalog has no match", () => {
+    expect(shellTitleForPath("/account")).toBe("Profile");
+    expect(shellTitleForPath("/account", "?tab=appearance")).toBe("Appearance");
+    expect(shellTitleForPath("/team/admin")).toBe("Members and invites");
+    expect(shellTitleForPath("/settings")).toBe("Settings");
     expect(shellTitleForPath("/docs")).toBe("App manual");
-    expect(shellTitleForPath("/help")).toBe("Help centre");
+    expect(shellTitleForPath("/help")).toBe("Help");
     expect(shellTitleForPath("/support")).toBe("Support");
   });
 

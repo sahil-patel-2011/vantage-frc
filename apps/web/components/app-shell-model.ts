@@ -1,3 +1,4 @@
+import { ROLE_LABELS } from "@vantage/core/role-words";
 import type { ClientHubAccessRow } from "../lib/nav/hub-access-filter";
 import {
   ORG_EXEMPT_HREFS,
@@ -7,6 +8,7 @@ import {
   type ProductNavGroup,
 } from "../lib/nav/product-nav";
 import type { CommandHit } from "../lib/nav/command-search";
+import { SETTINGS_HREF, isSettingsPath, settingsSectionLabel } from "../lib/nav/settings-nav";
 
 export type SearchHit = {
   title: string;
@@ -70,13 +72,8 @@ export function formatMembershipLabel(row: MembershipOption): string {
   return teamLabelFor(teamNumber, row.orgName) ?? "Your team";
 }
 
-/** The words the invite and Team admin use for each access level ("scout" is the tier, "Student" the person). */
-const ROLE_WORDS: Record<string, string> = {
-  owner: "Owner",
-  admin: "Mentor or coach",
-  scout: "Student",
-  viewer: "Parent or guest",
-};
+/** The one table of role words (@vantage/core/role-words), shared with Team admin, invites and email. */
+const ROLE_WORDS: Record<string, string> = { ...ROLE_LABELS };
 
 /** The role in the words the invite and Team admin use ("scout" → "Student"). */
 export function roleWord(role?: string | null): string {
@@ -151,6 +148,9 @@ export function isHubRootPath(pathname: string): boolean {
 
 export function showBackForPath(pathname: string): boolean {
   if (isHubRootPath(pathname)) return false;
+  // Every settings page goes back to the Settings list (the list itself is a top-level place).
+  if (pathname === SETTINGS_HREF) return false;
+  if (isSettingsPath(pathname)) return true;
   return (
     pathname.startsWith("/account") ||
     pathname.startsWith("/team/") ||
@@ -164,8 +164,7 @@ export function showBackForPath(pathname: string): boolean {
 }
 
 export function backHrefForPath(pathname: string, orgId: string | null): string {
-  if (pathname.startsWith("/account")) return "/dashboard";
-  if (pathname.startsWith("/security")) return "/account";
+  if (pathname !== SETTINGS_HREF && isSettingsPath(pathname)) return withOrgHref(SETTINGS_HREF, orgId);
   if (pathname === "/support") return "/docs";
   if (pathname.startsWith("/docs/") || pathname === "/docs" || pathname.startsWith("/help/") || pathname === "/help") {
     return pathname === "/docs" || pathname === "/help" ? "/dashboard" : "/docs";
@@ -180,14 +179,19 @@ export function backHrefForPath(pathname: string, orgId: string | null): string 
   return "/dashboard";
 }
 
-export function shellTitleForPath(pathname: string): string | null {
+export function shellTitleForPath(pathname: string, search?: string | null): string | null {
+  // Settings pages are named as the Settings list names them ("Security", "Members and invites").
+  if (isSettingsPath(pathname)) {
+    const section = settingsSectionLabel(pathname, search);
+    if (section) return section;
+  }
   const fromNav = navTitleForPath(pathname);
   if (fromNav) return fromNav;
   if (pathname.startsWith("/account")) return "Account";
   if (pathname.startsWith("/notifications")) return "Notifications";
   if (pathname.startsWith("/admin")) return "Admin";
   if (pathname.startsWith("/docs")) return "App manual";
-  if (pathname.startsWith("/help")) return "Help centre";
+  if (pathname.startsWith("/help")) return "Help";
   if (pathname === "/support") return "Support";
   if (pathname === "/start") return "Your first week";
   if (pathname.startsWith("/team/slack")) return "Slack";
@@ -263,6 +267,67 @@ export function teamLabelFor(
 
 export function orgLabelFor(me: Me, orgId: string): string {
   return teamLabelFor(me.teamNumber, me.orgName) ?? (orgId ? "This team" : "No team selected");
+}
+
+/** The one placeholder while the team is not known yet: the server HTML says it too. */
+export const TEAM_LABEL_PLACEHOLDER = "Your team";
+
+/**
+ * The team switcher's label, stable while the page loads.
+ *
+ * It used to read "Your team" (server HTML), then "This team" (the URL's team known, /api/me not
+ * back yet), then "Team 6925": three widths and two words for one thing in the first seconds of
+ * every page. Now it is the placeholder (or the label this device last showed for this team)
+ * until the session answers for *this* team, then the real one. While switching teams the old
+ * team's name is not shown over the new team's page.
+ */
+export function shellOrgLabel(input: {
+  pathname: string;
+  orgId: string;
+  me: Me;
+  teamsLoaded: boolean;
+  remembered: string | null;
+}): string {
+  const { pathname, orgId, me, teamsLoaded, remembered } = input;
+  // During onboarding the person is joining a team, so "No team selected" contradicts the page.
+  if (!orgId && pathname === "/onboarding") return "Getting set up";
+  const known = teamLabelFor(me.teamNumber, me.orgName);
+  // A session that names another team is the previous page's answer (switching teams).
+  const answersForThisTeam = !orgId || !me.orgId || me.orgId === orgId;
+  if (known && answersForThisTeam) return known;
+  // Until /api/me answers, "No team selected" or "This team" is a guess, and usually wrong.
+  if (!teamsLoaded) return remembered ?? TEAM_LABEL_PLACEHOLDER;
+  if (remembered) return remembered;
+  return answersForThisTeam ? orgLabelFor(me, orgId) : "This team";
+}
+
+const TEAM_LABELS_KEY = "vantage.team-labels";
+
+/** The label this device last showed for a team, so a return visit shows it at once. */
+export function readRememberedTeamLabel(storage: Pick<Storage, "getItem"> | null, orgId: string): string | null {
+  if (!storage || !orgId) return null;
+  try {
+    const map = JSON.parse(storage.getItem(TEAM_LABELS_KEY) ?? "{}") as Record<string, unknown>;
+    const label = map[orgId];
+    return typeof label === "string" && label.trim() ? label : null;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberTeamLabel(storage: Pick<Storage, "getItem" | "setItem"> | null, orgId: string, label: string): void {
+  if (!storage || !orgId || !label.trim()) return;
+  try {
+    const map = JSON.parse(storage.getItem(TEAM_LABELS_KEY) ?? "{}") as Record<string, string>;
+    if (map[orgId] === label) return;
+    // Most recent last; a handful of teams is all anyone switches between.
+    delete map[orgId];
+    map[orgId] = label;
+    const entries = Object.entries(map).slice(-8);
+    storage.setItem(TEAM_LABELS_KEY, JSON.stringify(Object.fromEntries(entries)));
+  } catch {
+    // Storage full or blocked: the placeholder shows instead.
+  }
 }
 
 export function switchWorkspaceHrefFor(pathname: string, pathSearch: string, nextOrgId: string): string {

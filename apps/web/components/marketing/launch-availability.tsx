@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PUBLIC_SIGNUP_DATE_LABEL } from "@vantage/core/public-signup";
 
 export const EARLY_ACCESS_HREF = "mailto:vantagefrc@gmail.com?subject=Vantage%20early%20access&body=Team%20number%3A%20%0ATeam%20name%3A%20%0AYour%20role%3A%20%0AWhat%20would%20you%20like%20to%20try%3F%20";
 
@@ -29,10 +30,10 @@ export function usePublicSignupOpen() {
   return open;
 }
 
-export function LaunchAvailability() {
+export function LaunchAvailability({ className = "mx-hero-note" }: { className?: string }) {
   const open = usePublicSignupOpen();
-  return <p className="lux-hero-note" data-testid="launch-availability">
+  return <p className={className} data-testid="launch-availability">
     {open ? <>Team signup is open. <a href="/signin">Create your account</a></>
-      : <>Team signup is planned for <strong>December 1, 2026</strong>. <a href={EARLY_ACCESS_HREF}>Contact us for early access</a>.</>}
+      : <>Teams are set up from <strong>{PUBLIC_SIGNUP_DATE_LABEL}</strong>. <a href={EARLY_ACCESS_HREF}>Contact us for early access</a>.</>}
   </p>;
 }

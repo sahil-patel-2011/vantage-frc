@@ -304,3 +304,61 @@
 /* Each next step is a link named for what it does. */
 .invite-next-link{display:inline-flex;align-items:center;min-height:44px;font-weight:700;color:var(--accent,#2563eb);text-decoration:none}
 .invite-next-link:hover{text-decoration:underline}
+
+/* The sign-in card's chrome (QA A1-P3): /invite used a boxed logo, a centred black headline and
+   a small blue link inside a boxed list, so it read as a different site from /signin. The card,
+   logo and button now come from sign-in-flow.css; these keep the invite's wider details table
+   and line the header up the way the sign-in card does. */
+.signin-page.invite-flow-page {
+  padding: 48px 18px;
+  background:
+    radial-gradient(circle at 12% 0, color-mix(in srgb, var(--accent) 14%, transparent), transparent 36%),
+    var(--bg);
+}
+.signin-card.invite-flow-card {
+  width: min(100%, 520px);
+}
+.invite-flow-card .invite-flow-header {
+  text-align: left;
+}
+.invite-flow-card .invite-flow-header > span {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+.invite-flow-card .invite-flow-header h1 {
+  max-width: none;
+  margin-inline: 0;
+  font-size: clamp(27px, 5vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.invite-flow-card .invite-flow-header .signin-sub {
+  max-width: none;
+  margin: 10px 0 22px;
+}
+.invite-flow-card .invite-flow-header .invite-empty-badge {
+  margin: 0 0 8px;
+}
+/* Next steps are plain: the main one is the sign-in button, the rest are named links. */
+.invite-flow-card .invite-next-actions li,
+.invite-flow-card .invite-next-actions li.primary {
+  grid-template-columns: 1fr;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.invite-flow-card .invite-next-actions .signin-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-decoration: none;
+}
+.invite-flow-card .invite-actions .signin-submit {
+  width: 100%;
+}
+@media (max-width: 620px) {
+  .signin-page.invite-flow-page {
+    padding: 18px 10px;
+  }
+}

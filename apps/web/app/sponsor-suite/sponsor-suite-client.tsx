@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { reminderKindLabel, tierLabel } from "../../lib/sponsor-suite";
 import type { SponsorSuiteView } from "../../lib/sponsor-suite/compute-sponsor-suite";
 import {
@@ -298,7 +299,7 @@ export default function SponsorSuiteClient() {
             setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
             return;
           }
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);
@@ -367,6 +368,8 @@ export default function SponsorSuiteClient() {
         title="Sponsor Suite"
         description="Generate pitch/renewal decks, an end-of-season ROI report, and thank-you/renewal reminders — grounded in your recorded sponsors and contributions. Deck and ROI generation are metered."
       >
+        {/* One way into AI: Ask AI opens on this page's skill with its records. */}
+        <AskAiButton orgId={orgId} />
         <div className="sponsor-suite-header-actions">
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

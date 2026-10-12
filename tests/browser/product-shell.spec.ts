@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
 import { resetHomeBoard } from "./dashboard-fixture";
-import { openNav, navigationOpener } from "./nav";
+import { openNav, openSearch, searchOpener } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   expect(await signInAs(context, "owner")).toBe(true);
@@ -113,40 +113,44 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   // Four apps and nothing else: press and hold (or right-click, or the Menu key) to change them.
   await expect(island.getByRole("button")).toHaveCount(0);
   await openNav(page);
-  const drawer = page.getByRole("complementary", { name: "Product navigation" });
+  const drawer = page.getByRole("dialog", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
   // Search is a field in the panel, not a button that opened a second overlay.
   await expect(drawer.getByRole("combobox", { name: /Search pages, tools/ })).toBeVisible();
   // The island lists four of these same apps, so it steps aside while the panel is up.
   await expect(island).toBeHidden();
-  await expect(drawer.locator(".main-menu-launch a")).toHaveCount(2);
-  await expect(drawer.getByRole("link", { name: /^Home/ })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: /^Scouting/ })).toBeVisible();
+  // "Your apps" leads the menu: the stock pins are the bar's four, then My Day, Tasks and
+  // Team resources, with Edit beside the heading.
+  await expect(drawer.locator(".main-menu-launch a")).toHaveText(["Home", "Scout", "Teams", "Match plan", "My Day", "Tasks", "Team resources"]);
+  await expect(drawer.getByRole("button", { name: "Edit your apps", exact: true })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Competition", exact: true })).toHaveCount(0);
   await expect(drawer.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Forms", exact: true })).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: "Personal settings", exact: true })).toHaveCount(1);
-  await expect(drawer.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Settings", exact: true })).toHaveCount(1);
+  await expect(drawer.getByRole("link", { name: "Account", exact: true })).toHaveCount(0);
+  // Sign out lives in the avatar menu only; the menu is for going places.
+  await expect(drawer.getByRole("button", { name: "Sign out" })).toHaveCount(0);
   await drawer.getByRole("combobox").fill("scout");
   await drawer.getByRole("option").filter({ hasText: /Scout/ }).first().click();
   await expect(page).toHaveURL(/\/competition\?tab=scouting/);
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
   await expect(island).toBeVisible();
 
-  // Desktop keeps workspaces visible and opens the same drawer for search.
+  // Desktop keeps workspaces in the sidebar; its search button opens search, not the menu.
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeHidden();
   await expect(page.locator(".app-sidebar")).toBeVisible();
-  await expect(navigationOpener(page)).toBeVisible();
+  await expect(searchOpener(page)).toBeVisible();
+  await searchOpener(page).click();
+  await expect(page.getByRole("dialog", { name: "Search Vantage", exact: true })).toBeVisible();
   await expect(drawer).toBeHidden();
 });
 
-test("search is one affordance at every width, inside the navigation panel", async ({ page }) => {
+test("search is one field at every width: the palette on desktop, the menu's field on phones", async ({ page }) => {
   const field = page.getByRole("combobox", { name: /Search pages, tools/ });
 
   const oldButton = page.getByRole("button", { name: "Search Vantage" });
-  // Desktop search and the phone menu open the same field.
-  const opener = navigationOpener(page);
+  const opener = searchOpener(page);
 
   for (const size of [
     { width: 390, height: 844 },
@@ -166,10 +170,10 @@ test("search is one affordance at every width, inside the navigation panel", asy
     await expect(field).toBeHidden();
   }
 
-  // And it searches: the panel's field is the only one, so this is the path.
+  // And it searches: arrow keys and Enter open the top result.
   await opener.click();
   await field.fill("pick list");
-  await expect(page.locator("#soft-nav-row-0")).toContainText("Pick list");
+  await expect(page.getByRole("option").first()).toContainText("Pick list");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/picklist|competition/);
 });
@@ -179,7 +183,7 @@ test("one menu restores keyboard focus without a second workspace picker", async
   await page.goto("/competition");
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
   await expect(page.locator(".workspace-picker-trigger")).toHaveCount(0);
-  const opener = navigationOpener(page);
+  const opener = searchOpener(page);
   await opener.click();
   await expect(page.getByRole("combobox", { name: /Search pages, tools/ })).toBeFocused();
   await page.keyboard.press("Escape");
@@ -190,7 +194,7 @@ test("specialist tools stay discoverable through the shared search", async ({ pa
   expect(await signInAs(context, "owner")).toBe(true);
   await page.goto("/competition?tab=scouting");
   for (const label of ["Schema sync", "Data quality", "Practice"]) {
-    await openNav(page);
+    await openSearch(page);
     await page.getByRole("combobox", { name: /Search pages, tools/ }).fill(label);
     await expect(page.getByRole("option").filter({ hasText: label }).first()).toBeVisible();
     await page.keyboard.press("Escape");
@@ -210,14 +214,16 @@ test("account keeps every setting reachable from one place", async ({ page, cont
   // sections at all — which is a real state, tested below, and not the one
   // this test is about.
   test.skip(!(await signInAs(context, "owner")), "no owner fixture on this box");
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/account");
-  await expect(page.getByRole("heading", { name: "Account", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Profile", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Loading account" })).toBeHidden({ timeout: 20_000 });
 
-  for (const label of [/^Security/, /^AI usage/, /^AI limits/, /^Connectors/]) await expect(page.getByRole("link", { name: label }).first()).toBeVisible();
-  const sections = page.getByRole("tablist", { name: "Account sections", exact: true });
-  for (const label of ["Profile", "Appearance", "Notifications"]) await expect(sections.getByRole("tab", { name: label, exact: true })).toHaveCount(1);
-  await sections.getByRole("tab", { name: "Appearance", exact: true }).click();
+  for (const label of [/^AI usage/, /^AI limits/]) await expect(page.getByRole("link", { name: label }).first()).toBeVisible();
+  // Every section is in the one Settings list beside the page.
+  const sections = page.getByRole("navigation", { name: "Settings sections", exact: true });
+  for (const label of ["Profile", "Appearance", "Notifications", "Security", "Connectors"]) await expect(sections.getByRole("link", { name: label, exact: true })).toHaveCount(1);
+  await sections.getByRole("link", { name: "Appearance", exact: true }).click();
   await expect(page.locator(".appearance-panel")).toBeVisible();
 });
 

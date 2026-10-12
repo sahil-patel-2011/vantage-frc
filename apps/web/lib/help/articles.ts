@@ -11,7 +11,7 @@
  *   already working.
  */
 
-import { defaultIslandLabelList, islandCatalogLabelList } from "../nav/island-preferences";
+import { BAR_SLOTS, PIN_LIMIT, defaultPinLabelList } from "../nav/pins";
 
 export type HelpCategoryId =
   | "getting-started"
@@ -227,40 +227,46 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "bottom-island",
     slug: "bottom-island",
-    title: "Customize the bottom island",
+    title: "Your apps: the bottom bar, the menu and the sidebar",
     summary:
-      `Four apps sit in a floating island at the bottom — ${defaultIslandLabelList()} by default.`,
+      `Pin up to ${PIN_LIMIT} places. The first ${BAR_SLOTS} sit in your phone's bottom bar; all of them lead the menu and the desktop sidebar.`,
     category: "getting-started",
     keywords: [
       "island",
+      "bottom island",
+      "bottom bar",
       "bottom nav",
       "tabs",
-      "personal navigation",
+      "your apps",
+      "pinned apps",
+      "pins",
+      "shortcuts",
       "customize island",
-      "dynamic island",
+      "personal navigation",
     ],
-    relatedHref: "/dashboard",
+    relatedHref: "/dashboard?island=1",
     sections: [
       {
-        heading: "Four apps, always on",
+        heading: "One set of pins, three places",
         body: [
-          "The bottom island stays on phone and desktop. It has exactly four apps — not a fifth More dump.",
-          "Everything else is in the menu (hamburger) or Search (⌘K).",
+          `Your apps are the places you pinned. The first ${BAR_SLOTS} sit in the bar at the bottom of your phone, with More at the end for everything else.`,
+          "All of them sit at the top of the menu (the ☰ button) and in the Pinned group at the top of the sidebar on a computer.",
+          `Out of the box they are ${defaultPinLabelList()}.`,
         ],
       },
       {
-        heading: "Change the four",
+        heading: "Change them",
         body: [
-          "Long-press or right-click the island, or open the menu and tap Customize island.",
-          "Tap apps in the order you want them. A selected app shows its slot number. You need exactly four before Save is enabled.",
-          `The island can open ${islandCatalogLabelList()}.`,
+          "Tap Edit next to Your apps in the menu, the pencil next to Pinned in the sidebar, or press and hold the bottom bar (right-click on a computer). Account → Appearance has the same button.",
+          `Tap the red minus to remove a place, or the plus next to any place below to add it (up to ${PIN_LIMIT}). Drag the handle on the right to change the order, or focus it and use the arrow keys.`,
+          "Tap Done to keep your changes, or Cancel to leave everything as it was.",
         ],
       },
       {
-        heading: "Save or reset",
+        heading: "Nothing gets lost",
         body: [
-          "Save writes your choice for this account.",
-          `Reset restores ${defaultIslandLabelList()}.`,
+          "Every place is still in the menu under its workspace (Competition, Team, Build, Business, AI) and in search (⌘K or Ctrl+K), pinned or not.",
+          "Reset to default puts the original pins back.",
         ],
       },
     ],
@@ -837,7 +843,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "checked-step-by-step",
     slug: "checked-step-by-step",
-    title: "Checked step by step — tracks where each step is verified",
+    title: "Guided tracks — every step is checked",
     summary:
       "Your first Onshape part, and Team 6925's programming and mechanical weeks, one step at a time. A step counts only when Vantage has checked it: your Part Studio in Onshape, your build output, your pull request on GitHub, or a lead's check.",
     category: "build",
@@ -1221,7 +1227,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
         body: [
           "The team owner always manages money, and chooses anyone else who does: open Team admin, pick a person, then Access → Money → Manage money. Admins don't get it automatically.",
           "People who manage money set budgets and categories, record spending, sponsor money and fundraiser proceeds, approve purchase and part requests, pay reimbursements, and link grant spend.",
-          "Everyone else can see the team's money and still ask: submit a purchase or part request, or file their own reimbursement. View-only people can look but not change anything — the owner switches them to Team member first if they should manage money.",
+          "Everyone else can see the team's money and still ask: submit a purchase or part request, or file their own reimbursement. A parent or guest can look but not change anything — the owner switches them to Student first if they should manage money.",
           "Team admin and the Money tab both show who manages money right now.",
         ],
       },

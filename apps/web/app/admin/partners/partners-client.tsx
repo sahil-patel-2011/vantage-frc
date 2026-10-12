@@ -143,7 +143,7 @@ export default function AdminPartnersClient() {
   }
 
   const related = adminRelatedLinks({
-    include: ["teams", "plans", "support", "releases", "waitlist", "audit"],
+    include: ["teams", "health", "support", "releases", "waitlist", "audit"],
   });
   const activeCount = sponsors.filter((row) => row.status === "active").length;
 

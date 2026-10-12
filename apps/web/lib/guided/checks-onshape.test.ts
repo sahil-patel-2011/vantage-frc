@@ -213,6 +213,64 @@ describe("Your first part", () => {
   });
 });
 
+describe("Measuring a practice part", () => {
+  // The track's own practice check, so the test proves what students get.
+  const practice = ONSHAPE_TRACKS[0]!.steps.at(-1)!.check;
+  if (practice.kind !== "onshape-measure") throw new Error("first track ends with a measured part");
+  const check: OnshapeApiCheck = practice;
+  const IN = 0.0254;
+  const parts = [{ name: "Bearing plate", partId: "JHD", bodyType: "solid", isFlattenedBody: false, material: { displayName: "Aluminum - 6061" } }];
+  // Lying flat on Top, centered: 5 in along x, 2 in along y, 0.125 in up.
+  const box = (x = 5, y = 2, z = 0.125) => ({ lowX: (-x / 2) * IN, lowY: (-y / 2) * IN, lowZ: 0, highX: (x / 2) * IN, highY: (y / 2) * IN, highZ: z * IN });
+  const volume = (in3: number) => ({ bodies: { "-all-": { mass: [0.05], volume: [in3 / 61023.744094732], hasMass: true } } });
+  const routes = (over: Record<string, Route> = {}) => ({
+    [`GET /parts${base}/${PS}`]: parts,
+    [`GET /partstudios${base}/${PS}/boundingboxes`]: box(),
+    [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.1161),
+    ...over,
+  });
+
+  it("passes a part that matches the drawing, in any orientation", async () => {
+    const good = await run(check, routes());
+    expect(good.result.passed).toBe(true);
+    expect(good.result.message).toBe("Checked: your part matches the drawing — size, material and volume.");
+    expect(good.result.evidence).toContain("Size: 5 in × 2 in × 0.125 in (drawing: 5 in × 2 in × 0.125 in, ± 0.01 in)");
+    // Modeled standing up on the Front plane instead: same part.
+    const upright = await run(check, routes({ [`GET /partstudios${base}/${PS}/boundingboxes`]: box(0.125, 5, 2) }));
+    expect(upright.result.passed).toBe(true);
+  });
+
+  it("says which way the volume is off when a hole is missing or too big", async () => {
+    const noHoles = await run(check, routes({ [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.1241) }));
+    expect(noHoles.result.passed).toBe(false);
+    expect(noHoles.result.message).toMatch(/too much material — a hole is missing or too small/);
+    // One #10 hole left out (+0.0040 in³, +0.36%) is still caught.
+    const oneHole = await run(check, routes({ [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.1201) }));
+    expect(oneHole.result.passed).toBe(false);
+    // Corner rounds forgotten (+0.15%) and Close-fit holes are within the drawing's tolerance.
+    expect((await run(check, routes({ [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.1178) }))).result.passed).toBe(true);
+    const bigBore = await run(check, routes({ [`GET /partstudios${base}/${PS}/massproperties`]: volume(1.09) }));
+    expect(bigBore.result.message).toMatch(/too little material — a hole is too big/);
+  });
+
+  it("names a wrong thickness and a wrong material together", async () => {
+    const result = await run(
+      check,
+      routes({
+        [`GET /parts${base}/${PS}`]: [{ ...parts[0], material: { displayName: "Steel - 1018" } }],
+        [`GET /partstudios${base}/${PS}/boundingboxes`]: box(5, 2, 0.25),
+      }),
+    );
+    expect(result.result.passed).toBe(false);
+    expect(result.result.message).toBe("Not yet: “Bearing plate” is Steel - 1018, not 6061; a side measures 0.25 in where the drawing says 0.125 in.");
+  });
+
+  it("asks for a solid part before measuring", async () => {
+    const empty = await run(check, routes({ [`GET /parts${base}/${PS}`]: [] }));
+    expect(empty.result).toMatchObject({ passed: false, message: "Not yet: this Part Studio has no solid part to measure." });
+  });
+});
+
 describe("Sheet metal", () => {
   const smStart = feature("sheetMetalStart", "Sheet metal model 1", "FsmS", { parameters: [q("thickness", "0.09 in"), q("radius", "0.09 in")] });
   const flange = feature("sheetMetalFlange", "Flange 1", "FsmF", { parameters: [q("distance", "1.5 in")] });
@@ -508,8 +566,24 @@ describe("Onshape track content", () => {
     }
   });
 
+  it("teaches when to use each tool with an example, and ends every track with a measured practice part", () => {
+    for (const track of ONSHAPE_TRACKS) {
+      const last = track.steps.at(-1)!;
+      expect(last.practice, `${track.id} ends with practice`).toBe(true);
+      expect(track.steps.filter((step) => step.practice), `${track.id} has one practice`).toHaveLength(1);
+      for (const step of track.steps.slice(1, -1)) {
+        expect(step.whenToUse?.length ?? 0, `${track.id}/${step.id} says when to use it`).toBeGreaterThan(30);
+        expect(step.example?.length ?? 0, `${track.id}/${step.id} has an example`).toBeGreaterThan(20);
+      }
+    }
+    const first = ONSHAPE_TRACKS[0]!.steps.at(-1)!;
+    expect(first.check.kind).toBe("onshape-measure");
+  });
+
   it("keeps words a student knows out of the API's jargon", () => {
-    const words = JSON.stringify(ONSHAPE_TRACKS.map((t) => [t.title, t.summary, t.steps.map((s) => [s.title, s.why, s.do, s.checkedBy])]));
+    const words = JSON.stringify(
+      ONSHAPE_TRACKS.map((t) => [t.title, t.summary, t.steps.map((s) => [s.title, s.why, s.whenToUse, s.example, s.do, s.checkedBy])]),
+    );
     expect(words).not.toMatch(/featureType|API|endpoint|payload|schema|JSON response|\borg\b/);
   });
 });

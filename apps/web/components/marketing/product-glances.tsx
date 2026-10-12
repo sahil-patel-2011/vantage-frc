@@ -26,27 +26,6 @@ export function ProductGlances() {
   );
 }
 
-export function ProductHubCatalog() {
-  return (
-    <div className="mk-hub-catalog">
-      {MARKETING_HUBS.map((hub) => (
-        <article className="mk-hub-detail" id={`${hub.id}-detail`} key={hub.id}>
-          <header>
-            <p className="lux-kicker">Workspace</p>
-            <h3 id={hub.id}>{hub.title}</h3>
-            <p>{hub.promise}</p>
-          </header>
-          <ul>
-            {hub.tools.map((tool) => (
-              <li key={tool}>{tool}</li>
-            ))}
-          </ul>
-        </article>
-      ))}
-    </div>
-  );
-}
-
 const islandApps = ["Home", "Event day", "Scout", "Stats"] as const;
 const drawerPillars = ["Home", "Competition", "Team", "Build", "Business"] as const;
 const competitionTabs = ["Event day", "Scout", "Teams", "Strategy", "Pit"] as const;

@@ -113,8 +113,9 @@ export function formatWorkspaceOrgLabel(input: {
 }): string {
   const team =
     input.teamNumber != null && Number.isFinite(input.teamNumber) ? `Team ${input.teamNumber}` : null;
+  // A name that only repeats the number ("Team 9203", the default) is said once, not twice.
   const name = input.orgName?.trim() || null;
-  const parts = [team, name].filter(Boolean);
+  const parts = [team, name === team ? null : name].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "Your team";
 }
 
@@ -171,6 +172,23 @@ export function workspaceShellCopy(kind: WorkspaceShellKind): WorkspaceJoinCopy 
         badge: "Invite or waitlist",
       };
   }
+}
+
+/**
+ * The chooser reached from a link to a team the person is not on (proxy.ts, notOnTeamRedirect).
+ * It used to show that page's "Join your team" or "your role does not include" state, which sent
+ * people waiting for an invite or asking the other team's owner for a role.
+ */
+export function workspaceNotOnTeamCopy(options: WorkspaceMembershipOption[]): WorkspaceJoinCopy {
+  const only = options.length === 1 ? options[0] : null;
+  return {
+    kind: "select",
+    eyebrow: "TEAMS",
+    title: "You're not on that team",
+    description: only
+      ? `That link is for a team you haven't joined. You're on ${formatWorkspaceOrgLabel(only)}. If you should be on the other team, ask its owner for an invite.`
+      : "That link is for a team you haven't joined. Open one of your teams instead. If you should be on the other team, ask its owner for an invite.",
+  };
 }
 
 /** @deprecated Prefer workspaceShellCopy */

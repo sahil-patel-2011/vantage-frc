@@ -20,7 +20,8 @@ Nothing here costs money beyond the NAS and its power.
   Vantage offline for everyone until it is back. Pages then show their "can't reach the
   database" state within about ten seconds instead of hanging (self-hosted pools give up
   after 10 s and stay small; `packages/db/src/postgres-url.ts`). A UPS on the NAS and router
-  is worth it before an event.
+  is worth it before an event. You are emailed when it happens:
+  [When the NAS goes down](#when-the-nas-goes-down).
 - **The NAS needs to be reachable from the internet** on one TCP port. That needs a public IP
   (most home connections have one; if your ISP uses CGNAT, port forwarding cannot work: ask the
   ISP for a public IPv4) and a name that follows it (DDNS: Synology, QNAP and most routers
@@ -200,6 +201,61 @@ are not a way to rebuild the database.
 Run a restore drill before the season and after any big change: a backup that has never been
 restored is a guess.
 
+## When the NAS goes down
+
+If the NAS loses power or internet, or Postgres stops, Vantage emails **you only** (the address
+in `PLATFORM_OWNER_EMAIL`) with what failed, why, and what to try first: "Postgres isn't
+accepting connections" (container stopped), "The NAS can't be reached" (offline, or the
+internet / port forward is down), "The NAS's address doesn't resolve" (DDNS), a certificate
+problem (`DATABASE_SSL_CA`), a rejected password, a full disk, too many connections, and so on
+(`apps/web/lib/outage/classify.ts`). Nobody else hears about it unless you decide they should.
+
+- **One email per outage.** The first failure sends it. You get another only if the cause
+  changes, as a reminder every 6 hours while it stays down, and once when the database answers
+  again ("Vantage is back", with how long it was down).
+- **The email links to the outage console** (`/status/outage`, no sign-in: the link is signed
+  with `BETTER_AUTH_SECRET`, works for 24 hours, and each reminder brings a fresh one). It shows
+  the live status and the cause, and lets you **email everyone** that Vantage is running with
+  limited features (you edit the message and type `SEND`), turn on a calm "Vantage is limited
+  right now" banner in the app, and later send "Vantage is back" and turn the banner off.
+  Everyone gets their own email, a couple per second, so a free email plan isn't rate-limited.
+- **What keeps working:** scouting keeps saving on phones and syncs when the database is back,
+  and each team's [spreadsheet copy](SPREADSHEET_MIRROR.md) stays readable. The banner links to
+  it on every device that opened Vantage while it worked.
+
+### Detecting an outage when nobody is using the app
+
+Vercel crons are off, so detection comes from traffic: `/api/health`, `/api/me` and the
+sign-in check in front of every signed-in page report each database failure (after the
+response, so nobody waits on it). Add a free external uptime monitor so an outage at 3 a.m. is
+noticed too:
+
+1. [UptimeRobot](https://uptimerobot.com) (free, 5-minute checks) or
+   [cron-job.org](https://cron-job.org) → new HTTP(S) monitor.
+2. URL: `https://<your Vantage domain>/api/health`, every **5 minutes**. It answers 200 when the
+   database works and 503 when it doesn't, and never says why (safe to be public).
+3. Its own alert email is optional: Vantage's email already says what's wrong.
+
+### Settings (Vercel → Environment Variables, Production)
+
+| Variable | Needed for |
+|---|---|
+| `PLATFORM_OWNER_EMAIL` | Who the alert goes to. If unset, nothing is emailed (a warning naming the variable is logged). |
+| `RESEND_API_KEY` + `AUTH_EMAIL_FROM` (or `GMAIL_SMTP_USER` + `GMAIL_SMTP_APP_PASSWORD`) | Sending the alert and the "email everyone" notice. |
+| `BETTER_AUTH_SECRET` | Already set for sign-in. Signs the console link and encrypts the contact list. |
+| `OUTAGE_REDIS_URL` + `OUTAGE_REDIS_TOKEN` (optional) | A free [Upstash](https://upstash.com) Redis REST database. Falls back to `RATE_LIMIT_REDIS_URL` / `RATE_LIMIT_REDIS_TOKEN` when those are set. |
+| `OUTAGE_ALERT_TIMEZONE` (optional) | Time zone for times in the email, e.g. `America/Chicago` (UTC otherwise). |
+
+**Why the extra key-value store.** During an outage the database can't tell Vantage who to email,
+whether you already sent the notice, or whether the banner is on. Those live in a small Redis
+store that isn't on the NAS. The list of addresses is copied there automatically every 12 hours
+while a platform admin is signed in (the admin page shows "Outage contact list: N people,
+refreshed … — Refresh now"; migration `0718_service_notice_recipients.sql`), and it is
+encrypted (AES-256-GCM, key derived from `BETTER_AUTH_SECRET`) so Upstash only ever sees
+ciphertext. Without the store, each Vercel server keeps its own memory: the alert still
+arrives (possibly once from each server that noticed, capped at a few an hour), but the console
+can only email you, not everyone, and the banner may not show on every server.
+
 ## Checklist
 
 - [ ] UPS on the NAS and router
@@ -209,3 +265,5 @@ restored is a guess.
 - [ ] `npm run db:migrate -- --migration-env-file …` ends with every file `OK` or `SKIP`
 - [ ] Vercel variables set; a deploy passes the schema check; sign-in works
 - [ ] First encrypted snapshot uploaded and a restore drill done
+- [ ] `PLATFORM_OWNER_EMAIL` and email set; an uptime monitor checks `/api/health` every 5 minutes
+- [ ] (Optional) `OUTAGE_REDIS_URL` / `OUTAGE_REDIS_TOKEN` set, and the admin page shows the outage contact list

@@ -1,0 +1,23 @@
+/* The team's free AI credit from Vantage: one line, a meter, one sentence. */
+.ai-credit-line {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: var(--radius-sm, 12px);
+  background: var(--accent-soft, var(--surface));
+  color: var(--ink);
+}
+.ai-credit-line p { margin: 0; font-size: 14px; }
+.ai-credit-line strong { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ai-credit-line-detail { color: var(--muted); font-size: 13px; }
+.ai-credit-line-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft, var(--line));
+  overflow: hidden;
+}
+.ai-credit-line-fill { height: 100%; border-radius: 999px; background: var(--accent); }
+.ai-credit-line[data-used-up] { border-color: color-mix(in srgb, var(--warning) 45%, var(--line)); background: var(--warning-soft, var(--surface)); }
+.ai-credit-line[data-used-up] .ai-credit-line-fill { background: var(--warning); }

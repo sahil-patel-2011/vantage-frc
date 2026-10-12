@@ -24,7 +24,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
       ["invite", "Invite your team", "Add students and mentors by email. Ticks once you send the first invite.", "/team/admin"],
       ["event", "Pick your event", "Matches, scouting and My Day all follow it.", "/command?pickEvent=1"],
       // The Form builder, not the entry form: "set up" landed on a form ready to fill in.
-      ["scouting", "Set up your scouting form", "A ready-made match form is waiting: add what your team counts, then publish it.", "/scouting/forms"],
+      ["scouting", "Set up your scouting form", "A ready-made match form is waiting: add what your team counts, then publish it. Ticks once you publish.", "/scouting/forms"],
       ["calendar", "Add your first practice", "So students know when to show up.", "/team/calendar"],
     ]),
   },
@@ -48,7 +48,8 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Fabrication, mechanisms, and bring-up with the build crew.",
     source: "subteam",
     checks: checks([
-      ["mech_track", "Start the mechanical track", "Paced weeks, with each step checked: week one is shop safety and tools.", "/learn/6925#mechanical"],
+      // A page every team has (A2-21): /learn/6925 is one team's weeks.
+      ["mech_track", "Start a checked CAD track", "Step by step, each step checked: your first Onshape part, then an assembly.", "/learn/guided#guided-onshape"],
       ["read_blueprint", "Review the robot blueprint", "Understand current mechanism priorities.", "/robot"],
       ["check_inventory", "Check inventory / BOM", "Know what parts you already have before ordering.", "/inventory"],
       ["log_fmea", "Log a failure or risk", "Capture what breaks so the next iteration is safer.", "/fmea"],
@@ -72,7 +73,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Robot code, versions, and software bring-up.",
     source: "subteam",
     checks: checks([
-      ["prog_track", "Start the programming track", "Paced weeks, with each step checked: week one is your laptop and a first deploy.", "/learn/6925#programming"],
+      ["prog_track", "Start the Git and GitHub track", "Step by step, each step checked: get the robot code, branch, commit and open your first pull request.", "/learn/guided/git-first-pr"],
       ["open_code", "Open Code", "Find the team repo and current season branch context.", "/code"],
       ["software_versions", "Check software versions", "WPILib / vendordep alignment before you flash.", "/software-versions"],
       ["github_link", "Confirm GitHub is connected", "AI code context needs an org GitHub link.", "/team"],
@@ -192,7 +193,7 @@ export const ONBOARDING_TRACKS: OnboardingTrackTemplate[] = [
     summary: "Support travel, volunteering, and team communications.",
     source: "role",
     checks: checks([
-      ["announcements", "Read announcements", "Trip forms and schedule changes land here.", "/notifications"],
+      ["announcements", "Read announcements", "Trip forms and schedule changes land here.", "/announcements"],
       ["logistics_parent", "Check logistics", "Hotels and leave times for competition weekends.", "/logistics"],
       ["visit", "Visit invites", "Guest pit / stands access when the team uses them.", "/visit-invites"],
       ["hours_parent", "See build hours", "Understand how student time is tracked.", "/hours"],

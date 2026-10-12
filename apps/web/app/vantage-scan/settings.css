@@ -1,0 +1,11 @@
+/* =============================================================================
+   Scan polish — settings (the /settings list)
+   One title, the You and This team groups as grouped cards (components/settings-layout.css
+   owns the look). This overlay only keeps the page inside its column.
+   ========================================================================== */
+
+.product-hub--settings,
+.scan-hub--settings,
+.settings-home {
+  min-width: 0;
+}

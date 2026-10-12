@@ -11,9 +11,9 @@ import {
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { formatUsd } from "../../lib/finance/format-usd";
 
-const money = (value: number) =>
-  value.toLocaleString(undefined, { style: "currency", currency: "USD" });
+const money = formatUsd;
 
 function isPartRequestsView(value: unknown): value is PartRequestsView {
   if (!value || typeof value !== "object") return false;

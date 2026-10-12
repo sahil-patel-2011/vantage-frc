@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clockLabel, phaseAnchors, phaseAt, phaseRemainingSeconds, timingForSeason } from "./match-clock";
+import { clockLabel, liveClockReadout, phaseAnchors, phaseAt, phaseRemainingSeconds, rebuiltShiftAt, timingForSeason } from "./match-clock";
 
 describe("match clock", () => {
   it("uses official 2026 timing with a scoring pause and a 30-second endgame", () => {
@@ -21,6 +21,18 @@ describe("match clock", () => {
     expect(phaseAt(129_999)).toBe("teleop");
     expect(phaseAt(130_000)).toBe("endgame");
     expect(phaseAt(150_000)).toBe("done");
+  });
+
+  it("shows one countdown in the live header: the 2026 shift it names, with match time left beside it", () => {
+    const timing = timingForSeason(2026);
+    // At 24.5 s the header said "109s" (the endgame) under "Transition shift", which ends at 33 s.
+    const shift = rebuiltShiftAt(24_555, "red", "unknown");
+    expect(liveClockReadout(24_555, timing, shift)).toEqual({ big: "9s", label: "Transition shift · hub active", left: "2:19 left" });
+    expect(liveClockReadout(5_000, timing, rebuiltShiftAt(5_000, "red"))).toEqual({ big: "15s", label: "Auto · hub active", left: "2:38 left" });
+    // Done says the match is over, not how long ago it started.
+    expect(liveClockReadout(170_000, timing, rebuiltShiftAt(170_000, "red"))).toEqual({ big: "Done", label: "Match over", left: null });
+    // Other seasons count down the phase they name.
+    expect(liveClockReadout(5_000)).toEqual({ big: "10s", label: "Auto", left: "2:25 left" });
   });
 
   it("counts down to the end of the phase and labels the clock", () => {

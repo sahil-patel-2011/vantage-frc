@@ -18,6 +18,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { ASSIGNABLE_ROLES, ROLE_HINTS, ROLE_LABELS, rolePhrase } from "@vantage/core/role-words";
 import { Button, Modal } from "../../../components/ui";
 import { CLIENT_HUB_IDS, type ClientHubId } from "../../../lib/nav/hub-access-filter";
 import { PRODUCT_HUBS } from "../../../lib/nav/hubs";
@@ -42,29 +43,15 @@ export type HubAccessRow = { hubId: string; allowedTabIds: string[] };
 
 type Preset = { key: string; name: string; description: string; baseRole: string; capabilities: string[]; hubAccess: Record<string, string[]> };
 
-const ROLE_CHOICES: Array<{ id: "scout" | "admin" | "viewer"; label: string; hint: string }> = [
-  { id: "scout", label: "Team member", hint: "Scouts and uses team tools." },
-  {
-    id: "admin",
-    label: "Team admin",
-    hint: "A team admin: invites and removes people, changes team settings and adds AI keys, and uses every team tool.",
-  },
-  { id: "viewer", label: "View only", hint: "Can look, can't change." },
-];
-
-export const ROLE_WORDS: Record<string, string> = {
-  owner: "an owner",
-  admin: "a team admin",
-  scout: "a team member",
-  viewer: "a viewer",
-};
-
-export const ROLE_LABELS: Record<string, string> = {
-  owner: "Owner",
-  admin: "Team admin",
-  scout: "Team member",
-  viewer: "View only",
-};
+// The role words every screen uses (@vantage/core/role-words): Student first, the usual choice.
+// "A student captain can have this too": access is not a kind of person.
+const ROLE_CHOICES = (["scout", "admin", "viewer"] as const)
+  .filter((id) => ASSIGNABLE_ROLES.includes(id))
+  .map((id) => ({
+    id,
+    label: ROLE_LABELS[id],
+    hint: id === "admin" ? `${ROLE_HINTS.admin} A student captain can have this too.` : ROLE_HINTS[id],
+  }));
 
 function hubLabel(hubId: ClientHubId): { label: string; hint: string } {
   const entry = PROFILE_HUBS.find((hub) => hub.id === hubId);
@@ -219,7 +206,12 @@ export function MemberAccessPanel({
   const who = member.name || member.email;
   const isOwnerRow = member.role === "owner";
   const isSelf = member.userId === actorUserId;
-  const roleEditable = !isOwnerRow && !isSelf && (member.role !== "admin" || actorRole === "owner");
+  // An owner may change another owner (they stay owner themselves); a second owner used to be
+  // unchangeable by anyone (QA A3-26). Your own access changes from your own row's menu.
+  const roleEditable =
+    !isSelf && (isOwnerRow ? actorRole === "owner" : member.role !== "admin" || actorRole === "owner");
+  // Only the owner makes someone a mentor or coach (the API refuses it too).
+  const canMakeMentor = actorRole === "owner" || member.role === "admin";
   const limited = role === "scout" || role === "viewer";
 
   function toggleHub(hubId: ClientHubId) {
@@ -277,7 +269,7 @@ export function MemberAccessPanel({
       if (roleEditable && role !== (selectedPreset?.baseRole ?? member.role)) {
         const failure = await patchMember(orgId, { userId: member.userId, action: "set_role", role });
         if (failure) return setError(failure);
-        changed.push(`${who} is now ${ROLE_WORDS[role] ?? role}.`);
+        changed.push(`${who} is now ${rolePhrase(role)}. We let them know.`);
       }
       if (limited) {
         const beforeCaps = selectedPreset?.capabilities ?? member.capabilities ?? [];
@@ -310,7 +302,7 @@ export function MemberAccessPanel({
       // money" works in one go; a view-only person loses it in the database.
       if (money?.canChoose && !isOwnerRow) {
         if (role === "viewer") {
-          if (money.granted) changed.push("View-only people can't manage money, so that was turned off.");
+          if (money.granted) changed.push("A parent or guest can't manage money, so that was turned off.");
         } else if (moneyDraft !== money.granted) {
           const response = await fetch(`/api/finance/managers?orgId=${encodeURIComponent(orgId)}`, {
             method: "POST",
@@ -339,27 +331,38 @@ export function MemberAccessPanel({
         <fieldset className="member-access-roles" disabled={!roleEditable || busy}>
           <legend>Team access</legend>
           {isOwnerRow ? (
-            <p className="app-muted">Owner — can do everything. Owners can&apos;t be changed here.</p>
-          ) : (
-            ROLE_CHOICES.map((choice) => (
-              <label key={choice.id} className={`member-access-role${role === choice.id ? " is-selected" : ""}`}>
-                <input
-                  type="radio"
-                  name={`role-${member.userId}`}
-                  value={choice.id}
-                  checked={role === choice.id}
-                  onChange={() => setRole(choice.id)}
-                />
-                <span>
-                  <strong>{choice.label}</strong>
-                  <small>{choice.hint}</small>
-                </span>
-              </label>
-            ))
-          )}
+            <p className="app-muted">
+              {roleEditable
+                ? "Owner: can do everything. Choose another access below to take their owner access away; you stay the owner."
+                : `Owner: ${ROLE_HINTS.owner} Only another owner can change this.`}
+            </p>
+          ) : null}
+          {!isOwnerRow || roleEditable
+            ? ROLE_CHOICES.map((choice) => {
+                const blocked = choice.id === "admin" && !canMakeMentor;
+                return (
+                  <label key={choice.id} className={`member-access-role${role === choice.id ? " is-selected" : ""}`}>
+                    <input
+                      type="radio"
+                      name={`role-${member.userId}`}
+                      value={choice.id}
+                      checked={role === choice.id}
+                      disabled={blocked}
+                      onChange={() => setRole(choice.id)}
+                    />
+                    <span>
+                      <strong>{choice.label}</strong>
+                      <small>{blocked ? "Only the team owner can make someone a mentor or coach." : choice.hint}</small>
+                    </span>
+                  </label>
+                );
+              })
+            : null}
           {!isOwnerRow && !roleEditable ? (
             <p className="app-muted member-access-note">
-              {isSelf ? "Use Change my access from your people menu." : "Only an owner can change another admin’s access."}
+              {isSelf
+                ? "Use Change my access from your people menu."
+                : "Only the team owner can change another mentor or coach’s access."}
             </p>
           ) : null}
         </fieldset>
@@ -524,7 +527,7 @@ export function MemberAccessPanel({
           <Button variant="secondary" type="button" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          {isOwnerRow ? null : (
+          {isOwnerRow && !roleEditable ? null : (
             <Button variant="primary" type="button" onClick={() => void save()} disabled={busy}>
               {busy ? "Saving…" : "Save access"}
             </Button>

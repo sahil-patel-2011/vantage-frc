@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { ViewOnlyNote } from "../../components/view-only-note";
 import { shopTimeLeft } from "../../lib/calendar/shop-time-left";
 import { restOfWeek } from "../../lib/calendar/rest-of-week";
@@ -965,12 +965,11 @@ function ReadyCalendar({
       </Panel>
       )}
 
-      <AiInsightPanel
-        orgId={orgId}
-        kind="schedule_risk"
-        title="Schedule risk"
-        description="AI pace check — overdue milestones, this week's load, and what threatens the next event."
-      />
+      {/* One way into AI from every page: Ask AI on this page's skill (was an "Analyze" panel). */}
+      <div className="ask-ai-row">
+        <AskAiButton orgId={orgId} skill="schedule-risk" prompt="Are we on track for the next event?" />
+        <p>Overdue milestones, this week&apos;s load, and what threatens the next event.</p>
+      </div>
     </main>
   );
 }

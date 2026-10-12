@@ -265,7 +265,7 @@ export default function EpaTrendAlertsClient() {
         });
         const data = (await response.json()) as EpaTrendAlertsView | { error?: string };
         if (!response.ok || !isEpaTrendAlertsView(data)) {
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);

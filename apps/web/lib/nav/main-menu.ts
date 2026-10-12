@@ -17,7 +17,7 @@ export function mainMenuSearch(pathname: string, search: string, allowed: (href:
     const selected = query.get("tab")!;
     const workbench = hubWorkbenchId(hub, selected);
     const menuTab = hubNavigationSections(hub, hub.tabs).some(entry => entry.id === selected);
-    if (!menuTab && selected !== "pit-tv" && allowed(`${hub.href}?tab=${workbench}`)) query.set("tab", workbench);
+    if (!menuTab && selected !== "pit-tv" && selected !== "my-day" && allowed(`${hub.href}?tab=${workbench}`)) query.set("tab", workbench);
   }
   return query.toString();
 }
@@ -33,10 +33,14 @@ const DESTINATION_ICONS: Record<string, ProductNavIcon> = {
   chat: "sparkles", writer: "clipboard", budgets: "stats", connections: "globe",
 };
 
-/** Shared menu destinations keep the same team and tab permission checks as pages. */
-export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (href: string) => boolean, includeScout = false) {
+/**
+ * Shared menu destinations keep the same team and tab permission checks as pages. The list is
+ * complete (Scout included) even though Scout is also a pin by default: pins are shortcuts, and
+ * un-pinning one must never hide a place.
+ */
+export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (href: string) => boolean, includeScout = true) {
   const definitions: { id: ProductHubDef["id"]; label: string; icon: ProductNavIcon }[] = [
-    { id: "competition", label: "Competition tools", icon: "swords" },
+    { id: "competition", label: "Competition", icon: "swords" },
     { id: "team", label: "Team", icon: "users" },
     { id: "build", label: "Build", icon: "cube" },
     { id: "business", label: "Business", icon: "clipboard" },
@@ -50,7 +54,14 @@ export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (h
       .filter(section => includeScout || !(hub.id === "competition" && section.id === "scouting"))
       .map(section => ({ href: `${hub.href}?tab=${section.id}`, label: section.label, icon: DESTINATION_ICONS[section.id] ?? definition.icon }));
     if (hub.id === "competition") {
+      // My Day is a pin by default. Listed here too, so un-pinning it never hides it.
+      items.push({ href: "/competition?tab=my-day", label: "My Day", icon: "calendar" });
       items.push({ href: "/competition?tab=pit-tv", label: "Pit display", icon: "display" });
+    }
+    if (hub.id === "team") {
+      // The team's own lessons and PDFs (/learn/team): the team's library, so it lives with
+      // the team, not three levels down under Build › CAD.
+      items.push({ href: "/learn/team", label: "Team resources", icon: "book" });
     }
     const permitted = items.filter(item => allowed(item.href));
     return permitted.length ? [{ ...definition, items: permitted }] : [];

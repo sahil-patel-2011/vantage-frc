@@ -1,19 +1,23 @@
 /**
- * The short guided tour a student sees once, the first time they land on Home.
+ * The short guided tour a student sees once, the first time they land on Home, and again
+ * whenever they ask ("Take the tour again" in the account menu and on the Help page).
  *
- * It is a tour, not onboarding: it points at things that already exist and
- * explains what they are for. It never asks for input, never blocks, and can be
- * left at any point.
+ * It is a tour, not onboarding: it says what Vantage is for, then points at the parts of the
+ * app a new person will use, and ends at the feedback button. It never asks for input, never
+ * blocks, and can be left at any point.
  *
  * Steps target elements by `data-tour`, so a step whose element is not on the
  * page — a control that needs a team, a widget nobody added — is dropped rather
- * than pointing the spotlight at nothing.
+ * than pointing the spotlight at nothing. A step with no target is a centred card.
  */
 
 export type TourStep = {
   id: string;
-  /** Value of the `data-tour` attribute this step points at. */
-  target: string;
+  /**
+   * Value of the `data-tour` attribute this step points at, or null for a centred card with
+   * nothing highlighted (the welcome).
+   */
+  target: string | null;
   title: string;
   body: string;
   /** Preferred side; flips automatically when there is no room. */
@@ -25,41 +29,82 @@ export const TOUR_STORAGE_KEY = `vantage.tour.v${TOUR_VERSION}`;
 
 export const TOUR_STEPS: readonly TourStep[] = [
   {
-    id: "menu",
-    target: "menu",
-    title: "Find any page",
-    body: "Use menu or search to find any page, tool or team record.",
-    prefer: "bottom",
-  },
-  {
-    id: "island",
-    target: "island",
-    title: "Your shortcuts",
-    body: "These are the apps you pinned. Right-click them (press and hold the bar on a phone), or open Account → Appearance, to change them.",
-    prefer: "top",
-  },
-  {
-    id: "ask-ai",
-    target: "ask-ai",
-    title: "Ask about your own data",
-    body: "Strategy, match predictions, design help. It answers from your team's records and says when it does not know.",
-    prefer: "bottom",
+    id: "welcome",
+    target: null,
+    title: "Welcome to Vantage",
+    body: "This is where your robotics team scouts, plans and builds together. Here's a quick look around, about a minute long.",
   },
   {
     id: "event",
     target: "event",
-    title: "Your active event",
-    body: "Schedule, scouting and predictions all follow this. Tap it to open event day.",
+    title: "Your event",
+    body: "Pick the competition you're headed to. Schedules, scouting and match predictions all follow it.",
     prefer: "bottom",
+  },
+  {
+    id: "scouting",
+    target: "scouting",
+    title: "Scouting",
+    body: "Scouts write down what every robot does in a match. Your team uses it to plan strategy and pick alliance partners.",
+    // Beside the sidebar on a computer; above the bottom bar on a phone, where "right" has no room.
+    prefer: "right",
+  },
+  {
+    id: "team-work",
+    target: "team-work",
+    title: "Your team",
+    body: "Calendar, tasks, chat and your teammates all live under Team, so everyone knows who is doing what.",
+    prefer: "right",
+  },
+  {
+    id: "menu",
+    target: "menu",
+    title: "Search and menu",
+    body: "Tap here to find any page, tool or team record fast.",
+    prefer: "bottom",
+  },
+  {
+    id: "ask-ai",
+    target: "ask-ai",
+    title: "Ask AI",
+    body: "Ask about strategy, match predictions or design. It answers from your team's own records and says when it doesn't know.",
+    prefer: "right",
   },
   {
     id: "customise",
     target: "customise",
-    title: "Make this page yours",
-    body: "Add, move or remove cards so Home shows what your job actually needs.",
+    title: "Make Home yours",
+    body: "Add, move or remove cards so Home shows what you need most.",
     prefer: "left",
   },
+  {
+    id: "feedback",
+    target: "feedback",
+    title: "Tell us anything",
+    body: "Found a bug or have an idea? Tap here any time.",
+    prefer: "top",
+  },
 ] as const;
+
+/**
+ * Which `data-tour` name a navigation link carries, so the shell does not decide it twice.
+ * The sidebar lists hubs ("/competition", "/team"); the bottom bar lists the four apps a person
+ * picked ("/competition?tab=scouting"). Scouting is the Competition hub's front door, so both
+ * point there. Anything else is not a tour stop.
+ */
+export function tourTargetForHref(href: string): string | undefined {
+  const [path, query = ""] = href.split("?");
+  const tab = new URLSearchParams(query).get("tab");
+  if (path === "/competition" && (!tab || tab === "scouting")) return "scouting";
+  if (path === "/team" && !tab) return "team-work";
+  return undefined;
+}
+
+/**
+ * Home is ready for the tour once this target is on the page: the cards load after the shell,
+ * and starting before they do drops the steps that point at them.
+ */
+export const TOUR_HOME_READY_TARGET = "customise";
 
 /**
  * How long after an account is created the tour is still offered.
@@ -85,12 +130,20 @@ export function tourIsForNewMember(memberSince: string | null | undefined, now: 
   return ageDays >= -1 && ageDays <= TOUR_NEW_MEMBER_DAYS;
 }
 
-/** Steps whose target is present, in order. Absent targets are skipped. */
+/** Steps whose target is present, in order. Absent targets are skipped; a centred card always stays. */
 export function availableSteps(
   steps: readonly TourStep[],
   present: (target: string) => boolean,
 ): TourStep[] {
-  return steps.filter((step) => present(step.target));
+  return steps.filter((step) => step.target === null || present(step.target));
+}
+
+/**
+ * Whether what is left is worth interrupting someone for. A welcome card and nothing to point at
+ * is not a tour; two stops on the page is the least that is.
+ */
+export function tourIsWorthShowing(steps: readonly TourStep[]): boolean {
+  return steps.filter((step) => step.target !== null).length >= 2;
 }
 
 /** Accessible name on the tour dialog. Anything else with role=dialog is real work. */
@@ -105,7 +158,7 @@ export function tourShouldYield(openDialogLabels: readonly (string | null)[]): b
 }
 
 export type Rect = { top: number; left: number; width: number; height: number };
-export type Placement = { top: number; left: number; side: "top" | "bottom" | "left" | "right" };
+export type Placement = { top: number; left: number; side: "top" | "bottom" | "left" | "right" | "center" };
 
 export const CARD_GAP = 12;
 
@@ -115,10 +168,11 @@ export const CARD_GAP = 12;
  * Tries the preferred side, falls back to the side with the most room, then
  * clamps into the viewport. Clamping last matters: a card pinned to an edge is
  * readable, a card half off-screen is not, and on a phone in the stands the
- * preferred side often does not fit at all.
+ * preferred side often does not fit at all. A step with no target is centred.
  */
 export function placeCard(input: {
-  target: Rect;
+  /** What the card points at; null (a step with no target) centres it in the viewport. */
+  target: Rect | null;
   card: { width: number; height: number };
   viewport: { width: number; height: number };
   prefer?: TourStep["prefer"];
@@ -126,6 +180,17 @@ export function placeCard(input: {
 }): Placement {
   const gap = input.gap ?? CARD_GAP;
   const { target, card, viewport } = input;
+
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(value, max));
+
+  if (!target) {
+    return {
+      side: "center",
+      top: clamp((viewport.height - card.height) / 2, gap, Math.max(gap, viewport.height - card.height - gap)),
+      left: clamp((viewport.width - card.width) / 2, gap, Math.max(gap, viewport.width - card.width - gap)),
+    };
+  }
 
   const room = {
     top: target.top,
@@ -166,8 +231,6 @@ export function placeCard(input: {
     left = target.left - card.width - gap;
   }
 
-  const clamp = (value: number, min: number, max: number) =>
-    Math.max(min, Math.min(value, max));
   return {
     side,
     top: clamp(top, gap, Math.max(gap, viewport.height - card.height - gap)),

@@ -33,7 +33,10 @@ export type OpsEntity =
   | "Sponsors"
   | "RobotFailures"
   | "Batteries"
-  | "PracticeScouting";
+  | "PracticeScouting"
+  | "SeasonEvents"
+  | "SeasonMatches"
+  | "Lessons";
 
 type OpsTableDef = {
   entity: OpsEntity;
@@ -48,6 +51,107 @@ const ISO = (column: string) => `to_char(${column} AT TIME ZONE 'UTC', 'YYYY-MM-
 
 const ROLE_LABEL = `CASE m.role::text WHEN 'owner' THEN 'Owner' WHEN 'admin' THEN 'Mentor or coach'
                    WHEN 'scout' THEN 'Student' WHEN 'viewer' THEN 'Parent or guest' ELSE m.role::text END`;
+
+/*
+ * The team's own season from The Blue Alliance and Statbotics: every event the team played and
+ * every match it was in, already pulled into Vantage's reference tables (TBA is only asked again
+ * when its data changed). Read-only in the workbook — a pull back into Vantage ignores them.
+ */
+/*
+ * "Season" is the active event's year (else this year). Matches are found through that year's
+ * events (events_ref_year_start_idx, then matches_ref_event_order_idx), so a sync never scans
+ * every season's matches for the team's key.
+ */
+const US = `WITH us AS (SELECT 'frc' || o.team_number AS team_key FROM organizations o WHERE o.id = $1::uuid AND o.team_number IS NOT NULL),
+          season AS (
+            SELECT COALESCE(
+              (SELECT e.year FROM org_active_context c JOIN events_ref e ON e.event_key = c.active_event_key WHERE c.org_id = $1::uuid),
+              EXTRACT(YEAR FROM now())::int
+            ) AS year
+          ),
+          season_events AS (SELECT e.event_key FROM events_ref e JOIN season ON e.year = season.year)`;
+const ALLIANCE = (side: "red" | "blue") => `COALESCE(r.${side}_alliance->'teamKeys', r.${side}_alliance->'team_keys')`;
+const SCORE = (side: "red" | "blue") =>
+  `CASE WHEN (r.${side}_alliance->>'score') ~ '^-?[0-9]+$' THEN NULLIF((r.${side}_alliance->>'score')::int, -1) END`;
+
+const SEASON_TABLES: OpsTableDef[] = [
+  {
+    entity: "SeasonEvents",
+    description: "Every event the team played this season, from The Blue Alliance and Statbotics: dates, place, rank, record, EPA and OPR.",
+    columns: [
+      "id", "event_name", "year", "week", "start_date", "end_date", "city", "state_prov", "country",
+      "rank", "wins", "losses", "ties", "epa_total", "epa_auto", "epa_teleop", "epa_endgame", "opr", "dpr", "ccwm",
+      "updated_at", "source",
+    ],
+    sql: `${US},
+          events AS (
+            SELECT m.event_key FROM team_event_metrics m JOIN us ON m.team_key = us.team_key
+             WHERE m.event_key IN (SELECT event_key FROM season_events)
+            UNION
+            SELECT r.event_key FROM matches_ref r JOIN us ON (${ALLIANCE("red")} ? us.team_key OR ${ALLIANCE("blue")} ? us.team_key)
+             WHERE r.event_key IN (SELECT event_key FROM season_events)
+          ),
+          ours AS (
+            SELECT m.event_key,
+                   (array_agg(m.rank ORDER BY m.synced_at DESC) FILTER (WHERE m.rank IS NOT NULL))[1] AS rank,
+                   (array_agg(m.wins ORDER BY m.synced_at DESC) FILTER (WHERE m.wins IS NOT NULL))[1] AS wins,
+                   (array_agg(m.losses ORDER BY m.synced_at DESC) FILTER (WHERE m.losses IS NOT NULL))[1] AS losses,
+                   (array_agg(m.ties ORDER BY m.synced_at DESC) FILTER (WHERE m.ties IS NOT NULL))[1] AS ties,
+                   (array_agg(m.epa_total ORDER BY m.synced_at DESC) FILTER (WHERE m.epa_total IS NOT NULL))[1] AS epa_total,
+                   (array_agg(m.epa_auto ORDER BY m.synced_at DESC) FILTER (WHERE m.epa_auto IS NOT NULL))[1] AS epa_auto,
+                   (array_agg(m.epa_teleop ORDER BY m.synced_at DESC) FILTER (WHERE m.epa_teleop IS NOT NULL))[1] AS epa_teleop,
+                   (array_agg(m.epa_endgame ORDER BY m.synced_at DESC) FILTER (WHERE m.epa_endgame IS NOT NULL))[1] AS epa_endgame,
+                   (array_agg(m.opr ORDER BY m.synced_at DESC) FILTER (WHERE m.opr IS NOT NULL))[1] AS opr,
+                   (array_agg(m.dpr ORDER BY m.synced_at DESC) FILTER (WHERE m.dpr IS NOT NULL))[1] AS dpr,
+                   (array_agg(m.ccwm ORDER BY m.synced_at DESC) FILTER (WHERE m.ccwm IS NOT NULL))[1] AS ccwm,
+                   string_agg(DISTINCT m.source, '+' ORDER BY m.source) AS sources,
+                   max(m.synced_at) AS synced_at
+              FROM team_event_metrics m JOIN us ON m.team_key = us.team_key
+             WHERE m.event_key IN (SELECT event_key FROM season_events)
+             GROUP BY m.event_key
+          )
+          SELECT ev.event_key AS id, e.name AS event_name, e.year, e.week,
+                 to_char(e.start_date, 'YYYY-MM-DD') AS start_date, to_char(e.end_date, 'YYYY-MM-DD') AS end_date,
+                 e.city, e.state_prov, e.country,
+                 o.rank, o.wins, o.losses, o.ties, o.epa_total, o.epa_auto, o.epa_teleop, o.epa_endgame, o.opr, o.dpr, o.ccwm,
+                 ${ISO("COALESCE(o.synced_at, e.synced_at)")} AS updated_at,
+                 COALESCE(o.sources, 'tba') AS source
+            FROM events ev
+            LEFT JOIN events_ref e ON e.event_key = ev.event_key
+            LEFT JOIN ours o ON o.event_key = ev.event_key
+           ORDER BY e.start_date NULLS LAST, ev.event_key`,
+  },
+  {
+    entity: "SeasonMatches",
+    description: "Every match the team played or is scheduled for this season, from The Blue Alliance: alliances, scores and the result.",
+    columns: [
+      "id", "event_key", "comp_level", "set_number", "match_number", "alliance", "red_teams", "blue_teams",
+      "red_score", "blue_score", "result", "scheduled_time", "actual_time", "updated_at", "source",
+    ],
+    sql: `${US}
+          SELECT r.match_key AS id, r.event_key, r.comp_level, r.set_number, r.match_number,
+                 CASE WHEN ${ALLIANCE("red")} ? us.team_key THEN 'red' ELSE 'blue' END AS alliance,
+                 array_to_string(ARRAY(SELECT jsonb_array_elements_text(${ALLIANCE("red")})), ' ') AS red_teams,
+                 array_to_string(ARRAY(SELECT jsonb_array_elements_text(${ALLIANCE("blue")})), ' ') AS blue_teams,
+                 ${SCORE("red")} AS red_score, ${SCORE("blue")} AS blue_score,
+                 CASE
+                   WHEN ${SCORE("red")} IS NULL OR ${SCORE("blue")} IS NULL THEN 'not played'
+                   WHEN COALESCE(r.winning_alliance, '') = '' THEN 'tie'
+                   WHEN r.winning_alliance = CASE WHEN ${ALLIANCE("red")} ? us.team_key THEN 'red' ELSE 'blue' END THEN 'win'
+                   ELSE 'loss'
+                 END AS result,
+                 ${ISO("r.event_time")} AS scheduled_time, ${ISO("r.actual_time")} AS actual_time,
+                 ${ISO("r.synced_at")} AS updated_at, 'tba' AS source
+            FROM matches_ref r
+            JOIN us ON (${ALLIANCE("red")} ? us.team_key OR ${ALLIANCE("blue")} ? us.team_key)
+           WHERE r.event_key IN (SELECT event_key FROM season_events)
+             AND COALESCE(r.placeholder, false) = false
+           ORDER BY r.event_key,
+                    CASE r.comp_level WHEN 'qm' THEN 1 WHEN 'ef' THEN 2 WHEN 'qf' THEN 3 WHEN 'sf' THEN 4 WHEN 'f' THEN 5 ELSE 6 END,
+                    r.set_number, r.match_number, r.match_key`,
+  },
+];
+
 
 export const OPS_TABLES: OpsTableDef[] = [
   {
@@ -170,6 +274,28 @@ export const OPS_TABLES: OpsTableDef[] = [
           ${ISO("observed_at")} AS observed_at, ${ISO("created_at")} AS updated_at,
           'practice_scouting' AS source
           FROM free_scout_reports WHERE org_id=$1::uuid ORDER BY created_at, id`,
+  },
+  ...SEASON_TABLES,
+  {
+    entity: "Lessons",
+    description: "The team's published lessons (Learn › Team resources): title, steps and their text. Drafts and practice answers are left out.",
+    columns: [
+      "id", "title", "status", "kind", "audience", "minutes", "steps", "practice_questions", "text", "author",
+      "published_at", "updated_at", "source",
+    ],
+    sql: `SELECT l.id::text AS id, l.title, l.status, l.source AS kind, l.audience, l.minutes,
+                 jsonb_array_length(l.body->'steps') AS steps,
+                 jsonb_array_length(l.body->'practice') AS practice_questions,
+                 (SELECT string_agg(COALESCE(st.step->>'title', '') || E'\n' || COALESCE(st.step->>'text', ''), E'\n\n' ORDER BY st.n)
+                    FROM jsonb_array_elements(l.body->'steps') WITH ORDINALITY AS st(step, n)) AS text,
+                 COALESCE(NULLIF(u.name, ''), 'Member') AS author,
+                 ${ISO("l.published_at")} AS published_at, ${ISO("l.updated_at")} AS updated_at, 'team_lessons' AS source
+            FROM team_lessons l
+            LEFT JOIN users u ON u.id = l.created_by
+           -- Published only: drafts are private to their author and leads, and the copy must not
+           -- change with whoever happened to run the sync.
+           WHERE l.org_id = $1::uuid AND l.status = 'published'
+           ORDER BY l.title, l.id`,
   },
 ];
 

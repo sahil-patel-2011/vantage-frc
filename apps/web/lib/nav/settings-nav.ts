@@ -1,11 +1,13 @@
 /**
- * Canonical map of every settings surface in the product — the one place that
- * answers "where do I change X". Pure data + helpers, safe for client bundles.
+ * Settings: one place, like a phone's Settings app. Every settings surface in the product, in
+ * two groups — "You" (every member) and "This team" (what the person's role allows) — in the
+ * order the Settings column and the Settings list show them. Pure data + helpers, safe for
+ * client bundles.
  *
- * Personal entries are visible to every member; team entries require an
- * owner/admin role. Members do not get an AI-keys chip — Claude Code is the
- * no-key Ask AI path. Owners see one AI keys chip plus Chat, Team admin,
- * Member access, and Data export.
+ * The pages keep their own routes (/account, /security, /team/admin …); the settings layout
+ * (components/settings-layout.tsx) puts them in one frame with this list beside them, and
+ * /settings is the list itself. Entries with a #hash jump to a part of a page; they never mark
+ * themselves as the current section.
  */
 
 import type { ProductNavIcon } from "./product-nav";
@@ -20,75 +22,94 @@ export type SettingsNavItem = {
   icon: ProductNavIcon;
   scope: SettingsScope;
   requiredRole: SettingsRequiredRole;
+  /** One plain line under the label in the Settings list. */
+  detail: string;
+  /** Only the team's owner (Delete team). */
+  ownerOnly?: boolean;
+  /** Red, at the bottom of its group. */
+  danger?: boolean;
+  /** Words people search for that are not in the label ("invite", "dark mode", "API key"). */
+  keywords: string[];
+};
+
+/** The entry point: the grouped list on phones, the start page on desktop. */
+export const SETTINGS_HREF = "/settings";
+
+export const SETTINGS_GROUP_LABELS: Record<SettingsScope, string> = {
+  personal: "You",
+  team: "This team",
 };
 
 export const SETTINGS_NAV: SettingsNavItem[] = [
-  { id: "teams", label: "Your teams", href: "/account/teams", icon: "users", scope: "personal", requiredRole: "member" },
-  // Personal — every member.
-  { id: "profile", label: "Profile", href: "/account", icon: "users", scope: "personal", requiredRole: "member" },
-  {
-    id: "appearance",
-    label: "Appearance",
-    href: "/account?tab=appearance",
-    icon: "display",
-    scope: "personal",
-    requiredRole: "member",
-  },
-  {
-    id: "notifications",
-    label: "Notifications",
-    href: "/account?tab=notifications",
-    icon: "bell",
-    scope: "personal",
-    requiredRole: "member",
-  },
-  { id: "security", label: "Security", href: "/security", icon: "pin", scope: "personal", requiredRole: "member" },
-  // Personal rather than team: a member whose own Onshape authorisation has
-  // expired needs this page, and the deployment-level rows on it are read-only
-  // facts they can pass to whoever runs the deployment.
-  {
-    id: "connectors",
-    label: "Connectors",
-    href: "/connectors",
-    icon: "bolt",
-    scope: "personal",
-    requiredRole: "member",
-  },
-  // Team — owner/admin only. AI keys stay one chip (Claude Code is the no-key Ask AI path).
-  // The same pages, names and order as the Team settings chip row (lib/nav/team-settings-nav.ts),
-  // each with its own icon: Connectors and AI keys shared the bolt.
-  { id: "team-admin", label: "Team admin", href: "/team/admin", icon: "users", scope: "team", requiredRole: "owner-admin" },
-  { id: "team-profile", label: "Team profile", href: "/team/admin/profile", icon: "pin", scope: "team", requiredRole: "owner-admin" },
-  {
-    id: "member-access",
-    label: "Team security",
-    href: "/team/security",
-    icon: "shield",
-    scope: "team",
-    requiredRole: "owner-admin",
-  },
-  {
-    id: "team-ai-keys",
-    label: "AI keys",
-    href: "/team/ai-keys",
-    icon: "sparkles",
-    scope: "team",
-    requiredRole: "owner-admin",
-  },
-  {
-    id: "chat",
-    label: "Chat safety",
-    href: "/messages/moderation",
-    icon: "chat",
-    scope: "team",
-    requiredRole: "owner-admin",
-  },
-  { id: "team-data", label: "Team data", href: "/team/data", icon: "database", scope: "team", requiredRole: "owner-admin" },
-  { id: "data-export", label: "Data export", href: "/exports", icon: "grid", scope: "team", requiredRole: "owner-admin" },
+  // You — every member.
+  { id: "profile", label: "Profile", href: "/account", icon: "users", scope: "personal", requiredRole: "member",
+    detail: "Your name, sign-in email and phone",
+    keywords: ["profile", "my name", "name", "email", "phone", "recovery email", "account", "me"] },
+  { id: "appearance", label: "Appearance", href: "/account?tab=appearance", icon: "display", scope: "personal", requiredRole: "member",
+    detail: "Light or dark, motion, and your pinned apps",
+    keywords: ["appearance", "theme", "dark mode", "light mode", "colors", "motion", "density", "your apps", "pinned apps", "shortcuts", "bottom bar"] },
+  { id: "notifications", label: "Notifications", href: "/notifications/preferences", icon: "bell", scope: "personal", requiredRole: "member",
+    detail: "What we tell you about, and how",
+    keywords: ["notifications", "alerts", "email alerts", "push", "notification settings", "mute"] },
+  { id: "security", label: "Security", href: "/security", icon: "shield", scope: "personal", requiredRole: "member",
+    detail: "Your sign-in, a second step, and your devices",
+    keywords: ["security", "two factor", "2fa", "mfa", "authenticator", "password", "sessions", "signed in devices", "sign out everywhere"] },
+  { id: "teams", label: "Your teams", href: "/account/teams", icon: "grid", scope: "personal", requiredRole: "member",
+    detail: "Switch teams, join one, or leave one",
+    keywords: ["your teams", "my teams", "switch team", "leave team", "join a team", "invitation"] },
+  // Personal rather than team: a member whose own Onshape authorisation has expired needs this
+  // page, and the deployment-level rows on it are read-only facts they can pass on.
+  { id: "connectors", label: "Connectors", href: "/connectors", icon: "globe", scope: "personal", requiredRole: "member",
+    detail: "Onshape, Google, GitHub and other linked tools",
+    keywords: ["connectors", "integrations", "onshape", "google", "github", "the blue alliance", "tba", "slack", "discord", "connect"] },
+  // A member's own keys live on the AI keys page; for owners and mentors the team entry below
+  // covers the same page, so they see one row.
+  { id: "my-ai-keys", label: "Your AI keys", href: "/team/ai-keys", icon: "sparkles", scope: "personal", requiredRole: "member",
+    detail: "Use your own AI key for Ask AI",
+    keywords: ["my ai key", "api key", "my api key", "gemini key", "openai key", "anthropic key"] },
+  { id: "delete-account", label: "Delete account", href: "/account#delete-account", icon: "trash", scope: "personal", requiredRole: "member",
+    detail: "Remove your account for good", danger: true,
+    keywords: ["delete account", "delete my account", "remove my account", "close account"] },
+
+  // This team — owners and mentors (owner-admin). Delete team is the owner's alone.
+  { id: "team-profile", label: "Team profile", href: "/team/admin/profile", icon: "pin", scope: "team", requiredRole: "owner-admin",
+    detail: "Name, location, colour and logo",
+    keywords: ["team profile", "team name", "rename team", "logo", "team colour", "team color", "location"] },
+  { id: "team-admin", label: "Members and invites", href: "/team/admin", icon: "users", scope: "team", requiredRole: "owner-admin",
+    detail: "Invite people and choose what each can do",
+    keywords: ["members", "invite", "invites", "add someone", "add member", "people", "team admin", "remove member", "roles"] },
+  { id: "access-roles", label: "Access and roles", href: "/team/admin/presets", icon: "shield", scope: "team", requiredRole: "owner-admin",
+    detail: "Custom roles and scouting leads",
+    keywords: ["access", "custom roles", "permissions", "scouting lead", "access presets", "delegate"] },
+  { id: "money-managers", label: "Money managers", href: "/team/admin#money-managers", icon: "stats", scope: "team", requiredRole: "owner-admin",
+    detail: "Who can change the team's money",
+    keywords: ["money managers", "finance managers", "budget access", "treasurer", "who can spend"] },
+  { id: "join-code", label: "Join code", href: "/team/admin#join-code", icon: "bolt", scope: "team", requiredRole: "owner-admin",
+    detail: "A code or link people use to join",
+    keywords: ["join code", "join link", "team code", "invite link", "share code"] },
+  { id: "member-access", label: "Team security", href: "/team/security", icon: "shield", scope: "team", requiredRole: "owner-admin",
+    detail: "How everyone on the team signs in",
+    keywords: ["team security", "sign in policy", "require 2fa", "allowed domains", "member access"] },
+  { id: "team-ai-keys", label: "AI keys and credit", href: "/team/ai-keys", icon: "sparkles", scope: "team", requiredRole: "owner-admin",
+    detail: "The team's AI keys, limits and credit",
+    keywords: ["ai keys", "api key", "ai credit", "openai", "anthropic", "gemini", "openrouter", "byok", "model training"] },
+  { id: "chat", label: "Chat safety", href: "/messages/moderation", icon: "chat", scope: "team", requiredRole: "owner-admin",
+    detail: "Reports and private-message rules",
+    keywords: ["chat safety", "moderation", "reports", "private messages", "block", "youth protection"] },
+  { id: "team-data", label: "Team data and export", href: "/team/data", icon: "database", scope: "team", requiredRole: "owner-admin",
+    detail: "What the team has recorded; download it",
+    keywords: ["team data", "export", "download data", "csv", "zip", "backup", "takeout", "event data"] },
+  { id: "delete-team", label: "Delete team", href: "/team/admin/profile#team-delete-title", icon: "trash", scope: "team", requiredRole: "owner-admin",
+    detail: "Remove this team and its data", danger: true, ownerOnly: true,
+    keywords: ["delete team", "remove team", "close team", "shut down team"] },
 ];
 
-/** Pages that still exist but are no longer chips — keep Settings highlighting. */
-const SETTINGS_PATH_ALIASES = ["/team/budgets", "/team/ai-policy"];
+/** Pages that are not a row of their own but belong to one (they keep Settings around them). */
+const SETTINGS_PATH_ALIASES: Record<string, string> = {
+  "/exports": "team-data",
+  "/team/budgets": "team-ai-keys",
+  "/team/ai-policy": "team-ai-keys",
+};
 
 /** Map a raw org role ("owner" | "admin" | "scout" | "viewer" | null) to the nav tier. */
 export function settingsRoleTier(role: string | null | undefined): SettingsRequiredRole {
@@ -101,23 +122,24 @@ function pathOf(href: string): string {
 }
 
 function queryOf(href: string): URLSearchParams {
-  const queryIndex = href.indexOf("?");
+  const path = href.split("#")[0] ?? href;
+  const queryIndex = path.indexOf("?");
   if (queryIndex < 0) return new URLSearchParams();
-  return new URLSearchParams(href.slice(queryIndex + 1));
+  return new URLSearchParams(path.slice(queryIndex + 1));
 }
 
 /**
- * Entries the given role may see, in Personal-then-Team order. When a team
- * entry covers the same page as a personal one, the team entry wins so an
- * admin never sees two chips pointing at one page.
+ * Entries the given role may see, You first, then This team. When a team entry covers the same
+ * page as a personal one (AI keys), the team entry wins so nobody sees two rows for one page.
  */
 export function visibleSettingsNav(role: string | null | undefined, scope?: SettingsScope): SettingsNavItem[] {
   const tier = settingsRoleTier(role);
-  const allowed = SETTINGS_NAV.filter((item) => item.requiredRole === "member" || tier === "owner-admin");
-  const teamHrefs = new Set(allowed.filter((item) => item.scope === "team").map((item) => pathOf(item.href)));
-  const deduped = allowed.filter(
-    (item) => item.scope === "team" || !teamHrefs.has(pathOf(item.href)),
+  const owner = (role ?? "").trim().toLowerCase() === "owner";
+  const allowed = SETTINGS_NAV.filter(
+    (item) => (item.requiredRole === "member" || tier === "owner-admin") && (!item.ownerOnly || owner),
   );
+  const teamPages = new Set(allowed.filter((item) => item.scope === "team").map((item) => item.href));
+  const deduped = allowed.filter((item) => item.scope === "team" || !teamPages.has(item.href));
   return scope ? deduped.filter((item) => item.scope === scope) : deduped;
 }
 
@@ -125,16 +147,16 @@ export function visibleSettingsNav(role: string | null | undefined, scope?: Sett
 export function isSettingsPath(pathname: string): boolean {
   const path = pathOf(pathname);
   if (path === "/messages") return false;
-  return [...SETTINGS_NAV.map((item) => pathOf(item.href)), ...SETTINGS_PATH_ALIASES].some((itemPath) => {
-    return path === itemPath || path.startsWith(`${itemPath}/`);
-  });
+  return [SETTINGS_HREF, ...SETTINGS_NAV.map((item) => pathOf(item.href)), ...Object.keys(SETTINGS_PATH_ALIASES)].some(
+    (itemPath) => path === itemPath || path.startsWith(`${itemPath}/`),
+  );
 }
 
 /**
- * Which entry of `items` is active for the current location. Longest path
- * prefix wins; among entries on the same path, the `tab` query decides —
- * no tab (or tab=profile) matches the entry without a tab in its href, and a
- * tab with no matching entry (e.g. /account?tab=integrations) activates none.
+ * Which entry of `items` is the current section. Longest path prefix wins; among entries on
+ * the same path, the `tab` query decides — no tab (or tab=profile) matches the entry without a
+ * tab, and a tab with no matching entry (e.g. /account?tab=integrations) marks none. Entries
+ * with a #hash are jumps within a page and are never the current one.
  */
 export function activeSettingsId(
   items: SettingsNavItem[],
@@ -142,26 +164,46 @@ export function activeSettingsId(
   search?: string | null,
 ): string | null {
   const path = pathOf(pathname);
-  const currentTab = search ? new URLSearchParams(search.replace(/^\?/, "")).get("tab") : null;
+  const params = new URLSearchParams((search ?? "").replace(/^\?/, ""));
+  const currentTab = params.get("tab");
+  const currentSettings = params.get("settings");
 
   let best: SettingsNavItem | null = null;
   let bestScore = -1;
   for (const item of items) {
+    if (item.href.includes("#")) continue;
     const itemPath = pathOf(item.href);
     const onPath = path === itemPath || path.startsWith(`${itemPath}/`);
     if (!onPath) continue;
     const itemQuery = queryOf(item.href);
     const itemTab = itemQuery.get("tab");
     const itemSettings = itemQuery.get("settings");
-    const currentSettings = search ? new URLSearchParams(search.replace(/^\?/, "")).get("settings") : null;
-    const tabMatches =
-      itemTab === null ? currentTab === null || currentTab === "profile" : currentTab === itemTab;
+    const tabMatches = itemTab === null ? currentTab === null || currentTab === "profile" : currentTab === itemTab;
     const settingsMatches = itemSettings === null || currentSettings === itemSettings;
     if (!tabMatches || !settingsMatches) continue;
-    if (itemPath.length > bestScore) {
+    // On a page both groups list (AI keys), the team's row is the section for whoever sees it.
+    if (itemPath.length > bestScore || (itemPath.length === bestScore && item.scope === "team" && best?.scope === "personal")) {
       bestScore = itemPath.length;
       best = item;
     }
   }
-  return best?.id ?? null;
+  if (best) return best.id;
+  for (const [alias, id] of Object.entries(SETTINGS_PATH_ALIASES)) {
+    if ((path === alias || path.startsWith(`${alias}/`)) && items.some((item) => item.id === id)) return id;
+  }
+  return null;
+}
+
+/** The section a settings page shows ("Security", "Members and invites" …), for its title. */
+export function settingsSectionLabel(pathname: string, search?: string | null, role?: string | null): string | null {
+  const path = pathOf(pathname);
+  if (path === SETTINGS_HREF) return "Settings";
+  const items = role === undefined ? SETTINGS_NAV : visibleSettingsNav(role);
+  const id = activeSettingsId(items, pathname, search);
+  return SETTINGS_NAV.find((item) => item.id === id)?.label ?? null;
+}
+
+/** "Settings › Security": the one breadcrumb every settings page carries. */
+export function settingsBreadcrumb(section: string): string {
+  return `Settings › ${section}`;
 }

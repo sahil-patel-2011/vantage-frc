@@ -19,9 +19,15 @@ import {
   OWNER_INVITE_HOURS,
   ownerProvisionMode,
   provisionConflictMessage,
+  teamNumberTakenMessage,
   validateProvisionInput,
   type ProvisionConfirmation,
 } from "../../../../lib/admin-analytics/provisioning";
+import { emailNewOwner, noteNewOwner } from "../../../../lib/admin-analytics/owner-notice";
+import { createWaitlistStore, waitlistBackend } from "../../../../lib/marketing/waitlist";
+import { lifecycleRefusal, teamDisplayName } from "../../../../lib/team-lifecycle/model";
+import { lifecycleErrorResponse } from "../../../../lib/team-lifecycle/respond";
+import { deleteTeam } from "../../../../lib/team-lifecycle/store";
 
 // Platform admin: create org -> seed owner -> invite, end to end.
 // - Owner already has a verified account → membership seeded immediately
@@ -37,6 +43,9 @@ async function session() {
   return value;
 }
 
+/** A provisioning refusal with a sentence the admin can act on (409). */
+class ProvisionConflict extends Error {}
+
 export async function GET() {
   try {
     const current = await session();
@@ -48,17 +57,21 @@ export async function GET() {
                   o.created_at AS "createdAt",
                   owner.email AS "ownerEmail",
                   pending.email AS "pendingOwnerEmail",
-                  pending.expires_at AS "pendingOwnerInviteExpiresAt"
+                  pending.expires_at AS "pendingOwnerInviteExpiresAt",
+                  COALESCE(pending.expired, false) AS "ownerInviteExpired",
+                  (SELECT count(*)::int FROM memberships x WHERE x.org_id = o.id) AS "memberCount"
            FROM organizations o
            LEFT JOIN LATERAL (
              SELECT u.email FROM memberships m JOIN users u ON u.id = m.user_id
              WHERE m.org_id = o.id AND m.role = 'owner'
              ORDER BY m.created_at LIMIT 1
            ) owner ON true
+           -- The latest owner invite, expired ones included: filtering them out showed
+           -- "No owner yet" with no button once a day had passed (QA A2-03).
            LEFT JOIN LATERAL (
-             SELECT i.email, i.expires_at FROM invites i
-             WHERE i.org_id = o.id AND i.role = 'owner' AND i.status = 'pending'
-               AND i.expires_at > now()
+             SELECT i.email, i.expires_at, (i.status = 'expired' OR i.expires_at <= now()) AS expired
+             FROM invites i
+             WHERE i.org_id = o.id AND i.role = 'owner' AND i.status IN ('pending', 'expired')
              ORDER BY i.created_at DESC LIMIT 1
            ) pending ON true
            ORDER BY o.team_number`,
@@ -85,6 +98,14 @@ export async function POST(request: Request) {
         userId: current.user.id,
         sessionId: current.session.id,
       });
+
+      // The number first: it is the mistake an admin makes (a waitlisted mentor whose team is
+      // already here), and the insert would otherwise trip over the web address index first.
+      const taken = await client.query<{ name: string }>(
+        `SELECT name FROM organizations WHERE team_number = $1::int LIMIT 1`,
+        [input.teamNumber],
+      );
+      if (taken.rows[0]) throw new ProvisionConflict(teamNumberTakenMessage(input.teamNumber, taken.rows[0].name));
 
       const ownerLookup = await client.query<{ id: string; emailVerified: boolean }>(
         `SELECT id, email_verified AS "emailVerified" FROM users
@@ -159,12 +180,17 @@ export async function POST(request: Request) {
     // owner just seeded, after the team is committed. An invited owner's team gets them when the
     // owner accepts (invite routes and onboarding). Never undoes the team if it fails.
     let teamDefaults: ProvisionConfirmation["teamDefaults"] = "on_owner_join";
+    const teamLabel = teamDisplayName({ teamNumber: input.teamNumber, name: input.name });
     if (created.mode === "seeded" && created.ownerUserId) {
       const ownerUserId = created.ownerUserId;
       const outcome = await withRls({ userId: ownerUserId, orgId: created.orgId }, (client) =>
         ensureFirstOwnerTeamDefaults(client, created.orgId, ownerUserId),
       ).catch(() => null);
       teamDefaults = outcome?.defaults ? "ready" : "pending";
+      // The owner hears about it in Vantage (written as them: notifications_self).
+      await withRls({ userId: ownerUserId, orgId: created.orgId }, (client) =>
+        noteNewOwner(client, { userId: ownerUserId, orgId: created.orgId, teamLabel }),
+      ).catch(() => undefined);
     }
 
     const confirmation: ProvisionConfirmation = {
@@ -175,6 +201,12 @@ export async function POST(request: Request) {
       owner: { email: input.ownerEmail, mode: created.mode },
       teamDefaults,
     };
+    if (created.mode === "seeded") {
+      // ...and by email, after commit, so a slow mail service never undoes the team (A2-08).
+      const notice = await emailNewOwner({ email: input.ownerEmail, teamLabel, orgId: created.orgId });
+      confirmation.owner.emailSent = notice.emailSent;
+      confirmation.owner.delivery = notice.delivery;
+    }
     if (created.mode === "invited" && created.inviteToken && created.inviteExpiresAt) {
       // Deliver AFTER commit so a slow/failed email never rolls back the org.
       const delivery = await deliverInviteEmail({
@@ -189,6 +221,9 @@ export async function POST(request: Request) {
       confirmation.owner.emailSent = delivery.emailSent;
       confirmation.owner.delivery = delivery.delivery;
     }
+    // A waitlist entry for this email is done: the team exists (QA A2-09). Best effort; the
+    // waitlist can live in its own database, and a miss here never fails the team.
+    confirmation.waitlistConverted = await markWaitlistConverted(input.ownerEmail);
     // The team's spreadsheet in the VantageFRC folder, made now so it is there on day one.
     // After the response, and never fatal: a slow Google cannot hold up or undo the team.
     after(async () => {
@@ -206,10 +241,20 @@ export async function POST(request: Request) {
     });
     return Response.json(confirmation, { status: 201 });
   } catch (error) {
+    if (error instanceof ProvisionConflict) return Response.json({ error: error.message }, { status: 409 });
     const conflict =
       error instanceof Error ? provisionConflictMessage(error.message) : null;
     if (conflict) return Response.json({ error: conflict }, { status: 409 });
     return platformAdminDeniedResponse(error);
+  }
+}
+
+async function markWaitlistConverted(email: string): Promise<boolean> {
+  if (waitlistBackend() === "unavailable") return false;
+  try {
+    return Boolean(await createWaitlistStore().markConverted(email));
+  } catch {
+    return false;
   }
 }
 
@@ -231,10 +276,16 @@ export async function PATCH(request: Request) {
       await assertPlatformPrivilegeMfa(client, { userId: current.user.id, sessionId: current.session.id });
       const { token, tokenHash } = createInviteToken();
       const expiresAt = new Date(Date.now() + OWNER_INVITE_HOURS * 3_600_000);
+      // An expired owner invite is reissued too (QA A2-03): it is the case the button exists for.
+      // Only while nobody owns the team yet; a revoked or accepted invite is never brought back.
       const row = await client.query<{ email: string; organization: string }>(
-        `UPDATE invites i SET token_hash = $2, expires_at = $3, last_sent_at = now()
+        `UPDATE invites i SET token_hash = $2, expires_at = $3, last_sent_at = now(), status = 'pending'
            FROM organizations o
-          WHERE i.org_id = $1::uuid AND o.id = i.org_id AND i.role = 'owner' AND i.status = 'pending'
+          WHERE i.org_id = $1::uuid AND o.id = i.org_id AND i.role = 'owner' AND i.status IN ('pending', 'expired')
+            AND i.id = (SELECT latest.id FROM invites latest
+                         WHERE latest.org_id = $1::uuid AND latest.role = 'owner' AND latest.status IN ('pending', 'expired')
+                         ORDER BY latest.created_at DESC LIMIT 1)
+            AND NOT EXISTS (SELECT 1 FROM memberships m WHERE m.org_id = $1::uuid AND m.role = 'owner')
           RETURNING i.email, o.name AS organization`,
         [orgId, tokenHash, expiresAt],
       );
@@ -248,7 +299,9 @@ export async function PATCH(request: Request) {
       });
       return { token, expiresAt, email: invite.email, organization: invite.organization };
     });
-    if (!rotated) return Response.json({ error: "This team has no owner invite waiting." }, { status: 404 });
+    if (!rotated) {
+      return Response.json({ error: "This team has no owner invite to replace. Its owner may have joined already; reload the list." }, { status: 404 });
+    }
     const delivery = await deliverInviteEmail({
       email: rotated.email,
       organization: rotated.organization,
@@ -263,6 +316,29 @@ export async function PATCH(request: Request) {
       emailSent: delivery.emailSent && delivery.delivery !== "local",
     });
   } catch (error) {
+    return platformAdminDeniedResponse(error);
+  }
+}
+
+/**
+ * Delete a team as a platform admin: one made by mistake (a wrong number, a test team) or one whose
+ * owner never joined, which nobody else can delete. `{ orgId, confirm }`, confirm being the typed
+ * team number. The same delete_team (0720) an owner uses; members are told why it is gone.
+ */
+export async function DELETE(request: Request) {
+  try {
+    const current = await session();
+    const body = (await request.json().catch(() => ({}))) as { orgId?: unknown; confirm?: unknown };
+    const orgId = typeof body.orgId === "string" ? body.orgId.trim() : "";
+    if (!/^[0-9a-f-]{36}$/i.test(orgId)) return Response.json({ error: "Pick a team to delete." }, { status: 400 });
+    await withRls({ userId: current.user.id }, async (client) => {
+      await assertPlatformAdmin(client);
+      await assertPlatformPrivilegeMfa(client, { userId: current.user.id, sessionId: current.session.id });
+      await deleteTeam(client, orgId, typeof body.confirm === "string" ? body.confirm.trim() : "");
+    });
+    return Response.json({ deleted: true });
+  } catch (error) {
+    if (lifecycleRefusal(error)) return lifecycleErrorResponse(error, "delete_team");
     return platformAdminDeniedResponse(error);
   }
 }

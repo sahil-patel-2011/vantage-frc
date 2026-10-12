@@ -1,5 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { computeMetrics, daysToDue, sortTodos, statusLabel, withFlags } from "./evaluate";
+import { computeMetrics, daysToDue, localDateIso, resolveAsOf, sortTodos, statusLabel, withFlags } from "./evaluate";
+
+describe("today for due dates (A5-02)", () => {
+  // 8:30 PM in Georgia (EDT) on Oct 11 is already Oct 12 in UTC.
+  const evening = new Date("2026-10-12T00:30:00Z");
+
+  it("uses the viewer's own date, so a task due today stays due today until their midnight", () => {
+    expect(resolveAsOf("2026-10-11", evening)).toBe("2026-10-11");
+    const due = withFlags(
+      { id: "t", title: "x", notes: "", status: "todo", assigneeUserId: null, assigneeName: null, subteamId: null, subteamName: null,
+        subteamColor: null, dueOn: "2026-10-11", completedAt: null, completedBy: null, createdBy: "u", createdByName: null,
+        createdAt: "", updatedAt: "" },
+      resolveAsOf("2026-10-11", evening),
+    );
+    expect(due.flags).toMatchObject({ overdue: false, dueSoon: true, daysToDue: 0 });
+  });
+
+  it("falls back to UTC for a missing, malformed or far-off date", () => {
+    expect(resolveAsOf(undefined, evening)).toBe("2026-10-12");
+    expect(resolveAsOf("2026-13-40", evening)).toBe("2026-10-12");
+    expect(resolveAsOf("2026-10-01", evening)).toBe("2026-10-12");
+  });
+
+  it("formats this device's date", () => {
+    expect(localDateIso(new Date(2026, 9, 11, 23, 59))).toBe("2026-10-11");
+  });
+});
 import type { TeamTodo } from "./types";
 
 function base(overrides: Partial<Omit<TeamTodo, "flags">> = {}): Omit<TeamTodo, "flags"> {

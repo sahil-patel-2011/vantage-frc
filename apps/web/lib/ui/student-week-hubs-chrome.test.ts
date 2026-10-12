@@ -51,7 +51,7 @@ describe("student-week hub chrome", () => {
     }
   });
 
-  it("setup badges stay Needs setup and Chat empty has one primary without a Next-actions neighbor", () => {
+  it("setup badges stay Needs setup and Ask AI empty has one primary (Send) without a Next-actions neighbor", () => {
     expect(scoutingShellCopy("setup").badge).toBe("Needs setup");
     expect(strategyShellCopy("setup").badge).toBe("Needs setup");
     expect(videoRescoutShellCopy("setup").badge).toBe("Needs setup");
@@ -63,13 +63,15 @@ describe("student-week hub chrome", () => {
 
     const chat = readFileSync(join(WEB, "app/chat/chat-client.tsx"), "utf8");
     expect(chat).toMatch(/shell === "setup" \|\| shell === "loading" \|\| shell === "auth_required" \|\| shell === "error"/);
-    expect(chat).not.toMatch(/shell === "empty".*NextActions/s);
-    const emptyActions = chat.slice(chat.indexOf("ch-empty-actions"));
-    const emptyBlock = emptyActions.slice(0, emptyActions.indexOf("</div>") + 6);
-    expect(emptyBlock.match(/<Button\b/g) ?? []).toHaveLength(1);
-    expect(emptyBlock).toMatch(/variant="primary"/);
-    expect(emptyBlock).toMatch(/New private chat/);
+    expect(chat).not.toMatch(/NextActions/);
+    // Ask AI empty: grouped starters, no buttons of its own; Send is the one primary.
+    const emptyBlock = chat.slice(chat.indexOf('className="ch-empty ask-empty"'), chat.indexOf("{thread ? ("));
+    expect(emptyBlock).toMatch(/StarterGroups/);
+    expect(emptyBlock.match(/<Button\b/g) ?? []).toHaveLength(0);
     expect(emptyBlock).not.toMatch(/Budgets/);
     expect(emptyBlock).not.toMatch(/Next actions/);
+    const formStart = chat.indexOf('<form className="ch-composer ask-composer"');
+    const composer = chat.slice(formStart, chat.indexOf("</form>", formStart));
+    expect(composer.match(/variant="primary"/g) ?? []).toHaveLength(1);
   });
 });

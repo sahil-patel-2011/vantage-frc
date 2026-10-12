@@ -4,16 +4,15 @@ test("the cost page distinguishes free Vantage from personal Codex and provider 
   await page.goto("/pricing");
   // The plan ladder (Free / Pro / Pro+ / Max) is no longer offered. The page has one job:
   // say that Vantage costs nothing, and how AI works without Vantage charging for it.
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Free for every team. Connect your own AI." }),
-  ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "How AI keys work" })).toBeVisible();
-  await expect(page.getByText("Get a key", { exact: true })).toBeVisible();
-  await expect(page.getByText("Paste it once", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Free for every team." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How AI keys work." })).toBeVisible();
+  await expect(page.getByText("Pick a provider", { exact: true })).toBeVisible();
+  await expect(page.getByText("Add the key once", { exact: true })).toBeVisible();
   await expect(page.getByText("Set a limit", { exact: true })).toBeVisible();
-  await expect(page.getByText("Or connect personal Codex", { exact: true })).toBeVisible();
-  await expect(page.locator(".pricing-hero")).toContainText("no subscription charge");
-  await expect(page.locator(".pricing-hero")).toContainText("External providers set their own prices and usage limits");
+  await expect(page.getByText("Or pair your own account", { exact: true })).toBeVisible();
+  const hero = page.locator(".mx-page-hero");
+  await expect(hero).toContainText("No subscription and no card");
+  await expect(hero).toContainText("those providers set their own prices");
   await expect(page.getByText("Will it stay free?")).toBeVisible();
 
   // No tiers, prices or credit packs anywhere on the page.

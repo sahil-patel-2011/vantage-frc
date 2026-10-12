@@ -30,7 +30,8 @@ describe("student-week Team hub People / invite / roles slice", () => {
     const featured = hubFeaturedMoreTabs(hubById("team")).map((tab) => tab.id);
     expect(featured).toContain("team-admin");
     expect(featured).toContain("roles");
-    expect(hubById("team").tabs.find((tab) => tab.id === "team-admin")?.label).toBe("Team admin");
+    // The same name as its Settings section (lib/nav/settings-nav.ts).
+    expect(hubById("team").tabs.find((tab) => tab.id === "team-admin")?.label).toBe("Members and invites");
     expect(hubById("team").tabs.find((tab) => tab.id === "attendance")?.label).toBe("People");
   });
 

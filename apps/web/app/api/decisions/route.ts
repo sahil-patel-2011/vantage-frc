@@ -12,7 +12,7 @@ import {
   type DecisionsView,
 } from "../../../lib/decisions/compute-decisions";
 import type { DecisionCategory, DecisionStatus } from "../../../lib/decisions/types";
-import { publicErrorMessage } from "../../../lib/security/public-error";
+import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
 
 export type { DecisionsView };
 
@@ -168,6 +168,9 @@ export async function POST(request: Request) {
 
     return Response.json(view);
   } catch (error) {
+    // View only refusals are 403 + reason, everywhere (QA A3-18).
+    const viewOnly = viewOnlyResponse(error);
+    if (viewOnly) return viewOnly;
     const message = publicErrorMessage(error, "Decision log request failed");
     const status = message === "forbidden" ? 403 : 400;
     return Response.json(

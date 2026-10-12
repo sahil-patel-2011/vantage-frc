@@ -4,27 +4,40 @@ import { Icon } from "./icon";
 import { islandTabIsActive } from "./app-shell-model";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import { mainMenuSearch, mainMenuSections } from "../lib/nav/main-menu";
+import type { PinDefinition } from "../lib/nav/pins";
 
-/** One menu owns destinations; each disclosure has one column of real links. */
-export function AppShellNavGroups({ groups, pathname, pathSearch, orgId, navHrefAllowed, closeNav }: {
+/**
+ * The menu's body: "Your apps" (the person's pins, like a phone's dock, with Edit) and then
+ * every workspace as a disclosure of real links. The workspaces are complete whatever is
+ * pinned, so un-pinning something never hides it.
+ */
+export function AppShellNavGroups({ groups, pins, pathname, pathSearch, orgId, navHrefAllowed, closeNav, onEditPins }: {
   groups: ProductNavGroup[];
+  /** The person's pins this team may open, in their order. */
+  pins: PinDefinition[];
   activeGroupLabel?: string;
   pathname: string;
   pathSearch: string;
   orgId: string;
   navHrefAllowed: (href: string) => boolean;
   closeNav: () => void;
+  onEditPins: () => void;
 }) {
   const sections = mainMenuSections(groups, navHrefAllowed);
   const activeSearch = mainMenuSearch(pathname, pathSearch, navHrefAllowed);
+  const isHere = (href: string) => islandTabIsActive(pathname, activeSearch, href) || pathname === href;
   return <>
-    <div className="main-menu-launch">
-      {[{ href: "/dashboard", label: "Home", hint: "Your overview", icon: "home" as const },
-        { href: "/competition?tab=scouting", label: "Scouting", hint: "Collect reports", icon: "scout" as const }]
-        .filter(item => navHrefAllowed(item.href)).map(item => <a key={item.href}
+    <div className="main-menu-pins-head">
+      <p className="main-menu-heading" id="main-menu-pins-label">Your apps</p>
+      <button type="button" className="main-menu-pins-edit" onClick={onEditPins} aria-label="Edit your apps">
+        Edit
+      </button>
+    </div>
+    <div className="main-menu-launch" role="group" aria-labelledby="main-menu-pins-label" data-count={pins.length}>
+      {pins.map(item => <a key={item.href}
           className="main-menu-app" href={withOrgHref(item.href, orgId)} onClick={closeNav}
-          aria-current={islandTabIsActive(pathname, activeSearch, item.href) ? "page" : undefined}>
-          <i className="main-menu-symbol"><Icon name={item.icon} /></i><span><strong>{item.label}</strong><small>{item.hint}</small></span>
+          aria-current={isHere(item.href) ? "page" : undefined}>
+          <i className="main-menu-symbol"><Icon name={item.icon} /></i><span><strong>{item.label}</strong></span>
         </a>)}
     </div>
     {sections.length > 0 ? <p className="main-menu-heading">Workspaces</p> : null}

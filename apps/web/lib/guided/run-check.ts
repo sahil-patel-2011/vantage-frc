@@ -60,11 +60,10 @@ export async function runGuidedCheck(
     case "numbers":
       return checkNumbers(check, input.values ?? {});
     case "lead-signoff":
-      // Software cannot see a band saw or a printed checklist. The student marks it after a lead
-      // has checked it with them, and the page labels it that way, never as "checked by Vantage".
-      return input.values?.confirmed === true
-        ? { passed: true, message: "Marked done after a lead checked it with you." }
-        : { passed: false, message: "Ask a team lead to check this with you, then mark it done." };
+      // Software cannot see a band saw or a printed checklist, and neither can the student's own
+      // button: /api/guided turns this step into a sign-off request an owner or admin approves
+      // (lib/guided/signoffs.ts). Nothing the client sends can pass it here.
+      return { passed: false, message: "Ask a team lead to check this with you; it counts once they sign it off in Vantage." };
     case "github-pr":
     case "github-tag": {
       const ref = parseGitHubUrl(String(input.url ?? ""));

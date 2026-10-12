@@ -1,4 +1,4 @@
-import { navigationOpener } from "./nav";
+import { searchOpener } from "./nav";
 import { expect, test, type Page } from "@playwright/test";
 import { loadFailureHeading } from "./hub-org-gate";
 import { waitForLoadingGone } from "./ready";
@@ -98,7 +98,7 @@ test.describe("student-week GUI path", () => {
   test("Event day Packing is a real click from the related strip", async ({ page }) => {
     await openStudent(page, "/command");
     await expectNoBanned(page, "Event day");
-    await navigationOpener(page).click();
+    await searchOpener(page).click();
     const search = page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true });
     await search.fill("Packing");
     const packing = page.getByRole("option", { name: /^Packing / });
@@ -162,7 +162,7 @@ test.describe("student-week GUI path", () => {
 
   test("Team invites Send invite is on the board", async ({ page }) => {
     await openStudent(page, "/team/admin");
-    await expect(page.getByRole("heading", { level: 1, name: "Team admin" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Members and invites" })).toBeVisible();
     await expectNoBanned(page, "Team admin", ["Join or pick a team", "Account Connections", "RLS"]);
     const orgId = await activeOrgId(page);
     if (orgId) {

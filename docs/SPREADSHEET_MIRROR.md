@@ -16,6 +16,16 @@ Microsoft Excel — that always say the same thing. Connectors → **Spreadsheet
   (`packages/reference`: one coordinated ingest worker, ETags, per-key rotation, freshness
   windows). The nightly mirror runs right after that ingest, so the copies carry the day's
   matches without a single extra TBA request, however many teams connect.
+- **The team's whole season, too.** Besides the active event's Teams and Matches, two
+  read-only sheets carry everything Vantage has already pulled about the team itself:
+  **SeasonEvents** (each event played this season: dates, place, rank, record, Statbotics EPA,
+  OPR) and **SeasonMatches** (each match this season: alliances, scores, win/loss/tie), plus
+  **Lessons** (the team's published lessons; drafts and practice answers left out). TBA is only asked again
+  when its data changed (`If-None-Match`/ETag → 304), and a copy is only rewritten when its
+  content hash changed, so nothing is fetched or written twice for the same data.
+- **When the NAS is down,** the copies stay readable in Excel and Google Sheets. They are
+  not a second database: nobody signs in or writes through them (see "Outages" in
+  `docs/NAS_DATABASE.md`).
 
 ## How a sync works (`lib/mirror/mirror-sync.ts`)
 

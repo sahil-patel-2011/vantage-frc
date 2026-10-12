@@ -16,7 +16,7 @@ test("public join screen stays focused, accessible and usable in both themes", a
     await page.goto("/join-team");
     await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
     await expect(page.getByRole("heading", { name: "Join your team", exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Menu and search" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Menu", exact: true })).toHaveCount(0);
     await expect(page.locator(".soft-island")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Continue", exact: true })).toBeDisabled();
     for (const name of ["FRC team number", "Team join code", "Your email"]) {
@@ -136,7 +136,7 @@ for (const width of [1440, 390])
       const page = await invited.newPage();
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/join-team");
-      await expect(page.getByRole("button", { name: "Menu and search" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Menu", exact: true })).toHaveCount(0);
       await expect(page.getByRole("navigation", { name: "Main navigation" })).toHaveCount(0);
       await page.getByLabel("FRC team number").fill(String(teamNumber));
       await page.getByLabel("Team join code", { exact: true }).fill("999999");

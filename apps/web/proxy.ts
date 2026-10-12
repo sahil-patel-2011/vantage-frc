@@ -8,8 +8,18 @@ import { productRedirect, requestOrigin } from "./lib/products/products";
 import { isPendingWorkspacePath } from "./lib/onboarding/pending-paths";
 import { isGoogleSheetsState } from "./lib/google-sheets/oauth-state";
 import { isKnownAppPath } from "./lib/nav/app-route-roots";
-import { REMEMBERED_TEAM_COOKIE, TEAM_SCOPED_PAGES, isTeamId, teamPageRedirect } from "./lib/nav/remembered-team";
+import {
+  REMEMBERED_TEAM_COOKIE,
+  TEAM_SCOPED_PAGES,
+  chooseMemberTeam,
+  isTeamId,
+  notOnTeamRedirect,
+  teamPageRedirect,
+} from "./lib/nav/remembered-team";
+import { memberTeamIds } from "./lib/nav/member-teams";
 import { pendingProvisioningTeam, requestedProvisioningTeam } from "./lib/provisioning/request-gate";
+import { noteDatabaseFailure } from "./lib/outage/note";
+import { SIGNED_OUT_MESSAGE } from "./lib/security/signed-out";
 
 const PUBLIC_PAGES = new Set([
   "/",
@@ -51,6 +61,11 @@ const PUBLIC_PREFIXES = [
   "/api/waitlist",
   // Uptime monitor: says only whether the database answers.
   "/api/health",
+  // Outage handling works while the database (and so every session) is down: the public
+  // "limited" flag reads no database, and the outage console and its API (/api/status/outage)
+  // are authorized by the HMAC-signed link in the owner's alert email, checked in each route.
+  "/api/status",
+  "/status/outage",
   "/api/admin/bootstrap-owner",
   "/api/showcase/public",
   "/api/display/snapshot",
@@ -123,7 +138,11 @@ const MARKETING_ALIASES: Record<string, string> = {
   // The URLs people guess for signing in. /login was the 404 page.
   "/login": "/signin",
   "/log-in": "/signin",
-  "/contact": "mailto:vantagefrc@gmail.com",
+  // The footer's contact column, with the address written out: a mailto: redirect left a laptop
+  // with no mail app on a blank page.
+  "/contact": "/#contact",
+  // The page is called "Cost" everywhere a person reads it.
+  "/cost": "/pricing",
   "/about": "/for-teams",
 };
 const PUBLIC_FILE = /\.(?:avif|css|gif|ico|jpe?g|js|json|map|png|svg|txt|webmanifest|webp|woff2?|xml)$/i;
@@ -331,7 +350,10 @@ export async function proxy(request: NextRequest) {
     try {
       session = await auth.api.getSession({ headers: request.headers });
       authenticated = Boolean(session);
-    } catch {
+    } catch (error) {
+      // Sessions live in the database: while it is down, every signed-in request ends here, so
+      // this is where an outage is first seen (lib/outage; deferred, never throws).
+      noteDatabaseFailure(error, "sign-in check");
       return accessUnavailable(request);
     }
   }
@@ -347,7 +369,8 @@ export async function proxy(request: NextRequest) {
     if (pathname === "/signin" || pathname === "/sign-in") return NextResponse.next();
     // Fetch follows redirects: a sign-in page would become a misleading 200
     // instead of letting product screens recognize an expired session.
-    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    // The same sentence the routes use (e.g. /api/onboarding), so a signed-out answer reads one way.
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: SIGNED_OUT_MESSAGE }, { status: 401 });
     // An address that is no page at all gets the 404, not a sign-in form that leads nowhere.
     if (!isKnownAppPath(pathname)) return NextResponse.next();
     return signInRedirect(request);
@@ -369,7 +392,10 @@ export async function proxy(request: NextRequest) {
 
   const onboardingGate = await withRls({ userId: session.user.id }, (client) =>
     getOnboardingGate(client, session.user.id),
-  ).catch(() => null);
+  ).catch((error: unknown) => {
+    noteDatabaseFailure(error, "sign-in check");
+    return null;
+  });
   if (!onboardingGate) return accessUnavailable(request);
 
   if (!onboardingGate.onboardingComplete) {
@@ -391,7 +417,9 @@ export async function proxy(request: NextRequest) {
     // Profile is saved. Docs, account, and two-factor stay open so the
     // "while you wait" links are real pages, not a bounce back here.
     if (isPendingWorkspacePath(pathname)) return NextResponse.next();
-    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Team approval is required", code: "workspace_approval_required" }, { status: 403 });
+    // A page left open after its owner took this person off the team lands here on every save;
+    // "Team approval is required" read as a fault (QA A3-15). Reloading shows why.
+    if (pathname.startsWith("/api/")) return NextResponse.json({ error: "You're not on this team any more, or not yet. Reload the page to see why and what to do next.", code: "workspace_approval_required" }, { status: 403 });
     return approvalPendingRedirect(request);
   }
 
@@ -399,39 +427,64 @@ export async function proxy(request: NextRequest) {
     return postOnboardingRedirect(request);
   }
 
+  // Team pages: which of the person's own teams this page is for (lib/nav/remembered-team.ts).
+  const pageRequest = !pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD");
+  const opened = pageRequest ? request.nextUrl.searchParams.get("orgId") : null;
+  const remembered = request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null;
+  // An explicit team switch must reach the membership picker, without the remembered team
+  // being injected or sending the person back to Home.
+  const teamSwitch = pathname === "/workspace" && request.nextUrl.searchParams.has("next");
+  const needsTeams = pageRequest && !teamSwitch && (isTeamId(opened) || TEAM_SCOPED_PAGES.has(pathname));
+  // null: not read (or unreadable), so nothing is remembered and nobody is redirected on a guess.
+  let memberTeams: string[] | null = null;
+
   if (!isPendingWorkspacePath(pathname)) {
-    const requestedOrg = await requestedProvisioningTeam(request, request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null);
-    const pendingOrg = await withRls({ userId: session.user.id, ...(requestedOrg ? { orgId: requestedOrg } : {}) },
-      client => pendingProvisioningTeam(client, session.user.id, requestedOrg));
-    if (pendingOrg) {
-      const setup = `/team-setup?orgId=${encodeURIComponent(pendingOrg)}`;
+    const requestedOrg = await requestedProvisioningTeam(request, remembered);
+    // One transaction for both reads: this runs on nearly every page load.
+    const gate = await withRls({ userId: session.user.id, ...(requestedOrg ? { orgId: requestedOrg } : {}) },
+      async client => ({
+        pendingOrg: await pendingProvisioningTeam(client, session.user.id, requestedOrg),
+        teams: needsTeams ? await memberTeamIds(client, session.user.id) : null,
+      }));
+    if (gate.pendingOrg) {
+      const setup = `/team-setup?orgId=${encodeURIComponent(gate.pendingOrg)}`;
       if (pathname.startsWith("/api/")) return NextResponse.json({ error: "Your team setup must finish before this action is available.", code: "TEAM_SETUP_REQUIRED", setup }, { status: 409, headers: { "cache-control": "private, no-store" } });
       return NextResponse.redirect(new URL(setup, request.url), 307);
     }
+    memberTeams = gate.teams;
+  } else if (needsTeams && isTeamId(opened) && opened !== remembered) {
+    // Account, Help and the other while-you-wait pages: only asked when there is a team to remember.
+    memberTeams = await withRls({ userId: session.user.id }, client => memberTeamIds(client, session.user.id)).catch(() => null);
   }
 
   // Remember the team a page was opened for, and fill it in for team pages that arrive
-  // without one (lib/nav/remembered-team.ts). Pages still check membership themselves.
-  if (!pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD")) {
-    const opened = request.nextUrl.searchParams.get("orgId");
-    const remembered = request.cookies.get(REMEMBERED_TEAM_COOKIE)?.value ?? null;
+  // without one. Pages still check membership themselves.
+  if (pageRequest) {
+    if (teamSwitch) return NextResponse.next();
+    const openedTeam = isTeamId(opened) ? opened : null;
+    const notOnOpened = Boolean(openedTeam && memberTeams && !memberTeams.includes(openedTeam));
+    // A link to someone else's team: say so on the chooser, with a way back to the person's own
+    // team. Platform admin pages take any team id, and the while-you-wait pages have no team yet.
+    if (notOnOpened && memberTeams?.length && !pathname.startsWith("/admin") && !isPendingWorkspacePath(pathname)) {
+      return NextResponse.redirect(notOnTeamRedirect(new URL(request.url)), 307);
+    }
     // /workspace was a second home page (event tiles, sync status, keyboard letters) that
     // every "Choose your team" link pointed at. A member goes to their team's Home.
-    if (pathname === "/workspace") {
-      // An explicit team switch must reach the membership picker, without the
-      // remembered team being injected or sending the person back to Home.
-      if (request.nextUrl.searchParams.has("next")) return NextResponse.next();
-      const teamId = isTeamId(opened) ? opened : isTeamId(remembered) ? remembered : null;
+    if (pathname === "/workspace" && memberTeams) {
+      // The team they named, else the one they last used, else the one they run. The team
+      // switcher (/workspace?next=…) is the chooser; this address is "take me to my team".
+      const teamId = chooseMemberTeam(memberTeams, openedTeam, remembered);
       if (teamId) {
         const home = new URL("/dashboard", request.url);
         home.searchParams.set("orgId", teamId);
         return NextResponse.redirect(home, 307);
       }
     }
-    if (isTeamId(opened)) {
+    if (openedTeam) {
       const response = NextResponse.next();
-      if (remembered !== opened) {
-        response.cookies.set(REMEMBERED_TEAM_COOKIE, opened, {
+      // Never a team the person is not on, and never on a guess when the read failed.
+      if (remembered !== openedTeam && memberTeams?.includes(openedTeam)) {
+        response.cookies.set(REMEMBERED_TEAM_COOKIE, openedTeam, {
           httpOnly: true,
           sameSite: "lax",
           secure: process.env.NODE_ENV === "production",
@@ -441,19 +494,9 @@ export async function proxy(request: NextRequest) {
       }
       return response;
     }
-    if (TEAM_SCOPED_PAGES.has(pathname)) {
-      const teamId = isTeamId(remembered)
-        ? remembered
-        : await withRls({ userId: session.user.id }, async (client) => {
-            const row = await client.query<{ orgId: string }>(
-              `SELECT org_id::text AS "orgId" FROM memberships WHERE user_id = $1::uuid
-                ORDER BY CASE role::text WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, created_at ASC
-                LIMIT 1`,
-              [session.user.id],
-            );
-            return row.rows[0]?.orgId ?? null;
-          }).catch(() => null);
-      const target = teamPageRedirect(new URL(request.url), teamId);
+    if (TEAM_SCOPED_PAGES.has(pathname) && memberTeams) {
+      // A remembered team the person has since left (or never joined) falls back to their own.
+      const target = teamPageRedirect(new URL(request.url), chooseMemberTeam(memberTeams, remembered));
       if (target) return NextResponse.redirect(target, 307);
     }
   }

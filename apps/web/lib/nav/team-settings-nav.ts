@@ -8,22 +8,24 @@
  * agree. Pure data, safe for client bundles.
  */
 
+import { settingsBreadcrumb } from "./settings-nav";
+
 export type TeamSettingsPageId = "people" | "profile" | "security" | "ai" | "connectors" | "chat" | "data";
 
 export type TeamSettingsPage = { id: TeamSettingsPageId; label: string; href: string };
 
 export const TEAM_SETTINGS_PAGES: readonly TeamSettingsPage[] = [
-  { id: "people", label: "Team admin", href: "/team/admin" },
+  { id: "people", label: "Members and invites", href: "/team/admin" },
   { id: "profile", label: "Team profile", href: "/team/admin/profile" },
   { id: "security", label: "Team security", href: "/team/security" },
-  { id: "ai", label: "AI keys", href: "/team/ai-keys" },
+  { id: "ai", label: "AI keys and credit", href: "/team/ai-keys" },
   { id: "connectors", label: "Connectors", href: "/connectors" },
   { id: "chat", label: "Chat safety", href: "/messages/moderation" },
-  { id: "data", label: "Team data", href: "/team/data" },
+  { id: "data", label: "Team data and export", href: "/team/data" },
 ];
 
-/** "Team settings / AI keys": the same first word on every one of these pages. */
+/** "Settings › AI keys and credit": the same first word on every settings page. */
 export function teamSettingsBreadcrumb(id: TeamSettingsPageId): string {
   const page = TEAM_SETTINGS_PAGES.find((row) => row.id === id);
-  return `Team settings / ${page?.label ?? ""}`.trim();
+  return settingsBreadcrumb(page?.label ?? "");
 }

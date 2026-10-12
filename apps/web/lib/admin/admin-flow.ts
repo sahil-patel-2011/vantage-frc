@@ -26,12 +26,14 @@ export type AdminNextAction = {
 
 /** Platform admin cross-links that already ship under `/admin/*`. */
 export const ADMIN_RELATED_LINKS = [
-  { id: "teams", label: "Teams", href: "/admin" },
+  { id: "teams", label: "Teams", href: "/admin/teams" },
   { id: "waitlist", label: "Waitlist", href: "/admin/waitlist" },
   { id: "partners", label: "Partners", href: "/admin/partners" },
   { id: "outreach", label: "Outreach", href: "/admin/outreach" },
-  { id: "plans", label: "Org plans", href: "/admin/plans" },
+  // Plans and Commercial left with Stripe: Vantage is free. Health took their place.
+  { id: "health", label: "Health", href: "/admin/health" },
   { id: "support", label: "Support", href: "/admin/support" },
+  { id: "feedback", label: "Feedback", href: "/admin/feedback" },
   { id: "releases", label: "Releases", href: "/admin/releases" },
   { id: "audit", label: "Audit log", href: "/admin/audit" },
 ] as const;
@@ -44,9 +46,9 @@ export type AdminRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Plans · Support · Releases (plus Waitlist on the Teams hub). */
+/** Focused Soft-UI strip — Health · Support · Releases (plus Waitlist on the Teams hub). */
 export const ADMIN_RELATED_INCLUDE: AdminRelatedId[] = [
-  "plans",
+  "health",
   "support",
   "releases",
   "waitlist",
@@ -79,7 +81,7 @@ export function adminProvisionHref(input: {
   if (email) params.set("ownerEmail", email);
   if (team) params.set("teamNumber", team);
   const query = params.toString();
-  return query ? `/admin?${query}` : "/admin";
+  return query ? `/admin/teams?${query}` : "/admin/teams";
 }
 
 /** Soft-UI org row label — blank-safe, never a DEMO team name. */
@@ -194,7 +196,7 @@ export function adminEmptyCopy(kind: AdminShellKind, detail?: string | null): Ad
 
 /**
  * Soft-UI next actions for the Teams hub.
- * Points at Plans, Support, Releases, and Waitlist — never invents DEMO ledger or ticket rows.
+ * Points at Health, Support, Releases, and Waitlist — never invents DEMO ledger or ticket rows.
  */
 export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
   if (kind === "auth_required") {
@@ -202,7 +204,7 @@ export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
       {
         id: "signin",
         label: "Sign in",
-        detail: "Use a verified platform_admins account. Closed waitlist access — no public admin signup.",
+        detail: "Sign in with a Vantage operator account. Operator access is granted by hand; there is no sign-up for it.",
         href: "/signin?next=%2Fadmin",
         primary: true,
       },
@@ -214,7 +216,7 @@ export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
       {
         id: "workspace",
         label: "Back to workspace",
-        detail: "Team tools and org admin live under Team — they do not grant platform_admins.",
+        detail: "Your team's tools and team settings are under Team. Running a team doesn't make you a Vantage operator.",
         href: "/workspace",
         primary: true,
       },
@@ -233,7 +235,7 @@ export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
         id: "retry",
         label: "Retry Teams hub",
         detail: "Reload after database connectivity recovers. Counts stay honest — empty until rows return.",
-        href: "/admin",
+        href: "/admin/teams",
         primary: true,
       },
       {
@@ -267,10 +269,10 @@ export function adminNextActions(kind: AdminShellKind): AdminNextAction[] {
 
   actions.push(
     {
-      id: "plans",
-      label: "Org plans",
-      detail: "Entitlement status and Stripe IDs from the live ledger.",
-      href: "/admin/plans",
+      id: "health",
+      label: "Module health",
+      detail: "What is healthy, degraded, down or not set up, with the real errors behind each.",
+      href: "/admin/health",
     },
     {
       id: "support",

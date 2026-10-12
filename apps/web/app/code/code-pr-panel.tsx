@@ -241,15 +241,27 @@ export function CodePullRequests({ orgId }: { orgId: string }) {
     return (
       <section className="cpr app-card soft-panel" aria-label="Pull requests">
         <h2>Pull requests</h2>
-        <p className="app-muted">
-          {view.reason === "not_connected"
-            ? "Connect the team's GitHub so every pull request on the robot code gets an AI review, and Ask AI knows the code."
-            : "Pick the robot code repository so its pull requests can be reviewed."}
-        </p>
-        {/* Secondary: the page's primary actions are the code review above; this is setup. */}
-        <Button as="a" variant="secondary" href={withOrgHref("/connectors/github", orgId)}>
-          {view.reason === "not_connected" ? "Connect GitHub" : "Pick the repository"}
-        </Button>
+        {/* Say who has to act (A5-20): a student pressing Connect GitHub reached a token walkthrough
+            the server then refused them. */}
+        {view.canManage ? (
+          <>
+            <p className="app-muted">
+              {view.reason === "not_connected"
+                ? "Connect the team's GitHub so every pull request on the robot code gets an AI review, and Ask AI knows the code."
+                : "Pick the robot code repository so its pull requests can be reviewed."}
+            </p>
+            {/* Secondary: the page's primary actions are the code review above; this is setup. */}
+            <Button as="a" variant="secondary" href={withOrgHref("/connectors/github", orgId)}>
+              {view.reason === "not_connected" ? "Connect GitHub" : "Pick the repository"}
+            </Button>
+          </>
+        ) : (
+          <p className="app-muted">
+            {view.reason === "not_connected"
+              ? "Pull request reviews start once your team's owner or an admin connects GitHub. Ask one of them to connect it."
+              : "Pull request reviews start once your team's owner or an admin picks the robot code repository. Ask one of them."}
+          </p>
+        )}
       </section>
     );
   }

@@ -3,6 +3,7 @@
 import { Icon } from "./icon";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import { AppShellAccountMenu } from "./app-shell-account-menu";
+import { AskAiTopbarLink } from "./ask-ai-button";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { VIEW_ONLY_CHIP_TITLE, isViewOnlyIn } from "../lib/nav/view-only";
 import type { Me, MembershipOption } from "./app-shell-model";
@@ -34,6 +35,8 @@ export function AppShellTopbar({
   navOpen,
   menuOpen,
   onOpenNav,
+  searchOpen,
+  onOpenSearch,
   shortcutHint,
   onOpenTeams,
   minimal = false,
@@ -65,6 +68,10 @@ export function AppShellTopbar({
   /** Whether the on-demand navigation drawer is showing. */
   menuOpen: boolean;
   onOpenNav: () => void;
+  /** Whether the search palette is showing. */
+  searchOpen: boolean;
+  /** Opens the search palette (⌘K / Ctrl+K does the same). */
+  onOpenSearch: () => void;
   shortcutHint: string;
   /** Opens the workspace picker. */
   onOpenTeams: () => void;
@@ -102,10 +109,9 @@ export function AppShellTopbar({
             className={`soft-icon-btn soft-menu-btn${menuOpen ? " is-open" : ""}`}
             data-tour="menu"
             type="button"
-            aria-label="Menu and search"
+            aria-label="Menu"
             aria-controls="vantage-navigation-panel"
             aria-expanded={menuOpen || navOpen}
-            aria-keyshortcuts="Control+K Meta+K"
             onClick={onOpenNav}
           >
             <span className="soft-burger" aria-hidden="true">
@@ -126,10 +132,11 @@ export function AppShellTopbar({
             </button>
           ) : null}
           <div className="soft-page-head-copy">
-            {/* A page with no title of its own showed "Vantage" over the team ("Vantage /
-                Team 6925" on Calendar); without a title the team switcher stands alone, as on a
-                hub's front page. */}
-            {isHubRoot || (!showBack && (!title || title.trim() === "Vantage")) ? (
+            {/* Two patterns, no more. A page with a parent (Account, Help, Team admin) shows
+                the back button and its name. Every other page shows the team switcher alone:
+                its own breadcrumb and h1 already name it, and a title here made Safety, Hours,
+                Learn and Pit say their name three times in 150px. */}
+            {isHubRoot || !showBack ? (
               <TeamChip
                 label={orgLabel}
                 onOpen={onOpenTeams}
@@ -138,16 +145,14 @@ export function AppShellTopbar({
             ) : (
               <>
                 <p className="soft-topbar-title">{title ?? "Vantage"}</p>
-                {/* The line under the title is the team, or the crumb when
-                    there is a back button. Either can repeat the title —
-                    "6925" over "6925" — which reads as a rendering bug rather
-                    than a hierarchy, so the second line is dropped when it
-                    would only say the same thing again. */}
+                {/* The line under the title is the crumb. It can repeat the title — "6925"
+                    over "6925" — which reads as a rendering bug rather than a hierarchy, so it
+                    is dropped when it would only say the same thing again. */}
                 {(() => {
-                  const sub = showBack ? crumbHint : orgLabel;
+                  const sub = crumbHint;
                   // A page with no menu entry has "Vantage" for both lines ("Vantage / Vantage"
                   // on Team security); the fallback crumb says nothing, so it is dropped.
-                  if (!sub || (showBack && sub.trim() === "Vantage")) return null;
+                  if (!sub || sub.trim() === "Vantage") return null;
                   const heading = (title ?? "Vantage").trim().toLowerCase();
                   const crumb = sub.trim().toLowerCase();
                   // A crumb reading "Settings / Account" under a title reading
@@ -156,13 +161,7 @@ export function AppShellTopbar({
                   // twice, one line apart.
                   const tail = crumb.split("/").pop()?.trim() ?? crumb;
                   if (crumb === heading || tail === heading) return null;
-                  // The crumb is a location; the team is a thing you can
-                  // change. Only the latter becomes a control.
-                  return showBack ? (
-                    <small className="soft-org-crumb">{sub}</small>
-                  ) : (
-                    <TeamChip label={sub} onOpen={onOpenTeams} className="soft-org-crumb" />
-                  );
+                  return <small className="soft-org-crumb">{sub}</small>;
                 })()}
               </>
             )}
@@ -175,19 +174,13 @@ export function AppShellTopbar({
             View only
           </span>
         ) : null}
-        {minimal ? null : <button hidden={navOpen} className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
+        {/* Search, not a second menu: it opens the centered search palette. */}
+        {minimal ? null : <button className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenSearch} aria-label="Search pages, tools, and team data" aria-haspopup="dialog" aria-expanded={searchOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
         {/* Nothing is queued before someone is on a team, and its 12-second check read /api/me,
             which answers 403 during onboarding. */}
         {minimal ? null : <ShellOutboxStatus orgId={orgId || null} />}
-        <a
-          className="soft-icon-btn soft-ask-ai"
-          data-tour="ask-ai"
-          href={withOrgHref("/ai?tab=chat", orgId || null)}
-          aria-label="Ask AI"
-          title="Ask AI — strategy, match predictions, design help"
-        >
-          <Icon name="bolt" />
-        </a>
+        {/* One way into Ask AI from every page, opened on this page's skill (lib/ai-skills). */}
+        <AskAiTopbarLink className="soft-icon-btn soft-ask-ai" orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-notif"
           href={withOrgHref("/notifications", orgId || null)}
@@ -203,7 +196,15 @@ export function AppShellTopbar({
             aria-label="Account menu"
             aria-expanded={accountMenuOpen}
             aria-haspopup="menu"
+            aria-controls={accountMenuOpen ? "soft-account-menu" : undefined}
             onClick={onToggleAccount}
+            onKeyDown={(event) => {
+              // Arrow keys on a menu button open its menu (focus then lands on the first item).
+              if ((event.key === "ArrowDown" || event.key === "ArrowUp") && !accountMenuOpen) {
+                event.preventDefault();
+                onToggleAccount();
+              }
+            }}
           >
             {me.image ? <img src={me.image} alt="" /> : initial === "?" ? <PersonGlyph /> : initial}
           </button>

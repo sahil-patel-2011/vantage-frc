@@ -4,30 +4,33 @@ import "../app/product-styles";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
-import { AppShellEventFocus, AppShellIsland, AppShellIslandEditor } from "./app-shell-island";
+import { AppShellEventFocus, AppShellIsland } from "./app-shell-island";
+import { AppShellSearchPalette } from "./app-shell-search-palette";
+import { AppShellPinsEditor } from "./app-shell-pins-editor";
+import { useShellSearch } from "./use-shell-search";
 import { AppTour } from "./app-tour";
+import { FeedbackButton } from "./feedback-button";
 import { StatusEcho } from "./status-echo";
 import { LegalUpdateBanner } from "./legal-update-banner";
+import { ServiceNoticeBanner } from "./service-notice-banner";
 import { useSheetsAutoSync } from "./use-sheets-auto-sync";
 import { AppShellTopbar } from "./app-shell-topbar";
 import { AppShellSidebar } from "./app-shell-sidebar";
 import {
-  ISLAND_TAB_CATALOG,
   PRODUCT_NAV_GROUPS,
   breadcrumbForPath,
   findNavMatch,
   withOrgHref,
 } from "../lib/nav/product-nav";
-import { defaultIslandHrefs, resolveIslandTabs, toggleIslandDraft } from "../lib/nav/island-preferences";
+import { BAR_SLOTS, PINS_CHANGED_EVENT, PINS_EDIT_EVENT, defaultPinHrefs, pinCatalog, resolvePins, resolveStoredPins } from "../lib/nav/pins";
 import {
   pathAllowedByHubAccess,
   pathAllowedBySponsors,
 } from "../lib/nav/hub-access-filter";
 import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
-import { commandCatalogFor, searchCommands } from "../lib/nav/command-search";
-import { settingsRoleTier } from "../lib/nav/settings-nav";
+import { commandCatalogFor } from "../lib/nav/command-search";
+import { isSettingsPath, settingsRoleTier } from "../lib/nav/settings-nav";
 import { pushAppNavigation, softNavigationTarget } from "../lib/nav/soft-navigation";
-import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { fetchProductSession } from "../lib/nav/product-session";
 import { pathnameIsEntryScreen } from "../lib/nav/product-route";
 import { probeSessionUser } from "../lib/nav/session-probe";
@@ -38,7 +41,8 @@ import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
 import { listenInboxUpdates } from "../lib/notifications/inbox-events";
 import { watchSessionBoundary } from "../lib/offline/identity";
-import { isKnownAppPath } from "../lib/nav/app-route-roots";
+import { pathnameIsBareShell } from "../lib/nav/shell-body-class";
+import { workspacePickerHref } from "../lib/workspace";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import { NextActionsDedupe } from "./next-actions-dedupe";
 import {
@@ -49,17 +53,27 @@ import {
   filterVisibleNavGroups,
   formatRolePlanCue,
   isHubRootPath,
-  navResultRows,
-  orgLabelFor,
+  readRememberedTeamLabel,
+  rememberTeamLabel,
+  shellOrgLabel,
+  teamLabelFor,
   shellTitleForPath,
   showBackForPath,
   switchWorkspaceHrefFor,
   type Me,
   type MembershipOption,
-  type SearchHit,
 } from "./app-shell-model";
 
 const groups = PRODUCT_NAV_GROUPS;
+
+/** localStorage, or null where the browser blocks it (private mode, blocked site data). */
+function safeLocalStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 export default function AppShell() {
   const pathname = usePathname();
@@ -74,12 +88,13 @@ export default function AppShell() {
   // The team's spreadsheets follow the app on their own: no Sync button to remember.
   useSheetsAutoSync(orgId);
   /**
-   * One overlay for navigation *and* search. There used to be two — a drawer of
-   * destinations behind the hamburger and a command dialog of the same
-   * destinations behind ⌘K — which is why the same page could be reached from
-   * four controls at once.
+   * The menu (phones and tablets: the hamburger and the bottom bar's More) is for going
+   * places, with its own search field. ⌘K / Ctrl+K and the top bar's "Search anything" open
+   * the search palette instead: one field, centered, on every screen size. Desktop already has
+   * the sidebar, so search never opens a second navigation menu on top of it.
    */
   const [navOpen, setNavOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   useEffect(() => {
     try { setSidebarCollapsed(localStorage.getItem("vantage.sidebar.collapsed") === "true"); } catch { /* Device preference is optional. */ }
@@ -94,6 +109,12 @@ export default function AppShell() {
     try { localStorage.setItem("vantage.sidebar.collapsed", String(next)); } catch { /* Still works for this visit. */ }
   };
   const [me, setMe] = useState<Me>({});
+  const [rememberedTeamLabel, setRememberedTeamLabel] = useState<string | null>(null);
+  useEffect(() => {
+    const label = teamLabelFor(me.teamNumber, me.orgName);
+    const id = me.orgId ?? "";
+    if (label && id) rememberTeamLabel(safeLocalStorage(), id, label);
+  }, [me.orgId, me.orgName, me.teamNumber]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const notificationRevision = useRef(0);
@@ -102,36 +123,26 @@ export default function AppShell() {
   const [myDayGlance, setMyDayGlance] = useState<MyDayView | null>(null);
   const [online, setOnline] = useState(true);
   const [focusCollapsed, setFocusCollapsed] = useState(false);
-  const [islandHrefs, setIslandHrefs] = useState<string[]>(defaultIslandHrefs);
-  const [islandDraft, setIslandDraft] = useState<string[]>(defaultIslandHrefs);
+  /** "Your apps": the bottom bar shows the first four; the menu and the sidebar show them all. */
+  const [pinHrefs, setPinHrefs] = useState<string[]>(defaultPinHrefs);
   const [islandEditorOpen, setIslandEditorOpen] = useState(false);
-  const [islandSaving, setIslandSaving] = useState(false);
-  const [islandMessage, setIslandMessage] = useState("");
-  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
   const [teamsLoaded, setTeamsLoaded] = useState(false);
   const [recentOrgIds, setRecentOrgIds] = useState<string[]>([]);
   const [pathSearch, setPathSearch] = useState("");
-  const [navQuery, setNavQuery] = useState("");
-  const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [resultCursor, setResultCursor] = useState(0);
-  const [recentCommands, setRecentCommands] = useState<string[]>([]);
   const [shortcutHint, setShortcutHint] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const panelCloseRef = useRef<HTMLButtonElement>(null);
-  const searchRequestId = useRef(0);
   const islandQueryOpened = useRef(false);
-  // Late-arriving preferences never overwrite an editor already open, and a stale save never
-  // lands after a newer one (or after the editor closed).
-  const islandPreferenceRevision = useRef(0);
-  const islandDraftRevision = useRef(0);
-  const islandSaveAbort = useRef<AbortController | null>(null);
+  // A save that lands wins over a late-arriving read of the old pins.
+  const pinsRevision = useRef(0);
   const islandPressTimer = useRef<number | null>(null);
   const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
   const islandLongPressed = useRef(false);
   const focusSearchOnOpen = useRef(false);
   const navOpenerRef = useRef<HTMLElement | null>(null);
+  /** Focus goes back only after a real close, never on the first render. */
+  const navWasOpenRef = useRef(false);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
 
@@ -142,18 +153,30 @@ export default function AppShell() {
 
   const openNav = useCallback((options?: { focusSearch?: boolean }) => {
     if (!document.activeElement?.closest(".soft-drawer")) {
-      navOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      // Ctrl/⌘+K from the page itself has <body> as the "opener"; focusing that again on close
+      // dropped keyboard users at the top of the document. null sends focus to the search button.
+      const active = document.activeElement;
+      navOpenerRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
     }
     focusSearchOnOpen.current = Boolean(options?.focusSearch);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
+    setPaletteOpen(false);
     setNavOpen(true);
   }, []);
 
   const closeNav = useCallback(() => {
     setNavOpen(false);
-    setWorkspaceOpen(false);
   }, []);
+
+  /** ⌘K / Ctrl+K and "Search anything": the search palette, never the menu. */
+  const openPalette = useCallback(() => {
+    setAccountMenuOpen(false);
+    setIslandEditorOpen(false);
+    setNavOpen(false);
+    setPaletteOpen(true);
+  }, []);
+  const closePalette = useCallback(() => setPaletteOpen(false), []);
 
   /** Touch opens navigation without bringing up the software keyboard. */
   const toggleMenu = useCallback(() => {
@@ -208,21 +231,24 @@ export default function AppShell() {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
     setOrgId(id);
-    document.body.classList.add("has-app-shell");
-    return () => document.body.classList.remove("has-app-shell");
+    // Same render as the team id, so the label goes straight from the placeholder to the name
+    // this device last showed for the team.
+    setRememberedTeamLabel(readRememberedTeamLabel(safeLocalStorage(), id));
+    // has-app-shell, shell-bare and shell-onboarding are on <body> in the server HTML
+    // (components/app-body.tsx), so the first paint is already this frame.
   }, [pathname, locationTick]);
 
   useEffect(() => {
     document.body.classList.toggle(
       "soft-nav-open",
-      navOpen || accountMenuOpen || islandEditorOpen,
+      navOpen || accountMenuOpen || islandEditorOpen || paletteOpen,
     );
     document.body.classList.toggle("soft-nav-panel-open", navOpen);
     return () => {
       document.body.classList.remove("soft-nav-open");
       document.body.classList.remove("soft-nav-panel-open");
     };
-  }, [navOpen, accountMenuOpen, islandEditorOpen]);
+  }, [navOpen, accountMenuOpen, islandEditorOpen, paletteOpen]);
 
   useEffect(() => {
     setPathSearch(window.location.search);
@@ -230,9 +256,9 @@ export default function AppShell() {
 
   useEffect(() => {
     setNavOpen(false);
+    setPaletteOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
-    setWorkspaceOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -244,20 +270,20 @@ export default function AppShell() {
   useEffect(() => {
     if (!navOpen) {
       const opener = navOpenerRef.current;
+      const wasOpen = navWasOpenRef.current;
       navOpenerRef.current = null;
-      if (opener) requestAnimationFrame(() => {
-        const visible = opener.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden";
+      navWasOpenRef.current = false;
+      if (wasOpen) requestAnimationFrame(() => {
+        // The menu closed to open the "Your apps" editor or the search palette: focus is theirs.
+        if (document.activeElement?.closest(".pins-editor, .search-palette")) return;
+        const visible = Boolean(opener?.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden");
         const fallback = [...document.querySelectorAll<HTMLElement>(".app-topbar-search, .soft-menu-btn")]
           .find(control => control.getClientRects().length > 0 && getComputedStyle(control).visibility !== "hidden");
         (visible ? opener : fallback)?.focus();
       });
-      setNavQuery("");
-      setSearchHits([]);
-      setSearchLoading(false);
-      setResultCursor(0);
       return;
     }
-    setRecentCommands(listRecentCommands());
+    navWasOpenRef.current = true;
     const wantsSearch = focusSearchOnOpen.current;
     focusSearchOnOpen.current = false;
     const focusTimer = window.setTimeout(() => {
@@ -269,48 +295,6 @@ export default function AppShell() {
     }, 40);
     return () => window.clearTimeout(focusTimer);
   }, [navOpen]);
-
-  useEffect(() => {
-    if (!navOpen) return;
-    const q = navQuery.trim();
-    if (q.length < 2) {
-      setSearchHits([]);
-      setSearchLoading(false);
-      return;
-    }
-    const id = ++searchRequestId.current;
-    setSearchLoading(true);
-    const timer = window.setTimeout(() => {
-      const params = new URLSearchParams({ q });
-      if (orgId) params.set("orgId", orgId);
-      void fetch(`/api/search?${params.toString()}`, { cache: "no-store" })
-        .then(async (response) =>
-          response.ok
-            ? ((await response.json()) as { status?: string; results?: SearchHit[] })
-            : null,
-        )
-        .then((data) => {
-          if (id !== searchRequestId.current) return;
-          const rows =
-            data?.status === "ready" && Array.isArray(data.results) ? data.results.slice(0, 8) : [];
-          setSearchHits(
-            rows.map((row) => ({
-              title: row.title,
-              subtitle: row.subtitle,
-              href: row.href,
-              sourceLabel: row.sourceLabel,
-            })),
-          );
-          setSearchLoading(false);
-        })
-        .catch(() => {
-          if (id !== searchRequestId.current) return;
-          setSearchHits([]);
-          setSearchLoading(false);
-        });
-    }, 220);
-    return () => window.clearTimeout(timer);
-  }, [navOpen, navQuery, orgId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -377,49 +361,61 @@ export default function AppShell() {
   useEffect(() => {
     if (entryScreen) return;
     const controller = new AbortController();
-    const revision = islandPreferenceRevision.current;
-    const draftRevision = islandDraftRevision.current;
+    const revision = pinsRevision.current;
     void fetch("/api/navigation/preferences", {
       cache: "no-store",
       signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]),
     })
       .then(async (response) => (response.ok ? response.json() as Promise<{ tabs?: unknown }> : null))
       .then((data) => {
-        if (!data || controller.signal.aborted || revision !== islandPreferenceRevision.current) return;
-        const tabs = resolveIslandTabs(data.tabs).map((item) => item.href);
-        setIslandHrefs(tabs);
-        if (draftRevision === islandDraftRevision.current) setIslandDraft(tabs);
+        if (!data || controller.signal.aborted || revision !== pinsRevision.current) return;
+        setPinHrefs(resolveStoredPins(data.tabs));
       })
       .catch(() => undefined);
     return () => controller.abort();
   }, [entryScreen]);
 
+  const openIslandEditor = useCallback(() => {
+    setNavOpen(false);
+    setPaletteOpen(false);
+    setAccountMenuOpen(false);
+    setIslandEditorOpen(true);
+  }, []);
+
+  // ?island=1 (older links and the help article) and Account → Appearance open the same editor.
   useEffect(() => {
     if (islandQueryOpened.current) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("island") === "1" || params.get("customize") === "island") {
       islandQueryOpened.current = true;
-      islandDraftRevision.current++;
-      setIslandDraft(islandHrefs);
-      setIslandMessage("");
-      setIslandEditorOpen(true);
+      openIslandEditor();
     }
-  }, [pathname, islandHrefs]);
-
-  function openIslandEditor() {
-    islandDraftRevision.current++;
-    islandSaveAbort.current?.abort();
-    setIslandSaving(false);
-    setIslandDraft(islandHrefs);
-    setIslandMessage("");
-    setNavOpen(false);
-    setIslandEditorOpen(true);
-  }
-
+  }, [pathname, openIslandEditor]);
   useEffect(() => {
-    if (!islandEditorOpen) islandSaveAbort.current?.abort();
-    return () => { islandSaveAbort.current?.abort(); };
-  }, [islandEditorOpen]);
+    window.addEventListener(PINS_EDIT_EVENT, openIslandEditor);
+    return () => window.removeEventListener(PINS_EDIT_EVENT, openIslandEditor);
+  }, [openIslandEditor]);
+
+  /** Saves the editor's draft. Resolves to a message to show, or null when saved. */
+  const savePins = useCallback(async (draft: string[]): Promise<string | null> => {
+    const id = ++pinsRevision.current;
+    try {
+      const response = await fetch("/api/navigation/preferences", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tabs: draft }),
+        signal: AbortSignal.timeout(8_000),
+      });
+      const data = (await response.json().catch(() => ({}))) as { tabs?: unknown; error?: string };
+      if (!response.ok) return data.error ?? "Your apps couldn't be saved. Try again.";
+      if (id === pinsRevision.current) setPinHrefs(resolveStoredPins(data.tabs));
+      window.dispatchEvent(new CustomEvent(PINS_CHANGED_EVENT, { detail: { tabs: data.tabs } }));
+      setIslandEditorOpen(false);
+      return null;
+    } catch {
+      return "Your apps couldn't be saved. Check your connection and try again.";
+    }
+  }, []);
 
   useEffect(
     () => () => {
@@ -467,20 +463,22 @@ export default function AppShell() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       // Onboarding has no menu or search to open (the topbar there is the logo and Sign out).
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k" && window.location.pathname !== "/onboarding") {
+      // ⌘K again closes it, as in Spotlight. Phones with a keyboard get the palette too.
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "k" && window.location.pathname !== "/onboarding") {
         event.preventDefault();
-        openNav({ focusSearch: true });
+        if (paletteOpen) closePalette();
+        else openPalette();
       }
       if (event.key === "Escape") {
         setNavOpen(false);
+        setPaletteOpen(false);
         setAccountMenuOpen(false);
         setIslandEditorOpen(false);
-        setWorkspaceOpen(false);
-      }
+          }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openNav]);
+  }, [closePalette, openPalette, paletteOpen]);
 
   const accountLabel = accountLabelFor(me);
   const initial = accountInitialFor(me);
@@ -491,10 +489,7 @@ export default function AppShell() {
       pathAllowedByHubAccess(href, hubAccess) && pathAllowedBySponsors(href, sponsorsAllowed),
     [hubAccess, sponsorsAllowed],
   );
-  const visibleIslandCatalog = useMemo(
-    () => ISLAND_TAB_CATALOG.filter((item) => navHrefAllowed(item.href)),
-    [navHrefAllowed],
-  );
+  const visiblePinCatalog = useMemo(() => pinCatalog(navHrefAllowed), [navHrefAllowed]);
   const visibleNavGroups = useMemo(
     () => filterVisibleNavGroups(groups, navHrefAllowed),
     [navHrefAllowed],
@@ -506,32 +501,26 @@ export default function AppShell() {
     const membershipRole = orgId ? memberships.find((row) => row.orgId === orgId)?.role : undefined;
     return settingsRoleTier(membershipRole ?? me.role) === "owner-admin";
   }, [memberships, me.role, orgId]);
-  const queryActive = navQuery.trim().length > 0;
-  const commandHits = useMemo(
-    () =>
-      queryActive
-        ? searchCommands(navQuery, paletteCatalog, {
-            limit: 8,
-            isAllowed: navHrefAllowed,
-            recentHrefs: recentCommands,
-            canManageTeam,
-          })
-        : [],
-    [canManageTeam, navQuery, navHrefAllowed, paletteCatalog, queryActive, recentCommands],
-  );
-
-  const goToCommand = useCallback(
-    (hit: { href: string }) => {
-      closeNav();
-      setRecentCommands(rememberRecentCommand(hit.href));
-      navigate(withOrgHref(hit.href, orgId || null));
-    },
-    [closeNav, orgId, navigate],
-  );
-
-  useEffect(() => {
-    setResultCursor(0);
-  }, [navQuery]);
+  // The menu's field and the palette each keep their own query; both forget it on closing.
+  const menuSearch = useShellSearch({
+    active: navOpen,
+    orgId,
+    catalog: paletteCatalog,
+    isAllowed: navHrefAllowed,
+    canManageTeam,
+    navigate,
+    onDone: closeNav,
+  });
+  const paletteSearch = useShellSearch({
+    active: paletteOpen,
+    orgId,
+    catalog: paletteCatalog,
+    isAllowed: navHrefAllowed,
+    canManageTeam,
+    navigate,
+    onDone: closePalette,
+    suggestWhenEmpty: true,
+  });
 
   const orderedMemberships = useMemo(
     () => sortMembershipsByRecent(memberships, recentOrgIds),
@@ -540,32 +529,19 @@ export default function AppShell() {
 
   // Onboarding is a short, focused flow: its tabs and shortcuts only bounced back to it.
   const onboarding = pathname === "/onboarding";
-  useEffect(() => {
-    document.body.classList.toggle("shell-onboarding", onboarding);
-    return () => document.body.classList.remove("shell-onboarding");
-  }, [onboarding]);
   // The invite landing and the 404 keep the product's styles but not its chrome: the person
   // there usually has no account yet, or took a wrong turn, and a team switcher reading
   // "No team selected" plus a tab bar of sign-in walls only looked broken.
-  const bare = pathname === "/invite" || pathname === "/join-team" || pathname === "/access-unavailable" || !isKnownAppPath(pathname);
-  useEffect(() => {
-    document.body.classList.toggle("shell-bare", bare);
-    return () => document.body.classList.remove("shell-bare");
-  }, [bare]);
+  const bare = pathnameIsBareShell(pathname);
   const isHubRoot = isHubRootPath(pathname);
   const showBack = showBackForPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
-  const title = shellTitleForPath(pathname);
-  // During onboarding the person is joining a team, so "No team selected" contradicts the page.
-  const orgLabel =
-    !orgId && pathname === "/onboarding"
-      ? "Getting set up"
-      : !orgId && !teamsLoaded
-        ? // Until /api/me answers, "No team selected" is a guess, and usually a wrong one.
-          "Your team"
-        : orgLabelFor(me, orgId);
+  const title = shellTitleForPath(pathname, pathSearch);
+  // One placeholder, then the real team: never "Your team" → "This team" → "Team 6925".
+  const orgLabel = shellOrgLabel({ pathname, orgId, me, teamsLoaded, remembered: rememberedTeamLabel });
   const rolePlanCue = formatRolePlanCue(me.role, me.planCode, me.paidOrg);
-  const crumbHint = breadcrumbForPath(pathname);
+  // Every settings page is "Settings › Section", whichever page it is underneath.
+  const crumbHint = isSettingsPath(pathname) ? "Settings" : breadcrumbForPath(pathname);
   // Not on Home: Home leads with its own next-match card, and the strip made it three times.
   // Not while scouting either: the match card there already says which match, and on a phone
   // the strip took ~105px from the counters.
@@ -579,10 +555,9 @@ export default function AppShell() {
         : buildEventFocus(myDayGlance, online),
     [myDayGlance, online, pathname, scouting],
   );
-  const islandTabs = useMemo(
-    () => resolveIslandTabs(islandHrefs).filter((tab) => navHrefAllowed(tab.href)),
-    [islandHrefs, navHrefAllowed],
-  );
+  // Pins this team may open; the bottom bar takes the first four of them.
+  const pins = useMemo(() => resolvePins(pinHrefs).filter((pin) => navHrefAllowed(pin.href)), [pinHrefs, navHrefAllowed]);
+  const islandTabs = useMemo(() => pins.slice(0, BAR_SLOTS), [pins]);
   const activeIslandTabHref = useMemo(
     () => activeIslandHref(pathname, pathSearch, islandTabs),
     [islandTabs, pathname, pathSearch],
@@ -595,9 +570,9 @@ export default function AppShell() {
 
   const closeOverlays = useCallback(() => {
     setNavOpen(false);
+    setPaletteOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
-    setWorkspaceOpen(false);
   }, []);
 
   const switchWorkspaceHref = useCallback(
@@ -609,91 +584,12 @@ export default function AppShell() {
     setRecentOrgIds(rememberRecentOrg(nextOrgId));
   }, []);
 
-  const openFullSearch = useCallback(() => {
-    const q = navQuery.trim();
-    const href = withOrgHref(q ? `/search?q=${encodeURIComponent(q)}` : "/search", orgId || null);
-    closeNav();
-    navigate(href);
-  }, [closeNav, navQuery, orgId, navigate]);
-
-  const resultRows = useMemo(
-    () => navResultRows(commandHits, searchHits),
-    [commandHits, searchHits],
-  );
-  const activeRowIndex = resultRows.length ? Math.min(resultCursor, resultRows.length - 1) : -1;
-
-  const openResultRow = useCallback(
-    (index: number) => {
-      const row = resultRows[index];
-      if (!row) {
-        openFullSearch();
-        return;
-      }
-      if (row.kind === "command") {
-        goToCommand(row.hit);
-        return;
-      }
-      closeNav();
-      setRecentCommands(rememberRecentCommand(row.href));
-      navigate(row.href);
-    },
-    [closeNav, goToCommand, openFullSearch, resultRows, navigate],
-  );
-
-  const jumpTopResult = useCallback(() => {
-    if (activeRowIndex < 0) {
-      openFullSearch();
-      return;
-    }
-    openResultRow(activeRowIndex);
-  }, [activeRowIndex, openFullSearch, openResultRow]);
-
   async function handleSignOut() {
     if (signingOut) return;
     setSigningOut(true);
     closeOverlays();
     await signOutAndRedirect("/");
     setSigningOut(false);
-  }
-
-  function handleToggleIslandDraft(href: string) {
-    setIslandDraft((current) => {
-      const next = toggleIslandDraft(current, href);
-      setIslandMessage(next.error ?? "");
-      return next.draft;
-    });
-  }
-
-  async function saveIsland() {
-    if (islandDraft.length !== 4 || islandSaving) return;
-    islandPreferenceRevision.current++;
-    setIslandSaving(true);
-    setIslandMessage("");
-    const controller = new AbortController();
-    islandSaveAbort.current = controller;
-    try {
-      const response = await fetch("/api/navigation/preferences", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tabs: islandDraft }),
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]),
-      });
-      const data = await response.json() as { tabs?: unknown; error?: string };
-      if (controller.signal.aborted) return;
-      if (!response.ok) {
-        setIslandMessage(data.error ?? "Could not save the island.");
-        return;
-      }
-      const tabs = resolveIslandTabs(data.tabs).map((item) => item.href);
-      setIslandHrefs(tabs);
-      setIslandDraft(tabs);
-      setIslandEditorOpen(false);
-    } catch {
-      if (controller.signal.aborted) return;
-      setIslandMessage("Could not save the island. Check your connection and try again.");
-    } finally {
-      if (islandSaveAbort.current === controller) setIslandSaving(false);
-    }
   }
 
   if (bare) return null;
@@ -704,8 +600,9 @@ export default function AppShell() {
         Skip to main content
       </a>
       <NextActionsDedupe routeKey={`${pathname}:${locationTick}`} />
-      {!onboarding ? <AppShellSidebar groups={visibleNavGroups} pathname={pathname} pathSearch={pathSearch}
-        orgId={orgId} orgLabel={orgLabel} collapsed={sidebarCollapsed} onCollapse={toggleSidebar} allowed={navHrefAllowed} /> : null}
+      {!onboarding ? <AppShellSidebar groups={visibleNavGroups} pins={pins} pathname={pathname} pathSearch={pathSearch}
+        orgId={orgId} orgLabel={orgLabel} roleCue={rolePlanCue} collapsed={sidebarCollapsed} onCollapse={toggleSidebar}
+        onEditPins={openIslandEditor} allowed={navHrefAllowed} /> : null}
       <AppShellTopbar
         showBack={showBack}
         onBack={() => navigate(backHref)}
@@ -717,8 +614,10 @@ export default function AppShell() {
         navOpen={navOpen}
         menuOpen={navOpen}
         onOpenNav={toggleMenu}
+        searchOpen={paletteOpen}
+        onOpenSearch={openPalette}
         shortcutHint={shortcutHint}
-        onOpenTeams={() => navigate(`/workspace?next=${encodeURIComponent(`${pathname}${pathSearch}`)}`)}
+        onOpenTeams={() => navigate(workspacePickerHref(pathname, pathSearch))}
         minimal={onboarding}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}
@@ -745,6 +644,11 @@ export default function AppShell() {
         />
       ) : null}
       {entryScreen ? null : <LegalUpdateBanner />}
+      {/* On entry screens too: /access-unavailable is where people land while the database is down. */}
+      <ServiceNoticeBanner
+        cacheOrgId={!entryScreen && me.userId && orgId ? orgId : null}
+        orgLabel={me.teamNumber ? `Team ${me.teamNumber}` : (me.orgName ?? null)}
+      />
       {accountMenuOpen ? (
         <button
           className="soft-account-scrim"
@@ -754,47 +658,32 @@ export default function AppShell() {
         />
       ) : null}
       <AppShellNavPanel
-        islandTabs={islandTabs}
         navOpen={navOpen}
         closeNav={closeNav}
         panelCloseRef={panelCloseRef}
         searchInputRef={searchInputRef}
-        me={me}
-        initial={initial}
-        accountLabel={accountLabel}
         orgLabel={orgLabel}
         rolePlanCue={rolePlanCue}
         orgId={orgId}
-        workspaceOpen={workspaceOpen}
-        setWorkspaceOpen={setWorkspaceOpen}
-        memberships={memberships}
-        teamsLoaded={teamsLoaded}
-        orderedMemberships={orderedMemberships}
-        switchWorkspaceHref={switchWorkspaceHref}
-        onWorkspaceSwitch={onWorkspaceSwitch}
-        navQuery={navQuery}
-        setNavQuery={setNavQuery}
-        resultRows={resultRows}
-        commandHits={commandHits}
-        searchHits={searchHits}
-        searchLoading={searchLoading}
-        queryActive={queryActive}
-        activeRowIndex={activeRowIndex}
-        setResultCursor={setResultCursor}
-        goToCommand={goToCommand}
-        openFullSearch={openFullSearch}
-        jumpTopResult={jumpTopResult}
+        search={menuSearch}
         shortcutHint={shortcutHint}
         visibleNavGroups={visibleNavGroups}
+        pins={pins}
         activeGroupLabel={activeGroupLabel}
         pathname={pathname}
         pathSearch={pathSearch}
         navHrefAllowed={navHrefAllowed}
-        openIslandEditor={openIslandEditor}
-        signingOut={signingOut}
-        onSignOut={() => void handleSignOut()}
+        onEditPins={openIslandEditor}
+      />
+      <AppShellSearchPalette
+        open={paletteOpen}
+        onClose={closePalette}
+        search={paletteSearch}
+        orgId={orgId}
+        shortcutHint={shortcutHint}
       />
       <AppTour />
+      <FeedbackButton orgId={orgId} signedIn={Boolean(me.userId) && !entryScreen} />
       {entryScreen ? null : <StatusEcho />}
       {onboarding ? null : (
       <AppShellIsland
@@ -803,21 +692,20 @@ export default function AppShell() {
         activeIslandTabHref={activeIslandTabHref}
         unreadMessages={unreadMessages}
         onOpenEditor={openIslandEditor}
+        onOpenMore={toggleMenu}
+        navOpen={navOpen}
         islandPressTimer={islandPressTimer}
         islandPressOrigin={islandPressOrigin}
         islandLongPressed={islandLongPressed}
       />
       )}
-      <AppShellIslandEditor
+      <AppShellPinsEditor
         open={islandEditorOpen}
-        islandDraft={islandDraft}
-        visibleIslandCatalog={visibleIslandCatalog}
-        islandMessage={islandMessage}
-        islandSaving={islandSaving}
-        onClose={() => setIslandEditorOpen(false)}
-        onToggle={handleToggleIslandDraft}
-        onReset={() => setIslandDraft(defaultIslandHrefs())}
-        onSave={() => void saveIsland()}
+        pins={pinHrefs}
+        catalog={visiblePinCatalog}
+        allowed={navHrefAllowed}
+        onCancel={() => setIslandEditorOpen(false)}
+        onSave={savePins}
       />
     </>
   );

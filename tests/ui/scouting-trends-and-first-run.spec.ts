@@ -160,7 +160,7 @@ for (const viewport of [{width:320,height:667},{width:844,height:390},{width:768
   await isolateUi(page,context); await page.setViewportSize(viewport);
   await page.route("**/api/search?**",route=>route.fulfill({json:{status:"ready",results:Array.from({length:8},(_,index)=>({title:`Scouting help ${index+1}`,subtitle:"Saved team data and scouting guidance",href:`/help?entry=${index+1}`,sourceLabel:"Help"}))}}));
   await page.goto(`/competition?tab=teams&orgId=${orgId}`);
-  const opener=page.getByRole("button",{name:viewport.width<1100?"Menu and search":"Search pages, tools, and team data",exact:true});
+  const opener=page.getByRole("button",{name:viewport.width<1100?"Menu":"Search pages, tools, and team data",exact:true});
   await opener.click();
   const panel=page.getByRole("complementary",{name:"Product navigation",exact:true});
   const search=panel.getByRole("combobox",{name:"Search pages, tools, and your team's data",exact:true});await search.fill("scouting");

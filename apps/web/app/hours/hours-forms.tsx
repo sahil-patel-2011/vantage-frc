@@ -15,7 +15,92 @@ import {
   scanFeedbackMessage,
 } from "../../lib/hours/scan-codes";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import type { HoursRun, ReadyView } from "./hours-model";
+import { fmtClock, toLocalInputValue, type HourLog, type HoursRun, type ReadyView } from "./hours-model";
+
+function browserTimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * A mentor fixes an entry's times in place (a forgotten clock-out, a typo in a typed-in session)
+ * instead of deleting it and adding it again. The note is required and is kept with the entry,
+ * together with the times it replaced (0723).
+ */
+export function EditTimesForm({
+  orgId,
+  record,
+  busy,
+  run,
+  onDone,
+}: {
+  orgId: string;
+  record: HourLog;
+  busy: boolean;
+  run: HoursRun;
+  onDone: () => void;
+}) {
+  const [clockIn, setClockIn] = useState(() => toLocalInputValue(record.clockIn));
+  const [clockOut, setClockOut] = useState(() => (record.clockOut ? toLocalInputValue(record.clockOut) : ""));
+  const [note, setNote] = useState("");
+  const latest = toLocalInputValue(new Date().toISOString());
+  const ready = Boolean(clockIn && clockOut && note.trim().length >= 3);
+
+  return (
+    <form
+      className="hours-manual hours-edit"
+      aria-label={`Edit times for ${record.userName ?? "this member"}`}
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!ready) return;
+        void run(
+          { action: "correct_record", orgId, id: record.id, clockIn, clockOut, note: note.trim(), timeZone: browserTimeZone() },
+          `edit:${record.id}`,
+        ).then((ok) => {
+          if (ok !== false) onDone();
+        });
+      }}
+    >
+      <p className="hours-kiosk-hint app-muted">
+        Now: {fmtClock(record.clockIn)}
+        {record.clockOut ? ` → ${fmtClock(record.clockOut)}` : " → still clocked in"}. Your note is saved with the entry.
+      </p>
+      <div className="hours-form-grid">
+        <label className="hours-field">
+          <span>From</span>
+          <input type="datetime-local" value={clockIn} max={latest} disabled={busy} required onChange={(e) => setClockIn(e.target.value)} />
+        </label>
+        <label className="hours-field">
+          <span>To</span>
+          <input type="datetime-local" value={clockOut} min={clockIn || undefined} max={latest} disabled={busy} required onChange={(e) => setClockOut(e.target.value)} />
+        </label>
+        <label className="hours-field hours-field-wide">
+          <span>Why the change</span>
+          <input
+            value={note}
+            disabled={busy}
+            required
+            minLength={3}
+            maxLength={250}
+            placeholder="Forgot to clock out at 6 PM"
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </label>
+      </div>
+      <div className="hours-edit-actions">
+        <Button variant="secondary" type="button" disabled={busy} onClick={onDone}>
+          Cancel
+        </Button>
+        <Button variant="primary" type="submit" disabled={busy || !ready}>
+          Save times
+        </Button>
+      </div>
+    </form>
+  );
+}
 
 export function ManualEntryForm({
   orgId,
@@ -37,6 +122,8 @@ export function ManualEntryForm({
   const [clockIn, setClockIn] = useState("");
   const [clockOut, setClockOut] = useState("");
   const [note, setNote] = useState("");
+  // The picker stops at now; the server refuses a future session either way.
+  const latest = toLocalInputValue(new Date().toISOString());
 
   return (
     <form
@@ -53,9 +140,12 @@ export function ManualEntryForm({
             clockIn,
             clockOut,
             note: note.trim(),
+            timeZone: browserTimeZone(),
           },
           "manual",
-        ).then(() => {
+        ).then((ok) => {
+          // A refused entry (overlap, future) keeps what was typed so it can be fixed.
+          if (ok === false) return;
           setClockIn("");
           setClockOut("");
           setNote("");
@@ -63,6 +153,10 @@ export function ManualEntryForm({
       }}
     >
       <h3>Add hours manually</h3>
+      <p className="hours-kiosk-hint app-muted">
+        For a session you forgot to clock. It shows as added by hand, and it can&rsquo;t be in the future or
+        overlap hours already logged.
+      </p>
       <div className="hours-form-grid">
         {canAdmin ? (
           <label className="hours-field">
@@ -91,11 +185,11 @@ export function ManualEntryForm({
         </label>
         <label className="hours-field">
           <span>From</span>
-          <input type="datetime-local" value={clockIn} disabled={busy} onChange={(e) => setClockIn(e.target.value)} />
+          <input type="datetime-local" value={clockIn} max={latest} disabled={busy} onChange={(e) => setClockIn(e.target.value)} />
         </label>
         <label className="hours-field">
           <span>To</span>
-          <input type="datetime-local" value={clockOut} disabled={busy} onChange={(e) => setClockOut(e.target.value)} />
+          <input type="datetime-local" value={clockOut} min={clockIn || undefined} max={latest} disabled={busy} onChange={(e) => setClockOut(e.target.value)} />
         </label>
         <label className="hours-field">
           <span>Note</span>
@@ -273,10 +367,9 @@ export function ScanClockForm({
   const focusField = useCallback(() => {
     requestAnimationFrame(() => inputRef.current?.focus());
   }, []);
-
-  useEffect(() => {
-    focusField();
-  }, [focusField]);
+  // No focus on page load: on a phone it opened the keyboard over "Clock in", and on Hours
+  // the scan field sits below the clock card. After a scan the field is focused again, so a
+  // USB scanner can keep going; the full-screen kiosk (/hours/kiosk) focuses it from the start.
 
   const submit = useCallback(async () => {
     const normalized = normalizeScanCode(code);
@@ -369,11 +462,11 @@ export function ScanClockForm({
         void submit();
       }}
     >
-      <h3>Scan a card</h3>
+      {/* The first card under the page title: an h2, so the outline does not skip from h1 to h3. */}
+      <h2>Scan a card</h2>
       <p className="hours-kiosk-hint app-muted">
-        Barcode, student ID, or RFID — a USB scanner types into this field and presses Enter. One scan clocks in;
-        the next scan from the same card clocks out. Manual clock buttons below are a fallback for members without a
-        card.
+        For a shop scanner or a student ID card: one scan clocks in, the next scan from the same card clocks out.
+        No card? Use Clock in above.
       </p>
       <div className="hours-form-grid">
         <label className="hours-field">

@@ -42,6 +42,8 @@ export type ProductNavGroup = {
 };
 
 export type ProductNavIcon =
+  // The desktop sidebar's show/hide control: a panel with its left column, as on macOS.
+  | "sidebar"
   // Added for the shared row/tile kit: the shapes a settings or admin screen
   // needs, which the navigation set never had because navigation never needed
   // a bin or a sign-out arrow.
@@ -80,7 +82,14 @@ export type ProductNavIcon =
   | "form"
   | "assignment"
   | "rank"
-  | "book";
+  | "book"
+  // Editing controls ("Your apps" and Home's edit mode): add, remove, reorder, edit, more, done.
+  | "plus"
+  | "minus"
+  | "grip"
+  | "pencil"
+  | "more"
+  | "check";
 
 /**
  * Every pillar currently reads as the house blue — one palette was a deliberate
@@ -202,7 +211,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   { href: "/team", label: "Team", icon: "users" },
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/business", label: "Business", icon: "clipboard" },
-  { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
+  { href: "/ai?tab=chat", label: "Ask AI", icon: "sparkles" },
   { href: "/files", label: "Files", icon: "grid" },
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
@@ -218,7 +227,7 @@ export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: Prod
   { href: "/team", label: "Team", icon: "users" },
   { href: "/build", label: "Build", icon: "cube" },
   { href: "/business", label: "Business", icon: "clipboard" },
-  { href: "/ai?tab=chat", label: "Ask AI", icon: "bolt" },
+  { href: "/ai?tab=chat", label: "Ask AI", icon: "sparkles" },
 ];
 
 /**

@@ -27,6 +27,7 @@ import {
   WAITLIST_ONLY_MESSAGE,
   resolveAuthEmailAccess,
 } from "./auth-access";
+import { AUTH_RATE_LIMIT_DEFAULT, AUTH_RATE_LIMIT_RULES } from "./auth-rate-limit";
 import { desktopLinkSessions } from "./desktop-link-plugin";
 import { productHandoffSessions } from "./product-handoff-plugin";
 
@@ -244,9 +245,10 @@ function buildAuth() {
   ],
   rateLimit: {
     enabled: true,
-    window: 60,
-    // Per IP address and path: a team signing in together shares one school network.
-    max: 60,
+    // Per IP address and path: a team shares one school or venue network. See auth-rate-limit.ts
+    // for why session reads get far more room than the code and password routes.
+    ...AUTH_RATE_LIMIT_DEFAULT,
+    customRules: AUTH_RATE_LIMIT_RULES,
   },
   // Cookie defaults: HttpOnly + SameSite=Lax; Secure when serving over HTTPS / production.
   // CSRF / Origin checks stay enabled (Better Auth defaults); trustedOrigins is the allowlist.
@@ -389,3 +391,6 @@ export * from "./legal";
 /* The one switch that opens the doors — see public-signup.ts. */
 export * from "./public-signup";
 export * from "./team-handover";
+export * from "./role-words";
+export * from "./membership-notices";
+export * from "./invite-policy";

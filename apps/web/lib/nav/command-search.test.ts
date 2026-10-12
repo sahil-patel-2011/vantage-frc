@@ -281,6 +281,9 @@ describe("this wave's tools are findable by the words teams type", () => {
     ["dxf", "/build?tab=cad-vault"],
     ["upload cad", "/build?tab=cad-vault"],
     ["inspection prep", "/competition?tab=event-readiness"],
+    ["team resources", "/build?tab=team-lessons"],
+    ["team lessons", "/build?tab=team-lessons"],
+    ["write a lesson", "/build?tab=team-lessons"],
     ["consent", "/competition?tab=event-readiness"],
     ["pre event", "/competition?tab=event-readiness"],
   ];
@@ -291,6 +294,20 @@ describe("this wave's tools are findable by the words teams type", () => {
   }
 });
 
+describe("natural words for Code and pull request reviews (A6-17)", () => {
+  it("finds Bugbot and Code for 'pull request' ahead of Connectors and Part requests", () => {
+    const top = hrefs("pull request", 3);
+    expect(top[0]).toMatch(/tab=(bugbot|code)/);
+    expect(top.some((href) => /tab=bugbot/.test(href))).toBe(true);
+    expect(top.some((href) => /tab=code/.test(href))).toBe(true);
+    expect(hrefs("code review", 3).some((href) => /tab=bugbot/.test(href))).toBe(true);
+  });
+
+  it("puts Tasks first for 'task'", () => {
+    expect(hrefs("task", 1)[0]).toMatch(/tab=todos/);
+  });
+});
+
 describe("equivalent destinations across permission scopes",()=>{
  it("lists the same robot tool once for unrestricted users",()=>{
   const hits=searchCommands("fmea",commandCatalog(),{limit:100});
@@ -299,6 +316,6 @@ describe("equivalent destinations across permission scopes",()=>{
  it("retains the Team link when Competition and Build are not permitted",()=>{
   const hits=searchCommands("fmea",commandCatalog(),{limit:100,isAllowed:href=>href.startsWith("/team?")});
   expect(hits.some(hit=>hit.href==="/team?tab=fmea")).toBe(true);
-  expect(hits.find(hit=>hit.href==="/team?tab=fmea")?.context).toBe("Team › Work");
+  expect(hits.find(hit=>hit.href==="/team?tab=fmea")?.context).toBe("Team › Tasks");
  });
 });

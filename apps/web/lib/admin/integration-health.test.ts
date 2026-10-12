@@ -192,8 +192,8 @@ describe("buildIntegrationHealthReport — setup_required behavior", () => {
       expect(findCheck(report, id).state).toBe("setup_required");
     }
 
-    // Stripe is a config-blockers list, not a single boolean — still resolves to setup_required.
-    expect(findCheck(report, "stripe").state).toBe("setup_required");
+    // Stripe is not used: with no secret it is left out instead of reported as a gap.
+    expect(report.checks.some((check) => check.id === "stripe")).toBe(false);
 
     const onshape = findCheck(report, "onshape-oauth");
     expect(onshape.verification).toBe("config_only");

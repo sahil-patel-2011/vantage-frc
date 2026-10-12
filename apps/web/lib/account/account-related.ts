@@ -1,3 +1,4 @@
+import { isAccessRole, roleLabel } from "@vantage/core/role-words";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
@@ -66,20 +67,25 @@ export type AccountOrgContext = {
   planCode: string | null;
 };
 
-/** Soft-UI label for an org role — blank-safe, never a DEMO title. */
+/**
+ * Soft-UI label for an org role — blank-safe, never a DEMO title. In the role words every
+ * screen uses (@vantage/core/role-words); this said "Scout" and "Admin" where the menu said
+ * "Student" and "Mentor or coach" (QA A6-09).
+ */
 export function formatAccountRole(role: string | null | undefined): string | null {
   if (!role?.trim()) return null;
   const normalized = role.trim().toLowerCase();
-  if (normalized === "owner") return "Owner";
-  if (normalized === "admin") return "Admin";
+  if (isAccessRole(normalized)) return roleLabel(normalized);
   if (normalized === "mentor") return "Mentor";
   if (normalized === "member") return "Member";
-  if (normalized === "viewer") return "Viewer";
-  if (normalized === "scout") return "Scout";
   return role.trim();
 }
 
-/** One-line workspace context — blank until a real membership exists. */
+/**
+ * One-line workspace context — blank until a real membership exists. The team only: Account
+ * printed the person's access three times (hero, this line and its badge), so the access is
+ * shown once, as the "This team" card's badge (handed over by F).
+ */
 export function formatAccountOrgLabel(input: AccountOrgContext): string | null {
   if (!input.orgId) return null;
   const team =
@@ -87,8 +93,7 @@ export function formatAccountOrgLabel(input: AccountOrgContext): string | null {
   const rawName = input.orgName?.trim() || null;
   // A team named "Team 6925" printed as "Team 6925 · Team 6925 · scout".
   const name = rawName && team && rawName.toLowerCase() === team.toLowerCase() ? null : rawName;
-  const role = formatAccountRole(input.role);
-  const parts = [team, name, role].filter(Boolean);
+  const parts = [team, name].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "This team";
 }
 

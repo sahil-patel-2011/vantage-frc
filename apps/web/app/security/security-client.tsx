@@ -7,6 +7,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { SessionsPanel } from "./sessions-panel";
 
 type Device = {
   id: string;
@@ -213,7 +214,7 @@ export default function SecurityClient({
     return (
       <main className="module-page security-page">
         <PageHeader
-          breadcrumbs="Account / Security"
+          breadcrumbs="Settings › Security"
           title="Security"
           description="A second sign-in step with an app like Google Authenticator, and the devices you told us to remember."
         >
@@ -244,9 +245,9 @@ export default function SecurityClient({
   return (
         <main className="module-page security-page">
           <PageHeader
-            breadcrumbs="Account / Security"
+            breadcrumbs="Settings › Security"
             title="Security"
-            description="A second sign-in step with an app like Google Authenticator, and the devices you told us to remember. Appearance and notifications are under Account."
+            description="A second sign-in step with an app like Google Authenticator, the devices you told us to remember, and where you're signed in."
           >
             <SecurityRelated orgId={orgId} />
           </PageHeader>
@@ -389,6 +390,7 @@ export default function SecurityClient({
                 ))
               )}
             </Panel>
+            <SessionsPanel />
           </section>
           {recovery.length > 0 ? (
             <Panel className="recovery-codes">

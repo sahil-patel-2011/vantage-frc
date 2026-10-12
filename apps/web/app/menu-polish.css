@@ -1,0 +1,143 @@
+/*
+ * The menus, made calmer (loaded last; see product-styles.ts).
+ *
+ * Phone and tablet menu (the hamburger) and the desktop search panel:
+ *   - Four places people go every day sit in one row at the top, like a phone's dock: an icon in
+ *     a soft square with a short name under it. The one you're on is tinted.
+ *   - The workspaces follow as one list of disclosures.
+ *   - A small toolbar is pinned to the bottom: Account, Help and Shortcuts. Sign out, Team admin
+ *     and Platform admin live in the avatar menu only, so the two menus never repeat each other
+ *     and nothing hides under a "Manage" heading below the fold.
+ *
+ * Press feedback and every duration use the vantage-fluid tokens (0 ms under reduced motion).
+ */
+
+/* ── Dock row ─────────────────────────────────────────────────────────── */
+
+body.has-app-shell .soft-drawer .main-menu-launch {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 2px 0 18px;
+}
+body.has-app-shell .soft-drawer .main-menu-app {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 76px;
+  padding: 8px 2px 10px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  text-align: center;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    scale var(--dur-press) var(--ease-spring);
+}
+body.has-app-shell .soft-drawer .main-menu-app .main-menu-symbol {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  transition: background-color var(--dur-tint) var(--ease-out), color var(--dur-tint) var(--ease-out);
+}
+body.has-app-shell .soft-drawer .main-menu-app .main-menu-symbol > svg {
+  width: 24px;
+  height: 24px;
+}
+body.has-app-shell .soft-drawer .main-menu-app strong {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+}
+body.has-app-shell .soft-drawer .main-menu-app:not([aria-current="page"]):hover {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+/* The place you're on: the icon fills with the accent and the name takes it; no second tint
+   behind the tile (macos-product.css tints current menu rows, hence the longer selector). */
+body.has-app-shell .soft-drawer .main-menu-launch > a.main-menu-app[aria-current="page"] {
+  background: transparent;
+  color: var(--accent);
+}
+body.has-app-shell .soft-drawer .main-menu-launch > a.main-menu-app[aria-current="page"] .main-menu-symbol {
+  background: var(--accent);
+  color: var(--surface);
+}
+body.has-app-shell .soft-drawer .main-menu-app:active {
+  scale: 0.96;
+}
+
+/* ── Workspace list: one rhythm with the dock above ─────────────────────── */
+
+body.has-app-shell .soft-drawer .main-menu-heading {
+  margin: 0 12px 6px;
+}
+
+/* ── Bottom toolbar ────────────────────────────────────────────────────── */
+
+body.has-app-shell .soft-drawer .soft-drawer-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 8px 0 max(0px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line-soft);
+}
+body.has-app-shell .soft-drawer .soft-drawer-toolbar > :is(a, button) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: auto;
+  min-height: 52px;
+  padding: 6px 4px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    scale var(--dur-press) var(--ease-spring);
+}
+body.has-app-shell .soft-drawer .soft-drawer-toolbar > :is(a, button) svg {
+  width: 22px;
+  height: 22px;
+}
+body.has-app-shell .soft-drawer .soft-drawer-toolbar > :is(a, button):hover {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
+}
+body.has-app-shell .soft-drawer .soft-drawer-toolbar > :is(a, button):active {
+  scale: 0.96;
+}
+body.has-app-shell .soft-drawer .soft-drawer-toolbar > :is(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Desktop sidebar: the team card says your role, like the phone menu ─── */
+
+body.has-app-shell .app-sidebar-team small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* With the sidebar open on a wide screen, its team card already names the team (and switches
+   it), so the top bar doesn't repeat "Team 6925" a few centimetres to the right. Collapse the
+   sidebar, or go narrower, and the top bar's team switch comes back. */
+@media (min-width: 1100px) {
+  body.has-app-shell:has(.app-sidebar):not(.shell-sidebar-collapsed) .soft-topbar-org {
+    display: none;
+  }
+}

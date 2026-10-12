@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { isAccessRole, roleHint, roleLabel } from "@vantage/core/role-words";
 import { VantageLogo } from "../../components/brand";
 import {
   buildOnboardingStepMeta,
@@ -15,8 +16,13 @@ import {
   onboardingGoBack,
   onboardingLegalRequired,
   onboardingLoadCopy,
+  onboardingErrorTarget,
   onboardingMembershipNote,
   onboardingProgressLabel,
+  resumeOnboardingStep,
+  resumedFocus,
+  roleAgeQuestion,
+  skipsTeamStep,
   submittedTeamNumber,
   type OnboardingCrew,
   type OnboardingDraft,
@@ -24,6 +30,8 @@ import {
   type OnboardingRole,
   type OnboardingStepContext,
 } from "../../lib/onboarding";
+import { askConfirm } from "../../components/ui/confirm-dialog";
+import { applyThemeChoice, deviceThemePreference } from "../theme-provider";
 import {
   fundingModelFromFlags,
   isFundingModel,
@@ -41,7 +49,7 @@ import {
   type OnboardingState,
 } from "./onboarding-model";
 import { PendingPanel } from "./onboarding-pending";
-import { PreferencesForm, ProfileForm, TeamForm } from "./onboarding-steps";
+import { ONBOARDING_ERROR_ID, PreferencesForm, ProfileForm, TeamForm } from "./onboarding-steps";
 import "./onboarding-flow.css";
 import "../vantage-scan-auth.css";
 
@@ -52,19 +60,57 @@ export default function OnboardingClient() {
   // Continue kept the scroll position, so step 2 opened at the bottom of its last block and the
   // person never saw that a new step started. Every step change starts at the heading.
   const firstStep = useRef(true);
+  /** Set while an error is waiting to be brought into view; it wins over the jump to the top. */
+  const errorScroll = useRef<{ field: string | null } | null>(null);
   useEffect(() => {
     if (firstStep.current) {
       firstStep.current = false;
       return;
     }
+    if (errorScroll.current) return;
     window.scrollTo({ top: 0 });
     document.getElementById("onboarding-title")?.focus({ preventScroll: true });
   }, [step]);
   const [draft, setDraft] = useState<OnboardingDraft>(() => emptyOnboardingDraft());
   /** True once the person picked a focus themselves — stops the role default overriding them. */
   const focusTouched = useRef(false);
+  /** True once the person picked an appearance here; only then is it saved as their choice. */
+  const themeTouched = useRef(false);
   const [message, setMessage] = useState("");
   const [errorField, setErrorField] = useState<string | null>(null);
+
+  /**
+   * Show a message beside what it is about and bring it into view. Every failure goes through
+   * here: the gate's own checks, the server's answer and a lost connection. Only the first used
+   * to scroll, so on a phone a refused birthday or a dropped connection looked like a dead button.
+   */
+  const [errorTick, setErrorTick] = useState(0);
+  const showError = useCallback((text: string, field: string | null) => {
+    errorScroll.current = { field };
+    setMessage(text);
+    setErrorField(field);
+    setErrorTick((tick) => tick + 1);
+  }, []);
+  // After the render that shows it (and after the step effect above, which leaves the scroll to
+  // this one when an error sent the person back to an earlier screen).
+  useEffect(() => {
+    const pending = errorScroll.current;
+    if (!pending) return;
+    errorScroll.current = null;
+    const target =
+      (pending.field ? document.querySelector<HTMLElement>(".onboarding-form [aria-invalid='true']") : null) ??
+      document.getElementById(ONBOARDING_ERROR_ID);
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    target?.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "center" });
+    if (target && target.matches("input, select, textarea")) target.focus({ preventScroll: true });
+  }, [errorTick]);
+
+  /** A refusal from the server, shown on the screen and beside the field that can fix it. */
+  function showServerError(text: string) {
+    const target = onboardingErrorTarget(text);
+    if (target && target.step !== step) setStep(target.step);
+    showError(text, target?.field ?? null);
+  }
   const [busy, setBusy] = useState(false);
   const mutationRef = useRef(false);
   const loadRef = useRef<AbortController | null>(null);
@@ -93,28 +139,42 @@ export default function OnboardingClient() {
     // Finish), kept on this device so "Welcome back" is true in a new tab (see answersStore).
     answersScope.current = { userId: data.userId ?? null, orgId: data.workspaceOrgId ?? null };
     const local = readLocalAnswers(answersScope.current);
-    setDraft((current) => ({
-      ...current,
-      firstName: data.firstName ?? current.firstName,
-      lastName: data.lastName ?? current.lastName,
-      dateOfBirth: data.dateOfBirth ?? current.dateOfBirth,
-      gender: isGender(data.gender) ? data.gender : current.gender,
+    // The server answers "competition" when no focus was ever picked, so a saved team screen is
+    // what makes it an answer (resumedFocus); otherwise the role's default stands.
+    const resumed = (role: OnboardingRole | "", crew: OnboardingCrew | "") =>
+      resumedFocus({ serverFocus: data.primaryFocus, serverStep: data.currentStep, teamRole: role, crewRole: crew });
+    setDraft((current) => {
       // Someone the team made an owner or admin is not a student; start them on Mentor instead
       // of pre-picking Student for everyone.
-      teamRole: isRole(data.teamRole)
+      const teamRole: OnboardingRole | "" = isRole(data.teamRole)
         ? data.teamRole
         : typeof local.teamRole === "string" && isRole(local.teamRole)
           ? local.teamRole
           : data.isTeamHead || data.workspaceRole === "owner" || data.workspaceRole === "admin"
             ? "mentor"
-            : current.teamRole,
-      crewRole: isCrew(data.crewRole) ? data.crewRole : typeof local.crewRole === "string" && isCrew(local.crewRole) ? local.crewRole : current.crewRole,
+            : current.teamRole;
+      const crewRole: OnboardingCrew | "" = isCrew(data.crewRole)
+        ? data.crewRole
+        : typeof local.crewRole === "string" && isCrew(local.crewRole) ? local.crewRole : current.crewRole;
+      const focus = resumed(teamRole, crewRole);
+      if (focus.answered) focusTouched.current = true;
+      return {
+      ...current,
+      // Names typed before a reload come back from this device until Continue saves them. The
+      // birthday is not kept here: it stays on the server only.
+      firstName: data.firstName ?? (typeof local.firstName === "string" && local.firstName ? local.firstName : current.firstName),
+      lastName: data.lastName ?? (typeof local.lastName === "string" && local.lastName ? local.lastName : current.lastName),
+      dateOfBirth: data.dateOfBirth ?? current.dateOfBirth,
+      gender: isGender(data.gender) ? data.gender : current.gender,
+      teamRole,
+      crewRole,
       roleDescription: data.roleDescription ?? (typeof local.roleDescription === "string" ? local.roleDescription : current.roleDescription),
       teamNumber: String(data.lockedTeamNumber ?? data.preferredTeamNumber ?? current.teamNumber ?? ""),
       noTeam: data.complete && !data.lockedTeamNumber && data.preferredTeamNumber == null ? true : current.noTeam,
-      primaryFocus: data.primaryFocus ?? current.primaryFocus,
+      primaryFocus: focusTouched.current && !focus.answered ? current.primaryFocus : focus.focus,
       displayName: data.displayName ?? current.displayName,
-      themePreference: data.themePreference ?? current.themePreference,
+      // What this device shows now. The server's copy is only the column default until Finish.
+      themePreference: themeTouched.current ? current.themePreference : deviceThemePreference(),
       orgCity: data.orgCity ?? (typeof local.orgCity === "string" ? local.orgCity : current.orgCity),
       orgStateProv: data.orgStateProv ?? (typeof local.orgStateProv === "string" ? local.orgStateProv : current.orgStateProv),
       orgDescription: data.orgDescription ?? current.orgDescription,
@@ -142,8 +202,8 @@ export default function OnboardingClient() {
       sponsorsAllowed: data.orgSponsorsAllowed ?? current.sponsorsAllowed,
       termsAccepted: data.termsAcceptedAt ? true : current.termsAccepted,
       privacyAccepted: data.privacyAcceptedAt ? true : current.privacyAccepted,
-    }));
-    if (data.primaryFocus) focusTouched.current = true;
+      };
+    });
   }, []);
 
   const approvedDestination = useCallback(
@@ -209,8 +269,7 @@ export default function OnboardingClient() {
         hydrate(data);
         setLoadStatus("ready");
         if (data.complete) routeCompleteState(data, false);
-        else if (data.currentStep === "team" || data.currentStep === "preferences") setStep(data.currentStep);
-        else setStep("profile");
+        else setStep(resumeOnboardingStep(data.currentStep, stepContextOf(data)));
       })
       .catch(() => {
         if (controller.signal.aborted) return;
@@ -268,8 +327,9 @@ export default function OnboardingClient() {
     termsAcceptedAt: state?.termsAcceptedAt,
     privacyAcceptedAt: state?.privacyAcceptedAt,
   });
-  const stepMeta = useMemo(() => buildOnboardingStepMeta(step), [step]);
-  const progressLabel = onboardingProgressLabel(step);
+  const skipTeam = skipsTeamStep(context);
+  const stepMeta = useMemo(() => buildOnboardingStepMeta(step, { skipTeam }), [step, skipTeam]);
+  const progressLabel = onboardingProgressLabel(step, { skipTeam });
   const membershipNote = onboardingMembershipNote(state?.accessStatus ?? "none", {
     preferredTeamNumber: state?.preferredTeamNumber ?? lookup.teamNumber,
   });
@@ -280,10 +340,17 @@ export default function OnboardingClient() {
     setErrorField(null);
   }
 
-  function pickCrew(value: OnboardingCrew) {
-    const next = draft.crewRole === value ? "" : value;
-    const nextFocus = focusTouched.current ? draft.primaryFocus : defaultFocusForRole(draft.teamRole, next);
-    patch({ crewRole: next, primaryFocus: nextFocus });
+  /** "" is "Not sure yet". */
+  function pickCrew(value: OnboardingCrew | "") {
+    const nextFocus = focusTouched.current ? draft.primaryFocus : defaultFocusForRole(draft.teamRole, value);
+    patch({ crewRole: value, primaryFocus: nextFocus });
+  }
+
+  function pickTheme(value: OnboardingDraft["themePreference"]) {
+    themeTouched.current = true;
+    patch({ themePreference: value });
+    // Shown now, the way Account does it; Finish saves light or dark to the account.
+    applyThemeChoice(value);
   }
 
   function goBack() {
@@ -298,20 +365,32 @@ export default function OnboardingClient() {
     if (mutationRef.current) return;
     const result = onboardingAdvance({ step, draft, error: null, errorField: null }, context);
     if (result.error) {
-      setMessage(result.error);
-      setErrorField(result.errorField);
-      // The message sits at the top of the card, often a screen above Continue: bring it (or
-      // the field it is about) into view, or the press looked like it did nothing.
-      window.requestAnimationFrame(() => {
-        const target =
-          document.querySelector<HTMLElement>("[aria-invalid='true']") ??
-          document.querySelector<HTMLElement>(".onboarding-message.invalid");
-        target?.scrollIntoView({ behavior: "smooth", block: "center" });
-        if (target && target.matches("input, select, textarea")) target.focus({ preventScroll: true });
-      });
+      showError(result.error, result.errorField);
       return;
     }
     setErrorField(null);
+    setMessage("");
+    if (step === "profile") {
+      // The birthday decides student protections and the role is a label, so a slip in either is
+      // worth one question before it is saved.
+      const question = roleAgeQuestion(draft.teamRole, draft.dateOfBirth);
+      if (question) {
+        mutationRef.current = true;
+        const right = await askConfirm({
+          title: "Check your role and birthday",
+          body: `${question} Your birthday decides whether this is a student account; your role is how teammates see you.`,
+          confirmLabel: "Yes, that's right",
+          cancelLabel: "Let me fix it",
+          tone: "neutral",
+        }).finally(() => {
+          mutationRef.current = false;
+        });
+        if (!right) {
+          document.querySelector<HTMLInputElement>("input[type='date']")?.focus();
+          return;
+        }
+      }
+    }
     if (result.submit) {
       await finish();
       return;
@@ -350,7 +429,7 @@ export default function OnboardingClient() {
       });
       const data = (await response.json()) as OnboardingState & { error?: string };
       if (!response.ok) {
-        setMessage(data.error ?? "Could not save your progress.");
+        showServerError(data.error ?? "Could not save this step. Press Continue to try again.");
         return;
       }
       if (!confirmedOnboardingState(data)) throw new Error("Progress could not be confirmed");
@@ -360,7 +439,7 @@ export default function OnboardingClient() {
       setState(data);
       if (data.complete) routeCompleteState(data, false); else setStep(result.step);
     } catch {
-      setMessage("Could not save your progress. Check your connection and try again.");
+      showError("We couldn't reach Vantage, so this step isn't saved yet. Your answers are still here. Check your connection and press Continue again.", null);
     } finally {
       mutationRef.current = false;
       setBusy(false);
@@ -378,8 +457,7 @@ export default function OnboardingClient() {
           legalConsentMessage({ terms: draft.termsAccepted, privacy: draft.privacyAccepted }) ??
           "Agree to the Terms of Service and the Privacy Policy to submit your request.";
         setLegalError(consentMessage);
-        setMessage(consentMessage);
-        setErrorField("legal");
+        showError(consentMessage, "legal");
         return;
       }
       const isTeamHead = Boolean(state?.isTeamHead);
@@ -399,7 +477,9 @@ export default function OnboardingClient() {
           roleDescription: draft.roleDescription.trim() || null,
           primaryFocus: draft.primaryFocus,
           displayName: draft.displayName.trim() || undefined,
-          themePreference: draft.themePreference,
+          // Only a choice made here is saved as one; System stays on this device, as in Account.
+          themePreference:
+            themeTouched.current && draft.themePreference !== "system" ? draft.themePreference : undefined,
           termsAccepted: true,
           privacyAccepted: true,
           city: isTeamHead ? draft.orgCity.trim() || null : undefined,
@@ -414,15 +494,9 @@ export default function OnboardingClient() {
       });
       const data = (await response.json()) as OnboardingState & { error?: string };
       if (!response.ok) {
-        const text = data.error ?? "Could not submit your access request.";
-        // An answer from step two: go back to it and point at the field, instead of an error at
-        // the top of a step that has no way to fix it.
-        if (/affiliated|funding path|how the team is funded/i.test(text)) {
-          setStep("team");
-          setErrorField(/funded|funding/i.test(text) ? "fundingModel" : "teamAffiliation");
-        }
-        setMessage(text);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        // An answer from an earlier screen (a birthday, the team's funding) goes back to it and
+        // points at the field, instead of an error on a screen that has no way to fix it.
+        showServerError(data.error ?? "Could not finish setting up your profile. Press the button again to retry.");
         return;
       }
       if (!confirmedOnboardingState(data) || data.complete !== true) throw new Error("Profile completion could not be confirmed");
@@ -430,7 +504,7 @@ export default function OnboardingClient() {
       hydrate(data);
       routeCompleteState(data, true);
     } catch {
-      setMessage("Could not confirm that your profile was completed. Your answers are still here. Check your connection and try again.");
+      showError("We couldn't confirm that your profile was saved. Your answers are still here. Check your connection and try again.", null);
     } finally {
       mutationRef.current = false;
       setBusy(false);
@@ -457,7 +531,7 @@ export default function OnboardingClient() {
       hydrate(data);
       if (data.accessStatus === "approved") {
         if (data.complete) routeCompleteState(data, false);
-        else setStep(data.currentStep === "team" || data.currentStep === "preferences" ? data.currentStep : "profile");
+        else setStep(resumeOnboardingStep(data.currentStep, stepContextOf(data)));
       } else if (data.accessStatus === "invited") {
         setMessage("Your team invited you. Tap Join to finish.");
       } else if (data.accessStatus === "declined") {
@@ -535,6 +609,16 @@ export default function OnboardingClient() {
               title: `Set up ${teamName ?? "your team"}.`,
               sub: "Tell us who you are, then Home walks you through inviting your team.",
             }
+          : onTeamAlready && state?.accessStatus === "invited"
+          ? {
+              // Invited, not joined yet: finishing joins them. It said "You're on <team>" before
+              // they had joined and never said with what access (QA A3-28).
+              eyebrow: "YOU'RE INVITED",
+              title: `Join ${teamName ?? "your team"}.`,
+              sub: isAccessRole(state.workspaceRole)
+                ? `Tell us who you are. When you finish, you join as ${roleLabel(state.workspaceRole)}: ${roleHint(state.workspaceRole).charAt(0).toLowerCase()}${roleHint(state.workspaceRole).slice(1)}`
+                : "Tell us who you are. When you finish, you join the team.",
+            }
           : onTeamAlready
           ? {
               // Someone who just accepted an invite was told their team "still
@@ -574,9 +658,9 @@ export default function OnboardingClient() {
           </div>
         ) : null}
 
-        {message ? (
-          <p className={`onboarding-message${errorField ? " invalid" : ""}`} role="status">{message}</p>
-        ) : null}
+        {/* On the setup screens a message is an error, shown by the form beside its field or
+            above its buttons. Here only the waiting screen's status lines. */}
+        {message && !setupStep ? <p className="onboarding-message" role="status">{message}</p> : null}
         {restoredFrom && setupStep ? (
           <p className="onboarding-resume-note">
             <b>Welcome back</b>
@@ -589,6 +673,7 @@ export default function OnboardingClient() {
             draft={draft}
             patch={patch}
             errorField={errorField}
+            message={message}
             busy={busy}
             pickRole={pickRole}
             pickCrew={pickCrew}
@@ -621,6 +706,8 @@ export default function OnboardingClient() {
             state={state}
             lookup={lookup}
             errorField={errorField}
+            message={message}
+            onThemeChange={pickTheme}
             legalNeeded={legalNeeded}
             legalError={legalError}
             setLegalError={setLegalError}
@@ -649,6 +736,11 @@ export default function OnboardingClient() {
   );
 }
 
+/** What decides whether the team screen is shown, read from the server's state. */
+function stepContextOf(data: OnboardingState): Pick<OnboardingStepContext, "locked" | "isTeamHead"> {
+  return { locked: data.lockedTeamNumber != null, isTeamHead: Boolean(data.isTeamHead) };
+}
+
 /*
   Answers not yet accepted by the server stay private to this account and team.
   Legacy team-only drafts are not read because their author cannot be verified.
@@ -656,6 +748,8 @@ export default function OnboardingClient() {
 type AnswersScope = { userId: string | null; orgId: string | null };
 const answersStore = (scope: AnswersScope): Storage => (scope.orgId ? window.localStorage : window.sessionStorage);
 type LocalAnswers = {
+  firstName?: unknown;
+  lastName?: unknown;
   teamRole?: unknown;
   crewRole?: unknown;
   roleDescription?: unknown;
@@ -685,6 +779,10 @@ function saveLocalAnswers(draft: OnboardingDraft, scope: AnswersScope) {
     answersStore(scope).setItem(
       key,
       JSON.stringify({
+        // A reload before Continue used to bring the role back but not the name typed above it.
+        // Not the birthday: that is kept on the server only.
+        firstName: draft.firstName.slice(0, 60),
+        lastName: draft.lastName.slice(0, 60),
         teamRole: draft.teamRole,
         crewRole: draft.crewRole,
         roleDescription: draft.roleDescription,

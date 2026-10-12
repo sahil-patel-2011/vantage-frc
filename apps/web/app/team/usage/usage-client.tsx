@@ -14,6 +14,7 @@ import {
 } from "../../../lib/billing/ai-budgets-related";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
 import { hubHref } from "../../../lib/nav/hubs";
+import { aiSkillById } from "../../../lib/ai-skills/catalog";
 import "../budgets/ai-budgets.css";
 
 type UsageData = {
@@ -99,7 +100,12 @@ const FEATURE_LABELS: Record<string, string> = {
   chat: "Assistant chat",
 };
 
-const label = (map: Record<string, string>, key: string) => map[key] ?? key;
+// Ask AI turns meter under their skill id ("sponsorships"): show them as "Ask AI · Sponsorships".
+const label = (map: Record<string, string>, key: string) => {
+  if (map[key]) return map[key];
+  const skill = map === FEATURE_LABELS ? aiSkillById(key) : null;
+  return skill ? `Ask AI · ${skill.name}` : key;
+};
 
 // .admin-org is a 60px-badge grid; these rows are [content ... value], so flex-override it.
 const rowStyle: React.CSSProperties = {

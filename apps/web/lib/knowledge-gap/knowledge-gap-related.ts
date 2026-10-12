@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Knowledge-gap detective (never DEMO wiki gaps). */
 export const KNOWLEDGE_GAP_RELATED_LINKS = [
   { id: "knowledge", label: "Knowledge", tab: "knowledge" },
-  { id: "todos", label: "Work", tab: "todos" },
+  { id: "todos", label: "Tasks", tab: "todos" },
   { id: "meeting-autopilot", label: "Meeting Autopilot", tab: "meeting-autopilot" },
 ] as const;
 

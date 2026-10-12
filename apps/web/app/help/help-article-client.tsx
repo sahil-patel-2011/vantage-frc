@@ -1,18 +1,20 @@
 "use client";
 
 import { PageHeader, Button } from "../../components/ui";
-import { helpCategoryLabel, type HelpArticle } from "../../lib/help";
+import { openFeedback } from "../../lib/feedback/feedback-open";
+import { helpTopicFor, type HelpArticle } from "../../lib/help";
 import "./help.css";
 
 export default function HelpArticleClient({ article }: { article: HelpArticle }) {
+  const topic = helpTopicFor(article);
   return (
     <main className="module-page help-page help-article-page soft-gate">
       <PageHeader
         breadcrumbs={
           <>
-            <a href="/help">Help centre</a>
-            {" / "}
-            {article.title}
+            <a href="/help">Help center</a>
+            {" › "}
+            <a href={`/help?topic=${topic.id}`}>{topic.label}</a>
           </>
         }
         title={article.title}
@@ -22,13 +24,8 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
           <Button as="a" variant="primary" href={article.relatedHref}>
             Open in app
           </Button>
-          <Button as="a" variant="secondary" href="/help">
-            All topics
-          </Button>
         </div>
       </PageHeader>
-
-      <span className="eyebrow help-article-cat">{helpCategoryLabel(article.category)}</span>
 
       <div className="help-article-body">
         {article.sections.map((section) => (
@@ -43,10 +40,18 @@ export default function HelpArticleClient({ article }: { article: HelpArticle })
         ))}
       </div>
 
-      <nav className="help-article-footer" aria-label="Help navigation">
-        <a href="/help">← Help centre</a>
-        <a href="/docs?view=sections">Section-by-section guide</a>
-        <a href="/support">Support tickets</a>
+      <nav className="help-article-footer" aria-label="Still need help?">
+        <a href={`/help?topic=${topic.id}`}>More in {topic.label}</a>
+        <a href="/support">Contact support</a>
+        {/* The same dialog as the round button in the corner; /report-bug if it isn't there. */}
+        <a
+          href="/report-bug"
+          onClick={(event) => {
+            if (openFeedback("bug")) event.preventDefault();
+          }}
+        >
+          Send feedback
+        </a>
       </nav>
     </main>
   );

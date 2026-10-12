@@ -32,7 +32,8 @@ import {
   type RoutingPrefs,
 } from "./ai-keys-model";
 import { MyFreeGeminiKey } from "./ai-keys-my-free-key";
-import { ProviderCard } from "./ai-keys-provider-card";
+import { TeamKeyList } from "./ai-keys-team-list";
+import { AiCreditLine } from "../../../components/ai-credit-line";
 import { WebResearchCard } from "./ai-keys-web-research";
 import { AiTrainingCard } from "./ai-training-card";
 
@@ -58,6 +59,10 @@ export type AiKeysReadyViewProps = {
   setDrafts: Dispatch<SetStateAction<Record<ByokProvider, string>>>;
   save: (provider: ByokProvider) => void;
   remove: (provider: ByokProvider) => void;
+  /** Reload the page's data after a key changes. */
+  reload: () => Promise<void> | void;
+  /** Say what happened, in the page's message line. */
+  notify: (message: string, isError?: boolean) => void;
   localDraft: LocalDraft;
   setLocalDraft: Dispatch<SetStateAction<LocalDraft>>;
   busyLocal: boolean;
@@ -95,12 +100,10 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     messageIsError,
     keyError,
     providerMeta,
-    statusByProvider,
     busyProvider,
     drafts,
     setDrafts,
     save,
-    remove,
     localDraft,
     setLocalDraft,
     busyLocal,
@@ -138,6 +141,8 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     ) : null;
   return (
     <>
+          {/* A credit gift from Vantage, when there is one: how much, how much is used. */}
+          <AiCreditLine orgId={orgId} />
           {message ? (
             <p className={`ai-keys-flash${messageIsError ? " is-error" : ""}`} role={messageIsError ? "alert" : "status"}>
               {message}
@@ -221,34 +226,18 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 {showStart ? OTHER_KEYS_TITLE : "Your team's AI keys"}
               </h2>
             </summary>
-          <section className="ai-keys-grid" aria-label="Provider API keys">
-            {/* While the start card offers the Gemini field, the Google card would be a
-                second field bound to the same draft. */}
-            {providerMeta.filter((meta) => !(showStart && meta.id === "google")).map((meta) => {
-              const status = statusByProvider.get(meta.id) ?? {
-                provider: meta.id,
-                label: meta.label,
-                configured: false,
-                createdAt: null,
-                lastUsedAt: null,
-              };
-              return (
-                <ProviderCard
-                  key={meta.id}
-                  meta={meta}
-                  status={status}
-                  canManage={payload.canManage}
-                  setupBlocked={Boolean(payload.setupRequired)}
-                  busy={busyProvider === meta.id}
-                  draft={drafts[meta.id]}
-                  onDraft={(value) => setDrafts((prev) => ({ ...prev, [meta.id]: value }))}
-                  onSave={() => void save(meta.id)}
-                  onRemove={() => void remove(meta.id)}
-                  error={keyError?.provider === meta.id ? keyError.message : null}
-                />
-              );
-            })}
-          </section>
+          {orgId ? (
+            <TeamKeyList
+              orgId={orgId}
+              keyList={payload.keyList}
+              legacyStatuses={payload.keys}
+              providers={providerMeta}
+              canManage={payload.canManage}
+              setupBlocked={Boolean(payload.setupRequired)}
+              onChanged={props.reload}
+              onMessage={props.notify}
+            />
+          ) : null}
           </details>
 
           {payload.canManage ? myFreeKey : null}

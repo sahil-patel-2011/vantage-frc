@@ -106,7 +106,7 @@ export function OrgContextCard({ org }: { org: OrgContext }) {
         </div>
       </div>
       <p className="app-muted">
-        Your profile, notifications and personal Codex connection belong to you. Team settings apply to this workspace.
+        Your profile and notifications follow you to every team. Team settings change only this team.
       </p>
       {/* AI keys / Billing / AI usage are exactly the related strip above this
           panel, same hrefs in the same order. What belongs here is the one link

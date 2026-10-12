@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent, RefObject } from "react";
-import { formatCooldown, isLikelyEmail } from "../../lib/sign-in";
+import { emailEntryHint, formatCooldown, isLikelyEmail } from "../../lib/sign-in";
 import {
   emailSubmitLabel,
   googleButtonLabel,
@@ -35,6 +35,7 @@ export function SignInIdentityStep({
   onPasswordSubmit,
   onPasswordChange,
   onCodeChange,
+  invited = false,
 }: {
   googleAvailable: boolean;
   emailAvailable: boolean;
@@ -59,7 +60,10 @@ export function SignInIdentityStep({
   onPasswordSubmit: (event: FormEvent) => void;
   onPasswordChange: (password: string) => void;
   onCodeChange: (code: string) => void;
+  /** Signing in to accept an invitation: no "join with a team code" detour. */
+  invited?: boolean;
 }) {
+  const entryHint = email.trim().length > 3 ? emailEntryHint(email) : null;
   return (
     <>
       {googleAvailable ? (
@@ -76,7 +80,9 @@ export function SignInIdentityStep({
       ) : null}
 
       {passwordPanel === "closed" ? (
-        <form className="signin-form" onSubmit={onSubmitIdentity}>
+        // noValidate: the button and the line under the field do the checking, in words. The
+        // browser's own check refused some addresses with no message at all on iPhone.
+        <form className="signin-form" onSubmit={onSubmitIdentity} noValidate>
           <label>
             Email
             <span className="signin-field">
@@ -105,15 +111,21 @@ export function SignInIdentityStep({
               </small>
             ) : null}
             {/* The button just stayed grey for "mentor@example": say what is missing. */}
-            {email.trim().length > 3 && !isLikelyEmail(email) ? (
+            {entryHint ? (
               <small className="signin-email-hint" aria-live="polite">
-                Finish the address, like name@school.org.
+                {entryHint}
               </small>
             ) : null}
           </label>
           <button className="signin-submit" disabled={!emailAvailable || working || !isLikelyEmail(email) || emailCooldown > 0}>
             {emailCooldown > 0 ? `Try again in ${formatCooldown(emailCooldown)}` : emailSubmitLabel(busy)}
           </button>
+          {/* Sending can take several seconds; a small grey "Sending…" looked stuck. */}
+          {busy === "sending" ? (
+            <p className="signin-status signin-sending" role="status">
+              Sending a code to {email.trim()}. This can take a few seconds.
+            </p>
+          ) : null}
         </form>
       ) : (
         <form className="signin-form" onSubmit={onPasswordSubmit}>
@@ -174,7 +186,9 @@ export function SignInIdentityStep({
         </form>
       )}
       {/* The other way in comes after the main one, as on Apple and Google sign-in pages. */}
-      <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p>
+      {invited ? null : (
+        <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p>
+      )}
     </>
   );
 }

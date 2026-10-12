@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { EmptyState, PageHeader, Panel } from "../../../components/ui";
+import { Button, EmptyState, PageHeader, Panel } from "../../../components/ui";
 import { adminProvisionHref, adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 
@@ -23,6 +23,8 @@ type WaitlistEntry = {
   convertedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** A team with this number is already on Vantage. */
+  teamExists?: boolean;
 };
 
 function provisionHref(entry: WaitlistEntry) {
@@ -98,7 +100,7 @@ export default function WaitlistAdminClient() {
         <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
           {adminRelatedLinks({
             active: "waitlist",
-            include: ["teams", "plans", "support", "releases"],
+            include: ["teams", "health", "support", "releases"],
           }).map((link) => (
             <a key={link.id} href={link.href}>
               {link.label}
@@ -198,12 +200,24 @@ export default function WaitlistAdminClient() {
                   {entry.phoneE164 ? ` · ${entry.phoneE164}` : ""}
                   {entry.launchInvitedAt ? " · launch invited" : ""}
                   {entry.convertedAt ? " · converted" : ""}
+                  {entry.teamExists ? ` · Team ${entry.teamNumber} is already on Vantage` : ""}
                 </small>
               </div>
               <div className="admin-waitlist-actions">
-                <a href={provisionHref(entry)}>Provision team</a>
+                {/* One clear next step per row: provision while there's no team yet; once there is,
+                    find it (provisioning marks the request converted on its own). */}
+                {entry.teamExists ? (
+                  <Button as="a" variant="secondary" size="sm" href={`/admin?find=${encodeURIComponent(String(entry.teamNumber))}`}>
+                    Find team
+                  </Button>
+                ) : entry.convertedAt ? null : (
+                  <Button as="a" variant="secondary" size="sm" href={provisionHref(entry)}>
+                    Provision team
+                  </Button>
+                )}
                 <button
                   type="button"
+                  className="text-button"
                   disabled={busyEmail === entry.email || !!entry.launchInvitedAt}
                   onClick={() => void mark("mark_invited", entry.email)}
                 >
@@ -211,6 +225,7 @@ export default function WaitlistAdminClient() {
                 </button>
                 <button
                   type="button"
+                  className="text-button"
                   disabled={busyEmail === entry.email || !!entry.convertedAt}
                   onClick={() => void mark("mark_converted", entry.email)}
                 >

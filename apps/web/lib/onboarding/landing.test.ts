@@ -178,3 +178,16 @@ describe("role-aware landing", () => {
     expect(view.summary).not.toMatch(/AI limits/);
   });
 });
+
+describe("a parent's first steps", () => {
+  it("promises what the list holds (QA A1-20: it promised logistics and hours, and opened on Scouting)", () => {
+    // Leadership is the parent default (defaultFocusForRole), which a skipped team step now keeps.
+    const view = buildOnboardingLanding({ teamRole: "parent", crewRole: null, primaryFocus: "leadership", orgId: ORG, orgRole: "viewer" });
+    const labels = view.firstFiveMinutes.map((link) => link.label);
+    expect(labels).toContain("Read announcements");
+    expect(labels).toContain("See this week");
+    expect(labels).not.toContain("Open Scouting");
+    expect(view.summary).toMatch(/news and this week's plan/);
+    expect(view.summary).not.toMatch(/logistics|student time/);
+  });
+});

@@ -80,7 +80,9 @@ export async function POST(request: Request) {
       });
       await client.query("INSERT INTO team_provisioning_jobs(org_id,requested_by) VALUES($1::uuid,$2::uuid) ON CONFLICT(org_id) DO NOTHING", [orgId, session.user.id]);
       await initializeTeamDefaults(client, orgId, { inTransaction: true });
-      await setTeamJoinCode(client, orgId, body.joinPin?.trim() || undefined);
+      // A code the founder typed is a choice to use one, so it is on; a blank one is made off
+      // until they turn it on in Team admin. Either way joiners start as Parent or guest (0721).
+      await setTeamJoinCode(client, orgId, body.joinPin?.trim() || undefined, { enable: Boolean(body.joinPin?.trim()) });
       await client.query("UPDATE team_provisioning_jobs SET completed_phases=ARRAY['team','tools']::text[],phase='workspace',updated_at=now() WHERE org_id=$1::uuid", [orgId]);
       return orgId;
     });

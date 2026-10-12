@@ -420,3 +420,348 @@
 .ch-new-chat button { width: calc(100% - 12px); margin: 3px 6px; }
 .product-hub-panel .ch-page > .app-page-header:not(:has(.ch-header-actions > *)) { display: none; }
 .ch-layout[data-has-threads="false"] { grid-template-columns: minmax(0, 1fr); }
+
+/* ── Ask AI: one assistant with skills (app/chat/chat-client.tsx, ask-ai-skills.tsx) ───────── */
+.ask-page .ask-head p {
+  max-width: 62ch;
+}
+.ask-page .ch-main {
+  gap: 14px;
+}
+.ask-empty {
+  gap: 14px;
+  padding: 10px 2px 4px;
+}
+.ask-empty > p {
+  max-width: 60ch;
+}
+.ask-groups {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.ask-group {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.ask-group h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ask-group ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ask-starter {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-tint) var(--ease-out), background-color var(--dur-tint) var(--ease-out);
+}
+.ask-starter:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg));
+}
+.ask-starter:focus-visible,
+.ask-skill-chip:focus-visible,
+.ask-skill-clear:focus-visible,
+.ask-skill-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ask-starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ask-starters .ask-starter {
+  width: auto;
+  border-radius: var(--radius-pill);
+}
+.ask-composer-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.ask-skill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ask-skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color var(--dur-tint) var(--ease-out), border-color var(--dur-tint) var(--ease-out);
+}
+.ask-skill[data-chosen-by="pinned"] .ask-skill-chip,
+.ask-skill[data-chosen-by="auto"] .ask-skill-chip {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.ask-skill-chip svg {
+  width: 14px;
+  height: 14px;
+}
+.ask-skill-chip small {
+  color: var(--muted);
+  font-weight: 600;
+}
+.ask-skill-clear {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.ask-skill-clear svg {
+  width: 14px;
+  height: 14px;
+}
+.ask-skill-clear:hover {
+  color: var(--ink);
+}
+.ask-skill-notice {
+  color: var(--muted);
+  font-size: 12px;
+}
+.ask-skill-list {
+  display: grid;
+  gap: 14px;
+  max-height: min(70vh, 640px);
+  overflow: auto;
+}
+.ask-skill-group {
+  display: grid;
+  gap: 6px;
+}
+.ask-skill-group h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ask-skill-option {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ask-skill-option strong {
+  font-size: 14px;
+}
+.ask-skill-option span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.ask-skill-option[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg));
+}
+.ask-preview-row {
+  display: grid;
+  gap: 8px;
+}
+.ask-preview {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: var(--radius-sm);
+}
+.ask-preview.status-empty,
+.ask-preview.status-setup_required {
+  border-color: var(--line);
+}
+.ask-preview-summary {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.ask-preview ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.ask-preview-next {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.ask-sources summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ask-composer textarea {
+  min-height: 72px;
+  font-size: 16px;
+}
+.ask-composer .ch-composer-foot {
+  justify-content: space-between;
+}
+.ask-bg-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+.ask-bg-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.ask-scope-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ask-scope-option span {
+  display: grid;
+  gap: 2px;
+}
+.ask-scope-option small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.ask-viewonly-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+.ask-bg-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: var(--radius-sm);
+}
+.ask-bg-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ask-bg-card h3 {
+  margin: 0;
+  font-size: var(--title-3);
+}
+.ask-bg-close {
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ask-bg-error {
+  margin: 0;
+  color: var(--danger, #b42318);
+  font-size: 13px;
+}
+.ask-bg-steps {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.ask-bg-steps a {
+  margin-left: 6px;
+  color: var(--accent);
+}
+@media (max-width: 720px) {
+  .ask-page .ch-layout .ch-sidebar {
+    order: 2;
+  }
+  .ask-groups {
+    grid-template-columns: 1fr;
+  }
+}
+/* The header's two quiet actions sit in one row at every width. */
+.ask-page .ask-head .ch-header-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px 8px;
+}
+/* Phones: one starter per group keeps the empty state short and the message box in reach. */
+@media (max-width: 720px) {
+  .ask-groups .ask-group li:nth-child(n + 2) {
+    display: none;
+  }
+}

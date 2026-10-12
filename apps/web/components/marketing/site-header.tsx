@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { fetchProductSession } from "../../lib/nav/product-session";
@@ -20,10 +20,14 @@ const links = [
   ["/features", "Features"],
   ["/workflow", "How it works"],
   ["/for-teams", "For teams"],
-  // Named "Free", not "Pricing": a "Pricing" tab tells a mentor the opposite of the answer,
-  // but the cost question still needs a place in the nav (it was only in the footer).
+  // Named "Cost", not "Pricing": a "Pricing" tab tells a mentor the opposite of the answer,
+  // but the cost question still needs a place in the nav (it was only in the footer). The page
+  // is "Cost" in the menu, the footer and its title; /cost reaches it too (proxy.ts).
   ["/pricing", "Cost"],
 ] as const;
+
+/** At this width the header shows its links and the phone menu goes away (marketing-site.css). */
+const WIDE_HEADER = "(min-width: 960px)";
 
 export function BrandLink({ href = "/" }: { href?: string }) {
   return (
@@ -57,10 +61,6 @@ function useSignedIn(): boolean {
   return signedIn;
 }
 
-function closeMobileMenu(event: { currentTarget: Element }) {
-  (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
-}
-
 export function MarketingAccountTextLink() {
   const signedIn = useSignedIn();
   const link = marketingFooterAccountLink(signedIn);
@@ -91,6 +91,7 @@ export function MarketingInvitedNote({
   );
 }
 
+/** The older public pages' hero actions (workflow, for-teams, the deep dives). */
 export function MarketingRouteActions({
   className = "actions",
   guestLabel = "Join the waitlist",
@@ -122,6 +123,37 @@ export function MarketingRouteActions({
           className={companion.variant === "secondary" ? "button secondary" : "text-link"}
           href={companion.href}
         >
+          {companion.label}
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The rebuilt pages' actions: one filled button (the waitlist for a guest, the team for a member,
+ * account creation once signup opens) and at most one quiet link beside it.
+ */
+export function MarketingPageActions({
+  guestLabel = "Join the waitlist",
+  companion,
+}: {
+  guestLabel?: string;
+  companion?: { href: string; label: string };
+}) {
+  const signedIn = useSignedIn();
+  const signupOpen = usePublicSignupOpen();
+  const header = marketingHeaderLinks(signedIn, signupOpen).find((link) => link.primary);
+  const primary = !signedIn && !signupOpen ? { href: "/#waitlist", label: guestLabel } : header;
+  return (
+    <div className="mx-actions">
+      {primary ? (
+        <a className="mx-btn" href={primary.href}>
+          {primary.label}
+        </a>
+      ) : null}
+      {companion ? (
+        <a className="mx-link" href={companion.href}>
           {companion.label}
         </a>
       ) : null}
@@ -170,18 +202,19 @@ export function MarketingDesktopWebLink({ primary }: { primary: boolean }) {
   );
 }
 
+/** Home hero: one filled button and one quiet link (sign in, for people who were invited). */
 export function MarketingHeroActions() {
   const signedIn = useSignedIn();
   const signupOpen = usePublicSignupOpen();
   return (
-    <div className="actions">
+    <div className="mx-actions">
       {marketingHeroLinks(signedIn, signupOpen).map((link) =>
         link.primary ? (
-          <a className="button primary" href={link.href} key={link.label}>
+          <a className="mx-btn" href={link.href} key={link.label}>
             {link.label}
           </a>
         ) : (
-          <a className="text-link" href={link.href} key={link.label}>
+          <a className="mx-link" href={link.href} key={link.label}>
             {link.label}
           </a>
         ),
@@ -190,116 +223,215 @@ export function MarketingHeroActions() {
   );
 }
 
+function isCurrent(pathname: string, href: string): boolean {
+  return pathname === href || (href === "/features" && pathname.startsWith("/features/"));
+}
+
+/**
+ * The phone and tablet menu: a sheet from the right over a scrim. The page links are one list;
+ * the one action (the waitlist, the team, or account creation) is pinned at the bottom, in thumb
+ * reach. While it is open, focus stays inside it, the page behind does not scroll, and Escape, the
+ * scrim, the close button or a link closes it; focus then goes back to the menu button.
+ */
+function useMenu() {
+  const [open, setOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const close = useCallback((returnFocus = true) => {
+    setOpen(false);
+    if (returnFocus) buttonRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const root = document.documentElement;
+    const previousOverflow = root.style.overflow;
+    root.style.overflow = "hidden";
+    const panel = panelRef.current;
+    const focusable = () =>
+      panel ? Array.from(panel.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")) : [];
+    // The first page link, not the close button: that is what someone opening a menu came for.
+    const first = panel?.querySelector<HTMLElement>(".mx-menu-links a") ?? focusable()[0];
+    first?.focus({ preventScroll: true });
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const head = items[0]!;
+      const tail = items[items.length - 1]!;
+      const active = document.activeElement;
+      const inside = panel?.contains(active) ?? false;
+      if (event.shiftKey && (active === head || !inside)) {
+        event.preventDefault();
+        tail.focus();
+      } else if (!event.shiftKey && (active === tail || !inside)) {
+        event.preventDefault();
+        head.focus();
+      }
+    };
+    // Turning a tablet to landscape can make the header wide enough to show its own links.
+    const wide = window.matchMedia(WIDE_HEADER);
+    const onWide = () => {
+      if (wide.matches) close(false);
+    };
+    document.addEventListener("keydown", onKey);
+    wide.addEventListener("change", onWide);
+    return () => {
+      root.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+      wide.removeEventListener("change", onWide);
+    };
+  }, [open, close]);
+
+  return { open, setOpen, close, buttonRef, panelRef };
+}
+
 export function SiteHeader() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const signedIn = useSignedIn();
   const signupOpen = usePublicSignupOpen();
   const account = marketingHeaderLinks(signedIn, signupOpen);
-  // The phone menu is a <details>: it stayed open over the page until its button was tapped
-  // again. Escape and a tap anywhere outside it close it too.
-  useEffect(() => {
-    const menu = () => document.querySelector<HTMLDetailsElement>("header.nav details.mobile-menu");
-    const onKey = (event: KeyboardEvent) => {
-      const open = menu();
-      if (event.key !== "Escape" || !open?.open) return;
-      open.open = false;
-      open.querySelector("summary")?.focus();
-    };
-    const onPointer = (event: PointerEvent) => {
-      const open = menu();
-      if (open?.open && !open.contains(event.target as Node)) open.open = false;
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointer);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointer);
-    };
-  }, []);
-  const nav = (mobile = false) =>
-    links.map(([href, label]) => (
-      <a
-        aria-current={
-          pathname === href || (href === "/features" && pathname.startsWith("/features/"))
-            ? "page"
-            : undefined
-        }
-        href={href}
-        key={href}
-        onClick={mobile ? closeMobileMenu : undefined}
-      >
-        {label}
-      </a>
-    ));
+  const primary = account.find((link) => link.primary);
+  const secondary = account.find((link) => !link.primary);
+  const menu = useMenu();
+  const menuId = useId();
+  const titleId = `${menuId}-title`;
 
   return (
-    <header className="nav">
-      <BrandLink />
-      <nav aria-label="Primary navigation">{nav()}</nav>
-      <div className="nav-actions">
-        {account.map((link) =>
-          link.primary ? (
-            <a
-              className={link.href === "/#waitlist" ? "button compact waitlist-nav" : "button compact"}
-              href={link.href}
-              key={link.label}
+    <>
+      <header className="mx-nav">
+        <div className="mx-nav-inner">
+          <BrandLink />
+          <nav className="mx-nav-links" aria-label="Primary navigation">
+            {links.map(([href, label]) => (
+              <a aria-current={isCurrent(pathname, href) ? "page" : undefined} href={href} key={href}>
+                {label}
+              </a>
+            ))}
+          </nav>
+          <div className="mx-nav-actions">
+            {secondary ? (
+              <a className="mx-nav-signin" href={secondary.href}>
+                {secondary.label}
+              </a>
+            ) : null}
+            {primary ? (
+              <a className="mx-btn is-small" href={primary.href}>
+                {primary.label}
+              </a>
+            ) : null}
+            <button
+              ref={menu.buttonRef}
+              type="button"
+              className="mx-menu-button"
+              aria-label="Menu"
+              aria-expanded={menu.open}
+              aria-controls={menuId}
+              onClick={() => menu.setOpen((value) => !value)}
             >
-              {link.label}
+              <span />
+              <span />
+            </button>
+          </div>
+        </div>
+      </header>
+      {/* Outside the header: its backdrop blur would make it the box a fixed sheet is placed in. */}
+      <div className={`mx-menu${menu.open ? " is-open" : ""}`} inert={!menu.open}>
+        <div className="mx-menu-scrim" aria-hidden="true" onClick={() => menu.close()} />
+        <div
+          ref={menu.panelRef}
+          id={menuId}
+          className="mx-menu-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+        >
+          <div className="mx-menu-top">
+            <p className="mx-menu-title" id={titleId}>
+              Menu
+            </p>
+            <button type="button" className="mx-menu-close" aria-label="Close menu" onClick={() => menu.close()} />
+          </div>
+          <nav className="mx-menu-links" aria-label="Mobile navigation">
+            <a aria-current={pathname === "/" ? "page" : undefined} href="/" onClick={() => menu.close(false)}>
+              Home
             </a>
-          ) : (
-            <a className="sign-in-link" href={link.href} key={link.label}>
-              {link.label}
-            </a>
-          ),
-        )}
+            {links.map(([href, label]) => (
+              <a
+                aria-current={isCurrent(pathname, href) ? "page" : undefined}
+                href={href}
+                key={href}
+                onClick={() => menu.close(false)}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+          <div className="mx-menu-foot">
+            {primary ? (
+              <a className="mx-btn" href={primary.href} onClick={() => menu.close(false)}>
+                {primary.label}
+              </a>
+            ) : null}
+            {secondary ? (
+              <p>
+                Already invited?{" "}
+                <a href={secondary.href} onClick={() => menu.close(false)}>
+                  {secondary.label}
+                </a>
+              </p>
+            ) : null}
+          </div>
+        </div>
       </div>
-      <details className="mobile-menu">
-        <summary aria-label="Open navigation">
-          <span />
-          <span />
-          <span />
-        </summary>
-        <nav aria-label="Mobile navigation">
-          {nav(true)}
-          {account.map((link) => (
-            <a href={link.href} key={link.label} onClick={closeMobileMenu}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </details>
-    </header>
+    </>
   );
 }
 
 export function SiteFooter() {
   const account = marketingFooterAccountLink(useSignedIn());
   return (
-    <footer className="marketing-footer">
-      <div className="marketing-footer-brand">
-        <BrandLink />
-        <p>Your FRC team, connected. Scouting, team work, robot development and business.</p>
-      </div>
-      <div className="marketing-footer-cols">
-        <nav className="marketing-footer-col" aria-label="Product">
+    <footer className="mx-footer">
+      <div className="mx-footer-inner">
+        <div className="mx-footer-brand">
+          <BrandLink />
+          <p>The operations app for FRC teams. Plan, scout, build and learn together, free.</p>
+        </div>
+        <nav className="mx-footer-col" aria-label="Product">
           <b>Product</b>
-          {/* The same names as the top menu: "Product", "How it works", "For teams", "Free". */}
+          {/* The same names as the top menu: "Features", "How it works", "For teams", "Cost". */}
           <a href="/features">Features</a>
           <a href="/workflow">How it works</a>
           <a href="/for-teams">For teams</a>
           <a href="/pricing">Cost</a>
+          <a href="/desktop">Desktop app</a>
         </nav>
-        <nav className="marketing-footer-col" aria-label="Company">
-          <b>Company</b>
+        <nav className="mx-footer-col" aria-label="Account">
+          <b>Account</b>
           <a href={account.href}>{account.label}</a>
           <a href="/#waitlist">Waitlist</a>
-          <a href="mailto:vantagefrc@gmail.com">Contact</a>
         </nav>
-        <nav className="marketing-footer-col" aria-label="Legal">
+        {/* /contact lands here (proxy.ts). The address is written out, so a laptop with no mail
+            app still shows where to write; /contact used to open a mailto: link and nothing else. */}
+        <nav className="mx-footer-col" aria-label="Contact" id="contact">
+          <b>Contact</b>
+          <a href="mailto:vantagefrc@gmail.com">vantagefrc@gmail.com</a>
+        </nav>
+        <nav className="mx-footer-col" aria-label="Legal">
           <b>Legal</b>
           <a href="/privacy">Privacy</a>
           <a href="/terms">Terms</a>
         </nav>
+      </div>
+      <div className="mx-footer-base">
+        <p>Vantage is independent of FIRST and is not endorsed by FIRST.</p>
       </div>
     </footer>
   );

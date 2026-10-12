@@ -362,6 +362,36 @@ export async function clearFeatureSnapshot(feature: OfflineFeature, orgId: strin
   } finally { db.close(); }
 }
 
+/**
+ * Remove every last-good read cache of one team, for anyone, on this device: run when this
+ * person is told they were taken off that team. A removed student's phone kept the team's Home
+ * and task snapshots until sign-out (QA A3-19). Drafts and unsent outboxes are other databases.
+ */
+export async function clearFeatureSnapshotsForOrg(orgId: string): Promise<number> {
+  const org = orgId.trim();
+  if (typeof indexedDB === "undefined" || !org) return 0;
+  const db = await openDatabase();
+  try {
+    return await new Promise<number>((resolve, reject) => {
+      let removed = 0;
+      const transaction = db.transaction(STORE, "readwrite");
+      const cursorRequest = transaction.objectStore(STORE).openCursor();
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (!cursor) return;
+        if ((cursor.value as { orgId?: string } | undefined)?.orgId === org) {
+          cursor.delete();
+          removed += 1;
+        }
+        cursor.continue();
+      };
+      transaction.oncomplete = () => resolve(removed);
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+    });
+  } finally { db.close(); }
+}
+
 /** Remove last-good read caches when a person leaves a shared browser. */
 export async function clearFeatureSnapshots(): Promise<void> {
   if (typeof indexedDB === "undefined") return;

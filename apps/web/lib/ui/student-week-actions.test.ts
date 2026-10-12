@@ -34,14 +34,14 @@ const THIS_WEEK = [
 ] as const;
 
 describe("student-week action path", () => {
-  it("Home clocked-in leads to My Hours; empty stays Nothing you have to do right now", () => {
+  it("Home clocked-in leads to My Hours; empty stays Nothing assigned to you right now", () => {
     expect(homeNowAction({ orgId: "org-1", clockedIn: true })).toEqual({
       title: "You’re in the shop",
       detail: "Your hours are still running.",
       href: "/hours-self-view",
       cta: "Open My Hours",
     });
-    expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing you have to do right now");
+    expect(homeNowAction({ orgId: "org-1" }).title).toBe("Nothing assigned to you right now");
     expect(homeNowAction({ orgId: "org-1", nextMatchLabel: "Qual 3" }).href).toBe("/my-day");
   });
 

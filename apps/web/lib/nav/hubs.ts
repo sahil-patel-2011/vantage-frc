@@ -182,7 +182,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // on first visit and refreshed weekly. Under People because the one thing
         // it cannot know — who is on the team — is answered right next to it.
         { id: "profile", label: "Team profile", legacyHref: "/team/profile", featured: true },
-        { id: "hours", label: "Hours kiosk", legacyHref: "/hours", featured: true },
+        { id: "hours", label: "Shop hours", legacyHref: "/hours", featured: true },
         // Subteams and Forms are people operations, so they live under People
         // rather than as their own drawer pillar — the drawer keeps one link
         // per pillar, and a tool nobody can click to might as well not exist.
@@ -196,7 +196,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // has a single answer instead of three half-answers.
         { id: "presence", label: "Presence", legacyHref: "/presence" },
         { id: "hours-self-view", label: "My hours", legacyHref: "/hours-self-view", featured: true },
-        { id: "team-admin", label: "Team admin", legacyHref: "/team/admin", featured: true },
+        // The Settings section of the same name ("Members and invites", lib/nav/settings-nav.ts).
+        { id: "team-admin", label: "Members and invites", legacyHref: "/team/admin", featured: true },
         { id: "my-kit", label: "My kit", legacyHref: "/my-kit" },
         { id: "mentor-hours", label: "Mentor hours", legacyHref: "/mentor-hours" },
         // The programming subteam's setup track. Sits with the other
@@ -220,7 +221,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // the token-scoped read-only view a guardian opens without an account.
         { id: "parents", label: "Parents", legacyHref: "/parents" },
       ]),
-      { id: "todos", label: "Work", legacyHref: "/todos" },
+      { id: "todos", label: "Tasks", legacyHref: "/todos" },
       ...nest("todos", [
         { id: "practice", label: "Practice", legacyHref: "/practice" },
         {
@@ -241,7 +242,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "fmea", label: "Failure notes", legacyHref: "/fmea" },
         { id: "tool-checkout", label: "Tool checkout", legacyHref: "/tool-checkout" },
         { id: "equipment-maintenance", label: "Equipment", legacyHref: "/equipment-maintenance" },
-        { id: "safety-training", label: "Safety", legacyHref: "/safety-training" },
+        { id: "safety-training", label: "Safety training", legacyHref: "/safety-training" },
         { id: "safety", label: "Tool certifications", legacyHref: "/safety" },
         { id: "checklist-library", label: "Checklists", legacyHref: "/checklist-library" },
         { id: "pit-map-planner", label: "Pit map", legacyHref: "/pit-map-planner" },
@@ -376,7 +377,10 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // Nested under CAD rather than added as a workbench: hubs.test.ts pins
         // Build's four workbenches, and a training surface is not one of them.
         { id: "cad-learn", label: "Learn CAD", legacyHref: "/cad-learn", featured: true },
-        { id: "learn-resources", label: "Code & CAD", legacyHref: "/learn", featured: true },
+        { id: "learn-resources", label: "Learn", legacyHref: "/learn", featured: true },
+        // Team resources: lessons a team writes itself (or uploads as a PDF), ending in checked
+        // practice. Also a stock pin and listed under Team in the menu (lib/nav/pins.ts).
+        { id: "team-lessons", label: "Team resources", legacyHref: "/learn/team" },
       ]),
       { id: "code", label: "Code", legacyHref: "/code" },
       ...nest("code", [
@@ -445,12 +449,13 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
     // live under Settings where configuration belongs. The hub page and every
     // /ai?tab= URL keep working.
     hidden: true,
-    description: "Chat, writer, agent, and controls — usage and memory live as tabs inside Controls.",
+    description: "Ask AI, and its controls — usage and memory live as tabs inside Controls.",
     defaultTab: "chat",
     tabs: [
-      { id: "chat", label: "Chat", legacyHref: "/chat" },
-      { id: "writer", label: "Writer", legacyHref: "/writer" },
-      { id: "agent", label: "Agent" },
+      // One assistant: Writer drafting and the Agent tab folded into Ask AI as its Writing
+      // skill and "Work on this in the background" (lib/ai-skills). /ai?tab=writer still opens
+      // the saved drafts, and /ai?tab=agent opens Ask AI in background mode.
+      { id: "chat", label: "Ask AI", legacyHref: "/chat" },
       { id: "budgets", label: "Controls", legacyHref: "/team/budgets" },
       ...nest("budgets", [
         { id: "memory", label: "Memory", legacyHref: "/team/ai-memory" },

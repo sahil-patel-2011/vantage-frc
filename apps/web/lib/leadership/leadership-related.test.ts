@@ -18,7 +18,7 @@ describe("leadershipRelatedLinks", () => {
     expect(links.map((l) => l.id)).toEqual(["roles", "skills-graph", "safety-training"]);
     expect(links.find((l) => l.id === "roles")?.href).toBe("/team?tab=roles&orgId=org-1");
     expect(links.find((l) => l.id === "roles")?.label).toBe("Season roles");
-    expect(links.find((l) => l.id === "safety-training")?.label).toBe("Safety");
+    expect(links.find((l) => l.id === "safety-training")?.label).toBe("Safety training");
   });
 });
 

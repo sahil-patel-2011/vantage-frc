@@ -6,7 +6,8 @@ const web = (...parts: string[]) => readFileSync(join(__dirname, "..", ...parts)
 
 describe("Prediction SQL refuses DEMO rows", () => {
   it("filters model_version / caveats demo on accuracy and match-delta queries", () => {
-    expect(web("app/api/ai-insights/route.ts")).toContain("!~* 'demo'");
+    // The insight loaders moved beside the route so Ask AI skills read the same rows.
+    expect(web("lib/ai-insights-load.ts")).toContain("!~* 'demo'");
     expect(web("lib/match-delta-watcher/compute-match-delta-watcher.ts")).toContain("!~* 'demo'");
     expect(web("lib/display.ts")).toContain("!~* 'demo'");
     expect(web("lib/dashboard/snapshot.ts")).toContain("isDemoPrediction");

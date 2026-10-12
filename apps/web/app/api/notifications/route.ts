@@ -66,7 +66,7 @@ export async function GET(request: Request) {
               row.type === "invite_accepted" && typeof payload.userId === "string"
                 ? nameTheJoiner(title, joiners.get(String(payload.userId)))
                 : title,
-            body: notificationBody(payload),
+            body: notificationBody(payload, row.type),
             href: notificationHref(row.type, payload, row.orgId ?? orgId),
             payload,
             readAt: row.readAt,

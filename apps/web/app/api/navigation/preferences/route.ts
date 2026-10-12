@@ -1,11 +1,14 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import {
-  defaultIslandHrefs,
-  isValidIslandSelection,
-} from "../../../../lib/nav/island-preferences";
+import { defaultPinHrefs } from "../../../../lib/nav/pins";
+import { readPins, savePins } from "../../../../lib/nav/pins-store";
 
+/**
+ * "Your apps": the places a person pins (bottom bar, the menu's top row, the sidebar's Pinned
+ * group). `tabs` is the whole ordered list; the bottom bar shows the first four. The name stays
+ * `tabs` so a saved bar from before pins keeps working.
+ */
 async function currentUserId() {
   const session = await auth.api.getSession({ headers: await headers() });
   return session?.user.id ?? null;
@@ -13,44 +16,19 @@ async function currentUserId() {
 
 export async function GET() {
   const userId = await currentUserId();
-  if (!userId) return Response.json({ tabs: defaultIslandHrefs(), persisted: false }, { status: 401 });
+  if (!userId) return Response.json({ tabs: defaultPinHrefs(), isDefault: true, persisted: false }, { status: 401 });
 
-  const tabs = await withRls({ userId }, async (client) => {
-    const result = await client.query<{ tabs: unknown }>(
-      `SELECT island_tabs AS tabs FROM profiles WHERE user_id = $1`,
-      [userId],
-    );
-    return isValidIslandSelection(result.rows[0]?.tabs)
-      ? result.rows[0]!.tabs
-      : defaultIslandHrefs();
-  });
-
-  return Response.json({ tabs, persisted: true }, { headers: { "Cache-Control": "no-store" } });
+  const view = await withRls({ userId }, (client) => readPins(client, userId));
+  return Response.json({ ...view, persisted: true }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function PUT(request: Request) {
   const userId = await currentUserId();
   if (!userId) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
 
-  const body = await request.json().catch(() => null) as { tabs?: unknown } | null;
-  if (!isValidIslandSelection(body?.tabs)) {
-    return Response.json(
-      { error: "Choose exactly four unique apps from the island catalog." },
-      { status: 400 },
-    );
-  }
+  const body = (await request.json().catch(() => null)) as { tabs?: unknown; reset?: unknown } | null;
+  const result = await withRls({ userId }, (client) => savePins(client, userId, body ?? {}));
+  if (!result.ok) return Response.json({ error: result.error }, { status: result.status });
 
-  await withRls({ userId }, async (client) => {
-    await client.query(
-      `INSERT INTO profiles(user_id, island_tabs)
-       VALUES($1, $2::jsonb)
-       ON CONFLICT(user_id) DO UPDATE SET island_tabs = excluded.island_tabs`,
-      [userId, JSON.stringify(body.tabs)],
-    );
-  });
-
-  return Response.json(
-    { tabs: body.tabs, persisted: true },
-    { headers: { "Cache-Control": "no-store" } },
-  );
+  return Response.json({ ...result.view, persisted: true }, { headers: { "Cache-Control": "no-store" } });
 }

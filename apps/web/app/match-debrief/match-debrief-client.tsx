@@ -2,13 +2,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { AIAttribution, Button, EmptyState, PageHeader, askConfirm } from "../../components/ui";
-import {
-  AI_EXPAND_IDLE,
-  expandedDisplay,
-  expandFailureState,
-  expandSuccessState,
-  type AiExpandState,
-} from "../../lib/ai-expand";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { canDeleteMatchDebrief, MATCH_RESULTS, type Alliance, type MatchResult } from "../../lib/match-debrief";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -66,9 +60,6 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
-  // Optional metered AI coach over the computed takeaways; the computed text
-  // always renders and a missing model degrades to it with a setup note.
-  const [coach, setCoach] = useState<AiExpandState>(AI_EXPAND_IDLE);
   const viewRef = useRef<View | null>(null);
   viewRef.current = view;
 
@@ -223,35 +214,6 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
 
   const flag = (ok: boolean, label: string) => (ok ? "" : ` · ${label} issue`);
 
-  const askCoach = async () => {
-    if (view.status !== "ready") return;
-    setCoach({ status: "loading" });
-    try {
-      const response = await fetch("/api/match-debrief", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "coach", orgId: view.context.orgId, seasonYear }),
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-      });
-      const data = (await response.json()) as Record<string, unknown>;
-      if (!response.ok) {
-        setCoach(
-          expandFailureState({
-            httpStatus: response.status,
-            code: typeof data.code === "string" ? data.code : null,
-            error: typeof data.error === "string" ? data.error : null,
-          }),
-        );
-        return;
-      }
-      setCoach(expandSuccessState(data));
-    } catch {
-      setCoach(expandFailureState({ httpStatus: 0, error: "network error" }));
-    }
-  };
-
-  const takeawaysDisplay = expandedDisplay(view.takeaways ?? "", coach);
-
   return (
     <main className="intel-app">
       <PageHeader
@@ -274,33 +236,12 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
 
       <section className="intel-panel" aria-label="Between-matches takeaways">
         <span className="eyebrow">TAKEAWAYS</span>
-        <p style={{ margin: "6px 0 0" }}>{takeawaysDisplay.text}</p>
+        <p style={{ margin: "6px 0 0" }}>{view.takeaways ?? ""}</p>
         <AIAttribution kind="computed" feature="match_debrief" generatedAt={new Date().toISOString()} />
-        {coach.status === "ready" && takeawaysDisplay.aiText ? (
-          <>
-            <p style={{ margin: "6px 0 0" }}>{takeawaysDisplay.aiText}</p>
-            <AIAttribution
-              kind="ai"
-              feature="match_debrief"
-              generatedAt={coach.expansion.generatedAt}
-              onRegenerate={() => void askCoach()}
-            />
-          </>
-        ) : (
-          <div style={{ display: "grid", gap: 6, justifyItems: "start", marginTop: 8 }}>
-            {/* Save debrief is the page's one primary; the AI expansion is optional. */}
-            <button
-              type="button"
-              className="app-button secondary"
-              style={{ minHeight: 44 }}
-              disabled={coach.status === "loading" || view.summary.total === 0}
-              onClick={() => void askCoach()}
-            >
-              {coach.status === "loading" ? "Expanding…" : "Expand with AI"}
-            </button>
-            {takeawaysDisplay.note ? <small>{takeawaysDisplay.note}</small> : null}
-          </div>
-        )}
+        {/* Save debrief is the page's one primary. AI is one tap away, the same way on every page. */}
+        <div className="ask-ai-row">
+          <AskAiButton orgId={view.context.orgId} skill="retros" prompt="What should we fix before our next match, from these debriefs?" />
+        </div>
       </section>
 
       <section className="admin-grid">

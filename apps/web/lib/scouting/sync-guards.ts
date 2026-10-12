@@ -1,4 +1,7 @@
 import type { SyncEntry } from "@vantage/scouting";
+import { allianceTeamKeys, type TbaAllianceJson } from "../schedule/tba-cache";
+import { hasObservation, NOTHING_RECORDED_REASON } from "./entry-answers";
+import { labelForMatchKey } from "./next-match";
 
 /**
  * Checks the sync route runs on each entry before the repository files it.
@@ -112,6 +115,36 @@ export async function resolveSyncTarget(
   if (!mine?.clientId) return { kind: "as-sent", entry };
   await writeReceipt(client, orgId, mine.clientId, "match", mine.id);
   return { kind: "existing-report", entry: { ...entry, clientId: mine.clientId } };
+}
+
+/** "Team 254 is not in Qual 33 on the event schedule…" */
+export function notInMatchReason(teamKey: string, matchKey: string): string {
+  return `Team ${teamKey.replace(/^frc/i, "")} is not in ${labelForMatchKey(matchKey) ?? "that match"} on the event schedule, so this report was not saved. Discard it and scout the robot from the match list.`;
+}
+
+/**
+ * Reports the server will not file, whatever the phone said:
+ * - nothing recorded at all (a blank pit visit marked the pit visited with no data);
+ * - a qualification robot that is not in that match's published alliances (a mistyped match
+ *   or team filed a report against a robot that never played in it). Quals are fixed once the
+ *   schedule is out, so the schedule is right; playoffs are left alone, where a backup robot
+ *   can play before the alliances are updated, and so is a match whose alliances are not out.
+ * Null when the entry may be filed.
+ */
+export async function entryRefusal(client: Queryable, entry: SyncEntry): Promise<string | null> {
+  if (entry?.type !== "match" && entry?.type !== "pit") return null;
+  if (!hasObservation(entry.payload)) return NOTHING_RECORDED_REASON;
+  if (entry.type !== "match" || !entry.matchKey || !entry.teamKey) return null;
+  const scheduled = await client.query<{ compLevel: string | null; redAlliance: TbaAllianceJson; blueAlliance: TbaAllianceJson }>(
+    `SELECT comp_level AS "compLevel", red_alliance AS "redAlliance", blue_alliance AS "blueAlliance"
+     FROM matches_ref WHERE match_key = $1::text`,
+    [entry.matchKey],
+  );
+  const match = scheduled.rows[0];
+  if (!match || (match.compLevel ?? "qm") !== "qm") return null;
+  const robots = [...allianceTeamKeys(match.redAlliance), ...allianceTeamKeys(match.blueAlliance)];
+  if (!robots.length || robots.includes(entry.teamKey)) return null;
+  return notInMatchReason(entry.teamKey, entry.matchKey);
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { withSavepoint } from "@vantage/db";
 import {
   createKms,
   decryptSecret,
@@ -32,6 +33,9 @@ import {
   tryCreateOpenRouterFreeAdapter,
 } from "./hosted-platform-keys";
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
+import { resolveCreditGiftAdapter, type CreditGiftRouting } from "./credit-gift-adapter";
+import { KeyFailoverChatAdapter, type FailoverKey, type KeyAttemptResult } from "./key-failover-adapter";
+import type { CreditGiftLedger } from "@vantage/billing";
 import { PetalsPublicPoolAdapter, tryCreatePetalsPublicAdapter } from "./petals-public-pool";
 import { isAiHordeModel, tryCreateAiHordeAdapter } from "./ai-horde-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
@@ -60,7 +64,9 @@ export type ResolvedModelSource =
   | "local-connector"
   | "local-fallback"
   | "subscription-bridge"
-  | "public-swarm";
+  | "public-swarm"
+  /** AI credit a platform admin gifted the team, paid from the operator's key (0727). */
+  | "gift";
 
 /**
  * Provenance of a resolved chat adapter. Additive metadata alongside the
@@ -119,7 +125,9 @@ export function chatAdapterProvenance(
   source: ResolvedModelSource,
 ): ResolvedModelProvenance {
   const baseUrl =
-    adapter instanceof HttpChatAdapter || adapter instanceof ModelFallbackChatAdapter
+    adapter instanceof HttpChatAdapter ||
+    adapter instanceof ModelFallbackChatAdapter ||
+    adapter instanceof KeyFailoverChatAdapter
       ? adapter.baseUrl
       : adapter instanceof PetalsPublicPoolAdapter
         ? adapter.generateUrl
@@ -185,6 +193,8 @@ export type ResolveOrgChatAdapterInput = {
     kmsKeyId: string;
   }) => Promise<string>;
   fetchImpl?: typeof fetch;
+  /** Injected for tests: where gift reservations go. Defaults to committed withRls transactions. */
+  creditGiftLedger?: CreditGiftLedger;
 };
 
 type EncryptedRow = {
@@ -209,6 +219,8 @@ export type OrgKeyRow = EncryptedRow & {
   provider: string;
   baseUrl?: string | null;
   model?: string | null;
+  /** The owner's name for the key (0727: several keys per provider). */
+  label?: string | null;
 };
 
 type ManagedRow = EncryptedRow & {
@@ -557,18 +569,26 @@ async function loadRoutingPrefsAndPolicy(
   }
 }
 
+/*
+  Switched-on keys in the owner's order (0727: several per provider, each with an order and an
+  on/off switch). The two columns are read through to_jsonb so a database without 0727 answers
+  "on, default order" instead of failing the query, and with it the whole AI request.
+*/
+const KEY_ENABLED_SQL = `COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true)`;
+const KEY_PRIORITY_SQL = `COALESCE((to_jsonb(k) ->> 'priority')::int, 100)`;
+
 export async function loadOrgLlmKeys(client: PoolClient, orgId: string): Promise<OrgKeyRow[]> {
   try {
     const result = await client.query<OrgKeyRow>(
-      `SELECT id, provider,
-              base_url AS "baseUrl",
-              model,
-              key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
-              key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
-              kms_key_id AS "kmsKeyId"
-       FROM org_llm_keys
-       WHERE org_id = $1
-       ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
+      `SELECT k.id, k.provider, k.label,
+              k.base_url AS "baseUrl",
+              k.model,
+              k.key_ciphertext AS "keyCiphertext", k.key_nonce AS "keyNonce",
+              k.key_auth_tag AS "keyAuthTag", k.encrypted_dek AS "encryptedDek",
+              k.kms_key_id AS "kmsKeyId"
+       FROM org_llm_keys k
+       WHERE k.org_id = $1 AND ${KEY_ENABLED_SQL}
+       ORDER BY ${KEY_PRIORITY_SQL}, k.created_at`,
       [orgId],
     );
     return result.rows;
@@ -594,15 +614,15 @@ export async function loadMemberLlmKeys(
 ): Promise<OrgKeyRow[]> {
   try {
     const result = await client.query<OrgKeyRow>(
-      `SELECT id, provider,
-              base_url AS "baseUrl",
-              model,
-              key_ciphertext AS "keyCiphertext", key_nonce AS "keyNonce",
-              key_auth_tag AS "keyAuthTag", encrypted_dek AS "encryptedDek",
-              kms_key_id AS "kmsKeyId"
-         FROM member_llm_keys
-        WHERE org_id = $1::uuid AND user_id = $2::uuid
-        ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
+      `SELECT k.id, k.provider, k.label,
+              k.base_url AS "baseUrl",
+              k.model,
+              k.key_ciphertext AS "keyCiphertext", k.key_nonce AS "keyNonce",
+              k.key_auth_tag AS "keyAuthTag", k.encrypted_dek AS "encryptedDek",
+              k.kms_key_id AS "kmsKeyId"
+         FROM member_llm_keys k
+        WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid AND ${KEY_ENABLED_SQL}
+        ORDER BY ${KEY_PRIORITY_SQL}, k.created_at`,
       [orgId, userId],
     );
     return result.rows;
@@ -612,13 +632,61 @@ export async function loadMemberLlmKeys(
   }
 }
 
+/**
+ * A member's own keys come first for their provider, then the team's: the team's keys are the
+ * failover when the member's are turned away (as the Google path already did).
+ */
 function overlayMemberKeys(orgKeys: OrgKeyRow[], memberKeys: OrgKeyRow[]): OrgKeyRow[] {
   if (!memberKeys.length) return orgKeys;
-  const personal = new Set(memberKeys.map((row) => row.provider.trim().toLowerCase()));
-  return [
-    ...memberKeys,
-    ...orgKeys.filter((row) => !personal.has(row.provider.trim().toLowerCase())),
-  ];
+  return [...memberKeys, ...orgKeys];
+}
+
+/**
+ * One adapter for every key the team (and the member) holds for a provider, tried in order.
+ * A single key is returned as it always was; several fail over on a rate limit, a provider
+ * error or a rejected key (KeyFailoverChatAdapter), each attempt noted on the key for the
+ * settings page. A key that does not decrypt is skipped rather than failing the turn.
+ */
+async function failoverOverKeys(
+  client: PoolClient,
+  rows: OrgKeyRow[],
+  input: ResolveOrgChatAdapterInput,
+  memberKeyIds: Set<string>,
+  build: (row: OrgKeyRow, apiKey: string) => HttpChatAdapter,
+): Promise<ChatAdapter | null> {
+  if (rows.length === 0) return null;
+  if (rows.length === 1) return build(rows[0]!, await decryptRow(rows[0]!, input.decrypt));
+  const keys: FailoverKey[] = [];
+  for (const row of rows) {
+    const apiKey = await decryptRow(row, input.decrypt).catch(() => "");
+    if (!apiKey) continue;
+    keys.push({
+      id: row.id,
+      label: row.label?.trim() || row.provider,
+      scope: memberKeyIds.has(row.id) ? "member" : "org",
+      adapter: build(row, apiKey),
+    });
+  }
+  if (keys.length === 0) return build(rows[0]!, "");
+  if (keys.length === 1) return keys[0]!.adapter;
+  return new KeyFailoverChatAdapter(keys as [FailoverKey, ...FailoverKey[]], (result) => noteKeyResult(client, result));
+}
+
+/** Record a key's outcome (0727 note_llm_key_result). Bookkeeping: never fails a turn. */
+async function noteKeyResult(client: PoolClient, result: KeyAttemptResult): Promise<void> {
+  if (result.key.scope === "platform") return;
+  await withSavepoint(
+    client,
+    async () => {
+      await client.query(`SELECT note_llm_key_result($1::text, $2::uuid, $3::boolean, $4::text)`, [
+        result.key.scope,
+        result.key.id,
+        result.ok,
+        result.reason,
+      ]);
+    },
+    undefined,
+  );
 }
 
 function httpAdapterFromLlmKey(
@@ -978,13 +1046,15 @@ export async function resolveOrgChatAdapterWithProvenance(
           { model: chosen.modelId, prices: pricesFromOption(chosen) },
           (model) => (usesOwnKey ? used.get(model)?.mine : used.get(model)?.team) ?? 0,
         );
+        // Every Google key the member and the team hold, in their order: the member's first, the
+        // team's as the last resort (0727 allows several per provider).
         const keys = [apiKey];
-        const teamRow = usesOwnKey ? teamKeyRows.find((r) => isGoogleByokProvider(r.provider)) : undefined;
-        if (teamRow) {
+        for (const other of orgKeys.rows.filter((r) => r !== row && isGoogleByokProvider(r.provider))) {
           try {
-            keys.push(await decryptRow(teamRow, input.decrypt));
+            const value = await decryptRow(other, input.decrypt);
+            if (value && !keys.includes(value)) keys.push(value);
           } catch {
-            // An unreadable team key must not take a member's working key down with it.
+            // An unreadable key must not take a working key down with it.
           }
         }
         const adapters = keys.flatMap((key) =>
@@ -1028,14 +1098,11 @@ export async function resolveOrgChatAdapterWithProvenance(
       }
     }
     if (chosen.provider === "openai" || chosen.provider === "anthropic") {
-      const row = orgKeys.rows.find((r) => normalizeProvider(r.provider) === chosen.provider);
-      if (row) {
-        const apiKey = await decryptRow(row, input.decrypt);
-        return resolved(
-          httpAdapterFromLlmKey(row, input, apiKey, chosen.modelId, pricesFromOption(chosen)),
-          keyRowSource(row),
-        );
-      }
+      const rows = orgKeys.rows.filter((r) => normalizeProvider(r.provider) === chosen.provider);
+      const adapter = await failoverOverKeys(client, rows, input, memberKeyIds, (row, apiKey) =>
+        httpAdapterFromLlmKey(row, input, apiKey, chosen.modelId, pricesFromOption(chosen)),
+      );
+      if (adapter) return resolved(adapter, keyRowSource(rows[0]!));
     }
   }
 
@@ -1134,11 +1201,44 @@ export async function resolveOrgChatAdapterWithProvenance(
     );
   }
 
-  const billing = await client.query<{ tier: string }>(
-    `SELECT tier FROM org_billing WHERE org_id = $1`,
+  const billing = await client.query<{ tier: string; giftsReady?: boolean }>(
+    `SELECT tier, to_regprocedure('public.ai_credit_gift_for_org(uuid)') IS NOT NULL AS "giftsReady"
+       FROM org_billing WHERE org_id = $1`,
     [input.orgId],
   );
   const tier = billing.rows[0]?.tier ?? "free";
+
+  // AI credit a platform admin gifted this team (0727), paid from the operator's own key: after
+  // the team's own keys, before hosted keys and the free pools. On a database without 0727
+  // `giftsReady` is false and the chain is exactly what it was.
+  const giftsReady = billing.rows[0]?.giftsReady === true;
+  const giftAdapter = async (usableOnly: boolean): Promise<ResolvedOrgChatAdapter | null> => {
+    if (!giftsReady) return null;
+    const routing = await resolveCreditGiftAdapter(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      feature: input.feature,
+      difficulty: input.taskText ? classifyTaskDifficulty(input.taskText, input.feature) : undefined,
+      promptCachingEnabled: input.promptCachingEnabled,
+      fetchImpl: input.fetchImpl,
+      decryptVault: (vault) => decryptRow(vault, input.decrypt),
+      ledger: input.creditGiftLedger,
+      usableOnly,
+    });
+    return routing ? resolvedGift(routing) : null;
+  };
+  const resolvedGift = (routing: CreditGiftRouting): ResolvedOrgChatAdapter => ({
+    adapter: routing.adapter,
+    provenance: {
+      provider: routing.adapter.upstreamProvider,
+      modelId: routing.adapter.model,
+      baseUrlOrigin: originOnly(routing.adapter.baseUrl),
+      source: "gift",
+    },
+    ...(bridgeDegraded ? { degraded: bridgeDegraded } : {}),
+  });
+  const usableGift = await giftAdapter(true);
+  if (usableGift) return usableGift;
 
   if (tier !== "free") {
     const managed = await client.query<ManagedRow>(
@@ -1233,6 +1333,10 @@ export async function resolveOrgChatAdapterWithProvenance(
       capability: input.feature,
     });
     if (petals) return resolved(petals, "public-swarm");
+    // Nothing else can answer: a used-up gift refuses with "Your free AI credit from Vantage is
+    // used up", which says more than "no key is configured".
+    const spentGift = await giftAdapter(false);
+    if (spentGift) return spentGift;
     if (!promo.eligible && promo.reason === "promo_expired") {
       await maybeNotifySponsoredPromoExpired(client, input.orgId, promo);
       throw new ChatProviderResolutionError(sponsoredPromoExpiredMessage(promo.teamNumber ?? 1111));
@@ -1242,6 +1346,8 @@ export async function resolveOrgChatAdapterWithProvenance(
     );
   }
 
+  const spentGift = await giftAdapter(false);
+  if (spentGift) return spentGift;
   throw new ChatProviderResolutionError(
     "No AI provider key is available. Add OpenAI / Anthropic / Google / OpenRouter under Team → AI API keys, configure a local OpenAI-compatible connector, or set ANTHROPIC_API_KEY for paid hosted Sonnet/Opus.",
   );

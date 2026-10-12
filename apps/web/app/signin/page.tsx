@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getPublicAuthCapabilities } from "@vantage/core";
+import { PUBLIC_SIGNUP_DATE_LABEL } from "@vantage/core/public-signup";
 import { productForHost } from "../../lib/products/products";
 import SignInClient from "../sign-in/sign-in-client";
 import { safeAppPath } from "../../lib/security/safe-navigation";
 
 export const dynamic = "force-dynamic";
 
-const DESCRIPTION = "Sign in with Google or email. Team signup is planned for December 1, 2026, with early access by invitation.";
+const DESCRIPTION = `Sign in with Google or email. Teams are set up from ${PUBLIC_SIGNUP_DATE_LABEL}, with early access by invitation.`;
 
 export async function generateMetadata({
   searchParams,

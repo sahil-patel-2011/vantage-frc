@@ -1,7 +1,7 @@
 import TodosClient from "./todos-client";
 
 export const metadata = {
-  title: "Team work",
+  title: "Tasks",
 };
 
 export default function TodosPage() {

@@ -31,7 +31,7 @@ describe("team-related Soft-UI helpers", () => {
       calendar: "Calendar",
       messages: "Chat",
       attendance: "People",
-      todos: "Work",
+      todos: "Tasks",
       knowledge: "Playbook",
       fmea: "Failure notes",
     });

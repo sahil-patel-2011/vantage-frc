@@ -29,7 +29,10 @@ describe("Home first-paint JS split", () => {
     expect(src).not.toMatch(/from ["']\.\.\/\.\.\/components\/partner-placement["']/);
     expect(src).toMatch(/import\(["']\.\/dashboard-boards-modal["']\)/);
     expect(src).toMatch(/import\(["']\.\/dashboard-edit-dock["']\)/);
-    expect(src).toMatch(/import\(["']\.\/dashboard-widget-library["']\)/);
+    // Edit Home is one panel now (list, sizes, add); it loads when opened.
+    // A type-only import is erased at build time; a value import would load it with Home.
+    expect(src).not.toMatch(/import \{[^}]*\} from ["']\.\/dashboard-customize-sheet["']/);
+    expect(src).toMatch(/import\(["']\.\/dashboard-customize-sheet["']\)/);
     // The inline palette is gone: the widget sheet is the one list of widgets.
     expect(src).not.toMatch(/dashboard-widget-palette/);
     expect(src).toMatch(/import\(["']\.\.\/\.\.\/components\/partner-placement["']\)/);

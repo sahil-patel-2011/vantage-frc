@@ -11,6 +11,8 @@ import {
   groupEventsByDay,
   canDeleteCalendarEvent,
   isReadonlyCalendarEvent,
+  calendarGridHours,
+  calendarGridRange,
   layoutTimedEventsForDay,
   localDayKey,
   overlayItemsForDay,
@@ -326,6 +328,53 @@ describe("timed grid + GitHub overlay", () => {
     expect(blocks.map((block) => block.event.id)).toEqual(["shop", "code"]);
     expect(blocks[0]!.cols).toBe(2);
     expect(blocks[1]!.col).toBeGreaterThanOrEqual(0);
+  });
+
+  it("grows the grid to hold a 5 AM bus call and an 11:30 PM match (A5-04)", () => {
+    const early = event({
+      id: "bus",
+      title: "Bus leaves",
+      startsAt: new Date(2026, 2, 11, 5, 0).toISOString(),
+      endsAt: new Date(2026, 2, 11, 5, 30).toISOString(),
+    });
+    const late = event({
+      id: "q80",
+      title: "Qual 80",
+      startsAt: new Date(2026, 2, 12, 23, 30).toISOString(),
+      endsAt: new Date(2026, 2, 12, 23, 45).toISOString(),
+    });
+    const range = calendarGridRange([{ items: [early] }, { items: [late] }]);
+    expect(range).toEqual({ start: 5, end: 24 });
+    expect(calendarGridHours(range)).toHaveLength(19);
+    // Drawn in its own row, not the 7 AM row.
+    const [bus] = layoutTimedEventsForDay([early], range);
+    expect(bus!.topPct).toBe(0);
+    const [match] = layoutTimedEventsForDay([late], range);
+    expect(match!.topPct).toBeCloseTo(((23.5 - 5) / 19) * 100);
+    expect(match!.topPct + match!.heightPct).toBeLessThanOrEqual(100);
+  });
+
+  it("keeps the usual 7 AM–10 PM grid on an ordinary week", () => {
+    const shop = event({
+      id: "shop",
+      title: "Shop",
+      startsAt: new Date(2026, 2, 11, 16, 0).toISOString(),
+      endsAt: new Date(2026, 2, 11, 18, 0).toISOString(),
+    });
+    expect(calendarGridRange([{ items: [shop] }])).toEqual({ start: 7, end: 22 });
+  });
+
+  it("runs an event past midnight to the bottom of its day instead of collapsing it", () => {
+    const overnight = event({
+      id: "lockin",
+      title: "Lock-in",
+      startsAt: new Date(2026, 2, 11, 21, 0).toISOString(),
+      endsAt: new Date(2026, 2, 12, 1, 0).toISOString(),
+    });
+    const range = calendarGridRange([{ items: [overnight] }]);
+    expect(range.end).toBe(24);
+    const [block] = layoutTimedEventsForDay([overnight], range);
+    expect(block!.topPct + block!.heightPct).toBeCloseTo(100);
   });
 
   it("keeps GitHub overlay items on their real due date only", () => {

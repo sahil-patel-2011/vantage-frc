@@ -22,6 +22,7 @@ export type ClientHubAccessRow = {
 export const HUB_ACCESS_ALWAYS_PATHS = new Set([
   "/dashboard",
   "/account",
+  "/settings",
   "/security",
   "/docs",
   "/help",

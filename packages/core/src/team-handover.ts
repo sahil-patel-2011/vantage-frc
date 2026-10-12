@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { notifyOwnershipGiven } from "./membership-notices";
 
 export type StepDownRole = "admin" | "scout" | "viewer";
 
@@ -41,6 +42,8 @@ export async function handOverTeam(client: PoolClient, actorUserId: string,
      VALUES($1,$2,'team.handed_over',$3::jsonb)`,
     [input.orgId, actorUserId, JSON.stringify({ newOwnerUserId: input.userId, previousOwnerRole: input.role })],
   );
+  // The new owner is told, while the giver is still an owner (the 0721 policy checks that).
+  await notifyOwnershipGiven(client, { orgId: input.orgId, actorUserId, userId: input.userId });
   await client.query(`DELETE FROM membership_capabilities WHERE org_id=$1 AND user_id=$2`, [input.orgId, actorUserId]);
   await client.query(`UPDATE memberships SET role=$3::org_role WHERE org_id=$1 AND user_id=$2`,
     [input.orgId, actorUserId, input.role]);

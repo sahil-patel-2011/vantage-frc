@@ -14,6 +14,18 @@ The Vantage symbol is a geometric V: three input lines converge into one blue de
 
 Use cobalt only for actions, active state, provenance signals, and the decision point in the mark. Do not add gradients, glows, alliance colors, or decorative color variants.
 
+## Interface accent
+
+Signal cobalt is the mark's colour. The product interface (the app and the Scouting app) has one
+accent token, `--accent`, defined once in `app/macos-product.css`:
+
+- Light: `#075DCC` (white text on it 6.1:1; on white 6.1:1)
+- Dark: `#8DB7FF` (on the dark card 8.9:1), with `--accent-ink` `#11254B` for filled buttons
+
+A team's own colour (Account → Appearance) replaces it through `data-brand-accent`. Components
+read `var(--accent)` and never write a blue of their own. The public site (home, features,
+pricing, legal pages) keeps its own light palette (`lib/marketing/public-theme.ts`).
+
 ## Assets and clear space
 
 - `vantage-logo.svg`: standard horizontal lockup on light surfaces

@@ -24,22 +24,29 @@ for (const width of [390, 1280]) {
   });
 }
 
-test("phone workspace links work, menu returns focus, and offline scope is explained", async ({ page }) => {
+test("phone season links work, the menu traps and returns focus, and offline scope is explained", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
   await page.goto("/");
-  const map = page.locator(".mk-workspace-map");
-  await expect(map).toContainText("Product overview");
-  const competition = map.getByRole("link", { name: /Competition/ });
-  const bounds = await competition.boundingBox();
+  // The four parts of the season are full-width rows on a phone, each a link to its section.
+  const scout = page.locator(".mx-four").getByRole("link", { name: /Scout/ });
+  const bounds = await scout.boundingBox();
   expect(bounds?.width).toBeGreaterThanOrEqual(48);
   expect(bounds?.height).toBeGreaterThanOrEqual(48);
-  await competition.click();
-  await expect(page).toHaveURL(/\/features#competition$/);
-  await expect(page.locator("#competition")).toBeInViewport();
-  const menu = page.getByLabel("Open navigation", { exact: true });
+  await scout.click();
+  await expect(page).toHaveURL(/#scout$/);
+  await expect(page.locator("#scout")).toBeInViewport();
+  // The menu: a dialog with the page links and one action, focus inside it, Escape closes it
+  // and puts focus back on the button.
+  const menu = page.getByRole("banner").getByRole("button", { name: "Menu", exact: true });
   await menu.click();
+  const dialog = page.getByRole("dialog", { name: "Menu" });
   await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeVisible();
-  await menu.press("Escape");
+  await expect(dialog.getByRole("link", { name: "Home" })).toBeFocused();
+  for (let i = 0; i < 10; i += 1) {
+    await page.keyboard.press("Tab");
+    expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+  }
+  await page.keyboard.press("Escape");
   await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeHidden();
   await expect(menu).toBeFocused();
   await page.goto("/");

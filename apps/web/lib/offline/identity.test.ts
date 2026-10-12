@@ -45,15 +45,25 @@ describe("authenticated offline identity on shared devices", () => {
     probe.read.mockResolvedValue({ userId: "owner" });
     expect(await offlineSnapshotUser("team")).toBeNull();
   });
-  it("removes the previous person's rendered page when another tab changes accounts", async () => {
-    const windowStub = { sessionStorage: storage(), localStorage: storage(), addEventListener: vi.fn(), location: { replace: vi.fn() } };
+  it("removes the previous person's rendered page when another tab changes accounts, keeping the place to come back to", async () => {
+    const windowStub = {
+      sessionStorage: storage(), localStorage: storage(), addEventListener: vi.fn(),
+      location: { replace: vi.fn(), pathname: "/team", search: "?tab=todos" },
+    };
     vi.stubGlobal("window", windowStub);
     const { offlineSnapshotUser } = await import("./identity");
     probe.read.mockResolvedValue({ userId: "owner" });
     await offlineSnapshotUser("team");
     const handler = windowStub.addEventListener.mock.calls[0][1] as (event: { key: string; newValue: string }) => void;
     handler({ key: "vantage-session-user", newValue: "scout" });
-    expect(windowStub.location.replace).toHaveBeenCalledWith("/signin");
+    // QA A1-26: it used to be a bare /signin, losing the page.
+    expect(windowStub.location.replace).toHaveBeenCalledWith(`/signin?next=${encodeURIComponent("/team?tab=todos")}`);
     expect(await offlineSnapshotUser("team")).toBeNull();
+  });
+  it("does not send sign-in back to itself or to the home page", async () => {
+    const { signInAgainPath } = await import("./identity");
+    expect(signInAgainPath({ pathname: "/", search: "" })).toBe("/signin");
+    expect(signInAgainPath({ pathname: "/signin", search: "?next=%2Fteam" })).toBe("/signin");
+    expect(signInAgainPath(undefined)).toBe("/signin");
   });
 });

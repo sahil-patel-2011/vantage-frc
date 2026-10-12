@@ -24,6 +24,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { summarizeBudget, usd, type BudgetSummary } from "../budget/compute-budget";
 import { statusLabel, type OrderStatus } from "../orders/evaluate";
+import { formatUsd } from "../finance/format-usd";
 
 export type PartRequest = {
   id: string;
@@ -245,8 +246,7 @@ export function describeApprovalImpact(
   requestTotalUsd: number,
 ): string | null {
   if (!budget) return null;
-  const money = (value: number) =>
-    value.toLocaleString(undefined, { style: "currency", currency: "USD" });
+  const money = formatUsd;
 
   if (budget.state === "no_budget" || budget.state === "no_budget_no_spend") {
     return `${money(requestTotalUsd)} would be recorded as spend. No season budget is set to measure it against.`;

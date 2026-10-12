@@ -3,15 +3,16 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, TabBar, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { withOrgHref } from "../../lib/nav/product-nav";
+import { settingsBreadcrumb } from "../../lib/nav/settings-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
-import { SettingsBar } from "../../components/settings-bar";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { KitCard, KitEyebrow, KitRow } from "../../components/ui/kit";
+import { AccountDeleteRow } from "./account-delete-row";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
 import { AccountProfilePanel } from "./account-profile-panel";
 import { OrgContextCard } from "./account-shell";
@@ -60,6 +61,12 @@ async function persistAccountSnapshot(data: AccountOfflineCache): Promise<void> 
     // Live Account already painted; IndexedDB is best-effort.
   }
 }
+
+const SECTION_COPY: Record<Tab, { title: string; description: string }> = {
+  profile: { title: "Profile", description: "Your name, sign-in email and phone, and the account actions." },
+  appearance: { title: "Appearance", description: "Light or dark, motion and density, and your pinned apps." },
+  notifications: { title: "Notifications", description: "What Vantage tells you about, and how." },
+};
 
 export default function AccountClient() {
   const [tab, setTab] = useState<Tab>("profile");
@@ -117,20 +124,7 @@ export default function AccountClient() {
     if (requested === "profile" || requested === "appearance" || requested === "notifications") setTab(requested);
   });
 
-  function selectTab(next: Tab) {
-    // The switches live on one screen; the tab goes there instead of showing a page that
-    // only linked to it.
-    if (next === "notifications") {
-      window.location.assign("/notifications/preferences");
-      return;
-    }
-    setTab(next);
-    if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    if (next === "profile") url.searchParams.delete("tab");
-    else url.searchParams.set("tab", next);
-    window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-  }
+
 
   function applyAccount(data: AccountView) {
     setAccount(data);
@@ -342,20 +336,12 @@ export default function AccountClient() {
   const orgId = org.orgId;
   const canManageTeam = Boolean(orgId) && (org.role === "owner" || org.role === "admin");
 
+  // One page, three Settings sections. The Settings list beside it (and /settings on a phone)
+  // switches between them, so the page no longer carries its own tab row or settings rows.
+  const section = SECTION_COPY[tab];
   return (
-    <main className="module-page account-page">
-      <PageHeader
-        /* "Account", not "Your settings".
-           The page lists two groups, "Your settings" and "Team settings", so
-           titling the whole page after one of them was both a duplicate of the
-           group label 440px below it and wrong about what the page holds.
-           "Account" is what the top bar calls this route, which is the point:
-           a page title that matches the thing you tapped to get here is not a
-           repetition. (The breadcrumb that used to make it a third sighting is
-           already gone.) */
-        title="Account"
-        description="Your profile and alerts, plus the team settings your role can reach."
-      />
+    <main className="module-page account-page" data-section={tab}>
+      <PageHeader breadcrumbs={settingsBreadcrumb(section.title)} title={section.title} description={section.description} />
 
       <OfflineBanner feature="Account" fromCache={fromCache} cachedAt={cachedAt} />
       <div className="account-workspace">
@@ -366,32 +352,16 @@ export default function AccountClient() {
           "which toggle" rather than "whose account is this" — which matters on
           a shared shop laptop. No join date here: nothing in the session
           carries one, and a made-up "member since" is worse than no line. */}
-      <section className="acct-hero" aria-label="Signed in as">
+      {tab === "profile" ? <section className="acct-hero" aria-label="Signed in as">
         <span className="acct-avatar" aria-hidden="true">
           {(displayName.trim() || "?").charAt(0).toUpperCase()}
         </span>
         <h2 className="acct-name">{displayName.trim() || "Your account"}</h2>
         {account?.email ? <p className="acct-email">{account.email}</p> : null}
-        {/* Role and team only. The reference shows a join date here and the
-            session does not carry one; a plausible-looking invented date is
-            worse than a shorter row. */}
-        {org.role || org.orgName ? (
-          <dl className="acct-facts">
-            {org.role ? (
-              <div>
-                <dt>Role</dt>
-                <dd>{org.role}</dd>
-              </div>
-            ) : null}
-            {org.orgName ? (
-              <div>
-                <dt>Team</dt>
-                <dd>{org.orgName}</dd>
-              </div>
-            ) : null}
-          </dl>
-        ) : null}
-      </section>
+        {/* Who you are only. Your team and your access on it are on the "This team" card beside
+            this, once, in the role words (it said "Scout" here, "Student" in the menu and the
+            access again on the card: QA A6-09, handed over by F). */}
+      </section> : null}
 
 
       {/* On Profile a success shows beside Save (savedNote); here too it said it twice. */}
@@ -451,23 +421,6 @@ export default function AccountClient() {
       {account ? (
         <>
 
-
-          {/* The one section switcher. `SettingsBar` used to render the same
-              three destinations as a second row of links with the same
-              accessible name, so the page carried two `navigation` landmarks
-              called "Account sections" and the browser test's locator matched
-              both. This is the copy that switches the panel in place; the
-              other one has been removed. */}
-          <TabBar
-            aria-label="Account sections"
-            value={tab}
-            onChange={(id) => selectTab(id as Tab)}
-            tabs={[
-              { id: "profile", label: "Profile" },
-              { id: "appearance", label: "Appearance" },
-              { id: "notifications", label: "Notifications" },
-            ]}
-          />
 
           {tab === "profile" ? (
             <AccountProfilePanel
@@ -529,12 +482,10 @@ export default function AccountClient() {
         </>
       ) : null}
       </div>
-      <aside className="account-directory" aria-label="Team and account settings">
-
-      {/* Team settings and help come after your own profile: the menu promises "your profile,
-          sign-in and notifications", and the form started 1,100px down under team rows. */}
+      {/* Beside Profile only: your team, help, and the account actions (Sign out, Delete account).
+          The settings rows that used to be here are the Settings list beside the page now. */}
+      {tab === "profile" ? <aside className="account-directory" aria-label="Your team and account actions">
       {account ? <OrgContextCard org={org} /> : null}
-      <SettingsBar role={org.role} orgId={org.orgId} />
 
       {/* One place for money and help. AI spending and usage only for the people who can
           change them. */}
@@ -554,11 +505,9 @@ export default function AccountClient() {
 
       {/* The account actions people come to this page to use that are not a
           toggle. One card, one shape each, chevrons so they read as somewhere
-          you go rather than something that happens on tap.
-
-          No "Delete account" row: the reference has one and this deployment
-          has no endpoint behind it, and a destructive-looking button that
-          silently does nothing is worse than its absence. */}
+          you go rather than something that happens on tap. "Delete account" is
+          last and red, and asks for the email address first (account-delete-row). */}
+      <span id="delete-account" aria-hidden="true" />
       <KitEyebrow>Account</KitEyebrow>
       <KitCard className="acct-actions">
         <KitRow
@@ -576,8 +525,9 @@ export default function AccountClient() {
           onClick={() => void signOut()}
           chevron={false}
         />
+        <AccountDeleteRow email={account?.email} />
       </KitCard>
-      </aside>
+      </aside> : null}
       </div>
 
       <p className="kit-footnote">Vantage · FRC scouting and strategy</p>

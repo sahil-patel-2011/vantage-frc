@@ -11,6 +11,7 @@ import {
   Panel,
   SoftBlockSkeleton,
   StatTile, Button, askConfirm } from "../../components/ui";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   MATCHING_GIFT_PLEDGE_STATUSES,
@@ -277,7 +278,7 @@ export default function MatchingGiftFinderClient() {
             setError("AI usage limit reached — raise budgets or wait for the billing period to reset.");
             return;
           }
-          setError("error" in data && data.error ? data.error : "Something went wrong.");
+          setError("error" in data && data.error ? data.error : "That didn't go through. Check your connection and try again.");
           return;
         }
         setView(data);
@@ -348,6 +349,8 @@ export default function MatchingGiftFinderClient() {
         title="Matching Gift Multiplier Finder"
         description="Match household-employer contacts against employer matching-gift programs, draft HR request letters, and track pledge status."
       >
+        {/* One way into AI: Ask AI opens on this page's skill with its records. */}
+        <AskAiButton orgId={orgId} />
         <div className="mgf-header-actions">
           {relatedLinks.map((link) => (
             <Button as="a" variant="secondary" key={link.id} href={link.href}>

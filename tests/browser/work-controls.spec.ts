@@ -173,8 +173,11 @@ for (const width of [390, 1440]) {
     await page.getByRole("button", { name: "Account menu", exact: true }).click();
     const menu = page.getByRole("menu", { name: "Account", exact: true });
     await expect(menu).toBeVisible();
-    await expect(menu.getByRole("menuitem", { name: "Account and settings", exact: true })).toBeVisible();
-    await expect(menu.getByRole("menuitem", { name: "Help and support", exact: true })).toBeVisible();
+    // One "Settings", not Account plus Team admin.
+    await expect(menu.getByRole("menuitem", { name: "Settings", exact: true })).toBeVisible();
+    await expect(menu.getByRole("menuitem", { name: "Account", exact: true })).toHaveCount(0);
+    await expect(menu.getByRole("menuitem", { name: "Team admin", exact: true })).toHaveCount(0);
+    await expect(menu.getByRole("menuitem", { name: "Help", exact: true })).toBeVisible();
     await expect(menu.getByRole("menuitem", { name: "App manual", exact: true })).toHaveCount(0);
     await page.waitForFunction(() => document.getAnimations().every(animation => animation.effect?.getTiming().iterations === Infinity || animation.playState !== "running"));
     const audit = await new AxeBuilder({ page }).analyze();
@@ -182,8 +185,8 @@ for (const width of [390, 1440]) {
     expect(audit.violations).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath(`account-${width}.png`) });
-    await menu.getByRole("menuitem", { name: "Help and support", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Help centre", exact: true })).toBeVisible();
+    await menu.getByRole("menuitem", { name: "Help", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Help", exact: true })).toBeVisible();
     const more = page.locator("details.page-options > summary");
     if (await more.count()) await more.press("Enter");
     for (const name of ["Support tickets", "Report a bug", "App manual"]) {

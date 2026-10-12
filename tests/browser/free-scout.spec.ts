@@ -90,15 +90,16 @@ for (const width of [390, 1440]) {
 
 test("compact navigation keeps search, keyboard dismissal, and every workspace reachable", async ({ page, context }, testInfo) => {
   expect(await signInAs(context, "owner")).toBe(true);
-  for (const width of [390, 1440]) {
+  // Phones and tablets: the menu. A desktop-width page has the sidebar and the search palette.
+  for (const width of [390, 1024]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
     await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 25_000 });
     const opener = navigationOpener(page);
     await openNav(page);
-    const drawer = page.getByRole("complementary", { name: "Product navigation" });
-    for (const name of ["Home", "Scouting"]) await expect(drawer.getByRole("link", { name: new RegExp(`^${name} `) })).toBeVisible();
-    for (const name of ["Competition tools", "Team", "Build", "Business", "AI"]) {
+    const drawer = page.getByRole("dialog", { name: "Product navigation" });
+    for (const name of ["Home", "Scout"]) await expect(drawer.getByRole("link", { name, exact: true }).first()).toBeVisible();
+    for (const name of ["Competition", "Team", "Build", "Business", "AI"]) {
       const section = drawer.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ has: page.getByText(name, { exact: true }) }) });
       await section.locator("summary").click();
       await expect(section.getByRole("navigation", { name, exact: true }).getByRole("link").first()).toBeVisible();
@@ -106,7 +107,7 @@ test("compact navigation keeps search, keyboard dismissal, and every workspace r
     }
     await expect(drawer.getByRole("link", { name: "Logistics", exact: true })).toHaveCount(0);
     await expect(drawer.getByRole("button", { name: /Show .* tools/ })).toHaveCount(0);
-    const workspace = drawer.getByRole("link", { name: /^Scouting / });
+    const workspace = drawer.getByRole("link", { name: "Scout", exact: true }).first();
     await drawer.evaluate(async (node) => {
       await Promise.all(node.getAnimations().map((animation) => animation.finished.catch(() => {})));
     });

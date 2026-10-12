@@ -1,0 +1,19 @@
+/*
+ * No "related links" row at the top of pages.
+ *
+ * Most pages carried a row of cross-links under their title ("Learn CAD · Assembly manual ·
+ * CAD workbench", "Practice · Attendance · Logistics", …). It changed with every tab, looked
+ * like buttons for the page you were on, and sat where the page's own actions belong. Every
+ * page it pointed at is in its workspace's tabs, the menu, or search (lib/nav/related-reach.test.ts
+ * keeps that true), so the rows go.
+ */
+body.has-app-shell :is(.product-hub-related, nav[aria-label^="Related"]) {
+  display: none !important;
+}
+
+/* CAD Vault's storage line: quiet text beside the season picker. */
+.cad-vault-storage {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}

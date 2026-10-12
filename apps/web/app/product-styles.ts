@@ -19,6 +19,16 @@ import "./apple-polish-product.css";
 import "./product-motion.css";
 // The complete product material system, including desktop navigation.
 import "./macos-product.css";
+// After macos-product.css on purpose: press feedback, the sliding segment and rows easing in.
+import "./motion-polish.css";
+// Last: the design and accessibility pass (field boundaries, contrast, touch targets, bottom bar).
+import "./shell-clarity.css";
+// After everything: the menus (four-place dock, workspace list, bottom toolbar).
+import "./menu-polish.css";
+// No row of cross-links under page titles (everything they linked is in tabs, the menu or search).
+import "./header-strips.css";
+// After the menus: the search palette, "Your apps" (menu, sidebar) and its editor.
+import "./nav-pins-search.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

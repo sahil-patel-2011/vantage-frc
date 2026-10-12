@@ -120,12 +120,13 @@ actual hops in code with file evidence, and an honest PASS/FAIL. Companion docs:
 - [ ] `npm run typecheck` / `npm test` / `npm run lint` green on the deploy commit
 - [ ] Migrations applied to production Postgres; re-run prints only `SKIP`
 - [ ] Platform owner bootstrapped; `BOOTSTRAP_TOKEN` removed
-- [ ] Stripe webhook test event returns `{"received":true}`
+- [ ] Stripe is not used (Vantage is free; AI runs on each team's own key). Leave `STRIPE_*` unset;
+      external data comes only from The Blue Alliance (`TBA_AUTH_KEY`) and Statbotics (no key)
 - [ ] Resend domain verified; a real OTP email arrives
 - [ ] External cron ticker firing (check `team_dream_runs` rows the next morning)
 - [ ] `/admin/integrations` (platform admin) shows no unexpected `error`/`degraded` rows — it aggregates
       config + already-persisted live signals for DB roles, Better Auth/Resend/Google, TBA/Statbotics/
-      Nexus/FIRST, Stripe/KMS, VAPID/Twilio, GitHub/Slack/Discord, Onshape/Fusion relay, AI providers/
+      Nexus/FIRST, KMS (and Stripe only if configured), VAPID/Twilio, GitHub/Slack/Discord, Onshape/Fusion relay, AI providers/
       bridge, Redis, storage, and cron freshness — without exposing any secret value
 - [ ] Function duration decided: the deploy plan allows the 300 s `maxDuration` the bridged AI
       routes declare, **or** `VANTAGE_BRIDGE_MAX_WAIT_MS` is set below the plan's cap (blocker 8)

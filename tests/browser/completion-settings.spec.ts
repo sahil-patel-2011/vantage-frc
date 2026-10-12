@@ -3,7 +3,6 @@ import { Pool } from "pg";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { baseOrigin, signInAs } from "./session";
-import { defaultIslandHrefs } from "../../apps/web/lib/nav/island-preferences";
 
 const orgId = "6925a000-0000-4000-8000-000000000001";
 test.beforeEach(async ({ context }) => { expect(await signInAs(context, "owner")).toBe(true); });
@@ -91,35 +90,40 @@ test("every code preference persists and a failed save offers a retry", async ({
   } finally { await context.request.put("/api/account/cockpit", { data: { cockpit: original.cockpit } }); }
 });
 
-test("bottom shortcuts preserve selection order, reload, and reset", async ({ page, context }) => {
+test("Appearance shows your apps and opens the one editor; order persists and resets", async ({ page, context }) => {
   const original = await (await context.request.get("/api/navigation/preferences")).json();
   try {
     await page.goto(`/account?tab=appearance&orgId=${orgId}`);
     await page.getByText("More display settings", { exact: true }).click();
-    const choices = page.locator(".appearance-island-grid");
-    await expect(choices).toBeVisible();
-    while (await choices.locator("button[aria-pressed=true]").count()) await choices.locator("button[aria-pressed=true]").first().click();
-    const labels: string[] = [];
-    for (const i of [4, 0, 1, 2]) {
-      const choice = choices.getByRole("button").nth(i);
-      labels.push(await choice.locator("strong").innerText());
-      await choice.click();
-    }
-    await expect(choices.getByRole("button").nth(3)).toBeDisabled();
-    await page.getByRole("button", { name: "Save 4/4", exact: true }).click();
-    await expect(page.getByText("Shortcuts saved.", { exact: true })).toBeVisible();
+    const pins = page.locator(".appearance-pins > li");
+    await expect(pins.first()).toBeVisible();
+    // No second editor here: the button opens the same sheet as the menu and the sidebar.
+    await page.getByRole("button", { name: "Edit your apps", exact: true }).click();
+    const editor = page.getByRole("dialog", { name: "Your apps", exact: true });
+    await expect(editor).toBeVisible();
+    const rows = editor.locator(".pins-editor-list strong");
+    const before = await rows.allInnerTexts();
+    // Move the second pin to the top with the keyboard on its handle.
+    await editor.getByRole("button", { name: new RegExp(`^Move ${before[1]}, place 2 of`) }).focus();
+    await page.keyboard.press("ArrowUp");
+    const labels = [before[1]!, before[0]!, ...before.slice(2)];
+    await expect(rows).toHaveText(labels);
+    await editor.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(editor).toBeHidden();
+    // The page follows what the editor saved, and so does a reload.
+    await expect(pins).toHaveText(labels);
     await page.reload();
     await page.getByText("More display settings", { exact: true }).click();
-    await expect(page.locator(".appearance-island-slots > span")).toHaveText(labels);
-    const reset = page.getByRole("button", { name: "Reset shortcuts", exact: true });
-    if (await reset.isEnabled()) {
-      await reset.click();
-      await expect(page.getByText(/^Shortcuts reset to /)).toBeVisible();
-      await page.reload();
-      await page.getByText("More display settings", { exact: true }).click();
-      await expect(reset).toBeDisabled();
-    }
-  } finally { expect((await context.request.put("/api/navigation/preferences", { data: { tabs: original.tabs ?? defaultIslandHrefs() } })).ok()).toBe(true); }
+    await expect(pins).toHaveText(labels);
+    await page.getByRole("button", { name: "Edit your apps", exact: true }).click();
+    await editor.getByRole("button", { name: "Reset to default", exact: true }).click();
+    await expect(editor.getByRole("button", { name: "Reset to default", exact: true })).toBeDisabled();
+    await editor.getByRole("button", { name: "Done", exact: true }).click();
+    await expect(editor).toBeHidden();
+    await expect(pins).toHaveText(["Home", "Scout", "Teams", "Match plan", "My Day", "Tasks", "Team resources"]);
+  } finally {
+    expect((await context.request.put("/api/navigation/preferences", original.isDefault === false ? { data: { tabs: original.tabs } } : { data: { reset: true } })).ok()).toBe(true);
+  }
 });
 
 test("appearance loading failure preserves saved settings until retry", async ({ page, context }) => {

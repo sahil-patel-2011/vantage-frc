@@ -7,7 +7,9 @@ import {
   placeCard,
   stepProgress,
   tourIsForNewMember,
+  tourIsWorthShowing,
   tourShouldYield,
+  tourTargetForHref,
 } from "./tour-steps";
 
 const VIEWPORT = { width: 1200, height: 800 };
@@ -15,21 +17,72 @@ const CARD = { width: 320, height: 160 };
 
 describe("TOUR_STEPS", () => {
   it("is short enough that nobody skips it out of boredom", () => {
-    expect(TOUR_STEPS.length).toBeGreaterThanOrEqual(4);
-    expect(TOUR_STEPS.length).toBeLessThanOrEqual(6);
+    expect(TOUR_STEPS.length).toBeGreaterThanOrEqual(6);
+    expect(TOUR_STEPS.length).toBeLessThanOrEqual(8);
   });
 
-  it("gives every step a target, a title and a body", () => {
+  it("gives every step a title and a body, and a target unless it is the welcome", () => {
     for (const step of TOUR_STEPS) {
-      expect(step.target, step.id).toBeTruthy();
       expect(step.title.length, step.id).toBeGreaterThan(0);
       expect(step.body.length, step.id).toBeGreaterThan(0);
+      if (step.id !== "welcome") expect(step.target, step.id).toBeTruthy();
+    }
+  });
+
+  it("opens with a centred welcome that points at nothing, and ends at the feedback button", () => {
+    const first = TOUR_STEPS[0]!;
+    expect(first.id).toBe("welcome");
+    expect(first.target).toBeNull();
+    const last = TOUR_STEPS[TOUR_STEPS.length - 1]!;
+    expect(last.id).toBe("feedback");
+    expect(last.target).toBe("feedback");
+    expect(last.body).toBe("Found a bug or have an idea? Tap here any time.");
+  });
+
+  it("shows the meaningful parts of the app, in order", () => {
+    expect(TOUR_STEPS.map((step) => step.id)).toEqual([
+      "welcome",
+      "event",
+      "scouting",
+      "team-work",
+      "menu",
+      "ask-ai",
+      "customise",
+      "feedback",
+    ]);
+  });
+
+  it("says each thing in one or two plain sentences", () => {
+    for (const step of TOUR_STEPS) {
+      const sentences = step.body.split(/(?<=[.!?])\s+/).filter(Boolean);
+      expect(sentences.length, step.id).toBeGreaterThanOrEqual(1);
+      expect(sentences.length, step.id).toBeLessThanOrEqual(2);
+      expect(step.body.length, step.id).toBeLessThanOrEqual(170);
+      // No jargon a 14-year-old would have to look up.
+      expect(step.body, step.id).not.toMatch(/\b(workspace|widget|dashboard|onboard|configure|API)\b/i);
     }
   });
 
   it("has no duplicate ids or targets", () => {
     expect(new Set(TOUR_STEPS.map((s) => s.id)).size).toBe(TOUR_STEPS.length);
-    expect(new Set(TOUR_STEPS.map((s) => s.target)).size).toBe(TOUR_STEPS.length);
+    const targets = TOUR_STEPS.map((s) => s.target).filter((target) => target !== null);
+    expect(new Set(targets).size).toBe(targets.length);
+  });
+});
+
+describe("tourTargetForHref", () => {
+  it("marks the Scout entry in the bottom bar and the Competition row in the sidebar", () => {
+    expect(tourTargetForHref("/competition?tab=scouting")).toBe("scouting");
+    expect(tourTargetForHref("/competition")).toBe("scouting");
+  });
+
+  it("marks Team, and nothing else", () => {
+    expect(tourTargetForHref("/team")).toBe("team-work");
+    expect(tourTargetForHref("/team?tab=messages")).toBeUndefined();
+    expect(tourTargetForHref("/competition?tab=strategy")).toBeUndefined();
+    expect(tourTargetForHref("/competition?tab=teams")).toBeUndefined();
+    expect(tourTargetForHref("/dashboard")).toBeUndefined();
+    expect(tourTargetForHref("/build")).toBeUndefined();
   });
 });
 
@@ -48,8 +101,23 @@ describe("availableSteps", () => {
     expect(steps.map((s) => s.id)).toEqual(TOUR_STEPS.map((s) => s.id));
   });
 
-  it("returns nothing when the page has none of the targets", () => {
-    expect(availableSteps(TOUR_STEPS, () => false)).toEqual([]);
+  it("keeps the welcome even when the page has none of the targets", () => {
+    expect(availableSteps(TOUR_STEPS, () => false).map((s) => s.id)).toEqual(["welcome"]);
+  });
+
+  it("drops the event step on a team with no active event, and the tour still runs", () => {
+    const steps = availableSteps(TOUR_STEPS, (target) => target !== "event");
+    expect(steps.map((s) => s.id)).not.toContain("event");
+    expect(tourIsWorthShowing(steps)).toBe(true);
+  });
+});
+
+describe("tourIsWorthShowing", () => {
+  it("needs at least two things to point at; a welcome and one stop is not a tour", () => {
+    expect(tourIsWorthShowing([])).toBe(false);
+    expect(tourIsWorthShowing(availableSteps(TOUR_STEPS, () => false))).toBe(false);
+    expect(tourIsWorthShowing(availableSteps(TOUR_STEPS, (target) => target === "menu"))).toBe(false);
+    expect(tourIsWorthShowing(availableSteps(TOUR_STEPS, (target) => target === "menu" || target === "feedback"))).toBe(true);
   });
 });
 
@@ -105,6 +173,36 @@ describe("placeCard", () => {
     const placed = placeCard({ target: farRight, card: CARD, viewport: VIEWPORT });
     expect(placed.left + CARD.width).toBeLessThanOrEqual(VIEWPORT.width);
     expect(placed.top + CARD.height).toBeLessThanOrEqual(VIEWPORT.height);
+  });
+
+  it("puts the card above the feedback button in the bottom-right corner, fully on screen", () => {
+    const fab = { top: 740, left: 1140, width: 44, height: 44 };
+    const placed = placeCard({ target: fab, card: CARD, viewport: VIEWPORT, prefer: "top" });
+    expect(placed.side).toBe("top");
+    expect(placed.top + CARD.height).toBeLessThanOrEqual(fab.top);
+    expect(placed.left + CARD.width).toBeLessThanOrEqual(VIEWPORT.width);
+  });
+
+  describe("a step with no target", () => {
+    it("centres the card in the viewport", () => {
+      const placed = placeCard({ target: null, card: CARD, viewport: VIEWPORT });
+      expect(placed.side).toBe("center");
+      expect(placed.left).toBe((VIEWPORT.width - CARD.width) / 2);
+      expect(placed.top).toBe((VIEWPORT.height - CARD.height) / 2);
+    });
+
+    it("stays on screen on a small phone", () => {
+      const phone = { width: 320, height: 480 };
+      const placed = placeCard({ target: null, card: { width: 288, height: 220 }, viewport: phone });
+      expect(placed.left).toBeGreaterThanOrEqual(CARD_GAP);
+      expect(placed.left + 288).toBeLessThanOrEqual(phone.width);
+      expect(placed.top).toBeGreaterThanOrEqual(CARD_GAP);
+      expect(placed.top + 220).toBeLessThanOrEqual(phone.height);
+    });
+
+    it("ignores a preferred side, since there is nothing to be beside", () => {
+      expect(placeCard({ target: null, card: CARD, viewport: VIEWPORT, prefer: "left" }).side).toBe("center");
+    });
   });
 });
 

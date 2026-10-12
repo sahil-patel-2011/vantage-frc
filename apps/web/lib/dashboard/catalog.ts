@@ -453,7 +453,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     type: "team_todos",
-    label: "Team tasks",
+    label: "Tasks",
     description: "Open shared todos, yours first",
     defaultW: 4,
     defaultH: 3,
@@ -536,7 +536,7 @@ export const WIDGET_CATALOG: WidgetCatalogEntry[] = [
   },
   {
     type: "my_day",
-    label: "My day",
+    label: "My Day",
     description: "Your next match, leave time, and what to do now",
     defaultW: 4,
     defaultH: 3,

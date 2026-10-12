@@ -156,7 +156,8 @@ describe("generateCounterBookReport", () => {
           rowCount: 1,
         };
       }
-      if (sql.includes("COALESCE")) return { rows: [{ used: "0", grants: "0" }], rowCount: 1 };
+      // The spend totals query only: key detection also says COALESCE (a switched-off key, 0727).
+      if (sql.includes("COALESCE") && sql.includes("used")) return { rows: [{ used: "0", grants: "0" }], rowCount: 1 };
       if (sql.includes("INSERT INTO counter_book_reports")) {
         return { rows: [{ id: "report-1", createdAt: new Date().toISOString() }], rowCount: 1 };
       }
@@ -206,7 +207,8 @@ describe("generateCounterBookReport", () => {
           rowCount: 1,
         };
       }
-      if (sql.includes("COALESCE")) return { rows: [{ used: "0", grants: "0" }], rowCount: 1 };
+      // The spend totals query only: key detection also says COALESCE (a switched-off key, 0727).
+      if (sql.includes("COALESCE") && sql.includes("used")) return { rows: [{ used: "0", grants: "0" }], rowCount: 1 };
       if (sql.includes("INSERT INTO counter_book_reports")) {
         return { rows: [{ id: "report-1", createdAt: new Date().toISOString() }], rowCount: 1 };
       }

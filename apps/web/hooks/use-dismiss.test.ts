@@ -72,6 +72,10 @@ const NOT_A_PANEL: Record<string, string> = {
   // contains is dismissed by .soft-account-scrim, rendered from app-shell.tsx.
   // Verified: opened the avatar menu, clicked the page, menu closed.
   "components/app-shell-topbar.tsx": "the bar is fixed; its menu has a scrim next door",
+  // Matches on .soft-island (the fixed bottom bar). Its one aria-expanded control is More,
+  // which opens the navigation panel; that panel closes from its own scrim, its close button
+  // and Escape (app-shell-nav-panel.tsx). The Your apps editor moved to its own sheet.
+  "components/app-shell-island.tsx": "the bar is fixed; More opens the menu panel, which has its own scrim and Escape",
 };
 
 /** Routes out of an open panel that are not its own trigger. */

@@ -18,6 +18,7 @@ import {
   type CostsView,
 } from "../../../lib/costs/compute-costs";
 import type { CostCategory, CostStatus, SubscriptionCadence } from "../../../lib/costs/types";
+import { parseMoneyInput } from "../../../lib/finance/money-input";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 import {
   FINANCE_MANAGER_REQUIRED,
@@ -41,10 +42,20 @@ function trimmedOrNull(value: unknown, max = 4000): string | null {
   return trimmed ? trimmed.slice(0, max) : null;
 }
 
-function moneyOrNull(value: unknown): number | null {
-  if (value == null || value === "") return null;
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+/**
+ * A money field, or a 400 with the sentence. "-50", "abc" and "$1,200.50" used to become a $0.00
+ * cost, and a negative budget erased the budget (A5-08). `allowEmpty` is for the budget only,
+ * where empty means "no budget".
+ */
+function money(value: unknown, label: string, allowEmpty = false): number | null {
+  const parsed = parseMoneyInput(value, { label, allowEmpty });
+  if (!parsed.ok) throw new Error(parsed.reason);
+  return parsed.value;
+}
+
+/** An optional money field on an update: absent stays absent, present must be valid. */
+function moneyUpdate(value: unknown, label: string): number | undefined {
+  return value === undefined ? undefined : (money(value, label) ?? undefined);
 }
 
 function seasonFrom(value: unknown): number {
@@ -120,7 +131,7 @@ export async function POST(request: Request) {
             orgId,
             userId,
             seasonYear,
-            totalBudgetUsd: moneyOrNull(body.totalBudgetUsd),
+            totalBudgetUsd: money(body.totalBudgetUsd, "The season budget", true),
             aiAssistEnabled: body.aiAssistEnabled === true,
             notes: trimmedOrNull(body.notes),
           });
@@ -137,7 +148,7 @@ export async function POST(request: Request) {
             seasonYear,
             label,
             category: oneOf<CostCategory>(COST_CATEGORIES, body.category) ?? "other",
-            amountUsd: moneyOrNull(body.amountUsd) ?? 0,
+            amountUsd: money(body.amountUsd, "The amount") ?? 0,
             vendor: trimmedOrNull(body.vendor, 200),
             incurredOn,
             status: oneOf<CostStatus>(COST_STATUSES, body.status) ?? "planned",
@@ -157,7 +168,7 @@ export async function POST(request: Request) {
             costId,
             label: body.label === undefined ? undefined : (trimmedOrNull(body.label, 200) ?? undefined),
             category: category ?? undefined,
-            amountUsd: body.amountUsd === undefined ? undefined : (moneyOrNull(body.amountUsd) ?? undefined),
+            amountUsd: moneyUpdate(body.amountUsd, "The amount"),
             vendor: body.vendor === undefined ? undefined : trimmedOrNull(body.vendor, 200),
             incurredOn: body.incurredOn === undefined ? undefined : (isoDateOrNull(body.incurredOn) ?? undefined),
             status: status ?? undefined,
@@ -180,7 +191,7 @@ export async function POST(request: Request) {
             seasonYear,
             name,
             provider: trimmedOrNull(body.provider, 200),
-            amountUsd: moneyOrNull(body.amountUsd) ?? 0,
+            amountUsd: money(body.amountUsd, "The amount") ?? 0,
             cadence: oneOf<SubscriptionCadence>(SUBSCRIPTION_CADENCES, body.cadence) ?? "monthly",
             active: body.active !== false,
             notes: trimmedOrNull(body.notes),
@@ -197,7 +208,7 @@ export async function POST(request: Request) {
             subscriptionId,
             name: body.name === undefined ? undefined : (trimmedOrNull(body.name, 200) ?? undefined),
             provider: body.provider === undefined ? undefined : trimmedOrNull(body.provider, 200),
-            amountUsd: body.amountUsd === undefined ? undefined : (moneyOrNull(body.amountUsd) ?? undefined),
+            amountUsd: moneyUpdate(body.amountUsd, "The amount"),
             cadence: cadence ?? undefined,
             active: body.active === undefined ? undefined : body.active === true,
             notes: body.notes === undefined ? undefined : trimmedOrNull(body.notes),

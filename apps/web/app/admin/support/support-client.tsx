@@ -105,7 +105,7 @@ export default function AdminSupportClient() {
         <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
           {adminRelatedLinks({
             active: "support",
-            include: ["teams", "plans", "releases", "waitlist"],
+            include: ["teams", "health", "releases", "waitlist"],
           }).map((link) => (
             <a key={link.id} href={link.href}>
               {link.label}

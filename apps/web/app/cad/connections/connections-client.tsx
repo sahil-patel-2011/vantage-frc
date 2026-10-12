@@ -81,25 +81,31 @@ export function CadConnectionsRelated({ orgId }: { orgId: string | null }) {
 function CadConnectionsNextActions({
   orgId,
   hasDesktop,
+  onshapeAvailable,
+  onshapeConnected,
 }: {
   orgId: string;
   hasDesktop: boolean;
+  /** Vantage has Onshape sign-in switched on. When it doesn't, "Connect Onshape" is a dead end. */
+  onshapeAvailable: boolean;
+  onshapeConnected: boolean;
 }) {
-  const actions = [
-    {
+  const actions: Array<{ id: string; label: string; detail: string; href: string; primary?: true }> = [];
+  if (onshapeAvailable && !onshapeConnected) {
+    actions.push({
       id: "onshape",
       label: "Connect Onshape",
       detail: "Authorize in the browser. Never type your password in a terminal.",
       href: "#onshape",
-      primary: true as const,
-    },
-    {
-      id: "desktop",
-      label: hasDesktop ? "Review paired computers" : "Pair this computer",
-      detail: "Fusion stays on this computer. Pair it here when you need the desktop app.",
-      href: withOrgHref("/cad/pair", orgId),
-    },
-  ];
+      primary: true,
+    });
+  }
+  actions.push({
+    id: "desktop",
+    label: hasDesktop ? "Review paired computers" : "Pair this computer",
+    detail: "Fusion stays on this computer. Pair it here when you need the desktop app.",
+    href: withOrgHref("/cad/pair", orgId),
+  });
   return (
     <section className="app-card soft-panel edc-next-actions" aria-label="Next actions">
       <header>
@@ -389,7 +395,8 @@ export default function CadConnections({ orgId }: { orgId: string }) {
                       : "Ready — tap Connect Onshape to authorize."}
                   </small>
                 </>
-              ) : (
+              ) : view.onshapeSetupMessage ? null : (
+                // The note above already says it; the same sentence twice read as two problems.
                 <p className="app-muted">{ONSHAPE_OAUTH_CTA.disabledDetail}</p>
               )}
             </article>
@@ -447,6 +454,8 @@ export default function CadConnections({ orgId }: { orgId: string }) {
           <CadConnectionsNextActions
             orgId={orgId}
             hasDesktop={view.devices.some((d) => !d.revokedAt)}
+            onshapeAvailable={Boolean(view.onshapeOauthReady)}
+            onshapeConnected={onshapeConnected}
           />
         </main>
       );

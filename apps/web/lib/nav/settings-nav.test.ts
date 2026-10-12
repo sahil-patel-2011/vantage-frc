@@ -50,36 +50,61 @@ describe("settingsRoleTier", () => {
 });
 
 describe("visibleSettingsNav", () => {
-  it("members see only personal entries, without an AI-keys chip", () => {
+  it("members see You only, with their own AI keys and Delete account last", () => {
     const items = visibleSettingsNav("scout");
     expect(items.every((i) => i.scope === "personal")).toBe(true);
-    expect(items.map((i) => i.id)).toEqual([
-      "teams",
-      "profile",
-      "appearance",
-      "notifications",
-      "security",
-      "connectors",
+    expect(items.map((i) => i.label)).toEqual([
+      "Profile",
+      "Appearance",
+      "Notifications",
+      "Security",
+      "Your teams",
+      "Connectors",
+      "Your AI keys",
+      "Delete account",
     ]);
+    expect(items.at(-1)?.danger).toBe(true);
   });
 
-  it("owners see personal then a short team list, including Chat", () => {
+  it("owners see You, then This team in the Settings order, ending with Delete team", () => {
     const items = visibleSettingsNav("owner");
-    const ids = items.map((i) => i.id);
-    expect(ids).toContain("team-admin");
-    expect(ids).toContain("chat");
-    expect(ids).toContain("team-ai-keys");
-    expect(ids).not.toContain("my-ai-keys");
-    expect(ids).not.toContain("ai-budgets");
-    expect(ids).not.toContain("ai-governance");
+    const team = items.filter((i) => i.scope === "team").map((i) => i.label);
+    expect(team).toEqual([
+      "Team profile",
+      "Members and invites",
+      "Access and roles",
+      "Money managers",
+      "Join code",
+      "Team security",
+      "AI keys and credit",
+      "Chat safety",
+      "Team data and export",
+      "Delete team",
+    ]);
+    // One row for the AI keys page: the team's.
+    expect(items.map((i) => i.id)).not.toContain("my-ai-keys");
     const firstTeam = items.findIndex((i) => i.scope === "team");
     expect(items.slice(0, firstTeam).every((i) => i.scope === "personal")).toBe(true);
     expect(items.slice(firstTeam).every((i) => i.scope === "team")).toBe(true);
   });
 
+  it("mentors and coaches see the team's settings but not Delete team", () => {
+    const ids = visibleSettingsNav("admin").map((i) => i.id);
+    expect(ids).toContain("team-admin");
+    expect(ids).toContain("join-code");
+    expect(ids).not.toContain("delete-team");
+  });
+
   it("scope filter narrows the list", () => {
     expect(visibleSettingsNav("owner", "team").every((i) => i.scope === "team")).toBe(true);
     expect(visibleSettingsNav("scout", "team")).toEqual([]);
+  });
+
+  it("every row has a plain one-line detail and search words", () => {
+    for (const item of SETTINGS_NAV) {
+      expect(item.detail.length).toBeGreaterThan(8);
+      expect(item.keywords.length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -92,6 +117,11 @@ describe("isSettingsPath", () => {
     expect(isSettingsPath("/team/budgets")).toBe(true);
     expect(isSettingsPath("/messages")).toBe(false);
     expect(isSettingsPath("/exports")).toBe(true);
+    expect(isSettingsPath("/settings")).toBe(true);
+    expect(isSettingsPath("/connectors")).toBe(true);
+    expect(isSettingsPath("/messages/moderation")).toBe(true);
+    expect(isSettingsPath("/notifications/preferences")).toBe(true);
+    expect(isSettingsPath("/notifications")).toBe(false);
     expect(isSettingsPath("/accounting")).toBe(false);
     expect(isSettingsPath("/team")).toBe(false);
     expect(isSettingsPath("/dashboard")).toBe(false);
@@ -110,7 +140,19 @@ describe("activeSettingsId", () => {
 
   it("tab query picks the tab entry", () => {
     expect(activeSettingsId(member, "/account", "?tab=appearance")).toBe("appearance");
-    expect(activeSettingsId(member, "/account", "tab=notifications")).toBe("notifications");
+    expect(activeSettingsId(member, "/notifications/preferences")).toBe("notifications");
+  });
+
+  it("never marks a jump within a page (#join-code, #delete-account) as the section", () => {
+    expect(activeSettingsId(owner, "/team/admin")).toBe("team-admin");
+    expect(activeSettingsId(member, "/account")).toBe("profile");
+    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-profile");
+  });
+
+  it("pages that belong to a section mark it", () => {
+    expect(activeSettingsId(owner, "/exports")).toBe("team-data");
+    expect(activeSettingsId(owner, "/team/admin/presets")).toBe("access-roles");
+    expect(activeSettingsId(member, "/team/ai-keys")).toBe("my-ai-keys");
   });
 
   it("a tab with no chip activates nothing", () => {
@@ -119,8 +161,8 @@ describe("activeSettingsId", () => {
 
   it("matches team routes and ignores unrelated query params", () => {
     expect(activeSettingsId(owner, "/team/ai-keys", "?orgId=abc")).toBe("team-ai-keys");
-    expect(activeSettingsId(member, "/team/ai-keys", "?orgId=abc")).toBeNull();
-    expect(activeSettingsId(owner, "/team/budgets")).toBeNull();
+    expect(activeSettingsId(member, "/team/ai-keys", "?orgId=abc")).toBe("my-ai-keys");
+    expect(activeSettingsId(owner, "/team/budgets")).toBe("team-ai-keys");
     // Chat safety is its own page now, the same one the Team settings chip opens.
     expect(activeSettingsId(owner, "/messages/moderation")).toBe("chat");
   });

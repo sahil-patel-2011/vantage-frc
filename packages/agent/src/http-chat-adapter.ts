@@ -46,6 +46,12 @@ export type HttpChatAdapterConfig = {
   capability?: string;
   /** Extra headers (OpenRouter HTTP-Referer / X-Title). Never log values. */
   extraHeaders?: Record<string, string>;
+  /**
+   * Hard output cap sent on every request. Anthropic calls always send one
+   * (chatCompletionMaxTokens); OpenAI-shaped calls send one only when this is set, as the
+   * gift-funded adapter does so a call's cost has a known ceiling.
+   */
+  maxOutputTokens?: number;
 };
 
 /**
@@ -126,6 +132,7 @@ export class HttpChatAdapter implements ChatAdapter {
   private readonly capability: string;
 
   private readonly extraHeaders: Record<string, string>;
+  private readonly maxOutputTokens: number | null;
 
   constructor(config: HttpChatAdapterConfig) {
     this.kind = config.provider;
@@ -153,6 +160,37 @@ export class HttpChatAdapter implements ChatAdapter {
       game: { pack: packForYear(currentSeasonYear()) },
     });
     this.extraHeaders = config.extraHeaders ?? {};
+    this.maxOutputTokens =
+      config.maxOutputTokens && config.maxOutputTokens > 0 ? Math.floor(config.maxOutputTokens) : null;
+  }
+
+  /**
+   * An upper bound on what one call sends and can return, for reserving its worst-case cost
+   * before it runs: the UTF-8 bytes of everything that goes into the request (a byte-level
+   * tokenizer makes no more tokens than bytes), with an allowance per wrapped item, and the
+   * output cap the request carries. Compaction only ever shrinks what is sent.
+   */
+  requestBounds(input: {
+    message: string;
+    context: ContextItem[];
+    history?: ChatMessage[];
+    tools?: ChatToolDefinition[];
+  }): { inputBytes: number; maxOutputTokens: number | null } {
+    const encoder = new TextEncoder();
+    const bytes = (value: unknown) =>
+      encoder.encode(typeof value === "string" ? value : JSON.stringify(value ?? null)).length;
+    const wrappedItems = input.context.length + (input.history?.length ?? 0) + (input.tools?.length ?? 0) + 2;
+    return {
+      inputBytes:
+        bytes(this.systemPrompt) +
+        bytes(input.message) +
+        bytes(input.context) +
+        bytes(input.history ?? []) +
+        bytes(input.tools ?? []) +
+        256 * wrappedItems,
+      maxOutputTokens:
+        this.kind === "anthropic" ? (this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability)) : this.maxOutputTokens,
+    };
   }
 
   private prepare(context: ContextItem[], history: ChatMessage[]) {
@@ -217,7 +255,7 @@ export class HttpChatAdapter implements ChatAdapter {
         },
         body: JSON.stringify({
           model: this.model,
-          max_tokens: chatCompletionMaxTokens(this.capability),
+          max_tokens: this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability),
           system: systemBlocks,
           messages: [...history, { role: "user", content: userTurnWithContext(message, context) }],
           ...(tools.length
@@ -320,6 +358,7 @@ export class HttpChatAdapter implements ChatAdapter {
                 tool_choice: "auto",
               }
             : {}),
+          ...(this.maxOutputTokens ? { max_tokens: this.maxOutputTokens } : {}),
           ...preference,
         }),
       },

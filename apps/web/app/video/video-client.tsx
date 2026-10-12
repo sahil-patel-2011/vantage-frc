@@ -4,7 +4,7 @@ import { teamProseLabel } from "../../components/app-shell-model";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, askConfirm } from "../../components/ui";
-import { AiInsightPanel } from "../../components/ai-insight-panel";
+import { AskAiButton } from "../../components/ask-ai-button";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -538,12 +538,11 @@ export default function VideoClient() {
         )}
       </div>
 
-      <AiInsightPanel
-        orgId={orgId}
-        kind="video_scout_summary"
-        title="Video scout summary"
-        description="AI rollup of every timestamped note — recurring failures, defense patterns, and the deepest-reviewed matches."
-      />
+      {/* One way into AI from every page: Ask AI on this page's skill (was an "Analyze" panel). */}
+      <div className="ask-ai-row">
+        <AskAiButton orgId={orgId} skill="scouting-insight" prompt="Sum up our video notes" />
+        <p>Recurring failures and defense patterns from every timestamped note.</p>
+      </div>
     </main>
   );
 }

@@ -32,6 +32,7 @@ test("the site says Vantage is free and never shows a pricing tab", async ({ pag
   const nav = page.getByRole("banner").or(page.locator("header")).first();
   // Vantage is free; personal AI connections are optional.
   await expect(nav.getByRole("link", { name: "Pricing", exact: true })).toHaveCount(0);
-  // Said in the hero (the separate cost section left the home page; the Cost page has it).
-  await expect(page.getByText("Free to use. AI connections are optional.", { exact: true })).toBeVisible();
+  // Said in the hero, and again with the detail in the trust section; the Cost page has the rest.
+  await expect(page.locator(".mx-hero")).toContainText("Free for FRC teams.");
+  await expect(page.getByText("Free. AI is optional.", { exact: true })).toBeVisible();
 });

@@ -16,7 +16,9 @@ import {
   TODO_LIST_FILTERS,
   TODOS_RELATED_INCLUDE,
   TODO_STATUSES,
+  TODO_TITLE_MAX,
   filterTodos,
+  localDateIso,
   statusLabel,
   todoDeepLink,
   todosNextActions,
@@ -32,12 +34,30 @@ type LiveView = Extract<TodosView, { status: "live" }>;
 type LiveWorkView = Extract<WorkItemsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => Promise<boolean>;
 
+/** Tones are theme tokens: a fixed #c02626 was 2.65:1 on a dark card (A6-07). */
 function dueLabel(todo: TeamTodo): { text: string; tone: string } | null {
   if (!todo.dueOn || todo.flags.daysToDue == null) return null;
   const d = todo.flags.daysToDue;
-  if (todo.flags.overdue) return { text: `Overdue ${Math.abs(d)}d`, tone: "#c02626" };
-  if (todo.flags.dueSoon) return { text: d === 0 ? "Due today" : `Due ${d}d`, tone: "#b26a00" };
+  if (todo.flags.overdue) return { text: `Overdue ${Math.abs(d)}d`, tone: "var(--critical)" };
+  if (todo.flags.dueSoon) return { text: d === 0 ? "Due today" : `Due ${d}d`, tone: "var(--warning)" };
   return { text: `Due ${todo.dueOn}`, tone: "inherit" };
+}
+
+/** View-only members (parents, guests) can't complete a task, so they aren't offered as assignees. */
+function assignableMembers(members: LiveView["members"], keepUserId?: string | null): LiveView["members"] {
+  return members.filter((member) => member.role !== "viewer" || member.userId === keepUserId);
+}
+
+/** Shown once a title nears the limit, so nothing is cut off without warning (A5-01). */
+function TitleCount({ id, length }: { id: string; length: number }) {
+  if (length < TODO_TITLE_MAX - 40) return <span id={id} hidden />;
+  return (
+    <p id={id} className="todos-title-count" aria-live="polite">
+      {length >= TODO_TITLE_MAX
+        ? `That's the ${TODO_TITLE_MAX}-character limit. Put the rest in Notes under Details.`
+        : `${TODO_TITLE_MAX - length} characters left in the title.`}
+    </p>
+  );
 }
 
 function NextActions({
@@ -83,14 +103,14 @@ function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
     <Panel className="todos-unified-work" aria-label="All team work">
       <header>
         <div>
-          <span className="app-badge">One work view</span>
-          <h2>Todos, build tasks, and milestones</h2>
+          <span className="app-badge">All trackers</span>
+          <h2>Tasks, build tasks, and milestones</h2>
           <p className="app-muted">
             One read across the team&apos;s trackers. Open an item in its owning board to update it.
           </p>
         </div>
         <Button as="a" variant="secondary" href={withOrgHref("/tasks", view.orgId)}>
-          Open build board
+          Open task board
         </Button>
       </header>
       <div className="todos-unified-metrics">
@@ -157,6 +177,8 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
     const query = new URLSearchParams();
     if (urlOrg) query.set("orgId", urlOrg);
     if (todoId) query.set("todoId", todoId);
+    // "Due today" and "Overdue" follow this device's calendar, not the server's UTC date.
+    query.set("today", localDateIso());
     void fetch(`/api/todos${query.toString() ? `?${query.toString()}` : ""}`)
       .then(async (response) => {
         const data = (await response.json()) as TodosView | { error?: string };
@@ -236,7 +258,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       setBusy(true);
       setError("");
       try {
-        const result = await persistTodo(orgId, payload, navigator.onLine);
+        const result = await persistTodo(orgId, { ...payload, today: localDateIso() }, navigator.onLine);
         if (result.kind === "queued") {
           if (view?.status === "live" && payload.action === "update-todo" && typeof payload.todoId === "string") {
             setView({
@@ -256,12 +278,14 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         return true;
       } catch (failure) {
         setError(failure instanceof Error ? failure.message : "Could not save the task. Check your connection and try again.");
+        // A task someone else already deleted: refresh so the list stops showing it.
+        if (failure instanceof Error && /already deleted|was deleted/.test(failure.message)) load();
         return false;
       } finally {
         setBusy(false);
       }
     },
-    [orgId, busy, view, loadWork],
+    [orgId, busy, view, loadWork, load],
   );
 
   const failure = fetchFailed
@@ -284,18 +308,18 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
       {!embedded ? (
         <>
           <PageHeader
-            breadcrumbs="Team / Todos"
-            title="Team work"
+            breadcrumbs="Team"
+            title="Tasks"
             description={
               <>
-                Todos, build tasks, and season milestones in one workbench. Create quick team todos here and open
+                Tasks, build tasks, and season milestones in one place. Add quick team tasks here and open
                 specialized work in its owning board.
               </>
             }
           >
             {view?.status === "live" ? (
               <Button as="a" variant="secondary" href={withOrgHref("/tasks", orgId)}>
-                Build-season board
+                Task board
               </Button>
             ) : null}
           </PageHeader>
@@ -308,7 +332,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
           />
         </>
       ) : null}
-      <OfflineBanner feature="Todos" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Tasks" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -353,8 +377,10 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
-          {embedded ? null : <MetricsTiles view={view} />}
-          <UnifiedWorkSummary view={workView} />
+          {/* Counts and the all-trackers summary wait for some work to count: an empty team saw
+              ten zero tiles above the one field it needed. */}
+          {embedded || view.todos.length === 0 ? null : <MetricsTiles view={view} />}
+          {workView && workView.items.length > 0 ? <UnifiedWorkSummary view={workView} /> : null}
           {viewOnly ? <ViewOnlyNote /> : <CreateTodoForm view={view} busy={busy} mutate={mutate} />}
           <FilterBar
             filter={filter}
@@ -362,7 +388,7 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
             mineOpen={view.metrics.mineOpen}
             overdue={view.metrics.overdue}
           />
-          <Board view={view} filter={filter} setFilter={setFilter} busy={busy} mutate={mutate} />
+          <Board view={view} filter={filter} setFilter={setFilter} busy={busy} mutate={mutate} viewOnly={viewOnly} />
           {view.todos.length === 0 || view.metrics.overdue > 0 || view.metrics.mineOpen > 0 ? (
             <NextActions
               orgId={view.orgId}
@@ -460,17 +486,25 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
     >
       <div className="todos-create-row">
         <FormRow label="Title" wide>
-          <input value={form.title} onChange={set("title")} placeholder="Add a team task…" required />
+          <input
+            value={form.title}
+            onChange={set("title")}
+            placeholder="Add a team task…"
+            required
+            maxLength={TODO_TITLE_MAX}
+            aria-describedby="todo-title-count"
+          />
         </FormRow>
         <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>Add</Button>
       </div>
+      <TitleCount id="todo-title-count" length={form.title.length} />
       <details>
         <summary className="todos-more">Details</summary>
         <FormGrid min={150}>
         <FormRow label="Assignee">
           <select value={form.assigneeUserId} onChange={set("assigneeUserId")}>
             <option value="">Unassigned</option>
-            {view.members.map((member) => (
+            {assignableMembers(view.members).map((member) => (
               <option key={member.userId} value={member.userId}>
                 {member.name}
               </option>
@@ -507,12 +541,15 @@ function Board({
   setFilter,
   busy,
   mutate,
+  viewOnly = false,
 }: {
   view: LiveView;
   filter: TodoListFilter;
   setFilter: (value: TodoListFilter) => void;
   busy: boolean;
   mutate: Mutate;
+  /** A parent or guest: no Mark done, Reopen or edit controls that the database refuses anyway. */
+  viewOnly?: boolean;
 }) {
   const filtered = filterTodos(view.todos, filter, view.currentUserId);
 
@@ -522,21 +559,9 @@ function Board({
         soft
         badge="Empty"
         badgeTone="setup"
-        title="No team todos yet"
-        description="Add the first shared action item when your team has real work to track."
-      >
-        <div className="soft-btn-row">
-          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=calendar", view.orgId)}>
-            Calendar
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=messages", view.orgId)}>
-            Messages
-          </Button>
-          <Button as="a" variant="secondary" href={withOrgHref("/team?tab=practice", view.orgId)}>
-            Practice
-          </Button>
-        </div>
-      </EmptyState>
+        title="No team tasks yet"
+        description="Type the first one in the box above and press Add. A short title is enough; assign it and set a due date under Details."
+      />
     );
   }
 
@@ -564,6 +589,7 @@ function Board({
           busy={busy}
           mutate={mutate}
           focused={todo.id === view.focusTodoId}
+          viewOnly={viewOnly}
         />
       ))}
     </div>
@@ -576,15 +602,28 @@ function TodoCard({
   busy,
   mutate,
   focused,
+  viewOnly = false,
 }: {
   todo: TeamTodo;
   view: LiveView;
   busy: boolean;
   mutate: Mutate;
   focused: boolean;
+  viewOnly?: boolean;
 }) {
   const due = dueLabel(todo);
   const deepLink = todoDeepLink(view.orgId, todo.id);
+  const me = view.members.find((member) => member.userId === view.currentUserId);
+  const canDelete =
+    me?.role === "owner" || me?.role === "admin" || todo.createdBy === view.currentUserId || todo.assigneeUserId === view.currentUserId;
+  const [title, setTitle] = useState(todo.title);
+  const [notes, setNotes] = useState(todo.notes ?? "");
+  useEffect(() => {
+    setTitle(todo.title);
+    setNotes(todo.notes ?? "");
+  }, [todo.title, todo.notes]);
+  const textChanged = title.trim() !== todo.title || notes.trim() !== (todo.notes ?? "").trim();
+  const shortTitle = todo.title.length > 60 ? `${todo.title.slice(0, 59)}…` : todo.title;
 
   return (
     <article className={focused ? "todos-card is-focused" : "todos-card"} id={`todo-${todo.id}`}>
@@ -612,9 +651,45 @@ function TodoCard({
 
       {todo.notes ? <p style={{ margin: 0 }}>{todo.notes}</p> : null}
 
+      {/* A parent or guest saw "Mark done" on every task, and the tap was refused (QA A3-18). */}
+      {viewOnly ? null : (
       <div className="todos-card-controls">
         <details className="todos-card-details">
           <summary>Details</summary>
+          {/* Fix a typo without deleting and re-adding the task (A5-22). */}
+          <form
+            className="todos-card-text"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!title.trim() || !textChanged) return;
+              void mutate({ action: "update-todo", todoId: todo.id, title: title.trim(), notes: notes.trim() });
+            }}
+          >
+            <FormRow label="Title" wide>
+              <input value={title} maxLength={TODO_TITLE_MAX} required disabled={busy} onChange={(event) => setTitle(event.target.value)} />
+            </FormRow>
+            <FormRow label="Notes" wide>
+              <input value={notes} disabled={busy} placeholder="Optional context" onChange={(event) => setNotes(event.target.value)} />
+            </FormRow>
+            {textChanged ? (
+              <div className="todos-card-actions">
+                <Button
+                  variant="secondary"
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setTitle(todo.title);
+                    setNotes(todo.notes ?? "");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button variant="secondary" type="submit" disabled={busy || !title.trim()}>
+                  Save text
+                </Button>
+              </div>
+            ) : null}
+          </form>
           <FormGrid min={140}>
             <FormRow label="Status">
               <select
@@ -644,7 +719,7 @@ function TodoCard({
                 }
               >
                 <option value="">Unassigned</option>
-                {view.members.map((member) => (
+                {assignableMembers(view.members, todo.assigneeUserId).map((member) => (
                   <option key={member.userId} value={member.userId}>
                     {member.name}
                   </option>
@@ -690,13 +765,32 @@ function TodoCard({
           </FormGrid>
           <div className="todos-card-actions">
             <a className="app-muted" href={deepLink}>Link to task</a>
-            <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: `Delete “${todo.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) { mutate({ action: "delete-todo", todoId: todo.id }); } }}>
-              Delete
-            </Button>
+            {canDelete ? (
+              <Button
+                variant="secondary"
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  if (
+                    await askConfirm({
+                      title: `Delete “${shortTitle}”?`,
+                      body: `It comes off the list for the whole team${todo.assigneeName ? `, including ${todo.assigneeName}` : ""}. This can't be undone; mark it done instead if the work happened.`,
+                      confirmLabel: "Delete task",
+                      tone: "destructive",
+                    })
+                  ) {
+                    mutate({ action: "delete-todo", todoId: todo.id });
+                  }
+                }}
+              >
+                Delete
+              </Button>
+            ) : null}
           </div>
         </details>
+        {/* Secondary: the page's one primary is Add, and every card used to carry its own. */}
         {todo.status !== "done" ? (
-          <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}>
+          <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}>
             Mark done
           </Button>
         ) : (
@@ -705,6 +799,7 @@ function TodoCard({
           </Button>
         )}
       </div>
+      )}
     </article>
   );
 }

@@ -26,12 +26,27 @@ async function session() {
   return value;
 }
 
-const fail = (error: unknown) =>
-  Response.json(
+const ADMIN_ONLY = "Organization administrator access required";
+
+/**
+ * "Organization administrator access required" meant nothing to a student (QA A3-22): say who
+ * can. Still a 403 with that cause, and every other refusal keeps its own sentence.
+ */
+const fail = (error: unknown) => {
+  if (error instanceof Error && error.message === ADMIN_ONLY) {
+    return Response.json(
+      {
+        error: "Only the team owner and mentors or coaches can see or change people. Ask one of them.",
+        reason: "team_admin_only",
+      },
+      { status: 403 },
+    );
+  }
+  return Response.json(
     { error: publicErrorMessage(error, "Member request failed") },
-    { status: error instanceof Error && error.message === "Authentication required" ? 401
-      : error instanceof Error && error.message === "Organization administrator access required" ? 403 : 400 },
+    { status: error instanceof Error && error.message === "Authentication required" ? 401 : 400 },
   );
+};
 
 export async function GET(request: Request) {
   try {

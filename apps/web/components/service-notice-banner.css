@@ -1,0 +1,51 @@
+/* "Vantage is limited right now": in the page, never over it; calm, and still. */
+.service-notice {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 12px auto 0;
+  width: min(1124px, calc(100% - 32px));
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--line));
+  border-radius: var(--radius-sm, 12px);
+  background: var(--warning-soft);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.service-notice-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.service-notice-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.service-notice a {
+  color: var(--accent);
+}
+
+.service-notice-close {
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs, 8px);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .service-notice {
+    margin-top: 8px;
+    padding: 10px 12px;
+  }
+}

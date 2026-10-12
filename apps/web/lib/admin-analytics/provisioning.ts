@@ -4,11 +4,17 @@
  * lives here so it can be smoke-tested.
  */
 
+import { ORGANIZATION_INVITE_MAX_HOURS } from "@vantage/core/invite-policy";
+
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const TEAM_NUMBER_MIN = 1;
 export const TEAM_NUMBER_MAX = 99999;
-/** One-time owner invite lifetime; matches the member-invite default ceiling. */
-export const OWNER_INVITE_HOURS = 24;
+/**
+ * One-time owner invite lifetime: the member-invite ceiling (7 days, invite-policy.ts). A new
+ * team's mentor is the person most likely to open the email days later, and a day-long link
+ * left new teams ownerless until someone reissued it (QA A2-10).
+ */
+export const OWNER_INVITE_HOURS = ORGANIZATION_INVITE_MAX_HOURS;
 
 export type ProvisionInput = {
   name?: unknown;
@@ -28,20 +34,34 @@ export type ProvisionValidation =
   | { ok: true; value: ValidProvisionInput }
   | { ok: false; error: string };
 
+export const TEAM_NAME_MAX = 80;
+const EMAIL_MAX = 254;
+
+/**
+ * A team number exactly as typed: a whole number, or digits only. `Number()` alone turned `true`
+ * into team #1, and `"9e3"`, `" 9202 "` and `[5]` into numbers too (QA A2-12: a stray team #1).
+ */
+export function parseTeamNumber(value: unknown): number | null {
+  if (typeof value === "number") return Number.isInteger(value) ? value : null;
+  if (typeof value === "string" && /^\d{1,5}$/.test(value)) return Number(value);
+  return null;
+}
+
 /** Validate the create-workspace form exactly once, server-side. */
 export function validateProvisionInput(input: ProvisionInput): ProvisionValidation {
-  const name = typeof input.name === "string" ? input.name.trim() : "";
+  const name = typeof input.name === "string" ? input.name.replace(/\s+/g, " ").trim() : "";
   const slug = typeof input.slug === "string" ? input.slug.trim() : "";
   const ownerEmail = typeof input.ownerEmail === "string" ? input.ownerEmail.trim().toLowerCase() : "";
-  const teamNumber = Number(input.teamNumber);
+  const teamNumber = parseTeamNumber(input.teamNumber);
 
   if (!name) return { ok: false, error: "Organization name is required" };
+  if (name.length > TEAM_NAME_MAX) return { ok: false, error: `Keep the team name to ${TEAM_NAME_MAX} characters` };
   if (!slug) return { ok: false, error: "Team slug is required" };
-  if (!SLUG_PATTERN.test(slug))
+  if (!SLUG_PATTERN.test(slug) || slug.length > 64)
     return { ok: false, error: "Slug must use lowercase letters, numbers, and hyphens" };
-  if (!Number.isInteger(teamNumber) || teamNumber < TEAM_NUMBER_MIN || teamNumber > TEAM_NUMBER_MAX)
+  if (teamNumber === null || teamNumber < TEAM_NUMBER_MIN || teamNumber > TEAM_NUMBER_MAX)
     return { ok: false, error: `Team number must be between ${TEAM_NUMBER_MIN} and ${TEAM_NUMBER_MAX}` };
-  if (!ownerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail))
+  if (!ownerEmail || ownerEmail.length > EMAIL_MAX || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ownerEmail))
     return { ok: false, error: "A valid owner email is required" };
   return { ok: true, value: { name, slug, teamNumber, ownerEmail } };
 }
@@ -78,13 +98,22 @@ export type ProvisionConfirmation = {
    * owner's team gets them when the owner accepts). A /claim team gets the same set.
    */
   teamDefaults?: "ready" | "on_owner_join" | "pending";
+  /** A waitlist entry for the owner's email was marked converted. */
+  waitlistConverted?: boolean;
 };
 
 /** What to do next, in plain words. The technical record is in confirmationDetails. */
 export function confirmationLines(confirmation: ProvisionConfirmation): string[] {
   const { owner } = confirmation;
   if (owner.mode === "seeded") {
-    return [`${owner.email} is the owner and can sign in now.`];
+    // Someone who already has an account is made owner at once. Say whether anyone told them:
+    // "is the owner" alone left the admin thinking the hand-off was done (QA A2-08).
+    const emailed = owner.emailSent && owner.delivery !== "local" && owner.delivery !== "unconfigured";
+    return [
+      emailed
+        ? `${owner.email} already had an account and is the owner now. We emailed them, and they'll see a note when they sign in.`
+        : `${owner.email} already had an account and is the owner now. Email isn't set up here, so tell them yourself. They'll see a note when they sign in.`,
+    ];
   }
   const expires = owner.inviteExpiresAt
     ? ` It expires ${new Date(owner.inviteExpiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}.`
@@ -105,6 +134,7 @@ export function confirmationDetails(confirmation: ProvisionConfirmation): string
       ? "Owner: existing verified account, added directly."
       : "Owner: no verified account yet, so a one-time invite was created. The link is shown once and not stored.",
     ...(confirmation.teamDefaults ? [teamDefaultsLine(confirmation.teamDefaults)] : []),
+    ...(confirmation.waitlistConverted ? ["Waitlist: this email's request is marked converted."] : []),
   ];
 }
 
@@ -114,11 +144,29 @@ function teamDefaultsLine(state: NonNullable<ProvisionConfirmation["teamDefaults
   return "Starter scout forms could not be added. The owner can publish forms from Competition → Forms.";
 }
 
+/**
+ * The most likely provisioning mistake (a waitlisted mentor whose team is already on Vantage),
+ * checked before the insert so it is named for what it is. The insert used to hit the web-address
+ * index first and send the admin to a field folded under Advanced (QA A2-07).
+ */
+export function teamNumberTakenMessage(teamNumber: number, existingName: string | null): string {
+  const name = existingName?.trim();
+  const label = name && name !== `Team ${teamNumber}` ? ` (${name})` : "";
+  return `Team ${teamNumber} already has a team${label}. Find it in the list on the right.`;
+}
+
 /** Friendly message for the two uniqueness races provisioning can hit. */
 export function provisionConflictMessage(errorText: string): string | null {
   const text = errorText.toLowerCase();
   if (!text.includes("duplicate key")) return null;
-  if (text.includes("team_number")) return "That team number already has a team";
+  if (text.includes("team_number")) return "That team number already has a team. Find it in the list on the right.";
   if (text.includes("slug")) return "Another team already uses that web address. Change it under Advanced, or check the team isn't already set up";
   return "A team with those details already exists";
+}
+
+/** An owner invite that has run out, from the admin team list's point of view. */
+export function ownerInviteExpired(expiresAt: string | Date | null | undefined, now: Date = new Date()): boolean {
+  if (!expiresAt) return false;
+  const at = new Date(expiresAt).getTime();
+  return Number.isFinite(at) && at <= now.getTime();
 }

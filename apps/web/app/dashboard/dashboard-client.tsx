@@ -279,6 +279,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
 
   const {
     addWidget,
+    moveWidget,
     tidyLayout,
     setAlwaysShown,
     shareWithTeam,
@@ -420,6 +421,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       onToggleQuietWidgets={() => setQuietView({ scope: quietScope, expanded: !showQuietWidgets })}
       refreshing={refreshing}
       onRefresh={() => void refreshBoard()}
+      onRetryHome={() => {
+        if (home.orgId) void home.loadHome(home.orgId);
+      }}
       // Whether the widgets (and the onboarding steps) have arrived, so the "what to do
       // now" card waits as a blank shape rather than saying there is nothing.
       widgetsLoaded={home.widgetsLoaded && firstWeek.loaded}
@@ -497,6 +501,7 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       renameBoard={renameBoard}
       deleteBoard={deleteBoard}
       addWidget={addWidget}
+      moveWidget={moveWidget}
       setAlwaysShown={setAlwaysShown}
       shareWithTeam={shareWithTeam}
       removeWidget={removeWidget}

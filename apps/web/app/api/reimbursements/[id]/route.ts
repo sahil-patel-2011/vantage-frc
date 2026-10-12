@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { withRls } from "@vantage/db";
 import {
   auditPayload,
+  denialNoteProblem,
   evaluateTransition,
   isReimbursementAction,
   isUuid,
@@ -35,14 +36,21 @@ async function loadClaim(
   return mapSummaryRow(row as never);
 }
 
-/** Column writes for each transition. Timestamps are set by the database. */
+/**
+ * Column writes for each transition. Timestamps are set by the database.
+ *
+ * The filer's own moves (submit, withdraw, reopen) clear the approver, which RLS requires of a
+ * member's write, but keep `decision_note` and `decided_at`: a denied claim that is fixed and sent
+ * again still shows "Denied Oct 11: …" to the filer and to whoever decides it next. The next
+ * approval or denial replaces them (0723 stops a member from editing them directly).
+ */
 function transitionSql(action: string): { sql: string; params: (userId: string, note: string | null) => unknown[] } {
   switch (action) {
     case "submit":
       return {
         sql: `UPDATE reimbursement_requests
               SET status = 'submitted', submitted_at = now(), approver_user_id = NULL,
-                  decided_at = NULL, decision_note = NULL, paid_at = NULL, updated_at = now()
+                  paid_at = NULL, updated_at = now()
               WHERE org_id = $1::uuid AND id = $2::uuid`,
         params: () => [],
       };
@@ -51,7 +59,7 @@ function transitionSql(action: string): { sql: string; params: (userId: string, 
       return {
         sql: `UPDATE reimbursement_requests
               SET status = 'draft', submitted_at = NULL, approver_user_id = NULL,
-                  decided_at = NULL, decision_note = NULL, paid_at = NULL, updated_at = now()
+                  paid_at = NULL, updated_at = now()
               WHERE org_id = $1::uuid AND id = $2::uuid`,
         params: () => [],
       };
@@ -180,6 +188,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         hasReceipt: claim.hasReceipt,
       });
       if (!verdict.ok) throw new TenantHttpError(409, verdict.reason);
+      if (requestedAction === "deny") {
+        const problem = denialNoteProblem(note);
+        if (problem) throw new TenantHttpError(400, problem);
+      }
 
       const { sql, params: buildParams } = transitionSql(requestedAction);
       const updated = await client.query(sql, [orgId, id, ...buildParams(session.user.id, note)]);

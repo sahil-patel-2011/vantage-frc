@@ -53,7 +53,7 @@ test.describe("one control per destination", () => {
     // about genuinely do not exist there — so the test failed three
     // assertions later on a page that was behaving correctly.
     await gotoAsTeam(page, "/team/admin");
-    const title = page.getByRole("heading", { level: 1, name: "Team admin" });
+    const title = page.getByRole("heading", { level: 1, name: "Members and invites" });
     const missing = page.getByRole("heading", { name: "This page is not here" });
     const chooseTeam = page.getByRole("heading", { name: "Choose your team", exact: true });
     await expect(title.or(missing).first()).toBeVisible();

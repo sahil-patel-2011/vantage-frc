@@ -1,0 +1,96 @@
+/*
+ * Motion polish — loaded after macos-product.css, which sets button transitions to colour only
+ * and turns off the hub-tab underline. This sheet restores the three things that left the app
+ * feeling static, in the same spirit as product-motion.css:
+ *
+ *   1. Buttons answer a press: a 3% give that springs back on release.
+ *   2. Segmented tabs slide their selected background to the new tab (TabBar measures it).
+ *   3. Rows that appear in a list ease in where they land, using @starting-style, so a saved
+ *      record, a filter change or a new review arrives instead of popping.
+ *
+ * No global `scroll-behavior: smooth`: Next 16 would then animate every route change and
+ * back/forward scroll restore unless <html> carries data-scroll-behavior="smooth".
+ *
+ * Every duration is a vantage-fluid token (0ms under reduced motion). `scale` and `translate`
+ * are the standalone properties, so none of this fights a keyframed `transform`.
+ */
+
+/* ── 1. Press ──────────────────────────────────────────────────────────── */
+
+body.has-app-shell :is(.app-button, .soft-btn, .primary-action) {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    box-shadow var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    scale var(--dur-press) var(--ease-spring);
+}
+body.has-app-shell :is(.app-button, .soft-btn, .primary-action):not(:disabled, [aria-disabled="true"]):active {
+  scale: 0.97;
+}
+/* Segments and icon buttons give a little less: they are small, and sit in a row. */
+body.has-app-shell :is(.soft-tab-bar, .form-view-segments, .workspace-hub-tabs) > :is(a, button),
+body.has-app-shell .soft-icon-btn {
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    box-shadow var(--dur-tint) var(--ease-out),
+    scale var(--dur-press) var(--ease-spring);
+}
+body.has-app-shell :is(.soft-tab-bar, .form-view-segments, .workspace-hub-tabs) > :is(a, button):not(:disabled):active,
+body.has-app-shell .soft-icon-btn:not(:disabled):active {
+  scale: 0.98;
+}
+
+/* ── 2. Sliding segment ────────────────────────────────────────────────── */
+
+/* Positioned always, so TabBar's offsetLeft is measured against the strip itself. */
+body.has-app-shell .soft-tab-bar {
+  position: relative;
+  isolation: isolate;
+}
+.soft-tab-glider {
+  display: none;
+}
+body.has-app-shell .soft-tab-bar[data-glide] > .soft-tab-glider {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: var(--glide-w);
+  height: var(--glide-h);
+  translate: var(--glide-x) var(--glide-y);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 1px 4px #0000000a, 0 0 0 1px var(--line-soft);
+  pointer-events: none;
+}
+body.has-app-shell .soft-tab-bar[data-glide="on"] > .soft-tab-glider {
+  transition:
+    translate var(--dur-move) var(--ease-spring),
+    width var(--dur-move) var(--ease-spring),
+    height var(--dur-move) var(--ease-settle);
+}
+/* The glider is the selected background now; the tab itself only changes its text colour. */
+body.has-app-shell .soft-tab-bar[data-glide] > :is(.active, [aria-selected="true"]) {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ── 3. Rows arriving ──────────────────────────────────────────────────── */
+
+/* Zero specificity: any list that choreographs its own rows keeps doing so. Menus, listboxes and
+   tab strips are excluded — they have their own pop-in. With no matching transition the row
+   simply renders in place, so nothing can be left invisible. */
+:where(body.has-app-shell .module-page) :where(ul, ol):not([role="menu"], [role="listbox"], [role="tablist"]) > :where(li) {
+  transition:
+    opacity var(--dur-move) var(--ease-out),
+    translate var(--dur-move) var(--ease-settle);
+}
+@starting-style {
+  :where(body.has-app-shell .module-page) :where(ul, ol):not([role="menu"], [role="listbox"], [role="tablist"]) > :where(li) {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}

@@ -570,6 +570,11 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           setDrafts={setDrafts}
           save={(provider) => void save(provider)}
           remove={(provider) => void remove(provider)}
+          reload={() => load()}
+          notify={(text, isError) => {
+            setMessage(text);
+            setMessageIsError(Boolean(isError));
+          }}
           localDraft={localDraft}
           setLocalDraft={setLocalDraft}
           busyLocal={busyLocal}

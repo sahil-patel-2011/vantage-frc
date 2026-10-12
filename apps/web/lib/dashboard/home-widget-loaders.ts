@@ -156,7 +156,28 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
       };
     }
   }
-  if (!matchLabel && events.length === 0 && duties.length === 0 && !scoutDuty) {
+  // Guided-track steps waiting on this person's sign-off (A5-16): only an owner or admin has any,
+  // and their own requests never count. Its own savepoint, so a database without 0719 still
+  // loads the rest of the card.
+  const signoffsWaiting = await withSavepoint(
+    client,
+    async () => {
+      const rows = await query<{ n: number }>(
+        client,
+        `SELECT /* home-widget:my_day-signoffs */ count(*)::int AS n
+           FROM guided_signoffs s
+          WHERE s.org_id = $1::uuid AND s.status = 'requested' AND s.user_id <> $2::uuid
+            AND EXISTS (
+              SELECT 1 FROM memberships m
+               WHERE m.org_id = s.org_id AND m.user_id = $2::uuid AND m.role IN ('owner', 'admin')
+            )`,
+        [ctx.orgId, ctx.userId],
+      );
+      return Number(rows[0]?.n ?? 0);
+    },
+    0,
+  );
+  if (!matchLabel && events.length === 0 && duties.length === 0 && !scoutDuty && signoffsWaiting === 0) {
     return empty(await myDayEmptyReason(client, ctx.eventKey, teamKey));
   }
   return live({
@@ -167,6 +188,7 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
     events,
     duties,
     scoutDuty,
+    signoffsWaiting,
   });
 }
 

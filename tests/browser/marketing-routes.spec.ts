@@ -5,7 +5,7 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   // The homepage identifies the whole product without promising spreadsheet replacement.
   await expect(page.getByRole("heading", { name: "One team. A clearer season." })).toBeVisible();
-  const hero = page.locator(".lux-hero");
+  const hero = page.locator(".mx-hero");
   await expect(hero.getByRole("link", { name: "Join the waitlist" })).toHaveCount(1);
   await expect(hero.getByRole("link", { name: /Already invited/ })).toBeVisible();
   await expect(page.getByText("Setup required")).toHaveCount(0);
@@ -14,7 +14,7 @@ test("marketing navigation uses real routes and active tabs", async ({ page }) =
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Features" }).click();
   await expect(page).toHaveURL(/\/features$/);
   await expect(page.getByRole("link", { name: "Features", exact: true }).first()).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("heading", { name: "What you open after sign-in." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Everything your team runs on." })).toBeVisible();
   await expect(page.getByText("Setup required")).toHaveCount(0);
 
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "How it works" }).click();
@@ -31,7 +31,7 @@ test("marketing header keeps mobile navigation and footer routes discoverable", 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("summary[aria-label='Open navigation']")).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("button", { name: "Menu", exact: true })).toBeVisible();
   await expect(page.getByRole("banner").getByRole("link", { name: "Sign in" })).toBeVisible();
   await page.getByRole("contentinfo").getByRole("link", { name: "How it works" }).click();
   await expect(page).toHaveURL(/\/workflow$/);

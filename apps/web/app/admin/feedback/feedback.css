@@ -1,0 +1,94 @@
+/* Platform admin: the Feedback inbox. Rows reuse the Support rows (admin-org / admin-support-row);
+   only what Support does not have lives here. */
+.fb-admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.fb-admin-status-filter {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+  font: 600 13px var(--font-source-sans), ui-sans-serif;
+}
+.fb-admin-status-filter select,
+.fb-admin-actions select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: inherit;
+  font: 500 14px var(--font-source-sans), ui-sans-serif;
+}
+
+.fb-admin-row {
+  align-items: start;
+}
+.fb-admin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 14px;
+}
+.fb-admin-head a {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.fb-admin-kind {
+  padding: 2px 9px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--line);
+  background: var(--surface-2, var(--bg));
+  color: var(--muted);
+  font: 700 11px/1.5 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+/* A problem and an idea differ in the word as well as the tint. */
+.fb-admin-kind[data-kind="bug"] {
+  border-color: color-mix(in srgb, var(--critical) 35%, var(--line));
+  background: var(--critical-soft);
+  color: var(--critical);
+}
+.fb-admin-kind[data-kind="idea"] {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.fb-admin-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px 16px;
+  margin: 12px 0 0;
+}
+.fb-admin-meta div {
+  min-width: 0;
+}
+.fb-admin-meta dt {
+  color: var(--muted);
+  font: 700 11px/1.2 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.fb-admin-meta dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.fb-admin-meta code {
+  font-size: 12px;
+}
+
+.fb-admin-saved {
+  min-height: 1.2em;
+  color: var(--muted);
+}

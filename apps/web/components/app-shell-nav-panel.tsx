@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, type KeyboardEvent, type RefObject } from "react";
+import { type KeyboardEvent, type RefObject } from "react";
 import { Icon } from "./icon";
-import {
-  type Me,
-  type MembershipOption,
-  type NavResultRow,
-  type SearchHit,
-} from "./app-shell-model";
-import type { CommandHit } from "../lib/nav/command-search";
-import { withOrgHref, type IslandTabDefinition, type ProductNavGroup } from "../lib/nav/product-nav";
+import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
+import type { PinDefinition } from "../lib/nav/pins";
+import { SETTINGS_HREF } from "../lib/nav/settings-nav";
 import { AppShellNavGroups } from "./app-shell-nav-groups";
+import { ShellSearchResults } from "./shell-search-results";
+import type { ShellSearch } from "./use-shell-search";
+import { workspacePickerHref } from "../lib/workspace";
 
 function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
   if (event.key !== "Tab") return;
@@ -39,80 +37,39 @@ export function AppShellNavPanel({
   closeNav,
   panelCloseRef,
   searchInputRef,
-  me,
   orgLabel,
   rolePlanCue,
   orgId,
-  memberships,
-  navQuery,
-  setNavQuery,
-  resultRows,
-  commandHits,
-  searchHits,
-  searchLoading,
-  queryActive,
-  activeRowIndex,
-  setResultCursor,
-  goToCommand,
-  openFullSearch,
-  jumpTopResult,
+  search,
   shortcutHint,
   visibleNavGroups,
+  pins,
   activeGroupLabel,
   pathname,
   pathSearch,
   navHrefAllowed,
-  openIslandEditor,
-  signingOut,
-  onSignOut,
+  onEditPins,
 }: {
   navOpen: boolean;
   closeNav: () => void;
   panelCloseRef: RefObject<HTMLButtonElement | null>;
   searchInputRef: RefObject<HTMLInputElement | null>;
-  me: Me;
-  initial: string;
-  accountLabel: string | null;
   orgLabel: string;
   rolePlanCue: string;
   orgId: string;
-  workspaceOpen: boolean;
-  setWorkspaceOpen: (value: boolean | ((current: boolean) => boolean)) => void;
-  memberships: MembershipOption[];
-  teamsLoaded: boolean;
-  orderedMemberships: MembershipOption[];
-  switchWorkspaceHref: (nextOrgId: string) => string;
-  onWorkspaceSwitch: (nextOrgId: string) => void;
-  navQuery: string;
-  setNavQuery: (value: string) => void;
-  resultRows: NavResultRow[];
-  commandHits: CommandHit[];
-  searchHits: SearchHit[];
-  searchLoading: boolean;
-  queryActive: boolean;
-  activeRowIndex: number;
-  setResultCursor: (value: number | ((current: number) => number)) => void;
-  goToCommand: (hit: CommandHit) => void;
-  openFullSearch: () => void;
-  jumpTopResult: () => void;
+  /** The menu's own search (phones and tablets). ⌘K opens the palette instead. */
+  search: ShellSearch;
   shortcutHint: string;
   visibleNavGroups: ProductNavGroup[];
-  islandTabs: IslandTabDefinition[];
+  /** "Your apps", already filtered to what this team may open. */
+  pins: PinDefinition[];
   activeGroupLabel: string | undefined;
   pathname: string;
   pathSearch: string;
   navHrefAllowed: (href: string) => boolean;
-  openIslandEditor: () => void;
-  signingOut: boolean;
-  onSignOut: () => void;
+  onEditPins: () => void;
 }) {
-  useEffect(() => {
-    if (!navOpen || !queryActive || activeRowIndex < 0) return;
-    document.getElementById(`soft-nav-row-${activeRowIndex}`)?.scrollIntoView({ block: "nearest" });
-  }, [navOpen, queryActive, activeRowIndex]);
-  const activeMembershipRole = orgId
-    ? (memberships.find((row) => row.orgId === orgId)?.role ?? null)
-    : null;
+  const queryActive = search.queryActive;
   return (
     <>
       <button className={`soft-scrim soft-navigation-scrim${navOpen ? " open" : ""}`} type="button" aria-label="Close navigation" aria-hidden={!navOpen} inert={!navOpen} tabIndex={-1} onClick={closeNav} />
@@ -146,9 +103,11 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          <a className="soft-org-chip" href={withOrgHref("/account/teams", orgId)} onClick={closeNav} aria-label={`${orgLabel}. Choose or manage your teams`}>
+          {/* The same destination as the top bar's team button and the sidebar's team card: the
+              picker, which brings you back to this page for the team you pick. */}
+          <a className="soft-org-chip" href={workspacePickerHref(pathname, pathSearch)} onClick={closeNav} aria-label={`Switch team — ${orgLabel}`}>
             <Icon name="users" />
-            <div><strong>{orgLabel}</strong><span>{orgId ? rolePlanCue : "Choose a team in Settings"}</span></div>
+            <div><strong>{orgLabel}</strong><span>{orgId ? rolePlanCue : "Choose your team"}</span></div>
             <Icon name="chevron" />
           </a>
         </div>
@@ -161,45 +120,22 @@ export function AppShellNavPanel({
             type="search"
             role="combobox"
             aria-label="Search pages, tools, and your team's data"
-            aria-expanded={resultRows.length > 0}
+            aria-expanded={search.rows.length > 0}
             aria-controls={queryActive ? "soft-nav-results" : undefined}
-            aria-activedescendant={activeRowIndex >= 0 ? `soft-nav-row-${activeRowIndex}` : undefined}
-            value={navQuery}
+            aria-activedescendant={queryActive && search.activeIndex >= 0 ? `soft-nav-row-${search.activeIndex}` : undefined}
+            value={search.query}
             placeholder="Search Vantage"
             autoComplete="off"
-            onChange={(event) => setNavQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                if (resultRows.length) {
-                  setResultCursor((current) => (current + 1) % resultRows.length);
-                }
-                return;
-              }
-              if (event.key === "ArrowUp") {
-                event.preventDefault();
-                if (resultRows.length) {
-                  setResultCursor((current) => (current - 1 + resultRows.length) % resultRows.length);
-                }
-                return;
-              }
-              if (event.key === "Enter") {
-                event.preventDefault();
-                if (event.metaKey || event.ctrlKey) {
-                  openFullSearch();
-                  return;
-                }
-                jumpTopResult();
-              }
-            }}
+            onChange={(event) => search.setQuery(event.target.value)}
+            onKeyDown={search.onFieldKeyDown}
           />
-          {navQuery ? (
+          {search.query ? (
             <button
               type="button"
               className="soft-panel-search-clear"
               aria-label="Clear search"
               onClick={() => {
-                setNavQuery("");
+                search.setQuery("");
                 searchInputRef.current?.focus();
               }}
             >
@@ -212,110 +148,23 @@ export function AppShellNavPanel({
 
         {queryActive ? (
           <div className="soft-nav-results">
-          <div id="soft-nav-results" role={resultRows.length ? "listbox" : undefined} aria-label="Search results">
-            {commandHits.length > 0 ? (
-              <div className="command-group" role="group" aria-label="Go to">
-                <p className="command-group-head">Go to</p>
-                {commandHits.map((hit, index) => (
-                  <a
-                    id={`soft-nav-row-${index}`}
-                    role="option"
-                    aria-selected={index === activeRowIndex}
-                    className={index === activeRowIndex ? "is-active" : undefined}
-                    href={withOrgHref(hit.href, orgId)}
-                    key={hit.id}
-                    onMouseEnter={() => setResultCursor(index)}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      goToCommand(hit);
-                    }}
-                  >
-                    <Icon name={hit.kind === "action" ? "bolt" : "grid"} />
-                    <span>
-                      {hit.label}
-                      <small>{hit.context}</small>
-                    </span>
-                    {index === activeRowIndex ? <small aria-hidden="true">↵</small> : null}
-                  </a>
-                ))}
-              </div>
-            ) : null}
-
-            {searchHits.length > 0 ? (
-              <section className="command-search-hits" role="group" aria-label="Your data">
-                <header>
-                  <strong>In your team&apos;s data</strong>
-                  {searchLoading ? <small>Searching…</small> : null}
-                </header>
-                <nav role="presentation">
-                  {searchHits.map((hit, offset) => {
-                    const index = commandHits.length + offset;
-                    return (
-                      <a
-                        id={`soft-nav-row-${index}`}
-                        role="option"
-                        aria-selected={index === activeRowIndex}
-                        className={index === activeRowIndex ? "is-active" : undefined}
-                        href={hit.href}
-                        key={`${hit.href}-${hit.title}`}
-                        onMouseEnter={() => setResultCursor(index)}
-                        onClick={closeNav}
-                      >
-                        <Icon name="search" />
-                        <span>
-                          {hit.title}
-                          {hit.subtitle ? <small>{hit.subtitle}</small> : null}
-                        </span>
-                        {hit.sourceLabel ? <small>{hit.sourceLabel}</small> : null}
-                      </a>
-                    );
-                  })}
-                </nav>
-              </section>
-            ) : null}
-          </div>
-            {searchLoading ? <p role="status">Searching your team’s data…</p> : null}
-            <button type="button" className="command-open-full" onClick={openFullSearch}>
-              Open full search for “{navQuery.trim()}”
-            </button>
-            {resultRows.length === 0 && !searchLoading ? (
-              <p className="command-empty">
-                Nothing matches “{navQuery.trim()}”. Press Ctrl/⌘+Enter to search your data.
-              </p>
-            ) : null}
+            <ShellSearchResults search={search} idPrefix="soft-nav" orgId={orgId} shortcutHint={shortcutHint} />
           </div>
         ) : (
           <nav className="soft-drawer-flat" aria-label="Main menu">
             <AppShellNavGroups key={`${navOpen}-${orgId}-${pathname}-${pathSearch}`}
-              groups={visibleNavGroups} activeGroupLabel={activeGroupLabel}
+              groups={visibleNavGroups} pins={pins} activeGroupLabel={activeGroupLabel}
               pathname={pathname} pathSearch={pathSearch} orgId={orgId}
-              navHrefAllowed={navHrefAllowed} closeNav={closeNav}
+              navHrefAllowed={navHrefAllowed} closeNav={closeNav} onEditPins={onEditPins}
             />
-            {/* Settings scroll with destinations, so short screens still have room
-                to browse. Sign-out alone stays in the fixed footer. */}
-            <div className="soft-drawer-settings" aria-label="Settings">
-              <p className="main-menu-heading">Manage</p>
-              {me.platformAdmin ? (
-                <a href="/admin" onClick={closeNav}><Icon name="grid" /><span><strong>Platform admin</strong></span></a>
-              ) : null}
-              <a href={withOrgHref("/account", orgId)} onClick={closeNav}>
-                <Icon name="gear" /><span><strong>Personal settings</strong></span>
-              </a>
-              {orgId && ["owner", "admin"].includes(activeMembershipRole ?? "") ? (
-                <a href={withOrgHref("/team/admin", orgId)} onClick={closeNav}>
-                  <Icon name="users" /><span><strong>Team admin</strong></span>
-                </a>
-              ) : null}
-              <button type="button" className="soft-drawer-shortcut-edit" onClick={openIslandEditor}>
-                <Icon name="grid" /><span><strong>Edit shortcuts</strong></span>
-              </button>
-            </div>
           </nav>
         )}
-        {!queryActive ? <footer className="soft-drawer-foot">
-          <button type="button" disabled={signingOut} onClick={onSignOut}>
-            <Icon name="logout" />{signingOut ? "Signing out…" : "Sign out"}
-          </button>
+        {/* The menu is for going places. Who you are (Team admin, Platform admin, Sign out) lives
+            in the avatar menu at the top right, on every screen size, so neither repeats the other.
+            Your apps are edited from their own heading, so the toolbar keeps Settings and Help. */}
+        {!queryActive ? <footer className="soft-drawer-foot soft-drawer-toolbar" aria-label="Help and settings">
+          <a href={withOrgHref(SETTINGS_HREF, orgId)} onClick={closeNav}><Icon name="gear" /><span>Settings</span></a>
+          <a href={withOrgHref("/help", orgId)} onClick={closeNav}><Icon name="book" /><span>Help</span></a>
         </footer> : null}
       </aside>
     </>

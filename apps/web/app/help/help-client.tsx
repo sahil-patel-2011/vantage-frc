@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { PageHeader, ToolStrip, Button } from "../../components/ui";
+import { openFeedback } from "../../lib/feedback/feedback-open";
+import { tourReplayHref } from "../../lib/tour/tour-start";
 import {
   HELP_ARTICLES,
   filterHelpArticles,
@@ -52,11 +54,14 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
   const [view, setView] = useState<HelpView>("topics");
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<HelpCategoryId | "all">("all");
+  // The team in the address, so "Take the tour again" opens that team's Home.
+  const [teamId, setTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     setView(readInitialView(hasGuide));
     const q = readInitialQuery();
     if (q) setQuery(q);
+    setTeamId(new URLSearchParams(window.location.search).get("orgId"));
   }, [hasGuide]);
 
   const searching = query.trim().length >= 2;
@@ -74,8 +79,8 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
   return (
     <main className="module-page help-page soft-gate">
       <PageHeader
-        breadcrumbs={hasGuide ? "Settings / App manual" : "Settings / Help centre"}
-        title={hasGuide ? "App manual" : "Help centre"}
+        // No breadcrumb: the top bar already has the back button and says where this is.
+        title={hasGuide ? "App manual" : "Help"}
         description={
           hasGuide
             ? "Guides for every part of Vantage."
@@ -85,7 +90,17 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
         <nav className="product-hub-related" aria-label="Related account tools">
           <a href="/whats-new">What’s new</a>
           <a href="/support">Support tickets</a>
-          <a href="/report-bug">Report a bug</a>
+          {/* Opens the same dialog as the round bug button; /report-bug is the page it falls back to. */}
+          <a
+            href="/report-bug"
+            onClick={(event) => {
+              if (openFeedback()) event.preventDefault();
+            }}
+          >
+            Send feedback
+          </a>
+          {/* Home with ?tour=replay: the tour starts there whatever it remembers. */}
+          <a href={tourReplayHref(teamId)}>Take the tour again</a>
           {!hasGuide ? (
             <a href="/docs?view=sections">App manual</a>
           ) : null}
@@ -200,7 +215,7 @@ export default function HelpClient({ sectionGuide }: HelpClientProps = {}) {
               <Button as="a" variant="secondary"
                 href={hasGuide ? "/help" : "/docs?view=sections"}
               >
-                {hasGuide ? "Open Help centre" : "Open the guide"}
+                {hasGuide ? "Open Help" : "Open the guide"}
               </Button>
             </div>
           ) : null}

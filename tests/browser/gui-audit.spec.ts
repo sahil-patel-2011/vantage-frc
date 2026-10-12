@@ -329,7 +329,7 @@ test.describe("GUI test agent", () => {
           const destination = new URL(page.url());
           const text = await page.evaluate(() => (document.querySelector("main") ?? document.body).innerText.slice(0, 6000));
           const authWall = /\/(signin|onboarding)$/.test(destination.pathname);
-          const crash = /Application error|This page is not here|Could not load|Couldn't load|Couldn’t load|Something went wrong/i.test(text);
+          const crash = /Application error|This page is not here|Could not load|Couldn't load|Couldn’t load|Something went wrong|This didn't load|didn't go through/i.test(text);
           const setup = /Needs setup|Needs a link|Choose your team|Ask a mentor|not configured|temporarily unavailable|not available right now|setup_required/i.test(text);
           let axe: string[] = [];
           if (withAxe) {

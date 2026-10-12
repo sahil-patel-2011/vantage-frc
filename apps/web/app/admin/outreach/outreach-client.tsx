@@ -125,7 +125,7 @@ export default function AdminOutreachClient() {
   }
 
   const related = adminRelatedLinks({
-    include: ["teams", "plans", "support", "releases", "waitlist", "audit"],
+    include: ["teams", "health", "support", "releases", "waitlist", "audit"],
   });
 
   return (

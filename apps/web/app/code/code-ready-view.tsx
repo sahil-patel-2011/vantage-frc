@@ -3,7 +3,7 @@
 import { BUGBOT_ULTRA_PRICES_USD } from "@vantage/agent/bugbot";
 import { AiHubRelated } from "../../components/ai-hub-related";
 import { BuildHubRelated } from "../../components/build-hub-related";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, PageMain } from "../../components/ui";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -30,7 +30,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
     message,
   } = props;
   return (
-    <main className={`module-page cdc-page${embedded ? " is-embedded" : ""}`}>
+    <PageMain className={`module-page cdc-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
       <header className="app-page-header">
         <div>
@@ -190,6 +190,6 @@ export function CodeReadyView(props: CodeReadyViewProps) {
       <CodeCoachPanel {...props} />
       <CodeBugbotPanel {...props} />
       {orgId ? <CodePullRequests orgId={orgId} /> : null}
-    </main>
+    </PageMain>
   );
 }

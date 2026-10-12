@@ -44,6 +44,23 @@ async function ownMembership(userId: string, teamNumber: number) {
   );
 }
 
+/** When a refused request may try again (0721), or null when it was just a wrong code. Never fatal. */
+async function lockedUntil(teamNumber: number, email: string, ip: string): Promise<string | null> {
+  try {
+    const row = (
+      await requestPool.query<{ retryAt: Date | string | null }>(
+        `SELECT team_code_join_retry_at($1, $2, $3) AS "retryAt"`,
+        [teamNumber, email, ip],
+      )
+    ).rows[0];
+    if (!row?.retryAt) return null;
+    const at = new Date(row.retryAt);
+    return Number.isFinite(at.getTime()) ? at.toISOString() : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The team the new code invitation is for, for "You're joining …" copy. Never fatal. */
 async function invitedTeam(token: string) {
   const client = await requestPool.connect();
@@ -91,14 +108,28 @@ export async function POST(request: Request) {
       "SELECT request_team_code_invite($1,$2,$3,$4,$5) AS id",
       [body.teamNumber, body.pin, body.email.toLowerCase(), ip, token],
     );
-    if (!result.rows[0]?.id)
+    if (!result.rows[0]?.id) {
+      // Locked out (five wrong tries for this address, or many from this network) is not the
+      // same as a typo: say when to try again instead of "wait fifteen minutes" on every miss.
+      const retryAt = await lockedUntil(body.teamNumber, body.email.toLowerCase(), ip);
+      if (retryAt)
+        return Response.json(
+          {
+            error: "Too many wrong tries. Wait a little, then try again, or ask a team admin for an email invite.",
+            code: "join_code_locked",
+            retryAt,
+          },
+          { status: 429, headers: noStore },
+        );
       return Response.json(
         {
           error:
-            "Check your team number and join code, or ask a team admin for an invitation. After several attempts, wait fifteen minutes.",
+            "That team number and join code don't match, or the team's code is turned off. Check both, or ask a team admin for an email invite.",
+          code: "join_code_wrong",
         },
         { status: 400, headers: noStore },
       );
+    }
     const team = await invitedTeam(token);
     return Response.json(
       {

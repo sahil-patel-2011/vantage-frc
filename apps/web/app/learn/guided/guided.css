@@ -14,7 +14,7 @@
 
 .guided-progress { display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
 .guided-bar { display: block; height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
-.guided-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 0.3s ease; }
+.guided-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width var(--dur-sheet) var(--ease-settle); }
 
 .guided-steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .guided-step { border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
@@ -35,6 +35,24 @@
 .guided-step-body { display: grid; gap: 12px; padding: 0 16px 16px 58px; }
 .guided-why { margin: 0; color: var(--muted); line-height: 1.5; }
 .guided-do { margin: 0; padding-left: 20px; display: grid; gap: 6px; line-height: 1.5; }
+
+/* When to use it / Example: two quiet notes beside each other, stacked on a phone. */
+.guided-teach { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.guided-teach p {
+  display: grid; gap: 4px; margin: 0; padding: 10px 12px; border-radius: 10px;
+  background: var(--surface-2); font-size: 14px; line-height: 1.5;
+}
+.guided-teach strong { font-size: 12px; font-weight: 650; color: var(--muted); letter-spacing: 0.01em; }
+.guided-example { border-left: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* The end-of-track practice part sets itself apart from the click-by-click steps. */
+.guided-step.is-practice { margin-top: 10px; border-style: dashed; }
+.guided-step.is-practice.is-open { border-style: solid; }
+.guided-practice-chip {
+  justify-self: start; padding: 1px 8px; border-radius: 999px; font-style: normal; font-size: 11px; font-weight: 650;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.guided-practice-note { margin: 0; font-size: 14px; line-height: 1.5; }
 .guided-links { margin: 0; font-size: 13px; }
 .guided-check { display: grid; gap: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .guided-checked-by { margin: 0; font-size: 14px; line-height: 1.5; }
@@ -47,7 +65,12 @@
 .guided-numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .guided-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .guided-ok { color: var(--success, #15803d); font-weight: 600; }
-.guided-result { padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.45; }
+.guided-waiting { color: var(--muted); font-size: 14px; }
+.guided-declined { margin: 0; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, #f59e0b 14%, transparent); font-size: 14px; }
+/* A real touch target for the leads' link (it was 17px tall on a phone). */
+.guided-lead-note .guided-team-link { display: inline-flex; align-items: center; min-height: 44px; font-weight: 650; }
+/* Scrolled into view after a check: clear of the top bar and the phone's bottom bar. */
+.guided-result { padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.45; scroll-margin: 80px 0 112px; }
 .guided-result p { margin: 0; }
 .guided-result.is-pass { background: color-mix(in srgb, #16a34a 12%, transparent); }
 .guided-result.is-fail { background: color-mix(in srgb, #f59e0b 14%, transparent); }
@@ -61,3 +84,25 @@
 .guided-group { display: grid; gap: 8px; }
 .guided-group h2 { margin: 8px 0 0; font-size: 18px; }
 .guided-group > p { margin: 0 0 4px; color: var(--muted); line-height: 1.5; }
+
+/* Team progress: sign-offs first, then a member × track table that scrolls sideways on a phone. */
+.guided-team-page { max-width: 1100px; }
+.guided-team-notice { margin: 0; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 10%, transparent); font-size: 14px; }
+.guided-pending-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.guided-pending-list > li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.guided-pending-list > li > div:first-child { display: grid; gap: 3px; min-width: 0; flex: 1 1 280px; }
+.guided-pending-list small { color: var(--muted); font-size: 12px; }
+.guided-pending-list p { margin: 4px 0 0; font-size: 14px; line-height: 1.45; }
+.guided-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface); }
+.guided-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.guided-table th, .guided-table td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft, var(--line)); text-align: left; vertical-align: middle; }
+.guided-table thead th { font-weight: 600; color: var(--muted); min-width: 84px; white-space: nowrap; }
+.guided-table thead th a { color: inherit; }
+.guided-table tbody th { font-weight: 600; white-space: nowrap; }
+/* The member's name stays in view while the tracks scroll sideways on a phone. */
+.guided-table th:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--line); }
+.guided-table td { position: relative; min-width: 84px; font-variant-numeric: tabular-nums; }
+.guided-table td .guided-cell-pending { display: block; font-style: normal; font-size: 11px; font-weight: 650; color: var(--accent); }
+.guided-table td i { position: absolute; left: 12px; bottom: 6px; display: block; max-width: calc(100% - 24px); height: 3px; border-radius: 3px; background: var(--accent); }
+.guided-table td[data-done="all"] span { color: var(--success, #15803d); font-weight: 650; }
+.guided-table td[data-done="none"] span { color: var(--muted); }
