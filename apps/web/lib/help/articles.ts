@@ -11,7 +11,7 @@
  *   already working.
  */
 
-import { defaultIslandLabelList, islandCatalogLabelList } from "../nav/island-preferences";
+import { BAR_SLOTS, PIN_LIMIT, defaultPinLabelList } from "../nav/pins";
 
 export type HelpCategoryId =
   | "getting-started"
@@ -227,40 +227,46 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "bottom-island",
     slug: "bottom-island",
-    title: "Customize the bottom island",
+    title: "Your apps: the bottom bar, the menu and the sidebar",
     summary:
-      `Four apps sit in a floating island at the bottom — ${defaultIslandLabelList()} by default.`,
+      `Pin up to ${PIN_LIMIT} places. The first ${BAR_SLOTS} sit in your phone's bottom bar; all of them lead the menu and the desktop sidebar.`,
     category: "getting-started",
     keywords: [
       "island",
+      "bottom island",
+      "bottom bar",
       "bottom nav",
       "tabs",
-      "personal navigation",
+      "your apps",
+      "pinned apps",
+      "pins",
+      "shortcuts",
       "customize island",
-      "dynamic island",
+      "personal navigation",
     ],
-    relatedHref: "/dashboard",
+    relatedHref: "/dashboard?island=1",
     sections: [
       {
-        heading: "Four apps, always on",
+        heading: "One set of pins, three places",
         body: [
-          "The bottom island stays on phone and desktop. It has exactly four apps — not a fifth More dump.",
-          "Everything else is in the menu (hamburger) or Search (⌘K).",
+          `Your apps are the places you pinned. The first ${BAR_SLOTS} sit in the bar at the bottom of your phone, with More at the end for everything else.`,
+          "All of them sit at the top of the menu (the ☰ button) and in the Pinned group at the top of the sidebar on a computer.",
+          `Out of the box they are ${defaultPinLabelList()}.`,
         ],
       },
       {
-        heading: "Change the four",
+        heading: "Change them",
         body: [
-          "Long-press or right-click the island, or open the menu and tap Customize island.",
-          "Tap apps in the order you want them. A selected app shows its slot number. You need exactly four before Save is enabled.",
-          `The island can open ${islandCatalogLabelList()}.`,
+          "Tap Edit next to Your apps in the menu, the pencil next to Pinned in the sidebar, or press and hold the bottom bar (right-click on a computer). Account → Appearance has the same button.",
+          `Tap the red minus to remove a place, or the plus next to any place below to add it (up to ${PIN_LIMIT}). Drag the handle on the right to change the order, or focus it and use the arrow keys.`,
+          "Tap Done to keep your changes, or Cancel to leave everything as it was.",
         ],
       },
       {
-        heading: "Save or reset",
+        heading: "Nothing gets lost",
         body: [
-          "Save writes your choice for this account.",
-          `Reset restores ${defaultIslandLabelList()}.`,
+          "Every place is still in the menu under its workspace (Competition, Team, Build, Business, AI) and in search (⌘K or Ctrl+K), pinned or not.",
+          "Reset to default puts the original pins back.",
         ],
       },
     ],

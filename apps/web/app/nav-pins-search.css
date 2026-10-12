@@ -1,12 +1,12 @@
 /*
  * Search palette, "Your apps" and their editor (loaded after menu-polish.css).
  *
- *   - The search palette: ⌘K / Ctrl+K and "Search anything". A centred card over a dim scrim,
+ *   - The search palette: ⌘K / Ctrl+K and "Search anything". A centered card over a dim scrim,
  *     like Spotlight: one field, then results. It rises a few pixels and fades in; the scrim
  *     fades. Zero motion under reduced motion (the duration tokens are 0 ms there).
  *   - "Your apps" in the phone menu (a dock that wraps to two rows) and the Pinned group at
  *     the top of the desktop sidebar, each with a quiet Edit control.
- *   - The editor: a sheet from the bottom on phones, a centred card on desktop. Cancel left,
+ *   - The editor: a sheet from the bottom on phones, a centered card on desktop. Cancel left,
  *     Done right; the pins are a list with drag handles; everything else has a plus.
  */
 
@@ -90,8 +90,8 @@ body.has-app-shell .search-palette-field input,
   background: transparent !important;
   box-shadow: none;
   color: var(--ink);
-  font: 400 18px/1.3 var(--font-sans);
-  letter-spacing: -0.01em;
+  /* 16px: a phone does not zoom into it (lib/ui/field-zoom.test.ts). */
+  font: 400 16px/1.3 var(--font-sans);
 }
 body.has-app-shell .search-palette-field input:focus,
 body.has-app-shell .search-palette-field input:focus-visible {
@@ -331,15 +331,39 @@ body.has-app-shell .soft-drawer .soft-drawer-toolbar {
     font-weight: 550;
   }
   /* Ask AI, Help and Settings stay in view: with eight pins the list can outgrow a laptop
-     screen, and the footer used to scroll out of sight below it. */
+     screen, and the footer used to scroll out of sight below it. They sit side by side, like
+     a toolbar, so the pins and workspaces above keep the room. */
   .app-sidebar .app-sidebar-footer {
     position: sticky;
     bottom: -18px;
-    margin-bottom: -18px;
-    padding-bottom: 18px;
-    padding-top: 12px;
-    background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--surface-2) 70%, var(--bg)) 12px);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin: auto -16px -18px;
+    padding: 8px 12px 18px;
+    border-top: 1px solid var(--line-soft);
+    background: color-mix(in srgb, var(--surface-2) 70%, var(--bg));
   }
+  .app-sidebar nav.app-sidebar-footer a {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-height: 54px;
+    padding: 6px 2px;
+    font-size: 12px;
+    text-align: center;
+  }
+  .app-sidebar nav.app-sidebar-footer a > svg {
+    width: 22px;
+    height: 22px;
+  }
+  .app-sidebar[data-collapsed="true"] .app-sidebar-footer {
+    grid-template-columns: minmax(0, 1fr);
+    margin-inline: -12px;
+  }
+  /* The sidebar scrolls when it is taller than the window; its parts never squash (a squashed
+     brand row hid the collapsed sidebar's Expand button under the team card). */
+  .app-sidebar > * { flex-shrink: 0; }
   .app-sidebar .app-sidebar-brand { margin-bottom: 20px; }
   .app-sidebar .app-sidebar-team { margin-bottom: 20px; }
   .app-sidebar[data-collapsed="true"] .app-sidebar-label-row {

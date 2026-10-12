@@ -20,7 +20,7 @@ import {
   type IslandTabDefinition,
   type ProductNavIcon,
 } from "./product-nav";
-import { canonicalIslandHref, isValidIslandSelection } from "./island-preferences";
+import { canonicalIslandHref, isValidIslandSelection, joinIslandLabels } from "./island-preferences";
 
 export type PinDefinition = IslandTabDefinition;
 export type PinGroup = { id: string; label: string; icon: ProductNavIcon; items: PinDefinition[] };
@@ -122,6 +122,11 @@ export function isValidPinSelection(value: unknown): value is string[] {
 
 export function defaultPinHrefs(): string[] {
   return [...DEFAULT_PINS];
+}
+
+/** "Home, Scout, Teams, Match plan, My Day, Tasks, and Team resources" — for help and settings copy. */
+export function defaultPinLabelList(): string {
+  return joinIslandLabels(DEFAULT_PINS.map((href) => pinDefinition(href)?.label ?? href));
 }
 
 export function isDefaultPinSelection(value: readonly string[]): boolean {

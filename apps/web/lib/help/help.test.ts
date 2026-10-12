@@ -3,7 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PRICING_CATALOG } from "@vantage/billing/catalog";
 import { describe, expect, it } from "vitest";
-import { defaultIslandLabelList } from "../nav/island-preferences";
+import { defaultPinLabelList } from "../nav/pins";
 import { PRODUCT_HUBS, isHubTab } from "../nav/hubs";
 import {
   HELP_ARTICLES,
@@ -205,10 +205,10 @@ describe("help search index", () => {
     expect(hits[0]?.href).toBe("/help/bottom-island");
   });
 
-  it("describes the island people actually get", () => {
+  it("describes the pins people actually get (Your apps)", () => {
     const article = getHelpArticle("bottom-island");
     const text = articleText(article!);
-    expect(text).toContain(defaultIslandLabelList());
+    expect(text).toContain(defaultPinLabelList());
     expect(text).not.toMatch(/Compete|Media/);
   });
 

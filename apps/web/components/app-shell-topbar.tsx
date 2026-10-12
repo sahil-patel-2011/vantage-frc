@@ -174,7 +174,7 @@ export function AppShellTopbar({
             View only
           </span>
         ) : null}
-        {/* Search, not a second menu: it opens the centred search palette. */}
+        {/* Search, not a second menu: it opens the centered search palette. */}
         {minimal ? null : <button className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenSearch} aria-label="Search pages, tools, and team data" aria-haspopup="dialog" aria-expanded={searchOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
         {/* Nothing is queued before someone is on a team, and its 12-second check read /api/me,
             which answers 403 during onboarding. */}

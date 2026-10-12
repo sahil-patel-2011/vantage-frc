@@ -96,7 +96,7 @@ export function AppShellAccountMenu({
         <a className="soft-account-destination" role="menuitem" href={withOrgHref(SETTINGS_HREF, orgId)} onClick={onClose}>
           <Icon name="gear" /><span>Settings</span>
         </a>
-        {/* The help centre keeps the manual, tickets and bug reporting together. */}
+        {/* The Help center keeps the manual, support and feedback together. */}
         <a className="soft-account-destination" role="menuitem" href={withOrgHref("/help", orgId)} onClick={onClose}>
           <Icon name="book" /><span>Help</span>
         </a>

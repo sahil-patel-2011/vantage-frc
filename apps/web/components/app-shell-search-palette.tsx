@@ -10,7 +10,7 @@ const FOCUSABLE = 'a[href]:not([tabindex="-1"]),button:not(:disabled):not([tabin
 
 /**
  * The search palette: ⌘K / Ctrl+K anywhere, and the top bar's "Search anything" on desktop.
- * One field in a centred card, results grouped "Go to" and "In your team's data", recent
+ * One field in a centered card, results grouped "Go to" and "In your team's data", recent
  * places and suggestions before you type. Arrow keys move, Enter opens, Escape closes and
  * puts focus back where it was. It searches; the menu (phone) and sidebar (desktop) navigate.
  */

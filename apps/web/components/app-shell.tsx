@@ -90,7 +90,7 @@ export default function AppShell() {
   /**
    * The menu (phones and tablets: the hamburger and the bottom bar's More) is for going
    * places, with its own search field. ⌘K / Ctrl+K and the top bar's "Search anything" open
-   * the search palette instead: one field, centred, on every screen size. Desktop already has
+   * the search palette instead: one field, centered, on every screen size. Desktop already has
    * the sidebar, so search never opens a second navigation menu on top of it.
    */
   const [navOpen, setNavOpen] = useState(false);

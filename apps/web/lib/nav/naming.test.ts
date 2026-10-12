@@ -37,6 +37,11 @@ describe("one name per destination", () => {
     expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/help", label: "Help"/);
     expect(read("components/app-shell-account-menu.tsx")).toMatch(/<span>Help<\/span>/);
     expect(read("app/help/help-client.tsx")).not.toMatch(/Help centre/);
+    // The Help center, in US spelling, with one breadcrumb and no row of links above it.
+    const center = read("app/help/help-center.tsx");
+    expect(center).toMatch(/>Help center</);
+    expect(center).not.toMatch(/centre/i);
+    expect(center).not.toMatch(/product-hub-related/);
   });
 
   it("My Day, Shop hours, Hours kiosk, Safety training, Robot status, Learn and Guided tracks", () => {

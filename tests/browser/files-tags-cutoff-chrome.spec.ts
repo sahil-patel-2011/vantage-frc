@@ -32,7 +32,7 @@ test("Files, Drive-team tags, Help, and Account drop leftover engineering chrome
   await expect(page.getByRole("heading", { name: "Help" })).toBeVisible({
     timeout: 20_000,
   });
-  const helpSearch = page.getByPlaceholder("e.g. library, pricing, scouting…");
+  const helpSearch = page.getByRole("searchbox", { name: "Search the manual" });
   await expect(helpSearch).toBeVisible();
   await expect(helpSearch).not.toHaveAttribute("placeholder", /subscription|bridge/i);
 

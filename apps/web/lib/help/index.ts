@@ -29,3 +29,14 @@ export {
   searchHelpArticles,
   type HelpSearchHit,
 } from "./search-help";
+export {
+  HELP_TOPICS,
+  POPULAR_HELP_SLUGS,
+  helpTopicArticles,
+  helpTopicFor,
+  isHelpTopicId,
+  popularHelpArticles,
+  searchHelpCenter,
+  type HelpTopic,
+  type HelpTopicId,
+} from "./topics";
