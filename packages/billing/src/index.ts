@@ -420,9 +420,11 @@ async function enforceApiBudgets<T>(
          FROM org_api_budget_policies WHERE org_id=$1`,
         [input.orgId],
       ),
+      // ai_blocked is read through to_jsonb so a database without 0730 reads "not blocked".
       input.client.query(
-        `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
-         FROM org_api_member_limits WHERE org_id=$1 AND user_id=$2`,
+        `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit,
+          COALESCE((to_jsonb(l) ->> 'ai_blocked')::boolean, false) AS ai_blocked
+         FROM org_api_member_limits l WHERE org_id=$1 AND user_id=$2`,
         [input.orgId, input.userId],
       ),
       input.client.query(
@@ -491,6 +493,8 @@ async function enforceApiBudgets<T>(
     throw new CommitAndThrowError(new BudgetLimitExceededError(reason));
   };
   if (policy?.kill_switch === true) await deny("org.kill_switch");
+  // An owner or admin turned AI off for this person: no call goes through, whatever its estimate.
+  if (member?.ai_blocked === true) await deny("member.ai_off");
   if (
     (policy?.model_allowlist_enabled === true || policy?.provider_allowlist_enabled === true) &&
     (!input.provider || !input.model || !model)

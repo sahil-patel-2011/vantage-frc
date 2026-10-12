@@ -32,7 +32,9 @@ export async function GET(request: Request) {
           FROM org_api_budget_policies WHERE org_id=$1`, [orgId]),
         client.query(`SELECT l.user_id AS "userId",u.name,u.email,l.daily_spend_limit_usd AS "dailySpendLimitUsd",
           l.monthly_spend_limit_usd AS "monthlySpendLimitUsd",l.daily_token_limit AS "dailyTokenLimit",
-          l.monthly_token_limit AS "monthlyTokenLimit" FROM memberships m JOIN users u ON u.id=m.user_id
+          l.monthly_token_limit AS "monthlyTokenLimit",
+          COALESCE((to_jsonb(l) ->> 'ai_blocked')::boolean,false) AS "aiBlocked"
+          FROM memberships m JOIN users u ON u.id=m.user_id
           LEFT JOIN org_api_member_limits l ON l.org_id=m.org_id AND l.user_id=m.user_id WHERE m.org_id=$1`, [orgId]),
         client.query(`SELECT feature,daily_spend_limit_usd AS "dailySpendLimitUsd",
           monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
@@ -138,6 +140,16 @@ export async function POST(request: Request) {
             monthly_spend_limit_usd=excluded.monthly_spend_limit_usd,daily_token_limit=excluded.daily_token_limit,
             monthly_token_limit=excluded.monthly_token_limit,updated_by=excluded.updated_by,updated_at=now()`,
             [orgId,...identity,body.allowed !== false,...limits(body),current.user.id]);
+        } else if (body.scope === "member") {
+          // aiBlocked turns AI off for this person entirely (0730), limits or not.
+          await client.query(`INSERT INTO org_api_member_limits(org_id,user_id,daily_spend_limit_usd,
+            monthly_spend_limit_usd,daily_token_limit,monthly_token_limit,ai_blocked,updated_by)
+            VALUES($1::uuid,$2::uuid,$3::numeric,$4::numeric,$5::integer,$6::integer,$7::boolean,$8::uuid)
+            ON CONFLICT(org_id,user_id) DO UPDATE SET daily_spend_limit_usd=excluded.daily_spend_limit_usd,
+            monthly_spend_limit_usd=excluded.monthly_spend_limit_usd,daily_token_limit=excluded.daily_token_limit,
+            monthly_token_limit=excluded.monthly_token_limit,ai_blocked=excluded.ai_blocked,
+            updated_by=excluded.updated_by,updated_at=now()`,
+            [orgId,...identity,...limits(body),body.aiBlocked === true,current.user.id]);
         } else {
           await client.query(`INSERT INTO ${config[0]}(org_id,${config[1]},daily_spend_limit_usd,
             monthly_spend_limit_usd,daily_token_limit,monthly_token_limit,updated_by) VALUES($1,$2,$3,$4,$5,$6,$7)

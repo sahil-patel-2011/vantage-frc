@@ -28,6 +28,37 @@ const fieldLabel: Record<keyof typeof blank, string> = {
   monthlyTokenLimit: "Monthly word limit (tokens)",
 };
 
+type BudgetMember = {
+  userId: string;
+  name: string;
+  email: string;
+  aiBlocked?: boolean;
+  dailySpendLimitUsd?: string | number | null;
+  monthlySpendLimitUsd?: string | number | null;
+  dailyTokenLimit?: string | number | null;
+  monthlyTokenLimit?: string | number | null;
+};
+
+const fieldText = (value: string | number | null | undefined) => (value == null ? "" : String(value));
+
+/** Picking a person shows what is already saved for them: their limits and whether AI is off. */
+function memberLayer<T extends typeof blank & { identifier: string; aiBlocked: boolean }>(
+  layer: T,
+  members: BudgetMember[],
+  userId: string,
+): T {
+  const saved = members.find((m) => m.userId === userId);
+  return {
+    ...layer,
+    identifier: userId,
+    aiBlocked: saved?.aiBlocked === true,
+    dailySpendLimitUsd: fieldText(saved?.dailySpendLimitUsd),
+    monthlySpendLimitUsd: fieldText(saved?.monthlySpendLimitUsd),
+    dailyTokenLimit: fieldText(saved?.dailyTokenLimit),
+    monthlyTokenLimit: fieldText(saved?.monthlyTokenLimit),
+  };
+}
+
 function ShellPrimary({
   orgId,
   shell,
@@ -72,9 +103,10 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     provider: "",
     model: "",
     allowed: true,
+    aiBlocked: false,
     ...blank,
   });
-  const [members, setMembers] = useState<Array<{ userId: string; name: string; email: string }>>([]);
+  const [members, setMembers] = useState<BudgetMember[]>([]);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
@@ -94,7 +126,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       aiKeyConfigured?: boolean | null;
       policy?: Record<string, unknown> | null;
       usage?: Record<string, string>;
-      members?: Array<{ userId: string; name: string; email: string }>;
+      members?: BudgetMember[];
     };
     setHttpStatus(response.status);
     if (!response.ok) {
@@ -374,14 +406,28 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                 {layer.scope === "member" ? (
                   <label>
                     Person
-                    <select value={layer.identifier} onChange={(e) => setLayer({ ...layer, identifier: e.target.value })}>
+                    <select
+                      value={layer.identifier}
+                      onChange={(e) => setLayer(memberLayer(layer, members, e.target.value))}
+                    >
                       <option value="">Choose a person</option>
                       {members.map((m) => (
                         <option key={m.userId} value={m.userId}>
                           {m.name} · {m.email}
+                          {m.aiBlocked ? " · AI off" : ""}
                         </option>
                       ))}
                     </select>
+                  </label>
+                ) : null}
+                {layer.scope === "member" ? (
+                  <label className="check-field danger">
+                    <input
+                      type="checkbox"
+                      checked={layer.aiBlocked}
+                      onChange={(e) => setLayer({ ...layer, aiBlocked: e.target.checked })}
+                    />
+                    Turn AI off for this person
                   </label>
                 ) : layer.scope === "feature" ? (
                   <label>

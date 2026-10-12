@@ -13,6 +13,7 @@ import {
   GOOGLE_FREE_TIER_MODEL,
   LOCAL_OPENAI_COMPAT_LABEL,
   pickByokModelForFeature,
+  teamDefaultRouting,
   type ByokEffort,
   type ByokModelOption,
   type ByokModelProvider,
@@ -240,6 +241,8 @@ type RoutingPrefs = {
   enabledModelIds: string[] | null;
   /** Preferred volunteer-swarm model, or null for any on the allowlist. */
   freeSwarmModel: string | null;
+  /** False until the team saves a routing choice: it then starts on teamDefaultRouting. */
+  saved: boolean;
 };
 
 const DEFAULT_MODELS: Record<"openai" | "anthropic" | "openai-compatible", string> = {
@@ -494,7 +497,7 @@ async function loadRoutingPrefs(client: PoolClient, orgId: string): Promise<Rout
     );
     const row = result.rows[0];
     if (!row) {
-      return { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null };
+      return { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null, saved: false };
     }
     return {
       mode: row.mode === "fixed" ? "fixed" : "automode",
@@ -504,10 +507,11 @@ async function loadRoutingPrefs(client: PoolClient, orgId: string): Promise<Rout
       // Vantage accepts becomes "any", which is the default and the safe
       // answer — never an error a team has to go and fix before chat works.
       freeSwarmModel: isAiHordeModel(row.freeSwarmModel) ? row.freeSwarmModel : null,
+      saved: true,
     };
   } catch {
     // Table may not exist yet before migration — degrade to automode defaults.
-    return { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null };
+    return { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null, saved: false };
   }
 }
 
@@ -553,8 +557,9 @@ async function loadRoutingPrefsAndPolicy(
             freeSwarmModel: isAiHordeModel(prefsRaw.free_swarm_model)
               ? prefsRaw.free_swarm_model
               : null,
+            saved: true,
           }
-        : { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null },
+        : { mode: "automode", fixedModelId: null, enabledModelIds: null, freeSwarmModel: null, saved: false },
       policy: normalizeOrgModelPolicy(
         policyRaw
           ? { mode: policyRaw.mode, allowedModelIds: policyRaw.allowed_model_ids ?? null }
@@ -936,10 +941,6 @@ export async function resolveOrgChatAdapterWithProvenance(
     }
   }
   const { prefs: storedPrefs, policy } = await loadRoutingPrefsAndPolicy(client, input.orgId);
-  // Org selection policy overrides member/org picks: force_auto drops any fixed
-  // model; allowlist coerces a disallowed fixed model to the best allowed one and
-  // narrows the automode pool. Never an error mid-chat.
-  const prefs = applyPolicyToRoutingPrefs(policy, storedPrefs, BYOK_MODEL_OPTIONS);
   const memberKeys = input.userId
     ? await loadMemberLlmKeys(client, input.orgId, input.userId)
     : [];
@@ -967,6 +968,15 @@ export async function resolveOrgChatAdapterWithProvenance(
   };
 
   const available = availableProvidersFrom(orgKeys.rows, orgProviders.rows);
+  // A team that never saved a routing choice starts on the team default (Claude Haiku 5.5,
+  // Medium). The org selection policy then overrides member/org picks: force_auto drops any
+  // fixed model; allowlist coerces a disallowed fixed model to the best allowed one and
+  // narrows the automode pool. Never an error mid-chat.
+  const prefs = applyPolicyToRoutingPrefs(
+    policy,
+    storedPrefs.saved ? storedPrefs : { ...storedPrefs, ...teamDefaultRouting(available) },
+    BYOK_MODEL_OPTIONS,
+  );
   const chosen = pickByokModelForFeature({
     feature: input.feature,
     mode: prefs.mode,

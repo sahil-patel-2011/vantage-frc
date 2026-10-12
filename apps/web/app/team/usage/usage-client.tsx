@@ -120,6 +120,7 @@ const rowStyle: React.CSSProperties = {
 function denialReasonLabel(reason: string): string {
   const fixed: Record<string, string> = {
     "org.kill_switch": "Chat paused for the team",
+    "member.ai_off": "AI turned off for this person",
     kill_switch: "Chat paused for the team",
     "model.not_allowed": "This model is not allowed",
     "provider.not_allowed": "This provider is not allowed",

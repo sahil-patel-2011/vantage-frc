@@ -5,6 +5,8 @@ import {
   findByokModelOption,
   pickByokModelForFeature,
   preferredTierForFeature,
+  TEAM_DEFAULT_MODEL_ID,
+  teamDefaultRouting,
 } from "../src/byok-model-routing";
 import {
   describeOpenAiCompatibleReachability,
@@ -113,5 +115,26 @@ describe("OpenAI-compatible base URL validation", () => {
     await expect(validateOpenAiCompatibleBaseUrl("https://169.254.169.254/latest")).rejects.toThrow(
       /blocked/i,
     );
+  });
+});
+
+describe("teamDefaultRouting", () => {
+  it("starts a team with an Anthropic key on Claude Haiku 5.5 at Medium effort", () => {
+    expect(teamDefaultRouting(["google", "anthropic"])).toEqual({
+      mode: "fixed",
+      fixedModelId: TEAM_DEFAULT_MODEL_ID,
+    });
+    const picked = pickByokModelForFeature({
+      feature: "chat",
+      ...teamDefaultRouting(["anthropic"]),
+      availableProviders: ["anthropic"],
+    });
+    expect(picked?.modelId).toBe("claude-haiku-5-5");
+    expect(picked?.effort).toBe("medium");
+  });
+
+  it("keeps Automode for a team that cannot reach Anthropic", () => {
+    expect(teamDefaultRouting(["google", "openai"])).toEqual({ mode: "automode", fixedModelId: null });
+    expect(teamDefaultRouting([])).toEqual({ mode: "automode", fixedModelId: null });
   });
 });

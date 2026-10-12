@@ -200,6 +200,22 @@ export function canonicalByokModelId(id: string): string {
   return RETIRED_BYOK_MODEL_IDS[id] ?? id;
 }
 
+/** The model a team starts on until it saves its own choice under Team → AI API keys. */
+export const TEAM_DEFAULT_MODEL_ID = "anthropic:claude-haiku-5-5";
+
+/**
+ * Routing for a team that has never saved a choice: Claude Haiku 5.5 at Medium effort when the
+ * team can reach Anthropic, and Automode over every model it can reach otherwise.
+ */
+export function teamDefaultRouting(availableProviders: readonly string[]): {
+  mode: "fixed" | "automode";
+  fixedModelId: string | null;
+} {
+  return availableProviders.includes("anthropic")
+    ? { mode: "fixed", fixedModelId: TEAM_DEFAULT_MODEL_ID }
+    : { mode: "automode", fixedModelId: null };
+}
+
 /** Fixed label for the Ollama / LM Studio org_provider_configs row. */
 export const LOCAL_OPENAI_COMPAT_LABEL = "OpenAI-compatible (Ollama / LM Studio)";
 export const LOCAL_OPENAI_COMPAT_KIND = "openai-compatible";
