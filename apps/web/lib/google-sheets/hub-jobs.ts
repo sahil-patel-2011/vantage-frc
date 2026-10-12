@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { after } from "next/server";
 import { start } from "workflow/api";
 import { provisioningPool } from "../provisioning/pool";
-import { readableHubWorkflow } from "./hub-workflow";
+import { readableHubWorkflow, runReadableHubSyncInline } from "./hub-workflow";
+import { durableWorkflowsEnabled } from "../workflows/durable";
 import { isAppsScriptSecret } from "./apps-script-source";
 import { loadSheetsHubBridge } from "./sheets-hub";
 
@@ -22,6 +24,11 @@ export async function queueReadableHubSync(orgId: string): Promise<boolean> {
           AND COALESCE(team_readable_sync_jobs.retry_after_at,now())<=now())
       RETURNING org_id`, [orgId, generation]);
     if (!claimed.rowCount) return false;
+    // Without Vercel Workflow the sync runs after the response; it records its own failure.
+    if (!durableWorkflowsEnabled()) {
+      after(() => runReadableHubSyncInline(orgId, generation).catch(() => undefined));
+      return true;
+    }
     try {
       const run = await start(readableHubWorkflow, [orgId, generation]);
       await client.query("UPDATE team_readable_sync_jobs SET workflow_run_id=$3,updated_at=now() WHERE org_id=$1::uuid AND generation=$2::uuid", [orgId, generation, run.runId]);

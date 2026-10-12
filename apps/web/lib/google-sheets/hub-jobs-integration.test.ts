@@ -25,12 +25,15 @@ suite("durable hub coordination against PostgreSQL", () => {
       await pool!.query("INSERT INTO team_provisioning_jobs(org_id,requested_by) VALUES($1,$2)", [id, userId]);
     }
     fake.start.mockResolvedValue({ runId: "controlled-workflow" });
+    // This covers the Vercel Workflow path; lib/workflows/durable-off.test.ts covers the default.
+    vi.stubEnv("VANTAGE_DURABLE_WORKFLOWS", "1");
   });
   afterAll(async () => {
     await pool?.query("DELETE FROM organizations WHERE id=ANY($1::uuid[])", [[orgId, otherOrg]]);
     await pool?.query("DELETE FROM users WHERE id=ANY($1::uuid[])", [[owner, outsider]]);
     await pool?.end();
     await workerPool?.end();
+    vi.unstubAllEnvs();
   });
   it("blocks unready teams, coalesces concurrent triggers and retains previous successful freshness after dispatch failure", async () => {
     expect(await queueReadableHubSync(orgId)).toBe(false);

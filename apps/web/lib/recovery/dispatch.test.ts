@@ -14,6 +14,8 @@ vi.mock("../google-sheets/hub-workflow", () => ({ readableHubWorkflow: vi.fn() }
 const request = () => new Request("https://vantage.test/api/cron/recovery-journal", { headers: { authorization: "Bearer local-test-cron" } });
 beforeEach(() => {
   vi.clearAllMocks();
+  // These cover the Vercel Workflow path; durable-off.test.ts covers the default (off).
+  vi.stubEnv("VANTAGE_DURABLE_WORKFLOWS", "1");
   vi.stubEnv("CRON_SECRET", "local-test-cron");
   vi.stubEnv("VANTAGE_SHEETS_HUB_SECRET", "a".repeat(64));
   fake.pending = true;

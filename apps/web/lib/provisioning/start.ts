@@ -1,7 +1,14 @@
+import { after } from "next/server";
 import { start } from "workflow/api";
-import { teamProvisioningWorkflow } from "./workflow";
+import { runTeamProvisioningInline, teamProvisioningWorkflow } from "./workflow";
 import { withRls } from "@vantage/db";
+import { durableWorkflowsEnabled } from "../workflows/durable";
 export async function startTeamProvisioning(orgId: string, userId: string): Promise<boolean> {
+  // Without Vercel Workflow the setup runs after the response; a failure is recorded by the run.
+  if (!durableWorkflowsEnabled()) {
+    after(() => runTeamProvisioningInline(orgId).catch(() => undefined));
+    return true;
+  }
   try {
     const run = await start(teamProvisioningWorkflow, [orgId]);
     await withRls({ userId, orgId }, (client) => client.query("UPDATE team_provisioning_jobs SET workflow_run_id=$2,updated_at=now() WHERE org_id=$1::uuid", [orgId, run.runId]));
