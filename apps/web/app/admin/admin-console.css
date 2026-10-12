@@ -157,10 +157,20 @@
 .ac-panel {
   justify-self: end;
   align-self: stretch;
+  /* The dialog is a grid: without this its rows share the full height and buttons grow tall. */
+  align-content: start;
   width: min(520px, 100%);
   max-height: none;
   margin: -20px -20px -20px 0;
   border-radius: 22px 0 0 22px;
+  /* Opaque: a full-height panel over a busy list must not let the list show through. */
+  background: var(--surface);
+  backdrop-filter: none;
+}
+.ac-page button:disabled,
+.ac-panel button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 @media (max-width: 640px) {
   .ac-panel { justify-self: stretch; margin: -20px; border-radius: 0; width: auto; }

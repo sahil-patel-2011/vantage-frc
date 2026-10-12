@@ -29,7 +29,7 @@ export type PlatformAdminErrorCode =
 const MESSAGES: Record<PlatformAdminErrorCode, { status: number; message: string }> = {
   not_platform_admin: { status: 404, message: "Not found" },
   no_account: {
-    status: 404,
+    status: 422,
     message: "No Vantage account uses that email. Ask them to sign in to Vantage once, then add them.",
   },
   already_admin: { status: 409, message: "That person is already a platform admin." },
