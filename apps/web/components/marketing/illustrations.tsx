@@ -22,7 +22,18 @@ function Open() {
 function QuickScoutPhone() {
   return (
     <div className="mx-phone">
-      <div className="mx-phone-notch" />
+      <div className="mx-phone-status">
+        <span>9:41</span>
+        <div className="mx-phone-notch" />
+        <span className="mx-phone-icons">
+          <i className="mx-phone-signal">
+            <i />
+            <i />
+            <i />
+          </i>
+          <i className="mx-phone-battery" />
+        </span>
+      </div>
       <p className="mx-qs-top">
         <b>Quick scout</b>
         <small>Your next robot</small>
