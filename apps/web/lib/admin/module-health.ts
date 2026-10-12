@@ -150,6 +150,8 @@ export type PoolKeySignal = {
 export type ModuleHealthInputs = {
   now: Date;
   checks: IntegrationCheck[];
+  /** Whether mail actually leaves this server (a provider is configured), not just "available". */
+  emailDelivers?: boolean;
   outage: OutageSignal;
   reference: ReferenceSignal[];
   jobs: JobHealthRow[] | null;
@@ -323,13 +325,26 @@ export function buildModuleHealth(input: ModuleHealthInputs): ModuleHealth[] {
   }
 
   // ---- Email ----
-  modules.push(
-    fromChecks(
+  {
+    const base = fromChecks(
       { id: "email", label: "Email", fix: ["Set RESEND_API_KEY and AUTH_EMAIL_FROM (or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD)."] },
       [check("resend-email")],
       now,
-    ),
-  );
+    );
+    // A development server reports mail as "available" while writing it to a local mailbox:
+    // nothing reaches a person, so that is Not set up here.
+    if (input.emailDelivers === false && base.status === "healthy") {
+      modules.push({
+        ...base,
+        status: "not_set_up",
+        summary: "No mail provider is set, so sign-in codes, invites and alerts aren't delivered to anyone.",
+        problem: "No mail provider is configured on this server.",
+        fix: ["Set RESEND_API_KEY and AUTH_EMAIL_FROM (or GMAIL_SMTP_USER and GMAIL_SMTP_APP_PASSWORD)."],
+      });
+    } else {
+      modules.push(base);
+    }
+  }
 
   // ---- TBA and Statbotics: the ingest health rows carry the real errors. ----
   for (const [id, label, checkId, source] of [
@@ -352,8 +367,19 @@ export function buildModuleHealth(input: ModuleHealthInputs): ModuleHealth[] {
     const ref = input.reference.find((row) => row.source === source);
     const logs = [...base.logs];
     if (ref?.lastError) logs.unshift({ at: ref.lastFailureAt, source: `${label} ingest`, message: redactSecrets(ref.lastError) });
+    // Configured but never synced is no signal at all: Not set up, not Healthy.
+    const neverRan = base.status === "healthy" && !ref?.lastSuccessAt && !ref?.lastFailureAt && !base.lastSuccessAt;
     modules.push({
       ...base,
+      ...(neverRan
+        ? {
+            status: "not_set_up" as const,
+            summary: `No ${label} sync has run on this server yet.`,
+            problem: `The ingest has never recorded a ${label} sync here.`,
+            fix: ["Set CRON_SECRET so the scheduled ingest runs, or run it from Data connectors."],
+            fixLink: { label: "Data connectors", href: "/admin/connectors" },
+          }
+        : {}),
       since: base.status !== "healthy" && base.status !== "not_set_up" ? (ref?.lastFailureAt ?? null) : null,
       lastSuccessAt: ref?.lastSuccessAt ?? base.lastSuccessAt,
       logs,
@@ -535,9 +561,18 @@ export function buildModuleHealth(input: ModuleHealthInputs): ModuleHealth[] {
       (s) => s === "down" || s === "degraded",
     );
     const status = worst([cron.status, ...jobStatuses]);
+    const provisioningDown = provisioning ? jobStatus(provisioning, now, 24 * 30) === "down" : false;
+    const exportsDown = exports ? jobStatus(exports, now, 24 * 30) === "down" : false;
     modules.push({
       ...cron,
       status,
+      summary:
+        provisioningDown || exportsDown
+          ? [provisioningDown ? "The last team setup job failed." : null, exportsDown ? "The last data export failed." : null, cron.status === "not_set_up" ? "CRON_SECRET is not set." : null]
+              .filter(Boolean)
+              .join(" ")
+          : cron.summary,
+      since: provisioningDown ? (provisioning?.lastFailureAt ?? null) : exportsDown ? (exports?.lastFailureAt ?? null) : null,
       problem:
         status === "healthy"
           ? null

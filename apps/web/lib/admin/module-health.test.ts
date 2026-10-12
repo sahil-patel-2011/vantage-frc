@@ -138,6 +138,40 @@ describe("module health", () => {
     expect(jobStatus({ ...base, lastSuccessAt: "2026-10-11T10:00:00Z", lastFailureAt: null }, NOW, 48)).toBe("healthy");
   });
 
+  it("calls a configured ingest that never ran Not set up, not Healthy", () => {
+    const statbotics = byId(buildModuleHealth(inputs()), "statbotics");
+    expect(statbotics.status).toBe("not_set_up");
+    expect(statbotics.summary).toMatch(/No Statbotics sync has run/);
+  });
+
+  it("says email is not set up when mail only goes to a local mailbox", () => {
+    const checks = [...inputs().checks.filter((c) => c.id !== "resend-email"), check("resend-email", "configured")];
+    expect(byId(buildModuleHealth(inputs({ checks, emailDelivers: false })), "email").status).toBe("not_set_up");
+    expect(byId(buildModuleHealth(inputs({ checks, emailDelivers: true })), "email").status).toBe("healthy");
+  });
+
+  it("names the failing job when scheduled work is Down", () => {
+    const jobs = buildModuleHealth(
+      inputs({
+        jobs: [
+          {
+            source: "team_provisioning",
+            lastSuccessAt: null,
+            lastFailureAt: "2026-10-11T09:00:00Z",
+            runs24h: 1,
+            failures24h: 1,
+            openJobs: 0,
+            recentErrors: [{ at: "2026-10-11T09:00:00Z", message: "Sheets hub not configured", scope: "sheets", team: 9201 }],
+          },
+        ],
+      }),
+    ).find((m) => m.id === "jobs")!;
+    expect(jobs.status).toBe("down");
+    expect(jobs.summary).toMatch(/team setup job failed/);
+    expect(jobs.since).toBe("2026-10-11T09:00:00Z");
+    expect(jobs.logs.some((line) => line.source.includes("team 9201"))).toBe(true);
+  });
+
   it("explains outage alerts honestly: no owner email, or a per-server store", () => {
     expect(byId(buildModuleHealth(inputs({ outage: { storeKind: "memory", ownerEmailConfigured: false, incident: null } })), "outage_alerts").status).toBe("not_set_up");
     expect(byId(buildModuleHealth(inputs()), "outage_alerts").status).toBe("degraded");

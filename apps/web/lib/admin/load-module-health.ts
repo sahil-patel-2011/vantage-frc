@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { resolveOutboundEmailProvider } from "@vantage/core";
 import { withSavepoint } from "@vantage/db";
 import { loadDataSourceHealth } from "../reference-health";
 import { readIncident } from "../outage/incident";
@@ -73,9 +74,17 @@ export async function gatherModuleHealthInputs(
   const jobs = await jobHealth(client);
   const pool = await loadKeyPool(client, env).catch(() => ({ ready: false, keys: [], unlisted: [] }));
   const outage = await outageSignal();
+  const emailDelivers = (() => {
+    try {
+      return Boolean(resolveOutboundEmailProvider());
+    } catch {
+      return false;
+    }
+  })();
   return {
     now,
     checks: report.checks as IntegrationCheck[],
+    emailDelivers,
     outage,
     reference: (reference?.sources ?? []).map((source) => ({
       source: source.source,
