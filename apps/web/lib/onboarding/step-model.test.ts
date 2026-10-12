@@ -359,3 +359,49 @@ describe("pending-approval plan", () => {
     expect(plan.primaryAction.label).toMatch(/Join/);
   });
 });
+
+describe("team requests and suspended teams on the waiting screen (0733)", () => {
+  const base = { accessStatus: "none" as const, teamNumber: 7777, orgName: null, adult: false, workspaceMissing: true };
+
+  it("an open team request says Vantage is reviewing it, not 'create this team'", () => {
+    const plan = buildOnboardingPendingPlan({
+      ...base,
+      teamRequest: { teamNumber: 7777, status: "pending", declineReason: null },
+    });
+    expect(plan.kind).toBe("team_requested");
+    expect(plan.headline).toBe("Vantage is reviewing Team 7777");
+    expect(plan.primaryAction.kind).toBe("check");
+    expect(JSON.stringify(plan)).not.toMatch(/claim|Create this team/i);
+  });
+
+  it("a declined request shows the reason and lets them change the team", () => {
+    const plan = buildOnboardingPendingPlan({
+      ...base,
+      teamRequest: { teamNumber: 7777, status: "declined", declineReason: "Ask your head mentor to request it." },
+    });
+    expect(plan.kind).toBe("team_request_declined");
+    expect(plan.stages[0]?.detail).toBe("Ask your head mentor to request it.");
+    expect(plan.primaryAction.kind).toBe("edit");
+  });
+
+  it("a suspended team comes first and says nothing was deleted", () => {
+    const plan = buildOnboardingPendingPlan({
+      ...base,
+      teamRequest: { teamNumber: 7777, status: "approved", declineReason: null },
+      bannedTeams: [{ teamNumber: 7777, orgName: "Team 7777" }],
+    });
+    expect(plan.kind).toBe("banned");
+    expect(plan.headline).toBe("Team 7777 is suspended from Vantage");
+    expect(plan.stages.map((stage) => stage.title)).toContain("Nothing was deleted");
+  });
+
+  it("an invitation still wins over an old request", () => {
+    const plan = buildOnboardingPendingPlan({
+      ...base,
+      accessStatus: "invited",
+      orgName: "Robo Ravens",
+      teamRequest: { teamNumber: 7777, status: "pending", declineReason: null },
+    });
+    expect(plan.kind).toBe("invited");
+  });
+});

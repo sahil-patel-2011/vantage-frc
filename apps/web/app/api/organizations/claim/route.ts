@@ -62,6 +62,28 @@ export async function POST(request: Request) {
   const ipHash = ip && ip !== "unknown" ? anonymizeIp(ip, "team-claim") : null;
 
   try {
+    // A team number is not first come, first served any more: anyone but a platform admin files a
+    // request, which the platform admins approve from Platform admin › Teams (migration 0733).
+    const requested = await withRls({ userId: session.user.id }, async (client) => {
+      const admin = await client.query<{ allowed: boolean }>(`SELECT is_platform_admin() AS allowed`);
+      if (admin.rows[0]?.allowed) return null;
+      await recordLegalAcceptance(client, session.user.id);
+      const profile = await client.query<{ teamRole: string | null; primaryFocus: string | null; crewRole: string | null }>(
+        `SELECT team_role AS "teamRole", primary_focus AS "primaryFocus", crew_role AS "crewRole"
+           FROM profiles WHERE user_id = $1::uuid`,
+        [session.user.id],
+      );
+      const row = profile.rows[0];
+      const id = await client.query<{ id: string | null }>(
+        `SELECT request_team_setup($1::int, $2::text, $3::text, $4::text, NULL, $5::text) AS id`,
+        [teamNumber, row?.teamRole ?? null, row?.primaryFocus ?? "leadership", row?.crewRole ?? null, body.name!.trim()],
+      );
+      return { requestId: id.rows[0]?.id ?? null };
+    });
+    if (requested) {
+      return Response.json({ requested: true, requestId: requested.requestId, teamNumber }, { status: 202 });
+    }
+
     // withRls runs the callback inside one BEGIN/COMMIT, so the acceptance row,
     // the team and the authorization statement are committed together or not
     // at all — a team is never created without its statement on record.
@@ -99,6 +121,15 @@ export async function POST(request: Request) {
           setupRequired: true,
         },
         { status: 503 },
+      );
+    }
+    if ((error as { detail?: unknown } | null)?.detail === "vantage:team_banned") {
+      return Response.json({ error: `Team ${teamNumber} can't join Vantage.` }, { status: 403 });
+    }
+    if ((error as { detail?: unknown } | null)?.detail === "vantage:team_exists") {
+      return Response.json(
+        { error: `Team ${teamNumber} is already on Vantage. Ask its owners for an invite, or use the team's join code.` },
+        { status: 409 },
       );
     }
     const message = publicErrorMessage(error, "Could not claim team");

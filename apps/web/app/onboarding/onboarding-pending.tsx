@@ -29,19 +29,14 @@ export function PendingPanel({
     workspaceMissing: state.workspaceMissing,
     adult,
     platformAdmin: state.platformAdmin,
+    teamRequest: state.teamRequest ?? null,
+    bannedTeams: state.bannedTeams ?? [],
   });
 
   return (
     <div className="onboarding-pending-panel">
       {/* Taken off a team: say which, first (QA A3-15). Renders nothing otherwise. */}
-      {state.accessStatus === "invited" || state.accessStatus === "pending" ? null : <RemovedFromTeamNotice />}
-      <div className={`onboarding-request-status ${state.accessStatus}`}>
-        <i aria-hidden="true" />
-        <div>
-          <span>{plan.eyebrow}</span>
-          <strong>{plan.headline}</strong>
-        </div>
-      </div>
+      {state.accessStatus === "invited" || state.accessStatus === "pending" || plan.kind === "banned" ? null : <RemovedFromTeamNotice />}
 
       <ol className="onboarding-approval-path">
         {plan.stages.map((stage, index) => (

@@ -13,6 +13,8 @@ export type PlatformAdmin = {
   grantedAt: string;
   grantedByEmail: string | null;
   you: boolean;
+  /** The platform owner (0733): the one person who adds and removes admins and bans teams. */
+  owner: boolean;
 };
 
 export type PlatformAdminErrorCode =
@@ -24,7 +26,9 @@ export type PlatformAdminErrorCode =
   | "self"
   | "invalid_email"
   | "reauth_required"
-  | "setup_required";
+  | "setup_required"
+  | "owner_only"
+  | "owner_protected";
 
 const MESSAGES: Record<PlatformAdminErrorCode, { status: number; message: string }> = {
   not_platform_admin: { status: 404, message: "Not found" },
@@ -47,6 +51,11 @@ const MESSAGES: Record<PlatformAdminErrorCode, { status: number; message: string
   setup_required: {
     status: 503,
     message: "Platform admin changes need database migration 0727. Run the migrations, then try again.",
+  },
+  owner_only: { status: 403, message: "Only the platform owner can change who is a platform admin." },
+  owner_protected: {
+    status: 409,
+    message: "The platform owner can't be removed. To step down, hand the role over instead.",
   },
 };
 
@@ -82,15 +91,19 @@ export function normalizeAdminEmail(value: unknown): string {
 }
 
 export async function listPlatformAdmins(client: PoolClient, userId: string): Promise<PlatformAdmin[]> {
+  // Read through to_jsonb so a database without 0733 (no is_owner column yet) still lists them.
   const result = await client.query<{
     userId: string;
     email: string;
     name: string;
     grantedAt: string;
     grantedByEmail: string | null;
+    owner: boolean;
   }>(
-    `SELECT user_id AS "userId", email, name, granted_at::text AS "grantedAt", granted_by_email AS "grantedByEmail"
-       FROM platform_admin_list()`,
+    `SELECT l.user_id AS "userId", l.email, l.name, l.granted_at::text AS "grantedAt",
+            l.granted_by_email AS "grantedByEmail",
+            COALESCE((to_jsonb(l) ->> 'is_owner')::boolean, false) AS owner
+       FROM platform_admin_list() l`,
   );
   return result.rows.map((row) => ({ ...row, you: row.userId === userId }));
 }
@@ -112,9 +125,18 @@ export async function transferPlatformAdmin(client: PoolClient, email: string): 
 /** What the page can offer, so it never shows a button the database will refuse. */
 export function platformAdminAbilities(admins: PlatformAdmin[]) {
   const count = admins.length;
+  const ownerKnown = admins.some((admin) => admin.owner);
+  if (!ownerKnown) {
+    // Before 0733: any admin manages the list, never the last one.
+    return { isOwner: false, canAdd: true, canRemoveOthers: count > 1, canRemoveSelf: count > 1, canTransfer: true };
+  }
+  const isOwner = admins.some((admin) => admin.you && admin.owner);
   return {
-    canRemoveOthers: count > 1,
-    canRemoveSelf: count > 1,
-    canTransfer: true,
+    isOwner,
+    canAdd: isOwner,
+    canRemoveOthers: isOwner && count > 1,
+    // The owner steps down only by handing over; anyone else may leave.
+    canRemoveSelf: !isOwner,
+    canTransfer: isOwner,
   };
 }

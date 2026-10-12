@@ -75,8 +75,10 @@ describe("live team-number feedback", () => {
     expect(result.kind).toBe("unchecked");
     expect(result.ok).toBe(true);
     expect(result.teamNumber).toBe(1234);
-    expect(result.title).toMatch(/requests Team 1234's approval/i);
-    expect(result.body).toMatch(/notification/i);
+    expect(result.title).toMatch(/ask to join Team 1234/i);
+    // Says who decides in both cases, without saying which case this is.
+    expect(result.body).toMatch(/owners get your request/i);
+    expect(result.body).toMatch(/isn't on Vantage yet/i);
     expect(result.action).toBeNull();
   });
 
@@ -106,18 +108,25 @@ describe("live team-number feedback", () => {
     ).toBe("unchecked");
   });
 
-  it("offers creation on a confirmed empty team to authorized students and adults", () => {
+  it("a confirmed empty team is a request to Vantage, never a self-serve claim", () => {
     const confirmed = { ...BASE, raw: "9999", knownTeamNumber: 9999, accessStatus: "none" as const, workspaceMissing: true };
 
-    const adult = lookupTeamNumber({ ...confirmed, adult: true });
-    expect(adult.kind).toBe("no_workspace");
-    expect(adult.tone).toBe("warn");
-    expect(adult.action).toEqual({ href: "/claim?teamNumber=9999", label: "Create this team" });
+    for (const adult of [true, false]) {
+      const result = lookupTeamNumber({ ...confirmed, adult });
+      expect(result.kind).toBe("no_workspace");
+      expect(result.title).toMatch(/Team 9999 isn't on Vantage yet/);
+      expect(result.body).toMatch(/request to set it up went to the Vantage team/i);
+      expect(result.action).toBeNull();
+      expect(result.ok).toBe(true);
+    }
+  });
 
-    const student = lookupTeamNumber({ ...confirmed, adult: false });
-    expect(student.kind).toBe("no_workspace");
-    expect(student.action).toEqual(adult.action);
-    expect(student.body).toMatch(/authorized.*team/i);
+  it("says Vantage is reviewing a team this person already asked for", () => {
+    const result = lookupTeamNumber({ ...BASE, raw: "7777", teamRequest: { teamNumber: 7777, status: "pending" } });
+    expect(result.kind).toBe("requested");
+    expect(result.title).toBe("Vantage is reviewing Team 7777");
+    // Another number is a new question.
+    expect(lookupTeamNumber({ ...BASE, raw: "7778", teamRequest: { teamNumber: 7777, status: "pending" } }).kind).toBe("unchecked");
   });
 
   it("does not treat a saved number without a request as proof of an absent team", () => {

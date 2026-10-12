@@ -180,7 +180,55 @@ export type OnboardingState = {
   requestCreatedAt: string | null;
   /** Only a failed exact-number access request establishes absence. */
   workspaceMissing?: boolean;
+  /**
+   * This person's latest request to put a team on Vantage (a team that isn't here yet, or one
+   * nobody leads yet), which the platform admins review. Null before migration 0733.
+   */
+  teamRequest: TeamSetupRequestSummary | null;
+  /** Teams this person belongs to that are suspended by a ban. */
+  bannedTeams: Array<{ teamNumber: number; orgName: string }>;
 };
+
+export type TeamSetupRequestSummary = {
+  id: string;
+  teamNumber: number;
+  status: "pending" | "approved" | "declined" | "withdrawn" | "forwarded";
+  declineReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Code a missing table or function raises: the database is older than this release. */
+function isMissingRelation(error: unknown) {
+  const code = error && typeof error === "object" && "code" in error ? (error as { code?: unknown }).code : null;
+  return code === "42P01" || code === "42883";
+}
+
+/**
+ * The latest team request and any banned team, read in a savepoint so a database without 0733
+ * still loads onboarding (it gates every new account).
+ */
+async function readTeamRequestState(client: PoolClient, userId: string) {
+  try {
+    return await withSavepointOrThrow(client, async () => {
+      const request = await client.query<TeamSetupRequestSummary>(
+        `SELECT id, team_number AS "teamNumber", status, decline_reason AS "declineReason",
+                created_at::text AS "createdAt", updated_at::text AS "updatedAt"
+           FROM team_setup_requests
+          WHERE user_id = $1::uuid AND status <> 'withdrawn'
+          ORDER BY updated_at DESC LIMIT 1`,
+        [userId],
+      );
+      const banned = await client.query<{ teamNumber: number; orgName: string }>(
+        `SELECT team_number AS "teamNumber", org_name AS "orgName" FROM my_banned_teams()`,
+      );
+      return { teamRequest: request.rows[0] ?? null, bannedTeams: banned.rows };
+    });
+  } catch (error) {
+    if (!isMissingRelation(error)) throw error;
+    return { teamRequest: null, bannedTeams: [] };
+  }
+}
 
 export type OnboardingDraftInput =
   | Pick<OnboardingPayload, "firstName" | "lastName" | "dateOfBirth" | "gender"> &
@@ -384,7 +432,11 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
             request_created_at::text AS "requestCreatedAt",city,state_prov AS "stateProv",description
        FROM onboarding_workspace_for_current_user()`,
   );
-  const locked = workspace.rows[0] ?? null;
+  const requests = await readTeamRequestState(client, userId);
+  // A team suspended by a ban is not this person's workspace any more: they see why, not its setup.
+  const lockedRow = workspace.rows[0] ?? null;
+  const locked =
+    lockedRow && requests.bannedTeams.some((team) => team.teamNumber === lockedRow.teamNumber) ? null : lockedRow;
   const workspaceLocked = locked && ["approved", "invited", "pending"].includes(locked.accessStatus);
   const row = profile.rows[0];
 
@@ -471,6 +523,8 @@ export async function getOnboardingState(client: PoolClient, userId: string): Pr
     workspaceOrgId: locked?.orgId ?? null,
     workspaceOrgName: locked?.orgName ?? null,
     requestCreatedAt: locked?.requestCreatedAt ?? null,
+    teamRequest: requests.teamRequest,
+    bannedTeams: requests.bannedTeams,
   };
 }
 
@@ -711,11 +765,41 @@ export async function completeOnboarding(
     } catch (error) {
       if (!isMissingWorkspaceError(error)) throw error;
       workspaceMissing = true;
+      // Nobody has this team on Vantage yet: ask the platform admins to set it up, with this
+      // person as its owner. They decide; nothing is created here.
+      await requestTeamSetup(client, teamNumber, payload);
     }
+  }
+
+  // A different number (or none) replaces an open team request for the old one.
+  if (state.teamRequest?.status === "pending" && state.teamRequest.teamNumber !== teamNumber) {
+    await withSavepointOrThrow(client, () =>
+      client.query(`SELECT withdraw_team_setup_request($1::uuid)`, [state.teamRequest!.id]),
+    ).catch((error: unknown) => {
+      if (!isMissingRelation(error)) throw error;
+    });
   }
 
   const completed = await getOnboardingState(client, userId);
   return workspaceMissing ? { ...completed, workspaceMissing: true } : completed;
+}
+
+async function requestTeamSetup(client: PoolClient, teamNumber: number, payload: OnboardingPayload) {
+  try {
+    await withSavepointOrThrow(client, () =>
+      client.query(`SELECT request_team_setup($1,$2,$3,$4,$5)`, [
+        teamNumber,
+        payload.teamRole,
+        payload.primaryFocus,
+        payload.crewRole,
+        payload.roleDescription,
+      ]),
+    );
+  } catch (error) {
+    // Before 0733 there is nothing to file the request in; the person still finishes.
+    if (isMissingRelation(error)) return;
+    throw error;
+  }
 }
 
 /** Lightweight gate for proxy/middleware: profile complete + workspace membership. */

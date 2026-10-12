@@ -4,11 +4,26 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, EmptyState, PageHeader, SoftBlockSkeleton, askConfirm } from "../../../components/ui";
 import { ReauthHint, SidePanel, api, day } from "../admin-console-kit";
 import "../admin-console.css";
+import "../teams/team-governance.css";
 
-type Admin = { userId: string; email: string; name: string; grantedAt: string; grantedByEmail: string | null; you: boolean };
+type Admin = {
+  userId: string;
+  email: string;
+  name: string;
+  grantedAt: string;
+  grantedByEmail: string | null;
+  you: boolean;
+  owner?: boolean;
+};
 type Payload = {
   admins: Admin[];
-  abilities: { canRemoveOthers: boolean; canRemoveSelf: boolean; canTransfer: boolean };
+  abilities: {
+    isOwner?: boolean;
+    canAdd?: boolean;
+    canRemoveOthers: boolean;
+    canRemoveSelf: boolean;
+    canTransfer: boolean;
+  };
   sessionFresh: boolean;
   setupRequired: boolean;
 };
@@ -47,7 +62,7 @@ export default function AdminsClient() {
     if (panel === "transfer") {
       const ok = await askConfirm({
         title: `Hand Platform admin to ${email.trim()}?`,
-        body: "They become a platform admin and you stop being one, in one step. You keep your account and your teams. Only a platform admin can give it back.",
+        body: "They become the platform owner and you stop being a platform admin, in one step. You keep your account and your teams. Only they can give it back.",
         confirmLabel: "Hand it over",
         tone: "destructive",
       });
@@ -120,16 +135,24 @@ export default function AdminsClient() {
   }
 
   const only = data.admins.length <= 1;
+  const abilities = data.abilities;
+  const canAdd = abilities.canAdd ?? true;
 
   return (
     <main className="module-page admin-control ac-page">
       <PageHeader
         title="Platform admins"
-        description="People who can set up teams, give AI credit and see module health. Add anyone with a Vantage account, from any team."
+        description={
+          abilities.isOwner
+            ? "You're the platform owner: only you add or remove admins and ban teams. Admins can set up teams, review team requests, give AI credit and see module health."
+            : "People who can set up teams, give AI credit and see module health. The platform owner decides who is an admin."
+        }
       >
-        <Button variant="primary" type="button" onClick={() => openPanel("add")} disabled={data.setupRequired}>
-          Add an admin
-        </Button>
+        {canAdd ? (
+          <Button variant="primary" type="button" onClick={() => openPanel("add")} disabled={data.setupRequired}>
+            Add an admin
+          </Button>
+        ) : null}
       </PageHeader>
 
       {data.setupRequired ? <p className="ac-message ac-muted">Managing platform admins needs database migration 0727.</p> : null}
@@ -151,6 +174,7 @@ export default function AdminsClient() {
               <strong>
                 {admin.name}
                 {admin.you ? " (you)" : ""}
+                {admin.owner ? <span className="ac-owner-badge">Owner</span> : null}
               </strong>
               <small>
                 {admin.email} · admin since {day(admin.grantedAt)}
@@ -158,29 +182,33 @@ export default function AdminsClient() {
               </small>
             </div>
             <div className="ac-item-actions">
-              {only ? (
+              {admin.owner ? (
+                <span className="ac-small ac-muted">{admin.you ? "Hand over below to step down." : "Runs Vantage"}</span>
+              ) : only ? (
                 <span className="ac-small ac-muted">The only admin: add someone before anyone can leave.</span>
-              ) : (
+              ) : (admin.you ? abilities.canRemoveSelf : abilities.canRemoveOthers) ? (
                 <Button variant="ghost" size="sm" type="button" className="admin-org-delete" disabled={busy} onClick={() => void remove(admin)}>
                   {admin.you ? "Leave…" : "Remove…"}
                 </Button>
-              )}
+              ) : null}
             </div>
           </li>
         ))}
       </ul>
 
-      <section className="ac-section">
-        <div className="ac-section-head">
-          <div>
-            <h2>Hand over Platform admin</h2>
-            <p>Make someone else an admin and stop being one yourself, in one step.</p>
+      {abilities.canTransfer ? (
+        <section className="ac-section">
+          <div className="ac-section-head">
+            <div>
+              <h2>Hand over the platform</h2>
+              <p>Make someone else the platform owner and stop being an admin yourself, in one step.</p>
+            </div>
+            <Button variant="secondary" type="button" onClick={() => openPanel("transfer")} disabled={data.setupRequired}>
+              Hand over…
+            </Button>
           </div>
-          <Button variant="secondary" type="button" onClick={() => openPanel("transfer")} disabled={data.setupRequired}>
-            Hand over…
-          </Button>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <SidePanel
         open={panel !== null}
