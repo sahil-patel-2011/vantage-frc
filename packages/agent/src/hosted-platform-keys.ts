@@ -6,24 +6,19 @@ export const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 export const GROQ_FREE_MODEL = "llama-3.1-8b-instant";
 /** Official free-model router — avoids pinning a rotating `:free` slug. */
 export const OPENROUTER_FREE_MODEL = "openrouter/free";
-export const HOSTED_ANTHROPIC_SONNET = "claude-sonnet-4-20250514";
-export const HOSTED_ANTHROPIC_OPUS = "claude-opus-4-20250514";
+/** Vantage's own Anthropic key answers with Claude Haiku 5.5 for every feature. */
+export const HOSTED_ANTHROPIC_MODEL = "claude-haiku-5-5";
 
 const OPENROUTER_PRICES = { inputPerMillionUsd: 0, outputPerMillionUsd: 0 };
-// Anthropic published cache rates: 5m cache write = 1.25x input, cache read =
-// 0.1x input. With these present, computeCacheAwareCost meters actual savings
-// on hosted-key turns instead of falling back to full input list price.
-const ANTHROPIC_SONNET_PRICES = {
-  inputPerMillionUsd: 3,
-  outputPerMillionUsd: 15,
-  cacheReadPerMillionUsd: 0.3,
-  cacheWritePerMillionUsd: 3.75,
-};
-const ANTHROPIC_OPUS_PRICES = {
-  inputPerMillionUsd: 15,
-  outputPerMillionUsd: 75,
-  cacheReadPerMillionUsd: 1.5,
-  cacheWritePerMillionUsd: 18.75,
+// Anthropic published rates for Claude Haiku 5.5 (prompts up to 100K tokens; longer ones are
+// billed at 5x through pricesForPrompt): 5m cache write = 1.25x input, cache read = 0.1x input.
+// With these present, computeCacheAwareCost meters actual savings on hosted-key turns instead of
+// falling back to full input list price.
+const ANTHROPIC_HAIKU_PRICES = {
+  inputPerMillionUsd: 0.1,
+  outputPerMillionUsd: 0.5,
+  cacheReadPerMillionUsd: 0.01,
+  cacheWritePerMillionUsd: 0.125,
 };
 
 export function readOpenRouterApiKey(env: NodeJS.ProcessEnv = process.env): string | null {
@@ -60,8 +55,13 @@ export function readFreeRelayConfig(
   };
 }
 
-export function hostedAnthropicModel(feature?: string | null): string {
-  return preferredTierForFeature(feature) === "high" ? HOSTED_ANTHROPIC_OPUS : HOSTED_ANTHROPIC_SONNET;
+export function hostedAnthropicModel(_feature?: string | null): string {
+  return HOSTED_ANTHROPIC_MODEL;
+}
+
+/** Features the router treats as hard think at High effort; everything else at Medium. */
+export function hostedAnthropicEffort(feature?: string | null): "medium" | "high" {
+  return preferredTierForFeature(feature) === "high" ? "high" : "medium";
 }
 
 export function openRouterRequestHeaders(env: NodeJS.ProcessEnv = process.env): Record<string, string> {
@@ -152,13 +152,13 @@ export function tryCreateHostedAnthropicAdapter(input?: {
   const apiKey = readAnthropicPlatformKey(env);
   if (!apiKey) return null;
   const model = hostedAnthropicModel(input?.feature);
-  const prices = model === HOSTED_ANTHROPIC_OPUS ? ANTHROPIC_OPUS_PRICES : ANTHROPIC_SONNET_PRICES;
   const config: HttpChatAdapterConfig = {
     provider: "anthropic",
     model,
     apiKey,
     promptCachingEnabled: input?.promptCachingEnabled ?? true,
-    prices,
+    prices: ANTHROPIC_HAIKU_PRICES,
+    effort: hostedAnthropicEffort(input?.feature),
     fetchImpl: input?.fetchImpl,
     providerLabel: "anthropic-hosted",
     capability: input?.feature ?? "chat",

@@ -11,6 +11,7 @@ import {
   compactChatTurns,
   compactContextItems,
   contextTokenBudgetForAdapter,
+  isAgentCapability,
 } from "./context-compact";
 import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
 import { userTurnWithContext } from "./untrusted";
@@ -202,14 +203,14 @@ export class HttpChatAdapter implements ChatAdapter {
       // worst-case cost is never below what the call can spend.
       maxOutputTokens:
         this.kind === "anthropic"
-          ? anthropicOutputSettings(this.model, this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability), this.effort).max_tokens
+          ? anthropicOutputSettings(this.model, this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability, this.model), this.effort).max_tokens
           : this.maxOutputTokens,
     };
   }
 
   private prepare(context: ContextItem[], history: ChatMessage[]) {
-    const compacted = compactContextItems(context, contextTokenBudgetForAdapter(this));
-    const turns = compactChatTurns(history, chatHistoryBudgetForAdapter(this));
+    const compacted = compactContextItems(context, contextTokenBudgetForAdapter(this, this.capability));
+    const turns = compactChatTurns(history, chatHistoryBudgetForAdapter(this, this.capability));
     const withSummary: ContextItem[] = turns.summary
       ? [
           ...compacted.items,
@@ -269,7 +270,7 @@ export class HttpChatAdapter implements ChatAdapter {
         },
         body: JSON.stringify({
           model: this.model,
-          ...anthropicOutputSettings(this.model, this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability), this.effort),
+          ...anthropicOutputSettings(this.model, this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability, this.model), this.effort),
           system: systemBlocks,
           messages: [...anthropicHistoryWithCache(history, caching), { role: "user", content: userTurnWithContext(message, context) }],
           ...(tools.length
@@ -313,7 +314,9 @@ export class HttpChatAdapter implements ChatAdapter {
         callId: block.id,
       }));
     const parsed = parseAnthropicUsage(payload.usage ?? {});
-    const priced = computeCacheAwareCost(parsed, this.prices);
+    // Anthropic reports cache reads and writes apart from input_tokens; the rate card goes by all three.
+    const promptTotal = parsed.promptTokens + parsed.cacheReadInputTokens + parsed.cacheWriteInputTokens;
+    const priced = computeCacheAwareCost(parsed, pricesForPrompt(this.model, this.prices, promptTotal));
     return {
       text: text || "No response.",
       ...(toolCalls.length ? { toolCalls } : {}),
@@ -428,6 +431,29 @@ export class HttpChatAdapter implements ChatAdapter {
   }
 }
 
+/** Claude Haiku 5.x bills a prompt over this many tokens at five times its list rate. */
+export const HAIKU_5_LONG_PROMPT_TOKENS = 100_000;
+
+/**
+ * The rates a call is billed at: Claude Haiku 5.5 has two rate cards, $0.10 / $0.50 per million
+ * up to a 100K-token prompt and $0.50 / $2.50 above it. Other models have one.
+ */
+export function pricesForPrompt<T extends PromptCachePrices>(
+  model: string,
+  prices: T,
+  promptTokens: number,
+): T {
+  if (!/^claude-haiku-5/i.test(model.trim()) || promptTokens <= HAIKU_5_LONG_PROMPT_TOKENS) return prices;
+  const times5 = (value: number | null | undefined) => (value == null ? value : value * 5);
+  return {
+    ...prices,
+    inputPerMillionUsd: prices.inputPerMillionUsd * 5,
+    outputPerMillionUsd: prices.outputPerMillionUsd * 5,
+    cacheReadPerMillionUsd: times5(prices.cacheReadPerMillionUsd),
+    cacheWritePerMillionUsd: times5(prices.cacheWritePerMillionUsd),
+  };
+}
+
 /** Room for thinking plus the reply, per effort level: thinking counts against max_tokens. */
 const HAIKU_5_MIN_TOKENS = { low: 4096, medium: 8192, high: 16000 } as const;
 
@@ -454,9 +480,17 @@ export function anthropicOutputSettings(
  * this number.
  */
 export const CHAT_MAX_OUTPUT_TOKENS = 16_000;
+/**
+ * Agents write whole files, plans and reports, so they get twice that: the output limit of the
+ * smallest model in the list (Claude Opus 4 and GPT-4.1 stop at 32K).
+ */
+export const AGENT_MAX_OUTPUT_TOKENS = 32_000;
+/** Claude Haiku 5.x writes up to 128K tokens; agents on it get half of that. */
+export const HAIKU_5_AGENT_MAX_OUTPUT_TOKENS = 64_000;
 
-export function chatCompletionMaxTokens(_capability?: string): number {
-  return CHAT_MAX_OUTPUT_TOKENS;
+export function chatCompletionMaxTokens(capability?: string | null, model?: string | null): number {
+  if (!isAgentCapability(capability)) return CHAT_MAX_OUTPUT_TOKENS;
+  return /^claude-haiku-5/i.test((model ?? "").trim()) ? HAIKU_5_AGENT_MAX_OUTPUT_TOKENS : AGENT_MAX_OUTPUT_TOKENS;
 }
 
 function defaultBase(provider: HttpChatAdapterConfig["provider"]) {

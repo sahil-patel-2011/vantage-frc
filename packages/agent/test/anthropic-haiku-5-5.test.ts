@@ -1,5 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { HttpChatAdapter, anthropicOutputSettings } from "../src/http-chat-adapter";
+import {
+  HAIKU_5_LONG_PROMPT_TOKENS,
+  HttpChatAdapter,
+  anthropicOutputSettings,
+  pricesForPrompt,
+} from "../src/http-chat-adapter";
+import {
+  AGENT_CHAT_HISTORY,
+  AGENT_CONTEXT_TOKEN_BUDGET,
+  chatHistoryBudgetForAdapter,
+  CLOUD_CHAT_HISTORY,
+  CLOUD_CONTEXT_TOKEN_BUDGET,
+  contextTokenBudgetForAdapter,
+  GEMINI_CONTEXT_TOKEN_BUDGET,
+  SHORT_CHAT_HISTORY,
+} from "../src/context-compact";
 import { pickByokModelForFeature } from "../src/byok-model-routing";
 import { anthropicHistoryWithCache } from "../src/prompt-caching";
 
@@ -68,5 +83,42 @@ describe("Claude Haiku 5.5 requests", () => {
     expect(body.max_tokens).toBeGreaterThanOrEqual(8192);
     for (const key of ["temperature", "top_p", "top_k", "thinking"]) expect(body).not.toHaveProperty(key);
     expect(body.messages.at(-1).role).toBe("user");
+  });
+});
+
+describe("Claude Haiku 5.5 long-prompt rate", () => {
+  const prices = { inputPerMillionUsd: 0.1, outputPerMillionUsd: 0.5, cacheReadPerMillionUsd: 0.01, cacheWritePerMillionUsd: 0.125 };
+
+  it("bills a prompt over 100K tokens at five times the list rate", () => {
+    expect(pricesForPrompt("claude-haiku-5-5", prices, HAIKU_5_LONG_PROMPT_TOKENS)).toBe(prices);
+    expect(pricesForPrompt("claude-haiku-5-5", prices, HAIKU_5_LONG_PROMPT_TOKENS + 1)).toEqual({
+      inputPerMillionUsd: 0.5,
+      outputPerMillionUsd: 2.5,
+      cacheReadPerMillionUsd: 0.05,
+      cacheWritePerMillionUsd: 0.625,
+    });
+  });
+
+  it("leaves other models on their one rate card", () => {
+    expect(pricesForPrompt("claude-sonnet-4-20250514", prices, 500_000)).toBe(prices);
+  });
+});
+
+describe("agent budgets", () => {
+  const haiku = { provider: "anthropic", model: "claude-haiku-5-5" };
+
+  it("gives agents more context and history than a chat turn", () => {
+    expect(contextTokenBudgetForAdapter(haiku, "chat")).toBe(CLOUD_CONTEXT_TOKEN_BUDGET);
+    expect(contextTokenBudgetForAdapter(haiku, "agent")).toBe(AGENT_CONTEXT_TOKEN_BUDGET);
+    expect(contextTokenBudgetForAdapter(haiku, "cad.design")).toBe(AGENT_CONTEXT_TOKEN_BUDGET);
+    expect(chatHistoryBudgetForAdapter(haiku, "coding")).toBe(AGENT_CHAT_HISTORY);
+    expect(chatHistoryBudgetForAdapter(haiku, "chat")).toBe(CLOUD_CHAT_HISTORY);
+  });
+
+  it("keeps local models and Gemini's free tier on the short window, agents included", () => {
+    expect(contextTokenBudgetForAdapter({ provider: "openai-compatible", model: "gemini-3.8-flash" }, "agent")).toBe(
+      GEMINI_CONTEXT_TOKEN_BUDGET,
+    );
+    expect(chatHistoryBudgetForAdapter({ provider: "ollama", model: "llama3.2" }, "agent")).toBe(SHORT_CHAT_HISTORY);
   });
 });

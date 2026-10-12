@@ -8,7 +8,7 @@ vi.mock("@vantage/core", () => ({
 
 const { emailGiftNotice, giftEmailText } = await import("./gift-mail");
 
-const gift = { amountUsd: 10, usedUsd: 8.25, familyLabel: "Claude Sonnet 5.5 and Opus 5.5" };
+const gift = { amountUsd: 10, usedUsd: 8.25, familyLabel: "Claude Haiku 5.5" };
 
 describe("gift emails", () => {
   it("say what was given, that it stops at the amount, and link to AI settings", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  HOSTED_ANTHROPIC_OPUS,
-  HOSTED_ANTHROPIC_SONNET,
+  HOSTED_ANTHROPIC_MODEL,
+  hostedAnthropicEffort,
   OPENROUTER_FREE_MODEL,
   readFreeRelayConfig,
   tryCreateFreeRelayAdapter,
@@ -43,10 +43,13 @@ describe("hosted platform keys", () => {
     expect(tryCreateFreeRelayAdapter({ env })?.provider).toBe("openai-compatible");
   });
 
-  it("routes paid hosted Anthropic to Sonnet, Opus for CAD/code", () => {
+  it("answers every hosted Anthropic feature with Claude Haiku 5.5, High effort for CAD/code", () => {
     const env = { ANTHROPIC_API_KEY: "sk-ant-test" };
-    expect(tryCreateHostedAnthropicAdapter({ env, feature: "chat" })?.model).toBe(HOSTED_ANTHROPIC_SONNET);
-    expect(tryCreateHostedAnthropicAdapter({ env, feature: "cad" })?.model).toBe(HOSTED_ANTHROPIC_OPUS);
+    expect(HOSTED_ANTHROPIC_MODEL).toBe("claude-haiku-5-5");
+    expect(tryCreateHostedAnthropicAdapter({ env, feature: "chat" })?.model).toBe(HOSTED_ANTHROPIC_MODEL);
+    expect(tryCreateHostedAnthropicAdapter({ env, feature: "cad" })?.model).toBe(HOSTED_ANTHROPIC_MODEL);
+    expect(hostedAnthropicEffort("chat")).toBe("medium");
+    expect(hostedAnthropicEffort("cad")).toBe("high");
     expect(tryCreateHostedAnthropicAdapter({ env: {} })).toBeNull();
   });
 });

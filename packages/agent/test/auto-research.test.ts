@@ -137,8 +137,11 @@ describe("finish / verify report", () => {
     expect(shouldRefuseEarlyFinal(report, "Design a coral intake", "cad")).toBe(false);
   });
 
-  it("gives chat and agent calls the same full output room", () => {
-    expect(chatCompletionMaxTokens("agent")).toBe(16_000);
+  it("gives chat full output room and agents more", () => {
     expect(chatCompletionMaxTokens("chat")).toBe(16_000);
+    expect(chatCompletionMaxTokens("chat", "claude-haiku-5-5")).toBe(16_000);
+    expect(chatCompletionMaxTokens("agent")).toBe(32_000);
+    expect(chatCompletionMaxTokens("cad", "claude-sonnet-4-20250514")).toBe(32_000);
+    expect(chatCompletionMaxTokens("agent", "claude-haiku-5-5")).toBe(64_000);
   });
 });

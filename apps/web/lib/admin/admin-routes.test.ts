@@ -203,7 +203,7 @@ describe("AI credit and the key pool", () => {
     state.respond = (sql) => (sql.includes("to_regclass") ? { rows: [{ ready: true }], rowCount: 1 } : undefined);
     const response = await aiCredits.POST(req("POST", "/api/admin/ai-credits", { orgId: ORG, family: "claude" }));
     expect(response.status).toBe(400);
-    expect((await response.json()).error).toMatch(/No Claude Sonnet 5.5 and Opus 5.5 key is switched on/);
+    expect((await response.json()).error).toMatch(/No Claude Haiku 5.5 key is switched on/);
     expect(state.queries.some((q) => q.sql.includes("grant_ai_credit_gift"))).toBe(false);
   });
 
