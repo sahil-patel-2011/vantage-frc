@@ -24,7 +24,7 @@
 .scout-page .next-match-row.red .next-match-robot { background: color-mix(in srgb,#d43c40 8%,var(--surface)); color: var(--ink); border-top: 3px solid #d43c40; }
 .scout-page .next-match-row.blue .next-match-robot { background: color-mix(in srgb,#2975d7 8%,var(--surface)); color: var(--ink); border-top: 3px solid #2975d7; }
 .scout-page .next-match-robot b { font-size: 21px; font-weight: 600; }
-.scout-page .next-match-robot small { color: var(--muted); font-size: 10px; }
+.scout-page .next-match-robot small { color: var(--muted); font-size: 11px; }
 .scout-page .next-match-robot.is-selected { outline: 2px solid var(--accent); outline-offset: 2px; background: var(--accent-soft); transform: none; }
 .scout-page .next-match-robot.is-done:not(.is-selected) { opacity: .65; }
 .scout-page .scout-other-target { margin: 12px 0 0; }

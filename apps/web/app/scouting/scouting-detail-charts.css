@@ -48,7 +48,7 @@
 }
 .sdc-trend-axis {
   fill: var(--muted);
-  font: 600 9px var(--font-source-sans), ui-sans-serif;
+  font: 600 11px var(--font-source-sans), ui-sans-serif;
 }
 .sdc-trend-avg {
   stroke: color-mix(in srgb, var(--muted) 50%, transparent);
@@ -96,7 +96,7 @@
 }
 .sdc-donut-sub {
   fill: var(--muted);
-  font: 600 8px var(--font-source-sans), ui-sans-serif;
+  font: 600 11px var(--font-source-sans), ui-sans-serif;
 }
 .sdc-donut-legend {
   display: grid;

@@ -49,7 +49,7 @@
 }
 .scout-accuracy-kpis span,.scout-accuracy-kpis small{
   color:var(--muted);
-  font:700 10px/1.2 var(--font-ibm-mono),ui-monospace,monospace;
+  font:700 11px/1.2 var(--font-ibm-mono),ui-monospace,monospace;
   letter-spacing:.06em;text-transform:uppercase;
 }
 .scout-accuracy-kpis strong{

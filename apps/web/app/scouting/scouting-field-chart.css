@@ -116,7 +116,7 @@
   left: 4px;
   white-space: nowrap;
   color: var(--muted);
-  font: 600 10px var(--font-source-sans), ui-sans-serif;
+  font: 600 11px var(--font-source-sans), ui-sans-serif;
 }
 
 @media (max-width: 720px) {

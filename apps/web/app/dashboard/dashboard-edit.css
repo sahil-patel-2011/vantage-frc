@@ -257,7 +257,7 @@ body.has-app-shell.dash-editing .soft-island{display:none !important}
 .dash-board-chip svg{flex:none;width:12px;height:12px;color:var(--muted)}
 .dash-board-chip em,.dash-board-menu em{
   padding:3px 7px;border-radius:var(--radius-pill);background:var(--accent-soft);color:var(--accent);
-  font:700 10px/1 var(--font-source-sans),system-ui;font-style:normal;letter-spacing:.04em;text-transform:uppercase;
+  font:700 11px/1 var(--font-source-sans),system-ui;font-style:normal;letter-spacing:.04em;text-transform:uppercase;
 }
 .dash-board-chip:hover:not(:disabled){border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
 .dash-board-chip:focus-visible{outline:2px solid var(--ring);outline-offset:2px}

@@ -41,7 +41,7 @@
 .vid-kpis span,
 .vid-kpis small {
   color: var(--muted);
-  font: 700 10px/1.2 var(--font-ibm-mono), ui-monospace, monospace;
+  font: 700 11px/1.2 var(--font-ibm-mono), ui-monospace, monospace;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -125,7 +125,7 @@
   color: var(--accent);
   background: var(--surface-2);
   border-radius:var(--radius-pill);
-  font-size: 10px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 700;
 }
@@ -236,7 +236,7 @@
 }
 .vid-score-btn small {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -344,7 +344,7 @@
   color: var(--muted);
   border: 1px solid var(--line);
   border-radius:var(--radius-pill);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;

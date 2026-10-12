@@ -139,7 +139,7 @@
   padding-top: 8px;
   border-top: 1px solid var(--line);
   color: var(--muted);
-  font: 800 10px/1 var(--font-source-sans), ui-sans-serif;
+  font: 800 11px/1 var(--font-source-sans), ui-sans-serif;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }

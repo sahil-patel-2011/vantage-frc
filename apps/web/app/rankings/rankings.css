@@ -21,7 +21,7 @@
 .rank-team{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:0}
 .rank-team b{color:var(--ink);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
 .rank-nick{color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rank-us{flex:none;padding:1px 6px;color:var(--accent);border:1px solid var(--accent);border-radius:var(--radius-pill);font-size:9px;font-weight:800;font-style:normal;letter-spacing:.06em}
+.rank-us{flex:none;padding:1px 6px;color:var(--accent);border:1px solid var(--accent);border-radius:var(--radius-pill);font-size:11px;font-weight:800;font-style:normal;letter-spacing:.06em}
 .rank-record{flex:0 0 74px;color:var(--ink);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rank-epa{display:grid;gap:3px;flex:1 1 220px;min-width:0}
 .rank-epa-top{display:flex;align-items:center;gap:8px}
@@ -41,7 +41,7 @@
 .rank-match-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .rank-match-top strong{color:var(--ink);font-size:13px}
 .rank-match-time{margin-left:auto;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rank-winner{margin-left:auto;padding:2px 8px;border-radius:var(--radius-pill);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.rank-winner{margin-left:auto;padding:2px 8px;border-radius:var(--radius-pill);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
 .rank-winner.red{color:var(--critical);border:1px solid var(--critical)}
 .rank-winner.blue{color:var(--accent);border:1px solid var(--accent)}
 .rank-alliance{display:flex;align-items:center;gap:8px}

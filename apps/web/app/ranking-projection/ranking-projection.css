@@ -21,7 +21,7 @@
 }
 .bp-kpis span,
 .bp-kpis small {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
@@ -162,7 +162,7 @@
   color: var(--ink);
 }
 .bp-standings th {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);

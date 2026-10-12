@@ -84,7 +84,7 @@
   display:inline-flex;align-items:baseline;gap:6px;padding:6px 10px;border-radius:var(--radius-xs);
   background:var(--surface-2);border:1px solid var(--line);font-variant-numeric:tabular-nums;
 }
-.risks-score em{font-style:normal;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.risks-score em{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .risks-score strong{font-size:18px;line-height:1}
 .risks-li{
   display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:var(--radius-xs);
@@ -93,7 +93,7 @@
 .risks-badge{
   display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:var(--radius-pill);
   border:1px solid var(--line);background:var(--surface-2);color:var(--muted);
-  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
 }
 .risks-badge.low{color:#245f46;background:#eaf5ef;border-color:#93bda9}
 .risks-badge.moderate{color:#805a17;background:#fff7e4;border-color:#e0c48a}

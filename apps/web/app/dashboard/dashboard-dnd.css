@@ -236,7 +236,7 @@
 }
 .dash-item-sizes>span{
   margin-right:auto;color:var(--muted);
-  font:700 10px var(--font-source-sans),ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;
+  font:700 11px var(--font-source-sans),ui-sans-serif;letter-spacing:.06em;text-transform:uppercase;
 }
 .dash-size-chips{
   display:inline-flex;align-items:center;gap:2px;padding:3px;border-radius:var(--radius-sm);pointer-events:auto;

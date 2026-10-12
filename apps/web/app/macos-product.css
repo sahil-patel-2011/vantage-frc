@@ -200,10 +200,10 @@ body.has-app-shell :is(.app-card,.soft-panel,.module-page) tbody tr:hover td { b
   .app-sidebar-team > i svg { width: 22px; height: 22px; }
   .app-sidebar-team > span { display: grid; gap: 3px; min-width: 0; flex: 1; }
   .app-sidebar-team strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 550; }
-  .app-sidebar-team small { color: var(--muted); font-size: 10px; }
+  .app-sidebar-team small { color: var(--muted); font-size: 11px; }
   .app-sidebar-team > svg { width: 11px; height: 11px; color: var(--muted); flex: none; }
   .app-sidebar nav { display: grid; gap: 3px; }
-  .app-sidebar-label { margin: 0 12px 8px; font-size: 10px; font-weight: 550; color: var(--muted); letter-spacing: .01em; }
+  .app-sidebar-label { margin: 0 12px 8px; font-size: 11px; font-weight: 550; color: var(--muted); letter-spacing: .01em; }
   .app-sidebar nav a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 12px; box-sizing: border-box; border: 1px solid transparent; border-radius: 11px; color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 450; transition: background-color 160ms ease, color 160ms ease; }
   .app-sidebar nav a > svg { width: 24px; height: 24px; flex: none; }
   .app-sidebar nav a > span { min-width: 0; overflow-wrap: anywhere; }

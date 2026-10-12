@@ -43,7 +43,7 @@
 
 .section-guide-search .eyebrow {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -172,7 +172,7 @@
 
 .section-guide-fact > span {
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -190,7 +190,7 @@
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius:var(--radius-xs);
-  font-size: 10px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 700;
 }

@@ -103,7 +103,7 @@
   border: 1px solid var(--line);
   background: var(--bg);
   color: var(--muted);
-  font: 600 10px var(--font-source-sans), ui-sans-serif;
+  font: 600 11px var(--font-source-sans), ui-sans-serif;
   font-style: normal;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -216,7 +216,7 @@
 .signin-invite > span {
   justify-self: start;
   color: var(--accent);
-  font: 700 10px var(--font-ibm-mono), monospace;
+  font: 700 11px var(--font-ibm-mono), monospace;
   letter-spacing: 0.08em;
 }
 
@@ -270,7 +270,7 @@
   border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--line));
   background: var(--surface);
   color: var(--warning);
-  font: 700 10px var(--font-ibm-mono), monospace;
+  font: 700 11px var(--font-ibm-mono), monospace;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }

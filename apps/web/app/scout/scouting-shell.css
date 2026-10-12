@@ -28,7 +28,7 @@
 .scouting-tabs{display:flex;justify-content:center;gap:4px;overflow-x:auto;scrollbar-width:none}
 .scouting-tabs::-webkit-scrollbar{display:none}
 .scouting-tabs a{
-  flex:0 0 auto;padding:8px 14px;border-radius:999px;
+  flex:0 0 auto;display:inline-flex;align-items:center;min-height:40px;padding:8px 16px;border-radius:999px;box-sizing:border-box;
   color:var(--muted);font-weight:600;font-size:14px;text-decoration:none;
   transition:background-color .2s var(--ease-out,ease),color .2s var(--ease-out,ease);
 }

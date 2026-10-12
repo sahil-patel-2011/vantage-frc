@@ -48,7 +48,7 @@
 .kb-template:hover{border-color:color-mix(in srgb,var(--accent) 40%,var(--line));box-shadow:var(--shadow)}
 .kb-template strong{font-size:14px}
 .kb-template span{color:var(--muted);font-size:12px;line-height:1.4}
-.kb-badge{display:inline-flex;align-items:center;min-height:22px;padding:3px 8px;border-radius:var(--radius-pill);font:700 10px/1 inherit;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:color-mix(in srgb,var(--muted) 12%,transparent);width:fit-content}
+.kb-badge{display:inline-flex;align-items:center;min-height:22px;padding:3px 8px;border-radius:var(--radius-pill);font:700 11px/1 inherit;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:color-mix(in srgb,var(--muted) 12%,transparent);width:fit-content}
 .kb-badge.handoff{color:var(--warning);background:color-mix(in srgb,var(--warning) 14%,transparent)}
 .kb-badge.onboarding{color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
 .kb-badge.procedure{color:var(--positive);background:color-mix(in srgb,var(--positive) 14%,transparent)}

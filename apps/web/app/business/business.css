@@ -146,7 +146,7 @@
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius:var(--radius-pill);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -720,7 +720,7 @@
   border-radius:var(--radius-sm); box-shadow: var(--shadow, none);
 }
 .biz-stage-strip li.has-partners { border-color: color-mix(in srgb, var(--biz-mint) 35%, var(--line)); }
-.biz-stage-label { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.biz-stage-label { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 .biz-stage-count { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
 .biz-stage-bar {
   display: block; align-self: end; width: 42%; min-height: 4px; margin: 0 auto;

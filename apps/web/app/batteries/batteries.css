@@ -52,7 +52,7 @@
 .batt-fleet-top .who strong{font-size:15px}
 .batt-fleet-top .who small{color:var(--muted);font-size:11px}
 .batt-badges{display:flex;flex-wrap:wrap;gap:6px}
-.batt-badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface-2);color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.batt-badge{display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border:1px solid var(--line);border-radius:var(--radius-pill);background:var(--surface-2);color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .batt-badge.good{color:#245f46;background:#eaf5ef;border-color:#93bda9}
 .batt-badge.aging{color:#805a17;background:#fff7e4;border-color:#e0c48a}
 .batt-badge.retire,.batt-badge.block{color:#8d2f2a;background:#fff0ef;border-color:#d9aaa6}
@@ -62,14 +62,14 @@
 .batt-actions button{min-height:32px;padding:5px 10px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--surface-2);color:var(--ink);font-size:11px;font-weight:700;cursor:pointer}
 .batt-actions button.danger{color:var(--critical)}
 .batt-assign{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
-.batt-assign label{display:grid;gap:4px;flex:1;min-width:140px;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.batt-assign label{display:grid;gap:4px;flex:1;min-width:140px;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .batt-forms{display:grid;gap:12px}
 .batt-form{display:grid;gap:10px;padding:14px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-sm)}
 .batt-form h3{margin:0;font-size:var(--title-4)}
 .batt-form-hint{margin:0;font-size:12px;line-height:1.4}
 .batt-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .batt-field{display:grid;gap:4px;min-width:0;color:var(--muted)}
-.batt-field>span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.batt-field>span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .batt-log{display:grid;gap:6px;margin:0;padding:0;list-style:none}
 .batt-log li{display:grid;gap:2px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-xs);font-size:12px}
 .batt-log strong{font-size:13px}

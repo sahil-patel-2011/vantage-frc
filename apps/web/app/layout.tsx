@@ -19,23 +19,12 @@ import { THEME_BOOTSTRAP_SCRIPT } from "../lib/theme/theme-bootstrap";
 import { VercelWebAnalytics } from "../components/vercel-web-analytics";
 import { rootMarketingMetadata } from "../lib/marketing/seo";
 
+// One sans and one mono. Source Sans 3 and Source Serif 4 were loaded on every page beside Inter;
+// their names now point at the one sans (system.css), so older rules still resolve.
 const inter = localFont({
   src: "../assets/fonts/inter-latin-variable.woff2",
   weight: "100 900",
   variable: "--font-inter",
-  display: "swap",
-});
-const sourceSans = localFont({
-  src: "../assets/fonts/source-sans-3-latin-variable.woff2",
-  weight: "200 900",
-  variable: "--font-source-sans",
-  display: "swap",
-});
-const sourceSerif = localFont({
-  src: "../assets/fonts/source-serif-4-latin-variable.woff2",
-  weight: "200 900",
-  adjustFontFallback: "Times New Roman",
-  variable: "--font-source-serif",
   display: "swap",
 });
 const ibmMono = localFont({
@@ -67,7 +56,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <html
       lang="en"
       data-theme="light"
-      className={`${inter.variable} ${sourceSans.variable} ${sourceSerif.variable} ${ibmMono.variable}`}
+      className={`${inter.variable} ${ibmMono.variable}`}
       suppressHydrationWarning
     >
       <head>

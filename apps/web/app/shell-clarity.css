@@ -173,9 +173,9 @@ body.has-app-shell main:has(.scan-empty :is(.is-primary, .app-button.primary)) .
 
 /* ── Small type in the frame (A6-24) ─────────────────────────────────────────────────────── */
 
-/* 10px section labels and captions in the sidebar, menu panel and account menu: 11px minimum. */
+/* Section labels and captions in the sidebar, menu panel and account menu: 12px minimum. */
 body.has-app-shell :is(.app-sidebar-label, .app-sidebar-team small, .soft-nav-group a small, .soft-nav-group span.planned small, .soft-account-teams a small, .soft-focus-rail > small, .soft-outbox-error) {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* ── Touch targets: 44px on touch screens (A6-08) ─────────────────────────────────────────── */

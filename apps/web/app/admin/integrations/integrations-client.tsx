@@ -27,7 +27,7 @@ const STATE_BADGE: Record<IntegrationState, { tone: string; label: string }> = {
   configured: { tone: "app-badge", label: "Configured" },
   degraded: { tone: "app-badge demo", label: "Degraded" },
   setup_required: { tone: "app-badge setup", label: "Setup required" },
-  error: { tone: "app-badge setup", label: "Error" },
+  error: { tone: "app-badge error", label: "Error" },
 };
 
 function groupByCategory(checks: IntegrationCheck[]): Array<{ category: string; checks: IntegrationCheck[] }> {

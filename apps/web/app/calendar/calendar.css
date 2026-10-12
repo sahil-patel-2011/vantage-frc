@@ -115,7 +115,7 @@
 .aii-head p{margin:0;font-size:12px;max-width:520px}
 .aii-error{margin:0;color:var(--critical);font-size:12px;font-weight:600}
 .aii-text{margin:0;padding:12px 14px;background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-xs);font-size:13px;line-height:1.6;white-space:pre-wrap}
-.aii-meta{color:var(--muted);font-size:10px}
+.aii-meta{color:var(--muted);font-size:11px}
 
 /* ===========================================================================
    The month grid.
@@ -266,7 +266,7 @@
 .cal-grid-more{
   align-self:flex-start;
   padding:1px 4px;border:0;border-radius:3px;background:transparent;
-  color:var(--muted);font:700 10px var(--font-source-sans),ui-sans-serif;cursor:pointer;
+  color:var(--muted);font:700 11px var(--font-source-sans),ui-sans-serif;cursor:pointer;
 }
 .cal-grid-more:hover{color:var(--accent);background:var(--accent-soft)}
 
@@ -290,7 +290,7 @@
   .cal-grid-day{min-height:62px;padding:3px}
   .cal-grid-entries{gap:1px}
   .cal-grid-chip{
-    padding:1px 3px;border-left-width:2px;font-size:9.5px;
+    padding:1px 3px;border-left-width:2px;font-size:11px;
   }
   .cal-grid-hint{display:none}
 }

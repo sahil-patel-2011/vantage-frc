@@ -11,7 +11,7 @@
 .public-wall-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:1080px;margin:24px auto 0;padding:0 24px}
 .public-wall-card{display:grid;align-content:start;gap:10px;padding:24px;border-radius:12px;background:#fff;border:1px solid #dce2eb;box-shadow:0 12px 35px rgba(23,40,66,.06)}
 .public-wall-dark .public-wall-card,.public-wall-team .public-wall-card{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16);box-shadow:none}
-.public-wall-tier{font-size:9px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#315fdd}
+.public-wall-tier{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#315fdd}
 .public-wall-dark .public-wall-tier,.public-wall-team .public-wall-tier{color:#b7ee68}
 .public-wall-card img{max-height:56px;max-width:180px;object-fit:contain;justify-self:start}
 .public-wall-card strong{font-size:19px;letter-spacing:-.02em}
@@ -19,7 +19,7 @@
 .public-wall-card strong a:hover{text-decoration:underline}
 .public-wall-card p{margin:0;font-size:13px;line-height:1.6;opacity:.8}
 .public-wall-state{display:grid;place-items:center;align-content:center;gap:8px;min-height:50vh;padding:30px;text-align:center}
-.public-wall-state span{font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#315fdd}
+.public-wall-state span{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#315fdd}
 .public-wall-state h1{margin:0;font-size:clamp(26px,4vw,42px);letter-spacing:-.04em}
 .public-wall-state p{margin:0;opacity:.75}
 .public-wall-footer{max-width:1080px;margin:48px auto 0;padding:0 24px;text-align:center;font-size:12px;opacity:.65}
