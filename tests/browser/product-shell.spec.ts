@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
 import { resetHomeBoard } from "./dashboard-fixture";
-import { openNav, navigationOpener } from "./nav";
+import { openNav, openSearch, searchOpener } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   expect(await signInAs(context, "owner")).toBe(true);
@@ -113,16 +113,16 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   // Four apps and nothing else: press and hold (or right-click, or the Menu key) to change them.
   await expect(island.getByRole("button")).toHaveCount(0);
   await openNav(page);
-  const drawer = page.getByRole("complementary", { name: "Product navigation" });
+  const drawer = page.getByRole("dialog", { name: "Product navigation" });
   await expect(drawer).toBeVisible();
   // Search is a field in the panel, not a button that opened a second overlay.
   await expect(drawer.getByRole("combobox", { name: /Search pages, tools/ })).toBeVisible();
   // The island lists four of these same apps, so it steps aside while the panel is up.
   await expect(island).toBeHidden();
-  // The four everyday places, as a dock row: Home, Scouting, My Day, Tasks.
-  await expect(drawer.locator(".main-menu-launch a")).toHaveCount(4);
-  await expect(drawer.getByRole("link", { name: /^Home/ })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: /^Scouting/ })).toBeVisible();
+  // "Your apps" leads the menu: the stock pins are the bar's four, then My Day, Tasks and
+  // Team resources, with Edit beside the heading.
+  await expect(drawer.locator(".main-menu-launch a")).toHaveText(["Home", "Scout", "Teams", "Match plan", "My Day", "Tasks", "Team resources"]);
+  await expect(drawer.getByRole("button", { name: "Edit your apps", exact: true })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Competition", exact: true })).toHaveCount(0);
   await expect(drawer.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) })).toBeVisible();
   await expect(drawer.getByRole("link", { name: "Forms", exact: true })).toHaveCount(0);
@@ -135,20 +135,21 @@ test("product shell keeps four favorite apps and one way to see the rest", async
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
   await expect(island).toBeVisible();
 
-  // Desktop keeps workspaces visible and opens the same drawer for search.
+  // Desktop keeps workspaces in the sidebar; its search button opens search, not the menu.
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeHidden();
   await expect(page.locator(".app-sidebar")).toBeVisible();
-  await expect(navigationOpener(page)).toBeVisible();
+  await expect(searchOpener(page)).toBeVisible();
+  await searchOpener(page).click();
+  await expect(page.getByRole("dialog", { name: "Search Vantage", exact: true })).toBeVisible();
   await expect(drawer).toBeHidden();
 });
 
-test("search is one affordance at every width, inside the navigation panel", async ({ page }) => {
+test("search is one field at every width: the palette on desktop, the menu's field on phones", async ({ page }) => {
   const field = page.getByRole("combobox", { name: /Search pages, tools/ });
 
   const oldButton = page.getByRole("button", { name: "Search Vantage" });
-  // Desktop search and the phone menu open the same field.
-  const opener = navigationOpener(page);
+  const opener = searchOpener(page);
 
   for (const size of [
     { width: 390, height: 844 },
@@ -168,10 +169,10 @@ test("search is one affordance at every width, inside the navigation panel", asy
     await expect(field).toBeHidden();
   }
 
-  // And it searches: the panel's field is the only one, so this is the path.
+  // And it searches: arrow keys and Enter open the top result.
   await opener.click();
   await field.fill("pick list");
-  await expect(page.locator("#soft-nav-row-0")).toContainText("Pick list");
+  await expect(page.getByRole("option").first()).toContainText("Pick list");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/picklist|competition/);
 });
@@ -181,7 +182,7 @@ test("one menu restores keyboard focus without a second workspace picker", async
   await page.goto("/competition");
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
   await expect(page.locator(".workspace-picker-trigger")).toHaveCount(0);
-  const opener = navigationOpener(page);
+  const opener = searchOpener(page);
   await opener.click();
   await expect(page.getByRole("combobox", { name: /Search pages, tools/ })).toBeFocused();
   await page.keyboard.press("Escape");
@@ -192,7 +193,7 @@ test("specialist tools stay discoverable through the shared search", async ({ pa
   expect(await signInAs(context, "owner")).toBe(true);
   await page.goto("/competition?tab=scouting");
   for (const label of ["Schema sync", "Data quality", "Practice"]) {
-    await openNav(page);
+    await openSearch(page);
     await page.getByRole("combobox", { name: /Search pages, tools/ }).fill(label);
     await expect(page.getByRole("option").filter({ hasText: label }).first()).toBeVisible();
     await page.keyboard.press("Escape");

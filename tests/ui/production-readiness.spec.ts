@@ -8,7 +8,7 @@ for (const width of [390, 768]) test(`opening menu preserves an already focused 
   await expect(page.getByRole("tablist", { name: "Account sections" })).toBeVisible();
   await page.clock.install();
   await page.clock.pauseAt(new Date(Date.now() + 1000));
-  const opener = page.getByRole("button", { name: "Menu and search", exact: true });
+  const opener = page.getByRole("button", { name: "Menu", exact: true });
   await opener.click();
   const ai = page.getByRole("navigation", { name: "Main menu", exact: true }).locator("details").filter({ has: page.locator("summary").filter({ has: page.getByText("AI", { exact: true }) }) });
   const summary = ai.locator("summary");
@@ -208,11 +208,11 @@ for (const width of [390, 1440]) test(`saved corrections refresh past the device
 });
 
 for (const width of [390, 1440]) test(`search opens connection setup directly and keeps the team at ${width}px`, async ({ page, context }) => {
-  const { navigationOpener } = await import("../browser/nav");
+  const { searchOpener } = await import("../browser/nav");
   await page.setViewportSize({ width, height: 900 });
   await isolateUi(page, context);
   await page.goto(`/ai?tab=writer&orgId=${orgId}`);
-  await navigationOpener(page).click();
+  await searchOpener(page).click();
   await page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true }).fill("Connect AI");
   await page.getByRole("option", { name: "Connect AI AI › Controls", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/ai/connect\\?orgId=${orgId}`));

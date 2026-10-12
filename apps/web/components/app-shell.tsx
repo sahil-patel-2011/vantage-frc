@@ -274,6 +274,8 @@ export default function AppShell() {
       navOpenerRef.current = null;
       navWasOpenRef.current = false;
       if (wasOpen) requestAnimationFrame(() => {
+        // The menu closed to open the "Your apps" editor or the search palette: focus is theirs.
+        if (document.activeElement?.closest(".pins-editor, .search-palette")) return;
         const visible = Boolean(opener?.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden");
         const fallback = [...document.querySelectorAll<HTMLElement>(".app-topbar-search, .soft-menu-btn")]
           .find(control => control.getClientRects().length > 0 && getComputedStyle(control).visibility !== "hidden");

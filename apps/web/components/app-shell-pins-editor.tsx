@@ -69,7 +69,10 @@ export function AppShellPinsEditor({
       openerRef.current = null;
       requestAnimationFrame(() => {
         if (document.activeElement && document.activeElement !== document.body && !sheetRef.current?.contains(document.activeElement)) return;
-        if (opener?.isConnected && opener.getClientRects().length > 0) opener.focus();
+        // Opened from the menu (now closed): back to the control that opens the menu or search.
+        const visible = (node: HTMLElement | null | undefined) => Boolean(node?.isConnected && node.getClientRects().length > 0);
+        const fallback = [...document.querySelectorAll<HTMLElement>(".soft-menu-btn, .app-sidebar-edit, .app-topbar-search")].find(visible);
+        (visible(opener) ? opener : fallback)?.focus();
       });
     };
     // Only on opening: a late `pins` update must not wipe a draft being edited.

@@ -78,6 +78,8 @@ async function stubBusiness(page: Page, payload: ReturnType<typeof livePortal>) 
 }
 
 test("school-funded teams without sponsors open on Overview and hide CRM", async ({ page }) => {
+  // Business sections are walked through the menu: the phone and tablet layout.
+  await page.setViewportSize({ width: 1024, height: 900 });
   await stubBusiness(page, livePortal({ schoolFunded: true, sponsorsAllowed: false }));
   await page.goto("/business");
 
@@ -97,6 +99,8 @@ test("school-funded teams without sponsors open on Overview and hide CRM", async
 });
 
 test("a Sponsors deep-link is sent back to Overview when sponsors are not allowed", async ({ page }) => {
+  // Business sections are walked through the menu: the phone and tablet layout.
+  await page.setViewportSize({ width: 1024, height: 900 });
   await stubBusiness(page, livePortal({ schoolFunded: true, sponsorsAllowed: false }));
   await page.goto("/business?tab=sponsors");
 
@@ -109,6 +113,8 @@ test("a Sponsors deep-link is sent back to Overview when sponsors are not allowe
 });
 
 test("sponsored teams still offer the Sponsors workbench", async ({ page }) => {
+  // Business sections are walked through the menu: the phone and tablet layout.
+  await page.setViewportSize({ width: 1024, height: 900 });
   await stubBusiness(page, livePortal({ schoolFunded: false, sponsorsAllowed: true }));
   await page.goto("/business");
 

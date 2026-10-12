@@ -105,7 +105,7 @@ export function AppShellSearchPalette({
             aria-autocomplete="list"
             aria-activedescendant={search.activeIndex >= 0 ? `search-palette-row-${search.activeIndex}` : undefined}
             value={search.query}
-            placeholder="Search pages, tools, and your team's data"
+            placeholder="Search Vantage"
             autoComplete="off"
             spellCheck={false}
             enterKeyHint="go"
@@ -126,7 +126,8 @@ export function AppShellSearchPalette({
             </button>
           ) : null}
         </div>
-        <div className="search-palette-results soft-nav-results">
+        {/* Rows are reached with the arrow keys from the field, so the list itself is not a Tab stop. */}
+        <div className="search-palette-results soft-nav-results" tabIndex={-1}>
           <ShellSearchResults
             search={search}
             idPrefix="search-palette"

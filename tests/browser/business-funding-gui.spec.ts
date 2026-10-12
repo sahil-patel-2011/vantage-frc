@@ -72,6 +72,8 @@ async function stubBusiness(page: Page, payload: ReturnType<typeof livePortal>) 
 }
 
 test("student this week can walk Business Sponsors, Budget, and Grants", async ({ page }) => {
+  // Business sections are walked through the menu: the phone and tablet layout.
+  await page.setViewportSize({ width: 1024, height: 900 });
   test.setTimeout(120_000);
   await stubBusiness(page, livePortal({ schoolFunded: false, sponsorsAllowed: true }));
   await page.goto("/business");

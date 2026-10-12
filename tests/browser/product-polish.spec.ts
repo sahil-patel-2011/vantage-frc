@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { signInFixture } from "./session";
 import { workspace } from "./fixtures/workspace-ui";
-import { openNav } from "./nav";
+import { openNav, openSearch } from "./nav";
 import AxeBuilder from "@axe-core/playwright";
 
 // Real page components with API fixtures; persistence is covered by the API suites.
@@ -100,14 +100,15 @@ test("sidebar collapse persists, workspace tabs support the keyboard, and search
   const destination = new URL(picker.searchParams.get("next") ?? "", page.url());
   expect(destination.pathname).toBe("/team");
   expect(destination.searchParams.get("orgId")).toBe("ui-team");
-  await openNav(page);
+  // Desktop search is the palette; Escape returns focus to the control that is visible now.
+  await openSearch(page);
   const search = page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true });
   await expect(search).toBeFocused();
   await search.fill("calendar");
-  await expect(page.locator(".command-group")).toContainText("Calendar");
+  await expect(page.locator(".command-group").first()).toContainText("Calendar");
   await page.setViewportSize({ width: 390, height: 960 });
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Menu and search", exact: true })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Menu", exact: true })).toBeFocused();
   await openNav(page);
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.keyboard.press("Escape");

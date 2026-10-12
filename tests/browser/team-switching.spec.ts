@@ -41,8 +41,13 @@ for (const width of [390, 1440]) test(`switching teams updates data, permissions
     await expect(page.locator(".free-scout-report").filter({ hasText: marker }).getByText("Uploaded", { exact: true })).toBeVisible();
     const saved = await pool.query("SELECT org_id FROM free_scout_reports WHERE payload->>'notes'=$1", [marker]);
     expect(saved.rows).toEqual([{ org_id: orgId }]);
-    await openNav(page);
-    await page.getByRole("complementary", { name: "Product navigation", exact: true }).getByRole("link", { name: /^Home\b/ }).click();
+    // Home is a pin: the menu's top row on phones, the sidebar's Pinned group on desktop.
+    if (width < 1100) {
+      await openNav(page);
+      await page.getByRole("dialog", { name: "Product navigation", exact: true }).getByRole("link", { name: "Home", exact: true }).click();
+    } else {
+      await page.getByRole("navigation", { name: "Pinned", exact: true }).getByRole("link", { name: "Home", exact: true }).click();
+    }
     // The org is already in the scouting URL. Wait for the destination too,
     // otherwise the test opens a menu on the page that is still leaving.
     await expect(page).toHaveURL(new RegExp(`/dashboard\\?orgId=${orgId}`));

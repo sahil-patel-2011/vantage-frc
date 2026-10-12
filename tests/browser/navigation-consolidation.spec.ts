@@ -1,4 +1,4 @@
-import { navigationOpener } from "./nav";
+import { searchOpener } from "./nav";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
@@ -12,7 +12,8 @@ for (const width of [390, 1440]) {
     expect(await signInAs(context, "owner"), "Real seeded session required").toBe(true);
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/competition?tab=strategy");
-    const trigger = navigationOpener(page);
+    // Search: the palette on desktop, the menu's field on phones.
+    const trigger = searchOpener(page);
     await expect(page.locator(".workspace-picker-trigger")).toHaveCount(0);
     await expect(page.locator(".workspace-hub-header select")).toHaveCount(0);
     await trigger.click();
@@ -22,12 +23,12 @@ for (const width of [390, 1440]) {
     const result = page.getByRole("option", { name: /^Chemistry/ });
     await expect(result).toBeVisible();
     await page.keyboard.press("ArrowDown");
-    await expect(search).toHaveAttribute("aria-activedescendant", /soft-nav-row-/);
+    await expect(search).toHaveAttribute("aria-activedescendant", width >= 1100 ? /search-palette-row-/ : /soft-nav-row-/);
     await page.keyboard.press("Escape");
     await expect(trigger).toBeFocused();
     await trigger.click();
     await search.fill("chemistry");
-    const audit = await new AxeBuilder({ page }).include(".soft-drawer").analyze();
+    const audit = await new AxeBuilder({ page }).include(width >= 1100 ? ".search-palette-card" : ".soft-drawer").analyze();
     await info.attach("tools-accessibility.json", { body: JSON.stringify({ violations: audit.violations }), contentType: "application/json" });
     expect(audit.violations).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { signInAs } from "./session";
-import { openNav } from "./nav";
+import { openNav, openSearch, searchPalette } from "./nav";
 
 /** Scan the rendered state, including navigation outside the active overlay. */
 async function checkAccessibility(page: Page, testInfo: TestInfo, state: string) {
@@ -32,15 +32,24 @@ for (const width of [1280, 390]) {
     await checkAccessibility(page, testInfo, "account");
     await page.keyboard.press("Escape");
 
-    await openNav(page);
-    await expect(page.getByRole("complementary", { name: "Product navigation", exact: true })).toBeVisible();
-    await checkAccessibility(page, testInfo, "drawer");
-    await page.keyboard.press("Escape");
-
-    await openNav(page);
-    await page.getByRole("button", { name: "Edit shortcuts", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "Your four apps", exact: true })).toBeVisible();
-    await checkAccessibility(page, testInfo, "island-editor");
+    if (width < 1100) {
+      // Phones: the menu, with "Your apps" and Edit at its top.
+      await openNav(page);
+      await expect(page.getByRole("dialog", { name: "Product navigation", exact: true })).toBeVisible();
+      await checkAccessibility(page, testInfo, "drawer");
+      await page.keyboard.press("Escape");
+      await openNav(page);
+      await page.getByRole("button", { name: "Edit your apps", exact: true }).click();
+    } else {
+      // Desktop: search is the palette, and the sidebar's Pinned group has its own Edit.
+      await openSearch(page);
+      await expect(searchPalette(page)).toBeVisible();
+      await checkAccessibility(page, testInfo, "search-palette");
+      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "Edit pinned apps", exact: true }).click();
+    }
+    await expect(page.getByRole("dialog", { name: "Your apps", exact: true })).toBeVisible();
+    await checkAccessibility(page, testInfo, "pins-editor");
     await page.keyboard.press("Escape");
 
     const me = await page.request.get("/api/me");

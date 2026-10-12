@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
-import { openNav } from "./nav";
+import { openNav, openSearch, searchPalette } from "./nav";
 
 // Network interception must reach the page rather than a service worker's warm-up cache.
 test.use({ serviceWorkers: "block" });
@@ -35,9 +35,10 @@ test("a hub shows its loading surface while the tool bundle downloads", async ({
   }
 });
 
-test("desktop destinations have one menu without repeating saved shortcuts", async ({ page, context }, info) => {
+test("the menu shows your saved apps once, then every workspace", async ({ page, context }, info) => {
   expect(await signInAs(context, "owner")).toBe(true);
-  await page.setViewportSize({ width: 1440, height: 900 });
+  // The menu is the phone and tablet way around; desktop has the sidebar (below).
+  await page.setViewportSize({ width: 1024, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
   await page.route("**/api/navigation/preferences", route => route.fulfill({ json: {
     tabs: ["/dashboard", "/competition", "/rankings", "/ai?tab=chat"],
@@ -47,11 +48,14 @@ test("desktop destinations have one menu without repeating saved shortcuts", asy
   await expect(panel).toBeHidden();
   await openNav(page);
   await expect(panel.locator(".soft-drawer-shortcuts")).toHaveCount(0);
-  await expect(panel.locator(".main-menu-launch a")).toHaveCount(4);
+  // A bar saved before pins (four apps) is exactly what "Your apps" shows.
+  await expect(panel.locator(".main-menu-launch a")).toHaveText(["Home", "Event day", "Stats", "Ask AI"]);
   await panel.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) }).click();
   await panel.getByRole("navigation", { name: "AI", exact: true }).getByRole("link", { name: "Chat", exact: true }).click();
   await expect(page).toHaveURL(/\/ai/);
   await expect(panel).toBeHidden();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.getByRole("navigation", { name: "Pinned", exact: true }).getByRole("link")).toHaveText(["Home", "Event day", "Stats", "Ask AI"]);
   await expect(page.getByRole("combobox", { name: "AI section", exact: true })).toHaveCount(0);
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Chat");
   await expect(page.getByRole("heading", { name: /^Loading assistant/ })).toBeHidden({ timeout: 30_000 });
@@ -83,7 +87,8 @@ test("workspace navigation and search survive routes and desktop breakpoint chan
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    const hamburger = page.getByRole("button", { name: "Menu and search", exact: true });
+    const hamburger = page.getByRole("button", { name: "Menu", exact: true });
+    const searchButton = page.getByRole("button", { name: "Search pages, tools, and team data", exact: true });
     await expect(page.locator(".soft-topbar")).toHaveCount(1);
     await expect(page.locator(".vrail")).toHaveCount(0);
     await expect(page.locator(".soft-drawer")).toHaveCount(1);
@@ -92,6 +97,20 @@ test("workspace navigation and search survive routes and desktop breakpoint chan
     await expect(page.locator(".soft-drawer")).toBeHidden();
     expect(await page.locator("body").evaluate(body => parseFloat(getComputedStyle(body).paddingLeft))).toBe(width >= 1100 ? 244 : 0);
     await page.screenshot({ path: info.outputPath(`navigation-closed-${width}.png`) });
+    if (width >= 1100) {
+      // Desktop: the sidebar is the menu, and search opens the palette, never a second menu.
+      await expect(hamburger).toBeHidden();
+      await openSearch(page);
+      await expect(searchPalette(page)).toBeVisible();
+      await expect(page.locator(".soft-drawer")).toBeHidden();
+      await page.keyboard.press("Escape");
+      await expect(searchPalette(page)).toBeHidden();
+      await expect(searchButton).toBeFocused();
+      await page.getByRole("navigation", { name: "Pinned", exact: true }).getByRole("link", { name: "Scout", exact: true }).click();
+      await expect(page).toHaveURL(/\/competition/);
+      await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
+      continue;
+    }
     await openNav(page);
     const panel = page.getByRole("dialog", { name: "Product navigation", exact: true });
     await expect(panel).toBeVisible();
@@ -108,7 +127,7 @@ test("workspace navigation and search survive routes and desktop breakpoint chan
     await info.attach(`navigation-${width}.json`, { body: JSON.stringify(audit), contentType: "application/json" });
     expect(audit.violations).toEqual([]);
     await page.screenshot({ path: info.outputPath(`navigation-${width}.png`) });
-    await panel.getByRole("link", { name: /^Scouting/ }).click();
+    await panel.getByRole("link", { name: "Scout", exact: true }).first().click();
     await expect(page).toHaveURL(/\/competition/);
     await expect(panel).toBeHidden();
     await expect(page.locator(".soft-topbar")).toHaveCount(1);
@@ -117,26 +136,28 @@ test("workspace navigation and search survive routes and desktop breakpoint chan
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
 
+  // Opened on one side of the breakpoint and closed on the other, focus lands on the control
+  // that is there now.
   for (const [from, to] of [[390, 1440], [1440, 390]]) {
     await page.setViewportSize({ width: from, height: 900 });
-    await openNav(page);
+    await openSearch(page);
     await page.setViewportSize({ width: to, height: 900 });
     await page.keyboard.press("Escape");
-    const opener = page.getByRole("button", { name: to >= 1100 ? "Search pages, tools, and team data" : "Menu and search", exact: true });
+    const opener = page.getByRole("button", { name: to >= 1100 ? "Search pages, tools, and team data" : "Menu", exact: true });
     await expect(opener).toBeVisible();
     await expect(opener).toBeFocused();
   }
 
   // Every dismissal returns to the same closed layout, including a fresh load.
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize({ width: 1024, height: 900 });
   const panel = page.getByRole("dialog", { name: "Product navigation", exact: true });
-  const opener = page.getByRole("button", { name: "Search pages, tools, and team data", exact: true });
+  const opener = page.getByRole("button", { name: "Menu", exact: true });
   await openNav(page);
   await panel.getByRole("button", { name: "Close menu", exact: true }).click();
   await expect(panel).toBeHidden();
   await expect(opener).toBeFocused();
   await openNav(page);
-  await page.getByRole("button", { name: "Close navigation", exact: true }).click({ position: { x: 1200, y: 400 } });
+  await page.getByRole("button", { name: "Close navigation", exact: true }).click({ position: { x: 900, y: 400 } });
   await expect(panel).toBeHidden();
   await expect(opener).toBeFocused();
   await openNav(page);
