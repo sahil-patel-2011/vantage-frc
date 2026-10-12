@@ -27,7 +27,8 @@ Run the loop yourself. Do not hand the clicking back to the user.
 
 After the last green pass:
 
-- Stage only the files changed for this task.
+- Stage explicit paths for this task only. Never `git add -A` or `git add .`.
+- Leave other agents' uncommitted files unstaged, and do not restore or stash them.
 - Commit with a message that says why.
 - Push the current branch with `git push -u origin HEAD` when it has no upstream.
 - Do not stage unrelated dirty files, secrets, or `.env` files.

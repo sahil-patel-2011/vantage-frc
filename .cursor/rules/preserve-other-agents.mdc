@@ -1,0 +1,29 @@
+---
+description: Leave other agents' in-progress Vantage work untouched and keep their decisions intact
+alwaysApply: true
+---
+
+# Preserve other agents' work
+
+This repo is edited by more than one agent. Uncommitted files are in-progress work, usually Claude's. They are not yours to clean up.
+
+Before the first edit:
+
+- Run `git status --short` and `git diff --stat`.
+- If a file you need is already modified, read that diff before touching it.
+- Prefer a new file over editing a shared one that is already dirty.
+
+Do not edit a dirty file unless the task cannot be done anywhere else. When you must, keep their hunks and change only the lines the task needs.
+
+Never `git add -A`, `git add .`, `git checkout`, `git restore`, `git reset`, or `git stash` on files you did not change for this task. Stage explicit paths only.
+
+Leave these decisions as they are unless the user asks to change that decision:
+
+- `withRls` sets `SET LOCAL ROLE vantage_app` and the request identity.
+- Product queries stay parameterized SQL on that client.
+- Empty numbers stay blank. Student chrome does not say TBA, EPA, or Statbotics.
+- Public token routes in `proxy.ts` stay narrow. Sheets stays a copy, not the store.
+- A failed refresh keeps the last IndexedDB snapshot.
+- Hub tools keep the workspace chrome from `hub-context.ts`.
+
+Hot files: `proxy.ts`, `lib/nav/hubs.ts`, `components/app-shell.tsx`, `packages/db/src/index.ts`, `meteredAI`, `feature-cache.ts`, `docs/FEATURE_MAP.md`. Read the surrounding comment before changing one.

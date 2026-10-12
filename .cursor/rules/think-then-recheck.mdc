@@ -1,0 +1,20 @@
+---
+description: Plan the blast radius before editing Vantage, then re-read the diff and check the live flow more than once
+alwaysApply: true
+---
+
+# Think, then recheck
+
+Name the blast radius before editing: the page, its API route, the hub that owns it, the offline snapshot name, and every caller of the symbol you will change.
+
+Match an existing pattern in this repo. The smallest change that fits the surrounding code is the one to make.
+
+After the edit, and again after the last fix:
+
+1. Re-read the full diff. Confirm it does not revert a comment, a guard, or another agent's hunk.
+2. Find every importer of the symbol you changed. A shared helper is not done when one caller still compiles in your head.
+3. Use the changed flow on https://vantagefrc.vercel.app, then open the neighboring route that shares the shell, hub, or data.
+
+A single look is not a check. If the diff, a caller, and the live page disagree, fix that before reporting done.
+
+On this laptop, do not start a local database, dev server, test runner, or build unless the user explicitly authorizes that workload. Read the existing tests that name the symbol. Do not rewrite them to match a new behavior unless the task changed that behavior.
