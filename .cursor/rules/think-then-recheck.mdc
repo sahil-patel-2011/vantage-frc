@@ -5,7 +5,9 @@ alwaysApply: true
 
 # Think, then recheck
 
-Name the blast radius before editing: the page, its API route, the hub that owns it, the offline snapshot name, and every caller of the symbol you will change.
+Before naming a blast radius, say what is actually wrong. If the requested edit would not fix it, do not make that edit.
+
+Then name the blast radius: the page, its API route, the hub that owns it, the offline snapshot name, and every caller of the symbol you will change. Read those callers. Do not guess them from the name.
 
 Match an existing pattern in this repo. The smallest change that fits the surrounding code is the one to make.
 

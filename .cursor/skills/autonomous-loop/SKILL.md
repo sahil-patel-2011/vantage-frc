@@ -9,9 +9,9 @@ Run the loop yourself. Do not hand the clicking back to the user.
 
 ## Each pass
 
-1. Read the owning code and `docs/FEATURE_MAP.md`.
-2. Open the matching URL on https://vantagefrc.vercel.app and use the control a person would use.
-3. Change only what the request needs.
+1. Name the real defect in one sentence. If the requested edit would not fix it, say why and use the better method. If the outcome is unclear, ask one question and stop.
+2. Read the implementation, its callers, and the comment that records a past bug. A file header is not enough. Open the matching URL on https://vantagefrc.vercel.app and use the control.
+3. Change only what fixes that defect. Skip work that does not change the outcome.
 4. Use it again. Confirm the obvious action works, the empty or signed-out state still has one next step, and the neighboring route still works.
 5. If the result is broken or finicky, fix it and repeat this pass.
 

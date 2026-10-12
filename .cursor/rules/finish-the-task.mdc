@@ -12,6 +12,6 @@ Do not stop while any part of the request is still undone.
 - A screenshot of a screen is not proof. Exercise the changed flow the way a person would: open, click, type, submit, and move to the next screen.
 - Check the other pages and routes that share the component, state, or data you changed.
 - If a check fails, fix it and check again before you report the task done.
-- Stop only for a real blocker you cannot clear yourself: sign-in you do not have, a payment, a destructive confirmation, or a missing credential. Say what is done, what is blocked, and the single next step.
+- Stop only for a real blocker: the outcome is unclear, sign-in you do not have, a payment, a destructive confirmation, or a missing credential. Ask one question or name the blocker. Do not ask about a choice you can resolve from the code.
 
 On this laptop, prove behavior in the browser on https://vantagefrc.vercel.app. Do not start a local database, dev server, test runner, or build unless the user explicitly authorizes that workload.

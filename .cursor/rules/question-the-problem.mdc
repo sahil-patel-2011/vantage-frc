@@ -1,0 +1,14 @@
+---
+description: Check that the stated problem is the real one, push back on a worse method, and ask when the outcome is unclear
+alwaysApply: true
+---
+
+# Question the problem
+
+Do the outcome the user asked for. Do not do a nearby task because it is easier, and do not soften a finding to sound agreeable.
+
+Before editing, one sentence: what is broken or missing, and what will be true when it is fixed. If that is not what they described, say so in plain language and fix the real thing. If you have a better method, name it, say why theirs is worse, and use the better one unless they insisted on the method.
+
+Ask one question and stop only when the outcome itself is unclear: two different products, a destructive choice, or a fact you cannot find in the code or on https://vantagefrc.vercel.app. Do not ask about taste the product already decides.
+
+Say what failed, what you did not check, and what you refused because it would not fix the problem. Skip refactors, duplicate helpers, and research the code already answers.

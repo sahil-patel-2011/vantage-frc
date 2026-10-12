@@ -9,8 +9,8 @@ Do not report the task done while any requested part is unfinished or unchecked.
 
 ## Sequence
 
-1. Restate the request as observable outcomes, including the edge cases it implies.
-2. Read the owning code, `docs/FEATURE_MAP.md`, and the live page on https://vantagefrc.vercel.app before editing.
+1. Name the real defect and the observable result that means it is fixed. If the request would miss that, say so and use the better method. If the outcome is unclear, ask one question and stop.
+2. Read the implementation, its callers, and the comment that records why it exists. Then read `docs/FEATURE_MAP.md` and the live page on https://vantagefrc.vercel.app. A header is not this step.
 3. Do the work. Leave unrelated code alone.
 4. Prove the changed flow in the browser: open it, use it, and confirm the result.
 5. Open every neighboring route that shares the changed component, state, or data.
@@ -25,4 +25,4 @@ On this laptop, use the hosted app. Do not start a local database, dev server, t
 
 ## When to stop
 
-Stop only when the outcomes are true, or when you are blocked by sign-in you do not have, a payment, a destructive confirmation, or a missing credential. Name the blocker and the single next step. Do not stop to ask a preference you can resolve from the product or the request.
+Stop when the outcomes are true, or when you are blocked. A blocker is an unclear outcome, sign-in you do not have, a payment, a destructive confirmation, or a missing credential. Ask one question or name the single next step. Do not ask about a choice the code or the request already settles.
