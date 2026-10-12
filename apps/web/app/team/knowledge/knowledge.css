@@ -131,3 +131,6 @@
   color: var(--ink);
   font-weight: 600;
 }
+/* No pages yet: the empty state is the page; the side pane has nothing to list. */
+.kb-layout.is-empty{grid-template-columns:1fr}
+.kb-layout.is-empty>.kb-side{display:none}

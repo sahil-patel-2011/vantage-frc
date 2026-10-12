@@ -47,7 +47,7 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           title="Set your season budget"
           description={
             view.canManageFinances
-              ? "Start with one number: what this season will cost. Money, orders, sponsors and grants all measure against it."
+              ? `Start with one number: what this season will cost. Money, orders, ${sponsorsAllowed ? "sponsors and grants" : "grants and fundraisers"} all measure against it.`
               : "A finance manager — the team owner or someone they chose — sets the season budget. Once it is set, this page shows how the money is going."
           }
         >
@@ -107,10 +107,10 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
           detail={
             receivedCents > 0
               ? planCents > 0
-                ? `${money(receivedCents)} received from sponsors and grants`
-                : "From sponsors and grants · no season budget set"
+                ? `${money(receivedCents)} received from ${sponsorsAllowed ? "sponsors and grants" : "grants and fundraisers"}`
+                : `From ${sponsorsAllowed ? "sponsors and grants" : "grants and fundraisers"} · no season budget set`
               : planCents > 0
-                ? "Nothing received from sponsors or grants yet"
+                ? `Nothing received from ${sponsorsAllowed ? "sponsors or grants" : "grants or fundraisers"} yet`
                 : "Set a season budget"
           }
           href={view.budget.totalBudgetCents > 0 ? undefined : budgetHref}
@@ -349,7 +349,7 @@ export function Budget({ view, busy, submit, mutate }: { view: BusinessView; bus
         {/* Money changes are for finance managers (0714); everyone else reads. */}
         {view.canManageFinances ? (
         <form className="biz-form-grid" onSubmit={(event) => void submit(event, "save-budget", ["fundraisingGoal"])}>
-          <Field label="Fundraising goal" hint="How much you plan to raise from sponsors, grants and fundraisers."><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} /></Field>
+          <Field label="Fundraising goal" hint={view.sponsorsAllowed === false ? "How much you plan to raise from grants and fundraisers." : "How much you plan to raise from sponsors, grants and fundraisers."}><input name="fundraisingGoalDollars" type="number" min="0" step="0.01" defaultValue={dollars(view.budget.fundraisingGoalCents)} /></Field>
           <Field label="Notes" wide><textarea name="notes" rows={2} placeholder="Cash reserves, travel plans, school rules…" /></Field>
           <Button type="submit" variant="secondary" disabled={busy}>Save goal</Button>
         </form>

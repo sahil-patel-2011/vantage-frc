@@ -445,24 +445,16 @@ export default function DecisionsClient() {
 
       <DecisionsNextActionsPanel actions={nextActions} />
 
-      {shell === "empty" ? (
-        <EmptyState
-          soft
-          badge="No decisions yet"
-          badgeTone="setup"
-          title={shellCopy.title}
-          description={shellCopy.description}
-        >
-          <Button as="a" variant="secondary" href="#decision-log-form">
-            Record first decision
-          </Button>
-        </EmptyState>
-      ) : null}
-
+      {/* With nothing logged, the form is the page: an empty card pointing at it and a row of
+          zeros above it said the same thing three times (UX audit). */}
       <div style={{ display: "grid", gap: 16 }}>
-        <SummaryTiles view={view} loaded />
+        {shell === "empty" ? null : <SummaryTiles view={view} loaded />}
         {view.summary.open.length > 0 ? <OpenDecisions view={view} /> : null}
-        <AddDecisionForm busy={busy} mutate={mutate} />
+        <AddDecisionForm
+          busy={busy}
+          mutate={mutate}
+          first={shell === "empty" ? { title: shellCopy.title, description: shellCopy.description } : undefined}
+        />
         <DecisionList view={view} busy={busy} mutate={mutate} />
       </div>
     </Root>
@@ -531,7 +523,16 @@ function OpenDecisions({ view }: { view: LiveView }) {
   );
 }
 
-function AddDecisionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
+function AddDecisionForm({
+  busy,
+  mutate,
+  first,
+}: {
+  busy: boolean;
+  mutate: Mutate;
+  /** The first decision: the empty state's words head the form. */
+  first?: { title: string; description: string };
+}) {
   const empty = useMemo(
     () => ({
       title: "",
@@ -570,9 +571,9 @@ function AddDecisionForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
         setForm(empty);
       }}
     >
-      <h2 style={{ margin: 0 }}>Record a decision</h2>
+      <h2 style={{ margin: 0 }}>{first?.title ?? "Record a decision"}</h2>
       <p className="app-muted" style={{ margin: 0 }}>
-        Paste real context and rationale only.
+        {first?.description ?? "Paste real context and rationale only."}
       </p>
       <FormGrid>
         <FormRow label="Decision" wide>

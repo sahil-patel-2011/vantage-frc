@@ -387,12 +387,18 @@ export function CodeBugbotPanel({
                   ? `Scan connected repo · ${scanPlan.chunkCount} chunk${scanPlan.chunkCount === 1 ? "" : "s"}`
                   : "Scan connected repo"}
             </Button>
-            <Button variant="secondary" type="button" disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)} onClick={() => void runBugbot({ mode: bugbotMode, phase: "fix", scanRepo: false })}>
-              {bugbotMode === "ultra" ? `Propose fix · $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)}` : "Propose fix"}
-            </Button>
-            <Button variant="secondary" type="button" disabled={busy || !orgId || (!hasSource && !lastScan?.scanRepo)} onClick={() => void runBugbot({ mode: bugbotMode, phase: "recheck", scanRepo: false })}>
-              {bugbotMode === "ultra" ? `Recheck · $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)}` : "Recheck"}
-            </Button>
+            {/* Fix and recheck follow a scan, so they appear after one: four equal buttons
+                before anything had been scanned left no clear first step (UX audit). */}
+            {lastScan ? (
+              <>
+                <Button variant="secondary" type="button" disabled={busy || !orgId || (!hasSource && !lastScan.scanRepo)} onClick={() => void runBugbot({ mode: bugbotMode, phase: "fix", scanRepo: false })}>
+                  {bugbotMode === "ultra" ? `Propose fix · $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)}` : "Propose fix"}
+                </Button>
+                <Button variant="secondary" type="button" disabled={busy || !orgId || (!hasSource && !lastScan.scanRepo)} onClick={() => void runBugbot({ mode: bugbotMode, phase: "recheck", scanRepo: false })}>
+                  {bugbotMode === "ultra" ? `Recheck · $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)}` : "Recheck"}
+                </Button>
+              </>
+            ) : null}
           </footer>
           {lastScan?.scanRepo ? (
             <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>

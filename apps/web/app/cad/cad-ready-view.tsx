@@ -133,7 +133,7 @@ export function CadReadyView({
           disabled={!url.trim() || busy !== null}
           onClick={() => void bind()}
         >
-          {busy === "bind" ? "Binding…" : "Bind"}
+          {busy === "bind" ? "Linking…" : "Link"}
         </Button>
         {listedElements.elements.length ? (
           <label className="cad-agent-doc">
@@ -269,7 +269,7 @@ export function CadReadyView({
           <div className="cad-agent-log" ref={logRef}>
             {!state?.messages.length ? (
               <div className="cad-agent-hero">
-                Specify the part or assembly in millimetres. Bind an Onshape Part Studio, then send a brief. The agent
+                Specify the part or assembly in millimetres. Link an Onshape Part Studio, then send a brief. The agent
                 creates native sketches, extrudes, instances, and mates that remain editable in Onshape.
                 {mode === "plan"
                   ? " Plan mode: the agent writes a numbered build plan and asks its questions before touching Onshape."

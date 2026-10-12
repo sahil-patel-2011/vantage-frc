@@ -225,7 +225,7 @@ export default function CadWorkspace({
         openUrl?: string;
         shadedPngBase64?: string | null;
       };
-      if (!response.ok) throw new Error(data.error ?? "Bind failed");
+      if (!response.ok) throw new Error(data.error ?? "Couldn't link that document");
       setState((prev) =>
         prev
           ? {
@@ -244,7 +244,7 @@ export default function CadWorkspace({
       const storedStudio = readStoredVariableStudioElementId(orgId, data.bound?.documentId ?? "");
       if (storedStudio) lastVariableStudioElementId.current = storedStudio;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Bind failed");
+      setError(err instanceof Error ? err.message : "Couldn't link that document");
     } finally {
       setBusy(null);
     }
@@ -272,7 +272,7 @@ export default function CadWorkspace({
         openUrl?: string;
         shadedPngBase64?: string | null;
       };
-      if (!response.ok) throw new Error(data.error ?? "Bind failed");
+      if (!response.ok) throw new Error(data.error ?? "Couldn't link that document");
       setState((prev) =>
         prev
           ? {
@@ -316,7 +316,7 @@ export default function CadWorkspace({
         // Agent bind already updated the tab; job set-document is best-effort.
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Bind failed");
+      setError(err instanceof Error ? err.message : "Couldn't link that document");
     } finally {
       setBusy(null);
     }

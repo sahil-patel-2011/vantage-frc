@@ -858,3 +858,21 @@ body.has-app-shell .sfb-page .sfb-question-document {
 .sfm-conflict { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; }
 .sfm-term select:focus-visible, .sfm-term input:focus-visible, .sfm-preview summary:focus-visible, .sfm-conflict summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 @media (max-width: 600px) { .sfm-term { padding: 10px; } .sfm-actions > button:last-child { flex: 1; } }
+
+/* One column, left-aligned under the hub's title and tabs. The page had three widths: a full
+   status bar, a centred title card, and a narrower centred question list (UX audit). Responses
+   keep their full table width. */
+.sfb-page > :is(.sfb-heading, .sfb-document-actions, .sfb-meta, .sfb-workspace-bar),
+.sfb-page > .sfb-layout:is(:has(.sfb-question-document), :has(.sfb-tablet-panel)) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 860px;
+  margin-inline: 0;
+  justify-self: start;
+}
+.sfb-page > .sfb-heading { text-align: left; }
+.sfb-page > .sfb-workspace-bar { justify-content: flex-start; }
+.sfb-page > .sfb-layout:has(.sfb-question-document) { display: grid; grid-template-columns: minmax(0, 1fr); }
+.sfb-page > .sfb-layout:has(.sfb-question-document) > .sfb-question-document { width: 100%; max-width: none; }
+/* The form's title reads as a title, not a 30px banner inside a box. */
+.sfb-meta .soft-form-row:first-child input { font-size: 20px; font-weight: 600; letter-spacing: -.01em; min-height: 44px; }
