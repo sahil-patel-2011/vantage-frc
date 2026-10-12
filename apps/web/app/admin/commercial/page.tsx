@@ -1,9 +1,9 @@
-import CommercialClient from "./commercial-client";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Commercial · Admin",
-};
-
+/**
+ * Retired: the commercial (pricing ladder) page only made sense for selling, and Vantage is
+ * free. /api/admin/commercial stays for code that imports it; the page goes to the Overview.
+ */
 export default function CommercialPage() {
-  return <CommercialClient />;
+  redirect("/admin");
 }

@@ -1,0 +1,208 @@
+/* Platform admin console: the one-row navigation, status pills, lists of rows that open a side
+   panel, and the small forms inside it. Tokens only (system.css); motion only through the
+   vantage-fluid tokens, none under reduced motion. */
+
+/* ---- Navigation: one row, seven places; scrolls sideways on a phone instead of wrapping. ---- */
+.admin-console-nav {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 18px;
+  padding: 0 0 1px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.admin-console-nav::-webkit-scrollbar { display: none; }
+.admin-console-nav a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--muted);
+  font: 600 14px var(--font-source-sans), ui-sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.admin-console-nav a:hover { color: var(--ink); }
+.admin-console-nav a.is-active { color: var(--ink); }
+.admin-console-nav a.is-active::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+.admin-console-nav a[data-quiet] { margin-left: auto; }
+.admin-console-nav a:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; border-radius: 8px; }
+
+/* ---- Page frame ---- */
+.ac-page { display: grid; gap: 18px; }
+.ac-section { display: grid; gap: 10px; }
+.ac-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ac-section-head h2 { margin: 0; font: 700 17px var(--font-source-sans), ui-sans-serif; color: var(--ink); }
+.ac-section-head p { margin: 0; color: var(--muted); font-size: 14px; }
+.ac-muted { color: var(--muted); }
+.ac-small { font-size: 13px; }
+.ac-message { margin: 0; font-size: 14px; }
+.ac-message[data-tone="error"] { color: var(--critical); }
+.ac-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+/* A card that only reports; its link says where to act. */
+.ac-card {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
+  color: var(--ink);
+}
+.ac-card h3 { margin: 0; font: 700 13px var(--font-source-sans), ui-sans-serif; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+.ac-card strong { font: 700 22px/1.2 var(--font-source-sans), ui-sans-serif; font-variant-numeric: tabular-nums; }
+.ac-card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.ac-card a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.ac-card a:hover { text-decoration: underline; }
+.ac-card[data-attention] { border-color: color-mix(in srgb, var(--warning) 45%, var(--line)); }
+
+/* ---- Status pill: the word always, the tint second. ---- */
+.ac-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--line);
+  font: 700 12px/1.4 var(--font-source-sans), ui-sans-serif;
+  white-space: nowrap;
+}
+.ac-status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.ac-status[data-status="healthy"], .ac-status[data-status="active"] { color: var(--positive); background: var(--positive-soft); border-color: color-mix(in srgb, var(--positive) 30%, var(--line)); }
+.ac-status[data-status="degraded"], .ac-status[data-status="used_up"] { color: var(--warning); background: var(--warning-soft); border-color: color-mix(in srgb, var(--warning) 35%, var(--line)); }
+.ac-status[data-status="down"] { color: var(--critical); background: var(--critical-soft); border-color: color-mix(in srgb, var(--critical) 35%, var(--line)); }
+.ac-status[data-status="not_set_up"], .ac-status[data-status="expired"], .ac-status[data-status="revoked"], .ac-status[data-status="off"] { color: var(--muted); background: var(--surface-2, var(--bg)); }
+
+/* ---- The health strip on Overview: every module, one tap to its detail. ---- */
+.ac-strip { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ac-strip a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 14px var(--font-source-sans), ui-sans-serif;
+  text-decoration: none;
+}
+.ac-strip a:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.ac-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--muted); }
+.ac-dot[data-status="healthy"] { background: var(--positive); }
+.ac-dot[data-status="degraded"] { background: var(--warning); }
+.ac-dot[data-status="down"] { background: var(--critical); }
+.ac-dot[data-status="not_set_up"] { background: transparent; border: 2px solid var(--muted); }
+
+/* ---- Lists of rows; a row is one button that opens its side panel. ---- */
+.ac-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: var(--radius, 16px); background: var(--surface); overflow: hidden; }
+.ac-list > li + li { border-top: 1px solid var(--line-soft, var(--line)); }
+.ac-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ac-row:hover { background: color-mix(in srgb, var(--accent) 5%, var(--surface)); }
+.ac-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.ac-row-main { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.ac-row-main strong { font: 600 15px var(--font-source-sans), ui-sans-serif; overflow-wrap: anywhere; }
+.ac-row-main small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.ac-row-badge { flex: none; min-width: 3.4em; font: 700 14px var(--font-source-sans), ui-sans-serif; font-variant-numeric: tabular-nums; color: var(--muted); }
+.ac-row-end { display: flex; align-items: center; gap: 8px; flex: none; }
+.ac-chevron { color: var(--muted); flex: none; }
+@media (max-width: 560px) {
+  .ac-row { flex-wrap: wrap; }
+  .ac-row-end { flex-basis: 100%; justify-content: flex-start; padding-left: calc(3.4em + 12px); }
+}
+
+/* A row with its own controls (keys, admins) rather than one button. */
+.ac-item { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; min-height: 56px; }
+.ac-item .ac-row-main { flex: 1 1 220px; }
+.ac-item-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+/* ---- Credit meter: a real progress bar for screen readers. ---- */
+.ac-meter { display: grid; gap: 4px; min-width: 160px; }
+.ac-meter-track { height: 8px; border-radius: 999px; background: var(--surface-2, var(--bg)); border: 1px solid var(--line-soft, var(--line)); overflow: hidden; }
+.ac-meter-fill { height: 100%; border-radius: 999px; background: var(--accent); }
+.ac-meter[data-near] .ac-meter-fill { background: var(--warning); }
+.ac-meter[data-full] .ac-meter-fill { background: var(--critical); }
+.ac-meter small { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* ---- Side panel: the team, module or gift you opened. Docks right on a wide screen. ---- */
+.ac-panel {
+  justify-self: end;
+  align-self: stretch;
+  width: min(520px, 100%);
+  max-height: none;
+  margin: -20px -20px -20px 0;
+  border-radius: 22px 0 0 22px;
+}
+@media (max-width: 640px) {
+  .ac-panel { justify-self: stretch; margin: -20px; border-radius: 0; width: auto; }
+}
+.ac-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; }
+.ac-facts dt { color: var(--muted); font-size: 13px; }
+.ac-facts dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.ac-panel-section { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--line-soft, var(--line)); }
+.ac-panel-section h3 { margin: 0; font: 700 15px var(--font-source-sans), ui-sans-serif; }
+
+/* ---- Forms ---- */
+.ac-form { display: grid; gap: 12px; }
+.ac-form label { display: grid; gap: 6px; font: 600 14px var(--font-source-sans), ui-sans-serif; color: var(--ink); }
+.ac-form input, .ac-form select, .ac-form textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 12px);
+  background: var(--surface);
+  color: var(--ink);
+  font: 500 15px var(--font-source-sans), ui-sans-serif;
+}
+.ac-form textarea { min-height: 72px; resize: vertical; }
+.ac-form small { color: var(--muted); font-weight: 400; font-size: 13px; }
+.ac-form-row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+/* Cancel left, confirm right. */
+.ac-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.ac-actions-end { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-left: auto; }
+@media (hover: none) and (pointer: coarse) {
+  .ac-form input, .ac-form select, .ac-form textarea { font-size: 16px; }
+}
+
+/* ---- Logs: the real lines, monospace, wrapping. ---- */
+.ac-logs { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ac-logs li { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2, var(--bg)); }
+.ac-logs small { color: var(--muted); font-size: 12px; }
+.ac-logs code { font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+.ac-steps { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; }
+
+.ac-table-note { margin: 0; font-size: 13px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-row, .ac-strip a { transition: none; }
+}

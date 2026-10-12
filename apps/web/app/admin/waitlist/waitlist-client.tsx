@@ -100,7 +100,7 @@ export default function WaitlistAdminClient() {
         <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
           {adminRelatedLinks({
             active: "waitlist",
-            include: ["teams", "plans", "support", "releases"],
+            include: ["teams", "health", "support", "releases"],
           }).map((link) => (
             <a key={link.id} href={link.href}>
               {link.label}

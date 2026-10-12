@@ -171,7 +171,7 @@ export default function AdminReleasesClient() {
         <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
           {adminRelatedLinks({
             active: "releases",
-            include: ["teams", "plans", "support", "waitlist"],
+            include: ["teams", "health", "support", "waitlist"],
           }).map((link) => (
             <a key={link.id} href={link.href}>
               {link.label}

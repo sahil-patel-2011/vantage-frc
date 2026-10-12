@@ -13,8 +13,8 @@ import {
 describe("adminRelatedLinks", () => {
   it("builds Plans / Support / Releases / Waitlist cross-links", () => {
     const links = adminRelatedLinks({ include: [...ADMIN_RELATED_INCLUDE] });
-    expect(links.map((l) => l.id)).toEqual(["waitlist", "plans", "support", "releases"]);
-    expect(links.find((l) => l.id === "plans")?.href).toBe("/admin/plans");
+    expect(links.map((l) => l.id)).toEqual(["waitlist", "health", "support", "releases"]);
+    expect(links.find((l) => l.id === "health")?.href).toBe("/admin/health");
     expect(links.find((l) => l.id === "support")?.href).toBe("/admin/support");
     expect(links.find((l) => l.id === "releases")?.href).toBe("/admin/releases");
     expect(links.find((l) => l.id === "waitlist")?.href).toBe("/admin/waitlist");
@@ -22,8 +22,8 @@ describe("adminRelatedLinks", () => {
 
   it("excludes active and respects include", () => {
     const links = adminRelatedLinks({
-      active: "plans",
-      include: ["plans", "support", "releases"],
+      active: "health",
+      include: ["health", "support", "releases"],
     });
     expect(links.map((l) => l.id)).toEqual(["support", "releases"]);
   });
@@ -31,19 +31,19 @@ describe("adminRelatedLinks", () => {
   it("never uses DEMO labels", () => {
     const links = adminRelatedLinks();
     expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
-    expect(ADMIN_RELATED_INCLUDE).toEqual(["plans", "support", "releases", "waitlist"]);
+    expect(ADMIN_RELATED_INCLUDE).toEqual(["health", "support", "releases", "waitlist"]);
   });
 });
 
 describe("adminProvisionHref", () => {
   it("encodes owner email and team number without JSX template bugs", () => {
     expect(adminProvisionHref({ ownerEmail: "coach@example.com", teamNumber: 254 })).toBe(
-      "/admin?ownerEmail=coach%40example.com&teamNumber=254",
+      "/admin/teams?ownerEmail=coach%40example.com&teamNumber=254",
     );
   });
 
-  it("returns plain /admin when both fields are blank", () => {
-    expect(adminProvisionHref({ ownerEmail: "  ", teamNumber: "" })).toBe("/admin");
+  it("returns plain /admin/teams when both fields are blank", () => {
+    expect(adminProvisionHref({ ownerEmail: "  ", teamNumber: "" })).toBe("/admin/teams");
   });
 });
 
@@ -92,10 +92,11 @@ describe("adminEmptyCopy / adminNextActions", () => {
     expect(adminEmptyCopy("empty").description).not.toMatch(/demo/i);
   });
 
-  it("points empty hub at waitlist + plans/support/releases", () => {
+  it("points empty hub at waitlist + health/support/releases, never the retired selling pages", () => {
     const actions = adminNextActions("empty");
     expect(actions[0]?.id).toBe("waitlist");
-    expect(actions.map((a) => a.id)).toEqual(["waitlist", "plans", "support", "releases"]);
+    expect(actions.map((a) => a.id)).toEqual(["waitlist", "health", "support", "releases"]);
+    expect(actions.some((a) => /plans|commercial|stripe/i.test(a.href + a.detail))).toBe(false);
     expect(actions.every((a) => !/demo/i.test(a.label))).toBe(true);
   });
 
