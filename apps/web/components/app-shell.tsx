@@ -674,6 +674,7 @@ export default function AppShell() {
         pathSearch={pathSearch}
         navHrefAllowed={navHrefAllowed}
         onEditPins={openIslandEditor}
+        platformAdmin={me.platformAdmin === true}
       />
       <AppShellSearchPalette
         open={paletteOpen}

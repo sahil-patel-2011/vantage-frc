@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { ROLE_LABELS, type AccessRole } from "@vantage/core/role-words";
-import { Icon } from "./icon";
+import { Icon, type IconName } from "./icon";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { fetchProductSession, type ProductSession } from "../lib/nav/product-session";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
@@ -82,7 +82,37 @@ function useSettingsViewer(orgId: string) {
   const teamNumber = membership?.teamNumber ?? session?.teamNumber ?? null;
   const teamName = membership?.orgName ?? session?.orgName ?? null;
   const teamLabel = teamNumber ? `Team ${teamNumber}` : teamName || "";
-  return { ready: session !== null, role, teamId, teamLabel };
+  return { ready: session !== null, role, teamId, teamLabel, platformAdmin: session?.platformAdmin === true };
+}
+
+/** Platform admin, from Settings: the console's parts, for people who run Vantage itself. */
+const PLATFORM_ROWS: Array<{ id: string; href: string; label: string; detail: string; icon: IconName }> = [
+  { id: "platform-teams", href: "/admin/teams", label: "Teams and requests", detail: "Add teams, approve requests to join, and ban teams", icon: "users" },
+  { id: "platform-admins", href: "/admin/admins", label: "Platform admins", detail: "Who helps you run Vantage, and handing it over", icon: "shield" },
+  { id: "platform-ai", href: "/admin/ai-credits", label: "AI credits", detail: "Give a team AI from your own keys, with a hard cap", icon: "sparkles" },
+  { id: "platform-health", href: "/admin/health", label: "Health", detail: "Email, sign-in, data sync and the database", icon: "activity" },
+];
+
+function PlatformSettings() {
+  return (
+    <section aria-labelledby="settings-group-platform" className="settings-list is-detailed">
+      <h2 className="settings-group-label" id="settings-group-platform">Platform</h2>
+      <ul className="settings-group">
+        {PLATFORM_ROWS.map((item) => (
+          <li key={item.id}>
+            <a href={item.href} className="settings-row">
+              <i className="settings-row-icon" aria-hidden="true"><Icon name={item.icon} /></i>
+              <span className="settings-row-copy">
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+              </span>
+              <Icon name="chevron" className="settings-row-chevron" />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 function roleWords(role: string | null): string {
@@ -210,6 +240,7 @@ export function SettingsHome() {
         ready={viewer.ready}
         detailed
       />
+      {viewer.platformAdmin ? <PlatformSettings /> : null}
     </main>
   );
 }

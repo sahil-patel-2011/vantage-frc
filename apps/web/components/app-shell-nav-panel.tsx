@@ -49,6 +49,7 @@ export function AppShellNavPanel({
   pathSearch,
   navHrefAllowed,
   onEditPins,
+  platformAdmin = false,
 }: {
   navOpen: boolean;
   closeNav: () => void;
@@ -68,6 +69,8 @@ export function AppShellNavPanel({
   pathSearch: string;
   navHrefAllowed: (href: string) => boolean;
   onEditPins: () => void;
+  /** Runs Vantage itself: the menu gets an Admin button beside Settings and Help. */
+  platformAdmin?: boolean;
 }) {
   const queryActive = search.queryActive;
   return (
@@ -165,6 +168,7 @@ export function AppShellNavPanel({
         {!queryActive ? <footer className="soft-drawer-foot soft-drawer-toolbar" aria-label="Help and settings">
           <a href={withOrgHref(SETTINGS_HREF, orgId)} onClick={closeNav}><Icon name="gear" /><span>Settings</span></a>
           <a href={withOrgHref("/help", orgId)} onClick={closeNav}><Icon name="book" /><span>Help</span></a>
+          {platformAdmin ? <a href="/admin" onClick={closeNav}><Icon name="shield" /><span>Admin</span></a> : null}
         </footer> : null}
       </aside>
     </>

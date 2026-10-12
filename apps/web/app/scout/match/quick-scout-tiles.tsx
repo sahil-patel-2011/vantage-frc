@@ -37,8 +37,8 @@ export function QuickTile(props: TileProps) {
 
 /**
  * The top of the tile is the +1 button, so a scout can tap without looking. The minus is a
- * separate strip under it, so a near miss on "−" never adds one. Blank shows a dash: "not
- * counted" is not zero.
+ * separate strip under it, so a near miss on "−" never adds one. Blank shows a "+" to start:
+ * "not counted" is not zero.
  */
 function CounterTile({ field, value, invalid, onStep }: TileProps) {
   const count = typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -51,11 +51,12 @@ function CounterTile({ field, value, invalid, onStep }: TileProps) {
         aria-label={`${field.label}: ${count ?? "not counted"}. Add one`}
       >
         <span className="qs-tile-label">{field.label}</span>
+        {/* Not counted is not zero: until the first tap the tile shows a "+" to start, never a 0. */}
         <span className="qs-counter-value" aria-hidden="true">
-          {count ?? "—"}
+          {count ?? "+"}
         </span>
         <span className="qs-counter-hint" aria-hidden="true">
-          Tap +1
+          {count === null ? "Tap to count" : "Tap +1"}
         </span>
       </button>
       <button

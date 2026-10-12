@@ -383,7 +383,7 @@ export function ScoutingHome() {
         {storage?.usage != null || storage?.available != null ? (
           <details className="scout-home-storage">
             <summary data-disclosure>
-              Device storage <span aria-hidden="true">▾</span>
+              Device storage
             </summary>
             <dl className="scout-home-facts">
               <div>

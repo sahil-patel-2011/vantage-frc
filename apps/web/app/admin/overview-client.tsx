@@ -9,6 +9,8 @@ type Overview = {
   health: { summary: Record<string, number>; modules: ModuleItem[]; checkedAt: string } | null;
   newFeedback: number | null;
   waitlist: { waiting: number } | null;
+  /** Requests to put a team on Vantage (0733); null when they can't be read. */
+  teamRequests?: { pending: number } | null;
   teamsWaiting: Array<{ orgId: string; teamNumber: number | null; name: string; inviteEmail: string | null; inviteExpired: boolean }> | null;
   credits: {
     setupRequired: boolean;
@@ -97,6 +99,18 @@ export default function OverviewClient() {
           <h2 id="ov-waiting">Waiting on you</h2>
         </div>
         <div className="ac-grid">
+          <article className="ac-card" data-attention={data.teamRequests?.pending ? "" : undefined}>
+            <h3>Team requests</h3>
+            <strong>{data.teamRequests ? data.teamRequests.pending : "–"}</strong>
+            <span className="ac-muted ac-small">
+              {data.teamRequests
+                ? data.teamRequests.pending === 1
+                  ? "team waiting to join"
+                  : "teams waiting to join"
+                : "Needs migration 0733."}
+            </span>
+            <a href="/admin/teams#team-requests">Review requests</a>
+          </article>
           <article className="ac-card" data-attention={data.newFeedback ? "" : undefined}>
             <h3>Feedback</h3>
             <strong>{data.newFeedback ?? "–"}</strong>
