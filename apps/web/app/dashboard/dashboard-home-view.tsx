@@ -55,7 +55,7 @@ import { VenueShortcutCheatsheet, type VenueShortcut } from "../../hooks/use-ven
 import { homeHeaderDetail, homeNowFromWidgets, homeSetupSurfaces, showStandaloneSetupBanner } from "./dashboard-home-model";
 import { FirstWeekCard, type SetupHero } from "./first-week-card";
 import { DashboardEditToast } from "./dashboard-edit-toast";
-import { DashboardCustomizeSheet, type CustomizeRow } from "./dashboard-customize-sheet";
+import type { CustomizeRow } from "./dashboard-customize-sheet";
 import { DashboardHomeHeader } from "./dashboard-home-header";
 import { DashboardBoardSwitcher } from "./dashboard-board-bar";
 import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
@@ -65,6 +65,11 @@ import { useHydrated } from "../../lib/ui/use-hydrated";
 import "./dashboard-edit.css";
 import "./dashboard-home.css";
 
+// Edit Home's panel loads when someone opens it, not with Home's first paint.
+const DashboardCustomizeSheet = dynamic(
+  () => import("./dashboard-customize-sheet").then((mod) => mod.DashboardCustomizeSheet),
+  { ssr: false },
+);
 const DashboardPreviewDock = dynamic(
   () => import("./dashboard-edit-dock").then((mod) => mod.DashboardPreviewDock),
   { ssr: false },
@@ -723,8 +728,9 @@ export function DashboardHomeView(props: {
             <div
               ref={setCanvasNode}
               className="dash-grid dash-pgrid"
-              data-editing={editing ? "true" : "false"}
-              data-flow={cols === 1 && !editing ? "true" : "false"}
+              // Edit Home's panel does the editing; the board keeps looking like Home.
+              data-editing="false"
+              data-flow={cols === 1 ? "true" : "false"}
               data-cols={cols}
               data-testid="dash-place-canvas"
               data-measured={measured && width > 0 ? "true" : "false"}

@@ -12,7 +12,7 @@
   bottom: 16px;
   display: flex;
   flex-direction: column;
-  width: min(400px, calc(100vw - 32px));
+  width: min(440px, calc(100vw - 32px));
   box-sizing: border-box;
   border: 1px solid var(--line-soft);
   border-radius: 18px;
@@ -338,7 +338,7 @@
 
 /* A wide screen has room for the board and the panel side by side. */
 @media (min-width: 1500px) {
-  body.has-app-shell:has(.dash-customize) .dash-home { padding-right: 420px; }
+  body.has-app-shell:has(.dash-customize) .dash-home { padding-right: 460px; }
 }
 
 /* A phone: a bottom sheet over the bottom bar, the board peeking above it. */
@@ -364,34 +364,6 @@
   .dash-customize-search input { font-size: 16px; }
 }
 
-/* Home's one edit control: a quiet "Edit" beside the section heading, as a list says it. */
-.dash-board-heading .dash-board-tools .dash-board-customize {
-  min-height: 36px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  box-shadow: none;
-  color: var(--accent);
-  font-size: 14.5px;
-  font-weight: 600;
-}
-.dash-board-heading .dash-board-tools .dash-board-customize:hover {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-@media (pointer: coarse) {
-  .dash-board-heading .dash-board-tools .dash-board-customize { min-height: 44px; }
-}
-.dash-sync-refresh {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  font: inherit;
-  cursor: pointer;
-}
-.dash-sync-refresh:disabled { color: var(--muted); cursor: default; }
-.dash-sync-refresh:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 .dash-customize-inline {
   padding: 0;
   border: 0;
@@ -402,3 +374,22 @@
   cursor: pointer;
 }
 .dash-customize-inline:disabled { opacity: 0.5; cursor: default; }
+
+/* Rows on Home: name gets the room, then size and the three buttons; a note runs underneath. */
+.dash-customize-list > li[data-testid="dash-customize-row"] {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto auto;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+.dash-customize-rownote {
+  grid-column: 2 / -1;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.dash-customize-size select { width: 124px; }
+.dash-customize-actions .dash-customize-icon-btn { width: 32px; }
+@media (max-width: 760px) {
+  .dash-customize-actions .dash-customize-icon-btn { width: 44px; }
+}

@@ -169,17 +169,7 @@ export function DashboardCustomizeSheet({
                       <Icon name={row.icon} />
                     </i>
                     <span className="dash-customize-name">
-                      <strong>{row.label}</strong>
-                      {/* Home leaves an empty card out until it has something to show; say so
-                          here, or moving it seems to do nothing. */}
-                      {row.hiddenReason && !row.alwaysShown ? (
-                        <small>
-                          {HIDDEN_ON_HOME_COPY[row.hiddenReason]} ·{" "}
-                          <button type="button" className="dash-customize-inline" disabled={saving} onClick={() => onAlwaysShow(row.id, true)}>
-                            Always show
-                          </button>
-                        </small>
-                      ) : null}
+                      <strong title={row.label}>{row.label}</strong>
                     </span>
                     {showSizes ? (
                       <label className="dash-customize-size">
@@ -230,6 +220,16 @@ export function DashboardCustomizeSheet({
                         <span aria-hidden="true" className="dash-customize-minus" />
                       </button>
                     </span>
+                    {/* Home leaves an empty card out until it has something to show; say so here,
+                        or moving it seems to do nothing. A line of its own, under the name. */}
+                    {row.hiddenReason && !row.alwaysShown ? (
+                      <small className="dash-customize-rownote">
+                        {HIDDEN_ON_HOME_COPY[row.hiddenReason]}.{" "}
+                        <button type="button" className="dash-customize-inline" disabled={saving} onClick={() => onAlwaysShow(row.id, true)}>
+                          Always show
+                        </button>
+                      </small>
+                    ) : null}
                   </li>
                 ))}
               </ol>

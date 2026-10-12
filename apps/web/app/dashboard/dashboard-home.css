@@ -453,3 +453,32 @@ body.has-app-shell .dash-context-prompt > .app-button { align-self: center; just
   .dash-context-prompt .dash-context-icon { width: 32px; height: 32px; border-radius: 10px; }
   body.has-app-shell .dash-context-prompt > .app-button { grid-column: 2; justify-self: start; }
 }
+
+/* Home's one edit control: a quiet "Edit" beside the section heading, as a list says it. */
+.dash-board-heading .dash-board-tools .dash-board-customize {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.dash-board-heading .dash-board-tools .dash-board-customize:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+@media (pointer: coarse) {
+  .dash-board-heading .dash-board-tools .dash-board-customize { min-height: 44px; }
+}
+.dash-sync-refresh {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+.dash-sync-refresh:disabled { color: var(--muted); cursor: default; }
+.dash-sync-refresh:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
