@@ -1,0 +1,17 @@
+---
+description: Finish every requested task, prove it works, and check that related behavior still works
+alwaysApply: true
+---
+
+# Finish the task
+
+Do not stop while any part of the request is still undone.
+
+- Research the current code and the live behavior before editing.
+- Carry the work through implementation, the edge cases that change touches, and a functional check.
+- A screenshot of a screen is not proof. Exercise the changed flow the way a person would: open, click, type, submit, and move to the next screen.
+- Check the other pages and routes that share the component, state, or data you changed.
+- If a check fails, fix it and check again before you report the task done.
+- Stop only for a real blocker you cannot clear yourself: sign-in you do not have, a payment, a destructive confirmation, or a missing credential. Say what is done, what is blocked, and the single next step.
+
+On this laptop, prove behavior in the browser on https://vantagefrc.vercel.app. Do not start a local database, dev server, test runner, or build unless the user explicitly authorizes that workload.

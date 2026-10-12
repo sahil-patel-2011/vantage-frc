@@ -1,0 +1,15 @@
+---
+description: Keep Vantage interactions direct so the obvious action works without extra steps
+alwaysApply: true
+---
+
+# Things just work
+
+Use https://vantagefrc.vercel.app the way a team member would. The next step should be obvious, and the control that looks right should do the thing.
+
+- One clear action finishes the job. Do not add a second confirm, a hidden menu, or a setup step for something the app already knows.
+- A field keeps its label. Placeholder text is only a hint. A disabled button says why, or it becomes enabled as soon as the required input is present.
+- Empty, signed-out, and no-team states still offer the one next step. They do not show a blank page, a stack trace, or a made-up number.
+- Phone and desktop both complete the same job. Navigation does not change meaning between widths.
+- If a flow is finicky — extra clicks, unclear copy, a control that does nothing, or a page that looks empty — treat that as part of the task and fix it before reporting done.
+- Prove it by using the control. Do not stop at a screenshot.

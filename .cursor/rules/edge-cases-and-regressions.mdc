@@ -1,0 +1,21 @@
+---
+description: Cover edge cases and confirm a change did not break neighboring Vantage flows
+alwaysApply: true
+---
+
+# Edge cases and regressions
+
+Treat the unhappy paths as part of the task, not a follow-up.
+
+Check the states this product actually has:
+
+- Signed out, waitlist, and invited sign-in.
+- No team selected (`Choose your team`) and a team selected.
+- Empty data, `setup_required`, and a failed refresh that must keep the last painted board.
+- Student chrome versus owner or admin chrome.
+- Phone width and desktop width when layout or navigation changed.
+- Offline or last-snapshot behavior when the screen is supposed to keep working without venue Wi-Fi.
+
+After the change, open the neighboring route that shares the shell, hub tab, or data. Confirm its primary action, empty state, and navigation still behave as they did.
+
+Do not claim a path is fine if you did not open it.

@@ -1,0 +1,13 @@
+---
+description: Research the request and current first-party guidance before designing or changing product behavior
+alwaysApply: true
+---
+
+# Research before building
+
+Read the code and docs that already own the behavior, then look up current external guidance when the request depends on it.
+
+- For UI or UX, read the current public guidance from Apple, Google, and Microsoft before choosing a layout, component, or interaction. Use Apple Human Interface Guidelines (https://developer.apple.com/design/human-interface-guidelines), Material Design 3 (https://m3.material.io/), and Fluent 2 (https://fluent2.microsoft.design/design-principles).
+- Prefer what those sources say now over memory. Cite the page you used when a design choice is not obvious.
+- Keep Vantage’s own product rules: one primary action on an empty screen, no invented metrics, and a clear setup state when something is not configured.
+- Apply the shared bar those systems agree on: one obvious primary action, text contrast of at least 4.5:1, labels that stay visible, keyboard and screen-reader access, and a layout that works on a phone and a desktop.

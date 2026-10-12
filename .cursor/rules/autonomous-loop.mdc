@@ -1,0 +1,17 @@
+---
+description: Work in a loop until the request is done, then commit and push only that work
+alwaysApply: true
+---
+
+# Autonomous loop
+
+Repeat this loop until every part of the request is done and checked. Do not stop between passes to ask a question you can answer from the code or the live app.
+
+1. Research the owning code and the current page on https://vantagefrc.vercel.app.
+2. Make the change.
+3. Use the changed flow on the hosted app, including the edge case that would make it feel finicky.
+4. If it fails or feels indirect, fix it and use it again.
+
+When the loop is green, commit only the files for that task and push the current branch. Leave unrelated dirty files unstaged. Do not commit secrets. Do not force-push. Do not start a background timer that keeps committing.
+
+On this laptop, do not start a local database, dev server, test runner, or build unless the user explicitly authorizes that workload.
