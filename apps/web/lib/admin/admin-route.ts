@@ -75,6 +75,12 @@ export function adminErrorResponse(error: unknown, fallback: string, mapped?: (e
   }
   const message = error instanceof Error ? error.message : "";
   if (/platform administrator/i.test(message)) return Response.json({ error: "Not found" }, { status: 404, headers: NO_STORE });
+  if (/step-up is required/i.test(message)) {
+    return Response.json(
+      { error: "Confirm it's you with your authenticator app first (Account → Security), then try again.", code: "mfa_required" },
+      { status: 403, headers: NO_STORE },
+    );
+  }
   return Response.json({ error: publicErrorMessage(error, fallback) }, { status: 500, headers: NO_STORE });
 }
 

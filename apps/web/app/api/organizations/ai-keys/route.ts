@@ -30,6 +30,86 @@ async function context(orgId: string | undefined) {
   return { session, orgId };
 }
 
+/**
+ * Several keys per provider (migration 0727): each team or personal key has a label, an order
+ * and an on/off switch, and Ask AI fails over from one to the next. Before 0727 a save still
+ * replaces the provider's key, as it always did.
+ */
+type KeyClient = Parameters<Parameters<typeof withRls>[1]>[0];
+
+async function multiKeyReady(client: KeyClient): Promise<boolean> {
+  const result = await client.query<{ ready: boolean }>(
+    `SELECT to_regprocedure('public.note_llm_key_result(text,uuid,boolean,text)') IS NOT NULL AS ready`,
+  );
+  return result.rows[0]?.ready === true;
+}
+
+export type KeyRow = {
+  id: string;
+  provider: string;
+  label: string;
+  priority: number;
+  enabled: boolean;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+  lastError: string | null;
+  lastErrorAt: string | null;
+  baseUrl?: string | null;
+  model?: string | null;
+};
+
+/** Never key material: the id, label, order, switch and what happened last. */
+const KEY_ROW_COLUMNS = `k.id::text AS id, lower(k.provider) AS provider, k.label,
+  COALESCE((to_jsonb(k) ->> 'priority')::int, 100) AS priority,
+  COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true) AS enabled,
+  k.created_at::text AS "createdAt", k.last_used_at::text AS "lastUsedAt",
+  to_jsonb(k) ->> 'last_error' AS "lastError", to_jsonb(k) ->> 'last_error_at' AS "lastErrorAt"`;
+
+/** A label for a new key: what the person typed, or "<Provider> key <n>". */
+function newKeyLabel(provider: ByokProvider, typed: unknown, existing: number): string {
+  const label = typeof typed === "string" ? typed.trim().replace(/\s+/g, " ").slice(0, 60) : "";
+  if (label) return label;
+  const base = BYOK_PROVIDER_META[provider].label;
+  return existing === 0 ? base : `${base} key ${existing + 1}`;
+}
+
+async function nextPriority(client: KeyClient, table: "org_llm_keys" | "member_llm_keys", orgId: string, provider: string, userId?: string) {
+  const result = await client.query<{ next: number; count: number }>(
+    table === "org_llm_keys"
+      ? `SELECT COALESCE(max(priority), 0) + 1 AS next, count(*)::int AS count
+           FROM org_llm_keys WHERE org_id = $1::uuid AND lower(provider) = $2`
+      : `SELECT COALESCE(max(priority), 0) + 1 AS next, count(*)::int AS count
+           FROM member_llm_keys WHERE org_id = $1::uuid AND lower(provider) = $2 AND user_id = $3::uuid`,
+    table === "org_llm_keys" ? [orgId, provider] : [orgId, provider, userId],
+  );
+  return result.rows[0] ?? { next: 1, count: 0 };
+}
+
+/** Swap a key with its neighbour in its provider's order (renumbering 1..n first). */
+async function moveKey(
+  client: KeyClient,
+  table: "org_llm_keys" | "member_llm_keys",
+  key: { id: string; provider: string; orgId: string; userId?: string },
+  direction: "up" | "down",
+) {
+  const rows = (
+    await client.query<{ id: string }>(
+      table === "org_llm_keys"
+        ? `SELECT id::text FROM org_llm_keys WHERE org_id = $1::uuid AND lower(provider) = $2 ORDER BY priority, created_at`
+        : `SELECT id::text FROM member_llm_keys WHERE org_id = $1::uuid AND lower(provider) = $2 AND user_id = $3::uuid
+            ORDER BY priority, created_at`,
+      table === "org_llm_keys" ? [key.orgId, key.provider] : [key.orgId, key.provider, key.userId],
+    )
+  ).rows.map((row) => row.id);
+  const index = rows.indexOf(key.id);
+  const swap = direction === "up" ? index - 1 : index + 1;
+  if (index < 0 || swap < 0 || swap >= rows.length) return;
+  [rows[index], rows[swap]] = [rows[swap]!, rows[index]!];
+  for (const [position, id] of rows.entries()) {
+    await client.query(`UPDATE ${table} SET priority = $2::int WHERE id = $1::uuid`, [id, position + 1]);
+  }
+}
+
 const fail = (error: unknown, status = 400) =>
   Response.json(
     { error: publicErrorMessage(error, "AI keys request failed") },
@@ -153,21 +233,16 @@ export async function GET(request: Request) {
       }
 
       const rows = (
-        await client.query<{
-          provider: string;
-          createdAt: string | null;
-          lastUsedAt: string | null;
-        }>(
-          `SELECT provider,
-                  created_at::text AS "createdAt",
-                  last_used_at::text AS "lastUsedAt"
-           FROM org_llm_keys
-           WHERE org_id = $1::uuid
-             AND lower(provider) = ANY($2::text[])
-           ORDER BY created_at DESC`,
+        await client.query<KeyRow>(
+          `SELECT ${KEY_ROW_COLUMNS}
+           FROM org_llm_keys k
+           WHERE k.org_id = $1::uuid
+             AND lower(k.provider) = ANY($2::text[])
+           ORDER BY lower(k.provider), COALESCE((to_jsonb(k) ->> 'priority')::int, 100), k.created_at`,
           [orgId, [...BYOK_PROVIDERS]],
         )
       ).rows;
+      const multiKey = await multiKeyReady(client);
 
       const [localConnector, routing] = await Promise.all([
         loadLocalConnector(client, orgId!),
@@ -176,21 +251,11 @@ export async function GET(request: Request) {
 
       // The caller's own personal keys (RLS restricts rows to user_id = caller).
       const memberRows = (
-        await client.query<{
-          provider: string;
-          baseUrl: string | null;
-          model: string | null;
-          createdAt: string | null;
-          lastUsedAt: string | null;
-        }>(
-          `SELECT provider,
-                  base_url AS "baseUrl",
-                  model,
-                  created_at::text AS "createdAt",
-                  last_used_at::text AS "lastUsedAt"
-           FROM member_llm_keys
-           WHERE org_id = $1::uuid AND user_id = $2::uuid
-           ORDER BY provider`,
+        await client.query<KeyRow>(
+          `SELECT ${KEY_ROW_COLUMNS}, k.base_url AS "baseUrl", k.model
+           FROM member_llm_keys k
+           WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid
+           ORDER BY lower(k.provider), COALESCE((to_jsonb(k) ->> 'priority')::int, 100), k.created_at`,
           [orgId, session.user.id],
         )
       ).rows;
@@ -199,7 +264,10 @@ export async function GET(request: Request) {
         tier: membership.rows[0]?.tier ?? "free",
         role: membership.rows[0]?.role ?? null,
         canManage,
-        keys: buildByokKeyStatuses(rows),
+        keys: buildByokKeyStatuses(rows.filter((row) => row.enabled)),
+        /** Every team key, in order per provider: several per provider since 0727. */
+        keyList: rows,
+        multiKey,
         memberKeys: memberRows,
         localConnector,
         routing,
@@ -252,7 +320,15 @@ export async function POST(request: Request) {
         | "remove_local"
         | "save_routing"
         | "save_member_key"
-        | "remove_member_key";
+        | "remove_member_key"
+        | "update_key"
+        | "remove_key";
+      /** update_key / remove_key: which key, and whether it is the team's or the caller's own. */
+      keyId?: string;
+      scope?: "team" | "member";
+      label?: string;
+      enabled?: boolean;
+      move?: "up" | "down";
       provider?: string;
       apiKey?: string;
       baseUrl?: string;
@@ -309,21 +385,28 @@ export async function POST(request: Request) {
       }
 
       const meta = BYOK_PROVIDER_META[provider];
-      await withRls({ userId: session.user.id, orgId }, async (client) => {
+      const added = await withRls({ userId: session.user.id, orgId }, async (client) => {
         await assertOrgCapability(client, orgId, "manage_api_keys");
-        await client.query(
-          `DELETE FROM org_llm_keys
-           WHERE org_id = $1::uuid AND lower(provider) = $2`,
-          [orgId, provider],
-        );
-        await client.query(
+        const multiKey = await multiKeyReady(client);
+        // Before 0727 a provider holds one key: a save replaces it, as it always did.
+        if (!multiKey) {
+          await client.query(
+            `DELETE FROM org_llm_keys
+             WHERE org_id = $1::uuid AND lower(provider) = $2`,
+            [orgId, provider],
+          );
+        }
+        const order = multiKey ? await nextPriority(client, "org_llm_keys", orgId, provider) : { next: 100, count: 0 };
+        const label = multiKey ? newKeyLabel(provider, (body as { label?: unknown }).label, order.count) : meta.storageLabel;
+        const inserted = await client.query<{ id: string }>(
           `INSERT INTO org_llm_keys
              (org_id, provider, label, key_ciphertext, key_nonce, key_auth_tag, encrypted_dek, kms_key_id, created_by)
-           VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9::uuid)`,
+           VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9::uuid)
+           RETURNING id::text`,
           [
             orgId,
             provider,
-            meta.storageLabel,
+            label,
             encrypted.ciphertext,
             encrypted.nonce,
             encrypted.authTag,
@@ -332,10 +415,26 @@ export async function POST(request: Request) {
             session.user.id,
           ],
         );
+        if (multiKey) {
+          await client.query(`UPDATE org_llm_keys SET priority = $2::int WHERE id = $1::uuid`, [
+            inserted.rows[0]!.id,
+            order.next,
+          ]);
+        }
+        return { id: inserted.rows[0]!.id, label, position: order.count + 1 };
       });
 
       return Response.json(
-        { ok: true, provider, configured: true, checked: check.status === "valid", notice: check.status === "unchecked" ? check.message : null },
+        {
+          ok: true,
+          provider,
+          configured: true,
+          keyId: added.id,
+          label: added.label,
+          position: added.position,
+          checked: check.status === "valid",
+          notice: check.status === "unchecked" ? check.message : null,
+        },
         { status: 201 },
       );
     }
@@ -387,22 +486,30 @@ export async function POST(request: Request) {
       }
 
       const meta = BYOK_PROVIDER_META[provider];
-      await withRls({ userId: session.user.id, orgId }, async (client) => {
-        await client.query(
-          `DELETE FROM member_llm_keys
-           WHERE org_id = $1::uuid AND user_id = $2::uuid AND lower(provider) = $3`,
-          [orgId, session.user.id, provider],
-        );
-        await client.query(
+      const addedMine = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        const multiKey = await multiKeyReady(client);
+        if (!multiKey) {
+          await client.query(
+            `DELETE FROM member_llm_keys
+             WHERE org_id = $1::uuid AND user_id = $2::uuid AND lower(provider) = $3`,
+            [orgId, session.user.id, provider],
+          );
+        }
+        const order = multiKey
+          ? await nextPriority(client, "member_llm_keys", orgId, provider, session.user.id)
+          : { next: 100, count: 0 };
+        const label = multiKey ? newKeyLabel(provider, (body as { label?: unknown }).label, order.count) : meta.storageLabel;
+        const inserted = await client.query<{ id: string }>(
           `INSERT INTO member_llm_keys
              (org_id, user_id, provider, label, key_ciphertext, key_nonce, key_auth_tag,
               encrypted_dek, kms_key_id, base_url, model)
-           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+           RETURNING id::text`,
           [
             orgId,
             session.user.id,
             provider,
-            meta.storageLabel,
+            label,
             encrypted.ciphertext,
             encrypted.nonce,
             encrypted.authTag,
@@ -412,10 +519,25 @@ export async function POST(request: Request) {
             model,
           ],
         );
+        if (multiKey) {
+          await client.query(`UPDATE member_llm_keys SET priority = $2::int WHERE id = $1::uuid`, [
+            inserted.rows[0]!.id,
+            order.next,
+          ]);
+        }
+        return { id: inserted.rows[0]!.id, label, position: order.count + 1 };
       });
 
       return Response.json(
-        { ok: true, provider, scope: "member", notice: memberCheck.status === "unchecked" ? memberCheck.message : null },
+        {
+          ok: true,
+          provider,
+          scope: "member",
+          keyId: addedMine.id,
+          label: addedMine.label,
+          position: addedMine.position,
+          notice: memberCheck.status === "unchecked" ? memberCheck.message : null,
+        },
         { status: 201 },
       );
     }
@@ -431,6 +553,48 @@ export async function POST(request: Request) {
         );
       });
       return Response.json({ ok: true, provider, scope: "member" });
+    }
+
+    if (action === "update_key" || action === "remove_key") {
+      const keyId = typeof body.keyId === "string" ? body.keyId.trim() : "";
+      if (!/^[0-9a-f-]{36}$/i.test(keyId)) throw new Error("Choose a key from the list");
+      const scope = body.scope === "member" ? "member" : "team";
+      const table = scope === "member" ? "member_llm_keys" : "org_llm_keys";
+      const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        // Team keys are the key managers'; RLS (owner/admin) backs this. A personal key is only
+        // ever the caller's own (member_llm_keys_own).
+        if (scope === "team") await assertOrgCapability(client, orgId, "manage_api_keys");
+        const key = (
+          await client.query<{ id: string; provider: string; label: string }>(
+            scope === "team"
+              ? `SELECT id::text, lower(provider) AS provider, label FROM org_llm_keys WHERE id = $1::uuid AND org_id = $2::uuid`
+              : `SELECT id::text, lower(provider) AS provider, label FROM member_llm_keys
+                  WHERE id = $1::uuid AND org_id = $2::uuid AND user_id = $3::uuid`,
+            scope === "team" ? [keyId, orgId] : [keyId, orgId, session.user.id],
+          )
+        ).rows[0];
+        if (!key) throw new Error("That key is gone. Refresh the page.");
+        if (action === "remove_key") {
+          await client.query(`DELETE FROM ${table} WHERE id = $1::uuid`, [keyId]);
+          return { removed: true, provider: key.provider, label: key.label };
+        }
+        if (!(await multiKeyReady(client))) {
+          throw new Error("Ordering and switching keys needs the latest database update. Ask your platform admin to run it.");
+        }
+        if (typeof body.label === "string") {
+          const label = body.label.trim().replace(/\s+/g, " ");
+          if (!label || label.length > 60) throw new Error("Give the key a name of up to 60 characters");
+          await client.query(`UPDATE ${table} SET label = $2 WHERE id = $1::uuid`, [keyId, label]);
+        }
+        if (typeof body.enabled === "boolean") {
+          await client.query(`UPDATE ${table} SET enabled = $2::boolean WHERE id = $1::uuid`, [keyId, body.enabled]);
+        }
+        if (body.move === "up" || body.move === "down") {
+          await moveKey(client, table, { id: keyId, provider: key.provider, orgId, userId: session.user.id }, body.move);
+        }
+        return { removed: false, provider: key.provider, label: key.label };
+      });
+      return Response.json({ ok: true, ...result, scope });
     }
 
     if (action === "save_local") {

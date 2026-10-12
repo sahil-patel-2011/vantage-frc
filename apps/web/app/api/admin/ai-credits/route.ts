@@ -11,8 +11,8 @@ import {
 import {
   giftRefusal,
   grantGift,
-  listGiftKeysForAdmin,
   loadAiCreditOverview,
+  loadKeyPool,
   parseGiftInput,
   revokeGift,
 } from "../../../../lib/admin/ai-credits";
@@ -22,7 +22,8 @@ import { CREDIT_GIFT_FAMILIES } from "@vantage/billing";
 /**
  * AI credit gifts, for platform admins: every gift with its spend (GET, `?orgId=` for one team),
  * gift a team credit (POST), end a gift early (DELETE). Giving and ending need a sign-in from the
- * last 24 hours. The operator's keys are named here (env var names, vault labels), never sent.
+ * last 24 hours. A gift is paid from the operator's key pool (/api/admin/ai-keys); keys are named
+ * here by label and env var name, never sent.
  */
 
 export async function GET(request: Request) {
@@ -36,14 +37,13 @@ export async function GET(request: Request) {
   }
 }
 
-/** `{ orgId, family?, amountUsd?, keyRef?, expiresAt?, note? }`; $10 of Claude by default. */
+/** `{ orgId, family?, amountUsd?, expiresAt?, note? }`; $10 of Claude by default. */
 export async function POST(request: Request) {
   try {
     const body = await readJsonBody(request);
     const { giftId, input, adminId } = await asPlatformAdmin(
       async (client, session) => {
-        const keys = await listGiftKeysForAdmin(client);
-        const input = parseGiftInput(body, keys);
+        const input = parseGiftInput(body, await loadKeyPool(client));
         return { giftId: await grantGift(client, input), input, adminId: session.user.id };
       },
       { fresh: true },

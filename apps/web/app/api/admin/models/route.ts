@@ -1,4 +1,4 @@
-import { createKms, decryptSecret, encryptSecret } from "@vantage/billing";
+import { createKms, decryptSecret, encryptSecret, isAllowedGiftEnvKey, providerFamily } from "@vantage/billing";
 import { assertPlatformAdmin, assertPlatformPrivilegeMfa, auth, platformAdminDeniedResponse, PlatformAdminRequiredError } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { HttpBase44BridgeTransport } from "@vantage/agent";
@@ -114,17 +114,25 @@ export async function POST(request: Request) {
         await client.query("UPDATE platform_provider_keys SET disabled_at=now() WHERE id=$1", [body.id]);
       } else if (body.action === "testKey") {
         const key = await client.query<{
-          provider: string; keyCiphertext: string; keyNonce: string; keyAuthTag: string;
-          encryptedDek: string; kmsKeyId: string;
+          provider: string; keyCiphertext: string | null; keyNonce: string; keyAuthTag: string;
+          encryptedDek: string; kmsKeyId: string; keyEnv: string | null;
         }>(`SELECT provider,key_ciphertext AS "keyCiphertext",key_nonce AS "keyNonce",
-          key_auth_tag AS "keyAuthTag",encrypted_dek AS "encryptedDek",kms_key_id AS "kmsKeyId"
-          FROM platform_provider_keys WHERE id=$1 AND disabled_at IS NULL`, [body.id]);
+          key_auth_tag AS "keyAuthTag",encrypted_dek AS "encryptedDek",kms_key_id AS "kmsKeyId",
+          to_jsonb(k) ->> 'key_env' AS "keyEnv"
+          FROM platform_provider_keys k WHERE id=$1 AND disabled_at IS NULL`, [body.id]);
         const row = key.rows[0];
         if (!row || !["openai","anthropic"].includes(row.provider)) throw new Error("Active OpenAI or Anthropic key required");
-        const secret = await decryptSecret({
-          ciphertext: row.keyCiphertext, nonce: row.keyNonce, authTag: row.keyAuthTag,
-          encryptedDek: row.encryptedDek, kmsKeyId: row.kmsKeyId,
-        }, createKms());
+        // A pool row may name a provider-key env var instead of holding a sealed key (0727).
+        const family = providerFamily(row.provider);
+        const secret = row.keyCiphertext
+          ? await decryptSecret({
+              ciphertext: row.keyCiphertext, nonce: row.keyNonce, authTag: row.keyAuthTag,
+              encryptedDek: row.encryptedDek, kmsKeyId: row.kmsKeyId,
+            }, createKms())
+          : row.keyEnv && family && isAllowedGiftEnvKey(family, row.keyEnv)
+            ? process.env[row.keyEnv]?.trim() ?? ""
+            : "";
+        if (!secret) throw new Error(`${row.keyEnv ?? "That key"} is not set on this deployment`);
         const response = await fetch(
           row.provider === "openai" ? "https://api.openai.com/v1/models" : "https://api.anthropic.com/v1/models",
           {
