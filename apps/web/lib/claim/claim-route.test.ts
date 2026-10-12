@@ -8,6 +8,8 @@ const state = vi.hoisted(() => ({
   claims: 0,
   queries: [] as Array<{ sql: string; params: unknown[] }>,
   failAttestationInsert: null as null | { code: string; message: string },
+  /** Platform admins still create a team directly; everyone else files a request (0733). */
+  platformAdmin: true,
 }));
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
@@ -39,6 +41,8 @@ vi.mock("@vantage/db", () => ({
           });
         }
         if (sql.includes("has_org_capability")) return { rows: [{ allowed: true }], rowCount: 1 };
+        if (sql.includes("is_platform_admin()")) return { rows: [{ allowed: state.platformAdmin }], rowCount: 1 };
+        if (sql.includes("request_team_setup")) return { rows: [{ id: "33333333-3333-4333-8333-333333333333" }], rowCount: 1 };
         return { rows: [], rowCount: 1 };
       },
     }),
@@ -77,8 +81,24 @@ beforeEach(() => {
   state.claims = 0;
   state.queries = [];
   state.failAttestationInsert = null;
+  state.platformAdmin = true;
 });
 afterEach(() => vi.unstubAllEnvs());
+
+describe("POST /api/organizations/claim — a request, not a claim, for everyone else", () => {
+  it("files a team request for the platform admins and creates no team", async () => {
+    state.platformAdmin = false;
+    const response = await post({ ...valid, teamNumber: 7777, name: "Robo Ravens" }, "203.0.113.9");
+    expect(response.status).toBe(202);
+    const body = (await response.json()) as { requested?: boolean; teamNumber?: number };
+    expect(body).toMatchObject({ requested: true, teamNumber: 7777 });
+    expect(state.claims).toBe(0);
+    expect(attestationInserts()).toHaveLength(0);
+    const request = state.queries.find((q) => q.sql.includes("request_team_setup"));
+    expect(request?.params[0]).toBe(7777);
+    expect(request?.params[4]).toBe("Robo Ravens");
+  });
+});
 
 describe("POST /api/organizations/claim — authorization statement", () => {
   it("rejects a claim with no acknowledgement (400) and writes nothing", async () => {

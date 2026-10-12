@@ -53,6 +53,22 @@ import { ONBOARDING_ERROR_ID, PreferencesForm, ProfileForm, TeamForm } from "./o
 import "./onboarding-flow.css";
 import "../vantage-scan-auth.css";
 
+/** Each setup step's own heading when nothing special (an invite, a new team) frames the flow. */
+const GENERIC_STEP_HEADERS: Record<"profile" | "team" | "preferences", { title: string; sub: string }> = {
+  profile: {
+    title: "Tell us about you",
+    sub: "Teammates see your name once you're on a team. Nothing else here is shared.",
+  },
+  team: {
+    title: "Find your team",
+    sub: "Enter your FRC team number. The team decides who gets in.",
+  },
+  preferences: {
+    title: "Check and finish",
+    sub: "Make sure this looks right. You can change any of it later in Account.",
+  },
+};
+
 export default function OnboardingClient() {
   const searchParams = useSearchParams();
   const [state, setState] = useState<OnboardingState | null>(null);
@@ -315,6 +331,7 @@ export default function OnboardingClient() {
         accessStatus: state?.accessStatus ?? null,
         knownTeamNumber: state?.preferredTeamNumber ?? null,
         workspaceMissing: state?.workspaceMissing,
+        teamRequest: state?.teamRequest ?? null,
         adult,
         owner: state?.workspaceRole === "owner",
       }),
@@ -580,6 +597,8 @@ export default function OnboardingClient() {
     workspaceMissing: state?.workspaceMissing,
     adult,
     platformAdmin: state?.platformAdmin,
+    teamRequest: state?.teamRequest ?? null,
+    bannedTeams: state?.bannedTeams ?? [],
   });
   const headerCopy =
     step === "done"
@@ -592,7 +611,13 @@ export default function OnboardingClient() {
         ? {
             eyebrow: pendingPlan.eyebrow,
             title: pendingPlan.headline,
-            sub: pendingPlan.primaryAction.kind === "claim"
+            sub: pendingPlan.kind === "team_requested"
+              ? "Your profile is saved. You'll get an email when Vantage approves the team."
+              : pendingPlan.kind === "team_request_declined"
+                ? "Your profile is saved. Check the team number, then ask again."
+              : pendingPlan.kind === "banned"
+                ? "Your account is fine. This team can't use Vantage right now."
+              : pendingPlan.primaryAction.kind === "claim"
               ? "Create the team workspace if you are authorized to represent this team."
               : pendingPlan.kind === "platform_admin"
                 ? "Your profile is saved. Add teams and their owners from the admin console."
@@ -627,36 +652,47 @@ export default function OnboardingClient() {
               title: `You're on ${teamName ?? "the team"}.`,
               sub: "Tell us who you are and what you do, and Home will open on what to do first.",
             }
-          : {
-              eyebrow: "WELCOME TO VANTAGE",
-              title: "Make Vantage work for you.",
-              sub: "A few questions. Your team still has to let you in before anything is shared.",
-            };
+          : setupStep
+            ? {
+                eyebrow: "",
+                ...GENERIC_STEP_HEADERS[setupStep],
+                ...(setupStep === "preferences" && legalNeeded
+                  ? { sub: "Make sure this looks right, then agree to the terms." }
+                  : {}),
+              }
+            : {
+                eyebrow: "WELCOME TO VANTAGE",
+                title: "Make Vantage work for you.",
+                sub: "A few questions. Your team still has to let you in before anything is shared.",
+              };
+  // The generic headers already say what the step is for; the hint under the progress bar
+  // would repeat it.
+  const showStepHint = Boolean(setupStep) && setupStep !== "profile" && headerCopy.eyebrow !== "";
 
   return (
     <main className="onboarding-page onboarding-flow-page scan-workbench scan-hub--onboarding">
       <section className={`onboarding-card onboarding-flow-card${step === "pending" || step === "done" ? " pending" : ""}`} aria-labelledby="onboarding-title">
         <header className="onboarding-flow-header">
           <div className="onboarding-brand"><VantageLogo /></div>
-          <span>{headerCopy.eyebrow}</span>
+          {setupStep ? (
+            <div className="onboarding-progress-block">
+              <ol className="onboarding-steps onboarding-steps-simple onboarding-progress-bar" aria-label="Onboarding progress">
+                {stepMeta.map((item) => (
+                  <li key={item.id} className={item.phase} aria-current={item.phase === "current" ? "step" : undefined}>
+                    <span className="sr-only">{item.label}{item.phase === "done" ? " (done)" : ""}</span>
+                  </li>
+                ))}
+              </ol>
+              <p className="onboarding-progress-label" aria-live="polite">{progressLabel}</p>
+            </div>
+          ) : null}
+          {headerCopy.eyebrow ? <span>{headerCopy.eyebrow}</span> : null}
           <h1 id="onboarding-title" tabIndex={-1}>{headerCopy.title}</h1>
           <p className="onboarding-sub">{headerCopy.sub}</p>
-        </header>
-
-        {setupStep ? (
-          <div className="onboarding-progress-block">
-            <p className="onboarding-progress-label" aria-live="polite">{progressLabel}</p>
-            <ol className="onboarding-steps onboarding-steps-simple scan-rail" aria-label="Onboarding progress">
-              {stepMeta.map((item) => (
-                <li key={item.id} className={item.phase} aria-current={item.phase === "current" ? "step" : undefined}>
-                  <b aria-hidden="true">{item.phase === "done" ? "✓" : item.index + 1}</b>
-                  <span>{item.label}</span>
-                </li>
-              ))}
-            </ol>
+          {showStepHint ? (
             <p className="onboarding-step-hint">{stepMeta.find((item) => item.phase === "current")?.description}</p>
-          </div>
-        ) : null}
+          ) : null}
+        </header>
 
         {/* On the setup screens a message is an error, shown by the form beside its field or
             above its buttons. Here only the waiting screen's status lines. */}

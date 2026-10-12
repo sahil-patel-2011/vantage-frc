@@ -275,8 +275,9 @@ export function TeamForm({
       </div>
       )}
 
-      <fieldset className="onboarding-focus-grid">
-        <legend>What should Vantage put first?</legend>
+      <fieldset className="onboarding-focus-grid" aria-describedby="onboarding-focus-hint">
+        <legend>What will you spend most of your time on?</legend>
+        <p id="onboarding-focus-hint" className="onboarding-focus-hint">Your Home opens on the tools for it. Everything else is still one tap away.</p>
         {FOCUS_OPTIONS.map((option) => (
           <label key={option.value} className={draft.primaryFocus === option.value ? "selected" : undefined}>
             <input
@@ -376,15 +377,16 @@ export function PreferencesForm({
         onSubmit();
       }}
     >
-      <section className="onboarding-review-card" aria-label="Access request summary">
-        <div><span>TEAM</span><strong>{lookup.teamNumber ? `FRC ${lookup.teamNumber}` : "None yet"}</strong></div>
-        <div><span>ROLE</span><strong>{ROLES.find((option) => option.value === draft.teamRole)?.label ?? draft.teamRole}</strong></div>
-        <div><span>SPECIALTY</span><strong>{CREW_ROLES.find((option) => option.value === draft.crewRole)?.label ?? "Skipped"}</strong></div>
-        <div><span>STARTING VIEW</span><strong>{FOCUS_OPTIONS.find((option) => option.value === draft.primaryFocus)?.label}</strong></div>
+      {/* A summary list, label on the left and answer on the right, like a settings screen. */}
+      <dl className="onboarding-review-card onboarding-review-list" aria-label="Your answers">
+        <div><dt>Team</dt><dd>{lookup.teamNumber ? `FRC ${lookup.teamNumber}` : "None yet"}</dd></div>
+        <div><dt>Role</dt><dd>{ROLES.find((option) => option.value === draft.teamRole)?.label ?? draft.teamRole}</dd></div>
+        <div><dt>Specialty</dt><dd>{CREW_ROLES.find((option) => option.value === draft.crewRole)?.label ?? "Not sure yet"}</dd></div>
+        <div><dt>Home opens on</dt><dd>{FOCUS_OPTIONS.find((option) => option.value === draft.primaryFocus)?.label}</dd></div>
         {draft.roleDescription.trim() ? (
-          <div><span>HOW YOU HELP</span><strong>{draft.roleDescription.trim()}</strong></div>
+          <div><dt>About your role</dt><dd>{draft.roleDescription.trim()}</dd></div>
         ) : null}
-      </section>
+      </dl>
 
       {state.isTeamHead ? (
         <fieldset className="onboarding-team-profile">
@@ -501,7 +503,7 @@ export function PreferencesForm({
               : lookup.invited
                 ? `You're joining ${lookup.title}.`
                 : lookup.teamNumber
-                  ? "Submit sends a request — not access."
+                  ? "Finishing sends a request"
                   : "Finish without a team"}
           </strong>
           <span>
@@ -512,7 +514,7 @@ export function PreferencesForm({
               : lookup.invited
                 ? " The team invited this email, so finishing puts you straight on it."
                 : lookup.teamNumber
-                ? " That team's owners must approve. You cannot join an existing team just by knowing the number."
+                ? ` Team ${lookup.teamNumber}'s owners decide who joins. If the team isn't on Vantage yet, the Vantage team reviews it instead.`
                 : " You are not joining anyone. An invite or a later team-number request still needs that team's approval."}
           </span>
         </p>
@@ -534,7 +536,7 @@ export function PreferencesForm({
               : lookup.invited
                 ? `Join ${lookup.title}`
                 : lookup.teamNumber
-                  ? "Submit access request"
+                  ? "Send request"
                   : "Finish without a team"}
         </button>
       </div>

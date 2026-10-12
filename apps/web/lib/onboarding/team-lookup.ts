@@ -71,6 +71,8 @@ export type TeamLookupInput = {
   knownTeamNumber?: number | null;
   /** Explicit failure from requesting this exact team's access. */
   workspaceMissing?: boolean;
+  /** This person's open or answered request to put this team on Vantage (0733). */
+  teamRequest?: { teamNumber: number; status: string } | null;
   /** Adults get the /claim path; students are told to ask a mentor. */
   adult?: boolean;
   /** The team was set up for this person to own (not an invite to join someone else's). */
@@ -208,17 +210,29 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
     };
   }
 
-  // Server-confirmed: we asked for this exact number and no workspace was found.
+  if (input.teamRequest?.teamNumber === parsed && input.teamRequest.status === "pending") {
+    return {
+      kind: "requested",
+      tone: "info",
+      teamNumber: parsed,
+      title: `Vantage is reviewing Team ${parsed}`,
+      body: "You asked to set this team up. You'll get an email when it's approved, and you'll run the team.",
+      ok: true,
+      action: null,
+    };
+  }
+
+  // Server-confirmed: we asked for this exact number and no workspace was found. Finishing sent
+  // the Vantage team a request to set it up; nobody claims a team number on their own.
   if (serverSaw && input.workspaceMissing && (input.accessStatus === "none" || input.accessStatus == null)) {
     return {
       kind: "no_workspace",
-      tone: "warn",
+      tone: "info",
       teamNumber: parsed,
       title: `Team ${parsed} isn't on Vantage yet`,
-      body: "If you’re authorized by this team, create its workspace and invite your teammates. You can hand it over to your team lead after they join.",
+      body: "Your request to set it up went to the Vantage team. If it's approved, you'll run the team and invite your teammates.",
       ok: true,
-      // The server just said this number has no workspace: /claim starts with it filled in.
-      action: { href: `/claim?teamNumber=${parsed}`, label: "Create this team" },
+      action: null,
     };
   }
 
@@ -226,8 +240,8 @@ export function lookupTeamNumber(input: TeamLookupInput): TeamLookupResult {
     kind: "unchecked",
     tone: "info",
     teamNumber: parsed,
-    title: `This requests Team ${parsed}'s approval`,
-    body: "When you submit, Vantage checks this team number. If a workspace exists, its owners and admins receive a notification with your access request. Your profile and team preference alone do not give access.",
+    title: `You'll ask to join Team ${parsed}`,
+    body: "When you finish, the team's owners get your request. If the team isn't on Vantage yet, the Vantage team reviews it instead, and you can become its owner.",
     ok: true,
     action: null,
   };

@@ -26,7 +26,6 @@ export default function ClaimWorkspaceClient() {
   const router = useRouter();
   const [fields, setFields] = useState<ClaimFields>(EMPTY_CLAIM_FIELDS);
   const { name, teamNumber } = fields;
-  const [joinPin, setJoinPin] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [authorized, setAuthorized] = useState(false);
@@ -35,6 +34,8 @@ export default function ClaimWorkspaceClient() {
   const [error, setError] = useState("");
   const [alreadyClaimed, setAlreadyClaimed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  /** Set once the request is filed: the team opens when a platform admin approves it. */
+  const [requestedTeam, setRequestedTeam] = useState<number | null>(null);
   // Blank by default. Only an explicit ?teamNumber= (onboarding links here once the server said
   // that number has no workspace) fills the form, and never with a team this person is already
   // on: the saved team number used to prefill a team that already had a workspace.
@@ -68,8 +69,7 @@ export default function ClaimWorkspaceClient() {
     authorized &&
     /^\d{1,5}$/.test(typedTeam) &&
     Number(typedTeam) >= 1 &&
-    claimNameToSubmit(fields).length >= 2 &&
-    (!joinPin || joinPin.length === 6);
+    claimNameToSubmit(fields).length >= 2;
 
   async function submit() {
     setError("");
@@ -98,7 +98,6 @@ export default function ClaimWorkspaceClient() {
           name: claimNameToSubmit(fields),
           slug: claimSlugToSubmit(fields),
           teamNumber: Number(teamNumber),
-          joinPin: joinPin || undefined,
           termsAccepted,
           privacyAccepted,
           authorizationAcknowledged: authorized,
@@ -107,8 +106,13 @@ export default function ClaimWorkspaceClient() {
       });
       const data = (await response.json().catch(() => ({}))) as {
         id?: string;
+        requested?: boolean;
         error?: string;
       };
+      if (response.ok && data.requested) {
+        setRequestedTeam(Number(teamNumber));
+        return;
+      }
       if (!response.ok || !data.id) {
         const message = data.error ?? "Could not claim this team.";
         setError(message);
@@ -123,11 +127,25 @@ export default function ClaimWorkspaceClient() {
     }
   }
 
+  if (requestedTeam != null) {
+    return (
+      <main className="module-page">
+        <PageHeader
+          title={`Vantage is reviewing Team ${requestedTeam}`}
+          description="You'll get an email and a note in Vantage when it's approved. Then you're the team's owner and can invite everyone."
+        />
+        <p className="app-muted">
+          <a href="/onboarding?state=pending">Check the status</a> any time.
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="module-page">
       <PageHeader
-        title="Claim your FRC team"
-        description="Create your team's workspace, then invite people by email or share your team join code."
+        title="Request your FRC team"
+        description="Tell Vantage which team you run. Once it's approved, you're the team's owner and can invite people."
       />
       <form
         className="claim-form"
@@ -156,24 +174,6 @@ export default function ClaimWorkspaceClient() {
               autoComplete="organization"
               required
             />
-          </FormRow>
-          <FormRow label="Team join code (optional)">
-            <input
-              aria-describedby="claim-pin-help"
-              value={joinPin}
-              onChange={(event) =>
-                setJoinPin(event.target.value.replace(/\D/g, "").slice(0, 6))
-              }
-              inputMode="numeric"
-              autoComplete="off"
-              pattern="[0-9]{6}"
-              maxLength={6}
-              placeholder="Generate one for me"
-            />
-            <small id="claim-pin-help" className="app-muted">
-              Six numbers. Leave blank for a random code. Find it later under
-              People.
-            </small>
           </FormRow>
         </FormGrid>
         <div className="claim-consents">
@@ -253,11 +253,11 @@ export default function ClaimWorkspaceClient() {
           className="claim-submit"
           disabled={!canSubmit || submitting}
         >
-          {submitting ? "Creating team…" : "Create team"}
+          {submitting ? "Sending…" : "Request this team"}
         </Button>
         <p className="app-muted">
-          You’ll manage this team first. Invite your lead, then hand over the
-          team from People whenever you’re ready.
+          The Vantage team checks each new team before it opens. Once approved,
+          you can hand the team to your lead from People whenever you&rsquo;re ready.
         </p>
         {alreadyClaimed ? null : (
           <p className="app-muted">

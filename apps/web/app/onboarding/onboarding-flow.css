@@ -211,3 +211,260 @@ fieldset[aria-invalid="true"]{border-color:var(--critical)}
 .onboarding-role-note label{display:grid;gap:6px;margin-top:8px}
 .onboarding-role-note label>small{color:var(--muted)}
 .onboarding-busy{margin:8px 0 0;color:var(--muted);font-size:13px;text-align:right}
+
+/* ------------------------------------------------------------------ *
+ * Calm pass. One surface, one column, one decision at a time.
+ * - The page is the background, not a second card: shared hub rules
+ *   framed <main> itself, so the form sat in a card inside a card.
+ * - A thin progress bar replaces the numbered stepper, and each step
+ *   has its own heading in ink, not a repeated blue slogan.
+ * - Controls share one radius and one height; choices are quiet rows
+ *   that fill in when picked.
+ * ------------------------------------------------------------------ */
+main.onboarding-page.onboarding-flow-page{
+  display:block;
+  min-height:calc(100dvh - 64px);
+  padding:40px 16px 72px;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  background:var(--bg);
+}
+.onboarding-flow-page .onboarding-flow-card{
+  width:min(100%,600px);
+  margin:0 auto;
+  padding:40px 48px 36px;
+  border:1px solid color-mix(in srgb,var(--ink) 7%,var(--line));
+  border-radius:22px;
+  background:var(--surface);
+  box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 4%,transparent),0 18px 48px color-mix(in srgb,var(--ink) 7%,transparent);
+}
+.onboarding-flow-page .onboarding-flow-card.pending{width:min(100%,640px)}
+
+/* Header: logo, progress, heading, one line of help. Always centred. */
+.onboarding-flow-page .onboarding-flow-header{display:grid;justify-items:center;gap:0;text-align:center}
+.onboarding-flow-page .onboarding-brand{margin:0 0 22px;padding:0;border:0;background:none;box-shadow:none}
+.onboarding-flow-page .onboarding-brand svg{height:26px;width:auto}
+.onboarding-flow-page .onboarding-flow-header>span{
+  margin:0 0 8px;
+  color:var(--muted);
+  font:600 12px/1.3 var(--font-sans,inherit);
+  letter-spacing:.06em;
+}
+.onboarding-flow-page .onboarding-flow-header h1{
+  max-width:20ch;
+  margin:0;
+  color:var(--ink);
+  font-size:clamp(26px,3.6vw,32px);
+  font-weight:700;
+  line-height:1.12;
+  letter-spacing:-.022em;
+  outline:none;
+}
+.onboarding-flow-page .onboarding-flow-header .onboarding-sub{
+  max-width:44ch;
+  margin:10px auto 28px;
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.5;
+}
+.onboarding-flow-page .onboarding-flow-header .onboarding-step-hint{margin:-16px auto 26px;max-width:44ch;font-size:13px}
+
+.onboarding-flow-page .onboarding-progress-block{display:grid;justify-items:center;gap:8px;width:100%;margin:0 0 22px}
+.onboarding-flow-page .onboarding-progress-bar{
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:1fr;
+  gap:6px;
+  width:min(100%,220px);
+  max-width:none;
+  margin:0;
+  padding:0;
+  border:0;
+  background:none;
+  box-shadow:none;
+}
+.onboarding-flow-page .onboarding-progress-bar li{
+  height:4px;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--ink) 10%,transparent);
+  transition:background-color var(--dur-move,.24s) ease;
+}
+.onboarding-flow-page .onboarding-progress-bar li::before{content:none!important}
+.onboarding-flow-page .onboarding-progress-bar li.done,
+.onboarding-flow-page .onboarding-progress-bar li.current{background:var(--accent)}
+.onboarding-flow-page .onboarding-progress-label{
+  margin:0;
+  color:var(--muted);
+  font:500 12px/1.3 var(--font-sans,inherit);
+  letter-spacing:0;
+  text-transform:none;
+}
+
+/* Fields */
+.onboarding-flow-page .onboarding-form{display:grid;gap:22px;padding:0;border:0;background:none;box-shadow:none}
+.onboarding-flow-page .onboarding-form label{font-size:13px;font-weight:600;color:var(--ink)}
+.onboarding-flow-page .onboarding-form :is(input:not([type="radio"],[type="checkbox"]),select,textarea){
+  min-height:48px;
+  padding:0 14px;
+  border:1px solid color-mix(in srgb,var(--ink) 14%,var(--line));
+  border-radius:12px;
+  background:var(--surface);
+  font-size:16px;
+  transition:border-color .15s ease,box-shadow .15s ease;
+}
+.onboarding-flow-page .onboarding-form textarea{min-height:96px;padding:12px 14px;line-height:1.45}
+.onboarding-flow-page .onboarding-form :is(input:not([type="radio"],[type="checkbox"]),select,textarea):focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 16%,transparent);
+}
+.onboarding-flow-page .onboarding-row{gap:12px;padding:0;border:0;background:none;box-shadow:none}
+
+/* Questions: a plain heading, then the choices. */
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid)>legend{
+  margin:0 0 10px;
+  padding:0;
+  color:var(--ink);
+  font-size:15px;
+  font-weight:650;
+}
+.onboarding-flow-page .onboarding-focus-hint{grid-column:1/-1;margin:-4px 0 4px;color:var(--muted);font-size:13px;line-height:1.45}
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid){gap:10px;padding:0;border:0;background:none;box-shadow:none}
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid) label{
+  display:grid!important;
+  align-content:center;
+  gap:3px;
+  min-height:64px;
+  padding:13px 44px 13px 16px;
+  border:1px solid color-mix(in srgb,var(--ink) 12%,var(--line));
+  border-radius:14px;
+  background:var(--surface);
+  box-shadow:none;
+  transform:none;
+}
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid) label:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));transform:none}
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid) label.selected{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 7%,var(--surface));
+  box-shadow:inset 0 0 0 1px var(--accent);
+}
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid) label strong{font-size:15px;font-weight:650;line-height:1.25}
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid) label span{color:var(--muted);font-size:13px;font-weight:450;line-height:1.35}
+/* An empty ring until picked, then the filled check: the row says it is a choice. */
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid) label::after{
+  content:"";
+  position:absolute;
+  top:50%;
+  right:14px;
+  width:20px;
+  height:20px;
+  margin-top:-10px;
+  border:1.5px solid color-mix(in srgb,var(--ink) 22%,var(--line));
+  border-radius:50%;
+  background:transparent;
+}
+.onboarding-flow-page :is(.onboarding-cards,.onboarding-focus-grid) label.selected::after{
+  top:50%;
+  right:14px;
+  width:20px;
+  height:20px;
+  border-color:var(--accent);
+  background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat;
+}
+.onboarding-flow-page .onboarding-cards label.selected,
+.onboarding-flow-page .onboarding-focus-grid label.selected{padding-right:44px}
+
+/* Optional extras: a list row with a chevron, not a "+" that turns into an "×". */
+.onboarding-flow-page :is(.onboarding-specialty,.onboarding-optional){
+  padding:0 16px;
+  border:1px solid color-mix(in srgb,var(--ink) 10%,var(--line));
+  border-radius:14px;
+  background:var(--surface);
+  box-shadow:none;
+}
+.onboarding-flow-page .onboarding-specialty>summary{min-height:58px}
+.onboarding-flow-page .onboarding-specialty>summary strong{font-size:14px;font-weight:650}
+.onboarding-flow-page .onboarding-specialty>summary small{font-size:13px}
+.onboarding-flow-page .onboarding-specialty>summary>b{
+  width:9px;
+  height:9px;
+  margin-right:4px;
+  border:solid var(--muted);
+  border-width:0 2px 2px 0;
+  border-radius:1px;
+  background:none;
+  font-size:0;
+  transform:rotate(45deg) translate(-2px,-2px);
+}
+.onboarding-flow-page .onboarding-specialty[open]>summary>b{transform:rotate(225deg) translate(-2px,-2px)}
+
+/* The private fields: a quiet grouped panel. */
+.onboarding-flow-page .onboarding-account-fields{
+  gap:14px;
+  padding:18px 16px;
+  border:0;
+  border-radius:16px;
+  background:color-mix(in srgb,var(--ink) 3.5%,var(--surface));
+}
+.onboarding-flow-page .onboarding-account-fields legend{float:left;width:100%;margin:0 0 2px;padding:0;font-size:15px;font-weight:650}
+.onboarding-flow-page .onboarding-account-fields .onboarding-team-profile-hint{clear:both;font-size:13px}
+
+/* Team number: the field and what will happen, nothing boxed around them. */
+.onboarding-flow-page .onboarding-team-lock{display:grid;gap:10px;padding:0;border:0;background:none}
+.onboarding-flow-page .onboarding-team-lock>label{display:grid;gap:6px}
+.onboarding-flow-page .onboarding-team-lock>label small{color:var(--muted);font-weight:500}
+.onboarding-flow-page .onboarding-team-lock input[inputmode="numeric"]{font-weight:600;letter-spacing:.04em}
+.onboarding-flow-page .onboarding-lookup{
+  margin:0!important;
+  padding:12px 14px;
+  border:0;
+  border-radius:12px;
+  background:color-mix(in srgb,var(--ink) 3.5%,var(--surface));
+}
+.onboarding-flow-page .onboarding-lookup strong{font-size:14px}
+.onboarding-flow-page .onboarding-lookup span{font-size:13px!important}
+.onboarding-flow-page .onboarding-lookup.info{background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
+.onboarding-flow-page .onboarding-lookup.good{background:var(--positive-soft)}
+.onboarding-flow-page .onboarding-lookup.warn{background:var(--warning-soft)}
+.onboarding-flow-page .onboarding-lookup.error{background:var(--critical-soft)}
+
+/* Buttons: one full-width primary; Back is a quiet text button. */
+.onboarding-flow-page .onboarding-actions{display:flex;align-items:center;gap:12px;margin-top:6px;padding:0;border:0;background:none;box-shadow:none}
+.onboarding-flow-page .onboarding-actions .signin-submit{flex:1;min-height:52px;border-radius:14px;font-size:16px;font-weight:650}
+.onboarding-flow-page .onboarding-actions .signin-link{min-height:52px;padding:0 14px;color:var(--muted);font-weight:600}
+.onboarding-flow-page .onboarding-actions .signin-link:hover{color:var(--ink)}
+
+/* Waiting screen */
+.onboarding-flow-page .onboarding-request-status{border:0;border-radius:16px;background:color-mix(in srgb,var(--ink) 3.5%,var(--surface))}
+.onboarding-flow-page .onboarding-request-status span{font:600 11px/1.3 var(--font-sans,inherit);letter-spacing:.06em}
+
+/* Phones: no card at all. The screen is the surface, edge to edge. */
+@media(max-width:620px){
+  main.onboarding-page.onboarding-flow-page{padding:20px 0 48px;background:var(--surface)}
+  .onboarding-flow-page .onboarding-flow-card{padding:8px 20px 24px;border:0;border-radius:0;box-shadow:none}
+  .onboarding-flow-page .onboarding-flow-header h1{font-size:26px}
+  .onboarding-flow-page .onboarding-flow-header .onboarding-sub{margin-bottom:22px;font-size:15px}
+  .onboarding-flow-page .onboarding-focus-grid{grid-template-columns:1fr}
+  .onboarding-flow-page .onboarding-actions{flex-direction:column-reverse;align-items:stretch;gap:4px}
+  .onboarding-flow-page .onboarding-actions .signin-link{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+  .onboarding-flow-page .onboarding-progress-bar li{transition:none}
+}
+/* The wordmark on its own, no chip around it. */
+.onboarding-flow-page .onboarding-brand .brand-logo{display:inline-flex;padding:0;border:0;border-radius:0;background:none;box-shadow:none;color:var(--ink)}
+.onboarding-flow-page .onboarding-brand .brand-logo svg{height:22px;width:auto}
+.onboarding-flow-page .onboarding-flow-header :is(h1,.onboarding-sub,.onboarding-step-hint){text-wrap:balance}
+.onboarding-flow-page .onboarding-lookup strong{color:var(--ink)}
+/* Your answers: label left, answer right, hairlines between. */
+.onboarding-flow-page .onboarding-review-list{display:grid;grid-template-columns:1fr;gap:0;margin:0;padding:0 16px;overflow:visible;border:1px solid color-mix(in srgb,var(--ink) 10%,var(--line));border-radius:16px;background:var(--surface)}
+.onboarding-flow-page .onboarding-review-list>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:13px 0;background:none}
+.onboarding-flow-page .onboarding-review-list>div+div{border-top:1px solid color-mix(in srgb,var(--ink) 8%,var(--line))}
+.onboarding-flow-page .onboarding-review-list dt{flex:none;color:var(--muted);font-size:14px;font-weight:500}
+.onboarding-flow-page .onboarding-review-list dd{margin:0;min-width:0;color:var(--ink);font-size:14px;font-weight:600;text-align:right;overflow-wrap:anywhere}
+/* What happens next: a calm note, not a green alert. */
+.onboarding-flow-page .onboarding-security-note{border:0;border-radius:14px;background:color-mix(in srgb,var(--ink) 3.5%,var(--surface))}
+.onboarding-flow-page .onboarding-security-note>b{background:var(--accent);color:#fff}
+.onboarding-flow-page .onboarding-security-note strong{font-size:14px}
+.onboarding-flow-page .onboarding-security-note span{color:var(--muted);font-size:13px}

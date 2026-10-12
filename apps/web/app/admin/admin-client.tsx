@@ -535,7 +535,7 @@ function TeamPanel({
 // The page
 // ---------------------------------------------------------------------------------------------
 
-function AdminClientInner() {
+function AdminClientInner({ children }: { children?: React.ReactNode }) {
   const searchParams = useSearchParams();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [teamQuery, setTeamQuery] = useState("");
@@ -587,6 +587,13 @@ function AdminClientInner() {
 
   useEffect(() => {
     void load();
+  }, [load]);
+
+  // Approving a team request (team-governance.tsx) creates a team: show it.
+  useEffect(() => {
+    const reload = () => void load();
+    window.addEventListener("vantage:admin-teams-changed", reload);
+    return () => window.removeEventListener("vantage:admin-teams-changed", reload);
   }, [load]);
 
   const visible = useMemo(() => {
@@ -643,6 +650,8 @@ function AdminClientInner() {
           {listMessage}
         </p>
       ) : null}
+
+      {children}
 
       {organizations.length === 0 ? (
         <EmptyState soft title={copyText.title} description={copyText.description}>
@@ -710,7 +719,8 @@ function AdminClientInner() {
   );
 }
 
-export default function AdminClient() {
+/** `children` render under the page header, above the team list (team requests and bans). */
+export default function AdminClient({ children }: { children?: React.ReactNode } = {}) {
   return (
     <Suspense
       fallback={
@@ -719,7 +729,7 @@ export default function AdminClient() {
         </main>
       }
     >
-      <AdminClientInner />
+      <AdminClientInner>{children}</AdminClientInner>
     </Suspense>
   );
 }

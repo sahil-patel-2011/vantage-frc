@@ -50,6 +50,15 @@ export type OnboardingState = {
   currentStep: "profile" | "team" | "preferences" | "complete";
   startedAt: string | null;
   savedAt: string | null;
+  /** The latest request to put a team on Vantage (migration 0733); absent on older servers. */
+  teamRequest?: {
+    id: string;
+    teamNumber: number;
+    status: "pending" | "approved" | "declined" | "withdrawn" | "forwarded";
+    declineReason: string | null;
+  } | null;
+  /** Teams this person is on that a ban suspended. */
+  bannedTeams?: Array<{ teamNumber: number; orgName: string }>;
 };
 
 export const GENDERS: Array<{ value: OnboardingGender; label: string }> = [
@@ -88,10 +97,10 @@ export const AFFILIATIONS: Array<{ value: TeamAffiliationOption; label: string }
 ];
 
 export const FOCUS_OPTIONS: Array<{ value: OnboardingFocus; label: string; description: string }> = [
-  { value: "competition", label: "Competition", description: "Scouting, match strategy, drive team, event ops" },
-  { value: "build", label: "Build & code", description: "Robot readiness, CAD, programming" },
-  { value: "business", label: "Business", description: "Sponsors, grants, budgets, awards" },
-  { value: "leadership", label: "Leadership", description: "Coordination, safety, season planning" },
+  { value: "competition", label: "Competing", description: "Scouting, match strategy and the drive team" },
+  { value: "build", label: "Building the robot", description: "Mechanical, CAD, wiring and code" },
+  { value: "business", label: "Running the business", description: "Sponsors, grants, budget and awards" },
+  { value: "leadership", label: "Leading the team", description: "Season plans, schedules and safety" },
 ];
 
 export function pendingInviteDestination() {

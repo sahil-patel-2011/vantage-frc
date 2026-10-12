@@ -439,7 +439,16 @@ export type PendingStage = {
 export type PendingMeanwhileLink = { href: string; label: string; detail: string };
 
 export type OnboardingPendingPlan = {
-  kind: "pending" | "invited" | "declined" | "no_workspace" | "no_team" | "platform_admin";
+  kind:
+    | "pending"
+    | "invited"
+    | "declined"
+    | "no_workspace"
+    | "no_team"
+    | "platform_admin"
+    | "team_requested"
+    | "team_request_declined"
+    | "banned";
   eyebrow: string;
   headline: string;
   /** Who actually received a notification — empty string when nobody did. */
@@ -472,6 +481,13 @@ const MEANWHILE_BASE: PendingMeanwhileLink[] = [
   },
 ];
 
+/** The latest request to put a team on Vantage, as GET /api/onboarding reports it. */
+export type PendingTeamRequest = {
+  teamNumber: number;
+  status: "pending" | "approved" | "declined" | "withdrawn" | "forwarded";
+  declineReason: string | null;
+};
+
 export function buildOnboardingPendingPlan(input: {
   accessStatus: TeamLookupAccessStatus | null | undefined;
   teamNumber: number | null;
@@ -480,8 +496,44 @@ export function buildOnboardingPendingPlan(input: {
   workspaceMissing?: boolean;
   /** A platform admin on no team: their way on is the admin console, not "join a team". */
   platformAdmin?: boolean;
+  teamRequest?: PendingTeamRequest | null;
+  /** Teams this person is on that a ban suspended. */
+  bannedTeams?: Array<{ teamNumber: number; orgName: string }>;
 }): OnboardingPendingPlan {
   const teamLabel = input.orgName ?? (input.teamNumber ? `FRC Team ${input.teamNumber}` : "your team");
+
+  // A suspended team comes first: an empty Home would be the only other clue.
+  const banned = input.bannedTeams?.[0];
+  if (banned && input.accessStatus !== "invited" && input.accessStatus !== "pending") {
+    return {
+      kind: "banned",
+      eyebrow: "TEAM SUSPENDED",
+      headline: `Team ${banned.teamNumber} is suspended from Vantage`,
+      notified: "",
+      stages: [
+        {
+          key: "why",
+          title: "Why",
+          detail: "Vantage suspended this team for breaking its Terms of Service or Privacy Policy.",
+          phase: "done",
+        },
+        {
+          key: "data",
+          title: "Nothing was deleted",
+          detail: "Your account is unaffected, and the team's work is kept while the suspension is reviewed.",
+          phase: "current",
+        },
+        {
+          key: "next",
+          title: "Questions?",
+          detail: "Reply to any Vantage email, or join another team with an invite or a team code.",
+          phase: "upcoming",
+        },
+      ],
+      meanwhile: MEANWHILE_BASE,
+      primaryAction: { kind: "edit", label: "Use a different team" },
+    };
+  }
 
   if (input.platformAdmin && input.accessStatus !== "invited" && input.accessStatus !== "pending") {
     return {
@@ -506,6 +558,53 @@ export function buildOnboardingPendingPlan(input: {
       ],
       meanwhile: MEANWHILE_BASE,
       primaryAction: { kind: "admin", label: "Open the admin console" },
+    };
+  }
+
+  const request = input.teamRequest;
+  if (request?.status === "pending" && input.accessStatus !== "invited") {
+    return {
+      kind: "team_requested",
+      eyebrow: "TEAM REQUEST SENT",
+      headline: `Vantage is reviewing Team ${request.teamNumber}`,
+      notified: "The Vantage team got your request with your name, verified email and role.",
+      stages: [
+        { key: "profile", title: "Request sent", detail: "Saved the moment you finished. You don't need to send it again.", phase: "done" },
+        {
+          key: "review",
+          title: "Vantage checks it",
+          detail: `Team ${request.teamNumber} isn't on Vantage yet, or nobody leads it yet, so the Vantage team reviews who should run it.`,
+          phase: "current",
+        },
+        {
+          key: "owner",
+          title: "You run the team",
+          detail: "Once approved you're its owner: invite teammates and choose what each person can see.",
+          phase: "upcoming",
+        },
+      ],
+      meanwhile: MEANWHILE_BASE,
+      primaryAction: { kind: "check", label: "Check status" },
+    };
+  }
+  if (request?.status === "declined" && (input.accessStatus === "none" || input.accessStatus == null)) {
+    return {
+      kind: "team_request_declined",
+      eyebrow: "REQUEST NOT APPROVED",
+      headline: `Vantage didn't approve the request for Team ${request.teamNumber}`,
+      notified: "",
+      stages: [
+        {
+          key: "why",
+          title: "What Vantage said",
+          detail: request.declineReason?.trim() || "No reason was given. The usual cause is a team number that belongs to someone else.",
+          phase: "done",
+        },
+        { key: "fix", title: "Check the number", detail: "Make sure it's the number on your robot's bumpers.", phase: "current" },
+        { key: "again", title: "Ask again, or ask your mentor", detail: "A team's head mentor is usually who sets it up.", phase: "upcoming" },
+      ],
+      meanwhile: MEANWHILE_BASE,
+      primaryAction: { kind: "edit", label: "Change my team" },
     };
   }
 
