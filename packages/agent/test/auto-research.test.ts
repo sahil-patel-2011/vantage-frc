@@ -137,8 +137,8 @@ describe("finish / verify report", () => {
     expect(shouldRefuseEarlyFinal(report, "Design a coral intake", "cad")).toBe(false);
   });
 
-  it("gives agent/CAD completions a larger token budget", () => {
-    expect(chatCompletionMaxTokens("agent")).toBe(4096);
-    expect(chatCompletionMaxTokens("chat")).toBe(1024);
+  it("gives chat and agent calls the same full output room", () => {
+    expect(chatCompletionMaxTokens("agent")).toBe(16_000);
+    expect(chatCompletionMaxTokens("chat")).toBe(16_000);
   });
 });

@@ -6,7 +6,12 @@ import type {
   ChatToolDefinition,
   ContextItem,
 } from "./index";
-import { compactChatTurns, compactContextItems, contextTokenBudgetForAdapter } from "./context-compact";
+import {
+  chatHistoryBudgetForAdapter,
+  compactChatTurns,
+  compactContextItems,
+  contextTokenBudgetForAdapter,
+} from "./context-compact";
 import { buildVantageChatSystemPrompt } from "./chat-system-prompt";
 import { userTurnWithContext } from "./untrusted";
 import { currentSeasonYear, packForYear } from "@vantage/game-year";
@@ -48,7 +53,7 @@ export type HttpChatAdapterConfig = {
   /** Extra headers (OpenRouter HTTP-Referer / X-Title). Never log values. */
   extraHeaders?: Record<string, string>;
   /**
-   * Hard output cap sent on every request. Anthropic calls always send one
+   * Output room sent on every request. Anthropic calls always send one
    * (chatCompletionMaxTokens); OpenAI-shaped calls send one only when this is set, as the
    * gift-funded adapter does so a call's cost has a known ceiling.
    */
@@ -204,7 +209,7 @@ export class HttpChatAdapter implements ChatAdapter {
 
   private prepare(context: ContextItem[], history: ChatMessage[]) {
     const compacted = compactContextItems(context, contextTokenBudgetForAdapter(this));
-    const turns = compactChatTurns(history);
+    const turns = compactChatTurns(history, chatHistoryBudgetForAdapter(this));
     const withSummary: ContextItem[] = turns.summary
       ? [
           ...compacted.items,
@@ -428,7 +433,7 @@ const HAIKU_5_MIN_TOKENS = { low: 4096, medium: 8192, high: 16000 } as const;
 
 /**
  * Claude Haiku 5.5 thinks before it answers, and that thinking counts against max_tokens: a
- * 1,024-token chat cap could be spent before any text came back. Send the team's effort level
+ * small cap could be spent before any text came back. Send the team's effort level
  * (medium unless they picked Low or High) and leave room for the reply at that level. Other
  * models are sent exactly as before.
  */
@@ -441,8 +446,17 @@ export function anthropicOutputSettings(
   return { max_tokens: Math.max(maxTokens, HAIKU_5_MIN_TOKENS[effort]), output_config: { effort } };
 }
 
-export function chatCompletionMaxTokens(capability: string): number {
-  return /^(agent|cad|coding|maintenance|bugbot)/i.test(capability.trim()) ? 4096 : 1024;
+/**
+ * The output room every chat and agent call gets. It is set high on purpose: a small cap cut
+ * answers off partway (and Claude Haiku 5.5's thinking counts against it), so how long a reply
+ * should be is said in the system prompt instead (chat-system-prompt.ts). It stays under the
+ * smallest output limit in the model list, and a call is billed for what it returns, not for
+ * this number.
+ */
+export const CHAT_MAX_OUTPUT_TOKENS = 16_000;
+
+export function chatCompletionMaxTokens(_capability?: string): number {
+  return CHAT_MAX_OUTPUT_TOKENS;
 }
 
 function defaultBase(provider: HttpChatAdapterConfig["provider"]) {

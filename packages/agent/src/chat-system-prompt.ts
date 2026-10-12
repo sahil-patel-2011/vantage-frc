@@ -50,7 +50,8 @@ export function buildVantageChatSystemPrompt(input: ChatSystemPromptInput = {}):
     ...HONESTY_RULES,
     ...TOOL_LIMITS,
     UNTRUSTED_CONTEXT_RULE,
-    "Style: short paragraphs or tight bullets that a 15-year-old can act on.",
+    "Style: lead with the answer, in short paragraphs or tight bullets that a 15-year-old can act on.",
+    "Length: match the ask. A quick question gets a few lines. A plan, code, a review, a report or a CAD brief gets everything it needs, finished: never stop partway, never pad.",
     "Use only grounded facts from the user message, injected org session context, memories, and tool outputs.",
   ];
   lines.push(...gameContextLines(input.game));

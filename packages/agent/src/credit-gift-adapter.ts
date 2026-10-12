@@ -17,7 +17,7 @@ import {
   type PoolKeyEnvelope,
 } from "@vantage/billing";
 import type { ChatAdapter, ChatMessage, ChatToolDefinition, ContextItem } from "./index";
-import { HttpChatAdapter, ProviderRateLimitError } from "./http-chat-adapter";
+import { chatCompletionMaxTokens, HttpChatAdapter, ProviderRateLimitError } from "./http-chat-adapter";
 import { KeyFailoverChatAdapter, type FailoverKey } from "./key-failover-adapter";
 
 /**
@@ -34,10 +34,6 @@ import { KeyFailoverChatAdapter, type FailoverKey } from "./key-failover-adapter
 
 const GOOGLE_OPENAI_COMPAT_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 
-/** OpenAI-shaped calls get the same output cap Anthropic chat calls carry. */
-function giftOutputCap(capability: string): number {
-  return /^(agent|cad|coding|maintenance|bugbot)/i.test(capability.trim()) ? 4096 : 1024;
-}
 
 /**
  * A call the provider answered with an error status was not billed, so its hold is released.
@@ -190,7 +186,8 @@ export async function resolveCreditGiftAdapter(
         fetchImpl: input.fetchImpl,
         providerLabel: family.provider,
         capability,
-        maxOutputTokens: giftOutputCap(capability),
+        // OpenAI-shaped calls get the same output room Anthropic chat calls carry.
+        maxOutputTokens: chatCompletionMaxTokens(capability),
       }),
     });
   }
