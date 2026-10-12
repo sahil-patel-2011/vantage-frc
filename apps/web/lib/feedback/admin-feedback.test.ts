@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeAdminGroup } from "../../app/admin/admin-subnav";
-import { adminRelatedLinks } from "../admin";
+import { ADMIN_DESTINATIONS, activeAdminDestination } from "../admin/admin-nav";
 import {
   FEEDBACK_STATUSES,
   FEEDBACK_STATUS_LABELS,
@@ -84,10 +83,10 @@ describe("mapFeedbackRow", () => {
 });
 
 describe("where the Feedback view lives in /admin", () => {
-  it("sits with the other inboxes under Data, and the page is reachable from the related links", () => {
-    const group = activeAdminGroup("/admin/feedback");
-    expect(group.label).toBe("Data");
-    expect(group.links.map((link) => link.href)).toContain("/admin/feedback");
-    expect(adminRelatedLinks().some((link) => link.href === "/admin/feedback")).toBe(true);
+  it("is one of the main admin destinations, and lights up on its own page", () => {
+    // The admin rebuild made the inboxes first-class: Feedback sits in the one row of places
+    // (Overview, Teams, AI credits, Health, Feedback, Platform admins, More), not under Data.
+    expect(ADMIN_DESTINATIONS.map((dest) => dest.href)).toContain("/admin/feedback");
+    expect(activeAdminDestination("/admin/feedback")).toBe("feedback");
   });
 });
