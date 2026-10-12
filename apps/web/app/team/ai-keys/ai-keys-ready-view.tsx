@@ -583,7 +583,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 ) : (
                   <fieldset className="ai-keys-pool">
                     <legend>Automode pool</legend>
-                    {modelOptions.map((opt) => {
+                    {modelOptions.filter((opt) => !opt.fixedOnly).map((opt) => {
                       const checked = routingDraft.enabledModelIds.includes(opt.id);
                       const providerReady =
                         opt.provider === "openai-compatible"

@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { HttpChatAdapter, anthropicOutputSettings } from "../src/http-chat-adapter";
+import { pickByokModelForFeature } from "../src/byok-model-routing";
+import { anthropicHistoryWithCache } from "../src/prompt-caching";
 
 function anthropicReply() {
   return new Response(
@@ -16,11 +18,36 @@ function anthropicReply() {
 }
 
 describe("Claude Haiku 5.5 requests", () => {
-  it("asks for low effort and leaves room for thinking, only on Haiku 5.x", () => {
-    expect(anthropicOutputSettings("claude-haiku-5-5", 1024)).toEqual({ max_tokens: 4096, output_config: { effort: "low" } });
-    expect(anthropicOutputSettings("claude-haiku-5-5", 8000)).toEqual({ max_tokens: 8000, output_config: { effort: "low" } });
-    expect(anthropicOutputSettings("claude-sonnet-5", 1024)).toEqual({ max_tokens: 1024 });
+  it("sends medium effort by default, the team's pick otherwise, with room for thinking, only on Haiku 5.x", () => {
+    expect(anthropicOutputSettings("claude-haiku-5-5", 1024)).toEqual({ max_tokens: 8192, output_config: { effort: "medium" } });
+    expect(anthropicOutputSettings("claude-haiku-5-5", 1024, "low")).toEqual({ max_tokens: 4096, output_config: { effort: "low" } });
+    expect(anthropicOutputSettings("claude-haiku-5-5", 1024, "high")).toEqual({ max_tokens: 16000, output_config: { effort: "high" } });
+    expect(anthropicOutputSettings("claude-haiku-5-5", 20000, "low")).toEqual({ max_tokens: 20000, output_config: { effort: "low" } });
+    expect(anthropicOutputSettings("claude-sonnet-5", 1024, "high")).toEqual({ max_tokens: 1024 });
     expect(anthropicOutputSettings("claude-haiku-4-5", 1024)).toEqual({ max_tokens: 1024 });
+  });
+
+  it("offers Low / Medium / High as Fixed choices; Automode stays on Medium", () => {
+    const pick = (fixedModelId: string) =>
+      pickByokModelForFeature({ feature: "chat", mode: "fixed", fixedModelId, availableProviders: ["anthropic"] });
+    expect(pick("anthropic:claude-haiku-5-5")?.effort).toBe("medium");
+    expect(pick("anthropic:claude-haiku-5-5@low")).toMatchObject({ modelId: "claude-haiku-5-5", effort: "low" });
+    expect(pick("anthropic:claude-haiku-5-5@high")).toMatchObject({ modelId: "claude-haiku-5-5", effort: "high" });
+    const auto = pickByokModelForFeature({ feature: "chat", mode: "automode", availableProviders: ["anthropic"] });
+    expect(auto?.id).toBe("anthropic:claude-haiku-5-5");
+  });
+
+  it("caches the conversation so far, and leaves it alone with caching off or no history", () => {
+    const history = [
+      { role: "user" as const, content: "Who is strong at defense?" },
+      { role: "assistant" as const, content: "Team 1678 and 254." },
+    ];
+    expect(anthropicHistoryWithCache(history, true)).toEqual([
+      history[0],
+      { role: "assistant", content: [{ type: "text", text: "Team 1678 and 254.", cache_control: { type: "ephemeral" } }] },
+    ]);
+    expect(anthropicHistoryWithCache(history, false)).toEqual(history);
+    expect(anthropicHistoryWithCache([], true)).toEqual([]);
   });
 
   it("sends no sampling parameters or prefill, and reads the answer past a thinking block", async () => {
@@ -37,8 +64,8 @@ describe("Claude Haiku 5.5 requests", () => {
     expect(result.text).toBe("Team 254 is the strongest pick.");
     const body = JSON.parse(String((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body));
     expect(body.model).toBe("claude-haiku-5-5");
-    expect(body.output_config).toEqual({ effort: "low" });
-    expect(body.max_tokens).toBeGreaterThanOrEqual(4096);
+    expect(body.output_config).toEqual({ effort: "medium" });
+    expect(body.max_tokens).toBeGreaterThanOrEqual(8192);
     for (const key of ["temperature", "top_p", "top_k", "thinking"]) expect(body).not.toHaveProperty(key);
     expect(body.messages.at(-1).role).toBe("user");
   });

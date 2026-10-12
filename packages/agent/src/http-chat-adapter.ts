@@ -12,6 +12,7 @@ import { userTurnWithContext } from "./untrusted";
 import { currentSeasonYear, packForYear } from "@vantage/game-year";
 import { ChatUpstreamTimeoutError, resolveChatFetchTimeoutMs } from "./chat-timeout";
 import {
+  anthropicHistoryWithCache,
   applyAnthropicCacheControl,
   computeCacheAwareCost,
   openAiPromptCachePreference,
@@ -52,6 +53,8 @@ export type HttpChatAdapterConfig = {
    * gift-funded adapter does so a call's cost has a known ceiling.
    */
   maxOutputTokens?: number;
+  /** Anthropic `output_config.effort` for models that take it (Claude Haiku 5.5). */
+  effort?: "low" | "medium" | "high";
 };
 
 /**
@@ -133,6 +136,7 @@ export class HttpChatAdapter implements ChatAdapter {
 
   private readonly extraHeaders: Record<string, string>;
   private readonly maxOutputTokens: number | null;
+  private readonly effort: "low" | "medium" | "high" | undefined;
 
   constructor(config: HttpChatAdapterConfig) {
     this.kind = config.provider;
@@ -162,6 +166,7 @@ export class HttpChatAdapter implements ChatAdapter {
     this.extraHeaders = config.extraHeaders ?? {};
     this.maxOutputTokens =
       config.maxOutputTokens && config.maxOutputTokens > 0 ? Math.floor(config.maxOutputTokens) : null;
+    this.effort = config.effort;
   }
 
   /**
@@ -188,8 +193,12 @@ export class HttpChatAdapter implements ChatAdapter {
         bytes(input.history ?? []) +
         bytes(input.tools ?? []) +
         256 * wrappedItems,
+      // The cap the request will actually send (Haiku 5.5 gets room for thinking), so a reserved
+      // worst-case cost is never below what the call can spend.
       maxOutputTokens:
-        this.kind === "anthropic" ? (this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability)) : this.maxOutputTokens,
+        this.kind === "anthropic"
+          ? anthropicOutputSettings(this.model, this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability), this.effort).max_tokens
+          : this.maxOutputTokens,
     };
   }
 
@@ -255,9 +264,9 @@ export class HttpChatAdapter implements ChatAdapter {
         },
         body: JSON.stringify({
           model: this.model,
-          ...anthropicOutputSettings(this.model, this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability)),
+          ...anthropicOutputSettings(this.model, this.maxOutputTokens ?? chatCompletionMaxTokens(this.capability), this.effort),
           system: systemBlocks,
-          messages: [...history, { role: "user", content: userTurnWithContext(message, context) }],
+          messages: [...anthropicHistoryWithCache(history, caching), { role: "user", content: userTurnWithContext(message, context) }],
           ...(tools.length
             ? {
                 tools: tools.map((tool) => ({
@@ -414,18 +423,22 @@ export class HttpChatAdapter implements ChatAdapter {
   }
 }
 
+/** Room for thinking plus the reply, per effort level: thinking counts against max_tokens. */
+const HAIKU_5_MIN_TOKENS = { low: 4096, medium: 8192, high: 16000 } as const;
+
 /**
- * Claude Haiku 5.5 thinks before it answers unless told otherwise, and that thinking counts
- * against max_tokens: a 1,024-token chat cap could be spent before any text came back. Vantage's
- * fast tier wants quick answers, so ask it to think little (effort "low", which also lets it skip
- * thinking on simple asks) and leave room for the reply. Other models are sent exactly as before.
+ * Claude Haiku 5.5 thinks before it answers, and that thinking counts against max_tokens: a
+ * 1,024-token chat cap could be spent before any text came back. Send the team's effort level
+ * (medium unless they picked Low or High) and leave room for the reply at that level. Other
+ * models are sent exactly as before.
  */
 export function anthropicOutputSettings(
   model: string,
   maxTokens: number,
-): { max_tokens: number; output_config?: { effort: "low" } } {
+  effort: "low" | "medium" | "high" = "medium",
+): { max_tokens: number; output_config?: { effort: "low" | "medium" | "high" } } {
   if (!/^claude-haiku-5/i.test(model.trim())) return { max_tokens: maxTokens };
-  return { max_tokens: Math.max(maxTokens, 4096), output_config: { effort: "low" } };
+  return { max_tokens: Math.max(maxTokens, HAIKU_5_MIN_TOKENS[effort]), output_config: { effort } };
 }
 
 export function chatCompletionMaxTokens(capability: string): number {

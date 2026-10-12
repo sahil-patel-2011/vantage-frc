@@ -13,6 +13,7 @@ import {
   GOOGLE_FREE_TIER_MODEL,
   LOCAL_OPENAI_COMPAT_LABEL,
   pickByokModelForFeature,
+  type ByokEffort,
   type ByokModelOption,
   type ByokModelProvider,
 } from "./byok-model-routing";
@@ -695,6 +696,7 @@ function httpAdapterFromLlmKey(
   apiKey: string,
   model: string,
   prices: PromptCachePrices,
+  effort?: ByokEffort,
 ): HttpChatAdapter {
   const baseUrl = row.baseUrl?.trim() || undefined;
   const normalized = normalizeProvider(row.provider);
@@ -718,6 +720,7 @@ function httpAdapterFromLlmKey(
     promptCachingEnabled: input.promptCachingEnabled,
     prices,
     fetchImpl: input.fetchImpl,
+    ...(provider === "anthropic" && effort ? { effort } : {}),
   });
 }
 
@@ -1100,7 +1103,7 @@ export async function resolveOrgChatAdapterWithProvenance(
     if (chosen.provider === "openai" || chosen.provider === "anthropic") {
       const rows = orgKeys.rows.filter((r) => normalizeProvider(r.provider) === chosen.provider);
       const adapter = await failoverOverKeys(client, rows, input, memberKeyIds, (row, apiKey) =>
-        httpAdapterFromLlmKey(row, input, apiKey, chosen.modelId, pricesFromOption(chosen)),
+        httpAdapterFromLlmKey(row, input, apiKey, chosen.modelId, pricesFromOption(chosen), chosen.effort),
       );
       if (adapter) return resolved(adapter, keyRowSource(rows[0]!));
     }

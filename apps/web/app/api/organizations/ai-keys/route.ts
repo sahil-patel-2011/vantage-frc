@@ -289,6 +289,7 @@ export async function GET(request: Request) {
           label: m.label,
           tier: m.tier,
           tierLabel: m.tierLabel,
+          ...(m.fixedOnly ? { fixedOnly: true } : {}),
         })),
       };
     });
