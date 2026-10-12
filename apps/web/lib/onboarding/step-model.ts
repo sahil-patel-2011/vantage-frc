@@ -335,6 +335,54 @@ export function validateOnboardingStep(
 }
 
 /**
+ * Every screen up to and including `upTo`, in order: the first answer still missing. Finish used
+ * to check only its own screen, so someone who reopened on it (or whose team was set up while
+ * they were away, which adds the funding questions) pressed it, was refused by the server and
+ * landed back on the team screen with no word about why.
+ */
+export function firstMissingAnswer(
+  upTo: OnboardingSetupStep,
+  draft: OnboardingDraft,
+  context: OnboardingStepContext,
+  now: Date = new Date(),
+): { step: OnboardingSetupStep; field: string; message: string } | null {
+  const last = ONBOARDING_SETUP_STEPS.indexOf(upTo);
+  for (const step of ONBOARDING_SETUP_STEPS.slice(0, last + 1)) {
+    if (step === "team" && skipsTeamStep(context)) continue;
+    const result = validateOnboardingStep(step, draft, context, now);
+    if (!result.ok) return { step, field: result.field, message: result.message };
+  }
+  return null;
+}
+
+/** Each earlier screen that still needs an answer, with what it needs. Listed on Finish. */
+export function missingAnswersBefore(
+  step: OnboardingSetupStep,
+  draft: OnboardingDraft,
+  context: OnboardingStepContext,
+  now: Date = new Date(),
+): Array<{ step: OnboardingSetupStep; field: string; message: string }> {
+  const gaps: Array<{ step: OnboardingSetupStep; field: string; message: string }> = [];
+  for (const earlier of ONBOARDING_SETUP_STEPS.slice(0, ONBOARDING_SETUP_STEPS.indexOf(step))) {
+    if (earlier === "team" && skipsTeamStep(context)) continue;
+    const result = validateOnboardingStep(earlier, draft, context, now);
+    if (!result.ok) gaps.push({ step: earlier, field: result.field, message: result.message });
+  }
+  return gaps;
+}
+
+/** Whether a screen's required answers are all there (for the progress marks). */
+export function onboardingStepComplete(
+  step: OnboardingSetupStep,
+  draft: OnboardingDraft,
+  context: OnboardingStepContext,
+  now: Date = new Date(),
+): boolean {
+  if (step === "team" && skipsTeamStep(context)) return true;
+  return validateOnboardingStep(step, draft, context, now).ok;
+}
+
+/**
  * Someone who joined through an invite and is not the team's head has nothing to answer on the
  * team screen: the number is locked to their team and the rest is for whoever runs it. They go
  * You, then Finish; their focus keeps the default their role gave it (changeable in Account).
@@ -387,13 +435,15 @@ export function onboardingAdvance(
   if (state.step === "pending" || state.step === "done") {
     return { ...state, submit: false };
   }
-  const result = validateOnboardingStep(state.step, state.draft, context, now);
-  if (!result.ok) {
+  // This screen and every one before it: a gap on an earlier screen sends the person back to it,
+  // with the message beside the field, instead of a refusal from the server.
+  const missing = firstMissingAnswer(state.step, state.draft, context, now);
+  if (missing) {
     return {
-      step: state.step,
+      step: missing.step,
       draft: state.draft,
-      error: result.message,
-      errorField: result.field,
+      error: missing.message,
+      errorField: missing.field,
       submit: false,
     };
   }

@@ -242,3 +242,29 @@ body.has-app-shell main.settings-home {
 .settings-pane :is(.settings-anchor, [id="delete-account"], [id="team-delete-title"]) {
   scroll-margin-top: 84px;
 }
+
+/* While the role loads: three quiet rows where the team's settings will be. */
+.settings-row-skeleton {
+  display: block;
+  min-height: 44px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ink) 5%, transparent) 0%, color-mix(in srgb, var(--ink) 9%, transparent) 50%, color-mix(in srgb, var(--ink) 5%, transparent) 100%);
+  background-size: 200% 100%;
+  animation: settings-skeleton 1.4s ease-in-out infinite;
+}
+@keyframes settings-skeleton {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-row-skeleton { animation: none; }
+}
+.settings-retry {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}

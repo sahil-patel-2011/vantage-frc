@@ -10,7 +10,8 @@ export type OnboardingSetupStep = (typeof ONBOARDING_SETUP_STEPS)[number];
 /** `pending` = submitted, waiting on a team. `done` = submitted and already in. */
 export type OnboardingFlowStep = OnboardingSetupStep | "pending" | "done";
 
-export type OnboardingStepPhase = "done" | "current" | "upcoming";
+/** "missing": a step before this one that still lacks a required answer. */
+export type OnboardingStepPhase = "done" | "current" | "upcoming" | "missing";
 
 export type OnboardingStepMeta = {
   id: OnboardingSetupStep;
@@ -38,7 +39,7 @@ export const ONBOARDING_STEP_COPY: Record<
   preferences: {
     label: "Finish",
     shortLabel: "Finish",
-    description: "Check that this looks right, then send it. You can change any of it later in Account.",
+    description: "Check your answers. You can change any of them later in Account.",
   },
 };
 
@@ -78,14 +79,24 @@ function visibleSetupSteps(options?: { skipTeam?: boolean }): OnboardingSetupSte
   return options?.skipTeam ? ONBOARDING_SETUP_STEPS.filter((id) => id !== "team") : [...ONBOARDING_SETUP_STEPS];
 }
 
-/** Soft-UI stepper metadata for the setup steps (two when the team step is skipped). */
-export function buildOnboardingStepMeta(current: OnboardingFlowStep, options?: { skipTeam?: boolean }): OnboardingStepMeta[] {
-  return visibleSetupSteps(options).map((id, index) => ({
-    id,
-    index,
-    ...ONBOARDING_STEP_COPY[id],
-    phase: onboardingStepPhase(id, current),
-  }));
+/**
+ * Soft-UI stepper metadata for the setup steps (two when the team step is skipped). With
+ * `complete`, a step before the current one only reads as done when its answers are all there:
+ * someone who reopened on Finish saw a ticked team step that still had no funding answer.
+ */
+export function buildOnboardingStepMeta(
+  current: OnboardingFlowStep,
+  options?: { skipTeam?: boolean; complete?: (step: OnboardingSetupStep) => boolean },
+): OnboardingStepMeta[] {
+  return visibleSetupSteps(options).map((id, index) => {
+    const phase = onboardingStepPhase(id, current);
+    return {
+      id,
+      index,
+      ...ONBOARDING_STEP_COPY[id],
+      phase: phase === "done" && options?.complete && !options.complete(id) ? "missing" : phase,
+    };
+  });
 }
 
 /** One-line progress for screen readers and Soft-UI clarity. */
