@@ -40,6 +40,28 @@ function useLocationSearch(): string {
   return search;
 }
 
+/**
+ * "Join code", "Money managers" and "Delete account" are parts of a page (#join-code …). The
+ * page fills in after its data arrives, so the browser's own jump finds nothing: wait for the
+ * part to exist, then bring it into view once.
+ */
+function useScrollToHash(pathname: string, search: string) {
+  useEffect(() => {
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!id) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      const target = document.getElementById(id);
+      tries += 1;
+      if (!target && tries < 40) return;
+      window.clearInterval(timer);
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target?.scrollIntoView({ block: "start", behavior: still ? "auto" : "smooth" });
+    }, 100);
+    return () => window.clearInterval(timer);
+  }, [pathname, search]);
+}
+
 /** Who is looking and on which team, from the shared /api/me read (no extra request). */
 function useSettingsViewer(orgId: string) {
   const [session, setSession] = useState<ProductSession | null>(null);
@@ -146,6 +168,7 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
   const viewer = useSettingsViewer(orgId);
   const items = visibleSettingsNav(viewer.role);
   const activeId = activeSettingsId(items, pathname, search);
+  useScrollToHash(pathname, search);
   return (
     <InSettingsLayout.Provider value>
       <div className="settings-frame">

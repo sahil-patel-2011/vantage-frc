@@ -237,3 +237,8 @@ body.has-app-shell main.settings-home {
   grid-template-columns: minmax(0, 1fr);
   max-width: 760px;
 }
+
+/* A jump to part of a settings page (#join-code) lands below the top bar, not under it. */
+.settings-pane :is(.settings-anchor, [id="delete-account"], [id="team-delete-title"]) {
+  scroll-margin-top: 84px;
+}
