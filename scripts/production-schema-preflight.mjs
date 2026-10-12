@@ -30,6 +30,9 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // Operations trust: /api/hours reads hour_logs.entry_source and correction columns; the
   // two-person reimbursement rule, lead-only certifications and sign-off notices live in RLS.
   "0723_operations_trust.sql",
+  // "Your apps": /api/navigation/preferences reads and writes profiles.pinned_apps (it falls back
+  // to island_tabs without it, but then only a bar of exactly four can be saved).
+  "0729_more_pinned_apps.sql",
   // Platform admin: /api/admin/platform-admins calls platform_admin_list/add/remove/transfer();
   // AI credit gifts (/api/admin/ai-credits, /api/ai-credit, every Ask AI call via
   // ai_credit_gift_for_org / reserve / settle) and /api/admin/health (platform_job_health).

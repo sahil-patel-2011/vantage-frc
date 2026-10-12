@@ -34,6 +34,8 @@ export function AppShellTopbar({
   navOpen,
   menuOpen,
   onOpenNav,
+  searchOpen,
+  onOpenSearch,
   shortcutHint,
   onOpenTeams,
   minimal = false,
@@ -65,6 +67,10 @@ export function AppShellTopbar({
   /** Whether the on-demand navigation drawer is showing. */
   menuOpen: boolean;
   onOpenNav: () => void;
+  /** Whether the search palette is showing. */
+  searchOpen: boolean;
+  /** Opens the search palette (⌘K / Ctrl+K does the same). */
+  onOpenSearch: () => void;
   shortcutHint: string;
   /** Opens the workspace picker. */
   onOpenTeams: () => void;
@@ -102,10 +108,9 @@ export function AppShellTopbar({
             className={`soft-icon-btn soft-menu-btn${menuOpen ? " is-open" : ""}`}
             data-tour="menu"
             type="button"
-            aria-label="Menu and search"
+            aria-label="Menu"
             aria-controls="vantage-navigation-panel"
             aria-expanded={menuOpen || navOpen}
-            aria-keyshortcuts="Control+K Meta+K"
             onClick={onOpenNav}
           >
             <span className="soft-burger" aria-hidden="true">
@@ -168,7 +173,8 @@ export function AppShellTopbar({
             View only
           </span>
         ) : null}
-        {minimal ? null : <button hidden={navOpen} className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenNav} aria-label="Search pages, tools, and team data" aria-controls="vantage-navigation-panel" aria-expanded={navOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
+        {/* Search, not a second menu: it opens the centred search palette. */}
+        {minimal ? null : <button className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenSearch} aria-label="Search pages, tools, and team data" aria-haspopup="dialog" aria-expanded={searchOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
         {/* Nothing is queued before someone is on a team, and its 12-second check read /api/me,
             which answers 403 during onboarding. */}
         {minimal ? null : <ShellOutboxStatus orgId={orgId || null} />}

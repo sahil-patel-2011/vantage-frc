@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useState, type PointerEvent } from "react";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
-import { defaultIslandLabelList } from "../lib/nav/island-preferences";
-import { ISLAND_TAB_CATALOG, withOrgHref, type IslandTabDefinition } from "../lib/nav/product-nav";
+import { withOrgHref, type IslandTabDefinition } from "../lib/nav/product-nav";
 
 export function AppShellEventFocus({
   eventFocus,
@@ -151,7 +150,7 @@ export function AppShellIsland({
       data-testid="soft-island"
       data-tour="island"
       aria-label="Primary apps"
-      title="Press and hold to change these four apps (or Account → Appearance)"
+      title="Press and hold to change your apps"
       onContextMenu={(event) => {
         event.preventDefault();
         onOpenEditor();
@@ -192,8 +191,8 @@ export function AppShellIsland({
           </a>
         );
       })}
-      {/* No "Apps" gear: it took a fifth of the bar to repeat Account → Appearance. Press and
-          hold the bar (or right-click it) to change the four apps.
+      {/* No "Apps" gear: it took a fifth of the bar. Press and hold the bar (or right-click it),
+          or use Edit in the menu, to change your apps; the bar shows the first four.
 
           More opens the same panel as the top-left menu button. That button is the hardest
           place on a phone to reach with a thumb, and without More the bar had no answer to
@@ -221,104 +220,5 @@ export function AppShellIsland({
         <span>More</span>
       </a>
     </nav>
-  );
-}
-
-export function AppShellIslandEditor({
-  open,
-  islandDraft,
-  visibleIslandCatalog,
-  islandMessage,
-  islandSaving,
-  onClose,
-  onToggle,
-  onReset,
-  onSave,
-}: {
-  open: boolean;
-  islandDraft: string[];
-  visibleIslandCatalog: IslandTabDefinition[];
-  islandMessage: string;
-  islandSaving: boolean;
-  onClose: () => void;
-  onToggle: (href: string) => void;
-  onReset: () => void;
-  onSave: () => void;
-}) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialogRef.current?.querySelector<HTMLButtonElement>('header button')?.focus();
-    return () => { if (opener?.isConnected) opener.focus(); };
-  }, [open]);
-  if (!open) return null;
-  return (
-    <div ref={dialogRef} className="soft-island-editor" role="dialog" aria-modal="true" aria-labelledby="island-editor-title"
-      onKeyDown={event => {
-        if (event.key !== "Tab") return;
-        const items = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]),a[href]')];
-        const first = items[0], last = items[items.length - 1];
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-      }}>
-      <button className="soft-island-editor-scrim" tabIndex={-1} type="button" aria-label="Close island customization" onClick={onClose} />
-      <section>
-        <header>
-          <div>
-            <span>BOTTOM BAR</span>
-            <h2 id="island-editor-title">Your four apps</h2>
-            <p>{defaultIslandLabelList()} by default. Tap apps in the order you want them.</p>
-          </div>
-          <button className="soft-icon-btn" type="button" aria-label="Close" onClick={onClose}><Icon name="x" /></button>
-        </header>
-        <div className="soft-island-slot-preview" role="group" aria-label={`${islandDraft.length} of 4 island apps selected`}>
-          {[0, 1, 2, 3].map((slot) => {
-            const selectedHref = islandDraft[slot];
-            const selected = visibleIslandCatalog.find((entry) => entry.href === selectedHref)
-              ?? ISLAND_TAB_CATALOG.find((entry) => entry.href === selectedHref);
-            if (selected && !visibleIslandCatalog.some(entry => entry.href === selected.href)) {
-              return <button className="filled" key={slot} type="button" disabled={islandSaving}
-                aria-label={`Remove ${selected.label}. Unavailable for this team.`} onClick={() => {
-                  onToggle(selected.href);
-                  // This removal button disappears. Keep keyboard focus in
-                  // the editor on a surviving choice (or its close button).
-                  (dialogRef.current?.querySelector<HTMLButtonElement>('.soft-island-choice-grid button:not(:disabled)')
-                    ?? dialogRef.current?.querySelector<HTMLButtonElement>('header button'))?.focus();
-                }}>
-                <Icon name={selected.icon} />{selected.label}<small>Unavailable · Remove</small>
-              </button>;
-            }
-            return <span className={selectedHref ? "filled" : ""} key={slot}>{selected ? <><Icon name={selected.icon} />{selected.label}</> : `${slot + 1}`}</span>;
-          })}
-        </div>
-        <p className="soft-island-order-hint">Tap apps in the order you want them. Tap a selected app to remove it.</p>
-        <div className="soft-island-choice-grid">
-          {visibleIslandCatalog.map((item) => {
-            const selected = islandDraft.includes(item.href);
-            const disabled = islandSaving || (!selected && islandDraft.length >= 4);
-            return (
-              <button
-                className={selected ? "selected" : ""}
-                disabled={disabled}
-                key={item.href}
-                onClick={() => onToggle(item.href)}
-                type="button"
-                aria-pressed={selected}
-              >
-                <Icon name={item.icon} /><span><strong>{item.label}</strong><small>{selected ? `App ${islandDraft.indexOf(item.href) + 1} of 4` : "Add"}</small></span>
-              </button>
-            );
-          })}
-        </div>
-        {islandMessage ? <p className="soft-island-editor-error" role="alert">{islandMessage}</p> : null}
-        <footer>
-          <button type="button" disabled={islandSaving} onClick={onReset}>Reset</button>
-          <button className="primary" type="button" disabled={islandDraft.length !== 4 || islandSaving} onClick={onSave}>
-            {islandSaving ? "Saving…" : "Save"}
-          </button>
-        </footer>
-      </section>
-    </div>
   );
 }

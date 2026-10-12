@@ -82,7 +82,14 @@ export type ProductNavIcon =
   | "form"
   | "assignment"
   | "rank"
-  | "book";
+  | "book"
+  // Editing controls ("Your apps" and Home's edit mode): add, remove, reorder, edit, more, done.
+  | "plus"
+  | "minus"
+  | "grip"
+  | "pencil"
+  | "more"
+  | "check";
 
 /**
  * Every pillar currently reads as the house blue — one palette was a deliberate

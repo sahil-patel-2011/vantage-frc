@@ -187,6 +187,8 @@ export const profiles = pgTable("profiles", {
   displayName: text("display_name"),
   notificationPrefs: jsonb("notification_prefs").notNull().default({}),
   islandTabs: jsonb("island_tabs").$type<string[]>().notNull().default([]),
+  /** "Your apps" (0729): up to eight pinned places; null follows the default pins. */
+  pinnedApps: jsonb("pinned_apps").$type<string[] | null>(),
   themePreference: text("theme_preference").notNull().default("light"),
   firstName: text("first_name"),
   lastName: text("last_name"),

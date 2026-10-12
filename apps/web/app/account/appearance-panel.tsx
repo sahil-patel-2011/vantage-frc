@@ -15,14 +15,14 @@ import {
 import { applyBranding, broadcastAppearance } from "../../lib/branding/appearance-runtime";
 import { brandingLogoUrl, type OrgBrandingView } from "../../lib/branding/branding";
 import {
-  ISLAND_SLOT_COUNT,
-  defaultIslandHrefs,
-  defaultIslandLabelList,
-  isDefaultIslandSelection,
-  isValidIslandSelection,
-  toggleIslandDraft,
-} from "../../lib/nav/island-preferences";
-import { ISLAND_TAB_CATALOG } from "../../lib/nav/product-nav";
+  BAR_SLOTS,
+  PINS_CHANGED_EVENT,
+  PINS_EDIT_EVENT,
+  defaultPinHrefs,
+  resolvePins,
+  resolveStoredPins,
+} from "../../lib/nav/pins";
+import { Icon } from "../../components/icon";
 import {
   pathAllowedByHubAccess,
   pathAllowedBySponsors,
@@ -43,9 +43,8 @@ type Status = { tone: "ok" | "error"; text: string } | null;
 
 /**
  * Account → Appearance. Everything a member can change about how Vantage looks:
- * theme, whether their team's accent applies to them, motion, density, and the
- * four apps on the bottom island (which otherwise only surfaces behind a
- * long-press most people never discover).
+ * theme, whether their team's accent applies to them, motion, density, and a
+ * view of "Your apps" (the pinned places) with the button that opens their editor.
  */
 export default function AppearancePanel({ orgId }: { orgId: string | null }) {
   const [org, setOrg] = useState<OrgBrandingView | null>(null);
@@ -57,10 +56,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<Status>(null);
 
-  const [islandSaved, setIslandSaved] = useState<string[]>(defaultIslandHrefs());
-  const [islandDraft, setIslandDraft] = useState<string[]>(defaultIslandHrefs());
-  const [islandBusy, setIslandBusy] = useState(false);
-  const [islandNote, setIslandNote] = useState<string | null>(null);
+  const [pins, setPins] = useState<string[]>(defaultPinHrefs());
   const [islandLoaded, setIslandLoaded] = useState(false);
   const [islandProblem, setIslandProblem] = useState(false);
   const [islandAttempt, setIslandAttempt] = useState(0);
@@ -123,9 +119,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       .then((response) => { if (!response.ok) throw new Error("Shortcuts unavailable"); return response.json(); })
       .then((data: { tabs?: unknown } | null) => {
         if (cancelled) return;
-        const tabs = isValidIslandSelection(data?.tabs) ? data.tabs : defaultIslandHrefs();
-        setIslandSaved(tabs);
-        setIslandDraft(tabs);
+        setPins(resolveStoredPins(data?.tabs));
       })
       .catch(() => {
         if (!cancelled) setIslandProblem(true);
@@ -139,21 +133,28 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
     };
   }, [islandAttempt]);
 
-  const visibleCatalog = useMemo(
+  // The editor lives in the app shell; this page follows what it saves.
+  useEffect(() => {
+    const follow = (event: Event) => {
+      const tabs = (event as CustomEvent<{ tabs?: unknown }>).detail?.tabs;
+      setPins(resolveStoredPins(tabs));
+    };
+    window.addEventListener(PINS_CHANGED_EVENT, follow);
+    return () => window.removeEventListener(PINS_CHANGED_EVENT, follow);
+  }, []);
+
+  const visiblePins = useMemo(
     () =>
-      ISLAND_TAB_CATALOG.filter(
+      resolvePins(pins).filter(
         (item) =>
           pathAllowedByHubAccess(item.href, access.hubAccess) &&
           pathAllowedBySponsors(item.href, access.sponsorsAllowed),
       ),
-    [access.hubAccess, access.sponsorsAllowed],
+    [pins, access.hubAccess, access.sponsorsAllowed],
   );
 
   const logoUrl = org ? brandingLogoUrl(org) : null;
   const dirty = !appearanceEquals(prefs, saved);
-  const islandDirty =
-    islandDraft.length === ISLAND_SLOT_COUNT &&
-    islandDraft.join("|") !== islandSaved.join("|");
 
   /** Preview immediately; the save call only makes it stick across devices. */
   function preview(next: AppearancePrefs) {
@@ -216,36 +217,6 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       setCockpitNote({ tone: "error", text: "Could not save cockpit settings." });
     } finally {
       setCockpitBusy(false);
-    }
-  }
-
-  async function saveIsland(tabs: string[], successText: string) {
-    if (!isValidIslandSelection(tabs)) {
-      setIslandNote(`Pick exactly ${ISLAND_SLOT_COUNT} apps.`);
-      return;
-    }
-    setIslandBusy(true);
-    setIslandNote(null);
-    try {
-      const response = await fetch("/api/navigation/preferences", {
-        signal: AbortSignal.timeout(8_000),
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tabs }),
-      });
-      const data = (await response.json()) as { tabs?: unknown; error?: string };
-      if (!response.ok) {
-        setIslandNote(data.error ?? "Could not save your shortcuts.");
-        return;
-      }
-      const stored = isValidIslandSelection(data.tabs) ? data.tabs : tabs;
-      setIslandSaved(stored);
-      setIslandDraft(stored);
-      setIslandNote(successText);
-    } catch {
-      setIslandNote("Could not save your shortcuts.");
-    } finally {
-      setIslandBusy(false);
     }
   }
 
@@ -421,85 +392,33 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       </section>
 
       <section className="appearance-group" aria-labelledby="appearance-island-title">
-        <h3 id="appearance-island-title">Bottom shortcuts</h3>
+        <h3 id="appearance-island-title">Your apps</h3>
         <p>
-          Choose four apps in order. Tap again to remove.
+          The places you pin. The first {BAR_SLOTS} sit in the bottom bar on your phone; all of them show at the top
+          of the menu and the sidebar.
         </p>
-        <div
-          className="appearance-island-slots"
-          aria-label={`${islandDraft.length} of ${ISLAND_SLOT_COUNT} island apps selected`}
-        >
-          {Array.from({ length: ISLAND_SLOT_COUNT }, (_, slot) => {
-            const href = islandDraft[slot];
-            const entry = ISLAND_TAB_CATALOG.find((item) => item.href === href);
-            return (
-              <span className={href ? "filled" : ""} key={slot}>
-                {entry ? entry.label : `Slot ${slot + 1}`}
-              </span>
-            );
-          })}
-        </div>
-        {islandProblem ? <div><p role="alert">Your shortcuts could not load.</p><Button type="button" variant="secondary" onClick={() => setIslandAttempt(current => current + 1)}>Retry shortcuts</Button></div> : !islandLoaded ? (
-          <p className="app-muted">Loading your island…</p>
+        {islandProblem ? <div><p role="alert">Your apps could not load.</p><Button type="button" variant="secondary" onClick={() => setIslandAttempt(current => current + 1)}>Try again</Button></div> : !islandLoaded ? (
+          <p className="app-muted">Loading your apps…</p>
         ) : (
-          <div className="appearance-island-grid">
-            {visibleCatalog.map((item) => {
-              const selected = islandDraft.includes(item.href);
-              const full = !selected && islandDraft.length >= ISLAND_SLOT_COUNT;
-              return (
-                <button
-                  key={item.href}
-                  type="button"
-                  className={selected ? "selected" : ""}
-                  aria-pressed={selected}
-                  disabled={full || islandBusy}
-                  onClick={() => {
-                    const result = toggleIslandDraft(islandDraft, item.href);
-                    setIslandDraft(result.draft);
-                    setIslandNote(result.error);
-                  }}
-                >
-                  <strong>{item.label}</strong>
-                  <small>{selected ? `Slot ${islandDraft.indexOf(item.href) + 1}` : "Add"}</small>
-                </button>
-              );
-            })}
-          </div>
+          <ol className="appearance-island-slots appearance-pins" aria-label="Your pinned apps, in order">
+            {visiblePins.map((item) => (
+              <li key={item.href} className="filled">
+                <Icon name={item.icon} />
+                {item.label}
+              </li>
+            ))}
+          </ol>
         )}
         <div className="appearance-actions">
-          <button
+          <Button
             type="button"
-            className="primary"
-            disabled={islandBusy || !islandLoaded || islandProblem || !islandDirty}
-            onClick={() =>
-              void saveIsland(islandDraft, "Shortcuts saved.")
-            }
+            variant="secondary"
+            disabled={!islandLoaded || islandProblem}
+            onClick={() => window.dispatchEvent(new CustomEvent(PINS_EDIT_EVENT))}
           >
-            {islandBusy ? "Saving…" : `Save ${islandDraft.length}/${ISLAND_SLOT_COUNT}`}
-          </button>
-          <button
-            type="button"
-            disabled={islandBusy || !islandLoaded || islandProblem || isDefaultIslandSelection(islandSaved)}
-            onClick={() =>
-              void saveIsland(
-                defaultIslandHrefs(),
-                `Shortcuts reset to ${defaultIslandLabelList()}. `,
-              )
-            }
-          >
-            Reset shortcuts
-          </button>
-          {islandDirty ? (
-            <button type="button" disabled={islandBusy} onClick={() => setIslandDraft(islandSaved)}>
-              Discard
-            </button>
-          ) : null}
+            Edit your apps
+          </Button>
         </div>
-        {islandNote ? (
-          <p className="brand-notice" role="status">
-            {islandNote}
-          </p>
-        ) : null}
       </section>
       </details>
       <div className="appearance-save">

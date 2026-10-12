@@ -19,13 +19,18 @@ describe("one main menu", () => {
     expect(mainMenuSearch("/ai", "", href => href.endsWith("tab=writer"))).toBe("tab=writer");
     expect(mainMenuSearch("/ai", "", () => false)).toBe("");
   });
-  it("puts pit display in the menu and never repeats the Scouting launcher", () => {
+  it("lists every place once, so un-pinning Scout, My Day or Team resources never hides it", () => {
     const sections = mainMenuSections(PRODUCT_NAV_GROUPS, () => true);
     const items = sections.flatMap(section => section.items);
     expect(new Set(items.map(item => item.href)).size).toBe(items.length);
     expect(items.some(item => item.label === "Pit display")).toBe(true);
-    expect(items.some(item => item.href === "/competition?tab=scouting")).toBe(false);
+    expect(items.some(item => item.href === "/competition?tab=scouting")).toBe(true);
+    expect(items.some(item => item.href === "/competition?tab=my-day")).toBe(true);
+    expect(sections.find(section => section.id === "team")?.items).toContainEqual({ href: "/learn/team", label: "Team resources", icon: "book" });
     expect(sections.map(section => section.label)).toEqual(["Competition", "Team", "Build", "Business", "AI"]);
+  });
+  it("marks My Day itself, not Event day, while you are on it", () => {
+    expect(mainMenuSearch("/competition", "tab=my-day")).toBe("tab=my-day");
   });
   it("never grants workspace, section, or sponsor access through the menu", () => {
     const access = [{ hubId: "competition" as const, allowedTabIds: ["scouting"] }];

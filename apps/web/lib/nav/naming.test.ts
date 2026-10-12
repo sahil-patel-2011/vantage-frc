@@ -25,8 +25,8 @@ describe("one name per destination", () => {
     }
   });
 
-  it("Tasks: the sidebar, the Team hub tab, its page and Home", () => {
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/todos", label: "Tasks"/);
+  it("Tasks: the pinned apps, the Team hub tab, its page and Home", () => {
+    expect(read("lib/nav/pins.ts")).toMatch(/\{ href: "\/team\?tab=todos", label: "Tasks"/);
     expect(tabLabel("team", "todos")).toBe("Tasks");
     expect(read("app/todos/page.tsx")).toMatch(/title: "Tasks"/);
     expect(read("app/dashboard/dashboard-home-tasks.tsx")).toMatch(/<h2 id=\{titleId\}>Tasks<\/h2>/);
@@ -40,7 +40,7 @@ describe("one name per destination", () => {
   });
 
   it("My Day, Shop hours, Hours kiosk, Safety training, Robot status, Learn and Guided tracks", () => {
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/label: "My Day"/);
+    expect(read("lib/nav/pins.ts")).toMatch(/label: "My Day"/);
     expect(tabLabel("team", "hours")).toBe("Shop hours");
     expect(read("lib/hours/hours-related.ts")).toMatch(/label: "Hours kiosk", kind: "path" as const, path: "\/hours\/kiosk"/);
     expect(tabLabel("team", "safety-training")).toBe("Safety training");
@@ -62,10 +62,15 @@ describe("two menus, no repeats", () => {
     expect(account).toMatch(/<span>Team admin<\/span>/);
   });
 
-  it("the menu's dock row has the four everyday places, the same ones the sidebar lists", () => {
-    const groups = read("components/app-shell-nav-groups.tsx");
-    for (const href of ["/dashboard", "/competition?tab=scouting", "/my-day", "/todos"]) {
-      expect(groups).toContain(`href: "${href}"`);
+  it("one \"Your apps\": the menu's top row, the sidebar's Pinned group and the bottom bar show the same pins", () => {
+    expect(read("components/app-shell-nav-groups.tsx")).toMatch(/\{pins\.map\(item =>/);
+    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{pins\.map\(item =>/);
+    const shell = read("components/app-shell.tsx");
+    expect(shell).toMatch(/const islandTabs = useMemo\(\(\) => pins\.slice\(0, BAR_SLOTS\), \[pins\]\);/);
+    // The stock pins keep the old menu dock's everyday places (Home, Scout, My Day, Tasks).
+    const pins = read("lib/nav/pins.ts");
+    for (const href of ["/dashboard", "/competition?tab=my-day", "/team?tab=todos", "/learn/team"]) {
+      expect(pins).toContain(`href: "${href}"`);
     }
   });
 });
