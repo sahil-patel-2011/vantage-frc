@@ -20,6 +20,7 @@ import {
 import { memberTeamIds } from "./lib/nav/member-teams";
 import { pendingProvisioningTeam, requestedProvisioningTeam } from "./lib/provisioning/request-gate";
 import { noteDatabaseFailure } from "./lib/outage/note";
+import { readOnboardingGate } from "./lib/auth/onboarding-gate-cache";
 import { backupModeRoute } from "./lib/outage/backup-routes";
 import { SIGNED_OUT_MESSAGE } from "./lib/security/signed-out";
 
@@ -409,12 +410,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(verify);
   }
 
-  const onboardingGate = await withRls({ userId: session.user.id }, (client) =>
-    getOnboardingGate(client, session.user.id),
-  ).catch((error: unknown) => {
-    noteDatabaseFailure(error, "sign-in check");
-    return null;
-  });
+  const onboardingGate = await readOnboardingGate(
+    session.session.id,
+    () => withRls({ userId: session.user.id }, (client) => getOnboardingGate(client, session.user.id)),
+    { onFailure: (error) => noteDatabaseFailure(error, "sign-in check") },
+  );
   if (!onboardingGate) return accessUnavailable(request);
 
   if (!onboardingGate.onboardingComplete) {

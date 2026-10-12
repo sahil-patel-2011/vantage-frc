@@ -8,7 +8,8 @@ export function provisioningPool() {
     const url = firstConfiguredEnv("DATABASE_WORKER_URL")
       || (process.env.NODE_ENV !== "production" ? firstConfiguredEnv("DATABASE_ADMIN_URL") : "");
     if (!url || url.includes("[SENSITIVE]")) throw new Error("Background database access is not configured.");
-    pool = createSqlPool(url, { max: 2 });
+    // Session mode: the workflow steps hold session advisory locks between statements.
+    pool = createSqlPool(url, { max: 2, poolMode: "session" });
   }
   return pool;
 }

@@ -7,12 +7,18 @@ import {
   shouldUseNodePostgres,
   sslOptionForUrl,
   connectionStringForSsl,
+  pooledConnectionString,
 } from "./postgres-url";
 
 export type SqlPoolOptions = {
   max?: number;
   idleTimeoutMillis?: number;
   connectionTimeoutMillis?: number;
+  /**
+   * "session" keeps a Supabase pooler URL on its session port, for a pool that holds session
+   * state (session advisory locks) between statements. Request pools use transaction mode.
+   */
+  poolMode?: "transaction" | "session";
 };
 
 /**
@@ -32,7 +38,7 @@ export function createRawSqlPool(
   const connectionTimeoutMillis = options?.connectionTimeoutMillis ?? limits.connectionTimeoutMillis;
   if (shouldUseNodePostgres(connectionString)) {
     return new pg.Pool({
-      connectionString: connectionStringForSsl(connectionString),
+      connectionString: connectionStringForSsl(pooledConnectionString(connectionString, options?.poolMode)),
       max,
       idleTimeoutMillis,
       ...(connectionTimeoutMillis != null ? { connectionTimeoutMillis } : {}),
