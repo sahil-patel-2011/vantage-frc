@@ -27,8 +27,17 @@ Excluded: API keys, BYO envelopes, sessions, invite tokens, other orgs.
 
 1. Create the project on **PostgreSQL 17** (see "Postgres version" below).
 2. In the SQL editor, run `packages/db/supabase/00_roles.sql`. Set LOGIN passwords for `vantage_app` and `vantage_worker`.
+   Then run `packages/db/supabase/01_supabase_compat.sql` (as `postgres`, before any migration). It:
+   - gives pgcrypto's functions (`digest`, `gen_random_bytes`, `crypt`, …) a home in `public`, because
+     Supabase installs pgcrypto in `extensions` and Vantage's functions pin `search_path = public`;
+   - grants `vantage_worker` BYPASSRLS (00_roles creates it before migration `0001` can);
+   - stops Supabase's default grants of new `public` tables to `anon` / `authenticated`, so no
+     table is ever reachable through the Data API, even before `0432` runs.
+   Rehearsed on a Supabase-shaped Postgres 17 (non-superuser `postgres` with CREATEROLE + BYPASSRLS,
+   pgcrypto in `extensions`): all migrations apply and the schema matches a Neon-style run exactly.
 3. **Project Settings → Data API**: disable or leave unused. Migration `0432` revokes `anon` / `authenticated` on `public` if those roles exist.
-4. `DATABASE_ADMIN_URL` = **direct or session-pooler** URI as `vantage_worker` (port **5432**, never 6543). Run `npm run db:migrate` — the authoritative `scripts/run-migrations.mjs` runner applies every file in `packages/db/migrations/` in filename order (~340 files, `0000` … `0496` and growing) and records each full filename in `schema_migrations`.
+4. `DATABASE_ADMIN_URL` = **direct or session-pooler** URI (port **5432**, never 6543), as `postgres` (objects
+   owned by `postgres`, as on Neon; `vantage_worker` reads through BYPASSRLS) or as `vantage_worker`. Run `npm run db:migrate` — the authoritative `scripts/run-migrations.mjs` runner applies every file in `packages/db/migrations/` in filename order (~340 files, `0000` … `0496` and growing) and records each full filename in `schema_migrations`.
 5. `DATABASE_URL` / `DATABASE_AUTH_URL` = **session-mode pooler** URI as `vantage_app` (port **5432** on the `pooler.supabase.com` host). Port 6543 is the transaction-mode pooler — see "Connection pooling and withRls" below before considering it.
 6. `node scripts/supabase-preflight.mjs` — every line must be PASS (WARN lines reviewed). See "Preflight" below.
 7. `node scripts/map-supabase-env.mjs` writes `.env.migrate.local`. Do **not** pass `--vercel` until you are ready to cut over production (`SUPABASE_CUTOVER_CONFIRM=I_UNDERSTAND`). Map the same aliases in the Vercel dashboard yourself if you prefer.
