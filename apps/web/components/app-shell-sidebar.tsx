@@ -6,6 +6,7 @@ import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import { mainMenuSearch } from "../lib/nav/main-menu";
 import type { PinDefinition } from "../lib/nav/pins";
 import { workspacePickerHref } from "../lib/workspace";
+import { tourTargetForHref } from "../lib/tour/tour-steps";
 
 /**
  * The desktop sidebar: your pinned apps first (the same "Your apps" as the phone's bottom bar
@@ -45,7 +46,7 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
     </nav> : null}
     <nav className="app-sidebar-main" aria-label="Workspaces">
       <p className="app-sidebar-label">Workspaces</p>
-      {workspaces.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} title={item.label}
+      {workspaces.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} title={item.label} data-tour={tourTargetForHref(item.href)}
         aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}>
         <Icon name={item.icon} /><span>{item.label}</span>
       </a>)}

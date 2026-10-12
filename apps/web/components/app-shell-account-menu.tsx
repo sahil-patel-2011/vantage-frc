@@ -4,6 +4,9 @@ import { useEffect, useRef } from "react";
 import { type Me, type MembershipOption } from "./app-shell-model";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { Icon } from "./icon";
+import { FeedbackBugIcon } from "./feedback-bug-icon";
+import { openFeedback } from "../lib/feedback/feedback-open";
+import { tourReplayHref } from "../lib/tour/tour-start";
 
 function menuItems(menu: HTMLElement | null): HTMLElement[] {
   return menu ? [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)')] : [];
@@ -103,6 +106,22 @@ export function AppShellAccountMenu({
         {/* The help centre keeps the manual, tickets and bug reporting together. */}
         <a className="soft-account-destination" role="menuitem" href={withOrgHref("/help", orgId)} onClick={onClose}>
           <Icon name="book" /><span>Help</span>
+        </a>
+        {/* The same dialog as the round bug button in the corner (components/feedback-button.tsx). */}
+        <button
+          className="soft-account-destination"
+          role="menuitem"
+          type="button"
+          onClick={() => {
+            onClose();
+            openFeedback();
+          }}
+        >
+          <FeedbackBugIcon size={18} /><span>Send feedback</span>
+        </button>
+        {/* Home with ?tour=replay: the tour starts there whatever it remembers (components/app-tour.tsx). */}
+        <a className="soft-account-destination" role="menuitem" href={tourReplayHref(orgId)} onClick={onClose}>
+          <Icon name="play" /><span>Take the tour again</span>
         </a>
         {me.platformAdmin ? (
           <a className="soft-account-destination" role="menuitem" href="/admin" onClick={onClose}>

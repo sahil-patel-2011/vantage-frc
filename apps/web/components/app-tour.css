@@ -1,0 +1,172 @@
+/*
+ * Guided tour. Shown once, again on request, leaves on Escape, a Skip, or a click outside.
+ *
+ * The spotlight is a ring plus a huge outward shadow, which dims the rest of the page without a
+ * second overlay element to keep in sync. With nothing to frame (the welcome) it is a point at
+ * the centre of the screen, so the same shadow dims the page, and it opens out to the first
+ * target. Moves use the vantage-fluid.css tokens (0ms under reduced motion), so the spotlight
+ * glides between targets and the card glides with it while its words cross-fade.
+ */
+.tour-root {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.tour-scrim {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+  pointer-events: auto;
+}
+
+.tour-spotlight {
+  position: fixed;
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgba(8, 14, 24, 0.55);
+  animation: tour-dim-in var(--dur-move) var(--ease-out) backwards;
+  transition:
+    top var(--dur-move) var(--ease-out),
+    left var(--dur-move) var(--ease-out),
+    width var(--dur-move) var(--ease-out),
+    height var(--dur-move) var(--ease-out),
+    border-radius var(--dur-move) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out);
+}
+
+/* Nothing framed: the ring is not drawn, only the dimming. */
+.tour-spotlight[data-empty] {
+  border-color: transparent;
+}
+
+.tour-card {
+  position: fixed;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-pop);
+  pointer-events: auto;
+  animation: tour-card-in var(--dur-sheet) var(--ease-settle) backwards;
+  transition:
+    top var(--dur-move) var(--ease-out),
+    left var(--dur-move) var(--ease-out);
+}
+
+/* The welcome stands on its own in the middle of the screen, a little larger. */
+.tour-card-center {
+  width: min(380px, calc(100vw - 32px));
+  padding: 22px;
+}
+.tour-card-center h2 {
+  font-size: 20px;
+}
+.tour-card-center p {
+  font-size: 14px;
+}
+
+/* A scroll or a resize moves the ring and the card at once, without gliding after the page. */
+.tour-root[data-snap] .tour-spotlight,
+.tour-root[data-snap] .tour-card {
+  transition: none;
+}
+
+/* The words fade out, change, and fade in while the card moves. */
+.tour-card-body {
+  transition: opacity var(--dur-tint) var(--ease-out);
+}
+.tour-card-body[data-leaving] {
+  opacity: 0;
+}
+
+.tour-progress {
+  display: block;
+  color: var(--accent);
+  font: 800 10px/1 var(--font-source-sans), ui-sans-serif;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.tour-card h2 {
+  margin: 6px 0 4px;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.tour-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+.tour-move {
+  display: flex;
+  gap: 6px;
+}
+.tour-card button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-xs, 9px);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: 700 13px var(--font-source-sans), ui-sans-serif;
+  cursor: pointer;
+}
+.tour-card .tour-skip {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.tour-card .tour-next {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+@keyframes tour-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tour-dim-in {
+  from {
+    box-shadow: 0 0 0 9999px rgba(8, 14, 24, 0);
+  }
+  to {
+    box-shadow: 0 0 0 9999px rgba(8, 14, 24, 0.55);
+  }
+}
+
+/* The tokens above are already 0ms for reduced motion; this is the same promise said out loud. */
+@media (prefers-reduced-motion: reduce) {
+  .tour-spotlight,
+  .tour-card,
+  .tour-card-body {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+html[data-motion="reduced"] :is(.tour-spotlight, .tour-card, .tour-card-body) {
+  animation: none !important;
+  transition: none !important;
+}

@@ -9,6 +9,7 @@ import { AppShellSearchPalette } from "./app-shell-search-palette";
 import { AppShellPinsEditor } from "./app-shell-pins-editor";
 import { useShellSearch } from "./use-shell-search";
 import { AppTour } from "./app-tour";
+import { FeedbackButton } from "./feedback-button";
 import { StatusEcho } from "./status-echo";
 import { LegalUpdateBanner } from "./legal-update-banner";
 import { ServiceNoticeBanner } from "./service-notice-banner";
@@ -679,6 +680,7 @@ export default function AppShell() {
         shortcutHint={shortcutHint}
       />
       <AppTour />
+      <FeedbackButton orgId={orgId} signedIn={Boolean(me.userId) && !entryScreen} />
       {entryScreen ? null : <StatusEcho />}
       {onboarding ? null : (
       <AppShellIsland

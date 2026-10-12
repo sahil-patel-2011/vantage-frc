@@ -32,6 +32,7 @@ export const ADMIN_RELATED_LINKS = [
   { id: "outreach", label: "Outreach", href: "/admin/outreach" },
   { id: "plans", label: "Org plans", href: "/admin/plans" },
   { id: "support", label: "Support", href: "/admin/support" },
+  { id: "feedback", label: "Feedback", href: "/admin/feedback" },
   { id: "releases", label: "Releases", href: "/admin/releases" },
   { id: "audit", label: "Audit log", href: "/admin/audit" },
 ] as const;

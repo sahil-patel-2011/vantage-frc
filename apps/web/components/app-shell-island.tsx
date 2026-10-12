@@ -4,6 +4,7 @@ import { useEffect, useState, type PointerEvent } from "react";
 import { usePathname } from "next/navigation";
 import { Icon } from "./icon";
 import { withOrgHref, type IslandTabDefinition } from "../lib/nav/product-nav";
+import { tourTargetForHref } from "../lib/tour/tour-steps";
 
 export function AppShellEventFocus({
   eventFocus,
@@ -173,6 +174,7 @@ export function AppShellIsland({
         return (
           <a
             key={tab.href}
+            data-tour={tourTargetForHref(tab.href)}
             aria-label={tab.href.includes("tab=messages") && unreadMessages >= 1 ? `${tab.label}, ${unreadMessages} unread` : tab.label}
             aria-current={current ? "page" : undefined}
             aria-busy={pendingHref === tab.href && !current ? true : undefined}

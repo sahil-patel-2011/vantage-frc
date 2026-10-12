@@ -1,0 +1,338 @@
+/*
+ * Send feedback: the corner button and its dialog.
+ *
+ * Every duration and curve is a vantage-fluid.css token, which is 0ms under reduced motion, so
+ * nothing here needs its own escape hatch. The one exception is the spinner, whose turning is
+ * not a duration the tokens can zero; it is switched off explicitly below.
+ *
+ * Two rules decide where the button is not:
+ *   - while something else is asking for the person's attention (a dialog, the menu, the tour)
+ *   - on focused task screens (see lib/feedback/feedback-routes.ts for the route list; the
+ *     phone scouting form marks itself with body.is-scouting-form)
+ */
+
+/* ── The button ───────────────────────────────────────────────────────── */
+
+.feedback-fab {
+  display: none;
+}
+
+body.has-app-shell .feedback-fab {
+  position: fixed;
+  /* Under the bottom bar (95) and every dialog (200); over the page. */
+  z-index: 90;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(16px + var(--safe-bottom, 0px));
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--product-glass, var(--surface));
+  backdrop-filter: var(--product-filter, none);
+  color: var(--muted);
+  box-shadow: var(--product-reflection, none), var(--shadow-pop);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    color var(--dur-tint) var(--ease-out),
+    border-color var(--dur-tint) var(--ease-out),
+    background-color var(--dur-tint) var(--ease-out),
+    scale var(--dur-press) var(--ease-spring),
+    opacity var(--dur-move) var(--ease-out),
+    visibility 0s linear 0s;
+}
+
+.feedback-fab svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+@media (hover: hover) {
+  body.has-app-shell .feedback-fab:hover {
+    color: var(--ink);
+    border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+  }
+}
+
+/* The same press the rest of the app's buttons give: a little give that springs back. */
+body.has-app-shell .feedback-fab:active {
+  scale: 0.94;
+}
+
+/* On a phone the bottom bar is there; sit above it, never over it. */
+@media (max-width: 1099.98px) {
+  body.has-app-shell .feedback-fab {
+    bottom: calc(var(--island-clearance, 80px) + 8px + var(--safe-bottom, 0px));
+  }
+}
+
+/* A dialog or the menu is up: step aside (still focusable, so the dialog can hand focus back). */
+body.has-app-shell:has([role="dialog"][aria-modal="true"]:not(.tour-root)) .feedback-fab,
+body.has-app-shell.soft-nav-open .feedback-fab {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The tour, until its last stop points at this button. Set by AppTour. */
+body.has-app-shell[data-tour-step]:not([data-tour-step="feedback"]) .feedback-fab,
+/* Focused task screens where a corner button would cover the work. */
+body.has-app-shell.is-scouting-form .feedback-fab {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, 0s, 0s, 0s, 0s, var(--dur-move);
+}
+
+@media print {
+  .feedback-fab {
+    display: none !important;
+  }
+}
+
+/* ── The dialog ───────────────────────────────────────────────────────── */
+
+/* The shared Modal supplies the backdrop fade, the focus trap and Escape. This only shapes the
+   card, and gives it its own rise-and-fade (the Modal's rises but does not fade). Doubled
+   specificity beats the module's .dialog without depending on stylesheet order. */
+div.feedback-dialog[role="dialog"] {
+  width: min(480px, 100%);
+  gap: 16px;
+  padding: 24px;
+  animation-name: feedback-dialog-in;
+}
+
+@keyframes feedback-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A phone keyboard covers the lower half of the screen; keep the card at the top. */
+@media (max-width: 640px) {
+  div:has(> div.feedback-dialog[role="dialog"]) {
+    place-items: start center;
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+  }
+}
+
+.feedback-form {
+  display: grid;
+  gap: 14px;
+}
+
+.feedback-kinds {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface-2, var(--bg));
+}
+
+.feedback-kind {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: 600 14px/1.2 var(--font-sans, inherit);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-tint) var(--ease-out),
+    color var(--dur-tint) var(--ease-out),
+    box-shadow var(--dur-tint) var(--ease-out),
+    scale var(--dur-press) var(--ease-spring);
+}
+
+.feedback-kind[aria-checked="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow:
+    0 1px 3px color-mix(in srgb, var(--ink) 12%, transparent),
+    0 0 0 1px var(--line-soft);
+}
+
+.feedback-kind:active {
+  scale: 0.98;
+}
+
+.feedback-text {
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg);
+  color: var(--ink);
+  /* 16px so a phone does not zoom the page when the box takes focus. */
+  font: 400 16px/1.5 var(--font-sans, inherit);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.feedback-text::placeholder {
+  color: var(--muted);
+}
+
+.feedback-text:focus {
+  border-color: var(--accent);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--ring, color-mix(in srgb, var(--accent) 30%, transparent));
+}
+
+.feedback-text[readonly] {
+  opacity: 0.7;
+}
+
+.feedback-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.feedback-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.feedback-count {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.feedback-count[data-full] {
+  color: var(--critical);
+  font-weight: 600;
+}
+
+.feedback-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--critical-soft);
+  color: var(--critical);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.feedback-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Send keeps its width whether it shows the word or the spinner. */
+.feedback-send {
+  position: relative;
+  min-width: 84px;
+}
+
+.feedback-send-label[data-sending] {
+  visibility: hidden;
+}
+
+.feedback-send[aria-busy="true"]:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+
+.feedback-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  animation: feedback-spin 700ms linear infinite;
+}
+
+@keyframes feedback-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A turning ring is motion: for anyone who asked for none it stays still and says "busy" by
+   being there (the button also announces itself as busy). */
+@media (prefers-reduced-motion: reduce) {
+  .feedback-spinner {
+    animation: none;
+  }
+  div.feedback-dialog[role="dialog"] {
+    animation: none;
+  }
+}
+
+html[data-motion="reduced"] .feedback-spinner,
+html[data-motion="reduced"] div.feedback-dialog[role="dialog"] {
+  animation: none;
+}
+
+/* Thanks. Same footprint as the form so the card does not jump before it closes. */
+.feedback-sent {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 220px;
+  outline: 0;
+  text-align: center;
+}
+
+.feedback-sent p {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.feedback-sent-check {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--positive-soft);
+  color: var(--positive);
+  animation: feedback-pop var(--dur-sheet) var(--ease-spring) backwards;
+}
+
+@keyframes feedback-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedback-sent-check {
+    animation: none;
+  }
+}
+
+html[data-motion="reduced"] .feedback-sent-check {
+  animation: none;
+}
