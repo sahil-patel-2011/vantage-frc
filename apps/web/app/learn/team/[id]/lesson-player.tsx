@@ -47,7 +47,7 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
 
   const crumbs = (title?: string) => (
     <>
-      <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team lessons</a>
+      <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team resources</a>
       {title ? ` / ${title}` : ""}
     </>
   );
@@ -70,12 +70,12 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
       <main className="module-page team-lessons-page">
         <PageHeader breadcrumbs={crumbs()} title="Team lesson" />
         {view?.status === "setup_required" ? (
-          <EmptyState soft badge="Needs setup" badgeTone="setup" title="Team lessons aren't ready yet" description={view.message} />
+          <EmptyState soft badge="Needs setup" badgeTone="setup" title="Team resources aren't ready yet" description={view.message} />
         ) : error ? (
           <EmptyState title={error.status === 404 ? "Lesson not found" : "Couldn't open this lesson"} description={error.message}>
             {error.status === 404 || error.status === 403 ? (
               <Button as="a" variant="secondary" href={lessonsHref(orgId)}>
-                Back to team lessons
+                Back to Team resources
               </Button>
             ) : (
               <Button variant="secondary" onClick={() => void load()}>

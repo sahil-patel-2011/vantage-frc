@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     if (isLessonsSchemaMissing(error) || isDatabaseUnavailable(error)) {
       return privateJson({ status: "setup_required", message: LESSONS_SETUP_MESSAGE } satisfies LessonsListView);
     }
-    return lessonErrorResponse(error, "Team lessons could not be loaded. Try again.");
+    return lessonErrorResponse(error, "Team resources could not be loaded. Try again.");
   }
 }
 

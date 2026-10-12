@@ -22,11 +22,11 @@ export const LEARN_RESOURCE_CARDS: LearnResourceCard[] = [
   },
   {
     id: "team-lessons",
-    title: "Team lessons",
+    title: "Team resources",
     description:
       "Lessons your own team wrote here or uploaded as a PDF: one step at a time, with examples and when to use each step, then practice questions Vantage checks.",
     href: "/learn/team",
-    primary: "Open team lessons",
+    primary: "Open Team resources",
   },
   {
     id: "dev-setup",

@@ -289,7 +289,7 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
       <PageHeader
         breadcrumbs={
           <>
-            <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team lessons</a> / Edit
+            <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team resources</a> / Edit
           </>
         }
         title={draft.title.trim() || "Untitled lesson"}
@@ -491,7 +491,7 @@ export function LessonEditor({ lessonId }: { lessonId: string }) {
     <PageHeader
       breadcrumbs={
         <>
-          <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team lessons</a> / Edit
+          <a href={withOrgHref("/learn", orgId)}>Learn</a> / <a href={lessonsHref(orgId)}>Team resources</a> / Edit
         </>
       }
       title="Edit lesson"
@@ -514,7 +514,7 @@ export function LessonEditor({ lessonId }: { lessonId: string }) {
     return (
       <main className="module-page team-lessons-page">
         {header}
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Team lessons aren't ready yet" description={view.message} />
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Team resources aren't ready yet" description={view.message} />
       </main>
     );
   }

@@ -278,7 +278,7 @@ export const OPS_TABLES: OpsTableDef[] = [
   ...SEASON_TABLES,
   {
     entity: "Lessons",
-    description: "The team's published lessons (Learn › Team lessons): title, steps and their text. Drafts and practice answers are left out.",
+    description: "The team's published lessons (Learn › Team resources): title, steps and their text. Drafts and practice answers are left out.",
     columns: [
       "id", "title", "status", "kind", "audience", "minutes", "steps", "practice_questions", "text", "author",
       "published_at", "updated_at", "source",

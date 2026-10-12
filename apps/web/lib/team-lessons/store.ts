@@ -116,7 +116,7 @@ export function isDatabaseUnavailable(error: unknown): boolean {
 }
 
 export const LESSONS_SETUP_MESSAGE =
-  "Team lessons aren't switched on for this server yet. The person who runs Vantage for your team needs to apply the latest database update.";
+  "Team resources aren't switched on for this server yet. The person who runs Vantage for your team needs to apply the latest database update.";
 
 export const LESSONS_UNREACHABLE_MESSAGE =
   "Vantage can't reach its database right now, so lessons can't load. Your work in the editor is kept on this device; try again in a few minutes.";

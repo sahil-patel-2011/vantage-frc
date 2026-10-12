@@ -13,7 +13,7 @@ function Breadcrumbs({ orgId }: { orgId: string | null }) {
   return (
     <>
       <a href={withOrgHref("/learn", orgId)}>Learn</a>
-      {" / Team lessons"}
+      {" / Team resources"}
     </>
   );
 }
@@ -88,7 +88,7 @@ export function TeamLessonsClient() {
     setError(null);
     const result = await lessonFetch<LessonsListView>(`/api/team-lessons?orgId=${encodeURIComponent(orgId)}`);
     if (result.ok && result.data) setView(result.data);
-    else setError(result.error ?? (result.status === 0 ? "Couldn't reach Vantage. Check your connection." : "Team lessons could not be loaded."));
+    else setError(result.error ?? (result.status === 0 ? "Couldn't reach Vantage. Check your connection." : "Team resources could not be loaded."));
   }, [orgId]);
 
   useEffect(() => {
@@ -113,7 +113,7 @@ export function TeamLessonsClient() {
   }
 
   const header = (actions?: ReactNode) => (
-    <PageHeader breadcrumbs={<Breadcrumbs orgId={orgId} />} title="Team lessons" description={DESCRIPTION}>
+    <PageHeader breadcrumbs={<Breadcrumbs orgId={orgId} />} title="Team resources" description={DESCRIPTION}>
       {actions}
     </PageHeader>
   );
@@ -122,7 +122,7 @@ export function TeamLessonsClient() {
     return (
       <main className="module-page team-lessons-page">
         {header()}
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Choose your team" description="Team lessons belong to a team. Choose yours to see them.">
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Choose your team" description="Team resources belong to a team. Choose yours to see them.">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
           </Button>
@@ -152,7 +152,7 @@ export function TeamLessonsClient() {
     return (
       <main className="module-page team-lessons-page">
         {header()}
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Team lessons aren't ready yet" description={view.message} />
+        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Team resources aren't ready yet" description={view.message} />
       </main>
     );
   }

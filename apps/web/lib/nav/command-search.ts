@@ -235,7 +235,7 @@ const KEYWORDS: Record<string, string[]> = {
     "code and cad", "cad resources", "programming resources", "code cad hub",
   ],
   "build:team-lessons": [
-    "team lessons", "our lessons", "write a lesson", "make a lesson", "lesson builder",
+    "team resources", "our resources", "team library", "our pdfs", "team lessons", "our lessons", "write a lesson", "make a lesson", "lesson builder",
     "training module", "teach the team", "upload a pdf lesson", "practice questions", "quiz",
   ],
   "build:sketch-to-brief": ["sketch", "napkin", "idea to brief", "concept"],
