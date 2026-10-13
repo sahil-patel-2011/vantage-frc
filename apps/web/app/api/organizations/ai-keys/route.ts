@@ -15,6 +15,7 @@ import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { checkProviderKey, skipsLiveKeyCheck, type ProviderKeyCheck } from "../../../../lib/ai-keys/check-provider-key";
+import { matchModelList, normalizeModelText } from "../../../../lib/ai-keys/model-list";
 import { aiKeysEncryptionStatus } from "../../../../lib/ai-keys/kms-status";
 import {
   BYOK_PROVIDER_META,
@@ -244,7 +245,7 @@ export async function GET(request: Request) {
 
       const rows = (
         await client.query<KeyRow>(
-          `SELECT ${KEY_ROW_COLUMNS}
+          `SELECT ${KEY_ROW_COLUMNS}, k.model
            FROM org_llm_keys k
            WHERE k.org_id = $1::uuid
              AND lower(k.provider) = ANY($2::text[])
@@ -347,7 +348,10 @@ export async function POST(request: Request) {
       provider?: string;
       apiKey?: string;
       baseUrl?: string;
+      /** One model, or several separated by a comma, stored on this key. */
       model?: string;
+      /** Model routing as typed: "claude-haiku-5-5, gpt-4.1-mini". */
+      models?: string;
       mode?: "fixed" | "automode";
       fixedModelId?: string | null;
       enabledModelIds?: string[];
@@ -436,6 +440,11 @@ export async function POST(request: Request) {
             order.next,
           ]);
         }
+        const model = normalizeModelText(typeof body.model === "string" ? body.model : "");
+        if (model) {
+          if (model.length > 400) throw new Error("Keep the model list under 400 characters");
+          await client.query(`UPDATE org_llm_keys SET model = $2 WHERE id = $1::uuid`, [inserted.rows[0]!.id, model]);
+        }
         return { id: inserted.rows[0]!.id, label, position: order.count + 1 };
       });
 
@@ -474,7 +483,8 @@ export async function POST(request: Request) {
           ? await validateOpenAiCompatibleBaseUrl(body.baseUrl)
           : null;
       const model =
-        typeof body.model === "string" && body.model.trim() ? body.model.trim() : null;
+        typeof body.model === "string" && body.model.trim() ? normalizeModelText(body.model) : null;
+      if (model && model.length > 400) throw new Error("Keep the model list under 400 characters");
 
       // A key for a custom base URL (Groq, a shop server) belongs to that server, not the
       // provider named on the card, so only keys for the provider itself are checked.
@@ -575,15 +585,17 @@ export async function POST(request: Request) {
       if (!/^[0-9a-f-]{36}$/i.test(keyId)) throw new Error("Choose a key from the list");
       const scope = body.scope === "member" ? "member" : "team";
       const table = scope === "member" ? "member_llm_keys" : "org_llm_keys";
-      const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
+      const loaded = await withRls({ userId: session.user.id, orgId }, async (client) => {
         // Team keys are the key managers'; RLS (owner/admin) backs this. A personal key is only
         // ever the caller's own (member_llm_keys_own).
         if (scope === "team") await assertOrgCapability(client, orgId, "manage_api_keys");
         const key = (
-          await client.query<{ id: string; provider: string; label: string }>(
+          await client.query<{ id: string; provider: string; label: string; baseUrl: string | null }>(
             scope === "team"
-              ? `SELECT id::text, lower(provider) AS provider, label FROM org_llm_keys WHERE id = $1::uuid AND org_id = $2::uuid`
-              : `SELECT id::text, lower(provider) AS provider, label FROM member_llm_keys
+              ? `SELECT id::text, lower(provider) AS provider, label, base_url AS "baseUrl"
+                   FROM org_llm_keys WHERE id = $1::uuid AND org_id = $2::uuid`
+              : `SELECT id::text, lower(provider) AS provider, label, base_url AS "baseUrl"
+                   FROM member_llm_keys
                   WHERE id = $1::uuid AND org_id = $2::uuid AND user_id = $3::uuid`,
             scope === "team" ? [keyId, orgId] : [keyId, orgId, session.user.id],
           )
@@ -591,9 +603,58 @@ export async function POST(request: Request) {
         if (!key) throw new Error("That key is gone. Refresh the page.");
         if (action === "remove_key") {
           await client.query(`DELETE FROM ${table} WHERE id = $1::uuid`, [keyId]);
-          return { removed: true, provider: key.provider, label: key.label };
         }
-        if (!(await multiKeyReady(client))) {
+        return key;
+      });
+      if (action === "remove_key") {
+        return Response.json({ ok: true, removed: true, provider: loaded.provider, label: loaded.label, scope });
+      }
+
+      // A new secret is checked with the provider before it replaces the stored one. The
+      // check stays outside the database call so a slow provider does not hold a connection.
+      const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
+      let encrypted: Awaited<ReturnType<typeof encryptSecret>> | null = null;
+      let check: ProviderKeyCheck | null = null;
+      if (apiKey) {
+        const provider = parseByokProvider(loaded.provider);
+        if (!provider) throw new Error("That provider cannot be checked");
+        const encryption = aiKeysEncryptionStatus();
+        if (!encryption.ok) {
+          return Response.json({ error: encryption.message, setupRequired: true }, { status: 503 });
+        }
+        check =
+          loaded.baseUrl || skipsLiveKeyCheck(apiKey)
+            ? { status: "valid" }
+            : await checkProviderKey(provider, apiKey);
+        if (check.status === "rejected") {
+          return Response.json({ error: check.message, field: "apiKey" }, { status: 422 });
+        }
+        try {
+          encrypted = await encryptSecret(apiKey, createKms());
+        } catch (error) {
+          return Response.json(
+            {
+              error: error instanceof Error ? error.message : "Could not encrypt API key. Encryption setup is required.",
+              setupRequired: true,
+            },
+            { status: 503 },
+          );
+        }
+      }
+
+      await withRls({ userId: session.user.id, orgId }, async (client) => {
+        if (scope === "team") await assertOrgCapability(client, orgId, "manage_api_keys");
+        const still = (
+          await client.query<{ id: string }>(
+            scope === "team"
+              ? `SELECT id::text FROM org_llm_keys WHERE id = $1::uuid AND org_id = $2::uuid`
+              : `SELECT id::text FROM member_llm_keys WHERE id = $1::uuid AND org_id = $2::uuid AND user_id = $3::uuid`,
+            scope === "team" ? [keyId, orgId] : [keyId, orgId, session.user.id],
+          )
+        ).rows[0];
+        if (!still) throw new Error("That key is gone. Refresh the page.");
+        const touchesOrder = typeof body.label === "string" || typeof body.enabled === "boolean" || body.move === "up" || body.move === "down";
+        if (touchesOrder && !(await multiKeyReady(client))) {
           throw new Error("Ordering and switching keys needs the latest database update. Ask your platform admin to run it.");
         }
         if (typeof body.label === "string") {
@@ -605,11 +666,31 @@ export async function POST(request: Request) {
           await client.query(`UPDATE ${table} SET enabled = $2::boolean WHERE id = $1::uuid`, [keyId, body.enabled]);
         }
         if (body.move === "up" || body.move === "down") {
-          await moveKey(client, table, { id: keyId, provider: key.provider, orgId, userId: session.user.id }, body.move);
+          await moveKey(client, table, { id: keyId, provider: loaded.provider, orgId, userId: session.user.id }, body.move);
         }
-        return { removed: false, provider: key.provider, label: key.label };
+        if (typeof body.model === "string") {
+          const model = normalizeModelText(body.model);
+          if (model.length > 400) throw new Error("Keep the model list under 400 characters");
+          await client.query(`UPDATE ${table} SET model = $2 WHERE id = $1::uuid`, [keyId, model || null]);
+        }
+        if (encrypted) {
+          await client.query(
+            `UPDATE ${table}
+                SET key_ciphertext = $2, key_nonce = $3, key_auth_tag = $4, encrypted_dek = $5, kms_key_id = $6
+              WHERE id = $1::uuid`,
+            [keyId, encrypted.ciphertext, encrypted.nonce, encrypted.authTag, encrypted.encryptedDek, encrypted.kmsKeyId],
+          );
+        }
       });
-      return Response.json({ ok: true, ...result, scope });
+      return Response.json({
+        ok: true,
+        removed: false,
+        provider: loaded.provider,
+        label: loaded.label,
+        scope,
+        checked: check?.status === "valid",
+        notice: check?.status === "unchecked" ? check.message : null,
+      });
     }
 
     if (action === "save_local") {
@@ -745,21 +826,41 @@ export async function POST(request: Request) {
 
     if (action === "save_routing") {
       const mode = body.mode === "fixed" ? "fixed" : "automode";
-      const fixedModelId =
+      let fixedModelId =
         typeof body.fixedModelId === "string" && body.fixedModelId.trim()
           ? body.fixedModelId.trim()
           : null;
-      if (mode === "fixed" && !fixedModelId) {
-        throw new Error("Pick a fixed model when Fixed mode is selected");
-      }
-      if (fixedModelId && !BYOK_MODEL_OPTIONS.some((m) => m.id === fixedModelId)) {
-        throw new Error("Fixed model is not in the supported BYOK catalog");
-      }
-      const enabledModelIds = Array.isArray(body.enabledModelIds)
+      let enabledModelIds = Array.isArray(body.enabledModelIds)
         ? body.enabledModelIds.filter((id) => BYOK_MODEL_OPTIONS.some((m) => m.id === id))
         : BYOK_MODEL_OPTIONS.map((m) => m.id);
+      let routingNotice: string | null = null;
+      if (typeof body.models === "string") {
+        const parsed = matchModelList(body.models, BYOK_MODEL_OPTIONS, mode);
+        if (parsed.unknown.length) {
+          return Response.json(
+            {
+              error: `We don't know ${parsed.unknown.join(", ")}. Separate model names with a comma.`,
+              field: "models",
+            },
+            { status: 422 },
+          );
+        }
+        const typed = body.models.split(",").map((part) => part.trim()).filter(Boolean);
+        if (mode === "fixed") {
+          fixedModelId = parsed.ids[0] ?? null;
+          if (typed.length > 1) routingNotice = "Saved the first model. Choose Pick for each job to use more than one.";
+        } else {
+          enabledModelIds = parsed.ids;
+        }
+      }
+      if (mode === "fixed" && !fixedModelId) {
+        throw new Error("Type the model to use");
+      }
+      if (fixedModelId && !BYOK_MODEL_OPTIONS.some((m) => m.id === fixedModelId)) {
+        throw new Error("That model is not one Vantage can route");
+      }
       if (mode === "automode" && enabledModelIds.length === 0) {
-        throw new Error("Enable at least one model for Automode");
+        throw new Error("Type at least one model, separated by commas");
       }
 
       /*
@@ -793,7 +894,7 @@ export async function POST(request: Request) {
         );
       });
 
-      return Response.json({ ok: true, mode, fixedModelId, enabledModelIds, freeSwarmModel });
+      return Response.json({ ok: true, mode, fixedModelId, enabledModelIds, freeSwarmModel, notice: routingNotice });
     }
 
     throw new Error("Unknown AI keys action");

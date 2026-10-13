@@ -25,6 +25,8 @@ export type TeamKeyRow = {
   createdAt: string | null;
   lastUsedAt: string | null;
   lastError: string | null;
+  /** One model, or several separated by a comma. Blank follows Model routing. */
+  model?: string | null;
 };
 
 function when(iso: string | null): string | null {
@@ -58,8 +60,13 @@ export function TeamKeyList({
   const [provider, setProvider] = useState<ByokProvider>(providers[0]?.id ?? "anthropic");
   const [label, setLabel] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [models, setModels] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editSecret, setEditSecret] = useState("");
+  const [editModels, setEditModels] = useState("");
   const meta = (id: string) => providers.find((entry) => entry.id === id);
 
   // Before 0727 there are no ids: show what is configured, one row per provider, read-only order.
@@ -76,6 +83,7 @@ export function TeamKeyList({
         createdAt: status.createdAt,
         lastUsedAt: status.lastUsedAt,
         lastError: null,
+        model: null,
       }));
   const multiKey = Boolean(keyList);
 
@@ -95,13 +103,20 @@ export function TeamKeyList({
     setBusy("add");
     setFieldError(null);
     try {
-      const { ok, data } = await post({ action: "save_key", provider, apiKey: secret, ...(label.trim() ? { label: label.trim() } : {}) });
+      const { ok, data } = await post({
+        action: "save_key",
+        provider,
+        apiKey: secret,
+        ...(label.trim() ? { label: label.trim() } : {}),
+        ...(models.trim() ? { model: models.trim() } : {}),
+      });
       if (!ok) {
         setFieldError(data.error ?? "That key was not saved. Check it and try again.");
         return;
       }
       setApiKey("");
       setLabel("");
+      setModels("");
       onMessage(data.notice ?? `${meta(provider)?.label ?? "The provider"} accepted the key. It is saved and encrypted.`);
       await onChanged();
     } finally {
@@ -117,6 +132,39 @@ export function TeamKeyList({
         onMessage(data.error ?? "That change was not saved.", true);
         return;
       }
+      await onChanged();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function startEdit(row: TeamKeyRow) {
+    setEditing(row.id);
+    setEditLabel(row.label);
+    setEditSecret("");
+    setEditModels(row.model ?? "");
+    setFieldError(null);
+  }
+
+  async function saveEdit(row: TeamKeyRow) {
+    setBusy(row.id);
+    setFieldError(null);
+    try {
+      const { ok, data } = await post({
+        action: "update_key",
+        keyId: row.id,
+        scope: "team",
+        label: editLabel,
+        model: editModels,
+        ...(editSecret.trim() ? { apiKey: editSecret.trim() } : {}),
+      });
+      if (!ok) {
+        setFieldError(data.error ?? "That change was not saved.");
+        return;
+      }
+      setEditing(null);
+      setEditSecret("");
+      onMessage(data.notice ?? (editSecret.trim() ? "Key checked and saved." : "Saved."));
       await onChanged();
     } finally {
       setBusy(null);
@@ -161,13 +209,14 @@ export function TeamKeyList({
             const place = sameProvider.findIndex((other) => other.id === row.id);
             const used = when(row.lastUsedAt);
             return (
-              <li key={row.id} data-enabled={row.enabled ? "yes" : "no"} data-testid="ai-key-row">
+              <li key={row.id} className={editing === row.id ? "is-editing" : undefined} data-enabled={row.enabled ? "yes" : "no"} data-testid="ai-key-row">
                 <span className="ai-keys-list-main">
                   <strong>{row.label}</strong>
                   <small>
                     {meta(row.provider)?.label ?? row.provider}
                     {sameProvider.length > 1 ? ` · tried ${place === 0 ? "first" : place === 1 ? "second" : `#${place + 1}`}` : ""}
                     {used ? ` · last used ${used}` : " · not used yet"}
+                    {row.model ? ` · ${row.model}` : ""}
                   </small>
                   {row.lastError ? <small className="ai-keys-list-error">{row.lastError}</small> : null}
                 </span>
@@ -185,6 +234,9 @@ export function TeamKeyList({
                         </button>
                       </>
                     ) : null}
+                    <button type="button" className="ai-keys-text-btn" disabled={busy !== null} onClick={() => startEdit(row)}>
+                      Edit
+                    </button>
                     <label className="ai-keys-switch" title={row.enabled ? "On: AI uses this key" : "Off: AI skips this key"}>
                       <input
                         type="checkbox"
@@ -207,6 +259,55 @@ export function TeamKeyList({
                 ) : (
                   <span className="ai-keys-list-state">{row.enabled ? "On" : "Off"}</span>
                 )}
+                {editing === row.id ? (
+                  <form
+                    className="ai-keys-edit"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void saveEdit(row);
+                    }}
+                  >
+                    <label>
+                      <span>Name</span>
+                      <input type="text" maxLength={60} value={editLabel} disabled={busy === row.id} onChange={(event) => setEditLabel(event.target.value)} required />
+                    </label>
+                    <label>
+                      <span>Models</span>
+                      <input
+                        type="text"
+                        value={editModels}
+                        disabled={busy === row.id}
+                        placeholder="claude-haiku-5-5, gpt-4.1-mini"
+                        spellCheck={false}
+                        onChange={(event) => setEditModels(event.target.value)}
+                      />
+                    </label>
+                    <label>
+                      <span>New API key</span>
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        spellCheck={false}
+                        value={editSecret}
+                        disabled={busy === row.id}
+                        placeholder="Leave blank to keep the current key"
+                        onChange={(event) => setEditSecret(event.target.value)}
+                      />
+                    </label>
+                    <p className="app-muted ai-keys-add-hint">
+                      Separate models with a comma. Leave models blank to follow Model routing. A new key is checked with the provider when you save.
+                    </p>
+                    {fieldError ? <p className="ai-keys-field-error" role="alert">{fieldError}</p> : null}
+                    <div className="ai-keys-add-actions">
+                      <button type="button" className="ai-keys-text-btn" disabled={busy === row.id} onClick={() => { setEditing(null); setFieldError(null); }}>
+                        Cancel
+                      </button>
+                      <button className="primary-action" type="submit" disabled={busy === row.id || !editLabel.trim()}>
+                        {busy === row.id ? (editSecret.trim() ? "Checking…" : "Saving…") : editSecret.trim() ? "Check and save" : "Save"}
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </li>
             );
           })}
@@ -263,15 +364,28 @@ export function TeamKeyList({
               onChange={(event) => setApiKey(event.target.value)}
             />
           </label>
-          <p className="app-muted ai-keys-add-hint">{meta(provider)?.docsHint}. Encrypted when saved and never shown again.</p>
-          {fieldError ? (
+          <label className="ai-keys-add-secret">
+            <span>Models (optional)</span>
+            <input
+              type="text"
+              value={models}
+              spellCheck={false}
+              placeholder="claude-haiku-5-5, gpt-4.1-mini"
+              disabled={busy === "add"}
+              onChange={(event) => setModels(event.target.value)}
+            />
+          </label>
+          <p className="app-muted ai-keys-add-hint">
+            {meta(provider)?.docsHint}. We check the key with the provider when you save, then encrypt it. Separate models with a comma, or leave them blank to follow Model routing.
+          </p>
+          {fieldError && editing === null ? (
             <p className="ai-keys-field-error" role="alert">
               {fieldError}
             </p>
           ) : null}
           <div className="ai-keys-add-actions">
             <button className="primary-action" type="submit" disabled={busy === "add" || !apiKey.trim()}>
-              {busy === "add" ? "Checking…" : "Save key"}
+              {busy === "add" ? "Checking…" : "Check and save"}
             </button>
           </div>
         </form>

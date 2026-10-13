@@ -281,7 +281,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     }
   }
 
-  async function removeMemberKey(provider: string) {
+  async function removeMemberKey(provider: string, keyId?: string) {
     if (!orgId) return;
     setMineBusy(true);
     setMessage("");
@@ -290,7 +290,11 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       const response = await fetch("/api/organizations/ai-keys", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action: "remove_member_key", provider }),
+        body: JSON.stringify(
+          keyId
+            ? { orgId, action: "remove_key", keyId, scope: "member" }
+            : { orgId, action: "remove_member_key", provider },
+        ),
       });
       const data = (await response.json()) as { error?: string };
       if (!response.ok) {
@@ -449,7 +453,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     }
   }
 
-  async function saveRouting() {
+  async function saveRouting(modelsText?: string) {
     if (!orgId) return;
     setBusyRouting(true);
     setMessage("");
@@ -465,18 +469,20 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           fixedModelId: routingDraft.fixedModelId,
           enabledModelIds: routingDraft.enabledModelIds,
           freeSwarmModel: routingDraft.freeSwarmModel ?? null,
+          ...(typeof modelsText === "string" ? { models: modelsText } : {}),
         }),
       });
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as { error?: string; notice?: string | null };
       if (!response.ok) {
         setMessage(data.error ?? "Could not save model routing");
         setMessageIsError(true);
         return;
       }
       setMessage(
-        routingDraft.mode === "fixed"
-          ? "Fixed model saved — every call with your keys uses that model."
-          : "Automode saved — CAD/Code use high reasoning; Strategy uses strong mid; light chat uses fast models from your pool.",
+        data.notice ??
+          (routingDraft.mode === "fixed"
+            ? "Saved. Every AI feature uses that model."
+            : "Saved. Vantage picks among those models for each job."),
       );
       await load();
     } finally {
@@ -559,7 +565,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           mineBusy={mineBusy}
           saveMemberKey={() => void saveMemberKey()}
           saveMyGoogleKey={(apiKey) => saveMemberKey({ provider: "google", apiKey })}
-          removeMemberKey={(provider) => void removeMemberKey(provider)}
+          removeMemberKey={(provider, keyId) => void removeMemberKey(provider, keyId)}
           message={message}
           messageIsError={messageIsError}
           keyError={keyError}
@@ -584,7 +590,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
           routingDraft={routingDraft}
           setRoutingDraft={setRoutingDraft}
           busyRouting={busyRouting}
-          saveRouting={() => void saveRouting()}
+          saveRouting={(modelsText) => void saveRouting(modelsText)}
           modelOptions={modelOptions}
           freeSwarm={freeSwarm}
           configuredProviders={configuredProviders}

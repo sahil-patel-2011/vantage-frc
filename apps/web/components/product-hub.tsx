@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, Suspense, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore, Suspense, useState, type ReactNode } from "react";
+import { hubBarSections } from "../lib/nav/hub-bar";
 import { hubPageTitle, hubNavigationSections } from "../lib/nav/hub-navigation";
+import { defaultPinHrefs } from "../lib/nav/pins";
+import { pinnedHrefsSnapshot, subscribePinnedHrefs } from "../lib/nav/pin-snapshot";
 import { HubContextActions } from "./hub-context-actions";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
@@ -170,6 +173,7 @@ export function ProductHubShell({
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [manageReady, setManageReady] = useState(false);
   const workbenchId = hubWorkbenchId(hub, tab);
+  const livePins = useSyncExternalStore(subscribePinnedHrefs, pinnedHrefsSnapshot, () => []);
   // One permitted destination list feeds compact sections and contextual actions.
   const workspaceTabs = useMemo(() => hubTabsForMember(hub.tabs.filter(entry =>
     primaryTabs.some(root => root.id === (entry.group ?? entry.id)),
@@ -284,6 +288,7 @@ export function ProductHubShell({
   const selectedSection = sections.find(section => section.id === tab)
     ?? sections.find(section => hubWorkbenchId(hub, section.id) === workbenchId)
     ?? sections[0];
+  const barSections = hubBarSections(hub.href, sections, livePins.length > 0 ? livePins : defaultPinHrefs(), selectedSection?.id ?? null);
 
   return (
     <PageMain className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
@@ -296,7 +301,7 @@ export function ProductHubShell({
         </div>
         {headerActions}
       </div>
-      <TabBar className="workspace-hub-tabs" aria-label={`${hub.label} sections`} tabs={sections} value={selectedSection?.id ?? tab} onChange={selectTab} />
+      <TabBar className="workspace-hub-tabs" aria-label={`${hub.label} sections`} tabs={barSections} value={selectedSection?.id ?? tab} onChange={selectTab} />
       <div
         className="product-hub-panel"
         data-hub-tab={tab}

@@ -317,6 +317,15 @@ export function findByokModelOption(id: string | null | undefined): ByokModelOpt
   return BYOK_MODEL_OPTIONS.find((m) => m.id === canonical) ?? null;
 }
 
+/**
+ * The first model in a comma-separated list saved on a key ("gpt-4.1, claude-haiku-5-5").
+ * The provider is called with one model id. An empty list returns "" so the caller can
+ * fall through to routing.
+ */
+export function firstListedModel(value: string | null | undefined): string {
+  return value?.split(",")[0]?.trim() ?? "";
+}
+
 export function estimateByokCostUsd(input: {
   provider: string;
   model: string;

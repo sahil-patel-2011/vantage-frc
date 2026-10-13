@@ -88,11 +88,11 @@ describe("product-nav", () => {
     // Plus the pit TV, which had no menu entry at all.
     // Forms and Assignments are canonical Competition destinations (hub-navigation.ts).
     expect(byLabel.Competition?.map((entry) => entry.label)).toEqual([
-      "Forms", "Assignments", "Teams", "Match plan", "Pick list", "Event day", "Our robot",
+      "Forms", "Assignments", "Teams", "Match plan", "Event day", "Our robot",
     ]);
     expect(byLabel.Competition?.map((entry) => entry.href)).toEqual([
       "/competition?tab=forms", "/competition?tab=scout-coverage-live",
-      "/competition?tab=teams", "/competition?tab=strategy", "/competition?tab=picks",
+      "/competition?tab=teams", "/competition?tab=strategy",
       "/competition?tab=command", "/competition?tab=match-checklist",
     ]);
     expect(byLabel.Team?.map((entry) => entry.label)).toEqual(["Chat", "People", "Tasks", "Playbook"]);

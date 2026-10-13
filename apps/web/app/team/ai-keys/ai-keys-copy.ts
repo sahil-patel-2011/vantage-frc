@@ -123,7 +123,7 @@ export const MEMBER_KEY_BASE_URL_HINT =
   "Optional. Point the OpenAI slot at anything OpenAI-compatible — Groq, Mistral, Cerebras, Together, or your own Ollama / LM Studio server. Leave blank for api.openai.com.";
 
 export const MEMBER_KEY_MODEL_HINT =
-  "Optional. The model id this key should use, e.g. llama3.2 or gpt-4.1-mini. Leave blank to use the team's routing.";
+  "Optional. One model, or several separated by a comma. This key uses the first. Leave blank to follow Team AI keys.";
 
 export type MemberKeyFields = {
   /** Always true — a personal entry without a key is not an entry. */

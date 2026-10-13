@@ -26,7 +26,7 @@ describe("settings nav model", () => {
 
   it("hrefs are unique in what any single viewer actually sees", () => {
     for (const role of [null, "scout", "viewer", "admin", "owner"]) {
-      const hrefs = visibleSettingsNav(role).map((i) => i.href.split("?")[0] + (i.href.includes("tab=") ? i.href : ""));
+      const hrefs = visibleSettingsNav(role).map((i) => i.href.split("#")[0]);
       expect(new Set(hrefs).size).toBe(hrefs.length);
     }
   });
@@ -60,7 +60,7 @@ describe("visibleSettingsNav", () => {
       "Security",
       "Your teams",
       "Connectors",
-      "Your AI keys",
+      "Your AI key",
       "Delete account",
     ]);
     expect(items.at(-1)?.danger).toBe(true);
@@ -71,18 +71,19 @@ describe("visibleSettingsNav", () => {
     const team = items.filter((i) => i.scope === "team").map((i) => i.label);
     expect(team).toEqual([
       "Team profile",
+      "Team AI keys",
       "Members and invites",
       "Access and roles",
       "Money managers",
       "Join code",
       "Team security",
-      "AI keys and credit",
       "Chat safety",
       "Team data and export",
       "Delete team",
     ]);
-    // One row for the AI keys page: the team's.
-    expect(items.map((i) => i.id)).not.toContain("my-ai-keys");
+    // Your key and the team's keys are both rows. They are the same page, two sections.
+    expect(items.map((i) => i.id)).toContain("my-ai-keys");
+    expect(items.find((i) => i.id === "my-ai-keys")?.href).toBe("/team/ai-keys?focus=yours");
     const firstTeam = items.findIndex((i) => i.scope === "team");
     expect(items.slice(0, firstTeam).every((i) => i.scope === "personal")).toBe(true);
     expect(items.slice(firstTeam).every((i) => i.scope === "team")).toBe(true);
@@ -161,6 +162,7 @@ describe("activeSettingsId", () => {
 
   it("matches team routes and ignores unrelated query params", () => {
     expect(activeSettingsId(owner, "/team/ai-keys", "?orgId=abc")).toBe("team-ai-keys");
+    expect(activeSettingsId(owner, "/team/ai-keys", "?focus=yours&orgId=abc")).toBe("my-ai-keys");
     expect(activeSettingsId(member, "/team/ai-keys", "?orgId=abc")).toBe("my-ai-keys");
     expect(activeSettingsId(owner, "/team/budgets")).toBe("team-ai-keys");
     // Chat safety is its own page now, the same one the Team settings chip opens.
