@@ -12,13 +12,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BACKUP_MODE_BUILD_NOTE, checkProductionSchema } from "../../../scripts/production-schema-preflight.mjs";
 
-// An operator enables this flag for the approved 0734 release, then clears it.
-// The normal production schema gate remains read-only and runs afterward.
-if (process.env.VERCEL_ENV === "production" && process.env.VANTAGE_APPLY_PERSONAL_KEY_SHARING === "1") {
-  const migration = spawnSync(process.execPath, [fileURLToPath(new URL("../../../scripts/apply-personal-key-sharing-production.mjs", import.meta.url)), "--apply-0734"], { stdio: "inherit", env: process.env });
-  if (migration.status !== 0) process.exit(migration.status ?? 1);
-}
-
 try {
   const schema = await checkProductionSchema();
   if (schema.backupMode) console.warn(BACKUP_MODE_BUILD_NOTE);
