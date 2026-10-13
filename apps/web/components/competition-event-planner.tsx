@@ -77,7 +77,7 @@ export function CompetitionEventPlanner({ orgId, initialEventKey, onChanged, onA
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "This event wasn't saved. Try again.");
       if (epoch !== generation.current) return;
-      setMessage(body.intent === "activate" ? `${data.eventName ?? "Event"} is active for the whole team.` : data.scheduled ? `${data.eventName} is on the team's calendar.` : `${data.eventName} is saved for preparation.`);
+      setMessage(body.intent === "activate" ? body.eventKey === null ? "No competition is active. Your saved events stay on the calendar." : `${data.eventName ?? "Event"} is active for the whole team.` : data.scheduled ? `${data.eventName} is on the team's calendar.` : `${data.eventName} is saved for preparation.`);
       setSelected(null); setAdding(false); setRetry(n => n + 1);
       onChanged?.();
       if (body.intent === "activate") onActive?.(data.eventKey ?? null);

@@ -146,7 +146,7 @@ describeWithDatabase(
       const client=await pool.connect();
       try {
         await client.query("BEGIN");
-        await client.query(`INSERT INTO users(id,email) VALUES($1,'plan-owner@example.test'),($2,'plan-member@example.test'),($3,'plan-foreign@example.test')`,[owner,member,foreignOwner]);
+        await client.query(`INSERT INTO users(id,email,name) VALUES($1,'plan-owner@example.test','Plan owner'),($2,'plan-member@example.test','Plan member'),($3,'plan-foreign@example.test','Foreign owner')`,[owner,member,foreignOwner]);
         await client.query(`INSERT INTO profiles(user_id,date_of_birth) VALUES($1,'2000-01-01'),($2,'2000-01-01'),($3,'2000-01-01')`,[owner,member,foreignOwner]);
         await client.query(`INSERT INTO organizations(id,name,slug) VALUES($1,'Plan team','plan-team'),($2,'Foreign plan','foreign-plan')`,[org,foreign]);
         await client.query(`INSERT INTO memberships(org_id,user_id,role) VALUES($1,$2,'owner'),($1,$3,'scout'),($4,$5,'owner')`,[org,owner,member,foreign,foreignOwner]);
@@ -197,7 +197,7 @@ describeWithDatabase(
       const event="2026custom-12345678-concurrency";
       const setup=await pool.connect();
       try {
-        await setup.query(`INSERT INTO users(id,email) VALUES($1,'plan-concurrency@example.test')`,[owner]);
+        await setup.query(`INSERT INTO users(id,email,name) VALUES($1,'plan-concurrency@example.test','Concurrent owner')`,[owner]);
         await setup.query(`INSERT INTO profiles(user_id,date_of_birth) VALUES($1,'2000-01-01')`,[owner]);
         await setup.query(`INSERT INTO organizations(id,name,slug) VALUES($1,'Concurrent plan','concurrent-plan')`,[org]);
         await setup.query(`INSERT INTO memberships(org_id,user_id,role) VALUES($1,$2,'owner')`,[org,owner]);
