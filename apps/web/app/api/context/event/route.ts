@@ -68,7 +68,10 @@ export async function GET(request: Request) {
         activeEventKey: membership.rows[0]!.eventKey,
         canSetEvent: await canManageScouting(client, orgId),
         year,
-        events: [...(scope === "saved" ? [] : organizerEvents(year, q, events.rows)), ...events.rows],
+        events: [...(scope === "saved" ? [] : organizerEvents(year, q, events.rows)), ...events.rows.map(row => ({ ...row,
+          plannedStart: row.plannedStart ? new Date(row.plannedStart).toISOString() : null,
+          plannedEnd: row.plannedEnd ? new Date(row.plannedEnd).toISOString() : null,
+        }))],
       };
     });
 

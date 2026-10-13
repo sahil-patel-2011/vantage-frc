@@ -458,6 +458,10 @@ async function loadView(
     const rsvp = rsvpByEvent.get(row.id);
     return {
       ...row,
+      ...(row.competitionEventKey ? {
+        startsAt: new Date(row.startsAt).toISOString(),
+        endsAt: row.endsAt ? new Date(row.endsAt).toISOString() : null,
+      } : {}),
       myRsvp: rsvp?.myRsvp ?? null,
       rsvpGoing: rsvp?.rsvpGoing ?? 0,
       rsvpMaybe: rsvp?.rsvpMaybe ?? 0,

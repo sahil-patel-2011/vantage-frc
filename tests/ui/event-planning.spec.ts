@@ -38,6 +38,7 @@ for (const width of [390, 768, 1440]) {
 }
 
 test("save an undated scrimmage without activating it or adding a calendar row", async ({ page, context }) => {
+  await page.setViewportSize({ width: 390, height: 691 });
   await isolateUi(page, context);
   await page.route("**/api/command?**", route => route.fulfill({ json: { status: "setup_required", orgId, canSetEvent: true, eventKey: null, matches: [], setupSteps: [], links: {} } }));
   await page.route("**/api/context/event?**", route => route.fulfill({ json: { canSetEvent: true, activeEventKey: null, events: [] } }));
@@ -48,7 +49,14 @@ test("save an undated scrimmage without activating it or adding a calendar row",
   await dialog.getByRole("spinbutton", { name: "Competition season" }).fill("2027");
   await dialog.getByRole("button", { name: "Add an unlisted event", exact: true }).click();
   await dialog.getByLabel("Event name", { exact: true }).fill("Shop scrimmage");
+  await dialog.getByText("Time zone", { exact: true }).click();
+  await dialog.getByLabel("City", { exact: true }).fill("Atlanta");
   await dialog.getByRole("checkbox", { name: "Add to the whole team’s calendar" }).uncheck();
+  const save = dialog.getByRole("button", { name: "Save event", exact: true });
+  await expect(save).toBeVisible();
+  const [action, bounds] = await Promise.all([save.boundingBox(), dialog.boundingBox()]);
+  expect(action && bounds && action.y >= bounds.y && action.y + action.height <= bounds.y + bounds.height).toBe(true);
+  await accessible(page);
   await dialog.getByRole("button", { name: "Save event", exact: true }).click();
   await expect.poll(() => posted).toMatchObject({ intent: "save", create: { name: "Shop scrimmage", year: 2027, startDate: null, endDate: null } });
   expect(posted).not.toHaveProperty("schedule");

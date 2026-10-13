@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { competitionCalendarDays, competitionCalendarLabel, competitionDay, dateSchedule, organizerEvent, organizerEvents, parseCompetitionSchedule, parseEventYear, plannedLastDay } from "./event-planning";
+import { buildWeekCells, groupEventsByDay, type CalendarEvent } from "../subteam-calendar";
 
 describe("competition planning", () => {
   it("finds organizer-published GRITS dates without inventing next year's dates", () => {
@@ -31,6 +32,11 @@ describe("competition planning", () => {
     expect(competitionCalendarDays(row)).toEqual(["2026-10-15", "2026-10-16", "2026-10-17"]);
     expect(competitionCalendarLabel(row)).toMatch(/15.*17/);
     expect(competitionCalendarLabel(row)).not.toMatch(/18/);
+  });
+  it("buckets the same competition on all venue days regardless of the device zone", () => {
+    const row = { ...dateSchedule("2026-10-15", "2026-10-17", true, "America/New_York"), id: "competition", title: "GRITS", competitionEventKey: "2026custom-12345678-grits", competitionTimeZone: "America/New_York" } as unknown as CalendarEvent;
+    expect(groupEventsByDay([row]).map(bucket => bucket.day)).toEqual(["2026-10-15", "2026-10-16", "2026-10-17"]);
+    expect(buildWeekCells(new Date(2026, 9, 15), [row]).filter(cell => cell.items.length).map(cell => cell.day)).toEqual(["2026-10-15", "2026-10-16", "2026-10-17"]);
   });
   it("rejects malformed times, bad zones and unsupported spans", () => {
     const valid = dateSchedule("2026-10-15", "2026-10-17", true, "America/New_York");
