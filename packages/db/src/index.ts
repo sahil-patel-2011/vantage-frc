@@ -31,13 +31,22 @@ export async function withRls<T>(
   work: (client: PoolClient) => Promise<T>
 ): Promise<T> {
   const client = await requestPool.connect();
-  try {
+  const beginRequest = async () => {
     await client.query("BEGIN");
+    await client.query("SET LOCAL ROLE vantage_app");
+    await client.query("SELECT set_config('app.user_id', $1, true), set_config('app.org_id', $2, true)", [context.userId, context.orgId ?? ""]);
+  };
+  try {
     // Even a misconfigured owner URL must never bypass tenant policies. Restricted
     // logins are members of vantage_app; SET LOCAL also resets on commit/rollback.
-    await client.query("SET LOCAL ROLE vantage_app");
-    await client.query("SELECT set_config('app.user_id', $1, true)", [context.userId]);
-    await client.query("SELECT set_config('app.org_id', $1, true)", [context.orgId ?? ""]);
+    await beginRequest();
+    const activation = await client.query<{ attempted: boolean }>("SELECT activate_scheduled_competition_events($1::uuid) AS attempted", [context.orgId?.trim() || null]);
+    if (activation.rows[0]?.attempted) {
+      // Release context row locks before any long feature/provider work. The
+      // approved calendar plan is independent of that subsequent operation.
+      await client.query("COMMIT");
+      await beginRequest();
+    }
     const result = await work(client);
     await client.query("COMMIT");
     return result;

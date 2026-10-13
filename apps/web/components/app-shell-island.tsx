@@ -148,6 +148,8 @@ export function AppShellIsland({
   return (
     <nav
       className="soft-island"
+      aria-hidden={navOpen || undefined}
+      inert={navOpen}
       data-testid="soft-island"
       data-tour="island"
       aria-label="Primary apps"

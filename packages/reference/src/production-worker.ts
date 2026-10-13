@@ -9,6 +9,7 @@ import { globalReferenceAdminStore } from "./admin-store";
 import { StatboticsClient } from "./statbotics-client";
 import {
   createGlobalReferenceJobs,
+  syncGlobalEventDirectory,
   type GlobalReferenceWorkerOptions,
   type TbaGetter,
 } from "./worker";
@@ -65,6 +66,15 @@ export function createProductionReferenceJobs(config: { preferOrgIds?: string[] 
   const jobs = createGlobalReferenceJobs(workerOptions);
 
   return {
+    eventDirectory: {
+      async run(year: number): Promise<number | null> {
+        const cursor = await globalReferenceAdminStore.getCursor("tba", `events/${year}`);
+        if (cursor?.syncedAt && !cursor.lastError && Date.now() - cursor.syncedAt.getTime() < 6 * 60 * 60_000) return null;
+        await assertTbaConfigured(credentials, preferOrgIds);
+        if (!await globalReferenceAdminStore.claimRefresh(`event-directory:${year}`, 60_000)) throw new Error("An event refresh is already running or was just attempted. Try again in a minute; your saved events are still available.");
+        return syncGlobalEventDirectory(workerOptions, year);
+      },
+    },
     /**
      * Cross-instance single flight for page-triggered refreshes (see
      * AdminGlobalReferenceStore.claimRefresh): true means this caller should fetch.

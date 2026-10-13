@@ -19,9 +19,9 @@ function PersonGlyph() {
   );
 }
 
-/** The current team also opens the workspace picker. */
-function TeamChip({ label, className, onOpen }: { label: string; onOpen: () => void; className: string }) {
-  return <button type="button" className={`${className} soft-team-switch`} onClick={onOpen} title="Switch team" aria-label={`Switch team — ${label}`}><span>{label}</span><Icon name="chevron" /></button>;
+/** Team context stays visible; switching lives in Settings → Your teams. */
+function TeamChip({ label, className }: { label: string; className: string }) {
+  return <p className={className}><span>{label}</span></p>;
 }
 
 export function AppShellTopbar({
@@ -38,7 +38,6 @@ export function AppShellTopbar({
   searchOpen,
   onOpenSearch,
   shortcutHint,
-  onOpenTeams,
   minimal = false,
 
   unreadCount,
@@ -73,8 +72,6 @@ export function AppShellTopbar({
   /** Opens the search palette (⌘K / Ctrl+K does the same). */
   onOpenSearch: () => void;
   shortcutHint: string;
-  /** Opens the workspace picker. */
-  onOpenTeams: () => void;
   /**
    * Onboarding: the logo and the account menu (for Sign out) only. The menu and search buttons
    * there led nowhere, and CSS hid only their icons, leaving an invisible 44×44 button.
@@ -128,7 +125,6 @@ export function AppShellTopbar({
               ) : (
                 <TeamChip
                   label={orgLabel}
-                  onOpen={onOpenTeams}
                   className="soft-topbar-title soft-topbar-org"
                 />
               )

@@ -8,7 +8,6 @@ import { SETTINGS_HREF } from "../lib/nav/settings-nav";
 import { AppShellNavGroups } from "./app-shell-nav-groups";
 import { ShellSearchResults } from "./shell-search-results";
 import type { ShellSearch } from "./use-shell-search";
-import { workspacePickerHref } from "../lib/workspace";
 
 function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
   if (event.key !== "Tab") return;
@@ -106,13 +105,10 @@ export function AppShellNavPanel({
           </button>
         </div>
         <div className="soft-profile-block soft-profile-compact">
-          {/* The same destination as the top bar's team button and the sidebar's team card: the
-              picker, which brings you back to this page for the team you pick. */}
-          <a className="soft-org-chip" href={workspacePickerHref(pathname, pathSearch)} onClick={closeNav} aria-label={`Switch team — ${orgLabel}`}>
+          <div className="soft-org-chip" aria-label={`Current team — ${orgLabel}`}>
             <Icon name="users" />
             <div><strong>{orgLabel}</strong><span>{orgId ? rolePlanCue : "Choose your team"}</span></div>
-            <Icon name="chevron" />
-          </a>
+          </div>
         </div>
 
         <div className="soft-panel-search">

@@ -551,6 +551,9 @@
 .dialogClose svg { width: 18px; height: 18px; }
 .dialogBody { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
 .dialogActions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.dialog.scrollableDialog { display: flex; flex-direction: column; overflow: hidden; }
+.scrollableDialog > .dialogHead { flex-shrink: 0; }
+.scrollableBody { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
 /* Animate the scrim colour, never the overlay opacity: fading a container
    also fades every label and input. The card rises a few
    pixels, a sheet slides up from the edge it is attached to. Durations are the

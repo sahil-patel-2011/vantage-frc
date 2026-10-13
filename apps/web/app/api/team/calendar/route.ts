@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { randomBytes } from "node:crypto";
 import { auth } from "@vantage/core";
+import { canManageScouting } from "@vantage/scouting/permissions";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { buildCalendar, type CalendarIcsEvent } from "../../../../lib/calendar-ics";
@@ -220,6 +221,9 @@ const BASE_EVENT_COLUMNS = `e.id, e.title, e.kind, e.starts_at::text AS "startsA
               ae.title AS "attendanceEventTitle",
               e.milestone_id AS "milestoneId",
               e.driver_session_id AS "driverSessionId",
+              e.competition_event_key AS "competitionEventKey",
+              e.competition_auto_activate AS "competitionAutoActivate",
+              e.recurrence_timezone AS "competitionTimeZone",
               e.created_by::text AS "createdBy",
               cb.name AS "createdByName"`;
 
@@ -454,6 +458,10 @@ async function loadView(
     const rsvp = rsvpByEvent.get(row.id);
     return {
       ...row,
+      ...(row.competitionEventKey ? {
+        startsAt: new Date(row.startsAt).toISOString(),
+        endsAt: row.endsAt ? new Date(row.endsAt).toISOString() : null,
+      } : {}),
       myRsvp: rsvp?.myRsvp ?? null,
       rsvpGoing: rsvp?.rsvpGoing ?? 0,
       rsvpMaybe: rsvp?.rsvpMaybe ?? 0,
@@ -593,6 +601,7 @@ async function loadView(
       role,
       userId,
       canManage: isAdmin(role),
+      canManageCompetition: await canManageScouting(client, orgId),
     },
     subteams: subteams.rows,
     members: memberRows,
@@ -757,6 +766,7 @@ type MasterRow = {
   seriesId: string | null;
   recurrenceTimezone: string | null;
   createdBy: string;
+  competitionEventKey: string | null;
 };
 
 async function loadMaster(
@@ -768,7 +778,7 @@ async function loadMaster(
     `SELECT id, starts_at::text AS "startsAt", ends_at::text AS "endsAt", rrule,
             recurrence_end::text AS "recurrenceEnd", series_id AS "seriesId",
             recurrence_timezone AS "recurrenceTimezone",
-            created_by::text AS "createdBy"
+            created_by::text AS "createdBy", competition_event_key AS "competitionEventKey"
      FROM subteam_calendar_events
      WHERE id = $1::uuid AND org_id = $2::uuid
      LIMIT 1`,
@@ -1026,7 +1036,7 @@ async function handleOccurrenceWrite(
   const scope: OccurrenceScope = parseOccurrenceScope(body.scope);
   const master = await loadMaster(client, orgId, ref.rowId);
   if (!master) throw new HttpError(404, "Event not found");
-  if (!canDeleteCalendarEvent({ role, userId, authorId: master.createdBy })) {
+  if (!(master.competitionEventKey ? await canManageScouting(client, orgId) : canDeleteCalendarEvent({ role, userId, authorId: master.createdBy }))) {
     throw new HttpError(403, mode === "delete" ? "You cannot delete this event" : "You cannot edit this event");
   }
 
@@ -1488,14 +1498,14 @@ export async function POST(request: Request) {
         }
 
         case "update_event": {
-          const existing = await client.query<{ createdBy: string }>(
-            `SELECT created_by::text AS "createdBy"
+          const existing = await client.query<{ createdBy: string; competitionEventKey: string | null }>(
+            `SELECT created_by::text AS "createdBy", competition_event_key AS "competitionEventKey"
              FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`,
             [action.id, action.orgId],
           );
           const author = existing.rows[0];
           if (!author) throw new HttpError(404, "Event not found");
-          if (!canDeleteCalendarEvent({ role, userId, authorId: author.createdBy })) {
+          if (!(author.competitionEventKey ? await canManageScouting(client, action.orgId) : canDeleteCalendarEvent({ role, userId, authorId: author.createdBy }))) {
             throw new HttpError(403, "You cannot edit this event");
           }
           const values: unknown[] = [action.id, action.orgId];
@@ -1542,14 +1552,14 @@ export async function POST(request: Request) {
         }
 
         case "delete_event": {
-          const existing = await client.query<{ createdBy: string }>(
-            `SELECT created_by::text AS "createdBy"
+          const existing = await client.query<{ createdBy: string; competitionEventKey: string | null }>(
+            `SELECT created_by::text AS "createdBy", competition_event_key AS "competitionEventKey"
              FROM subteam_calendar_events WHERE id = $1::uuid AND org_id = $2::uuid`,
             [action.id, action.orgId],
           );
           const row = existing.rows[0];
           if (!row) throw new HttpError(404, "Event not found");
-          if (!canDeleteCalendarEvent({ role, userId, authorId: row.createdBy })) {
+          if (!(row.competitionEventKey ? await canManageScouting(client, action.orgId) : canDeleteCalendarEvent({ role, userId, authorId: row.createdBy }))) {
             throw new HttpError(403, "You cannot delete this event");
           }
           const deleted = await client.query(

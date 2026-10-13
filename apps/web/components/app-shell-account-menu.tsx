@@ -111,9 +111,6 @@ export function AppShellAccountMenu({
         >
           <FeedbackBugIcon size={18} /><span>Send feedback</span>
         </button>
-        <a className="soft-account-destination" role="menuitem" href={withOrgHref("/account/teams", orgId)} onClick={onClose}>
-          <Icon name="users" /><span>Your teams</span>
-        </a>
         {me.platformAdmin ? (
           <a className="soft-account-destination" role="menuitem" href="/admin" onClick={onClose}>
             <Icon name="shield" /><span>Platform admin</span>

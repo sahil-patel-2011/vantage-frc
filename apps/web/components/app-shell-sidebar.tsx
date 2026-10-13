@@ -7,7 +7,6 @@ import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import { mainMenuSearch, mainMenuSections } from "../lib/nav/main-menu";
 import type { PinDefinition } from "../lib/nav/pins";
 import { SETTINGS_HREF, isSettingsPath } from "../lib/nav/settings-nav";
-import { workspacePickerHref } from "../lib/workspace";
 import { tourTargetForHref } from "../lib/tour/tour-steps";
 
 /**
@@ -36,7 +35,6 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
     </div>
     <div className="app-sidebar-team-context">
       <a className="app-sidebar-team" href={withOrgHref(orgId ? "/team" : "/account/teams", orgId)} title="Team overview"><i><Icon name="users" /></i><span><strong>{orgLabel}</strong><small>{orgId ? "Team overview" : "Choose your team"}</small></span><Icon name="chevron" /></a>
-      {!collapsed && orgId ? <a className="app-sidebar-switch" href={workspacePickerHref(pathname, pathSearch)}>Switch team <Icon name="chevron" /></a> : null}
     </div>
     <div className="app-sidebar-navigation">
     {pins.length > 0 ? <nav className="app-sidebar-pins" aria-labelledby="app-sidebar-pins-label">

@@ -41,6 +41,7 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   "0729_more_pinned_apps.sql",
   // Personal-key inference grants: never publish enabled sharing before its RLS-safe resolver exists.
   "0734_personal_ai_key_sharing.sql",
+  "0735_competition_calendar_planning.sql",
 ];
 
 export const BACKUP_MODE_BUILD_NOTE =

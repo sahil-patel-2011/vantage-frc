@@ -63,7 +63,6 @@ export function EventDayShell({
   error,
   onRetry,
   onSelectEvent,
-  canSetEvent,
   embedded = false,
   children,
 }: {
@@ -117,9 +116,9 @@ export function EventDayShell({
 
   const scoutingHref = hubHref("/competition", "scouting", orgId);
   const primarySetupCta =
-    canSetEvent && onSelectEvent ? (
+    orgId && onSelectEvent ? (
       <Button variant="primary" type="button" onClick={onSelectEvent}>
-        Set active event
+        Choose or plan an event
       </Button>
     ) : (
       <Button as="a" variant="primary" href={orgId ? scoutingHref : workspaceHref}>
@@ -150,9 +149,9 @@ export function EventDayShell({
         description={error ?? copy.description}
       >
         {shell === "setup" ? primarySetupCta : null}
-        {shell === "empty" && notOnSchedule && canSetEvent && onSelectEvent ? (
+        {shell === "empty" && notOnSchedule && onSelectEvent ? (
           <Button variant="primary" type="button" onClick={onSelectEvent}>
-            Change event
+            Choose or plan an event
           </Button>
         ) : shell === "empty" && !notOnSchedule ? (
           <Button as="a" variant="secondary" href={scheduleHref}>
@@ -174,7 +173,6 @@ export function CommandReadyHeader({
   eventName,
   loading,
   computedAt,
-  canSetEvent,
   onSelectEvent,
   onRefresh,
   headerActions,
@@ -209,15 +207,12 @@ export function CommandReadyHeader({
       >
         {loading ? "Loading…" : `Updated ${computedAt ? new Date(computedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"} · Refresh`}
       </button>
+      <Button variant="secondary" type="button" onClick={onSelectEvent}>Plan events</Button>
       <details className="edc-page-actions" open={actionsOpen} onToggle={event => setActionsOpen(event.currentTarget.open)}>
-        <summary data-disclosure>Event options</summary>
+        <summary data-disclosure>Share</summary>
         <div className="edc-page-actions-body">
           <CopyShareLink orgId={orgId} variant="ghost" />
-          {canSetEvent ? (
-            <Button variant="secondary" type="button" onClick={() => { setActionsOpen(false); onSelectEvent(); }}>
-              {eventKey ? "Change event" : "Set active event"}
-            </Button>
-          ) : null}
+
         </div>
       </details>
     </div>

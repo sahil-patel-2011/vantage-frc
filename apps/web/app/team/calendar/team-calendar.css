@@ -1366,6 +1366,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
 }
 .tc-entry-switch {
   display: inline-flex;
@@ -1375,7 +1376,7 @@
   border-radius: 999px;
 }
 .tc-entry-switch button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 6px 14px;
   color: var(--muted);
   background: none;

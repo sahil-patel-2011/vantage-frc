@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Modal, askConfirm } from "../../../components/ui";
+import { competitionCalendarLabel } from "../../../lib/events/event-planning";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { ViewOnlyNote } from "../../../components/view-only-note";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
@@ -143,6 +144,8 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const [anchor, setAnchor] = useState(() => new Date());
   const [quickDay, setQuickDay] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [competitionKey, setCompetitionKey] = useState<string | null>(null);
+  const [competitionBusy, setCompetitionBusy] = useState(false);
   const [quickHour, setQuickHour] = useState<number | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [syncScope, setSyncScope] = useState<CalendarFeedScope>("personal");
@@ -499,11 +502,11 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         events={view.events}
         busy={busy}
         canDelete={
-          canDeleteCalendarEvent({
+          (event.competitionEventKey ? view.context.canManageCompetition === true : canDeleteCalendarEvent({
             role: view.context.role,
             userId: view.context.userId,
             authorId: event.createdBy,
-          }) && !isReadonlyCalendarEvent(event)
+          })) && !isReadonlyCalendarEvent(event)
         }
         scopePrompt={scopeEventId === event.id}
         onScopePick={(scope) => {
@@ -515,14 +518,19 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         }}
         onCancelScope={() => setScopeEventId(null)}
         canEdit={
-          canDeleteCalendarEvent({
+          (event.competitionEventKey ? view.context.canManageCompetition === true : canDeleteCalendarEvent({
             role: view.context.role,
             userId: view.context.userId,
             authorId: event.createdBy,
-          }) && !isReadonlyCalendarEvent(event)
+          })) && !isReadonlyCalendarEvent(event)
         }
         editing={editEventId === event.id}
         onStartEdit={() => {
+          if (event.competitionEventKey) {
+            setCompetitionKey(event.competitionEventKey);
+            setCreateOpen(true);
+            return;
+          }
           setScopeEventId(null);
           setEditEventId(event.id);
         }}
@@ -899,7 +907,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
             <aside className="tc-panel">
               {viewOnly ? <ViewOnlyNote /> : null}
-              <Modal open={createOpen && !viewOnly} onClose={() => { if (!busy) { setCreateOpen(false); setPrefill(null); setQuickDay(null); setQuickHour(null); } }} title="Add to calendar" className="tc-create-dialog">
+              <Modal open={createOpen && !viewOnly} onClose={() => { if (!busy && !competitionBusy) { setCreateOpen(false); setCompetitionKey(null); setPrefill(null); setQuickDay(null); setQuickHour(null); } }} title={competitionKey ? "Competition details" : "Add to calendar"} className="tc-create-dialog" scrollBody>
               {error ? <p role="alert" className="tc-muted">{error}</p> : null}
               <div id="tc-quick-add">
                 <QuickAddForm
@@ -912,12 +920,16 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   attendanceEvents={view.attendanceEvents}
                   practiceSessions={view.practiceSessions}
                   busy={busy}
+                  initialCompetitionKey={competitionKey}
+                  onCompetitionSaved={() => { void load(); }}
+                  onCompetitionBusy={setCompetitionBusy}
                   run={run}
                   addTask={addTask}
                   onDone={() => {
                     setQuickDay(null);
                     setQuickHour(null);
                     setCreateOpen(false);
+                    setCompetitionKey(null);
                     setPrefill(null);
                   }}
                 />
@@ -928,7 +940,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
               <h2>Coming up</h2>
               <ZoneNote />
               {upcoming.length === 0 ? <p className="tc-muted">Nothing scheduled yet.</p> : <ul className="tc-upcoming">
-                {upcoming.map(event => <li key={event.id}><button type="button" className="tc-upcoming-btn" onClick={() => setSelectedEventId(event.id)}><strong>{event.title}</strong><span>{fmtWhen(event.startsAt)} · {event.subteamName || "Whole team"}{event.myRsvp === "going" ? " · going" : ""}</span></button></li>)}
+                {upcoming.map(event => <li key={event.id}><button type="button" className="tc-upcoming-btn" onClick={() => setSelectedEventId(event.id)}><strong>{event.title}</strong><span>{event.competitionEventKey ? competitionCalendarLabel(event) : fmtWhen(event.startsAt)} · {event.subteamName || "Whole team"}{event.myRsvp === "going" ? " · going" : ""}</span></button></li>)}
               </ul>}
               {canManage ? <details className="tc-find-time"><summary>Find a time</summary><AiScheduler onUse={usePick} /></details> : null}
             </aside>
