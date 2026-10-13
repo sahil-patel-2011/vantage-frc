@@ -40,6 +40,7 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
       <a className="app-sidebar-team" href={withOrgHref(orgId ? "/team" : "/account/teams", orgId)} title="Team overview"><i><Icon name="users" /></i><span><strong>{orgLabel}</strong><small>{orgId ? "Team overview" : "Choose your team"}</small></span><Icon name="chevron" /></a>
       {!collapsed && orgId ? <a className="app-sidebar-switch" href={workspacePickerHref(pathname, pathSearch)}>Switch team <Icon name="chevron" /></a> : null}
     </div>
+    <div className="app-sidebar-navigation">
     {pins.length > 0 ? <nav className="app-sidebar-pins" aria-labelledby="app-sidebar-pins-label">
       <div className="app-sidebar-label-row">
         <p className="app-sidebar-label" id="app-sidebar-pins-label">Pinned</p>
@@ -66,6 +67,7 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
           </details>;
       })}
     </nav>
+    </div>
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
       {platformAdmin ? <a className="app-sidebar-admin" href="/admin" title="Platform admin" aria-current={pathname.startsWith("/admin") ? "page" : undefined}><Icon name="shield" /><span>Admin</span></a> : null}
       {/* Ask AI opens on the current page's skill, the same link as the top bar's (lib/ai-skills). */}

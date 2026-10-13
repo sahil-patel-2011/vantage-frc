@@ -155,12 +155,13 @@ body.has-app-shell .main-menu-section > summary .main-menu-symbol svg { width: 2
   .app-sidebar-workspace > nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
   .app-sidebar-workspace-button { justify-content: center; padding: 0; width: 44px; height: 44px; }
   .app-sidebar-workspace-button > svg { width: 20px; height: 20px; }
-  body.has-app-shell .app-sidebar { padding-top: 18px; background: var(--surface-2); backdrop-filter: none; }
+  body.has-app-shell .app-sidebar { padding-top: 18px; background: var(--surface-2); backdrop-filter: none; overflow: hidden; }
+  body.has-app-shell .app-sidebar .app-sidebar-navigation { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; overscroll-behavior: contain; }
   body.has-app-shell .app-sidebar .app-sidebar-brand { margin-bottom: 14px; }
   body.has-app-shell .app-sidebar .app-sidebar-team { margin-bottom: 16px; box-shadow: none; }
   body.has-app-shell .app-sidebar nav a > svg { width: 20px; height: 20px; }
   body.has-app-shell .app-sidebar nav a { gap: 10px; font-size: 13px; border-radius: 9px; }
-  body.has-app-shell .app-sidebar .app-sidebar-footer { grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); }
+  body.has-app-shell .app-sidebar .app-sidebar-footer { position: static; flex: none; margin-top: 0; grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); }
   body.has-app-shell .app-sidebar[data-collapsed="true"] .app-sidebar-footer { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -290,7 +291,7 @@ body.has-app-shell .search-palette-keys kbd { padding: 1px 4px; min-width: 20px;
 body.has-app-shell .hub-picker-groups { gap: 12px; }
 body.has-app-shell .hub-picker-groups > section { border-bottom: 1px solid var(--line-soft); padding-bottom: 10px; }
 body.has-app-shell .settings-home { max-width: 1000px; }
-.settings-home > .settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 28px 24px; }
+.settings-home > nav.settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 28px 24px; }
 body.has-app-shell .settings-home .settings-group { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); }
 body.has-app-shell .settings-home .settings-group-label { margin: 0 4px 8px; font-size: 13px; color: var(--ink); font-weight: 600; }
 body.has-app-shell .settings-home .settings-row { min-height: 64px; padding: 12px 14px; border-radius: 0; gap: 12px; }
@@ -387,7 +388,7 @@ body.has-app-shell .tc-page .tc-timed-head { position: sticky; top: 0; z-index: 
   body.has-app-shell .ask-page .ask-composer textarea { font-size: 16px; }
 }
 @media (max-width: 600px) {
-  .settings-home > .settings-list { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .settings-home > nav.settings-list { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .hub-picker-more > div { grid-template-columns: minmax(0, 1fr); }
   body.has-app-shell .search-palette-field { min-height: 60px; padding: 10px 18px; }
   body.has-app-shell .search-palette-field input { font-size: 18px; }

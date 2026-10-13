@@ -53,7 +53,7 @@ export const ENDPOINT_EXAMPLES: EndpointExample[] = [
 // The lead is what an owner needs first; "OpenAI-compatible endpoint" and "LM Studio" in it read
 // as engineering, so the any-server promise moved to the other-keys title below.
 export const PAGE_DESCRIPTION =
-  "AI runs on your team's own key, and every AI feature runs through it. A free Google Gemini key takes about two minutes.";
+  "Connect team AI or add your own provider key. Personal keys stay private unless you choose to share them.";
 
 /** The one place for every other key: paid providers and a server in your own shop. */
 export const OTHER_KEYS_TITLE =
@@ -96,7 +96,7 @@ export const ANY_ENDPOINT_POINTS: string[] = [
 // Personal ("Mine") keys — the same endpoint freedom, scoped to one account.
 // ---------------------------------------------------------------------------
 
-export const MEMBER_KEY_HEADLINE = "Use your own key, just for you";
+export const MEMBER_KEY_HEADLINE = "Your personal keys";
 
 /** The one-field path for a member's own free Gemini key (ai-keys-my-free-key.tsx). */
 export const MY_FREE_KEY_HEADLINE = "Add your own free Google AI Studio key";
