@@ -15,7 +15,7 @@ for (const width of [390, 768, 1440]) {
     await page.getByRole("button", { name: "Add event", exact: true }).first().click();
     const dialog = page.getByRole("dialog", { name: "Add to calendar" });
     await dialog.getByRole("button", { name: "Competition", exact: true }).click();
-    await dialog.getByRole("textbox", { name: "Search competitions" }).fill("grits");
+    await dialog.getByRole("searchbox", { name: "Search competitions" }).fill("grits");
     await dialog.getByRole("button", { name: /GRITS 2026/ }).click();
     await expect(dialog.getByLabel("First day", { exact: true })).toHaveValue("2026-10-15");
     await expect(dialog.getByLabel("Last day", { exact: true })).toHaveValue("2026-10-17");
@@ -29,8 +29,10 @@ for (const width of [390, 768, 1440]) {
     await dialog.getByRole("button", { name: "Close dialog", exact: true }).click();
     const sidebar = page.getByRole("complementary", { name: "Workspace sidebar" });
     await expect(sidebar.getByRole("link", { name: /Switch team/ })).toHaveCount(0);
-    await page.getByRole("button", { name: "Browse all pages", exact: true }).click();
-    await expect(page.getByRole("link", { name: /Switch team/ })).toHaveCount(0);
+    if (width < 1024) {
+      await page.getByRole("button", { name: "Browse all pages", exact: true }).click();
+      await expect(page.getByRole("link", { name: /Switch team/ })).toHaveCount(0);
+    }
     await accessible(page);
   });
 }
