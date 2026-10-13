@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for Award Tracker (never DEMO win rates). */
 export const AWARD_TRACKER_RELATED_LINKS = [
-  { id: "evidence", label: "Business · Awards", kind: "business" as const, tab: "evidence" },
+  { id: "evidence", label: "Business · Awards", kind: "business" as const, tab: "achievements" },
   { id: "awards-workbench", label: "Awards workbench", kind: "path" as const, path: "/team/awards" },
   { id: "impact-essay", label: "Impact essay", kind: "business" as const, tab: "impact-essay" },
   { id: "judge-sim", label: "Judge-Pitch", kind: "business" as const, tab: "judge-sim" },
@@ -83,7 +83,7 @@ export function awardTrackerSetupSteps(orgId?: string | null): AwardTrackerSetup
       id: "evidence",
       label: "Open Awards",
       detail: "Award evidence stays blank until your team uploads it.",
-      href: hubHref("/business", "evidence", orgId),
+      href: hubHref("/business", "achievements", orgId),
     },
     {
       id: "awards-workbench",
@@ -220,7 +220,7 @@ export function awardTrackerNextActions(input: {
         id: "evidence",
         label: "Open Awards",
         detail: "Award evidence stays available while the tracker reloads.",
-        href: hubHref("/business", "evidence", orgId),
+        href: hubHref("/business", "achievements", orgId),
       },
       {
         id: "impact-essay",
@@ -244,7 +244,7 @@ export function awardTrackerNextActions(input: {
         id: "evidence",
         label: "Open Awards",
         detail: "Ground packets in uploaded evidence.",
-        href: hubHref("/business", "evidence", orgId),
+        href: hubHref("/business", "achievements", orgId),
       },
       {
         id: "impact-essay",
@@ -270,7 +270,7 @@ export function awardTrackerNextActions(input: {
       id: "evidence",
       label: "Open Awards",
       detail: "Keep packets grounded in uploaded evidence.",
-      href: hubHref("/business", "evidence", orgId),
+      href: hubHref("/business", "achievements", orgId),
     },
     {
       id: "awards-workbench",

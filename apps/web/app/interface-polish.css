@@ -244,3 +244,153 @@ body.has-app-shell .ask-composer textarea:focus { outline: none; box-shadow: non
 @media print {
   .settings-navigation, .hub-browse-button { display: none; }
 }
+
+/* Search feels like a small launcher, with four useful places before typing. */
+body.has-app-shell .search-palette-card {
+  width: min(620px, calc(100vw - 32px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  gap: 10px;
+  max-height: calc(100dvh - 64px);
+}
+body.has-app-shell .search-palette-field {
+  min-height: 72px;
+  padding: 12px 22px;
+  border: 1px solid var(--line);
+  border-radius: 36px;
+  background: var(--surface);
+  box-shadow: 0 12px 42px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+body.has-app-shell .search-palette-field input { font-size: 22px; border: 0 !important; background: transparent !important; }
+body.has-app-shell .search-palette-results {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 12px 42px color-mix(in srgb, var(--ink) 12%, transparent);
+  overflow: auto;
+}
+body.has-app-shell .search-palette .command-group-head { padding: 10px 14px 4px; margin: 0; font-size: 11px; letter-spacing: .04em; }
+body.has-app-shell .search-palette .command-group a { min-height: 56px; padding: 10px 14px; border: 0; border-radius: 14px; font-size: 15px; gap: 12px; }
+body.has-app-shell .search-palette .command-group a > span { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; flex: 1; }
+body.has-app-shell .search-palette .command-group a small { font-size: 12px; font-weight: 400; }
+.search-palette .command-group kbd { color: var(--muted); background: transparent; border: 0; font: 12px var(--font-sans); flex: none; }
+body.has-app-shell .search-palette-foot { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 4px 14px; gap: 12px; font-size: 12px; }
+body.has-app-shell .search-palette-keys { gap: 12px; font-size: 12px; }
+body.has-app-shell .search-palette-full { font-size: 12px; min-height: 36px; }
+body.has-app-shell .search-palette-keys kbd { padding: 1px 4px; min-width: 20px; font-size: 11px; }
+
+.hub-picker-more { margin: 4px 0 0; }
+.hub-picker-more summary { display: flex; gap: 8px; align-items: center; min-height: 44px; padding: 6px 12px; color: var(--muted); font-size: 13px; cursor: pointer; }
+.hub-picker-more summary small { margin-left: auto; }
+.hub-picker-more > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.has-app-shell .hub-picker-groups { gap: 12px; }
+body.has-app-shell .hub-picker-groups > section { border-bottom: 1px solid var(--line-soft); padding-bottom: 10px; }
+body.has-app-shell .settings-home { max-width: 1000px; }
+.settings-home > .settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 28px 24px; }
+body.has-app-shell .settings-home .settings-group { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); }
+body.has-app-shell .settings-home .settings-group-label { margin: 0 4px 8px; font-size: 13px; color: var(--ink); font-weight: 600; }
+body.has-app-shell .settings-home .settings-row { min-height: 64px; padding: 12px 14px; border-radius: 0; gap: 12px; }
+body.has-app-shell .settings-home .settings-row strong { font-size: 14px; font-weight: 600; }
+body.has-app-shell .settings-home .settings-row small { font-size: 12px; line-height: 1.4; }
+body.has-app-shell .settings-home .settings-row-icon { width: 32px; height: 32px; border-radius: 9px; }
+body.has-app-shell .settings-home .settings-row-icon svg { width: 18px; height: 18px; }
+body.has-app-shell .settings-home .settings-group > li + li { border-top: 1px solid var(--line-soft); }
+.app-sidebar-switch { display: flex; align-items: center; justify-content: space-between; min-height: 36px; padding: 0 12px; margin: -12px 0 12px; font-size: 12px; color: var(--muted); text-decoration: none; }
+.app-sidebar-switch > svg { width: 12px; height: 12px; }
+.app-sidebar-switch:hover { color: var(--ink); }
+body.has-app-shell .app-sidebar .app-sidebar-team { padding: 10px; border-radius: 12px; background: transparent; border-color: transparent; }
+
+/* Conversations have a history rail and a reply box anchored below their messages. */
+body.has-app-shell main.ask-page { max-width: 1400px; }
+body.has-app-shell .ask-page .ch-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 28px; align-items: start; }
+.ask-history-rail { position: sticky; top: 92px; min-width: 0; max-height: calc(100dvh - 120px); overflow: auto; }
+.ask-history-rail > .app-button { width: 100%; justify-content: flex-start; margin-bottom: 20px; }
+.ask-history-rail > h2 { font-size: 12px; font-weight: 500; color: var(--muted); margin: 0 10px 8px; }
+body.has-app-shell .ask-history-rail .ch-sidebar { display: block; border: 0; background: transparent; padding: 0; }
+.ask-history-rail .ch-thread-list { gap: 2px; }
+.ask-history-rail .ch-thread-list button { border: 0; background: transparent; padding: 10px; font-size: 13px; font-weight: 400; border-radius: 10px; line-height: 1.5; }
+.ask-history-rail .ch-thread-list button.active { background: var(--accent-soft); color: var(--accent); }
+.ask-history-rail .ch-thread-list span { font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.ask-history-rail .ch-thread-list button:hover { background: var(--surface-2); }
+.ask-history-rail .app-muted { font-size: 12px; line-height: 1.6; padding-inline: 10px; }
+body.has-app-shell .ask-page .ch-main { display: flex; flex-direction: column; width: 100%; min-width: 0; min-height: calc(100dvh - 200px); gap: 20px; }
+body.has-app-shell .ask-page .ch-layout[data-empty="true"] .ch-main { padding-top: clamp(24px, 6vh, 70px); }
+.ask-page .ch-thread-head h2 { font-size: 16px; font-weight: 500; }
+.ask-page .ch-thread-head .eyebrow { font-size: 10px; letter-spacing: .04em; color: var(--muted); }
+.ask-page .ch-messages { max-height: calc(100dvh - 420px); min-height: 100px; gap: 24px; }
+.ask-page .ch-msg.user { justify-self: end; max-width: 85%; }
+.ask-page .ch-msg.user > span { display: none; }
+.ask-page .ch-msg.assistant { padding-top: 8px; padding-bottom: 8px; }
+.ask-page .ch-msg.assistant > span { color: var(--muted); font-weight: 500; text-transform: none; }
+body.has-app-shell .ask-page .ask-composer { position: sticky; bottom: 20px; margin-top: auto; z-index: 2; }
+body.has-app-shell .ask-page .ask-composer textarea { min-height: 48px; max-height: 180px; font-size: 15px; }
+.ask-page .ch-history-mobile, .ask-page .ch-new-chat-mobile { display: none; }
+.chat-connect-inline { background: transparent; border: 0; color: var(--accent); font: inherit; text-decoration: underline; padding: 8px 0; cursor: pointer; }
+.chat-connect-dialog { width: min(460px, calc(100vw - 32px)); }
+.chat-connect-form { display: grid; gap: 12px; margin-top: 18px; }
+.chat-connect-form label { display: grid; gap: 6px; font-size: 14px; }
+.chat-connect-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.chat-connect-settings { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; font-size: 13px; }
+
+/* One navigation column for platform operators; the page has room for the actual work. */
+body.has-app-shell .admin-shell { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; max-width: 1440px; margin-inline: auto; padding: 28px; }
+body.has-app-shell .admin-console-nav { display: flex; flex-direction: column; position: sticky; top: 92px; align-self: start; margin: 0; border: 0; overflow: visible; gap: 4px; }
+.admin-console-label { display: flex; gap: 8px; align-items: center; margin: 0 10px 16px; font-size: 12px; color: var(--muted); }
+.admin-console-label svg { width: 16px; height: 16px; }
+body.has-app-shell .admin-console-nav a { display: flex; gap: 10px; min-height: 44px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 500; margin: 0; }
+.admin-console-nav a svg { width: 18px; height: 18px; }
+body.has-app-shell .admin-console-nav a.is-active { color: var(--accent); background: var(--accent-soft); }
+body.has-app-shell .admin-console-nav a.is-active::after { display: none; }
+body.has-app-shell .admin-shell > main { min-width: 0; width: 100%; padding: 0; }
+body.has-app-shell .admin-shell .app-page-header { margin-bottom: 20px; }
+body.has-app-shell .admin-shell .cards { gap: 12px; }
+body.has-app-shell .admin-shell .cards > .card { padding: 16px; border-radius: 14px; box-shadow: none; }
+body.has-app-shell .admin-shell .cards > .card strong { font-size: 24px; }
+body.has-app-shell .admin-shell .empty-state { padding: 24px; min-height: 180px; }
+
+body.has-app-shell .tc-create-dialog { width: min(600px, calc(100vw - 32px)); }
+.tc-create-dialog .tc-quick-actions { position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: flex-end; padding: 12px 0 4px; background: var(--surface); border-top: 1px solid var(--line); }
+body.has-app-shell .tc-page .tc-layout { grid-template-columns: minmax(0, 1fr) 260px; }
+body.has-app-shell .tc-page .tc-panel { padding: 16px; border-radius: 16px; box-shadow: none; }
+body.has-app-shell .tc-page .tc-toolbar { flex-wrap: wrap; gap: 10px; }
+.tc-find-time { margin-top: 16px; border-top: 1px solid var(--line-soft); }
+.tc-find-time > summary { min-height: 44px; display: flex; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; }
+.tc-create-dialog .tc-form { border: 0; padding: 0; }
+.tc-create-dialog .tc-form h3 { display: none; }
+body.has-app-shell .tc-page .tc-timed-wrap { max-height: 65dvh; overflow: auto; min-height: 360px; }
+body.has-app-shell .tc-page .tc-timed-head { position: sticky; top: 0; z-index: 3; background: var(--surface); }
+.ai-key-sharing { flex-basis: 100%; width: 100%; padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--line-soft); }
+.ai-key-sharing fieldset { min-width: 0; display: grid; gap: 10px; border: 0; padding: 0; margin: 0; }
+.ai-key-sharing :is(.ai-key-share-toggle, .ai-key-share-scope label, .ai-key-share-members label) { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13px; }
+.ai-key-sharing input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+.ai-key-share-scope { display: flex; flex-wrap: wrap; gap: 16px; }
+.ai-key-share-members { max-height: 220px; overflow: auto; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.ai-key-sharing .app-button { justify-self: start; }
+.sponsor-background-source { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.sponsor-background-source small { flex: 1 1 240px; }
+
+@media (max-width: 900px) {
+  body.has-app-shell .ask-page .ch-layout { grid-template-columns: minmax(0, 1fr); }
+  .ask-history-rail { display: none; }
+  .ask-page .ch-history-mobile, .ask-page .ch-new-chat-mobile { display: inline-flex; }
+  body.has-app-shell .admin-shell { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; }
+  body.has-app-shell .admin-console-nav { position: static; flex-direction: row; overflow: auto; padding-bottom: 8px; }
+  .admin-console-label { display: none; }
+  body.has-app-shell .tc-page .tc-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1099px) {
+  body.has-app-shell .ask-page .ask-composer { bottom: calc(80px + env(safe-area-inset-bottom)); }
+  body.has-app-shell .ask-page .ask-composer textarea { font-size: 16px; }
+}
+@media (max-width: 600px) {
+  .settings-home > .settings-list { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .hub-picker-more > div { grid-template-columns: minmax(0, 1fr); }
+  body.has-app-shell .search-palette-field { min-height: 60px; padding: 10px 18px; }
+  body.has-app-shell .search-palette-field input { font-size: 18px; }
+  .search-palette-keys { display: none; }
+  .ask-page .ch-messages { max-height: min(46dvh, 440px); }
+}

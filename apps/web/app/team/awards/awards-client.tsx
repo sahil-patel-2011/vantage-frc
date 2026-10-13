@@ -581,7 +581,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
               title="No FIRST award submissions yet"
               description={
                 canManage
-                  ? "Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards & evidence."
+                  ? "Pick an award from the FIRST catalog to pre-load essay prompts. Wins you already earned can be logged on Business · Awards."
                   : "An owner or admin starts a FIRST award submission. You can still read the catalog and any essays already saved."
               }
             >
@@ -712,7 +712,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
               <h2>Essay items</h2>
               <p>
                 {canManage
-                  ? "Drafts save on blur. Mark items done as you finish. Set status to Won when the team receives the award — that feeds Business evidence for grant writing."
+                  ? "Drafts save on blur. Mark items done as you finish. Set status to Won when the team receives the award — that feeds your award history for grant writing."
                   : "An owner or admin updates essays and status. You can still copy and print what is already written."}
               </p>
               <div className="awards-export-bar">

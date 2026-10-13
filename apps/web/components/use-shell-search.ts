@@ -64,11 +64,13 @@ export function useShellSearch({
       return;
     }
     const id = ++requestId.current;
+    const controller = new AbortController();
+    setSearchHits([]);
     setSearchLoading(true);
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams({ q });
       if (orgId) params.set("orgId", orgId);
-      void fetch(`/api/search?${params.toString()}`, { cache: "no-store" })
+      void fetch(`/api/search?${params.toString()}`, { cache: "no-store", signal: controller.signal })
         .then(async (response) =>
           response.ok ? ((await response.json()) as { status?: string; results?: SearchHit[] }) : null,
         )
@@ -84,14 +86,14 @@ export function useShellSearch({
           setSearchLoading(false);
         });
     }, 220);
-    return () => window.clearTimeout(timer);
+    return () => { window.clearTimeout(timer); controller.abort(); requestId.current += 1; };
   }, [active, query, orgId]);
 
   const commandHits = useMemo<CommandHit[]>(
     () =>
       active && (queryActive || suggestWhenEmpty)
         ? searchCommands(query, catalog, {
-            limit: queryActive ? 8 : 7,
+            limit: queryActive ? 8 : 4,
             isAllowed,
             recentHrefs,
             canManageTeam,
@@ -155,6 +157,11 @@ export function useShellSearch({
   /** Arrow keys move through the results; Enter opens one; ⌘/Ctrl+Enter opens full search. */
   const onFieldKeyDown = useCallback(
     (event: { key: string; metaKey: boolean; ctrlKey: boolean; preventDefault: () => void }) => {
+      if (!queryActive && (event.metaKey || event.ctrlKey) && /^[1-4]$/.test(event.key)) {
+        event.preventDefault();
+        if (rows[Number(event.key) - 1]) openRow(Number(event.key) - 1);
+        return;
+      }
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         if (!rows.length) return;
@@ -171,7 +178,7 @@ export function useShellSearch({
         openActive();
       }
     },
-    [openActive, openFullSearch, rows.length],
+    [openActive, openFullSearch, openRow, queryActive, rows],
   );
 
   return {

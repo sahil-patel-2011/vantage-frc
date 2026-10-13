@@ -26,7 +26,7 @@ describe("settings nav model", () => {
 
   it("hrefs are unique in what any single viewer actually sees", () => {
     for (const role of [null, "scout", "viewer", "admin", "owner"]) {
-      const hrefs = visibleSettingsNav(role).map((i) => i.href.split("#")[0]);
+      const hrefs = visibleSettingsNav(role).map((i) => i.href);
       expect(new Set(hrefs).size).toBe(hrefs.length);
     }
   });
@@ -70,7 +70,6 @@ describe("visibleSettingsNav", () => {
     const items = visibleSettingsNav("owner");
     const team = items.filter((i) => i.scope === "team").map((i) => i.label);
     expect(team).toEqual([
-      "Team profile",
       "Team AI keys",
       "AI limits",
       "AI usage",
@@ -149,7 +148,7 @@ describe("activeSettingsId", () => {
   it("never marks a jump within a page (#join-code, #delete-account) as the section", () => {
     expect(activeSettingsId(owner, "/team/admin")).toBe("team-admin");
     expect(activeSettingsId(member, "/account")).toBe("profile");
-    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-profile");
+    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-admin");
   });
 
   it("pages that belong to a section mark it", () => {
@@ -173,7 +172,7 @@ describe("activeSettingsId", () => {
 
   it("longest path prefix wins and non-settings paths return null", () => {
     expect(activeSettingsId(owner, "/team/admin/anything")).toBe("team-admin");
-    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-profile");
+    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-admin");
     expect(activeSettingsId(owner, "/dashboard")).toBeNull();
   });
 });

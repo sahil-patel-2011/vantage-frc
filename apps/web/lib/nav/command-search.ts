@@ -674,7 +674,9 @@ function scoreEntry(entry: CommandEntry, query: string): number {
   for (const keyword of [entry.label, ...entry.keywords]) {
     const k = normalize(keyword);
     if (!k) continue;
-    if (k === q) bump(760);
+    // An exact task alias ("budget" → Spending plan) is more useful than
+    // an incidental word match in a longer tool name.
+    if (k === q) bump(850);
     else if (k.startsWith(q)) bump(680);
     else if (k.includes(q)) bump(560);
   }

@@ -36,13 +36,19 @@ export function HubPagePicker({ hub, tabs, value, onChange }: {
         <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Find a section or tool…" data-autofocus />
       </label>
       <div className="hub-picker-groups">
-        {groups.map(group => <section key={group.id} aria-label={group.label}>
-          <h3>{group.label}</h3>
-          <div>{group.tabs.map(tab => <button type="button" key={tab.id} aria-current={tab.id === value ? "page" : undefined}
+        {groups.map(group => {
+          const primary = group.tabs.filter(tab => term || tab.id === group.id || tab.featured || tab.id === value);
+          const more = group.tabs.filter(tab => !primary.includes(tab));
+          const row = (tab: HubTabDef) => <button type="button" key={tab.id} aria-current={tab.id === value ? "page" : undefined}
             onClick={() => { onChange(tab.id); close(); }}>
             <span>{hubPageTitle(hub, tab.id)}</span><Icon name={tab.id === value ? "check" : "chevron"} />
-          </button>)}</div>
-        </section>)}
+          </button>;
+          return <section key={group.id} aria-label={group.label}>
+            {!primary.some(tab => tab.id === group.id) ? <h3>{group.label}</h3> : null}
+            <div>{primary.map(row)}</div>
+            {more.length ? <details className="hub-picker-more"><summary>More {group.label.toLowerCase()} tools <small>{more.length}</small></summary><div>{more.map(row)}</div></details> : null}
+          </section>;
+        })}
         {!groups.length ? <p className="app-muted" role="status">No matching tools. Try another name.</p> : null}
       </div>
     </Modal>

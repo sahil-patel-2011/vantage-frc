@@ -39,6 +39,8 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // "Your apps": /api/navigation/preferences reads and writes profiles.pinned_apps (it falls back
   // to island_tabs without it, but then only a bar of exactly four can be saved).
   "0729_more_pinned_apps.sql",
+  // Personal-key inference grants: never publish enabled sharing before its RLS-safe resolver exists.
+  "0734_personal_ai_key_sharing.sql",
 ];
 
 export const BACKUP_MODE_BUILD_NOTE =

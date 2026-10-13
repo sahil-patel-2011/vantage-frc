@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, askConfirm } from "../../../components/ui";
+import { Button, Modal, askConfirm } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { ViewOnlyNote } from "../../../components/view-only-note";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
@@ -50,7 +50,6 @@ import {
 } from "../../../lib/subteam-calendar";
 import { AiScheduler } from "./ai-scheduler";
 import {
-  CreateEventForm,
   EventCard,
   QuickAddForm,
 } from "./calendar-event-editors";
@@ -143,14 +142,13 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   }, []);
   const [anchor, setAnchor] = useState(() => new Date());
   const [quickDay, setQuickDay] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const [quickHour, setQuickHour] = useState<number | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [syncScope, setSyncScope] = useState<CalendarFeedScope>("personal");
   const [syncSubteamId, setSyncSubteamId] = useState<string | null>(null);
   const [highlightDutyId, setHighlightDutyId] = useState<string | null>(null);
   const [prefill, setPrefill] = useState<EventPrefill | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const viewRef = useRef<SubteamCalendarView | null>(null);
   viewRef.current = view;
 
@@ -457,6 +455,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   // One writer for tasks means RLS, notifications and the /todos page all keep
   // agreeing with each other, instead of a second copy drifting from the first.
   const addTask = async (input: { title: string; dueOn: string; subteamId: string | null }) => {
+    setBusyKey("create-task");
     try {
       const response = await fetch("/api/todos", {
         method: "POST",
@@ -474,6 +473,8 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
     } catch {
       setError("Could not reach the server.");
       return false;
+    } finally {
+      setBusyKey(null);
     }
   };
 
@@ -484,12 +485,8 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
       nonce: Date.now(),
       ...pickToDraft(pick, view.subteams.map((st) => st.id)),
     });
-    setDetailsOpen(true);
-    // The form is below the fold on a laptop; a prefill nobody sees reads as a
-    // dead button.
-    requestAnimationFrame(() => {
-      detailsRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-    });
+    setCreateOpen(true);
+
   };
 
   const renderEventCard = (rawEvent: CalendarEvent) => {
@@ -630,6 +627,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
           <GitHubCalendarHint overlay={view.githubCalendar} orgId={orgId} canManage={canManage} />
 
           <div className="tc-toolbar">
+            {!viewOnly ? <Button variant="primary" type="button" onClick={() => setCreateOpen(true)}>Add event</Button> : null}
             <div className="tc-mode" role="group" aria-label="Calendar view">
               {(["day", "week", "month", "agenda"] as const).map((value) => (
                 <button
@@ -713,9 +711,9 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                     <strong>Nothing scheduled</strong>
                     {viewOnly ? null : (
                       <>
-                        <p className="tc-muted">Add an event below, or switch to Week and click a time.</p>
+                        <p className="tc-muted">Add your first event, or choose a time in Week view.</p>
                         <div className="tc-guide-actions">
-                          <Button variant="primary" type="button" onClick={() => document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" }) }>
+                          <Button variant="primary" type="button" onClick={() => setCreateOpen(true)}>
                             Add event
                           </Button>
                         </div>
@@ -786,7 +784,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                     setQuickDay(day);
                     setQuickHour(hour);
                     setSelectedEventId(null);
-                    document.getElementById("tc-quick-add")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    if (!viewOnly) setCreateOpen(true);
                   }}
                   onOpenDay={(day) => {
                     setMode("day");
@@ -844,11 +842,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                             // Jump to the add form only when the day really is
                             // empty. A day whose one entry is a task due is why
                             // the person clicked; scrolling past it hides it.
-                            if (cell.items.length === 0 && dayTasks.length === 0) {
-                              document
-                                .getElementById("tc-quick-add")
-                                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                            }
+                            if (!viewOnly && cell.items.length === 0 && dayTasks.length === 0) setCreateOpen(true);
                           }}
                         >
                           <header className="tc-month-cell-head">
@@ -904,65 +898,39 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             </section>
 
             <aside className="tc-panel">
-              {canManage ? <AiScheduler onUse={usePick} /> : null}
               {viewOnly ? <ViewOnlyNote /> : null}
-              <div id="tc-quick-add" hidden={viewOnly}>
+              <Modal open={createOpen && !viewOnly} onClose={() => { if (!busy) { setCreateOpen(false); setPrefill(null); setQuickDay(null); setQuickHour(null); } }} title="Add to calendar" className="tc-create-dialog">
+              {error ? <p role="alert" className="tc-muted">{error}</p> : null}
+              <div id="tc-quick-add">
                 <QuickAddForm
                   orgId={orgId}
                   subteams={view.subteams}
                   events={view.events}
                   filterSubteamId={filterSubteamId}
                   initialStartsAt={quickStartsAt}
+                  prefill={prefill}
+                  attendanceEvents={view.attendanceEvents}
+                  practiceSessions={view.practiceSessions}
                   busy={busy}
                   run={run}
                   addTask={addTask}
                   onDone={() => {
                     setQuickDay(null);
                     setQuickHour(null);
+                    setCreateOpen(false);
+                    setPrefill(null);
                   }}
                 />
               </div>
 
+
+              </Modal>
               <h2>Coming up</h2>
               <ZoneNote />
-              {upcoming.length === 0 ? (
-                <p className="tc-muted">Nothing scheduled yet.</p>
-              ) : (
-                <ul className="tc-upcoming">
-                  {upcoming.map((event) => (
-                    <li key={event.id}>
-                      <button type="button" className="tc-upcoming-btn" onClick={() => setSelectedEventId(event.id)}>
-                        <strong>{event.title}</strong>
-                        <span>
-                          {fmtWhen(event.startsAt)}
-                          {event.subteamName ? ` · ${event.subteamName}` : " · Whole team"}
-                          {event.myRsvp === "going" ? " · going" : ""}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <details
-                className="tc-details"
-                ref={detailsRef}
-                open={detailsOpen}
-                onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
-              >
-                <summary data-disclosure>More event details</summary>
-                <CreateEventForm
-                  orgId={orgId}
-                  subteams={view.subteams}
-                  events={view.events}
-                  attendanceEvents={view.attendanceEvents}
-                  practiceSessions={view.practiceSessions}
-                  filterSubteamId={filterSubteamId}
-                  prefill={prefill}
-                  busy={busy}
-                  run={run}
-                />
-              </details>
+              {upcoming.length === 0 ? <p className="tc-muted">Nothing scheduled yet.</p> : <ul className="tc-upcoming">
+                {upcoming.map(event => <li key={event.id}><button type="button" className="tc-upcoming-btn" onClick={() => setSelectedEventId(event.id)}><strong>{event.title}</strong><span>{fmtWhen(event.startsAt)} · {event.subteamName || "Whole team"}{event.myRsvp === "going" ? " · going" : ""}</span></button></li>)}
+              </ul>}
+              {canManage ? <details className="tc-find-time"><summary>Find a time</summary><AiScheduler onUse={usePick} /></details> : null}
             </aside>
           </div>
         </>

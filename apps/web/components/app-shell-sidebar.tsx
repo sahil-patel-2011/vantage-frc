@@ -15,13 +15,14 @@ import { tourTargetForHref } from "../lib/tour/tour-steps";
  * and menu, edited in the same sheet), then every workspace, then help and account. The
  * workspaces are always listed, so un-pinning never hides anything.
  */
-export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, orgLabel, roleCue, collapsed, onCollapse, onEditPins, allowed }: {
+export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, orgLabel, roleCue, platformAdmin, collapsed, onCollapse, onEditPins, allowed }: {
   groups: ProductNavGroup[];
   /** "Your apps", already filtered to what this team may open. */
   pins: PinDefinition[];
   pathname: string; pathSearch: string; orgId: string; orgLabel: string;
   /** The person's role on this team, the same words the phone menu's team card shows. */
   roleCue?: string;
+  platformAdmin?: boolean;
   collapsed: boolean; onCollapse: () => void; onEditPins: () => void; allowed: (href: string) => boolean;
 }) {
   const activeSearch = mainMenuSearch(pathname, pathSearch, allowed);
@@ -35,7 +36,10 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
       <div className="app-sidebar-wordmark"><img src="/vantage-mark.svg" width="30" height="30" alt="" /><span>Vantage</span></div>
       <button type="button" onClick={onCollapse} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}><Icon name="sidebar" /></button>
     </div>
-    <a className="app-sidebar-team" href={workspacePickerHref(pathname, pathSearch)} title="Switch team" aria-label={`Switch team — ${orgLabel}`}><i><Icon name="users" /></i><span><strong>{orgLabel}</strong><small>{orgId ? roleCue || "Switch team" : "Choose your team"}</small></span><Icon name="chevron" /></a>
+    <div className="app-sidebar-team-context">
+      <a className="app-sidebar-team" href={withOrgHref(orgId ? "/team" : "/account/teams", orgId)} title="Team overview"><i><Icon name="users" /></i><span><strong>{orgLabel}</strong><small>{orgId ? "Team overview" : "Choose your team"}</small></span><Icon name="chevron" /></a>
+      {!collapsed && orgId ? <a className="app-sidebar-switch" href={workspacePickerHref(pathname, pathSearch)}>Switch team <Icon name="chevron" /></a> : null}
+    </div>
     {pins.length > 0 ? <nav className="app-sidebar-pins" aria-labelledby="app-sidebar-pins-label">
       <div className="app-sidebar-label-row">
         <p className="app-sidebar-label" id="app-sidebar-pins-label">Pinned</p>
@@ -63,6 +67,7 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
       })}
     </nav>
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
+      {platformAdmin ? <a className="app-sidebar-admin" href="/admin" title="Platform admin" aria-current={pathname.startsWith("/admin") ? "page" : undefined}><Icon name="shield" /><span>Admin</span></a> : null}
       {/* Ask AI opens on the current page's skill, the same link as the top bar's (lib/ai-skills). */}
       {allowed("/ai?tab=chat") && !pins.some(pin => pin.href === "/ai" || pin.href === "/ai?tab=chat") ? <AskAiTopbarLink orgId={orgId || null} label="Ask AI" /> : null}
       {[{ href: "/help", label: "Help", icon: "book" as const }, { href: SETTINGS_HREF, label: "Settings", icon: "gear" as const }]

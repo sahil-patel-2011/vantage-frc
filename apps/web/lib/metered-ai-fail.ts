@@ -20,18 +20,6 @@ const PROVIDER_SETUP_STEPS: MeteredAiSetupStep[] = [
     detail: "Choose a personal computer connection or an AI provider.",
     href: "/ai/connect",
   },
-  {
-    id: "budgets",
-    label: "Review Chat limits",
-    detail: "Spend and token limits apply before every Chat message.",
-    href: "/ai?tab=budgets",
-  },
-  {
-    id: "governance",
-    label: "Check AI governance",
-    detail: "Which tools Chat may use, and who must approve a costly call, can still block a message even when a key exists.",
-    href: "/ai?tab=governance",
-  },
 ];
 
 function isProviderSetupError(error: unknown): boolean {
@@ -56,7 +44,7 @@ function isProviderSetupError(error: unknown): boolean {
  * /ai/connect, and a shared team connection is an owner's or admin's.
  */
 export const AI_OFF_MESSAGE =
-  "AI isn't connected yet. Connect your own in AI settings, or ask your team's owner or an admin to set up a team connection, then try again.";
+  "No usable AI connection is available for your account on this team. Add your own provider key to continue.";
 
 function isAiOffError(message: string): boolean {
   return /No AI provider key|must configure a BYO AI key|local desktop relay/i.test(message);
@@ -86,7 +74,15 @@ export function failMeteredAi(
     const raw = error instanceof Error ? error.message : "No AI provider key is configured for this organization.";
     const aiOff = isAiOffError(raw);
     if (aiOff) console.warn("[metered-ai] AI is off for this team:", raw);
-    const message = aiOff ? AI_OFF_MESSAGE : raw;
+    const message = /could not be decrypted|KMS setup/i.test(raw)
+      ? "The saved AI key couldn’t be unlocked. A platform admin needs to repair the key encryption setup."
+      : /API key was rejected/i.test(raw)
+        ? "The AI provider rejected the saved key. Replace it with an active API key."
+        : /No configured model/i.test(raw)
+          ? "The AI connection has no usable model. Choose a model in AI settings."
+          : /local desktop relay/i.test(raw)
+            ? "The paired AI computer is offline. Reconnect it, or add a provider key here."
+            : aiOff ? AI_OFF_MESSAGE : raw;
     return Response.json(
       {
         error: message,

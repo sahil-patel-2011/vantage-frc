@@ -15,6 +15,7 @@ export type Tab =
   | "sponsorship"
   | "placements"
   | "grants"
+  | "achievements"
   | "evidence";
 
 export const TABS: Array<{ id: Tab; label: string }> = [
@@ -27,6 +28,7 @@ export const TABS: Array<{ id: Tab; label: string }> = [
   { id: "placements", label: "Partners" },
   { id: "grants", label: "Grants" },
   { id: "evidence", label: "Outreach" },
+  { id: "achievements", label: "Awards" },
 ];
 
 export function isTab(value: string | null): value is Tab {

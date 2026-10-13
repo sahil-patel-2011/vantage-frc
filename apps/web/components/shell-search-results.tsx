@@ -58,7 +58,7 @@ export function ShellSearchResults({
         {hit.label}
         <small>{hit.context}</small>
       </span>
-      {index === activeIndex ? <small aria-hidden="true">↵</small> : null}
+      {!queryActive && idPrefix === "search-palette" ? <kbd aria-hidden="true">{shortcutHint.startsWith("⌘") ? "⌘" : "Ctrl+"}{index + 1}</kbd> : index === activeIndex ? <small aria-hidden="true">↵</small> : null}
     </a>
   );
 

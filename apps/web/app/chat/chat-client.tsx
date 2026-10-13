@@ -1,6 +1,7 @@
 "use client";
 
 import { aiConnectionHref } from "../../lib/ai/connection";
+import { ChatConnectDialog } from "./chat-connect-dialog";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AiActionProposals } from "../../components/ai-action-proposals";
@@ -190,6 +191,7 @@ export default function ChatClient({
   const [promptCachingEnabled, setPromptCachingEnabled] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [connectOpen, setConnectOpen] = useState(false);
   const [memoryBusy, setMemoryBusy] = useState(false);
   const memoryPending = useRef(false);
   const [memoryNotice, setMemoryNotice] = useState<{ text: string; error: boolean } | null>(null);
@@ -201,11 +203,9 @@ export default function ChatClient({
   // A send that fails because AI is off keeps the thread and the typed question on screen with a
   // "Not sent" note; it used to swap the whole thread for a setup card and the question was gone.
   const [notSent, setNotSent] = useState<string | null>(null);
-  const [providerSetup, setProviderSetup] = useState<{
-    message: string;
-    steps: Array<{ id: string; label: string; detail: string; href: string }>;
-  } | null>(null);
   const [sending, setSending] = useState(false);
+  const sendPending = useRef(false);
+  const loadRequest = useRef<AbortController | null>(null);
 
   // Skills: which ones this member may use, the one pinned (chip / page), the one the last
   // question used, and what it found when AI couldn't answer.
@@ -220,42 +220,65 @@ export default function ChatClient({
   const [background, setBackground] = useState(initialMode === "background");
   const bg = useBackgroundWork(orgId);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const transcriptRef = useRef<HTMLDivElement | null>(null);
+  const followLatest = useRef(true);
+  useEffect(() => {
+    if (!followLatest.current) return;
+    const frame = requestAnimationFrame(() => {
+      const transcript = transcriptRef.current;
+      if (transcript) transcript.scrollTop = transcript.scrollHeight;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [messages]);
 
   const fromLabel = pageLabelFor(page.from ?? null);
   const shownSkillId = pinned ?? lastSkill?.id ?? null;
   const viewOnly = role === "viewer";
 
   async function load(threadId?: string, silent = false) {
-    if (!threadId && !silent) {
-      setLoading(true);
-      setLoadError(null);
+    loadRequest.current?.abort();
+    const controller = new AbortController();
+    loadRequest.current = controller;
+    if (!threadId && !silent) { setLoading(true); setLoadError(null); }
+    try {
+      const params = new URLSearchParams({ orgId });
+      if (threadId) params.set("threadId", threadId);
+      const response = await fetch(`/api/agent?${params}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]), cache: "no-store" });
+      const data = await response.json();
+      if (controller.signal.aborted) return;
+      if (!response.ok) {
+        if (silent) throw new Error("The change was saved, but chat settings couldn’t refresh. Reopen this chat to load them.");
+        if (threadId) { setStatus(data.error || "Couldn’t load that conversation. Select it again to retry."); return; }
+        setHttpStatus(response.status); setLoadError(data.error || "Couldn’t load your chats."); return;
+      }
+      if (!silent) { setHttpStatus(response.status); setLoadError(null); }
+      setThreads(data.threads ?? []); setMemories(data.memories ?? []);
+      setPromptCachingEnabled(Boolean(data.promptCachingEnabled));
+      if (Array.isArray(data.skills)) setAvailability(data.skills);
+      if (typeof data.role === "string") setRole(data.role);
+      if (data.memorySettings) {
+        setMemorySettings(data.memorySettings);
+        setPrivateBudget(data.memorySettings.private?.tokenBudget ?? 1200);
+        setTeamBudget(data.memorySettings.team?.tokenBudget ?? 1600);
+      }
+      if (threadId) setMessages(data.messages ?? []);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      if (silent) throw error;
+      if (threadId) setStatus("Couldn’t load that conversation. Select it again to retry.");
+      else { setHttpStatus(null); setLoadError("Couldn’t reach the server. Your chats haven’t been deleted."); }
+    } finally {
+      if (loadRequest.current === controller) {
+        loadRequest.current = null;
+        if (!threadId && !silent) setLoading(false);
+      }
     }
-    const response = await fetch(`/api/agent?orgId=${orgId}${threadId ? `&threadId=${threadId}` : ""}`);
-    const data = await response.json();
-    if (!silent) setHttpStatus(response.status);
-    if (!response.ok) {
-      if (silent) throw new Error("The change was saved, but settings couldn't refresh. Reopen this chat to load the latest settings.");
-      setLoadError(data.error ?? "Unable to load assistant channels");
-      if (!threadId) setLoading(false);
-      return;
-    }
-    if (!silent) setLoadError(null);
-    setThreads(data.threads ?? []);
-    setMemories(data.memories ?? []);
-    setPromptCachingEnabled(Boolean(data.promptCachingEnabled));
-    if (Array.isArray(data.skills)) setAvailability(data.skills);
-    if (typeof data.role === "string") setRole(data.role);
-    if (data.memorySettings) {
-      setMemorySettings(data.memorySettings);
-      setPrivateBudget(data.memorySettings.private?.tokenBudget ?? 1200);
-      setTeamBudget(data.memorySettings.team?.tokenBudget ?? 1600);
-    }
-    if (threadId) setMessages(data.messages ?? []);
-    if (!threadId && !silent) setLoading(false);
   }
 
   useEffect(() => {
+    setThread(null); setMessages([]); setThreads([]); setConnectOpen(false);
     void load();
+    return () => { loadRequest.current?.abort(); };
   }, [orgId]);
 
   useEffect(() => {
@@ -292,24 +315,21 @@ export default function ChatClient({
       const cutoff = resolveCutoffErrorCode(response.status, data);
       if (cutoff) setCutoffCode(cutoff);
       if (data.code === "setup_required" || data.status === "setup_required") {
-        setProviderSetup({
-          message: data.message ?? data.error ?? "Ask a mentor to add a key before chatting.",
-          steps: Array.isArray(data.steps) ? data.steps : [],
-        });
+        setNotSent(data.message ?? data.error ?? "A usable AI connection is needed to start chatting.");
       }
       setStatus(data.error ?? "Could not start a chat.");
       return null;
     }
     setCutoffCode(null);
-    setProviderSetup(null);
     const value: Thread = { id: data.threadId, title: label, scope: nextScope };
     setThread(value);
     setMessages([]);
-    await load();
+    setThreads(items => [value, ...items.filter(item => item.id !== value.id)]);
     return value;
   }
 
   function startOver() {
+    loadRequest.current?.abort();
     setThread(null);
     setMessages([]);
     setPreview(null);
@@ -329,21 +349,24 @@ export default function ChatClient({
       setStatus("");
       return;
     }
-    setText("");
+    setText(current => current.trim() === goal ? "" : current);
     setStatus("Background work finished.");
   }
 
   async function send(event: React.FormEvent) {
     event.preventDefault();
     const question = text.trim();
-    if (!question || sending) return;
+    if (!question || sendPending.current || bg.busy) return;
+    sendPending.current = true;
+    followLatest.current = true;
     setCutoffCode(null);
-    setProviderSetup(null);
     setNotSent(null);
     setPreview(null);
     setSkillNotice(null);
     if (background) {
-      await sendBackground(question);
+      try { await sendBackground(question); }
+      catch { setNotSent("Background work couldn’t reach the server. Try again."); setStatus(""); }
+      finally { sendPending.current = false; }
       return;
     }
     setSending(true);
@@ -385,9 +408,13 @@ export default function ChatClient({
       setAnswerPreviews(Array.isArray(data.skillOutputs) ? (data.skillOutputs as SkillPreview[]) : []);
       setStatus("");
       if (pendingEditorContextId) setPendingEditorContextId("");
-      setText("");
-      await load(active.id);
+      setText(current => current.trim() === question ? "" : current);
+      if (Array.isArray(data.messages)) setMessages(data.messages);
+      else await load(active.id);
+    } catch {
+      setStatus("Your message couldn’t reach the server. It’s still in the composer; try again.");
     } finally {
+      sendPending.current = false;
       setSending(false);
     }
   }
@@ -511,7 +538,7 @@ export default function ChatClient({
     loading,
     status: httpStatus,
     error: loadError,
-    providerSetup: Boolean(providerSetup),
+    providerSetup: false,
     threadCount: threads.length,
     hasActiveThread: Boolean(thread),
   });
@@ -531,6 +558,70 @@ export default function ChatClient({
     [messages],
   );
 
+  const historyContent = (
+          <div className="ch-sidebar">
+            {threads.length ? (
+              <>
+                <ul className="ch-thread-list">
+                  {threads.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        className={thread?.id === item.id ? "active" : ""}
+                        aria-current={thread?.id === item.id ? "page" : undefined}
+                        disabled={sending || bg.busy}
+                        type="button"
+                        onClick={() => {
+                          setThread(item);
+                          followLatest.current = true;
+                          setMessages([]);
+                          setStatus("");
+                          setNotSent(null);
+                          setPreview(null);
+                          setAnswerPreviews([]);
+                          bg.close();
+                          setHistoryOpen(false);
+                          void load(item.id);
+                        }}
+                      >
+                        <span>{item.scope === "team" ? "Shared" : "Private"}</span>
+                        {item.title}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {bg.runs.length ? (
+              <>
+                <h2>Background work</h2>
+                <ul className="ch-thread-list">
+                  {bg.runs.map((run) => (
+                    <li key={run.id}>
+                      <button
+                        className={bg.selected?.run.id === run.id ? "active" : ""}
+                        aria-current={bg.selected?.run.id === run.id ? "page" : undefined}
+                        disabled={sending || bg.busy}
+                        type="button"
+                        onClick={() => {
+                          loadRequest.current?.abort();
+                          setThread(null);
+                          setMessages([]);
+                          setHistoryOpen(false);
+                          void bg.open(run.id);
+                        }}
+                      >
+                        <span>{backgroundRunLabel(run)}</span>
+                        {run.goal.slice(0, 70)}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {!hasSide ? <p className="app-muted">Your conversations will appear here.</p> : null}
+          </div>
+  );
+
   return (
     <PageMain className="module-page ch-page ask-page">
       <header className="app-page-header ask-head">
@@ -540,11 +631,11 @@ export default function ChatClient({
         <div className="ch-header-actions">
           <AiSponsorBranding />
           {thread || bg.selected ? (
-            <Button variant="ghost" type="button" onClick={startOver}>
+            <Button className="ch-new-chat-mobile" variant="ghost" type="button" disabled={sending || bg.busy} onClick={startOver}>
               New chat
             </Button>
           ) : null}
-          {!blocked && hasSide ? <Button variant="ghost" type="button" aria-haspopup="dialog" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)}>
+          {!blocked && hasSide ? <Button variant="ghost" type="button" className="ch-history-mobile" aria-haspopup="dialog" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)}>
             <Icon name="chat" /> Recent chats
           </Button> : null}
           {!blocked ? (
@@ -576,61 +667,13 @@ export default function ChatClient({
 
       {!blocked ? (
       <div className="ch-layout" data-empty={conversationEmpty}>
+        <aside className="ask-history-rail" aria-label="Chat history">
+          <Button variant="secondary" type="button" disabled={sending || bg.busy} onClick={startOver}>New chat</Button>
+          <h2>Recent chats</h2>
+          {historyContent}
+        </aside>
         <Modal open={historyOpen} onClose={() => setHistoryOpen(false)} title="Recent chats" className="ch-history-dialog">
-          <div className="ch-sidebar" id="ch-channels">
-            {threads.length ? (
-              <>
-                <ul className="ch-thread-list">
-                  {threads.map((item) => (
-                    <li key={item.id}>
-                      <button
-                        className={thread?.id === item.id ? "active" : ""}
-                        aria-current={thread?.id === item.id ? "page" : undefined}
-                        type="button"
-                        onClick={() => {
-                          setThread(item);
-                          setPreview(null);
-                          setAnswerPreviews([]);
-                          bg.close();
-                          setHistoryOpen(false);
-                          void load(item.id);
-                        }}
-                      >
-                        <span>{item.scope === "team" ? "Shared" : "Private"}</span>
-                        {item.title}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-            {bg.runs.length ? (
-              <>
-                <h2>Background work</h2>
-                <ul className="ch-thread-list">
-                  {bg.runs.map((run) => (
-                    <li key={run.id}>
-                      <button
-                        className={bg.selected?.run.id === run.id ? "active" : ""}
-                        aria-current={bg.selected?.run.id === run.id ? "page" : undefined}
-                        type="button"
-                        onClick={() => {
-                          setThread(null);
-                          setMessages([]);
-                          setHistoryOpen(false);
-                          void bg.open(run.id);
-                        }}
-                      >
-                        <span>{backgroundRunLabel(run)}</span>
-                        {run.goal.slice(0, 70)}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : null}
-            {!hasSide ? <p className="app-muted">Your conversations will appear here.</p> : null}
-          </div>
+          {historyContent}
         </Modal>
 
         <section className="ch-main" aria-label="Conversation">
@@ -680,7 +723,10 @@ export default function ChatClient({
                 ) : null}
               </header>
 
-              <div className="ch-messages" aria-live="polite">
+              <div ref={transcriptRef} className="ch-messages" role="log" aria-live="polite" aria-label="Messages" onScroll={event => {
+                const node = event.currentTarget;
+                followLatest.current = node.scrollHeight - node.scrollTop - node.clientHeight < 60;
+              }}>
                 {messages.map((item, index) => {
                   const tools = toolRefs(item.sourceRefs);
                   const skillsUsed = skillRefs(item.sourceRefs);
@@ -783,7 +829,7 @@ export default function ChatClient({
           {preview ? (
             <SkillPreviewCard
               preview={preview}
-              lead={`AI couldn't answer, but here is what ${aiSkillById(preview.skill)?.name ?? "the skill"} found in your records`}
+              lead={`${aiSkillById(preview.skill)?.name ?? "Team"} records`}
             />
           ) : null}
 
@@ -838,7 +884,7 @@ export default function ChatClient({
             </details>
             {notSent ? (
               <p className="ch-status ch-not-sent" role="alert">
-                <strong>Not sent.</strong> {notSent} <a href={aiConnectionHref(orgId)}>Connect AI</a>
+                <strong>Not sent.</strong> {notSent} <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI here</button>
               </p>
             ) : status ? (
               <p className="ch-status" role="status">
@@ -861,6 +907,7 @@ export default function ChatClient({
           </div> : null}
         </section>
 
+        <ChatConnectDialog key={orgId} open={connectOpen} orgId={orgId} onClose={() => setConnectOpen(false)} onConnected={() => { setNotSent(null); setStatus("AI connected. Send your question when you’re ready."); }} />
         {shell === "ready" || shell === "empty" ? (
         <Modal open={contextOpen} onClose={() => setContextOpen(false)} title="Chat settings" className="ch-settings-dialog">
         {memoryNotice ? <p className={`ch-status${memoryNotice.error ? " ch-not-sent" : ""}`} role={memoryNotice.error ? "alert" : "status"}>{memoryNotice.text}</p> : null}

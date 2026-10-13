@@ -65,16 +65,13 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   // A person's own key and the team's keys are the same page, two sections. The focus
   // query is what marks the right row; owners and mentors see both.
   { id: "my-ai-keys", label: "Your AI key", href: "/team/ai-keys?focus=yours", icon: "sparkles", scope: "personal", requiredRole: "member",
-    detail: "A key only you use. It overrides the team key",
+    detail: "Your provider keys, with optional sharing",
     keywords: ["my ai key", "personal key", "api key", "my api key", "gemini key", "openai key", "anthropic key"] },
   { id: "delete-account", label: "Delete account", href: "/account#delete-account", icon: "trash", scope: "personal", requiredRole: "member",
     detail: "Remove your account for good", danger: true,
     keywords: ["delete account", "delete my account", "remove my account", "close account"] },
 
   // This team — owners and mentors (owner-admin). Delete team is the owner's alone.
-  { id: "team-profile", label: "Team profile", href: "/team/admin/profile", icon: "pin", scope: "team", requiredRole: "owner-admin",
-    detail: "Name, location, colour and logo",
-    keywords: ["team profile", "team name", "rename team", "logo", "team colour", "team color", "location"] },
   { id: "team-ai-keys", label: "Team AI keys", href: "/team/ai-keys", icon: "sparkles", scope: "team", requiredRole: "owner-admin",
     detail: "Keys the whole team uses, and which models to try",
     keywords: ["ai keys", "team key", "api key", "models", "model routing", "openai", "anthropic", "gemini", "openrouter"] },
@@ -109,6 +106,21 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     detail: "Remove this team and its data", danger: true, ownerOnly: true,
     keywords: ["delete team", "remove team", "close team", "shut down team"] },
 ];
+
+/** Small, task-based groups shared by the directory and the section selector. */
+export function settingsNavGroups(items: SettingsNavItem[]) {
+  const groups = [
+    { label: "Your account", ids: ["profile", "security", "teams"] },
+    { label: "Preferences", ids: ["appearance", "notifications"] },
+    { label: "Connections and your AI", ids: ["connectors", "my-ai-keys"] },
+    { label: "Team · People and access", ids: ["team-admin", "access-roles", "money-managers", "join-code", "member-access", "chat"] },
+    { label: "Team · AI", ids: ["team-ai-keys", "ai-limits", "ai-usage"] },
+    { label: "Team · Data", ids: ["team-data"] },
+    { label: "Account and team removal", ids: ["delete-account", "delete-team"] },
+  ];
+  return groups.map(group => ({ label: group.label, items: group.ids.flatMap(id => items.filter(item => item.id === id)) }))
+    .filter(group => group.items.length > 0);
+}
 
 /** Pages that are not a row of their own but belong to one (they keep Settings around them). */
 const SETTINGS_PATH_ALIASES: Record<string, string> = {

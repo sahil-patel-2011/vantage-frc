@@ -29,7 +29,7 @@ describe("computeJudgeSimView", () => {
       expect(view.steps[0]?.href).toBe("/workspace");
       expect(view.steps.some((s) => s.href.includes("/business?tab=impact"))).toBe(true);
       expect(view.steps.some((s) => s.href.includes("/business?tab=impact-essay"))).toBe(true);
-      expect(view.steps.some((s) => s.href.includes("/business?tab=evidence"))).toBe(true);
+      expect(view.steps.some((s) => s.href.includes("/business?tab=achievements"))).toBe(true);
       expect(view.steps.every((s) => !s.href.toLowerCase().includes("demo"))).toBe(true);
       view.steps.forEach((s) => expectPlainCopy(s.detail));
     }

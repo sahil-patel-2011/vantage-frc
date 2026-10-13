@@ -319,7 +319,8 @@ export function homeViewLayout(
 ): DashboardWidgetLayout[] {
   layout = layout.filter((item) => MEDIA_ENABLED || item.type !== "pit_youtube");
   return layout.filter((item) => {
-    if (input.editing || input.showQuietWidgets || isAlwaysShown(item)) return true;
+    // Tasks and today's calendar are useful starting points even before the first record.
+    if (input.editing || input.showQuietWidgets || isAlwaysShown(item) || item.type === "team_todos" || item.type === "calendar_today") return true;
     const status = (input.widgets?.[item.i] ?? input.widgets?.[item.type])?.status;
     if (!status || (status !== "live" && status !== "empty" && status !== "setup_required")) return true;
     if (input.teamSetupCard && SETUP_ONLY_WIDGETS.has(item.type)) return false;
@@ -390,6 +391,7 @@ export function emptyHomeWidgets(
     .filter(
       (item) =>
         !isAlwaysShown(item) &&
+        item.type !== "team_todos" && item.type !== "calendar_today" &&
         isQuietCard((rows[item.i] ?? rows[item.type])?.status),
     )
     .map((item) => catalogEntry(item.type)?.label ?? item.type);

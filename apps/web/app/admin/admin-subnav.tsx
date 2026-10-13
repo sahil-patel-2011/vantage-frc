@@ -6,6 +6,7 @@ import { ADMIN_FEEDBACK_NEW_EVENT, newFeedbackBadge } from "../../lib/feedback/a
 import "./admin-feedback-badge.css";
 import "./admin-console.css";
 import { ADMIN_DESTINATIONS, activeAdminDestination } from "../../lib/admin/admin-nav";
+import { Icon } from "../../components/icon";
 
 export { ADMIN_DESTINATIONS, MORE_PAGES, activeAdminDestination, type AdminDestinationId } from "../../lib/admin/admin-nav";
 
@@ -45,6 +46,7 @@ export function AdminSubnav({ newFeedback = null }: { newFeedback?: number | nul
 
   return (
     <nav className="admin-console-nav" aria-label="Platform admin">
+      <p className="admin-console-label"><Icon name="shield" /> Platform admin</p>
       {ADMIN_DESTINATIONS.map((dest) => {
         const isActive = dest.id === active;
         return (
@@ -55,6 +57,7 @@ export function AdminSubnav({ newFeedback = null }: { newFeedback?: number | nul
             aria-current={isActive ? "page" : undefined}
             data-quiet={dest.id === "more" || undefined}
           >
+            <Icon name={dest.id === "overview" ? "grid" : dest.id === "teams" ? "users" : dest.id === "ai-credits" ? "sparkles" : dest.id === "health" ? "activity" : dest.id === "feedback" ? "chat" : dest.id === "admins" ? "shield" : "gear"} />
             {dest.label}
             {dest.id === "feedback" ? <NewCount label={badge} /> : null}
           </a>

@@ -1,7 +1,5 @@
 import { PageHeader } from "../../../../components/ui";
-import { TeamBrandingPanel } from "../../../../lib/branding/team-branding-panel";
 import { withOrgHref } from "../../../../lib/nav/product-nav";
-import { TeamProfilePanel } from "../../team-profile-panel";
 import { TeamDeletePanel, TeamLifecyclePanel } from "../team-lifecycle-panel";
 import { ResolveTeamProfile } from "./resolve-team";
 import "../../team-admin.css";
@@ -10,10 +8,10 @@ import { teamSettingsBreadcrumb } from "../../../../lib/nav/team-settings-nav";
 
 export const metadata = {
   title: "Team profile",
-  description: "Where your team is, what it does, and its colours and logo.",
+  description: "Team identity and lifecycle.",
 };
 
-/** Team profile and branding — moved off Team admin so that page is only people and invites. */
+/** Team lifecycle; sponsor and grant facts live in the shared team background. */
 export default async function TeamProfileSettingsPage({
   searchParams,
 }: {
@@ -33,16 +31,12 @@ export default async function TeamProfileSettingsPage({
       <PageHeader
         breadcrumbs={teamSettingsBreadcrumb("profile")}
         title="Team profile"
-        description="Where your team is, what it does, and its colours and logo."
+        description="Team identity and lifecycle. Your team background supplies sponsor and grant drafts."
       >
         <TeamSettingsNav orgId={orgId} current="profile" />
-        <p className="app-muted" style={{ margin: 0 }}>
-          <a href={withOrgHref("/team/background", orgId)}>History and numbers for sponsors →</a>
-        </p>
       </PageHeader>
       <TeamLifecyclePanel orgId={orgId} />
-      <TeamProfilePanel orgId={orgId} />
-      <TeamBrandingPanel orgId={orgId} />
+      <p className="app-muted"><a href={withOrgHref("/team/background", orgId)}>Edit team background</a> · The same team facts are used in sponsor proposals and grants.</p>
       <TeamDeletePanel orgId={orgId} />
     </main>
   );

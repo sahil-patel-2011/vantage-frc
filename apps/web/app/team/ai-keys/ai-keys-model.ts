@@ -67,6 +67,8 @@ export type MemberKeyRow = {
   model: string | null;
   createdAt: string | null;
   lastUsedAt: string | null;
+  shareScope?: import("../../../lib/ai-keys/key-sharing").KeyShareScope;
+  shareUserIds?: string[];
 };
 
 export type Payload = {
@@ -74,6 +76,8 @@ export type Payload = {
   canManage: boolean;
   keys: ByokKeyStatus[];
   memberKeys?: MemberKeyRow[];
+  sharingReady?: boolean;
+  sharingMembers?: { userId: string; name: string | null }[];
   /** Every team key, in the order AI tries them (migration 0727). Absent before it. */
   keyList?: import("./ai-keys-team-list").TeamKeyRow[];
   providers: ProviderMeta[];

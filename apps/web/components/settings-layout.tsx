@@ -1,14 +1,15 @@
 "use client";
 
 import { createContext, useContext, useEffect, useId, useState, type ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { pushAppNavigation } from "../lib/nav/soft-navigation";
 import { ROLE_LABELS, type AccessRole } from "@vantage/core/role-words";
 import { Icon, type IconName } from "./icon";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { fetchProductSession, type ProductSession } from "../lib/nav/product-session";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import {
-  SETTINGS_GROUP_LABELS,
+  settingsNavGroups,
   activeSettingsId,
   settingsRoleTier,
   visibleSettingsNav,
@@ -168,7 +169,6 @@ export function SettingsList({
   onRetry?: () => void;
   detailed?: boolean;
 }) {
-  const personal = items.filter((item) => item.scope === "personal");
   const team = items.filter((item) => item.scope === "team");
   const lead = settingsRoleTier(role) === "owner-admin";
   const row = (item: SettingsNavItem) => (
@@ -189,14 +189,14 @@ export function SettingsList({
   );
   return (
     <nav className={`settings-list${detailed ? " is-detailed" : ""}`} aria-label="Settings sections">
-      <section aria-labelledby="settings-group-you">
-        <h2 className="settings-group-label" id="settings-group-you">{SETTINGS_GROUP_LABELS.personal}</h2>
-        <ul className="settings-group">{personal.map(row)}</ul>
-      </section>
-      {orgId || teamLabel ? (
+      {settingsNavGroups(items).map(group => <section key={group.label} aria-label={group.label}>
+        <h2 className="settings-group-label">{group.label}</h2>
+        <ul className="settings-group">{group.items.map(row)}</ul>
+      </section>)}
+      {(orgId || teamLabel) && !team.length ? (
         <section aria-labelledby="settings-group-team">
           <h2 className="settings-group-label" id="settings-group-team">
-            {SETTINGS_GROUP_LABELS.team}
+            Team settings
             {teamLabel ? <span className="settings-group-team">{teamLabel}{roleWords(role) ? ` · ${roleWords(role)}` : ""}</span> : null}
           </h2>
           {team.length ? (
@@ -232,6 +232,7 @@ export function SettingsList({
  * The full directory remains on /settings; pages drop their own duplicate navigation rows.
  */
 export function SettingsLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const pickerId = useId();
   const pathname = usePathname() ?? "";
   const search = useLocationSearch();
@@ -249,11 +250,11 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
             <span className="sr-only">Settings section</span>
             <select id={pickerId} value={activeId ?? ""} onChange={event => {
               const item = items.find(item => item.id === event.target.value);
-              if (item) window.location.assign(withOrgHref(item.href, orgId || viewer.teamId || null));
+              if (item) pushAppNavigation(path => router.push(path), withOrgHref(item.href, orgId || viewer.teamId || null));
             }}>
               {!activeId ? <option value="" disabled>Choose a section</option> : null}
-              {(["personal", "team"] as const).map(scope => <optgroup key={scope} label={SETTINGS_GROUP_LABELS[scope]}>
-                {items.filter(item => item.scope === scope && !item.href.includes("#")).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              {settingsNavGroups(items).map(group => <optgroup key={group.label} label={group.label}>
+                {group.items.filter(item => !item.href.includes("#")).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
               </optgroup>)}
             </select>
           </label>

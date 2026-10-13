@@ -550,6 +550,10 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                       rows={4}
                     />
                   </label>
+                  {context.seedWhoWeAre?.trim() ? <div className="sponsor-background-source">
+                    <small className="app-muted">Starts from your saved team background. Edit the wording for this proposal when needed.</small>
+                    <Button variant="ghost" type="button" onClick={() => setDraft({ ...draft, whoWeAre: context.seedWhoWeAre || "" })}>Use saved team background</Button>
+                  </div> : <a href={`/team/background?orgId=${encodeURIComponent(context.orgId || "")}`}>Add team background once for all proposals</a>}
                   <label>
                     What we do
                     <textarea

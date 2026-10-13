@@ -17,7 +17,7 @@ describe("awardTrackerRelatedLinks", () => {
       include: [...AWARD_TRACKER_RELATED_INCLUDE],
     });
     expect(links.map((l) => l.id)).toEqual(["evidence", "awards-workbench", "impact-essay"]);
-    expect(links.find((l) => l.id === "evidence")?.href).toBe("/business?tab=evidence&orgId=org-1");
+    expect(links.find((l) => l.id === "evidence")?.href).toBe("/business?tab=achievements&orgId=org-1");
     expect(links.find((l) => l.id === "awards-workbench")?.href).toBe("/team/awards?orgId=org-1");
     expect(links.find((l) => l.id === "impact-essay")?.href).toBe(
       "/business?tab=impact-essay&orgId=org-1",

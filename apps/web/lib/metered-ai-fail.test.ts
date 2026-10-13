@@ -18,7 +18,7 @@ describe("failMeteredAi", () => {
     };
     expect(body.code).toBe("setup_required");
     expect(body.status).toBe("setup_required");
-    expect(body.steps?.map((step) => step.id)).toEqual(["keys", "budgets", "governance"]);
+    expect(body.steps?.map((step) => step.id)).toEqual(["keys"]);
   });
 
   it("tells the team AI is off in plain words, never the router's environment variable names", async () => {
@@ -40,6 +40,6 @@ describe("failMeteredAi", () => {
   it("keeps a key problem the team can fix in its own words", async () => {
     const response = failMeteredAi(new ChatProviderResolutionError("Your OpenAI API key was rejected."), "failed");
     const body = (await response.json()) as { message?: string };
-    expect(body.message).toBe("Your OpenAI API key was rejected.");
+    expect(body.message).toBe("The AI provider rejected the saved key. Replace it with an active API key.");
   });
 });

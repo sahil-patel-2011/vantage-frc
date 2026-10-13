@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Impact Essay (never DEMO essay metrics). */
 export const IMPACT_ESSAY_RELATED_LINKS = [
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
-  { id: "evidence", label: "Awards", kind: "business" as const, tab: "evidence" },
+  { id: "evidence", label: "Awards", kind: "business" as const, tab: "achievements" },
   { id: "writer", label: "Writer", kind: "ai" as const, tab: "writer" },
   { id: "award-tracker", label: "Award tracker", kind: "business" as const, tab: "award-tracker" },
   { id: "judge-sim", label: "Judge-Pitch", kind: "business" as const, tab: "judge-sim" },
@@ -178,7 +178,7 @@ export function impactEssayNextActions(input: {
           id: "evidence",
           label: "Open Awards",
           detail: "Award evidence stays blank until your team uploads it.",
-          href: hubHref("/business", "evidence", null),
+          href: hubHref("/business", "achievements", null),
         },
         {
           id: "writer",
@@ -206,7 +206,7 @@ export function impactEssayNextActions(input: {
         id: "evidence",
         label: "Open Awards",
         detail: "Keep award packets grounded in uploaded evidence.",
-        href: hubHref("/business", "evidence", orgId),
+        href: hubHref("/business", "achievements", orgId),
       },
       {
         id: "writer",
@@ -236,7 +236,7 @@ export function impactEssayNextActions(input: {
         id: "evidence",
         label: "Open Awards",
         detail: "Award evidence stays available while the essay generator reloads.",
-        href: hubHref("/business", "evidence", orgId),
+        href: hubHref("/business", "achievements", orgId),
       },
       {
         id: "writer",
@@ -260,7 +260,7 @@ export function impactEssayNextActions(input: {
         id: "evidence",
         label: "Open Awards",
         detail: "Award packets stay blank until real uploads exist.",
-        href: hubHref("/business", "evidence", orgId),
+        href: hubHref("/business", "achievements", orgId),
       },
       {
         id: "writer",
@@ -292,7 +292,7 @@ export function impactEssayNextActions(input: {
       id: "evidence",
       label: "Open Awards",
       detail: "Keep award packets grounded in uploaded evidence.",
-      href: hubHref("/business", "evidence", orgId),
+      href: hubHref("/business", "achievements", orgId),
     },
     {
       id: "writer",
