@@ -91,6 +91,11 @@ export function Modal({
     document.body.style.overflow = "hidden";
 
     const onKeyDown = (e: KeyboardEvent) => {
+      // A confirmation can open above another dialog. Only the topmost visible dialog owns
+      // Escape and Tab; document listeners otherwise dismiss or trap both layers together.
+      const dialogs = [...document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')]
+        .filter(dialog => !dialog.closest('[inert], [aria-hidden="true"]'));
+      if (dialogs.at(-1) !== node) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         onCloseRef.current();

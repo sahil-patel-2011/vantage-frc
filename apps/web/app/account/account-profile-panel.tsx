@@ -59,17 +59,6 @@ export function AccountProfilePanel({
 }) {
   return (
     <Panel className="account-panel">
-      {/* The page's header already shows the avatar, name and email; a second copy here drew an
-          empty blue circle under the first. Only a real photo is worth showing again. */}
-      {account.image ? (
-        <div className="account-identity">
-          <img className="soft-avatar lg" src={account.image} alt="" />
-          <div>
-            <strong>{displayName || "Signed-in user"}</strong>
-            <span>{account.email ?? "—"}</span>
-          </div>
-        </div>
-      ) : null}
       <form className="account-form" onSubmit={(event) => void onSave(event)}>
         <label>
           Display name

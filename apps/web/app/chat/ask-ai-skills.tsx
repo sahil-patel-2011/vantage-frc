@@ -152,14 +152,20 @@ export function SkillStarters({ skillId, onPick }: { skillId: string; onPick: (t
 export function StarterGroups({
   availability,
   onPick,
+  compact = false,
+  omitFeatured = false,
 }: {
   availability: SkillAvailabilityRow[] | null;
   onPick: (skillId: string, text: string) => void;
+  compact?: boolean;
+  omitFeatured?: boolean;
 }) {
   const canUse = usable(availability);
+  const groups = AI_SKILL_GROUPS.filter(group => aiSkillsInGroup(group.id).some(canUse));
+  const featured = new Set(groups.slice(0, 3).map(group => aiSkillsInGroup(group.id).filter(canUse)[0]?.starters[0]));
   return (
-    <div className="ask-groups">
-      {AI_SKILL_GROUPS.map((group) => {
+    <div className={`ask-groups${compact ? " is-compact" : ""}`}>
+      {(compact ? groups.slice(0, 3) : groups).map((group) => {
         const skills = aiSkillsInGroup(group.id).filter(canUse);
         if (!skills.length) return null;
         const lead = skills[0]!;
@@ -172,7 +178,7 @@ export function StarterGroups({
           <section key={group.id} className="ask-group" aria-label={group.name}>
             <h3>{group.name}</h3>
             <ul>
-              {starters.map(([skill, text]) => (
+              {(compact ? starters.slice(0, 1) : starters.filter(([, text]) => !omitFeatured || !featured.has(text))).map(([skill, text]) => (
                 <li key={`${skill.id}-${text}`}>
                   <button type="button" className="ask-starter" onClick={() => onPick(skill.id, text)}>
                     {text}

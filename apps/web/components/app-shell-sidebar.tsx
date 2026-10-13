@@ -4,7 +4,7 @@ import { Icon } from "./icon";
 import { AskAiTopbarLink } from "./ask-ai-button";
 import { islandTabIsActive } from "./app-shell-model";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
-import { mainMenuSearch } from "../lib/nav/main-menu";
+import { mainMenuSearch, mainMenuSections } from "../lib/nav/main-menu";
 import type { PinDefinition } from "../lib/nav/pins";
 import { SETTINGS_HREF, isSettingsPath } from "../lib/nav/settings-nav";
 import { workspacePickerHref } from "../lib/workspace";
@@ -27,10 +27,12 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
   const activeSearch = mainMenuSearch(pathname, pathSearch, allowed);
   const pinnedHrefs = new Set(pins.map(pin => pin.href));
   // Home leads the workspaces when it isn't pinned, so it is always one click away.
-  const workspaces = groups.flatMap(group => group.items).filter(item => !(item.href === "/dashboard" && pinnedHrefs.has("/dashboard")));
+  const sections = mainMenuSections(groups, allowed).filter(section => section.id !== "ai").map(section => ({
+    ...section, items: section.items.filter(item => !pinnedHrefs.has(item.href)),
+  })).filter(section => section.items.length > 0);
   return <aside className="app-sidebar" aria-label="Workspace sidebar" data-collapsed={collapsed}>
     <div className="app-sidebar-brand">
-      <a href={withOrgHref("/dashboard", orgId)} aria-label="Vantage home"><img src="/vantage-mark.svg" width="30" height="30" alt="" /><span>Vantage</span></a>
+      <div className="app-sidebar-wordmark"><img src="/vantage-mark.svg" width="30" height="30" alt="" /><span>Vantage</span></div>
       <button type="button" onClick={onCollapse} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}><Icon name="sidebar" /></button>
     </div>
     <a className="app-sidebar-team" href={workspacePickerHref(pathname, pathSearch)} title="Switch team" aria-label={`Switch team — ${orgLabel}`}><i><Icon name="users" /></i><span><strong>{orgLabel}</strong><small>{orgId ? roleCue || "Switch team" : "Choose your team"}</small></span><Icon name="chevron" /></a>
@@ -48,14 +50,21 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
     </nav> : null}
     <nav className="app-sidebar-main" aria-label="Workspaces">
       <p className="app-sidebar-label">Workspaces</p>
-      {workspaces.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} title={item.label} data-tour={tourTargetForHref(item.href)}
-        aria-current={pathname === item.href.split("?")[0] ? "page" : undefined}>
-        <Icon name={item.icon} /><span>{item.label}</span>
-      </a>)}
+      {!pinnedHrefs.has("/dashboard") && allowed("/dashboard") ? <a href={withOrgHref("/dashboard", orgId)} title="Home" aria-current={pathname === "/dashboard" ? "page" : undefined}><Icon name="home" /><span>Home</span></a> : null}
+      {sections.map(section => {
+        const current = pathname === `/${section.id}` || section.items.some(item => islandTabIsActive(pathname, activeSearch, item.href));
+        return collapsed ? <button type="button" key={section.id} className="app-sidebar-workspace-button" title={`Browse ${section.label}`} aria-label={`Browse ${section.label}: expand sidebar`} onClick={onCollapse}><Icon name={section.icon} /></button>
+          : <details key={`${section.id}:${pathname}:${pathSearch}`} className="app-sidebar-workspace" open={current} data-current={current}>
+            <summary data-tour={tourTargetForHref(`/${section.id}`)}><Icon name={section.icon} /><span>{section.label}</span><Icon name="chevron" /></summary>
+            <nav aria-label={`${section.label} sections`}>
+              {section.items.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} aria-current={islandTabIsActive(pathname, activeSearch, item.href) ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
+            </nav>
+          </details>;
+      })}
     </nav>
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
       {/* Ask AI opens on the current page's skill, the same link as the top bar's (lib/ai-skills). */}
-      {allowed("/ai?tab=chat") ? <AskAiTopbarLink orgId={orgId || null} label="Ask AI" /> : null}
+      {allowed("/ai?tab=chat") && !pins.some(pin => pin.href === "/ai" || pin.href === "/ai?tab=chat") ? <AskAiTopbarLink orgId={orgId || null} label="Ask AI" /> : null}
       {[{ href: "/help", label: "Help", icon: "book" as const }, { href: SETTINGS_HREF, label: "Settings", icon: "gear" as const }]
         .filter(item => allowed(item.href)).map(item => <a key={item.href} data-tour={item.href.startsWith("/ai?") ? "ask-ai" : undefined} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={(item.href === SETTINGS_HREF ? isSettingsPath(pathname) : pathname === item.href.split("?")[0]) ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav>

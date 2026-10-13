@@ -78,6 +78,12 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { id: "team-ai-keys", label: "Team AI keys", href: "/team/ai-keys", icon: "sparkles", scope: "team", requiredRole: "owner-admin",
     detail: "Keys the whole team uses, and which models to try",
     keywords: ["ai keys", "team key", "api key", "models", "model routing", "openai", "anthropic", "gemini", "openrouter"] },
+  { id: "ai-limits", label: "AI limits", href: "/team/budgets", icon: "bolt", scope: "team", requiredRole: "owner-admin",
+    detail: "Set the team's AI spending limits and caching",
+    keywords: ["ai limits", "chat limits", "spending", "budget", "caching", "pause ai"] },
+  { id: "ai-usage", label: "AI usage", href: "/team/usage", icon: "activity", scope: "team", requiredRole: "owner-admin",
+    detail: "Review the team's AI usage",
+    keywords: ["ai usage", "usage log", "tokens", "ai cost"] },
   { id: "team-admin", label: "Members and invites", href: "/team/admin", icon: "users", scope: "team", requiredRole: "owner-admin",
     detail: "Invite people and choose what each can do",
     keywords: ["members", "invite", "invites", "add someone", "add member", "people", "team admin", "remove member", "roles"] },
@@ -107,7 +113,6 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
 /** Pages that are not a row of their own but belong to one (they keep Settings around them). */
 const SETTINGS_PATH_ALIASES: Record<string, string> = {
   "/exports": "team-data",
-  "/team/budgets": "team-ai-keys",
   "/team/ai-policy": "team-ai-keys",
 };
 
@@ -169,6 +174,8 @@ export function activeSettingsId(
   const currentTab = params.get("tab");
   const currentSettings = params.get("settings");
   const currentFocus = params.get("focus");
+  // The legacy /team/budgets address redirects here; this tab uses the Settings frame.
+  if (path === "/ai" && currentTab === "budgets" && items.some(item => item.id === "ai-limits")) return "ai-limits";
 
   let best: SettingsNavItem | null = null;
   let bestScore = -1;

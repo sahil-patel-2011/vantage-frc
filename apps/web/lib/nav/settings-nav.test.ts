@@ -72,6 +72,8 @@ describe("visibleSettingsNav", () => {
     expect(team).toEqual([
       "Team profile",
       "Team AI keys",
+      "AI limits",
+      "AI usage",
       "Members and invites",
       "Access and roles",
       "Money managers",
@@ -164,7 +166,7 @@ describe("activeSettingsId", () => {
     expect(activeSettingsId(owner, "/team/ai-keys", "?orgId=abc")).toBe("team-ai-keys");
     expect(activeSettingsId(owner, "/team/ai-keys", "?focus=yours&orgId=abc")).toBe("my-ai-keys");
     expect(activeSettingsId(member, "/team/ai-keys", "?orgId=abc")).toBe("my-ai-keys");
-    expect(activeSettingsId(owner, "/team/budgets")).toBe("team-ai-keys");
+    expect(activeSettingsId(owner, "/team/budgets")).toBe("ai-limits");
     // Chat safety is its own page now, the same one the Team settings chip opens.
     expect(activeSettingsId(owner, "/messages/moderation")).toBe("chat");
   });

@@ -1,14 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useSyncExternalStore, Suspense, useState, type ReactNode } from "react";
-import { hubBarSections } from "../lib/nav/hub-bar";
-import { hubPageTitle, hubNavigationSections } from "../lib/nav/hub-navigation";
-import { defaultPinHrefs } from "../lib/nav/pins";
-import { pinnedHrefsSnapshot, subscribePinnedHrefs } from "../lib/nav/pin-snapshot";
-import { HubContextActions } from "./hub-context-actions";
+import { useCallback, useEffect, useMemo, Suspense, useState, type ReactNode } from "react";
+import { hubPageTitle } from "../lib/nav/hub-navigation";
+import { HubPagePicker } from "./hub-page-picker";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
-import { EmptyState, PageHeader, PageMain, Button, TabBar } from "./ui";
+import { EmptyState, PageHeader, PageMain, Button } from "./ui";
 import {
   clientCanAccessHub,
   filterTabsByHubAccess,
@@ -173,8 +170,7 @@ export function ProductHubShell({
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [manageReady, setManageReady] = useState(false);
   const workbenchId = hubWorkbenchId(hub, tab);
-  const livePins = useSyncExternalStore(subscribePinnedHrefs, pinnedHrefsSnapshot, () => []);
-  // One permitted destination list feeds compact sections and contextual actions.
+  // One permitted destination list feeds the searchable workspace picker.
   const workspaceTabs = useMemo(() => hubTabsForMember(hub.tabs.filter(entry =>
     primaryTabs.some(root => root.id === (entry.group ?? entry.id)),
   ), canManageTeam), [canManageTeam, hub, primaryTabs]);
@@ -284,11 +280,6 @@ export function ProductHubShell({
   const tabAllowed =
     !access.ready ||
     primaryTabs.some((entry) => entry.id === tab || entry.id === workbenchId);
-  const sections = hubNavigationSections(hub, workspaceTabs);
-  const selectedSection = sections.find(section => section.id === tab)
-    ?? sections.find(section => hubWorkbenchId(hub, section.id) === workbenchId)
-    ?? sections[0];
-  const barSections = hubBarSections(hub.href, sections, livePins.length > 0 ? livePins : defaultPinHrefs(), selectedSection?.id ?? null);
 
   return (
     <PageMain className={`module-page product-hub product-hub--${hub.id} scan-workbench scan-hub--${hub.id}`}>
@@ -299,9 +290,11 @@ export function ProductHubShell({
           <span className="workspace-hub-eyebrow">{hub.label}</span>
           <h1>{hubPageTitle(hub, tab)}</h1>
         </div>
-        {headerActions}
+        <div className="workspace-hub-actions">
+          {headerActions}
+          <HubPagePicker hub={hub} tabs={workspaceTabs} value={tab} onChange={selectTab} />
+        </div>
       </div>
-      <TabBar className="workspace-hub-tabs" aria-label={`${hub.label} sections`} tabs={barSections} value={selectedSection?.id ?? tab} onChange={selectTab} />
       <div
         className="product-hub-panel"
         data-hub-tab={tab}
@@ -319,7 +312,6 @@ export function ProductHubShell({
           return <Suspense fallback={<HubPanelSkeleton />}>{children({ tab, orgId, selectTab })}</Suspense>;
         })()}
       </div>
-      {orgReady && access.ready && tabAllowed ? <HubContextActions hub={hub} tab={tab} tabs={workspaceTabs} orgId={orgId} canManage={canManageTeam} /> : null}
     </PageMain>
   );
 }

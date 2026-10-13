@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { ROLE_LABELS, type AccessRole } from "@vantage/core/role-words";
 import { Icon, type IconName } from "./icon";
@@ -228,11 +228,11 @@ export function SettingsList({
 }
 
 /**
- * One frame for every settings page (/account, /security, /connectors, /team/admin …): the
- * Settings list in a column on the left on wider screens, the page on the right. On a phone
- * the page is full width and the top bar's back button returns to the list (/settings).
+ * One reading column for settings pages, with a section selector and an All settings link.
+ * The full directory remains on /settings; pages drop their own duplicate navigation rows.
  */
 export function SettingsLayout({ children }: { children: ReactNode }) {
+  const pickerId = useId();
   const pathname = usePathname() ?? "";
   const search = useLocationSearch();
   const orgId = new URLSearchParams(search).get("orgId") ?? "";
@@ -243,19 +243,22 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
   return (
     <InSettingsLayout.Provider value>
       <div className="settings-frame">
-        <aside className="settings-column" aria-label="Settings">
-          <a className="settings-column-title" href={withOrgHref("/settings", orgId || viewer.teamId || null)}>Settings</a>
-          <SettingsList
-            items={items}
-            orgId={orgId || viewer.teamId}
-            activeId={activeId}
-            role={viewer.role}
-            teamLabel={viewer.teamLabel}
-            ready={viewer.ready}
-            failed={viewer.failed}
-            onRetry={viewer.retry}
-          />
-        </aside>
+        <nav className="settings-navigation" aria-label="Settings navigation">
+          <a href={withOrgHref("/settings", orgId || viewer.teamId || null)}><Icon name="back" /> All settings</a>
+          <label htmlFor={pickerId}>
+            <span className="sr-only">Settings section</span>
+            <select id={pickerId} value={activeId ?? ""} onChange={event => {
+              const item = items.find(item => item.id === event.target.value);
+              if (item) window.location.assign(withOrgHref(item.href, orgId || viewer.teamId || null));
+            }}>
+              {!activeId ? <option value="" disabled>Choose a section</option> : null}
+              {(["personal", "team"] as const).map(scope => <optgroup key={scope} label={SETTINGS_GROUP_LABELS[scope]}>
+                {items.filter(item => item.scope === scope && !item.href.includes("#")).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </optgroup>)}
+            </select>
+          </label>
+          {viewer.failed ? <button className="settings-retry" type="button" onClick={viewer.retry}>Reload team settings</button> : null}
+        </nav>
         <div className="settings-pane">{children}</div>
       </div>
     </InSettingsLayout.Provider>

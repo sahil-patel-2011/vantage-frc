@@ -5,17 +5,15 @@ import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { settingsBreadcrumb } from "../../lib/nav/settings-nav";
 import { fetchProductSession } from "../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { signOutAndRedirect } from "../../lib/sign-out";
-import { KitCard, KitEyebrow, KitRow } from "../../components/ui/kit";
+import { KitCard } from "../../components/ui/kit";
 import { AccountDeleteRow } from "./account-delete-row";
 import { AccountNotificationsPanel } from "./account-notifications-panel";
 import { AccountProfilePanel } from "./account-profile-panel";
-import { OrgContextCard } from "./account-shell";
 import {
   DEFAULT_EMAIL_PREFS,
   DEFAULT_NOTIFICATION_PREFS,
@@ -334,7 +332,6 @@ export default function AccountClient() {
   }
 
   const orgId = org.orgId;
-  const canManageTeam = Boolean(orgId) && (org.role === "owner" || org.role === "admin");
 
   // One page, three Settings sections. The Settings list beside it (and /settings on a phone)
   // switches between them, so the page no longer carries its own tab row or settings rows.
@@ -482,55 +479,10 @@ export default function AccountClient() {
         </>
       ) : null}
       </div>
-      {/* Beside Profile only: your team, help, and the account actions (Sign out, Delete account).
-          The settings rows that used to be here are the Settings list beside the page now. */}
-      {tab === "profile" ? <aside className="account-directory" aria-label="Your team and account actions">
-      {account ? <OrgContextCard org={org} /> : null}
-
-      {/* One place for money and help. AI spending and usage only for the people who can
-          change them. */}
-      <KitEyebrow>{canManageTeam ? "AI and help" : "Help"}</KitEyebrow>
-      <KitCard>
-        {canManageTeam ? (
-          <>
-            <KitRow icon="bolt" tone="amber" title="AI limits" subtitle="A monthly limit or pause for your team's AI key" href={withOrgHref("/ai?tab=budgets", orgId || null)} />
-            <KitRow icon="stats" tone="teal" title="AI usage" subtitle="What your team's AI key has been used for" href={withOrgHref("/team/usage", orgId || null)} />
-          </>
-        ) : null}
-        {!orgId ? (
-          <KitRow icon="users" tone="blue" title="You're not on a team yet" subtitle="See what's next" href="/onboarding" />
-        ) : null}
-        <KitRow icon="chat" tone="cyan" title="Help and support" href="/support" />
-      </KitCard>
-
-      {/* The account actions people come to this page to use that are not a
-          toggle. One card, one shape each, chevrons so they read as somewhere
-          you go rather than something that happens on tap. "Delete account" is
-          last and red, and asks for the email address first (account-delete-row). */}
-      <span id="delete-account" aria-hidden="true" />
-      <KitEyebrow>Account</KitEyebrow>
-      <KitCard className="acct-actions">
-        <KitRow
-          icon="sparkles"
-          tone="violet"
-          title="What’s new"
-          subtitle="Recent updates and features"
-          href="/whats-new"
-        />
-        <KitRow
-          icon="logout"
-          tone="cyan"
-          title="Sign out"
-          subtitle="End this session on this device"
-          onClick={() => void signOut()}
-          chevron={false}
-        />
-        <AccountDeleteRow email={account?.email} />
-      </KitCard>
-      </aside> : null}
       </div>
-
-      <p className="kit-footnote">Vantage · FRC scouting and strategy</p>
+      {tab === "profile" && account ? <section className="account-close" id="delete-account" aria-label="Close your account">
+        <KitCard><AccountDeleteRow email={account.email} /></KitCard>
+      </section> : null}
     </main>
   );
 }

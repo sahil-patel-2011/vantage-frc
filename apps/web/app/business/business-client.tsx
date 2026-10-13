@@ -4,9 +4,10 @@ import dynamic from "next/dynamic";
 import { HubPanelSkeleton } from "../../components/product-hub";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
-import { EmptyState, Button, PageMain, TabBar } from "../../components/ui";
+import { EmptyState, Button, PageMain } from "../../components/ui";
 import { hubPageTitle } from "../../lib/nav/hub-navigation";
-import { HubContextActions } from "../../components/hub-context-actions";
+import { HubPagePicker } from "../../components/hub-page-picker";
+import { hubLegacyContextHref } from "../../lib/nav/hub-legacy-context";
 import { MoneyAddMenu } from "./money-add-menu";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -296,11 +297,18 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
     <PageMain className="module-page business-page product-hub product-hub--business">
       <div className="workspace-hub-header">
         <div className="hub-bar-id"><span className="workspace-hub-eyebrow">Business</span><h1>{hubPageTitle(BUSINESS_HUB, tab)}</h1></div>
+        <div className="workspace-hub-actions">
+        <HubPagePicker hub={BUSINESS_HUB} tabs={workspaceTabs} value={tab} onChange={next => {
+          const destination = workspaceTabs.find(entry => entry.id === next);
+          if (!destination) return;
+          if (isTab(next)) selectTab(next);
+          else if (destination.legacyHref) window.location.assign(hubLegacyContextHref(destination.legacyHref, window.location.search, orgId ?? null));
+        }} />
         {live ? (
           <MoneyAddMenu orgId={orgId ?? null} canManageFinances={live.canManageFinances} viewOnly={live.role === "viewer"} />
         ) : null}
+        </div>
       </div>
-      <TabBar className="workspace-hub-tabs" aria-label="Business sections" tabs={visibleWorkbenches} value={workbenchId} onChange={next => selectTab(next as Tab)} />
 
       <OfflineBanner feature="Business" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -436,7 +444,6 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
           ) : null}
           {tab === "grants" ? <Grants view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "evidence" ? <Evidence view={live} busy={busy} submit={submit} /> : null}
-          <HubContextActions hub={BUSINESS_HUB} tab={tab} tabs={workspaceTabs} orgId={live.orgId} canManage={live.canManageFinance} />
         </>
       ) : null}
     </PageMain>

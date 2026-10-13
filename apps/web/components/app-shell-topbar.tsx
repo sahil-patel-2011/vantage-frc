@@ -102,24 +102,8 @@ export function AppShellTopbar({
   return (
     <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
-        {/* Navigation opens from the left, where a hamburger lives on every
-            other app. The right side is for things you act on. */}
-          {minimal ? null : <button
-            hidden={navOpen}
-            className={`soft-icon-btn soft-menu-btn${menuOpen ? " is-open" : ""}`}
-            data-tour="menu"
-            type="button"
-            aria-label="Menu"
-            aria-controls="vantage-navigation-panel"
-            aria-expanded={menuOpen || navOpen}
-            onClick={onOpenNav}
-          >
-            <span className="soft-burger" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-          </button>}
+        {/* Browse in the phone dock opens navigation; desktop has the sidebar. */}
+        {minimal ? null : <button className="soft-icon-btn soft-menu-btn" type="button" aria-label="Browse all pages" aria-controls="vantage-navigation-panel" aria-expanded={menuOpen || navOpen} onClick={onOpenNav}><Icon name="sidebar" /></button>}
         <div className="soft-page-head">
           {showBack ? (
             <button

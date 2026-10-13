@@ -1,0 +1,246 @@
+/* Product-wide navigation and spacing. Loaded after the older chrome layers. */
+body.has-app-shell {
+  --page-title: clamp(26px, 1.2vw + 18px, 32px);
+}
+body.has-app-shell .module-page {
+  padding: clamp(22px, 3vw, 40px) clamp(18px, 3vw, 40px) 40px;
+}
+body.has-app-shell .app-page-header {
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+body.has-app-shell .app-page-header h1 {
+  line-height: 1.2;
+  letter-spacing: -.035em;
+}
+body.has-app-shell .app-page-header p {
+  max-width: 64ch;
+  line-height: 1.6;
+}
+body.has-app-shell .app-page-actions {
+  align-items: center;
+  gap: 8px;
+}
+body.has-app-shell :is(.app-button, .hub-picker-groups button) > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+/* The dock owns phone navigation; document editors that hide it retain a topbar entrance. */
+body.has-app-shell .soft-menu-btn { display: none; }
+@media (max-width: 1099px) {
+  body.has-app-shell:is(.is-scouting-form, :has(.sfb-document-actions)) .soft-menu-btn { display: inline-flex; }
+}
+
+/* One compact destination control alongside the title, with every tool in its dialog. */
+body.has-app-shell .workspace-hub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.workspace-hub-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+body.has-app-shell .hub-browse-button { gap: 8px; font-weight: 500; }
+.hub-page-picker { width: min(640px, calc(100vw - 32px)); }
+.hub-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--field-line, var(--line));
+  border-radius: 12px;
+  background: var(--surface);
+}
+.hub-picker-search > svg { width: 18px; height: 18px; flex: none; color: var(--muted); }
+body.has-app-shell .hub-picker-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0;
+  /* Older product field defaults use !important; the wrapper owns this field's boundary. */
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+}
+.hub-picker-search:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+body.has-app-shell .hub-picker-search input:focus { outline: none; box-shadow: none; }
+.hub-picker-groups { display: grid; gap: 24px; margin-top: 22px; }
+.hub-picker-groups h3 { margin: 0 10px 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.hub-picker-groups section > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+.hub-picker-groups button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font: 500 14px/1.4 var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+.hub-picker-groups button:hover { background: var(--surface-2); }
+.hub-picker-groups button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+.hub-picker-groups button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hub-picker-groups button svg { color: var(--muted); }
+.hub-picker-groups button[aria-current="page"] svg { color: inherit; }
+
+/* Settings is a single reading column, with a small section switcher at every width. */
+body.has-app-shell .settings-frame {
+  display: block;
+  max-width: 960px;
+  padding: 28px clamp(18px, 3vw, 40px) 48px;
+}
+.settings-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.settings-navigation > a { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; color: var(--muted); text-decoration: none; font-size: 14px; }
+.settings-navigation > a:hover { color: var(--ink); }
+.settings-navigation > a svg { width: 16px; height: 16px; }
+.settings-navigation > label { min-width: 0; max-width: 100%; }
+.settings-navigation select { width: min(260px, 100%); min-height: 44px; border-radius: 12px; padding: 8px 32px 8px 12px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--field-line, var(--line)); }
+body.has-app-shell .settings-pane > main { width: 100%; max-width: none; margin: 0; padding: 0; }
+body.has-app-shell .account-workspace { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
+body.has-app-shell .account-page { max-width: 760px; }
+.account-close { max-width: 760px; margin-top: 32px; scroll-margin-top: 90px; }
+body.has-app-shell .acct-hero { display: grid; grid-template-columns: 52px minmax(0, 1fr); text-align: left; column-gap: 14px; padding: 0 0 8px; }
+body.has-app-shell .acct-hero .acct-avatar { grid-row: 1 / 3; width: 52px; height: 52px; font-size: 20px; }
+body.has-app-shell .acct-hero .acct-name { margin: 0; font-size: 20px; align-self: end; }
+body.has-app-shell .acct-hero .acct-email { margin: 4px 0 0; overflow-wrap: anywhere; }
+
+/* A quieter drawer: row navigation instead of a wall of icon tiles. */
+body.has-app-shell .soft-drawer .main-menu-launch { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; margin-bottom: 20px; }
+body.has-app-shell .soft-drawer .main-menu-app { flex-direction: row; justify-content: flex-start; align-items: center; gap: 12px; min-height: 44px; padding: 6px 12px; text-align: left; border-radius: 10px; }
+body.has-app-shell .soft-drawer .main-menu-app .main-menu-symbol { width: 28px; height: 28px; border-radius: 8px; background: transparent; }
+body.has-app-shell .soft-drawer .main-menu-app .main-menu-symbol > svg { width: 20px; height: 20px; }
+body.has-app-shell .soft-drawer .main-menu-app strong { font-size: 14px; font-weight: 500; }
+body.has-app-shell .soft-drawer .main-menu-launch > a.main-menu-app[aria-current="page"] { background: var(--accent-soft); }
+body.has-app-shell .soft-drawer .main-menu-launch > a.main-menu-app[aria-current="page"] .main-menu-symbol { background: transparent; color: inherit; }
+.main-menu-home { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; color: var(--ink); text-decoration: none; border-radius: 10px; }
+.main-menu-home svg { width: 22px; height: 22px; }
+.main-menu-home:hover, .main-menu-home[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.main-menu-home:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+body.has-app-shell .main-menu-section > summary { min-height: 48px; }
+body.has-app-shell .main-menu-section > summary .main-menu-symbol { width: 28px; height: 28px; background: transparent; }
+body.has-app-shell .main-menu-section > summary .main-menu-symbol svg { width: 22px; height: 22px; }
+@media (min-width: 1100px) {
+  .app-sidebar-wordmark { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; letter-spacing: -.04em; }
+  .app-sidebar[data-collapsed="true"] .app-sidebar-wordmark > span { display: none; }
+  .app-sidebar-workspace > summary, .app-sidebar-workspace-button { display: flex; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; padding: 8px 12px; border: 0; border-radius: 9px; color: var(--muted); background: transparent; font: 500 13px var(--font-sans); cursor: pointer; list-style: none; }
+  .app-sidebar-workspace > summary::-webkit-details-marker { display: none; }
+  .app-sidebar-workspace > summary > svg { width: 20px; height: 20px; flex: none; }
+  .app-sidebar-workspace > summary > span { flex: 1; }
+  .app-sidebar-workspace > summary > svg:last-child { width: 12px; height: 12px; }
+  .app-sidebar-workspace[open] > summary > svg:last-child { transform: rotate(90deg); }
+  .app-sidebar-workspace[data-current="true"] > summary { color: var(--ink); }
+  .app-sidebar-workspace > summary:hover, .app-sidebar-workspace-button:hover { background: var(--line-soft); color: var(--ink); }
+  .app-sidebar-workspace > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .app-sidebar-workspace > nav { padding-left: 12px; margin: 2px 0 8px 12px; border-left: 1px solid var(--line-soft); }
+  .app-sidebar-workspace > nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+  .app-sidebar-workspace-button { justify-content: center; padding: 0; width: 44px; height: 44px; }
+  .app-sidebar-workspace-button > svg { width: 20px; height: 20px; }
+  body.has-app-shell .app-sidebar { padding-top: 18px; background: var(--surface-2); backdrop-filter: none; }
+  body.has-app-shell .app-sidebar .app-sidebar-brand { margin-bottom: 14px; }
+  body.has-app-shell .app-sidebar .app-sidebar-team { margin-bottom: 16px; box-shadow: none; }
+  body.has-app-shell .app-sidebar nav a > svg { width: 20px; height: 20px; }
+  body.has-app-shell .app-sidebar nav a { gap: 10px; font-size: 13px; border-radius: 9px; }
+  body.has-app-shell .app-sidebar .app-sidebar-footer { grid-template-columns: repeat(auto-fit, minmax(58px, 1fr)); }
+  body.has-app-shell .app-sidebar[data-collapsed="true"] .app-sidebar-footer { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Ask AI: the composer anchors the empty state, with history and settings on demand. */
+body.has-app-shell main.ask-page { max-width: 1120px; }
+.ask-page .ask-head { margin-bottom: 12px; }
+.ask-page .ch-header-actions { gap: 4px; }
+body.has-app-shell .ask-page .ch-layout { display: block; min-height: 0; }
+body.has-app-shell .ask-page .ch-main { max-width: 760px; margin-inline: auto; padding: 0; border: 0; background: transparent; gap: 24px; }
+.ask-page .ch-layout[data-empty="true"] .ch-main { padding-top: clamp(28px, 8vh, 96px); }
+body.has-app-shell .ask-empty { justify-items: center; text-align: center; gap: 12px; padding: 0; }
+.ask-welcome-mark { display: grid; place-items: center; width: 44px; height: 44px; color: var(--accent); }
+.ask-welcome-mark svg { width: 32px; height: 32px; }
+body.has-app-shell .ask-empty h2 { font-size: clamp(28px, 3vw, 38px); font-weight: 550; letter-spacing: -.045em; }
+.ask-empty > p { font-size: 15px; line-height: 1.6; }
+.ask-page .ch-privacy { font-size: 12px; width: 100%; }
+.ask-page .ch-privacy summary { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 10px; color: var(--muted); }
+.ask-page .ch-privacy[open] .ch-scope { margin-top: 8px; text-align: left; }
+body.has-app-shell .ask-composer {
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--field-line, var(--line));
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--ink) 4%, transparent);
+}
+.ask-composer:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+body.has-app-shell .ask-composer textarea { min-height: 88px; max-height: 280px; width: 100%; box-sizing: border-box; padding: 4px; border: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none; font-size: 16px; line-height: 1.6; resize: vertical; }
+body.has-app-shell .ask-composer textarea:focus { outline: none; box-shadow: none; }
+.ask-composer .ch-composer-foot { flex-wrap: nowrap; gap: 12px; }
+.ask-composer .ask-skill { min-width: 0; }
+.ask-composer .ask-skill-chip { border: 0; min-width: 0; padding-inline: 10px; font-weight: 500; }
+.ask-composer .ask-skill-chip > span { text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+.ask-composer .ask-skill-chip small { display: none; }
+.ask-composer .ask-skill-clear { flex: none; }
+.ask-composer .ch-composer-foot > .app-button { min-width: 76px; flex: none; border-radius: 50px; }
+.ask-options { font-size: 12px; color: var(--muted); }
+.ask-options > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; }
+.ask-options[open] { padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.ask-options .ask-bg-toggle { display: flex; }
+.ask-suggestions { display: grid; gap: 12px; }
+.ask-groups.is-compact { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ask-groups.is-compact .ask-group h3 { font-size: 12px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.ask-groups.is-compact .ask-starter { align-items: flex-start; min-height: 70px; background: transparent; border-color: var(--line-soft); border-radius: 14px; padding: 12px; color: var(--muted); line-height: 1.5; }
+.ask-groups.is-compact .ask-starter:hover { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.ask-more-prompts > summary { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; color: var(--muted); font-size: 13px; cursor: pointer; }
+.ask-more-prompts[open] > summary { margin-bottom: 14px; }
+.ch-history-dialog .ch-sidebar { border: 0; padding: 0; background: transparent; }
+.ch-history-dialog .ch-thread-list button { border: 0; background: transparent; padding: 12px; font-size: 14px; line-height: 1.5; border-radius: 10px; }
+.ch-history-dialog .ch-thread-list button:hover { background: var(--surface-2); }
+.ch-history-dialog .ch-thread-list button.active { background: var(--accent-soft); color: var(--accent); }
+.ch-history-dialog .ch-thread-list span { font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.ch-settings-content { display: grid; gap: 18px; min-width: 0; margin: 16px 0 0; padding: 0; border: 0; }
+.ch-settings-content h2 { margin: 4px 0 8px; font-size: 18px; }
+.ch-settings-content .ch-gov { border: 0; padding: 0 0 16px; border-bottom: 1px solid var(--line-soft); border-radius: 0; gap: 8px 16px; }
+.ch-settings-content .ch-gov a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 500; }
+.ch-settings-content :is(textarea, input[type="number"]) { min-height: 44px; padding: 10px; border: 1px solid var(--field-line, var(--line)); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; }
+.ask-memory-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; cursor: pointer; }
+.ask-memory-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.ask-page .ch-msg { border: 0; border-radius: 18px; padding: 16px 18px; }
+.ask-page .ch-msg.user { background: var(--surface-2); }
+.ask-page .ch-msg.assistant { background: transparent; padding-inline: 0; }
+.ask-page .ch-msg-body { font-size: 15px; line-height: 1.75; }
+.ask-page .ch-messages { max-height: min(50dvh, 560px); overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+
+@media (max-width: 600px) {
+  body.has-app-shell .module-page { padding: 22px 18px 32px; }
+  body.has-app-shell .workspace-hub-header { gap: 12px; margin-bottom: 20px; }
+  .hub-picker-groups section > div { grid-template-columns: minmax(0, 1fr); }
+  .ask-page .ch-layout[data-empty="true"] .ch-main { padding-top: 16px; }
+  .ask-groups.is-compact { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .ask-groups.is-compact .ask-group h3 { margin-left: 4px; }
+  .ask-groups.is-compact .ask-starter { min-height: 44px; }
+  body.has-app-shell .ask-composer { padding: 12px; border-radius: 18px; }
+  .ask-composer .ask-skill-chip { max-width: 190px; }
+  .ask-page .ch-header-actions .app-button { font-size: 12px; padding-inline: 10px; }
+}
+@media (pointer: coarse) {
+  .ask-page .ch-privacy summary { min-height: 44px; }
+}
+@media print {
+  .settings-navigation, .hub-browse-button { display: none; }
+}

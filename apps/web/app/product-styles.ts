@@ -29,6 +29,8 @@ import "./menu-polish.css";
 import "./header-strips.css";
 // After the menus: the search palette, "Your apps" (menu, sidebar) and its editor.
 import "./nav-pins-search.css";
+// Shared navigation consolidation and the focused Ask AI workspace.
+import "./interface-polish.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

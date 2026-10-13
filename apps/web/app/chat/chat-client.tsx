@@ -9,7 +9,8 @@ import { AiSponsorBranding } from "../../components/ai-sponsor-branding";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { SponsoredPromoBanner } from "../../components/sponsored-promo-banner";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
-import { ModelProvenance, Button, EmptyState, PageMain, askConfirm } from "../../components/ui";
+import { ModelProvenance, Button, EmptyState, PageMain, Modal, askConfirm } from "../../components/ui";
+import { Icon } from "../../components/icon";
 import {
   AI_CHAT_SCOPE_CARDS,
   aiChatShellCopy,
@@ -188,6 +189,10 @@ export default function ChatClient({
   const [pendingEditorContextId, setPendingEditorContextId] = useState(contextId);
   const [promptCachingEnabled, setPromptCachingEnabled] = useState(false);
   const [contextOpen, setContextOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [memoryBusy, setMemoryBusy] = useState(false);
+  const memoryPending = useRef(false);
+  const [memoryNotice, setMemoryNotice] = useState<{ text: string; error: boolean } | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [canManageTeam, setCanManageTeam] = useState(false);
@@ -220,20 +225,21 @@ export default function ChatClient({
   const shownSkillId = pinned ?? lastSkill?.id ?? null;
   const viewOnly = role === "viewer";
 
-  async function load(threadId?: string) {
-    if (!threadId) {
+  async function load(threadId?: string, silent = false) {
+    if (!threadId && !silent) {
       setLoading(true);
       setLoadError(null);
     }
     const response = await fetch(`/api/agent?orgId=${orgId}${threadId ? `&threadId=${threadId}` : ""}`);
     const data = await response.json();
-    setHttpStatus(response.status);
+    if (!silent) setHttpStatus(response.status);
     if (!response.ok) {
+      if (silent) throw new Error("The change was saved, but settings couldn't refresh. Reopen this chat to load the latest settings.");
       setLoadError(data.error ?? "Unable to load assistant channels");
       if (!threadId) setLoading(false);
       return;
     }
-    setLoadError(null);
+    if (!silent) setLoadError(null);
     setThreads(data.threads ?? []);
     setMemories(data.memories ?? []);
     setPromptCachingEnabled(Boolean(data.promptCachingEnabled));
@@ -245,7 +251,7 @@ export default function ChatClient({
       setTeamBudget(data.memorySettings.team?.tokenBudget ?? 1600);
     }
     if (threadId) setMessages(data.messages ?? []);
-    if (!threadId) setLoading(false);
+    if (!threadId && !silent) setLoading(false);
   }
 
   useEffect(() => {
@@ -409,92 +415,72 @@ export default function ChatClient({
     setStatus(response.ok ? "Saved to your drafts. Open Writer to edit or send it." : (data.error ?? "That draft couldn't be saved."));
   }
 
+  async function updateMemory(body: Record<string, unknown> | string, success: string): Promise<boolean> {
+    if (memoryPending.current) return false;
+    memoryPending.current = true;
+    setMemoryBusy(true);
+    setMemoryNotice({ text: "Saving…", error: false });
+    try {
+      const response = typeof body === "string"
+        ? await fetch(`/api/agent/memory?id=${encodeURIComponent(body)}`, { method: "DELETE" })
+        : await fetch("/api/agent/memory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, orgId }) });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? "That change couldn't be saved. Try again.");
+      }
+      try {
+        await load(thread?.id, true);
+        setMemoryNotice({ text: success, error: false });
+      } catch {
+        // The mutation succeeded. Do not leave saved text in the input and invite a duplicate.
+        setMemoryNotice({ text: `${success} The latest settings couldn't reload. Reopen this chat to refresh them.`, error: true });
+      }
+      return true;
+    } catch (error) {
+      setMemoryNotice({ text: error instanceof Error ? error.message : "That change couldn't be saved. Try again.", error: true });
+      return false;
+    } finally {
+      memoryPending.current = false;
+      setMemoryBusy(false);
+    }
+  }
+
   async function saveMemory(event: React.FormEvent) {
     event.preventDefault();
-    const response = await fetch("/api/agent/memory", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "save", orgId, kind: "preference", content: memory }),
-    });
-    if (response.ok) {
-      setMemory("");
-      await load(thread?.id);
-    }
+    if (await updateMemory({ action: "save", kind: "preference", content: memory }, "Private memory saved.")) setMemory("");
   }
 
   async function removeMemory(id: string) {
     if (!(await askConfirm({ title: "Delete this private memory?", body: "This cannot be undone.", confirmLabel: "Delete private memory", tone: "destructive" }))) return;
-    await fetch(`/api/agent/memory?id=${id}`, { method: "DELETE" });
-    await load(thread?.id);
+    await updateMemory(id, "Private memory deleted.");
   }
 
   async function setPrivateInjection(enabled: boolean) {
-    await fetch("/api/agent/memory", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "toggle-private", orgId, enabled, tokenBudget: privateBudget }),
-    });
-    setStatus(enabled ? "Private memory injection enabled." : "Private memory injection disabled.");
-    await load(thread?.id);
+    await updateMemory({ action: "toggle-private", enabled, tokenBudget: privateBudget }, enabled ? "Private memory enabled." : "Private memory disabled.");
   }
 
   async function savePrivateBudget(event: React.FormEvent) {
     event.preventDefault();
-    await fetch("/api/agent/memory", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        action: "private-budget",
-        orgId,
-        enabled: memorySettings?.private.enabled ?? true,
-        tokenBudget: privateBudget,
-      }),
-    });
-    setStatus(`Private memory budget set to ${privateBudget} tokens.`);
-    await load(thread?.id);
+    await updateMemory({ action: "private-budget", enabled: memorySettings?.private.enabled ?? true, tokenBudget: privateBudget }, `Private memory budget set to ${privateBudget} tokens.`);
   }
 
   async function setTeamInjection(enabled: boolean) {
-    const response = await fetch("/api/agent/memory", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    await updateMemory({
         action: "toggle-team",
-        orgId,
         enabled,
         tokenBudget: teamBudget,
         retentionDays: memorySettings?.team?.retentionDays ?? 365,
-      }),
-    });
-    if (!response.ok) {
-      const data = (await response.json().catch(() => null)) as { error?: string } | null;
-      setStatus(data?.error ?? "Team memory could not be changed.");
-      return;
-    }
-    setStatus(enabled ? "Team memory injection enabled." : "Team memory injection disabled.");
-    await load(thread?.id);
+      }, enabled ? "Team memory enabled." : "Team memory disabled.");
   }
 
   async function saveTeamBudget(event: React.FormEvent) {
     event.preventDefault();
-    const response = await fetch("/api/agent/memory", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    await updateMemory({
         action: "team-budget",
-        orgId,
         enabled: memorySettings?.team?.enabled ?? false,
         tokenBudget: teamBudget,
         retentionDays: memorySettings?.team?.retentionDays ?? 365,
-      }),
-    });
-    if (!response.ok) {
-      const data = (await response.json().catch(() => null)) as { error?: string } | null;
-      setStatus(data?.error ?? "Team memory budget could not be saved.");
-      return;
-    }
-    setStatus(`Team memory budget set to ${teamBudget} tokens.`);
-    await load(thread?.id);
+      }, `Team memory budget set to ${teamBudget} tokens.`);
   }
 
   async function promote(messageId: string) {
@@ -550,7 +536,6 @@ export default function ChatClient({
       <header className="app-page-header ask-head">
         <div>
           <h1>Ask AI</h1>
-          <p>One assistant for your team. It picks the right skill for each question and answers from your team&apos;s own records.</p>
         </div>
         <div className="ch-header-actions">
           <AiSponsorBranding />
@@ -559,9 +544,12 @@ export default function ChatClient({
               New chat
             </Button>
           ) : null}
+          {!blocked && hasSide ? <Button variant="ghost" type="button" aria-haspopup="dialog" aria-expanded={historyOpen} onClick={() => setHistoryOpen(true)}>
+            <Icon name="chat" /> Recent chats
+          </Button> : null}
           {!blocked ? (
-            <Button variant="ghost" type="button" className="ch-context-toggle" aria-expanded={contextOpen} onClick={() => setContextOpen((v) => !v)}>
-              {contextOpen ? "Hide chat settings" : "Chat settings"}
+            <Button variant="ghost" type="button" className="ch-context-toggle" aria-haspopup="dialog" aria-expanded={contextOpen} onClick={() => setContextOpen(true)}>
+              <Icon name="gear" /> Chat settings
             </Button>
           ) : null}
         </div>
@@ -587,23 +575,24 @@ export default function ChatClient({
       ) : null}
 
       {!blocked ? (
-      <div className="ch-layout" data-has-threads={hasSide}>
-        {hasSide ? (
-          <aside className="ch-sidebar" id="ch-channels" aria-label="Recent chats">
+      <div className="ch-layout" data-empty={conversationEmpty}>
+        <Modal open={historyOpen} onClose={() => setHistoryOpen(false)} title="Recent chats" className="ch-history-dialog">
+          <div className="ch-sidebar" id="ch-channels">
             {threads.length ? (
               <>
-                <h2>Recent chats</h2>
                 <ul className="ch-thread-list">
-                  {threads.slice(0, 12).map((item) => (
+                  {threads.map((item) => (
                     <li key={item.id}>
                       <button
                         className={thread?.id === item.id ? "active" : ""}
+                        aria-current={thread?.id === item.id ? "page" : undefined}
                         type="button"
                         onClick={() => {
                           setThread(item);
                           setPreview(null);
                           setAnswerPreviews([]);
                           bg.close();
+                          setHistoryOpen(false);
                           void load(item.id);
                         }}
                       >
@@ -619,14 +608,16 @@ export default function ChatClient({
               <>
                 <h2>Background work</h2>
                 <ul className="ch-thread-list">
-                  {bg.runs.slice(0, 6).map((run) => (
+                  {bg.runs.map((run) => (
                     <li key={run.id}>
                       <button
                         className={bg.selected?.run.id === run.id ? "active" : ""}
+                        aria-current={bg.selected?.run.id === run.id ? "page" : undefined}
                         type="button"
                         onClick={() => {
                           setThread(null);
                           setMessages([]);
+                          setHistoryOpen(false);
                           void bg.open(run.id);
                         }}
                       >
@@ -638,15 +629,16 @@ export default function ChatClient({
                 </ul>
               </>
             ) : null}
-          </aside>
-        ) : null}
+            {!hasSide ? <p className="app-muted">Your conversations will appear here.</p> : null}
+          </div>
+        </Modal>
 
         <section className="ch-main" aria-label="Conversation">
           {conversationEmpty ? (
             <div className="ch-empty ask-empty">
-              <h2>{aiChatShellCopy("empty").title}</h2>
-              <p>{aiChatShellCopy("empty").description}</p>
-              {pinned ? null : <StarterGroups availability={availability} onPick={(skillId, starter) => pickStarter(skillId, starter)} />}
+              <span className="ask-welcome-mark" aria-hidden="true"><Icon name="sparkles" /></span>
+              <h2>What can we work on?</h2>
+              <p>Ask about your team. Start with a question, or choose a skill.</p>
               {!viewOnly ? (
                 <details className="ch-privacy">
                   <summary data-disclosure>{newScope === "team" ? "This chat will be shared with your team" : "Only you will see this chat"}</summary>
@@ -796,20 +788,6 @@ export default function ChatClient({
           ) : null}
 
           <form className="ch-composer ask-composer" onSubmit={send}>
-            <div className="ask-composer-top">
-              <SkillChip
-                skillId={shownSkillId}
-                chosenBy={pinned ? "pinned" : lastSkill ? "auto" : null}
-                fromLabel={pinned && pinned === aiSkillById(initialSkill)?.id ? fromLabel : null}
-                availability={availability}
-                onChange={(next) => {
-                  setPinned(next);
-                  if (!next) setLastSkill(null);
-                  setSkillNotice(null);
-                }}
-              />
-              {skillNotice ? <small className="ask-skill-notice">{skillNotice}</small> : null}
-            </div>
             {pinned && conversationEmpty ? <SkillStarters skillId={pinned} onPick={(starter) => pickStarter(null, starter)} /> : null}
             {thread?.scope === "team" ? (
               <div className="ch-composer-note">Shared with your team · teammates see this message</div>
@@ -835,14 +813,29 @@ export default function ChatClient({
               }
             />
             <div className="ch-composer-foot">
-              <label className="ask-bg-toggle">
-                <input type="checkbox" checked={background} onChange={(e) => setBackground(e.target.checked)} />
-                <span>Work on this in the background</span>
-              </label>
+              <SkillChip
+                skillId={shownSkillId}
+                chosenBy={pinned ? "pinned" : lastSkill ? "auto" : null}
+                fromLabel={pinned && pinned === aiSkillById(initialSkill)?.id ? fromLabel : null}
+                availability={availability}
+                onChange={(next) => {
+                  setPinned(next);
+                  if (!next) setLastSkill(null);
+                  setSkillNotice(null);
+                }}
+              />
               <Button variant="primary" type="submit" disabled={sending || bg.busy || !text.trim()}>
                 {sending || bg.busy ? "Working…" : "Send"}
               </Button>
             </div>
+            {skillNotice ? <small className="ask-skill-notice">{skillNotice}</small> : null}
+            <details className="ask-options">
+              <summary data-disclosure>Options{background ? " · Background work on" : ""}</summary>
+              <label className="ask-bg-toggle">
+                <input type="checkbox" checked={background} onChange={(e) => setBackground(e.target.checked)} />
+                <span>Work on this in the background</span>
+              </label>
+            </details>
             {notSent ? (
               <p className="ch-status ch-not-sent" role="alert">
                 <strong>Not sent.</strong> {notSent} <a href={aiConnectionHref(orgId)}>Connect AI</a>
@@ -859,10 +852,19 @@ export default function ChatClient({
               </p>
             ) : null}
           </form>
+          {conversationEmpty && !pinned ? <div className="ask-suggestions">
+            <StarterGroups compact availability={availability} onPick={pickStarter} />
+            <details className="ask-more-prompts">
+              <summary data-disclosure>Explore more ideas</summary>
+              <StarterGroups omitFeatured availability={availability} onPick={pickStarter} />
+            </details>
+          </div> : null}
         </section>
 
         {shell === "ready" || shell === "empty" ? (
-        <aside className={`ch-context${contextOpen ? " open" : ""}`} aria-label="Chat settings">
+        <Modal open={contextOpen} onClose={() => setContextOpen(false)} title="Chat settings" className="ch-settings-dialog">
+        {memoryNotice ? <p className={`ch-status${memoryNotice.error ? " ch-not-sent" : ""}`} role={memoryNotice.error ? "alert" : "status"}>{memoryNotice.text}</p> : null}
+        <fieldset className="ch-settings-content" disabled={memoryBusy} aria-busy={memoryBusy}>
           <nav className="ch-gov" aria-label="Chat settings links">
             <span className="ch-cache">
               Prompt caching{" "}
@@ -892,14 +894,7 @@ export default function ChatClient({
                 {memorySettings?.private.enabled === false ? "Off" : "On"}
               </span>
             </div>
-            <div className="ch-actions">
-              <Button variant="secondary" type="button" onClick={() => void setPrivateInjection(true)}>
-                Enable
-              </Button>
-              <Button variant="secondary" type="button" onClick={() => void setPrivateInjection(false)}>
-                Disable
-              </Button>
-            </div>
+            <label className="ask-memory-toggle"><input type="checkbox" checked={memorySettings?.private.enabled !== false} onChange={event => void setPrivateInjection(event.target.checked)} /> Use private memory in answers</label>
             <form className="ch-budget" onSubmit={savePrivateBudget}>
               <label>
                 Private token budget
@@ -926,14 +921,7 @@ export default function ChatClient({
             </div>
             {canManageTeam ? (
               <>
-                <div className="ch-actions">
-                  <Button variant="secondary" type="button" onClick={() => void setTeamInjection(true)}>
-                    Enable team
-                  </Button>
-                  <Button variant="secondary" type="button" onClick={() => void setTeamInjection(false)}>
-                    Disable team
-                  </Button>
-                </div>
+                <label className="ask-memory-toggle"><input type="checkbox" checked={memorySettings?.team?.enabled === true} onChange={event => void setTeamInjection(event.target.checked)} /> Use team memory in answers</label>
                 <form className="ch-budget" onSubmit={saveTeamBudget}>
                   <label>
                     Team token budget
@@ -955,15 +943,13 @@ export default function ChatClient({
                 An owner or admin turns team memory on. Your private memory stays yours.
               </p>
             )}
-            <a href={memoryHref} style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)" }}>
-              Open Memory →
-            </a>
           </div>
 
           <div className="ch-context-block">
             <span className="eyebrow">Your private memory</span>
             <form className="ch-budget" onSubmit={saveMemory}>
               <textarea
+                aria-label="New private memory"
                 value={memory}
                 onChange={(e) => setMemory(e.target.value)}
                 placeholder="Add a durable preference or fact"
@@ -987,7 +973,8 @@ export default function ChatClient({
               ))}
             </ul>
           </div>
-        </aside>
+        </fieldset>
+        </Modal>
         ) : null}
       </div>
       ) : null}

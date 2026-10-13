@@ -204,7 +204,7 @@ export function AppShellIsland({
         className="soft-island-more"
         href="#vantage-navigation-panel"
         role="button"
-        aria-label="More: every page and search"
+        aria-label="Browse all pages"
         aria-controls="vantage-navigation-panel"
         aria-expanded={navOpen}
         aria-current={moreCurrent ? "location" : undefined}
@@ -218,8 +218,8 @@ export function AppShellIsland({
           onOpenMore();
         }}
       >
-        <Icon name="menu" />
-        <span>More</span>
+        <Icon name="sidebar" />
+        <span>Browse</span>
       </a>
     </nav>
   );

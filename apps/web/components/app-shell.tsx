@@ -4,7 +4,7 @@ import "../app/product-styles";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShellNavPanel } from "./app-shell-nav-panel";
-import { AppShellEventFocus, AppShellIsland } from "./app-shell-island";
+import { AppShellIsland } from "./app-shell-island";
 import { AppShellSearchPalette } from "./app-shell-search-palette";
 import { AppShellPinsEditor } from "./app-shell-pins-editor";
 import { useShellSearch } from "./use-shell-search";
@@ -36,8 +36,6 @@ import { fetchProductSession } from "../lib/nav/product-session";
 import { pathnameIsEntryScreen } from "../lib/nav/product-route";
 import { probeSessionUser } from "../lib/nav/session-probe";
 import { Icon, type IconName } from "./icon";
-import { type MyDayView } from "../lib/my-day";
-import { buildEventFocus } from "../lib/event-focus";
 import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
 import { listenInboxUpdates } from "../lib/notifications/inbox-events";
@@ -124,9 +122,7 @@ export default function AppShell() {
   const notificationRevision = useRef(0);
   const [signingOut, setSigningOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [myDayGlance, setMyDayGlance] = useState<MyDayView | null>(null);
   const [online, setOnline] = useState(true);
-  const [focusCollapsed, setFocusCollapsed] = useState(false);
   /** "Your apps": the bottom bar shows the first four; the menu and the sidebar show them all. */
   const [pinHrefs, setPinHrefs] = useState<string[]>(defaultPinHrefs);
   useEffect(() => {
@@ -434,31 +430,6 @@ export default function AppShell() {
   );
 
   useEffect(() => {
-    if (!orgId) {
-      setMyDayGlance(null);
-      return;
-    }
-    let cancelled = false;
-    const load = () => {
-      if (document.visibilityState === "hidden") return;
-      void fetch(withOrgHref("/api/my-day", orgId), { cache: "no-store" })
-        .then(async (response) => (response.ok ? ((await response.json()) as MyDayView) : null))
-        .then((view) => {
-          if (!cancelled && view) setMyDayGlance(view);
-        })
-        .catch(() => undefined);
-    };
-    load();
-    const refresh = window.setInterval(load, 60_000);
-    document.addEventListener("visibilitychange", load);
-    return () => {
-      cancelled = true;
-      window.clearInterval(refresh);
-      document.removeEventListener("visibilitychange", load);
-    };
-  }, [orgId]);
-
-  useEffect(() => {
     const update = () => setOnline(navigator.onLine);
     update();
     window.addEventListener("online", update);
@@ -548,7 +519,8 @@ export default function AppShell() {
   // "No team selected" plus a tab bar of sign-in walls only looked broken.
   const bare = pathnameIsBareShell(pathname);
   const isHubRoot = isHubRootPath(pathname);
-  const showBack = showBackForPath(pathname);
+  // Settings has its own All settings link; the topbar need not repeat its title and back.
+  const showBack = showBackForPath(pathname) && !isSettingsPath(pathname);
   const backHref = useMemo(() => backHrefForPath(pathname, orgId || null), [pathname, orgId]);
   const title = shellTitleForPath(pathname, pathSearch);
   // One placeholder, then the real team: never "Your team" → "This team" → "Team 6925".
@@ -561,19 +533,7 @@ export default function AppShell() {
   }, [me.role, me.orgId, loadedRoleCue]);
   // Every settings page is "Settings › Section", whichever page it is underneath.
   const crumbHint = isSettingsPath(pathname) ? "Settings" : breadcrumbForPath(pathname);
-  // Not on Home: Home leads with its own next-match card, and the strip made it three times.
-  // Not while scouting either: the match card there already says which match, and on a phone
-  // the strip took ~105px from the counters.
-  // Nor on the Competition pages themselves (Event day, Scouting, Strategy, Robot check): they
-  // are about the next match already, and on a phone the strip stacked a third bar on top.
-  const scouting = pathname === "/scouting" || pathname === "/competition";
-  const eventFocus = useMemo(
-    () =>
-      pathname === "/dashboard" || pathname.startsWith("/admin") || scouting
-        ? null
-        : buildEventFocus(myDayGlance, online),
-    [myDayGlance, online, pathname, scouting],
-  );
+  // Match context lives on Home and My Day, without another global navigation band.
   // Pins this team may open; the bottom bar takes the first four of them.
   const pins = useMemo(() => resolvePins(pinHrefs).filter((pin) => navHrefAllowed(pin.href)), [pinHrefs, navHrefAllowed]);
   const islandTabs = useMemo(() => pins.slice(0, BAR_SLOTS), [pins]);
@@ -581,11 +541,6 @@ export default function AppShell() {
     () => activeIslandHref(pathname, pathSearch, islandTabs),
     [islandTabs, pathname, pathSearch],
   );
-
-  useEffect(() => {
-    document.body.classList.toggle("has-event-focus", Boolean(eventFocus && !focusCollapsed));
-    return () => document.body.classList.remove("has-event-focus");
-  }, [eventFocus, focusCollapsed]);
 
   const closeOverlays = useCallback(() => {
     setNavOpen(false);
@@ -654,14 +609,6 @@ export default function AppShell() {
         onWorkspaceSwitch={onWorkspaceSwitch}
         onSignOut={() => void handleSignOut()}
       />
-      {eventFocus ? (
-        <AppShellEventFocus
-          eventFocus={eventFocus}
-          focusCollapsed={focusCollapsed}
-          onCollapse={() => setFocusCollapsed(true)}
-          onExpand={() => setFocusCollapsed(false)}
-        />
-      ) : null}
       {entryScreen ? null : <LegalUpdateBanner />}
       {/* On entry screens too: /access-unavailable is where people land while the database is down. */}
       <ServiceNoticeBanner

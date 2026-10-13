@@ -759,9 +759,3 @@
   justify-content: flex-start;
   gap: 4px 8px;
 }
-/* Phones: one starter per group keeps the empty state short and the message box in reach. */
-@media (max-width: 720px) {
-  .ask-groups .ask-group li:nth-child(n + 2) {
-    display: none;
-  }
-}

@@ -26,6 +26,7 @@ export function AppShellNavGroups({ groups, pins, pathname, pathSearch, orgId, n
   const sections = mainMenuSections(groups, navHrefAllowed);
   const activeSearch = mainMenuSearch(pathname, pathSearch, navHrefAllowed);
   const isHere = (href: string) => islandTabIsActive(pathname, activeSearch, href) || pathname === href;
+  const pinnedHrefs = new Set(pins.map(pin => pin.href));
   return <>
     <div className="main-menu-pins-head">
       <p className="main-menu-heading" id="main-menu-pins-label">Your apps</p>
@@ -40,13 +41,16 @@ export function AppShellNavGroups({ groups, pins, pathname, pathSearch, orgId, n
           <i className="main-menu-symbol"><Icon name={item.icon} /></i><span><strong>{item.label}</strong></span>
         </a>)}
     </div>
+    {!pinnedHrefs.has("/dashboard") && navHrefAllowed("/dashboard") ? <a className="main-menu-home" href={withOrgHref("/dashboard", orgId)} onClick={closeNav} aria-current={pathname === "/dashboard" ? "page" : undefined}><Icon name="home" /><span>Home</span></a> : null}
     {sections.length > 0 ? <p className="main-menu-heading">Workspaces</p> : null}
     {sections.map(section => {
+      const destinations = section.items.filter(item => !pinnedHrefs.has(item.href));
+      if (!destinations.length) return null;
       const current = pathname === `/${section.id}` || section.items.some(item => islandTabIsActive(pathname, activeSearch, item.href));
       return <details key={section.id} className="main-menu-section" data-current={current} open={current}>
-      <summary><i className="main-menu-symbol"><Icon name={section.icon} /></i><span className="main-menu-section-copy"><strong>{section.label}</strong><small>{section.items.slice(0, 3).map(item => item.label).join(" · ")}</small></span><Icon name="chevron" /></summary>
+      <summary><i className="main-menu-symbol"><Icon name={section.icon} /></i><span className="main-menu-section-copy"><strong>{section.label}</strong></span><Icon name="chevron" /></summary>
       <nav aria-label={section.label}>
-        {section.items.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} onClick={closeNav}
+        {destinations.map(item => <a key={item.href} href={withOrgHref(item.href, orgId)} onClick={closeNav}
           aria-current={islandTabIsActive(pathname, activeSearch, item.href) ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
       </nav>
     </details>;
