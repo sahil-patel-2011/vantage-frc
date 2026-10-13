@@ -23,7 +23,9 @@ for (const width of [390, 768, 1440]) {
     await dialog.locator(".competition-planner-fields").evaluate(node => { node.scrollTop = node.scrollHeight; });
     const explanation = await dialog.getByText(/A later manual selection takes priority/).boundingBox();
     const footer = await dialog.locator(".competition-planner-actions").boundingBox();
+    const dialogBounds = await dialog.boundingBox();
     expect(explanation && footer && explanation.y + explanation.height <= footer.y).toBe(true);
+    expect(footer && dialogBounds && footer.y + footer.height <= dialogBounds.y + dialogBounds.height).toBe(true);
     await expect(dialog.getByRole("button", { name: "Close dialog", exact: true })).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Add to team calendar", exact: true })).toHaveClass(/is-primary/);
     await accessible(page);
