@@ -152,11 +152,12 @@ function CompetitionEventDetails({ year, event, activeKey, busy, message, onBack
     } catch (problem) { setError(problem instanceof Error ? problem.message : "Check the event dates."); }
   }
   return <div className="competition-planner competition-planner-detail">
-    <button className="text-button" type="button" disabled={busy} onClick={onBack}>← All events</button>
+    <button className="text-button" type="button" disabled={busy} onClick={onBack}>Back to events</button>
     <h3>{event?.name ?? "Add an unlisted event"}</h3>
-    {event?.sourceUrl ? <a href={event.sourceUrl} target="_blank" rel="noreferrer">Organizer details ↗</a> : null}
-    {event && !event.catalogId ? <a className="competition-planner-prepare" href={withOrgHref(`/competition?tab=scouting&eventKey=${encodeURIComponent(event.eventKey)}`, orgId)}>Prepare scouting for this event →</a> : null}
+    {event?.sourceUrl ? <a href={event.sourceUrl} target="_blank" rel="noreferrer">Organizer details</a> : null}
+    {event && !event.catalogId ? <a className="competition-planner-prepare" href={withOrgHref(`/competition?tab=scouting&eventKey=${encodeURIComponent(event.eventKey)}`, orgId)}>Prepare scouting for this event</a> : null}
     {!canManage ? <p>A scouting lead can add dates or make this event active for the team.</p> : <form onSubmit={submit}>
+      <div className="competition-planner-fields">
       {!event ? <label>Event name<input value={name} required maxLength={80} placeholder="e.g. GRITS or your local scrimmage" disabled={busy} onChange={e => setName(e.target.value)} /></label> : null}
       <div className="competition-planner-dates">
         <label>First day<input type="date" value={start} required={calendar} disabled={busy} onChange={e => setStart(e.target.value)} /></label>
@@ -167,7 +168,8 @@ function CompetitionEventDetails({ year, event, activeKey, busy, message, onBack
       {canSaveOnly ? <label className="competition-planner-check"><input type="checkbox" checked={calendar} disabled={busy} onChange={e => setCalendar(e.target.checked)} /><span>Add to the whole team&rsquo;s calendar</span></label> : <p>These dates are shared with the whole team.</p>}
       {calendar ? <><label className="competition-planner-check"><input type="checkbox" checked={autoActivate} disabled={busy} onChange={e => setAutoActivate(e.target.checked)} /><span>Make active automatically on the first day</span></label><p className="competition-planner-note">When someone opens Vantage that day, scouting, matches and strategy follow this event for everyone. A later manual selection takes priority.</p></> : <p className="competition-planner-note">Saved and searchable for preparation. Your team&rsquo;s active event stays the same.</p>}
       {error || message ? <p role="alert" className="competition-planner-message">{error || message}</p> : null}
-      <div className="competition-planner-actions"><Button type="submit" disabled={busy || (!event && !name.trim())}>{busy ? "Saving…" : calendar ? event?.calendarId ? "Save calendar dates" : "Add to team calendar" : "Save event"}</Button>
+      </div>
+      <div className="competition-planner-actions"><Button type="submit" variant="primary" disabled={busy || (!event && !name.trim())}>{busy ? "Saving…" : calendar ? event?.calendarId ? "Save calendar dates" : "Add to team calendar" : "Save event"}</Button>
         {event && !event.catalogId && event.eventKey !== activeKey ? <button type="button" className="text-button" disabled={busy} onClick={() => void onSave({ eventKey: event.eventKey, intent: "activate" })}>Make active now</button> : null}
         {event?.eventKey === activeKey ? <button type="button" className="text-button" disabled={busy} onClick={() => void onSave({ eventKey: null, intent: "activate" })}>Stop following this event</button> : null}
       </div>

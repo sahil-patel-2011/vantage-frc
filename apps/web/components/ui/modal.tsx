@@ -32,6 +32,8 @@ type ModalProps = {
   /** Hide the default close (X) button. */
   hideClose?: boolean;
   className?: string;
+  /** Keep the heading and Close available while long content scrolls. */
+  scrollBody?: boolean;
   /** Centered dialog by default; sheet docks to the bottom for mobile-first pickers. */
   variant?: "dialog" | "sheet";
 };
@@ -55,6 +57,7 @@ export function Modal({
   labelledById,
   hideClose,
   className,
+  scrollBody = false,
   variant = "dialog",
 }: ModalProps) {
   const presence = useExitPresence(open);
@@ -144,7 +147,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={[styles.dialog, variant === "sheet" ? styles.sheet : "", className].filter(Boolean).join(" ")}
+        className={[styles.dialog, variant === "sheet" ? styles.sheet : "", scrollBody ? styles.scrollableDialog : "", className].filter(Boolean).join(" ")}
       >
         <div className={styles.dialogHead}>
           <div>
@@ -159,7 +162,7 @@ export function Modal({
             </button>
           ) : null}
         </div>
-        {children}
+        {scrollBody ? <div className={styles.scrollableBody}>{children}</div> : children}
       </div>
     </div>,
     document.body,

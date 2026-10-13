@@ -14,9 +14,17 @@
 .competition-planner-badge { flex-shrink: 0; font-size: 11px; color: var(--muted); }
 .competition-planner-footer,.competition-planner-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .competition-planner-footer { border-top: 1px solid var(--line); padding-top: 14px; }
-.competition-planner-actions { position: sticky; bottom: 0; padding: 12px 0; background: var(--surface); border-top: 1px solid var(--line); }
+.competition-planner-actions { flex-shrink: 0; padding: 12px 0 0; border-top: 1px solid var(--line); }
 .competition-planner-detail h3 { margin: 0; font-size: 20px; }
-.competition-planner-detail form { display: grid; gap: 16px; }
+.competition-planner-detail { display: flex; flex-direction: column; min-height: 0; }
+.competition-planner-detail > * { flex-shrink: 0; }
+.competition-planner-detail form { display: flex; flex-direction: column; min-height: 0; flex: 1; gap: 16px; }
+.competition-planner-fields { display: grid; gap: 16px; overflow-y: auto; min-height: 0; padding: 2px 2px 12px; }
+.competition-event-dialog:has(.competition-planner-detail), .tc-create-dialog:has(.competition-planner-detail) { height: min(740px, calc(100dvh - 32px)); }
+.competition-event-dialog:has(.competition-planner-detail) > :last-child, .tc-create-dialog:has(.competition-planner-detail) > :last-child { flex: 1; overflow: hidden; }
+.competition-planner-detail, .tc-create-dialog:has(.competition-planner-detail) #tc-quick-add { flex: 1; }
+.tc-quick-add:has(.competition-planner-detail) { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.tc-quick-add:has(.competition-planner-detail) .tc-quick-head { flex-shrink: 0; }
 .competition-planner-dates { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
 .competition-planner label.competition-planner-check { display: flex; align-items: center; gap: 10px; min-height: 44px; }
 .competition-planner-check input { flex-shrink: 0; }

@@ -17,7 +17,7 @@ export function CommandEventPicker({ open, orgId, onClose, onChanged, onActive }
   onChanged: () => void; onActive: (eventKey: string | null) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  return <Modal open={open} onClose={() => { if (!busy) onClose(); }} title="Competition events" className="competition-event-dialog">
+  return <Modal open={open} onClose={() => { if (!busy) onClose(); }} title="Competition events" className="competition-event-dialog" scrollBody>
     {open && orgId ? <CompetitionEventPlanner key={orgId} orgId={orgId} onBusy={setBusy} onChanged={onChanged} onActive={onActive} /> : null}
   </Modal>;
 }

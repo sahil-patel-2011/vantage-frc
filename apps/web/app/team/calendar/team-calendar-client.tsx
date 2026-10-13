@@ -907,7 +907,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
             <aside className="tc-panel">
               {viewOnly ? <ViewOnlyNote /> : null}
-              <Modal open={createOpen && !viewOnly} onClose={() => { if (!busy && !competitionBusy) { setCreateOpen(false); setCompetitionKey(null); setPrefill(null); setQuickDay(null); setQuickHour(null); } }} title={competitionKey ? "Competition details" : "Add to calendar"} className="tc-create-dialog">
+              <Modal open={createOpen && !viewOnly} onClose={() => { if (!busy && !competitionBusy) { setCreateOpen(false); setCompetitionKey(null); setPrefill(null); setQuickDay(null); setQuickHour(null); } }} title={competitionKey ? "Competition details" : "Add to calendar"} className="tc-create-dialog" scrollBody>
               {error ? <p role="alert" className="tc-muted">{error}</p> : null}
               <div id="tc-quick-add">
                 <QuickAddForm
