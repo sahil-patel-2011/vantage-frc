@@ -63,8 +63,9 @@ describe("PAGE_DESCRIPTION", () => {
     expect(text.includes("ollama") || text.includes("lm studio")).toBe(true);
   });
 
-  it("repeats the feature-parity promise where it is read first", () => {
-    expect(PAGE_DESCRIPTION.toLowerCase()).toMatch(/every ai feature runs through/);
+  it("explains team connections and opt-in sharing without implying one compulsory key", () => {
+    expect(PAGE_DESCRIPTION.toLowerCase()).toContain("team ai");
+    expect(PAGE_DESCRIPTION.toLowerCase()).toContain("private unless you choose to share");
   });
 });
 

@@ -125,3 +125,32 @@ test("closing a previous background result cannot leave a new request busy", asy
   await page.getByRole("textbox", { name: "Message", exact: true }).fill("Next goal");
   await expect(page.getByRole("button", { name: "Send", exact: true })).toBeEnabled();
 });
+
+test("admin navigation and Platform settings stay usable on a short laptop screen", async ({ page, context }, info) => {
+  await page.setViewportSize({ width: 1440, height: 691 });
+  await isolateUi(page, context);
+  await page.route("**/api/me**", route => route.fulfill({ json: { authenticated: true, userId, orgId, name: "Ada", role: "owner", teamNumber: 6925, platformAdmin: true, memberships: [{ orgId, orgName: "Test Robotics", role: "owner", teamNumber: 6925 }], hubAccess: null, sponsorsAllowed: true } }));
+  await page.route("**/api/navigation/preferences**", route => route.fulfill({ json: { tabs: ["/dashboard", "/competition?tab=scouting", "/competition?tab=teams", "/competition?tab=strategy", "/competition?tab=my-day", "/team?tab=todos", "/learn/team"] } }));
+  await page.goto(`/settings?orgId=${orgId}`);
+  const platform = page.locator("section[aria-labelledby='settings-group-platform']");
+  await expect(platform.getByRole("heading", { name: "Platform", exact: true })).toBeVisible();
+  const heading = await platform.getByRole("heading").boundingBox();
+  const firstRow = await platform.getByRole("link").first().boundingBox();
+  expect(heading && firstRow && heading.y + heading.height <= firstRow.y).toBe(true);
+  const sidebar = page.getByRole("complementary", { name: "Workspace sidebar" });
+  const utilities = sidebar.getByRole("navigation", { name: "Workspace utilities" });
+  await expect(utilities.getByRole("link")).toHaveCount(4);
+  const boxes = await utilities.getByRole("link").evaluateAll(elements => elements.map(element => { const rect = element.getBoundingClientRect(); return { y: rect.y, height: rect.height, width: rect.width }; }));
+  expect(new Set(boxes.map(box => Math.round(box.y))).size).toBe(1);
+  expect(boxes.every(box => box.width >= 44 && box.height >= 44)).toBe(true);
+  const nav = sidebar.locator(".app-sidebar-navigation");
+  const resources = sidebar.getByRole("link", { name: "Team resources", exact: true });
+  await resources.focus();
+  const pin = await resources.boundingBox(), scrollBounds = await nav.boundingBox(), footer = await utilities.boundingBox();
+  expect(pin && scrollBounds && footer && pin.y >= scrollBounds.y && pin.y + pin.height <= scrollBounds.y + scrollBounds.height && scrollBounds.y + scrollBounds.height <= footer.y).toBe(true);
+  const business = sidebar.getByRole("button", { name: "Business", exact: true });
+  await business.scrollIntoViewIfNeeded(); await business.click();
+  await expect(business).toHaveAttribute("aria-expanded", "true");
+  await accessible(page);
+  await page.screenshot({ path: info.outputPath("admin-short-laptop.png"), fullPage: true });
+});
