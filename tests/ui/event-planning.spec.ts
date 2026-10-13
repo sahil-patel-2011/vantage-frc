@@ -43,7 +43,7 @@ test("save an undated scrimmage without activating it or adding a calendar row",
   await page.route("**/api/context/event?**", route => route.fulfill({ json: { canSetEvent: true, activeEventKey: null, events: [] } }));
   let posted: Record<string, unknown> | null = null;
   await page.route("**/api/context/event", route => { posted = route.request().postDataJSON(); return route.fulfill({ json: { ok: true, eventKey: "2027custom-6925a000-shop-scrimmage", eventName: "Shop scrimmage", scheduled: false } }); });
-  await page.goto(`/competition?pickEvent=1&orgId=${orgId}`);
+  await page.goto(`/competition?tab=command&pickEvent=1&orgId=${orgId}`);
   const dialog = page.getByRole("dialog", { name: "Competition events" });
   await dialog.getByRole("spinbutton", { name: "Competition season" }).fill("2027");
   await dialog.getByRole("button", { name: "Add an unlisted event", exact: true }).click();

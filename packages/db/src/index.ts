@@ -40,7 +40,7 @@ export async function withRls<T>(
     // Even a misconfigured owner URL must never bypass tenant policies. Restricted
     // logins are members of vantage_app; SET LOCAL also resets on commit/rollback.
     await beginRequest();
-    const activation = await client.query<{ attempted: boolean }>("SELECT activate_scheduled_competition_events($1::uuid) AS attempted", [context.orgId ?? null]);
+    const activation = await client.query<{ attempted: boolean }>("SELECT activate_scheduled_competition_events($1::uuid) AS attempted", [context.orgId?.trim() || null]);
     if (activation.rows[0]?.attempted) {
       // Release context row locks before any long feature/provider work. The
       // approved calendar plan is independent of that subsequent operation.
