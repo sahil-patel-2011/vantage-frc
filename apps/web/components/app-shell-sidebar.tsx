@@ -15,13 +15,11 @@ import { tourTargetForHref } from "../lib/tour/tour-steps";
  * and menu, edited in the same sheet), then every workspace, then help and account. The
  * workspaces are always listed, so un-pinning never hides anything.
  */
-export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, orgLabel, roleCue, platformAdmin, collapsed, onCollapse, onEditPins, allowed }: {
+export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, orgLabel, platformAdmin, collapsed, onCollapse, onEditPins, allowed }: {
   groups: ProductNavGroup[];
   /** "Your apps", already filtered to what this team may open. */
   pins: PinDefinition[];
   pathname: string; pathSearch: string; orgId: string; orgLabel: string;
-  /** The person's role on this team, the same words the phone menu's team card shows. */
-  roleCue?: string;
   platformAdmin?: boolean;
   collapsed: boolean; onCollapse: () => void; onEditPins: () => void; allowed: (href: string) => boolean;
 }) {

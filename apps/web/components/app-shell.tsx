@@ -593,7 +593,7 @@ export default function AppShell() {
       </a>
       <NextActionsDedupe routeKey={`${pathname}:${locationTick}`} />
       {!onboarding ? <AppShellSidebar groups={visibleNavGroups} pins={pins} pathname={pathname} pathSearch={pathSearch}
-        orgId={orgId} orgLabel={orgLabel} roleCue={rolePlanCue} collapsed={sidebarCollapsed} onCollapse={toggleSidebar}
+        orgId={orgId} orgLabel={orgLabel} collapsed={sidebarCollapsed} onCollapse={toggleSidebar}
         platformAdmin={me.platformAdmin === true} onEditPins={openIslandEditor} allowed={navHrefAllowed} /> : null}
       <AppShellTopbar
         showBack={showBack}
