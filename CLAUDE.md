@@ -83,6 +83,7 @@ and build are intentionally credential-free; RLS integration tests need a real P
 ## Verifying a change
 
 Prefer `npm run typecheck` + `npm test` for logic. For a UI/route change, exercise the actual flow (the
-`verify`/`run` skills). Note: this repo is often edited by more than one agent session at once — before a
+`vantage-gui-testing` skill; `node scripts/agent/ui-check.mjs`). The agent kit (workflow, review, UI, Supabase,
+production gotchas) is in `.claude/skills/vantage-*` and `docs/agents/`. Note: this repo is often edited by more than one agent session at once — before a
 large edit, check `git log --oneline -5` and file mtimes so you don't build on top of an in-flight refactor,
 and prefer new files over editing hot shared ones.
