@@ -88,7 +88,7 @@ try {
   await dialog.getByRole("searchbox", { name: "Search competitions" }).fill("Shop scrimmage");
   await dialog.getByRole("button", { name: /Shop scrimmage/ }).click();
   await page.screenshot({ path: `${proofDirectory}/authenticated-planning.png` });
-  assert.ok(await dialog.getByRole("button", { name: /Update team calendar/ }).isVisible(), "The hosted planner reads the real persisted calendar association");
+  assert.ok(await dialog.getByRole("button", { name: "Save calendar dates", exact: true }).isVisible(), "The hosted planner reads the real persisted calendar association");
   const result = { status: "passed", checks: 14, authentication: "Real Better Auth sessions", persistence: "Disposable remote Postgres", browser: "Real API responses, no interceptions", scope: "No production writes, no model requests" };
   writeFileSync(`${proofDirectory}/acceptance.json`, JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result));
