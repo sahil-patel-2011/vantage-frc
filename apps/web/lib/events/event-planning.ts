@@ -1,5 +1,5 @@
 import { validateCustomEvent, customEventProblemCopy, type CustomEventDraft } from "./custom-event";
-import { localPartsToInstant, toLocalParts, normalizeTimeZone } from "../calendar/recurrence";
+import { isValidTimeZone, localPartsToInstant, toLocalParts, normalizeTimeZone } from "../calendar/recurrence";
 
 export type PlannedCompetition = {
   eventKey: string;
@@ -76,7 +76,8 @@ export function parseCompetitionSchedule(input: unknown): CompetitionSchedule {
 /** Calendar end is exclusive; the UI's last day is inclusive, including DST. */
 export function dateSchedule(start: string, lastDay: string, autoActivate: boolean, zone?: string): CompetitionSchedule {
   validateCompetitionDraft({ name: "Competition", year: Number(start.slice(0, 4)), startDate: start, endDate: lastDay || start });
-  const timeZone = normalizeTimeZone(zone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const timeZone = (zone || Intl.DateTimeFormat().resolvedOptions().timeZone).trim();
+  if (!isValidTimeZone(timeZone)) throw new Error("Choose a valid event time zone.");
   const instant = (day: string) => {
     const [year, month, date] = day.split("-").map(Number);
     return localPartsToInstant({ year: year!, month: month!, day: date!, hour: 0, minute: 0, second: 0 }, timeZone);

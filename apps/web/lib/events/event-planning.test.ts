@@ -33,5 +33,6 @@ describe("competition planning", () => {
     }
     expect(() => dateSchedule("2026-02-31", "", true)).toThrow();
     expect(() => dateSchedule("2026-10-17", "2026-10-15", true)).toThrow();
+    expect(() => dateSchedule("2026-10-15", "", true, "America/NewYork")).toThrow(/time zone/);
   });
 });

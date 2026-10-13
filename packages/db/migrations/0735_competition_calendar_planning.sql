@@ -18,7 +18,7 @@ LANGUAGE plpgsql SET search_path = public, pg_temp AS $$
 BEGIN
   IF NEW.competition_event_key IS NOT NULL
      OR (TG_OP = 'UPDATE' AND OLD.competition_event_key IS NOT NULL) THEN
-    IF NOT can_manage_scouting(NEW.org_id) OR is_org_viewer(NEW.org_id) THEN
+    IF NOT is_org_member(NEW.org_id) OR NOT can_manage_scouting(NEW.org_id) OR is_org_viewer(NEW.org_id) THEN
       RAISE EXCEPTION 'Scouting lead access required to schedule a competition';
     END IF;
     IF NEW.competition_event_key IS NOT NULL AND (
@@ -50,10 +50,10 @@ CREATE POLICY calendar_competition_delete_guard ON subteam_calendar_events
 -- next opens any team feature. This narrowly scoped function lets a reader
 -- apply a lead's already-saved plan, never choose or edit an event themselves.
 CREATE FUNCTION activate_scheduled_competition_events(requested_org uuid DEFAULT NULL)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
-DECLARE plan record;
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
+DECLARE plan record; attempted boolean := false;
 BEGIN
-  IF current_app_user_id() IS NULL THEN RETURN; END IF;
+  IF current_app_user_id() IS NULL THEN RETURN false; END IF;
   FOR plan IN
     SELECT DISTINCT ON (c.org_id) c.org_id, c.competition_event_key,
       c.location, c.created_by, c.starts_at, c.created_at
@@ -61,12 +61,16 @@ BEGIN
     JOIN memberships m ON m.org_id = c.org_id AND m.user_id = current_app_user_id()
     JOIN events_ref e ON e.event_key = c.competition_event_key
       AND (e.org_id IS NULL OR e.org_id = c.org_id)
+    LEFT JOIN org_active_context active ON active.org_id = c.org_id
     WHERE (requested_org IS NULL OR c.org_id = requested_org)
+      AND is_org_member(c.org_id)
       AND c.competition_auto_activate AND c.competition_event_key IS NOT NULL
       AND c.subteam_id IS NULL AND c.kind = 'event' AND c.rrule IS NULL
       AND c.starts_at <= now() AND c.ends_at > now()
+      AND (active.org_id IS NULL OR active.set_at < GREATEST(c.starts_at, c.created_at))
     ORDER BY c.org_id, c.starts_at DESC, c.id
   LOOP
+    attempted := true;
     INSERT INTO org_active_context(org_id, active_event_key, active_location, set_by_user_id, set_at)
       VALUES (plan.org_id, plan.competition_event_key, NULLIF(plan.location, ''), plan.created_by, now())
     ON CONFLICT (org_id) DO UPDATE SET
@@ -78,6 +82,7 @@ BEGIN
     -- applied once, and does not undo a manual override on every page view.
     WHERE org_active_context.set_at < GREATEST(plan.starts_at, plan.created_at);
   END LOOP;
+  RETURN attempted;
 END;
 $$;
 REVOKE ALL ON FUNCTION activate_scheduled_competition_events(uuid) FROM PUBLIC;
