@@ -162,6 +162,8 @@ body.has-app-shell .main-menu-section > summary .main-menu-symbol svg { width: 2
   body.has-app-shell .app-sidebar nav a > svg { width: 20px; height: 20px; }
   body.has-app-shell .app-sidebar nav a { gap: 10px; font-size: 13px; border-radius: 9px; }
   body.has-app-shell .app-sidebar .app-sidebar-footer { position: static; flex: none; margin-top: 0; grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); }
+  body.has-app-shell .app-sidebar nav.app-sidebar-footer a { font-size: 12px; }
+  body.has-app-shell .app-sidebar nav.app-sidebar-footer a > span { font-size: inherit; white-space: nowrap; }
   body.has-app-shell .app-sidebar[data-collapsed="true"] .app-sidebar-footer { grid-template-columns: minmax(0, 1fr); }
 }
 
