@@ -1,9 +1,10 @@
 "use client";
 
-import { type Dispatch, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { Button, askConfirm } from "../../../components/ui";
 import { ModelSelector } from "../../../components/model-selector";
 import { BYOK_PROVIDER_META, type ByokProvider } from "../../../lib/ai-keys/byok-providers";
+import { formatModelList, matchModelList, modelTokens } from "../../../lib/ai-keys/model-list";
 import { MODEL_POLICY_MODE_META } from "../../../lib/ai-keys/model-policy-related";
 import { FREE_KEY_CAVEAT, FREE_KEY_PROVIDERS } from "../../../lib/ai-keys/free-key-providers";
 import { withOrgHref } from "../../../lib/nav/product-nav";
@@ -48,7 +49,7 @@ export type AiKeysReadyViewProps = {
   mineBusy: boolean;
   saveMemberKey: () => void;
   saveMyGoogleKey: (apiKey: string) => Promise<boolean>;
-  removeMemberKey: (provider: string) => void;
+  removeMemberKey: (provider: string, keyId?: string) => void;
   message: string;
   messageIsError?: boolean;
   keyError?: { provider: ByokProvider; message: string } | null;
@@ -72,7 +73,7 @@ export type AiKeysReadyViewProps = {
   routingDraft: RoutingPrefs;
   setRoutingDraft: Dispatch<SetStateAction<RoutingPrefs>>;
   busyRouting: boolean;
-  saveRouting: () => void;
+  saveRouting: (modelsText?: string) => void;
   modelOptions: ModelOption[];
   freeSwarm: FreeSwarm | null;
   configuredProviders: Set<string>;
@@ -139,6 +140,64 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
         onSave={saveMyGoogleKey}
       />
     ) : null;
+  const savedModelText =
+    routingDraft.mode === "fixed"
+      ? formatModelList(routingDraft.fixedModelId ? [routingDraft.fixedModelId] : [], modelOptions)
+      : formatModelList(
+          routingDraft.enabledModelIds.filter((id) => !modelOptions.find((option) => option.id === id)?.fixedOnly),
+          modelOptions,
+        );
+  const [modelText, setModelText] = useState(savedModelText);
+  const [modelError, setModelError] = useState<string | null>(null);
+  const [editingMine, setEditingMine] = useState<string | null>(null);
+  const [mineEdit, setMineEdit] = useState({ label: "", model: "", apiKey: "" });
+  const [mineEditError, setMineEditError] = useState<string | null>(null);
+  const [mineEditBusy, setMineEditBusy] = useState(false);
+  useEffect(() => {
+    setModelText(savedModelText);
+    setModelError(null);
+  }, [savedModelText]);
+  useEffect(() => {
+    const focus = new URLSearchParams(window.location.search).get("focus");
+    const id = focus === "yours" ? "settings-your-key" : focus === "team" ? "settings-team-keys" : "";
+    if (!id) return;
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ block: "start" });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, []);
+  async function saveMineEdit(keyId: string) {
+    if (!orgId || mineEditBusy) return;
+    setMineEditBusy(true);
+    setMineEditError(null);
+    try {
+      const response = await fetch("/api/organizations/ai-keys", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          action: "update_key",
+          keyId,
+          scope: "member",
+          label: mineEdit.label,
+          model: mineEdit.model,
+          ...(mineEdit.apiKey.trim() ? { apiKey: mineEdit.apiKey.trim() } : {}),
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as { error?: string; notice?: string | null };
+      if (!response.ok) {
+        setMineEditError(data.error ?? "That change was not saved.");
+        return;
+      }
+      setEditingMine(null);
+      props.notify(data.notice ?? (mineEdit.apiKey.trim() ? "Key checked and saved." : "Saved."));
+      await props.reload();
+    } catch {
+      setMineEditError("That change was not saved.");
+    } finally {
+      setMineEditBusy(false);
+    }
+  }
   return (
     <>
           {/* A credit gift from Vantage, when there is one: how much, how much is used. */}
@@ -207,7 +266,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                     type="submit"
                     disabled={busyProvider === "google" || !(drafts.google ?? "").trim()}
                   >
-                    {busyProvider === "google" ? "Saving…" : "Save"}
+                    {busyProvider === "google" ? "Checking…" : "Check and save"}
                   </button>
                 </div>
               </form>
@@ -220,7 +279,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
 
           {/* With the free Gemini path on offer, the paid providers are the second choice and
               wait behind one line; once a team has a key they are simply the page. */}
-          <details className="ai-keys-fold" open={!showStart}>
+          <details className="ai-keys-fold" id="settings-team-keys" open={!showStart}>
             <summary>
               <h2 className="ai-keys-fold-title">
                 {showStart ? OTHER_KEYS_TITLE : "Your team's AI keys"}
@@ -240,6 +299,81 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           ) : null}
           </details>
 
+          {payload.canManage && modelOptions.length ? (
+            <section className="app-card soft-panel ai-keys-routing" aria-label="Model routing">
+              <h2>Which models to use</h2>
+              <p className="app-muted">
+                Type model names separated by a comma. For example: Claude Haiku 5.5, GPT-4.1 mini, Gemini 3.8 Flash.
+              </p>
+              <form
+                className="ai-keys-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const parsed = matchModelList(modelText, modelOptions, routingDraft.mode);
+                  if (parsed.unknown.length) {
+                    setModelError(`We don't know ${parsed.unknown.join(", ")}.`);
+                    return;
+                  }
+                  if (!modelTokens(modelText).length) {
+                    setModelError(routingDraft.mode === "fixed" ? "Type the model to use." : "Type at least one model, separated by commas.");
+                    return;
+                  }
+                  setModelError(null);
+                  saveRouting(modelText);
+                }}
+              >
+                <fieldset className="ai-keys-mode">
+                  <legend>How to choose</legend>
+                  <label className="check-field">
+                    <input
+                      type="radio"
+                      name="byok-mode"
+                      checked={routingDraft.mode === "fixed"}
+                      onChange={() => setRoutingDraft((prev) => ({ ...prev, mode: "fixed" }))}
+                    />{" "}
+                    One model
+                  </label>
+                  <label className="check-field">
+                    <input
+                      type="radio"
+                      name="byok-mode"
+                      checked={routingDraft.mode === "automode"}
+                      onChange={() => setRoutingDraft((prev) => ({ ...prev, mode: "automode" }))}
+                    />{" "}
+                    Pick for each job
+                  </label>
+                </fieldset>
+                <label>
+                  Models
+                  <input
+                    type="text"
+                    value={modelText}
+                    spellCheck={false}
+                    autoComplete="off"
+                    placeholder="claude-haiku-5-5, gpt-4.1-mini, gemini-3.8-flash"
+                    disabled={busyRouting}
+                    aria-invalid={modelError ? true : undefined}
+                    onChange={(event) => {
+                      setModelText(event.target.value);
+                      setModelError(null);
+                    }}
+                  />
+                  <small className="app-muted">
+                    {routingDraft.mode === "fixed"
+                      ? "Every AI feature uses the first name."
+                      : "A stronger model for CAD and code, a faster one for chat. Only from companies whose key you have added."}
+                  </small>
+                </label>
+                {modelError ? <p className="ai-keys-field-error" role="alert">{modelError}</p> : null}
+                <div className="ai-keys-actions">
+                  <button className="primary-action" type="submit" disabled={busyRouting}>
+                    {busyRouting ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          ) : null}
+
           {payload.canManage ? myFreeKey : null}
 
           {/* Web research sits with the keys a team brings, straight after the
@@ -254,7 +388,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           ) : null}
 
           {/* Personal keys and a personal model are for the few who want them. */}
-          <details className="ai-keys-fold" open={(payload.memberKeys ?? []).length > 0}>
+          <details className="ai-keys-fold" id="settings-your-key" open={(payload.memberKeys ?? []).length > 0}>
             <summary>
               <h2 className="ai-keys-fold-title">Just for you: your own key or model</h2>
             </summary>
@@ -265,9 +399,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             {(payload.memberKeys ?? []).length ? (
               <ul className="ai-keys-mine-list">
                 {(payload.memberKeys ?? []).map((row) => (
-                  <li key={row.provider}>
+                  <li key={row.id ?? row.provider}>
                     <div>
-                      <strong>{BYOK_PROVIDER_META[row.provider as ByokProvider]?.label ?? row.provider}</strong>
+                      <strong>{row.label || BYOK_PROVIDER_META[row.provider as ByokProvider]?.label || row.provider}</strong>
                       {/* describeMemberKey never guesses: an unset base URL or
                           model is named as the inherited default, not invented. */}
                       <small className="app-muted">
@@ -277,9 +411,55 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                           : " · not used yet"}
                       </small>
                     </div>
-                    <Button variant="secondary" type="button" disabled={mineBusy} onClick={async () => { if (await askConfirm({ title: "Remove your key?", body: "Your personal key for this provider is deleted from Vantage.", confirmLabel: "Remove key", tone: "destructive" })) void removeMemberKey(row.provider); }}>
-                      Remove
-                    </Button>
+                    <span className="ai-keys-list-actions">
+                      {row.id ? (
+                        <Button
+                          variant="secondary"
+                          type="button"
+                          disabled={mineBusy}
+                          onClick={() => {
+                            setEditingMine(row.id ?? null);
+                            setMineEdit({ label: row.label || BYOK_PROVIDER_META[row.provider as ByokProvider]?.label || row.provider, model: row.model ?? "", apiKey: "" });
+                            setMineEditError(null);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      ) : null}
+                      <Button variant="secondary" type="button" disabled={mineBusy} onClick={async () => { if (await askConfirm({ title: "Remove your key?", body: "This personal key is deleted from Vantage. Any other key you saved stays.", confirmLabel: "Remove key", tone: "destructive" })) void removeMemberKey(row.provider, row.id); }}>
+                        Remove
+                      </Button>
+                    </span>
+                    {row.id && editingMine === row.id ? (
+                      <form
+                        className="ai-keys-edit"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void saveMineEdit(row.id!);
+                        }}
+                      >
+                        <label>
+                          Name
+                          <input type="text" maxLength={60} value={mineEdit.label} onChange={(event) => setMineEdit((prev) => ({ ...prev, label: event.target.value }))} required />
+                        </label>
+                        <label>
+                          Models
+                          <input type="text" value={mineEdit.model} spellCheck={false} placeholder="claude-haiku-5-5, gpt-4.1-mini" onChange={(event) => setMineEdit((prev) => ({ ...prev, model: event.target.value }))} />
+                          <small className="app-muted">{MEMBER_KEY_MODEL_HINT}</small>
+                        </label>
+                        <label>
+                          New API key
+                          <input type="password" autoComplete="off" spellCheck={false} value={mineEdit.apiKey} placeholder="Leave blank to keep the current key" onChange={(event) => setMineEdit((prev) => ({ ...prev, apiKey: event.target.value }))} />
+                        </label>
+                        {mineEditError ? <p className="ai-keys-field-error" role="alert">{mineEditError}</p> : null}
+                        <div className="ai-keys-add-actions">
+                          <Button variant="secondary" type="button" onClick={() => setEditingMine(null)}>Cancel</Button>
+                          <Button variant="primary" type="submit" disabled={mineEditBusy || !mineEdit.label.trim()}>
+                            {mineEditBusy ? (mineEdit.apiKey.trim() ? "Checking…" : "Saving…") : mineEdit.apiKey.trim() ? "Check and save" : "Save"}
+                          </Button>
+                        </div>
+                      </form>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -353,7 +533,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 </label>
               ) : null}
               <Button variant="primary" type="submit" disabled={mineBusy || !mineDraft.apiKey.trim()}>
-                {mineBusy ? "Saving…" : "Save my key"}
+                {mineBusy ? "Checking…" : "Check and save"}
               </Button>
             </form>
           </section>
@@ -381,7 +561,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               notes, local models, free keys, routing and model policy. The walkthrough
               found the page ~5,500px tall with the key forms buried; they now come first. */}
           <details className="ai-keys-advanced ai-keys-fold">
-            <summary>More options: free keys, your own model server, and which models to use</summary>
+            <summary>More options: free keys, your own model server, and which models people can pick</summary>
           <section className="app-card soft-panel ai-keys-billing" aria-label="Hosting vs your keys">
             <span className="eyebrow">{billing.title}</span>
             <p>{billing.body}</p>
@@ -527,148 +707,50 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           </section>
           ) : null}
 
-          <section className="app-card soft-panel ai-keys-routing" aria-label="Model routing">
-            <span className="eyebrow">ROUTING</span>
-            <h2>Fixed model or Automode</h2>
-            <p className="app-muted">
-              Automode picks a model for each job: the strongest for CAD and code, a balanced one for
-              strategy, a quick one for chat. It only picks from companies whose key you&apos;ve added.
-            </p>
-            {payload.canManage && modelOptions.length ? (
+          {freeSwarm?.enabled && freeSwarm.models.length && payload.canManage ? (
+            <section className="app-card soft-panel ai-keys-free-swarm" aria-label="Free AI from volunteers">
+              <h2>Free AI, from volunteers</h2>
+              <p className="app-muted">
+                When this team has no provider key, Vantage can ask the AI Horde. It costs nothing.
+                It is slower than a paid key, and the volunteer running the model can read what you send,
+                so Vantage never sends private notes to it.
+              </p>
               <form
                 className="ai-keys-form"
                 onSubmit={(event) => {
                   event.preventDefault();
-                  void saveRouting();
+                  saveRouting();
                 }}
               >
-                <fieldset className="ai-keys-mode">
-                  <legend>Mode</legend>
-                  <label className="check-field">
+                <label>
+                  <input
+                    type="radio"
+                    name="free-swarm-model"
+                    checked={!routingDraft.freeSwarmModel}
+                    onChange={() => setRoutingDraft((prev) => ({ ...prev, freeSwarmModel: null }))}
+                  />{" "}
+                  <strong>Whichever is free</strong>
+                </label>
+                {freeSwarm.models.map((model) => (
+                  <label key={model.id}>
                     <input
                       type="radio"
-                      name="byok-mode"
-                      checked={routingDraft.mode === "fixed"}
-                      onChange={() => setRoutingDraft((prev) => ({ ...prev, mode: "fixed" }))}
+                      name="free-swarm-model"
+                      checked={routingDraft.freeSwarmModel === model.id}
+                      onChange={() => setRoutingDraft((prev) => ({ ...prev, freeSwarmModel: model.id }))}
                     />{" "}
-                    Fixed model — always use one model
+                    <strong>{model.label}</strong>
+                    <span className="app-muted"> · {model.note}</span>
                   </label>
-                  <label className="check-field">
-                    <input
-                      type="radio"
-                      name="byok-mode"
-                      checked={routingDraft.mode === "automode"}
-                      onChange={() => setRoutingDraft((prev) => ({ ...prev, mode: "automode" }))}
-                    />{" "}
-                    Automode — route by feature toughness
-                  </label>
-                </fieldset>
-
-                {routingDraft.mode === "fixed" ? (
-                  <label>
-                    Fixed model
-                    <select
-                      value={routingDraft.fixedModelId ?? ""}
-                      onChange={(e) =>
-                        setRoutingDraft((prev) => ({ ...prev, fixedModelId: e.target.value || null }))
-                      }
-                    >
-                      {modelOptions.map((opt) => (
-                        <option key={opt.id} value={opt.id}>
-                          {opt.label} · {opt.tierLabel}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <fieldset className="ai-keys-pool">
-                    <legend>Automode pool</legend>
-                    {modelOptions.filter((opt) => !opt.fixedOnly).map((opt) => {
-                      const checked = routingDraft.enabledModelIds.includes(opt.id);
-                      const providerReady =
-                        opt.provider === "openai-compatible"
-                          ? Boolean(payload.localConnector?.configured)
-                          : configuredProviders.has(opt.provider);
-                      return (
-                        <label key={opt.id} className="check-field">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() =>
-                              setRoutingDraft((prev) => ({
-                                ...prev,
-                                enabledModelIds: checked
-                                  ? prev.enabledModelIds.filter((id) => id !== opt.id)
-                                  : [...prev.enabledModelIds, opt.id],
-                              }))
-                            }
-                          />{" "}
-                          {/* The name people know; the API id is in the tooltip for whoever needs it. */}
-                          <strong title={opt.modelId}>{opt.label}</strong>
-                          <span className="app-muted">
-                            {" "}
-                            · {opt.tierLabel}
-                            {!providerReady ? " · needs that company's key first" : ""}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </fieldset>
-                )}
-
-                {/*
-                  The free swarm is a different question from the models
-                  above, and it sits inside the same form because the answer
-                  is saved by the same press. Above: which model to buy from a
-                  provider key. Here: which volunteer to borrow from.
-                */}
-                {freeSwarm?.enabled && freeSwarm.models.length ? (
-                  <fieldset className="ai-keys-pool ai-keys-free-swarm">
-                    <legend>Free AI, from volunteers</legend>
-                    <p className="app-muted">
-                      When this team has no provider key, Vantage can ask the AI Horde — a
-                      crowdsourced swarm of people lending their graphics cards. It costs
-                      nothing and needs no account. Two things to know: it is slower than a
-                      paid key, and the volunteer running the model can read what you send,
-                      so Vantage never sends private notes to it.
-                    </p>
-                    <label>
-                      <input
-                        type="radio"
-                        name="free-swarm-model"
-                        checked={!routingDraft.freeSwarmModel}
-                        onChange={() =>
-                          setRoutingDraft((prev) => ({ ...prev, freeSwarmModel: null }))
-                        }
-                      />{" "}
-                      <strong>Whichever is free</strong>
-                      <span className="app-muted"> · usually the fastest answer</span>
-                    </label>
-                    {freeSwarm.models.map((model) => (
-                      <label key={model.id}>
-                        <input
-                          type="radio"
-                          name="free-swarm-model"
-                          checked={routingDraft.freeSwarmModel === model.id}
-                          onChange={() =>
-                            setRoutingDraft((prev) => ({ ...prev, freeSwarmModel: model.id }))
-                          }
-                        />{" "}
-                        <strong>{model.label}</strong>
-                        <span className="app-muted"> · {model.note}</span>
-                      </label>
-                    ))}
-                  </fieldset>
-                ) : null}
-
+                ))}
                 <div className="ai-keys-actions">
                   <button className="primary-action" type="submit" disabled={busyRouting}>
-                    Save routing
+                    Save
                   </button>
                 </div>
               </form>
-            ) : null}
-          </section>
+            </section>
+          ) : null}
 
           {modelPolicy?.canManage ? (
             <section className="app-card soft-panel ai-keys-model-policy" aria-label="Model policy">

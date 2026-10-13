@@ -12,6 +12,7 @@ import {
   GOOGLE_FREE_TIER_INPUT_TPM,
   GOOGLE_FREE_TIER_MODEL,
   LOCAL_OPENAI_COMPAT_LABEL,
+  firstListedModel,
   pickByokModelForFeature,
   teamDefaultRouting,
   type ByokEffort,
@@ -709,7 +710,7 @@ function httpAdapterFromLlmKey(
   if (normalized === "openai" && baseUrl) {
     return new HttpChatAdapter({
       provider: "openai-compatible",
-      model: row.model?.trim() || model,
+      model: firstListedModel(row.model) || model,
       apiKey,
       baseUrl,
       promptCachingEnabled: input.promptCachingEnabled,
@@ -720,7 +721,7 @@ function httpAdapterFromLlmKey(
   const provider = normalized === "anthropic" || normalized === "openai" ? normalized : "openai";
   return new HttpChatAdapter({
     provider,
-    model: row.model?.trim() || model,
+    model: firstListedModel(row.model) || model,
     apiKey,
     baseUrl,
     promptCachingEnabled: input.promptCachingEnabled,
@@ -1191,7 +1192,7 @@ export async function resolveOrgChatAdapterWithProvenance(
     }
     const provider = normalizeProvider(row.provider);
     if (provider !== "openai" && provider !== "anthropic") continue;
-    const model = row.model?.trim() || DEFAULT_MODELS[provider];
+    const model = firstListedModel(row.model) || DEFAULT_MODELS[provider];
     const apiKey = await decryptRow(row, input.decrypt);
     const prices = await catalogPrices(client, provider, model, DEFAULT_PRICES[provider]);
     return resolved(httpAdapterFromLlmKey(row, input, apiKey, model, prices), keyRowSource(row));

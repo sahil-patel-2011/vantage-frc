@@ -1442,11 +1442,11 @@ export const HELP_ARTICLES: HelpArticle[] = [
         ],
       },
       {
-        heading: "Fixed vs Automode",
+        heading: "Which models to use",
         body: [
-          "Fixed model pins every call to one enabled model.",
-          "Automode picks from your enabled pool by task toughness: CAD and Code → high reasoning; Strategy → strong mid; light chat → fast models.",
-          "Enable at least one model in the Automode pool before saving Automode.",
+          "Under Team AI keys, type model names separated by a comma, such as claude-haiku-5-5, gpt-4.1-mini, gemini-3.8-flash.",
+          "One model uses the first name for every AI feature. Pick for each job chooses among the names: a stronger model for CAD and code, a faster one for chat.",
+          "Saving a key asks the provider whether it works before it is stored. Edit on a saved key changes its name and models, and a new secret is checked the same way.",
         ],
       },
       {

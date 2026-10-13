@@ -2,7 +2,8 @@ import { hubPrimaryTabs, hubWorkbenchId, type HubTabDef, type ProductHubDef } fr
 const COMPETITION_SECTIONS = [
   { id: "scouting", label: "Scout" }, { id: "forms", label: "Forms" },
   { id: "scout-coverage-live", label: "Assignments" }, { id: "teams", label: "Teams" },
-  { id: "strategy", label: "Match plan" }, { id: "picks", label: "Pick list" },
+  // Pick list is Match plan's own "Pick lists" control. A second button opened the same view.
+  { id: "strategy", label: "Match plan" },
   { id: "command", label: "Event day" }, { id: "match-checklist", label: "Our robot" },
 ];
 /**
@@ -32,6 +33,17 @@ export function hubPageTitle(hub: ProductHubDef, tab: string): string {
   if (buildSection) return buildSection.label;
   return hub.tabs.find(section => section.id === tab)?.label ?? hub.title;
 }
+/**
+ * Follow-ups that are not already a button on this page's bar. Forms is on the Scout bar,
+ * so "Edit forms" is not offered again underneath it.
+ */
+export function visibleContextActions(hub: ProductHubDef, tab: string, permitted: readonly HubTabDef[]) {
+  const onBar = new Set(hubNavigationSections(hub, permitted).map((section) => section.id));
+  return (CONTEXT_ACTIONS[`${hub.id}:${tab}`] ?? []).filter(
+    (action) => permitted.some((entry) => entry.id === action.id) && !onBar.has(action.id),
+  );
+}
+
 /** Common follow-up actions instead of a second navigation catalog. */
 export const CONTEXT_ACTIONS: Record<string, readonly { id: string; label: string }[]> = {
   "competition:command": [{ id: "schedule", label: "Full schedule" }, { id: "event-day-plan", label: "Plan travel and duties" }],

@@ -247,7 +247,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
             before there is a matchup to show replaced the whole panel — tabs
             included — and the only way back to the pick list was to edit the
             URL, mid-alliance-selection. */}
-        {embedded ? null : sectionTabs}
+        {sectionTabs}
         {error && shell !== "error" ? (
           <p className="telemetry-status" role="alert">
             {error}
@@ -320,7 +320,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       <OfflineBanner feature="Strategy" fromCache={fromCache} cachedAt={cachedAt} />
       <VenueShortcutCheatsheet open={cheatOpen} onClose={() => setCheatOpen(false)} shortcuts={shortcuts} />
 
-      {embedded ? null : sectionTabs}
+      {sectionTabs}
 
       {error ? (
         <p className="telemetry-status" role="alert">

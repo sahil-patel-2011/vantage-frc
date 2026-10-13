@@ -62,11 +62,11 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { id: "connectors", label: "Connectors", href: "/connectors", icon: "globe", scope: "personal", requiredRole: "member",
     detail: "Onshape, Google, GitHub and other linked tools",
     keywords: ["connectors", "integrations", "onshape", "google", "github", "the blue alliance", "tba", "slack", "discord", "connect"] },
-  // A member's own keys live on the AI keys page; for owners and mentors the team entry below
-  // covers the same page, so they see one row.
-  { id: "my-ai-keys", label: "Your AI keys", href: "/team/ai-keys", icon: "sparkles", scope: "personal", requiredRole: "member",
-    detail: "Use your own AI key for Ask AI",
-    keywords: ["my ai key", "api key", "my api key", "gemini key", "openai key", "anthropic key"] },
+  // A person's own key and the team's keys are the same page, two sections. The focus
+  // query is what marks the right row; owners and mentors see both.
+  { id: "my-ai-keys", label: "Your AI key", href: "/team/ai-keys?focus=yours", icon: "sparkles", scope: "personal", requiredRole: "member",
+    detail: "A key only you use. It overrides the team key",
+    keywords: ["my ai key", "personal key", "api key", "my api key", "gemini key", "openai key", "anthropic key"] },
   { id: "delete-account", label: "Delete account", href: "/account#delete-account", icon: "trash", scope: "personal", requiredRole: "member",
     detail: "Remove your account for good", danger: true,
     keywords: ["delete account", "delete my account", "remove my account", "close account"] },
@@ -75,6 +75,9 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { id: "team-profile", label: "Team profile", href: "/team/admin/profile", icon: "pin", scope: "team", requiredRole: "owner-admin",
     detail: "Name, location, colour and logo",
     keywords: ["team profile", "team name", "rename team", "logo", "team colour", "team color", "location"] },
+  { id: "team-ai-keys", label: "Team AI keys", href: "/team/ai-keys", icon: "sparkles", scope: "team", requiredRole: "owner-admin",
+    detail: "Keys the whole team uses, and which models to try",
+    keywords: ["ai keys", "team key", "api key", "models", "model routing", "openai", "anthropic", "gemini", "openrouter"] },
   { id: "team-admin", label: "Members and invites", href: "/team/admin", icon: "users", scope: "team", requiredRole: "owner-admin",
     detail: "Invite people and choose what each can do",
     keywords: ["members", "invite", "invites", "add someone", "add member", "people", "team admin", "remove member", "roles"] },
@@ -90,9 +93,6 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { id: "member-access", label: "Team security", href: "/team/security", icon: "shield", scope: "team", requiredRole: "owner-admin",
     detail: "How everyone on the team signs in",
     keywords: ["team security", "sign in policy", "require 2fa", "allowed domains", "member access"] },
-  { id: "team-ai-keys", label: "AI keys and credit", href: "/team/ai-keys", icon: "sparkles", scope: "team", requiredRole: "owner-admin",
-    detail: "The team's AI keys, limits and credit",
-    keywords: ["ai keys", "api key", "ai credit", "openai", "anthropic", "gemini", "openrouter", "byok", "model training"] },
   { id: "chat", label: "Chat safety", href: "/messages/moderation", icon: "chat", scope: "team", requiredRole: "owner-admin",
     detail: "Reports and private-message rules",
     keywords: ["chat safety", "moderation", "reports", "private messages", "block", "youth protection"] },
@@ -129,8 +129,9 @@ function queryOf(href: string): URLSearchParams {
 }
 
 /**
- * Entries the given role may see, You first, then This team. When a team entry covers the same
- * page as a personal one (AI keys), the team entry wins so nobody sees two rows for one page.
+ * Entries the given role may see, You first, then This team. A personal row whose address is
+ * exactly a team row's address is hidden, so one page is not listed twice. Your AI key and
+ * Team AI keys differ by the focus query, so owners see both.
  */
 export function visibleSettingsNav(role: string | null | undefined, scope?: SettingsScope): SettingsNavItem[] {
   const tier = settingsRoleTier(role);
@@ -167,6 +168,7 @@ export function activeSettingsId(
   const params = new URLSearchParams((search ?? "").replace(/^\?/, ""));
   const currentTab = params.get("tab");
   const currentSettings = params.get("settings");
+  const currentFocus = params.get("focus");
 
   let best: SettingsNavItem | null = null;
   let bestScore = -1;
@@ -178,10 +180,18 @@ export function activeSettingsId(
     const itemQuery = queryOf(item.href);
     const itemTab = itemQuery.get("tab");
     const itemSettings = itemQuery.get("settings");
+    const itemFocus = itemQuery.get("focus");
     const tabMatches = itemTab === null ? currentTab === null || currentTab === "profile" : currentTab === itemTab;
     const settingsMatches = itemSettings === null || currentSettings === itemSettings;
     if (!tabMatches || !settingsMatches) continue;
-    // On a page both groups list (AI keys), the team's row is the section for whoever sees it.
+    // Your AI key and Team AI keys are one page. Owners land on the team row unless they
+    // opened focus=yours. A member has no team row, so the personal row stays current.
+    const teamCoversPath = items.some(
+      (other) => other.scope === "team" && !other.href.includes("#") && pathOf(other.href) === itemPath,
+    );
+    if (itemFocus === "yours" && currentFocus !== "yours" && teamCoversPath) continue;
+    if (currentFocus === "yours" && itemFocus !== "yours" && itemPath === "/team/ai-keys") continue;
+    // On a page both groups list, the team's row is the section for whoever sees it.
     if (itemPath.length > bestScore || (itemPath.length === bestScore && item.scope === "team" && best?.scope === "personal")) {
       bestScore = itemPath.length;
       best = item;

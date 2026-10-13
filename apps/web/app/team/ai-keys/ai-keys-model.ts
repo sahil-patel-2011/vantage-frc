@@ -60,7 +60,9 @@ export type ModelPolicyPayload = {
 };
 
 export type MemberKeyRow = {
+  id?: string;
   provider: string;
+  label?: string;
   baseUrl: string | null;
   model: string | null;
   createdAt: string | null;

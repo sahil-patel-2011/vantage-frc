@@ -303,9 +303,11 @@
 .ai-keys-mine-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .ai-keys-mine-list li {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  flex-wrap: wrap;
   padding: 10px 12px; border: 1px solid var(--line);
   border-radius:var(--radius-xs); background: var(--bg);
 }
+.ai-keys-mine-list li .ai-keys-edit { flex: 1 0 100%; }
 .ai-keys-mine-form { display: grid; gap: 10px; max-width: 30rem; }
 .ai-keys-mine-form label {
   display: grid; gap: 4px;
@@ -554,6 +556,25 @@
   gap: 12px;
   min-height: 60px;
   padding: 10px 14px;
+}
+.ai-keys-list > li.is-editing { flex-wrap: wrap; align-items: flex-start; }
+.ai-keys-edit {
+  flex: 1 0 100%;
+  display: grid;
+  gap: 10px;
+  padding-top: 8px;
+}
+.ai-keys-edit label { display: grid; gap: 6px; font-size: 13.5px; font-weight: 600; }
+.ai-keys-edit input {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 400;
 }
 .ai-keys-list > li + li { border-top: 1px solid var(--line-soft); }
 .ai-keys-list > li[data-enabled="no"] .ai-keys-list-main { opacity: 0.6; }

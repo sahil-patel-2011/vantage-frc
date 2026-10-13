@@ -18,13 +18,13 @@ export const TEAM_SETTINGS_PAGES: readonly TeamSettingsPage[] = [
   { id: "people", label: "Members and invites", href: "/team/admin" },
   { id: "profile", label: "Team profile", href: "/team/admin/profile" },
   { id: "security", label: "Team security", href: "/team/security" },
-  { id: "ai", label: "AI keys and credit", href: "/team/ai-keys" },
+  { id: "ai", label: "Team AI keys", href: "/team/ai-keys" },
   { id: "connectors", label: "Connectors", href: "/connectors" },
   { id: "chat", label: "Chat safety", href: "/messages/moderation" },
   { id: "data", label: "Team data and export", href: "/team/data" },
 ];
 
-/** "Settings › AI keys and credit": the same first word on every settings page. */
+/** "Settings › Team AI keys": the same first word on every settings page. */
 export function teamSettingsBreadcrumb(id: TeamSettingsPageId): string {
   const page = TEAM_SETTINGS_PAGES.find((row) => row.id === id);
   return settingsBreadcrumb(page?.label ?? "");

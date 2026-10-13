@@ -6,12 +6,21 @@ import {
   pickByokModelForFeature,
   preferredTierForFeature,
   TEAM_DEFAULT_MODEL_ID,
+  firstListedModel,
   teamDefaultRouting,
 } from "../src/byok-model-routing";
 import {
   describeOpenAiCompatibleReachability,
   validateOpenAiCompatibleBaseUrl,
 } from "../src/providers";
+
+describe("firstListedModel", () => {
+  it("uses the first name in a comma-separated list and nothing when the list is empty", () => {
+    expect(firstListedModel(" gpt-4.1 , claude-haiku-5-5 ")).toBe("gpt-4.1");
+    expect(firstListedModel("")).toBe("");
+    expect(firstListedModel(null)).toBe("");
+  });
+});
 
 describe("BYOK automode routing", () => {
   it("maps CAD/code to high and strategy to mid", () => {

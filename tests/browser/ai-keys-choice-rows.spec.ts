@@ -54,7 +54,9 @@ test("every choice sits on the same line as its label", async ({ page }) => {
 test("a checkbox is checkbox-sized, not input-sized", async ({ page }) => {
   await gotoAsTeam(page, "/team/ai-keys");
   await openMoreOptions(page);
-  await expect(page.locator(".ai-keys-pool input").first()).toBeVisible({ timeout: 25_000 });
+  await expect(page.locator(".ai-keys-routing .ai-keys-mode input, .ai-keys-pool input").first()).toBeVisible({
+    timeout: 25_000,
+  });
 
   // The form's input rule sets min-height 44px and full width for text
   // fields. A choice that inherits it becomes a stretched slab.

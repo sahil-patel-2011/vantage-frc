@@ -23,6 +23,7 @@ import {
   withOrgHref,
 } from "../lib/nav/product-nav";
 import { BAR_SLOTS, PINS_CHANGED_EVENT, PINS_EDIT_EVENT, defaultPinHrefs, pinCatalog, resolvePins, resolveStoredPins } from "../lib/nav/pins";
+import { publishPinnedHrefs } from "../lib/nav/pin-snapshot";
 import {
   pathAllowedByHubAccess,
   pathAllowedBySponsors,
@@ -128,6 +129,9 @@ export default function AppShell() {
   const [focusCollapsed, setFocusCollapsed] = useState(false);
   /** "Your apps": the bottom bar shows the first four; the menu and the sidebar show them all. */
   const [pinHrefs, setPinHrefs] = useState<string[]>(defaultPinHrefs);
+  useEffect(() => {
+    publishPinnedHrefs(pinHrefs);
+  }, [pinHrefs]);
   const [islandEditorOpen, setIslandEditorOpen] = useState(false);
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
   const [teamsLoaded, setTeamsLoaded] = useState(false);
