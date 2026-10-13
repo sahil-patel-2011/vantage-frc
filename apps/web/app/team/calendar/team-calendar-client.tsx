@@ -143,6 +143,8 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
   const [anchor, setAnchor] = useState(() => new Date());
   const [quickDay, setQuickDay] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [competitionKey, setCompetitionKey] = useState<string | null>(null);
+  const [competitionBusy, setCompetitionBusy] = useState(false);
   const [quickHour, setQuickHour] = useState<number | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [syncScope, setSyncScope] = useState<CalendarFeedScope>("personal");
@@ -523,6 +525,11 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         }
         editing={editEventId === event.id}
         onStartEdit={() => {
+          if (event.competitionEventKey) {
+            setCompetitionKey(event.competitionEventKey);
+            setCreateOpen(true);
+            return;
+          }
           setScopeEventId(null);
           setEditEventId(event.id);
         }}
@@ -899,7 +906,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
 
             <aside className="tc-panel">
               {viewOnly ? <ViewOnlyNote /> : null}
-              <Modal open={createOpen && !viewOnly} onClose={() => { if (!busy) { setCreateOpen(false); setPrefill(null); setQuickDay(null); setQuickHour(null); } }} title="Add to calendar" className="tc-create-dialog">
+              <Modal open={createOpen && !viewOnly} onClose={() => { if (!busy && !competitionBusy) { setCreateOpen(false); setCompetitionKey(null); setPrefill(null); setQuickDay(null); setQuickHour(null); } }} title={competitionKey ? "Competition details" : "Add to calendar"} className="tc-create-dialog">
               {error ? <p role="alert" className="tc-muted">{error}</p> : null}
               <div id="tc-quick-add">
                 <QuickAddForm
@@ -912,12 +919,16 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   attendanceEvents={view.attendanceEvents}
                   practiceSessions={view.practiceSessions}
                   busy={busy}
+                  initialCompetitionKey={competitionKey}
+                  onCompetitionSaved={() => { void load(); }}
+                  onCompetitionBusy={setCompetitionBusy}
                   run={run}
                   addTask={addTask}
                   onDone={() => {
                     setQuickDay(null);
                     setQuickHour(null);
                     setCreateOpen(false);
+                    setCompetitionKey(null);
                     setPrefill(null);
                   }}
                 />

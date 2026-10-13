@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../../components/ui";
+import { CompetitionEventPlanner } from "../../../components/competition-event-planner";
 import {
   EMPTY_REPEAT_DRAFT,
   OccurrenceScopeChoice,
@@ -307,7 +308,7 @@ export function EventCard({
               ? "Duty"
               : event.source === "travel"
                 ? "Travel"
-                : SUBTEAM_EVENT_KIND_LABELS[event.kind]}
+                : event.competitionEventKey ? "Competition" : SUBTEAM_EVENT_KIND_LABELS[event.kind]}
         </span>
         <span>
           {fmtRange(event.startsAt, event.endsAt)}
@@ -377,6 +378,9 @@ export function QuickAddForm({
   run,
   addTask,
   onDone,
+  onCompetitionSaved,
+  onCompetitionBusy,
+  initialCompetitionKey,
 }: {
   orgId: string;
   subteams: Subteam[];
@@ -392,6 +396,9 @@ export function QuickAddForm({
   /** Creates a team task through /api/todos. Resolves false if it failed. */
   addTask: (input: { title: string; dueOn: string; subteamId: string | null }) => Promise<boolean>;
   onDone?: () => void;
+  onCompetitionSaved?: () => void;
+  onCompetitionBusy?: (busy: boolean) => void;
+  initialCompetitionKey?: string | null;
 }) {
   const [title, setTitle] = useState("");
   const [added, setAdded] = useState<string | null>(null);
@@ -402,7 +409,7 @@ export function QuickAddForm({
   // Event or task, the way Google Calendar splits them. A task is a due date
   // with no hour, so switching hides the time and the roll-call rather than
   // pretending a deadline happens at 6pm.
-  const [entry, setEntry] = useState<"event" | "task">("event");
+  const [entry, setEntry] = useState<"event" | "task" | "competition">(initialCompetitionKey ? "competition" : "event");
   const [savingTask, setSavingTask] = useState(false);
   const dueOn = startsAt.slice(0, 10);
   const [endsAt, setEndsAt] = useState("");
@@ -432,6 +439,13 @@ export function QuickAddForm({
   useEffect(() => {
     setCreateAttendance(kind === "practice" || kind === "build");
   }, [kind]);
+
+  const entrySwitch = <div className="tc-entry-switch" role="group" aria-label="What to add">
+    {(["event", "task", "competition"] as const).map(value => <button key={value} type="button" className={entry === value ? "active" : undefined} aria-pressed={entry === value} disabled={busy || savingTask} onClick={() => setEntry(value)}>{value === "event" ? "Event" : value === "task" ? "Task" : "Competition"}</button>)}
+  </div>;
+  if (entry === "competition") return <div className="tc-quick-add"><div className="tc-quick-head"><h2>Competition</h2>{entrySwitch}</div>
+    <CompetitionEventPlanner key={`${orgId}:${initialCompetitionKey ?? "new"}`} orgId={orgId} initialEventKey={initialCompetitionKey} onBusy={value => { setSavingTask(value); onCompetitionBusy?.(value); }} onChanged={onCompetitionSaved} />
+  </div>;
 
   return (
     <form
@@ -492,20 +506,7 @@ export function QuickAddForm({
     >
       <div className="tc-quick-head">
         <h2>{entry === "task" ? "Add task" : "Add event"}</h2>
-        <div className="tc-entry-switch" role="group" aria-label="What to add">
-          {(["event", "task"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              className={entry === value ? "active" : undefined}
-              aria-pressed={entry === value}
-              disabled={busy || savingTask}
-              onClick={() => setEntry(value)}
-            >
-              {value === "event" ? "Event" : "Task"}
-            </button>
-          ))}
-        </div>
+        {entrySwitch}
       </div>
       <div className="tc-quick-grid">
         <input

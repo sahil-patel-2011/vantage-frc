@@ -40,7 +40,6 @@ import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/noti
 import { listenInboxUpdates } from "../lib/notifications/inbox-events";
 import { watchSessionBoundary } from "../lib/offline/identity";
 import { pathnameIsBareShell } from "../lib/nav/shell-body-class";
-import { workspacePickerHref } from "../lib/workspace";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import { NextActionsDedupe } from "./next-actions-dedupe";
 import {
@@ -609,7 +608,6 @@ export default function AppShell() {
         searchOpen={paletteOpen}
         onOpenSearch={openPalette}
         shortcutHint={shortcutHint}
-        onOpenTeams={() => navigate(workspacePickerHref(pathname, pathSearch))}
         minimal={onboarding}
         unreadCount={unreadCount}
         accountMenuOpen={accountMenuOpen}

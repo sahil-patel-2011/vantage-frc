@@ -80,6 +80,8 @@ export type CalendarEvent = {
   attendanceEventTitle: string | null;
   milestoneId: string | null;
   driverSessionId: string | null;
+  competitionEventKey?: string | null;
+  competitionAutoActivate?: boolean;
   createdBy?: string | null;
   createdByName: string | null;
   /** Current user's RSVP, when the RSVP table is available. */

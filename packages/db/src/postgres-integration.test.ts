@@ -138,6 +138,59 @@ describeWithDatabase(
       }
     });
 
+
+    it("shares a competition calendar plan, activates only when due, and preserves manual overrides", async () => {
+      const owner="00000000-0000-4000-8000-000000000021", member="00000000-0000-4000-8000-000000000022", foreignOwner="00000000-0000-4000-8000-000000000023";
+      const org="10000000-0000-4000-8000-000000000021", foreign="10000000-0000-4000-8000-000000000022";
+      const event="2026custom-12345678-planned", previous="2026custom-12345678-previous", foreignEvent="2026custom-87654321-private";
+      const client=await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(`INSERT INTO users(id,email) VALUES($1,'plan-owner@example.test'),($2,'plan-member@example.test'),($3,'plan-foreign@example.test')`,[owner,member,foreignOwner]);
+        await client.query(`INSERT INTO profiles(user_id,date_of_birth) VALUES($1,'2000-01-01'),($2,'2000-01-01'),($3,'2000-01-01')`,[owner,member,foreignOwner]);
+        await client.query(`INSERT INTO organizations(id,name,slug) VALUES($1,'Plan team','plan-team'),($2,'Foreign plan','foreign-plan')`,[org,foreign]);
+        await client.query(`INSERT INTO memberships(org_id,user_id,role) VALUES($1,$2,'owner'),($1,$3,'scout'),($4,$5,'owner')`,[org,owner,member,foreign,foreignOwner]);
+        await client.query(`INSERT INTO events_ref(event_key,year,name,org_id,created_by) VALUES($1,2026,'Planned event',$2,$3),($4,2026,'Previous event',$2,$3),($5,2026,'Foreign event',$6,$7)`,[event,org,owner,previous,foreignEvent,foreign,foreignOwner]);
+        await client.query(`INSERT INTO org_active_context(org_id,active_event_key,set_at) VALUES($1,$2,now()-interval '10 days'),($3,$4,now()-interval '10 days')`,[org,previous,foreign,foreignEvent]);
+        await client.query("SET LOCAL ROLE vantage_app");
+        await client.query("SELECT set_config('app.user_id',$1,true)",[owner]);
+        const inserted=await client.query(`INSERT INTO subteam_calendar_events(org_id,title,kind,starts_at,ends_at,created_by,competition_event_key,competition_auto_activate) VALUES($1,'Planned event','event',now()+interval '1 day',now()+interval '2 days',$2,$3,true) RETURNING id`,[org,owner,event]);
+        const calendarId=inserted.rows[0].id;
+        await client.query("SELECT set_config('app.user_id',$1,true)",[member]);
+        expect((await client.query("SELECT id FROM subteam_calendar_events WHERE org_id=$1",[org])).rows).toEqual([{id:calendarId}]);
+        await client.query("SELECT activate_scheduled_competition_events($1)",[org]);
+        expect((await client.query("SELECT active_event_key FROM org_active_context WHERE org_id=$1",[org])).rows[0].active_event_key).toBe(previous);
+        await client.query("SAVEPOINT refused_schedule");
+        await expect(client.query(`INSERT INTO subteam_calendar_events(org_id,title,kind,starts_at,ends_at,created_by,competition_event_key) VALUES($1,'Unauthorized','event',now(),now()+interval '1 day',$2,$3)`,[org,member,event])).rejects.toThrow(/Scouting lead/);
+        await client.query("ROLLBACK TO SAVEPOINT refused_schedule");
+        await client.query("SELECT set_config('app.user_id',$1,true)",[owner]);
+        await client.query("SAVEPOINT refused_foreign");
+        await expect(client.query(`INSERT INTO subteam_calendar_events(org_id,title,kind,starts_at,ends_at,created_by,competition_event_key) VALUES($1,'Foreign','event',now(),now()+interval '1 day',$2,$3)`,[org,owner,foreignEvent])).rejects.toThrow(/team-visible/);
+        await client.query("ROLLBACK TO SAVEPOINT refused_foreign");
+        await client.query(`UPDATE subteam_calendar_events SET starts_at=now()-interval '1 hour',ends_at=now()+interval '4 hours' WHERE id=$1`,[calendarId]);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[member]);
+        await client.query("SELECT activate_scheduled_competition_events($1)",[org]);
+        expect((await client.query("SELECT active_event_key FROM org_active_context WHERE org_id=$1",[org])).rows[0].active_event_key).toBe(event);
+        await client.query("SELECT activate_scheduled_competition_events($1)",[foreign]);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[owner]);
+        await client.query(`UPDATE org_active_context SET active_event_key=$2,set_at=now() WHERE org_id=$1`,[org,previous]);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[member]);
+        await client.query("SELECT activate_scheduled_competition_events($1)",[org]);
+        expect((await client.query("SELECT active_event_key FROM org_active_context WHERE org_id=$1",[org])).rows[0].active_event_key).toBe(previous);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[owner]);
+        const again=await client.query(`INSERT INTO subteam_calendar_events(org_id,title,kind,starts_at,ends_at,created_by,competition_event_key,competition_auto_activate) VALUES($1,'Planned event','event',now()+interval '1 day',now()+interval '2 days',$2,$3,true) ON CONFLICT(org_id,competition_event_key) WHERE competition_event_key IS NOT NULL DO UPDATE SET starts_at=EXCLUDED.starts_at,ends_at=EXCLUDED.ends_at RETURNING id`,[org,owner,event]);
+        expect(again.rows[0].id).toBe(calendarId);
+        expect((await client.query("SELECT count(*)::int AS count FROM subteam_calendar_events WHERE org_id=$1",[org])).rows[0].count).toBe(1);
+        await client.query(`UPDATE subteam_calendar_events SET starts_at=now()-interval '1 hour',ends_at=now()+interval '1 hour',competition_auto_activate=false WHERE id=$1`,[calendarId]);
+        await client.query(`UPDATE org_active_context SET set_at=now()-interval '2 days' WHERE org_id=$1`,[org]);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[member]);
+        await client.query("SELECT activate_scheduled_competition_events(NULL)");
+        expect((await client.query("SELECT active_event_key FROM org_active_context WHERE org_id=$1",[org])).rows[0].active_event_key).toBe(previous);
+        await client.query("SELECT set_config('app.user_id',$1,true)",[foreignOwner]);
+        expect((await client.query("SELECT active_event_key FROM org_active_context WHERE org_id=$1",[foreign])).rows[0].active_event_key).toBe(foreignEvent);
+      } finally { await client.query("ROLLBACK"); client.release(); }
+    });
+
     it("delegates scouting without global admin and revokes it immediately at RLS", async () => {
       const lead="00000000-0000-4000-8000-000000000003", member="00000000-0000-4000-8000-000000000004";
       const owner="00000000-0000-4000-8000-000000000001", org="10000000-0000-4000-8000-000000000001", foreign="10000000-0000-4000-8000-000000000002";

@@ -12,7 +12,7 @@ import type {
   TeamRecord,
   TeamYearMetricRecord,
 } from "../src/types";
-import { syncGlobalReferenceSeason } from "../src/worker";
+import { syncGlobalEventDirectory, syncGlobalReferenceSeason } from "../src/worker";
 import statboticsFixture from "./fixtures/statbotics.json";
 import tbaFixture from "./fixtures/tba.json";
 
@@ -309,5 +309,29 @@ describe("global reference worker", () => {
     await syncActiveEventDay(options, { year: 2026, withinDays: 1 });
     expect(statCalls).toBe(1);
     expect(store.eventMetrics.get("frc2337:2026miket:statbotics")?.epaTotal).toBe(42.5);
+  });
+});
+
+
+describe("bounded event directory", () => {
+  it("refreshes event metadata with one request and keeps offseason rows", async () => {
+    const store = new MemoryStore();
+    const calls: string[] = [];
+    const fetcher: typeof fetch = async request => {
+      calls.push(new URL(String(request)).pathname);
+      return Response.json([{ ...tbaFixture.events[0], event_type: 99 }], { headers: { etag: '"directory"' } });
+    };
+    const count = await syncGlobalEventDirectory({ store, tba: new TbaClient({ authKey: "fixture", fetch: fetcher }), statbotics: new StatboticsClient({ fetch: async () => { throw new Error("Directory refresh must not read Statbotics"); } }) }, 2026);
+    expect(count).toBe(1);
+    expect(calls).toEqual(["/api/v3/events/2026"]);
+    expect([...store.events.values()][0]?.eventType).toBe(99);
+    expect(store.matches.size).toBe(0);
+  });
+  it("retains stored events on a 304 and refreshes the cursor timestamp", async () => {
+    const store = new MemoryStore();
+    const now = new Date("2026-10-13T12:00:00Z");
+    const result = await syncGlobalEventDirectory({ store, now: () => now, tba: new TbaClient({ authKey: "fixture", fetch: async () => new Response(null, { status: 304 }) }), statbotics: new StatboticsClient({}) }, 2026);
+    expect(result).toBeNull();
+    expect(store.cursors.get("tba:events/2026")?.syncedAt).toEqual(now);
   });
 });

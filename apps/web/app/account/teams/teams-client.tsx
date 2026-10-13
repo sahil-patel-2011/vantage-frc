@@ -55,14 +55,15 @@ export function TeamsList({ teams, currentOrgId }: { teams: TeamLifecycleView[];
           const lastOwner = team.role === "owner" && !team.otherOwner;
           return (
             <li key={team.orgId}>
-              <a className="lifecycle-team-open" href={`/dashboard?orgId=${encodeURIComponent(team.orgId)}`}>
+              <div className="lifecycle-team-open">
                 <strong>{teamDisplayName(team)}</strong>
                 <small>
                   {accessRoleLabel(team.role)} · {peopleLabel(team.memberCount)}
                   {team.orgId === currentOrgId ? " · Open now" : ""}
                 </small>
-              </a>
+              </div>
               <div className="lifecycle-team-actions">
+                {team.orgId !== currentOrgId ? <Button as="a" variant="secondary" size="sm" href={`/dashboard?orgId=${encodeURIComponent(team.orgId)}`}>Switch to this team</Button> : null}
                 {team.canLeave ? (
                   <Button type="button" variant="secondary" size="sm" disabled={busyOrg === team.orgId} onClick={() => void leave(team)}>
                     {busyOrg === team.orgId ? "Leaving…" : "Leave"}

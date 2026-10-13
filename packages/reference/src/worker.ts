@@ -129,6 +129,21 @@ export async function syncGlobalReferenceSeason(
   return summary;
 }
 
+/** One published event-directory request; never download every event's matches. */
+export async function syncGlobalEventDirectory(options: GlobalReferenceWorkerOptions, year: number): Promise<number | null> {
+  if (!Number.isInteger(year) || year < 1992 || year > 2100) throw new Error("Choose a valid season year.");
+  const now = options.now ?? (() => new Date());
+  const result = await conditionalTba<JsonObject[]>(options, `events/${year}`, now);
+  if (result.data === null) {
+    await options.store.saveCursor({ ...result.cursor, cursor: null });
+    return null;
+  }
+  const events = requireArray(result.data, "TBA events").map(value => mapEvent(value, now()));
+  await options.store.upsertEvents(events);
+  await options.store.saveCursor({ ...result.cursor, cursor: null });
+  return events.length;
+}
+
 export async function syncActiveEventDay(
   options: GlobalReferenceWorkerOptions,
   input: EventDaySyncInput = {},

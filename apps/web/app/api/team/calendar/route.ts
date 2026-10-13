@@ -220,6 +220,8 @@ const BASE_EVENT_COLUMNS = `e.id, e.title, e.kind, e.starts_at::text AS "startsA
               ae.title AS "attendanceEventTitle",
               e.milestone_id AS "milestoneId",
               e.driver_session_id AS "driverSessionId",
+              e.competition_event_key AS "competitionEventKey",
+              e.competition_auto_activate AS "competitionAutoActivate",
               e.created_by::text AS "createdBy",
               cb.name AS "createdByName"`;
 

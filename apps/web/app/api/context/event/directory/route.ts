@@ -1,0 +1,31 @@
+import { assertOrgAuthentication, auth } from "@vantage/core";
+import { withRls } from "@vantage/db";
+import { canManageScouting } from "@vantage/scouting/permissions";
+import { cookies, headers } from "next/headers";
+import { parseEventYear } from "../../../../../lib/events/event-planning";
+import { publicErrorMessage } from "../../../../../lib/security/public-error";
+
+/** Intentional bounded refresh. No cron, background worker, or season crawl. */
+export async function POST(request: Request) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return Response.json({ error: "Sign in to refresh published events." }, { status: 401 });
+    const body = await request.json() as { orgId?: string; year?: number };
+    if (!body.orgId) throw new Error("Choose your team first.");
+    const orgId = body.orgId;
+    const year = parseEventYear(String(body.year));
+    await withRls({ userId: session.user.id, orgId }, async client => {
+      if (!await canManageScouting(client, orgId)) throw new Error("Ask your scouting lead to refresh the event directory.");
+      await assertOrgAuthentication(client, {
+        userId: session.user.id, orgId, sessionId: session.session.id,
+        authMethod: String((session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown"),
+        rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
+      });
+    });
+    const { createProductionReferenceJobs } = await import("@vantage/reference/production-worker");
+    const count = await createProductionReferenceJobs({ preferOrgIds: [orgId] }).eventDirectory.run(year);
+    return Response.json({ ok: true, count }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    return Response.json({ error: publicErrorMessage(error, "Published events couldn't be refreshed. Your saved events are still available; you can add an unlisted event.") }, { status: 400 });
+  }
+}

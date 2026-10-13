@@ -17,11 +17,10 @@ import {
   EventDayShell,
   classifyEventDayShell,
 } from "./command-chrome";
-import { CommandEventPicker, type CustomEventSubmission, type EventListState } from "./command-event-picker";
+import { CommandEventPicker } from "./command-event-picker";
 import {
   COMMAND_POLL_MS,
   commandHrefsFromSnap,
-  type EventOption,
   type Me,
 } from "./command-model";
 import { CommandReadyView } from "./command-ready-view";
@@ -38,11 +37,6 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
-  const [eventQ, setEventQ] = useState("");
-  const [events, setEvents] = useState<EventOption[]>([]);
-  const [eventsState, setEventsState] = useState<EventListState>("loading");
-  const [eventBusy, setEventBusy] = useState(false);
-  const [eventMessage, setEventMessage] = useState("");
   // Opened from Home's "Pick your event" step: the picker opens at once, and choosing an
   // event goes straight back to the setup list instead of leaving the owner on Event day.
   const [fromSetup, setFromSetup] = useState(false);
@@ -179,86 +173,6 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
     return () => window.clearInterval(id);
   }, []);
 
-  const loadEvents = useCallback(
-    async (q: string) => {
-      if (!orgId) return;
-      const year = new Date().getFullYear();
-      const params = new URLSearchParams({ orgId, year: String(year), q });
-      // "No events found" used to show while the list was still on its way, or after it failed,
-      // which sent a new team's mentor off to Team → Data for nothing (QA A2-05).
-      setEventsState("loading");
-      try {
-        const response = await fetch(`/api/context/event?${params}`);
-        if (!response.ok) {
-          setEventsState("failed");
-          return;
-        }
-        const data = await response.json();
-        setEvents(data.events ?? []);
-        setEventsState("ready");
-      } catch {
-        setEventsState("failed");
-      }
-    },
-    [orgId],
-  );
-
-  useEffect(() => {
-    if (!eventOpen) return;
-    const handle = window.setTimeout(() => void loadEvents(eventQ), 200);
-    return () => window.clearTimeout(handle);
-  }, [eventOpen, eventQ, loadEvents]);
-
-  async function setActiveEvent(eventKey: string | null) {
-    if (!orgId) return;
-    setEventBusy(true);
-    setEventMessage("");
-    try {
-      const response = await fetch("/api/context/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId, eventKey }),
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setEventMessage(body.error ?? "Could not set event");
-        return;
-      }
-      setEventOpen(false);
-      setEventMessage(eventKey ? `Active event set to ${body.eventName ?? eventKey}` : "Active event cleared");
-      if (fromSetup && eventKey) {
-        window.location.assign(`/dashboard?orgId=${encodeURIComponent(orgId)}`);
-        return;
-      }
-      await load(orgId);
-    } finally {
-      setEventBusy(false);
-    }
-  }
-
-  async function createCustomEvent(draft: CustomEventSubmission) {
-    if (!orgId) return;
-    setEventBusy(true);
-    setEventMessage("");
-    try {
-      const response = await fetch("/api/context/event", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orgId, create: draft }),
-      });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setEventMessage(body.error ?? "Could not add that event");
-        return;
-      }
-      setEventOpen(false);
-      setEventMessage(`Active event set to ${body.eventName ?? draft.name}`);
-      await load(orgId);
-    } finally {
-      setEventBusy(false);
-    }
-  }
-
   const hrefs = commandHrefsFromSnap(snap, orgId || null);
   const next = snap?.matches[0] ?? null;
   const after = snap?.matches[1] ?? null;
@@ -266,22 +180,11 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const liveActions = useMemo(() => eventDayNextActions(snap, { orgId: orgId || null }), [snap, orgId]);
 
   const eventPicker = (
-    <CommandEventPicker
-      open={eventOpen}
-      query={eventQ}
-      events={events}
-      eventsState={eventsState}
-      onRetry={() => void loadEvents(eventQ)}
-      busy={eventBusy}
-      snap={snap}
-      onClose={() => setEventOpen(false)}
-      onQuery={setEventQ}
-      onSelect={(eventKey) => void setActiveEvent(eventKey)}
-      onClear={() => void setActiveEvent(null)}
-      year={new Date().getFullYear()}
-      onCreate={(draft) => void createCustomEvent(draft)}
-      message={eventMessage}
-    />
+    <CommandEventPicker open={eventOpen} orgId={orgId} onClose={() => setEventOpen(false)}
+      onChanged={() => void load(orgId)} onActive={(eventKey) => {
+        setEventOpen(false);
+        if (fromSetup && eventKey) window.location.assign(`/dashboard?orgId=${encodeURIComponent(orgId)}`);
+      }} />
   );
 
   if (loading && !snap && orgId) {
@@ -385,7 +288,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       fromCache={fromCache}
       cachedAt={cachedAt}
       error={error}
-      eventMessage={eventMessage}
+      eventMessage=""
       recomputing={recomputing}
       cheatOpen={cheatOpen}
       shortcuts={shortcuts}

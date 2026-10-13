@@ -38,6 +38,7 @@ export async function withRls<T>(
     await client.query("SET LOCAL ROLE vantage_app");
     await client.query("SELECT set_config('app.user_id', $1, true)", [context.userId]);
     await client.query("SELECT set_config('app.org_id', $1, true)", [context.orgId ?? ""]);
+    await client.query("SELECT activate_scheduled_competition_events($1::uuid)", [context.orgId ?? null]);
     const result = await work(client);
     await client.query("COMMIT");
     return result;

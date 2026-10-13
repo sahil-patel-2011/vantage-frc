@@ -1,0 +1,25 @@
+.competition-planner { display: grid; gap: 16px; min-width: 0; }
+.competition-planner-intro,.competition-planner-note { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0; }
+.competition-planner-search { display: grid; grid-template-columns: minmax(0,1fr) 96px; gap: 12px; align-items: end; }
+.competition-planner label { display: grid; gap: 6px; font-size: 13px; }
+.competition-planner input:not([type=checkbox]) { width: 100%; min-width: 0; min-height: 44px; }
+.competition-planner-scopes { display: flex; gap: 6px; flex-wrap: wrap; }
+.competition-planner-scopes button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); color: inherit; }
+.competition-planner-scopes button[aria-pressed=true] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.competition-planner-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; max-height: 340px; overflow-y: auto; }
+.competition-planner-list button { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; text-align: left; }
+.competition-planner-list button:hover { background: var(--accent-soft); }
+.competition-planner-list strong,.competition-planner-list small { display: block; overflow-wrap: anywhere; }
+.competition-planner-list small { color: var(--muted); margin-top: 4px; }
+.competition-planner-badge { flex-shrink: 0; font-size: 11px; color: var(--muted); }
+.competition-planner-footer,.competition-planner-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.competition-planner-footer { border-top: 1px solid var(--line); padding-top: 14px; }
+.competition-planner-detail h3 { margin: 0; font-size: 20px; }
+.competition-planner-detail form { display: grid; gap: 16px; }
+.competition-planner-dates { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.competition-planner label.competition-planner-check { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.competition-planner-check input { flex-shrink: 0; }
+.competition-planner-prepare { display: block; padding: 12px 0; min-height: 44px; }
+.competition-planner-message { font-size: 13px; line-height: 1.5; margin: 0; }
+.competition-event-dialog { width: min(660px, calc(100vw - 32px)); }
+@media(max-width:480px) { .competition-planner-dates { grid-template-columns: 1fr; } .competition-planner-badge { max-width: 76px; } }
