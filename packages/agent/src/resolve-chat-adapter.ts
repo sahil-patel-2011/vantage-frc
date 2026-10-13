@@ -633,7 +633,17 @@ export async function loadMemberLlmKeys(
         ORDER BY ${KEY_PRIORITY_SQL}, k.created_at`,
       [orgId, userId],
     );
-    return result.rows;
+    const shared = await withSavepoint(client, async () => {
+      const probe = await client.query<{ ready: boolean }>("SELECT to_regprocedure('public.shared_member_llm_keys(uuid)') IS NOT NULL AS ready");
+      if (!probe.rows[0]?.ready) return [];
+      return (await client.query<OrgKeyRow>(
+        `SELECT k.id, k.provider, k.label, k.base_url AS "baseUrl", k.model,
+                k.key_ciphertext AS "keyCiphertext", k.key_nonce AS "keyNonce",
+                k.key_auth_tag AS "keyAuthTag", k.encrypted_dek AS "encryptedDek", k.kms_key_id AS "kmsKeyId"
+         FROM shared_member_llm_keys($1::uuid) k ORDER BY k.priority, k.created_at, k.id`, [orgId],
+      )).rows;
+    }, [] as OrgKeyRow[]);
+    return [...result.rows, ...shared];
   } catch {
     // Table may not exist yet before migration.
     return [];

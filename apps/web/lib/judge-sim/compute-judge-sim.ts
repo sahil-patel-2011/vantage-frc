@@ -50,7 +50,7 @@ function setupStepsFor(orgId: string | null): JudgeSimSetupStep[] {
       id: "evidence",
       label: "Open Awards",
       detail: "Award packets stay blank until your team uploads evidence.",
-      href: hubHref("/business", "evidence", orgId),
+      href: hubHref("/business", "achievements", orgId),
     },
   ];
 }

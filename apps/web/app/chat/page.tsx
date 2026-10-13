@@ -32,6 +32,7 @@ export default async function ChatPage({
   }
   return (
     <ChatClient
+      key={orgId}
       orgId={orgId}
       initialPrompt={prompt ?? ""}
       source={source ?? ""}

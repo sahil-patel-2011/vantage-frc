@@ -105,7 +105,7 @@ export function AppShellSearchPalette({
             aria-autocomplete="list"
             aria-activedescendant={search.activeIndex >= 0 ? `search-palette-row-${search.activeIndex}` : undefined}
             value={search.query}
-            placeholder="Search Vantage"
+            placeholder="Search Vantage…"
             autoComplete="off"
             spellCheck={false}
             enterKeyHint="go"

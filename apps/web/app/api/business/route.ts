@@ -54,7 +54,8 @@ const SPONSOR_ACTIONS = new Set([
 function businessTabForAction(action: string): string {
   if (SPONSOR_ACTIONS.has(action)) return "sponsors";
   if (action === "add-grant" || action === "set-grant-status") return "grants";
-  if (action === "generate-draft" || action === "add-award") return "evidence";
+  if (action === "add-award") return "achievements";
+  if (action === "generate-draft") return "grants";
   if (action === "submit-purchase" || action === "set-purchase-status") return "budget";
   if (action === "save-budget" || action === "add-category") return "budget";
   return "overview";

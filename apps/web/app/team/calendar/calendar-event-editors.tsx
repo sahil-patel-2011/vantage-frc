@@ -370,6 +370,9 @@ export function QuickAddForm({
   events,
   filterSubteamId,
   initialStartsAt,
+  prefill,
+  attendanceEvents,
+  practiceSessions,
   busy,
   run,
   addTask,
@@ -381,6 +384,9 @@ export function QuickAddForm({
   events: ReadyView["events"];
   filterSubteamId: string | null;
   initialStartsAt: string;
+  prefill?: EventPrefill | null;
+  attendanceEvents: ReadyView["attendanceEvents"];
+  practiceSessions: ReadyView["practiceSessions"];
   busy: boolean;
   run: (body: ActionBody, key: string) => Promise<boolean>;
   /** Creates a team task through /api/todos. Resolves false if it failed. */
@@ -399,14 +405,29 @@ export function QuickAddForm({
   const [entry, setEntry] = useState<"event" | "task">("event");
   const [savingTask, setSavingTask] = useState(false);
   const dueOn = startsAt.slice(0, 10);
+  const [endsAt, setEndsAt] = useState("");
+  const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
+  const [attendanceEventId, setAttendanceEventId] = useState("");
+  const [driverSessionId, setDriverSessionId] = useState("");
+  const [repeat, setRepeat] = useState<RepeatDraft>(EMPTY_REPEAT_DRAFT);
+  const [draftError, setDraftError] = useState("");
+  const timeZone = useMemo(() => browserTimeZone(), []);
+  const startsAtMs = new Date(startsAt).getTime();
+  const startsAtIso = Number.isFinite(startsAtMs) ? new Date(startsAtMs).toISOString() : null;
+  useEffect(() => {
+    if (!prefill) return;
+    setEntry("event"); setTitle(prefill.title); setKind(prefill.kind);
+    setStartsAt(prefill.startsAt); setEndsAt(prefill.endsAt); setSubteamId(prefill.subteamId ?? "");
+  }, [prefill]);
 
   useEffect(() => {
-    setStartsAt(initialStartsAt);
-  }, [initialStartsAt]);
+    if (!prefill) setStartsAt(initialStartsAt);
+  }, [initialStartsAt, prefill]);
 
   useEffect(() => {
-    setSubteamId(filterSubteamId ?? "");
-  }, [filterSubteamId]);
+    if (!prefill) setSubteamId(filterSubteamId ?? "");
+  }, [filterSubteamId, prefill]);
 
   useEffect(() => {
     setCreateAttendance(kind === "practice" || kind === "build");
@@ -433,21 +454,28 @@ export function QuickAddForm({
           return;
         }
 
-        if (!startsAt) return;
+        if (!startsAtIso) return;
+        const endMs = endsAt ? new Date(endsAt).getTime() : null;
+        if (endMs !== null && (!Number.isFinite(endMs) || endMs < startsAtMs)) { setDraftError("End time must be after the start."); return; }
+        const built = repeatDraftToRule(repeat, startsAtIso, timeZone);
+        if (built.error) { setDraftError(built.error); return; }
+        setDraftError("");
         void run(
           {
             action: "create_event",
             orgId,
             title: title.trim(),
             kind,
-            startsAt: new Date(startsAt).toISOString(),
-            endsAt: null,
-            location: "",
-            notes: "",
+            startsAt: startsAtIso,
+            endsAt: endMs === null ? null : new Date(endMs).toISOString(),
+            location,
+            notes,
             subteamId: subteamId || null,
-            createAttendance,
-            attendanceEventId: null,
-            driverSessionId: null,
+            createAttendance: createAttendance && !attendanceEventId && !built.rrule,
+            attendanceEventId: attendanceEventId || null,
+            driverSessionId: driverSessionId || null,
+            rrule: built.rrule,
+            timeZone,
           },
           "quick-add",
         ).then((ok) => {
@@ -471,6 +499,7 @@ export function QuickAddForm({
               type="button"
               className={entry === value ? "active" : undefined}
               aria-pressed={entry === value}
+              disabled={busy || savingTask}
               onClick={() => setEntry(value)}
             >
               {value === "event" ? "Event" : "Task"}
@@ -536,8 +565,20 @@ export function QuickAddForm({
         </select>
       </div>
       {/* A task is due on a day, not at an hour, so it cannot clash with one. */}
-      <ConflictNote events={events} startsAt={entry === "event" ? startsAt : ""} subteamId={subteamId} />
-      {entry === "event" ? (
+      <ConflictNote events={events} startsAt={entry === "event" ? startsAt : ""} endsAt={endsAt} subteamId={subteamId} />
+      {entry === "event" ? <details className="tc-details">
+        <summary data-disclosure>Event details</summary>
+        <div className="tc-form-grid">
+          <label className="tc-field"><span>Ends</span><input type="datetime-local" value={endsAt} disabled={busy} onChange={e => setEndsAt(e.target.value)} /></label>
+          <label className="tc-field"><span>Location</span><input value={location} disabled={busy} onChange={e => setLocation(e.target.value)} /></label>
+          <label className="tc-field wide"><span>Notes</span><textarea value={notes} disabled={busy} onChange={e => setNotes(e.target.value)} rows={3} /></label>
+          {attendanceEvents.length ? <label className="tc-field wide"><span>Link attendance</span><select value={attendanceEventId} disabled={busy} onChange={e => setAttendanceEventId(e.target.value)}><option value="">No existing roll-call</option>{attendanceEvents.map(item => <option key={item.id} value={item.id}>{item.occurredOn} · {item.title}</option>)}</select></label> : null}
+          {practiceSessions.length ? <label className="tc-field wide"><span>Link practice</span><select value={driverSessionId} disabled={busy} onChange={e => setDriverSessionId(e.target.value)}><option value="">No linked session</option>{practiceSessions.map(item => <option key={item.id} value={item.id}>{item.sessionDate} · {item.title}</option>)}</select></label> : null}
+        </div>
+        <RepeatControl draft={repeat} onChange={setRepeat} startsAtIso={startsAtIso} timeZone={timeZone} disabled={busy} idPrefix="quick-event" />
+      </details> : null}
+      {draftError ? <p className="tc-error" role="alert">{draftError}</p> : null}
+      {entry === "event" && !attendanceEventId && repeat.preset === "none" ? (
         <label className="tc-check">
           <input
             type="checkbox"
@@ -547,15 +588,15 @@ export function QuickAddForm({
           />
           <span>Create attendance roll-call</span>
         </label>
-      ) : (
+      ) : entry === "task" ? (
         <p className="tc-muted">
           Lands on the team task list and on this calendar, on the day it is due. Assign it on{" "}
           <a href="/todos">Tasks</a>.
         </p>
-      )}
-      <Button variant="primary" type="submit" disabled={ busy || savingTask || !title.trim() || (entry === "task" ? !dueOn : !startsAt) }>
+      ) : null}
+      <div className="tc-quick-actions"><Button variant="primary" type="submit" disabled={ busy || savingTask || !title.trim() || (entry === "task" ? !dueOn : !startsAt) }>
         {savingTask ? "Adding…" : entry === "task" ? "Add task" : "Add event"}
-      </Button>
+      </Button></div>
       {added ? (
         <p className="tc-added" role="status">
           {added}

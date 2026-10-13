@@ -13,6 +13,7 @@ import {
 import { createKms, encryptSecret } from "@vantage/billing";
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
+import { parseKeySharing } from "../../../../lib/ai-keys/key-sharing";
 import { headers } from "next/headers";
 import { checkProviderKey, skipsLiveKeyCheck, type ProviderKeyCheck } from "../../../../lib/ai-keys/check-provider-key";
 import { matchModelList, normalizeModelText } from "../../../../lib/ai-keys/model-list";
@@ -44,6 +45,22 @@ async function multiKeyReady(client: KeyClient): Promise<boolean> {
     `SELECT to_regprocedure('public.note_llm_key_result(text,uuid,boolean,text)') IS NOT NULL AS ready`,
   );
   return result.rows[0]?.ready === true;
+}
+
+async function keySharingReady(client: KeyClient): Promise<boolean> {
+  const result = await client.query<{ ready: boolean }>("SELECT to_regprocedure('public.shared_member_llm_keys(uuid)') IS NOT NULL AS ready");
+  return result.rows[0]?.ready === true;
+}
+
+async function saveKeySharing(client: KeyClient, orgId: string, userId: string, keyId: string, scope: unknown, recipients: unknown) {
+  const sharing = parseKeySharing(scope, recipients);
+  if (!(await keySharingReady(client))) throw new Error("Key sharing isn’t available on this deployment yet. Your personal key stays private.");
+  if (sharing.shareScope === "selected") {
+    const members = await client.query<{ userId: string }>("SELECT user_id::text AS \"userId\" FROM memberships WHERE org_id = $1::uuid AND user_id = ANY($2::uuid[])", [orgId, sharing.shareUserIds]);
+    if (members.rows.length !== sharing.shareUserIds.length) throw new Error("Choose people who still belong to this team.");
+  }
+  const updated = await client.query("UPDATE member_llm_keys SET share_scope = $4, share_user_ids = $5::uuid[], updated_at = now() WHERE id = $1::uuid AND org_id = $2::uuid AND user_id = $3::uuid", [keyId, orgId, userId, sharing.shareScope, sharing.shareUserIds]);
+  if (!updated.rowCount) throw new Error("That personal key is no longer available.");
 }
 
 export type KeyRow = {
@@ -255,25 +272,29 @@ export async function GET(request: Request) {
       ).rows;
       const multiKey = await multiKeyReady(client);
 
-      const [localConnector, routing] = await Promise.all([
-        loadLocalConnector(client, orgId!),
-        loadRoutingPrefs(
-          client,
-          orgId!,
-          rows.filter((row) => row.enabled).map((row) => row.provider),
-        ),
-      ]);
+      // One transaction owns one pg connection; overlapping queries do not run in parallel.
+      const localConnector = await loadLocalConnector(client, orgId!);
+      const routing = await loadRoutingPrefs(client, orgId!, rows.filter(row => row.enabled).map(row => row.provider));
 
       // The caller's own personal keys (RLS restricts rows to user_id = caller).
       const memberRows = (
         await client.query<KeyRow>(
-          `SELECT ${KEY_ROW_COLUMNS}, k.base_url AS "baseUrl", k.model
+          `SELECT ${KEY_ROW_COLUMNS}, k.base_url AS "baseUrl", k.model,
+                  COALESCE(to_jsonb(k)->>'share_scope', 'personal') AS "shareScope",
+                  COALESCE(to_jsonb(k)->'share_user_ids', '[]'::jsonb) AS "shareUserIds"
            FROM member_llm_keys k
            WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid
            ORDER BY lower(k.provider), COALESCE((to_jsonb(k) ->> 'priority')::int, 100), k.created_at`,
           [orgId, session.user.id],
         )
       ).rows;
+
+      const sharingReady = await keySharingReady(client);
+      const sharingMembers = sharingReady ? (await client.query<{ userId: string; name: string | null }>(
+        `SELECT m.user_id::text AS "userId", u.name FROM memberships m
+         JOIN users u ON u.id = m.user_id WHERE m.org_id = $1::uuid AND m.user_id <> $2::uuid ORDER BY lower(u.name), m.user_id`,
+        [orgId, session.user.id],
+      )).rows : [];
 
       return {
         tier: membership.rows[0]?.tier ?? "free",
@@ -284,6 +305,8 @@ export async function GET(request: Request) {
         keyList: rows,
         multiKey,
         memberKeys: memberRows,
+        sharingReady,
+        sharingMembers,
         localConnector,
         routing,
         /*
@@ -357,6 +380,8 @@ export async function POST(request: Request) {
       enabledModelIds?: string[];
       /** An AI Horde model id, or null/absent for any on the allowlist. */
       freeSwarmModel?: string | null;
+      shareScope?: "personal" | "team" | "selected";
+      shareUserIds?: string[];
     };
     const { session, orgId } = await context(body.orgId);
     const action = body.action ?? "save_key";
@@ -512,6 +537,7 @@ export async function POST(request: Request) {
 
       const meta = BYOK_PROVIDER_META[provider];
       const addedMine = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        if (body.shareScope !== undefined) parseKeySharing(body.shareScope, body.shareUserIds);
         const multiKey = await multiKeyReady(client);
         if (!multiKey) {
           await client.query(
@@ -550,6 +576,7 @@ export async function POST(request: Request) {
             order.next,
           ]);
         }
+        if (body.shareScope !== undefined) await saveKeySharing(client, orgId, session.user.id, inserted.rows[0]!.id, body.shareScope, body.shareUserIds);
         return { id: inserted.rows[0]!.id, label, position: order.count + 1 };
       });
 
@@ -585,6 +612,7 @@ export async function POST(request: Request) {
       if (!/^[0-9a-f-]{36}$/i.test(keyId)) throw new Error("Choose a key from the list");
       const scope = body.scope === "member" ? "member" : "team";
       const table = scope === "member" ? "member_llm_keys" : "org_llm_keys";
+      if (body.shareScope !== undefined && scope !== "member") throw new Error("Sharing is managed on your own personal key.");
       const loaded = await withRls({ userId: session.user.id, orgId }, async (client) => {
         // Team keys are the key managers'; RLS (owner/admin) backs this. A personal key is only
         // ever the caller's own (member_llm_keys_own).
@@ -653,6 +681,7 @@ export async function POST(request: Request) {
           )
         ).rows[0];
         if (!still) throw new Error("That key is gone. Refresh the page.");
+        if (body.shareScope !== undefined) await saveKeySharing(client, orgId, session.user.id, keyId, body.shareScope, body.shareUserIds);
         const touchesOrder = typeof body.label === "string" || typeof body.enabled === "boolean" || body.move === "up" || body.move === "down";
         if (touchesOrder && !(await multiKeyReady(client))) {
           throw new Error("Ordering and switching keys needs the latest database update. Ask your platform admin to run it.");

@@ -61,7 +61,7 @@ describe("product hubs", () => {
     }
   });
 
-  it("nests Business money / sponsors / grants / outreach under four workbenches", () => {
+  it("separates Business money, sponsors, grants, outreach and awards", () => {
     const business = hubById("business");
     expect(hubPrimaryTabs(business).map((tab) => tab.id)).toEqual([
       "overview",
@@ -69,6 +69,7 @@ describe("product hubs", () => {
       "sponsors",
       "grants",
       "evidence",
+      "achievements",
     ]);
     expect(hubNestedTabs(business, "finance").map((tab) => tab.id)).toEqual(
       expect.arrayContaining(["finance", "budget", "orders", "costs"]),
@@ -76,6 +77,8 @@ describe("product hubs", () => {
     expect(hubMoreTabs(business).map((tab) => tab.id)).toContain("fundraisers");
     expect(hubMoreTabs(business).map((tab) => tab.id)).toContain("impact");
     expect(hubMoreTabs(business).map((tab) => tab.id)).not.toContain("media");
+    expect(hubNestedTabs(business, "evidence").map(tab => tab.id)).not.toContain("awards-workbench");
+    expect(hubNestedTabs(business, "achievements").map(tab => tab.id)).toContain("awards-workbench");
   });
 
   it.skipIf(!MEDIA_ENABLED)("surfaces Media hub tabs for calendar, drafts, reminders, kit, and impact", () => {

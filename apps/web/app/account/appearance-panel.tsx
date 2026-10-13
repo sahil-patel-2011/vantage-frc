@@ -13,7 +13,7 @@ import {
   type ClarityPreference,
 } from "../../lib/branding/appearance";
 import { applyBranding, broadcastAppearance } from "../../lib/branding/appearance-runtime";
-import { brandingLogoUrl, type OrgBrandingView } from "../../lib/branding/branding";
+import { type OrgBrandingView } from "../../lib/branding/branding";
 import {
   BAR_SLOTS,
   PINS_CHANGED_EVENT,
@@ -153,7 +153,6 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
     [pins, access.hubAccess, access.sponsorsAllowed],
   );
 
-  const logoUrl = org ? brandingLogoUrl(org) : null;
   const dirty = !appearanceEquals(prefs, saved);
 
   /** Preview immediately; the save call only makes it stick across devices. */
@@ -226,50 +225,6 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
         <ThemeToggle expanded />
       </section>
 
-      <section className="appearance-group" aria-labelledby="appearance-accent-title">
-        <h3 id="appearance-accent-title">Team colour</h3>
-        {loadProblem ? (<p>Your appearance settings could not load.</p>) : !loaded ? (
-          <p className="app-muted">Loading your team’s branding…</p>
-        ) : !org ? (
-          <p>
-            Join a team to use its colours.
-          </p>
-        ) : !org.accentColor ? (
-          <p>
-            Using the Vantage accent.{" "}
-            {org.canEdit ? (
-              <a href={`/team/admin?orgId=${encodeURIComponent(org.orgId)}#team-branding`}>
-                Set the team colour
-              </a>
-            ) : (
-              "Your team admin can choose a team colour."
-            )}
-          </p>
-        ) : !org.applyAccentToApp ? (
-          <p>
-            Team colours are off. Using the Vantage accent.
-          </p>
-        ) : (
-          <>
-            <p>
-              Choose your accent. This only changes your view.
-            </p>
-            <ChoiceField label="Accent colour" value={prefs.teamAccent ? "team" : "vantage"} disabled={busy || !loaded || loadProblem}
-              choices={[{ value: "team", label: "Team accent", hint: `Match ${org.orgName ?? "your team"}` }, { value: "vantage", label: "Vantage", hint: "Default accent" }]}
-              onChange={value => preview({ ...prefs, teamAccent: value === "team" })} />
-          </>
-        )}
-        {logoUrl && org?.showLogoInHeader ? (
-          <p className="app-muted" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="soft-brand-mark" aria-hidden="true">
-              { }
-              <img src={logoUrl} alt="" />
-            </span>
-            Your team logo appears wherever this team is named.
-          </p>
-        ) : null}
-      </section>
-
       <section className="appearance-group" aria-labelledby="appearance-density-title">
         <h3 id="appearance-density-title">Density</h3>
         <p>
@@ -280,7 +235,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           onChange={value => preview({ ...prefs, density: value })} />
       </section>
 
-      {/* Theme, team colour and density are what most people change. Glass, motion, the
+      {/* Theme and density are what most people change. Glass, motion, the
           cockpit options and the bottom island made this tab about 5,000px tall. */}
       <details className="appearance-more">
         <summary data-disclosure>More display settings</summary>

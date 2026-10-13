@@ -21,7 +21,7 @@ describe("judgeSimRelatedLinks", () => {
     expect(links.find((l) => l.id === "impact-essay")?.href).toBe(
       "/business?tab=impact-essay&orgId=org-1",
     );
-    expect(links.find((l) => l.id === "evidence")?.href).toBe("/business?tab=evidence&orgId=org-1");
+    expect(links.find((l) => l.id === "evidence")?.href).toBe("/business?tab=achievements&orgId=org-1");
   });
 
   it("excludes the active surface and respects include", () => {

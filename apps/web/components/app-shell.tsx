@@ -20,7 +20,6 @@ import {
   PRODUCT_NAV_GROUPS,
   breadcrumbForPath,
   findNavMatch,
-  withOrgHref,
 } from "../lib/nav/product-nav";
 import { BAR_SLOTS, PINS_CHANGED_EVENT, PINS_EDIT_EVENT, defaultPinHrefs, pinCatalog, resolvePins, resolveStoredPins } from "../lib/nav/pins";
 import { publishPinnedHrefs } from "../lib/nav/pin-snapshot";
@@ -216,7 +215,23 @@ export default function AppShell() {
       navigate(path);
     };
     const onPop = () => setLocationTick((tick) => tick + 1);
+    // Warm only a destination the person shows intent to open. Never prefetch every tool.
+    const warmed = new Set<string>();
+    let warmTimer: number | undefined;
+    const onIntent = (event: Event) => {
+      const anchor = (event.target as Element | null)?.closest?.("a[href]");
+      if (!anchor || !routerReady) return;
+      const path = softNavigationTarget({ button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, defaultPrevented: false }, {
+        href: anchor.getAttribute("href") ?? "", target: anchor.getAttribute("target") ?? "", hasDownload: anchor.hasAttribute("download"),
+        rel: anchor.getAttribute("rel") ?? "", fullReload: Boolean(anchor.closest("[data-full-reload]")),
+      }, new URL(window.location.href));
+      if (!path || path.startsWith("/workspace") || warmed.has(path) || warmed.size >= 12) return;
+      window.clearTimeout(warmTimer);
+      warmTimer = window.setTimeout(() => { warmed.add(path); router.prefetch(path); }, 100);
+    };
     document.addEventListener("click", onClick);
+    document.addEventListener("pointerover", onIntent);
+    document.addEventListener("focusin", onIntent);
     window.addEventListener("popstate", onPop);
     // A hub switching tabs in place rewrites the address without navigating.
     window.addEventListener(URL_CHANGE_EVENT, onPop);
@@ -226,10 +241,13 @@ export default function AppShell() {
     return () => {
       window.clearTimeout(readyTimer);
       document.removeEventListener("click", onClick);
+      document.removeEventListener("pointerover", onIntent);
+      document.removeEventListener("focusin", onIntent);
+      window.clearTimeout(warmTimer);
       window.removeEventListener("popstate", onPop);
       window.removeEventListener(URL_CHANGE_EVENT, onPop);
     };
-  }, [navigate]);
+  }, [navigate, router, orgId, me.userId]);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
@@ -576,7 +594,7 @@ export default function AppShell() {
       <NextActionsDedupe routeKey={`${pathname}:${locationTick}`} />
       {!onboarding ? <AppShellSidebar groups={visibleNavGroups} pins={pins} pathname={pathname} pathSearch={pathSearch}
         orgId={orgId} orgLabel={orgLabel} roleCue={rolePlanCue} collapsed={sidebarCollapsed} onCollapse={toggleSidebar}
-        onEditPins={openIslandEditor} allowed={navHrefAllowed} /> : null}
+        platformAdmin={me.platformAdmin === true} onEditPins={openIslandEditor} allowed={navHrefAllowed} /> : null}
       <AppShellTopbar
         showBack={showBack}
         onBack={() => navigate(backHref)}

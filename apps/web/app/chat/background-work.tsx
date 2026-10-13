@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ModelProvenance } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { agentRunStoppedUnexpectedly } from "../../lib/ai/agent-run-status";
@@ -59,25 +59,50 @@ export function useBackgroundWork(orgId: string) {
   const [runs, setRuns] = useState<BackgroundRun[]>([]);
   const [selected, setSelected] = useState<{ run: BackgroundRun; steps: Step[] } | null>(null);
   const [busy, setBusy] = useState(false);
+  const openRequest = useRef<AbortController | null>(null);
+  const generation = useRef(0);
+  const refreshGeneration = useRef(0);
+  const startGeneration = useRef(0);
+  const activeOrg = useRef(orgId);
+  activeOrg.current = orgId;
+  const close = useCallback(() => {
+    generation.current += 1;
+    openRequest.current?.abort();
+    setSelected(null);
+  }, []);
 
   const refresh = useCallback(async () => {
-    const response = await fetch(`/api/agent/autonomous?orgId=${encodeURIComponent(orgId)}`).catch(() => null);
+    if (activeOrg.current !== orgId) return;
+    const request = ++refreshGeneration.current;
+    const response = await fetch(`/api/agent/autonomous?orgId=${encodeURIComponent(orgId)}`, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
     if (!response?.ok) return;
     const data = (await response.json().catch(() => null)) as { runs?: BackgroundRun[] } | null;
+    if (!data || request !== refreshGeneration.current || activeOrg.current !== orgId) return;
     setRuns(data?.runs ?? []);
   }, [orgId]);
 
   useEffect(() => {
+    close();
+    startGeneration.current += 1;
+    setRuns([]);
+    setBusy(false);
     void refresh();
-  }, [refresh]);
+    return () => { generation.current += 1; refreshGeneration.current += 1; openRequest.current?.abort(); };
+  }, [refresh, close]);
 
   const open = useCallback(
     async (runId: string) => {
+      openRequest.current?.abort();
+      const controller = new AbortController();
+      openRequest.current = controller;
+      const request = ++generation.current;
       const response = await fetch(
         `/api/agent/autonomous?orgId=${encodeURIComponent(orgId)}&runId=${encodeURIComponent(runId)}`,
+        { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) },
       ).catch(() => null);
       if (!response?.ok) return;
-      const data = (await response.json()) as { run?: BackgroundRun | null; steps?: Step[] };
+      const data = (await response.json().catch(() => null)) as { run?: BackgroundRun | null; steps?: Step[] } | null;
+      if (!data || controller.signal.aborted || request !== generation.current) return;
       if (data.run) setSelected({ run: data.run, steps: data.steps ?? [] });
     },
     [orgId],
@@ -86,6 +111,9 @@ export function useBackgroundWork(orgId: string) {
   /** Runs a goal; resolves with a failure in plain words, or null when it ran. */
   const start = useCallback(
     async (goal: string): Promise<BackgroundFailure | null> => {
+      if (activeOrg.current !== orgId) return null;
+      const request = generation.current;
+      const operation = ++startGeneration.current;
       setBusy(true);
       try {
         const response = await fetch("/api/agent/autonomous", {
@@ -101,6 +129,7 @@ export function useBackgroundWork(orgId: string) {
           message?: string;
           code?: string;
         };
+        if (activeOrg.current !== orgId || request !== generation.current) return null;
         if (!response.ok) {
           return {
             message: data.message ?? data.error ?? "Background work couldn't start.",
@@ -112,15 +141,16 @@ export function useBackgroundWork(orgId: string) {
         await refresh();
         return null;
       } catch {
+        if (activeOrg.current !== orgId || request !== generation.current) return null;
         return { message: "Background work couldn't start. Check your connection and try again.", setup: false, cutoff: null };
       } finally {
-        setBusy(false);
+        if (activeOrg.current === orgId && operation === startGeneration.current) setBusy(false);
       }
     },
     [orgId, refresh],
   );
 
-  return { runs, selected, busy, refresh, open, start, close: () => setSelected(null) };
+  return { runs, selected, busy, refresh, open, start, close };
 }
 
 /** One background run in the conversation area: status, answer, and the steps behind it. */

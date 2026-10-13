@@ -18,7 +18,7 @@ describe("impactEssayRelatedLinks", () => {
     });
     expect(links.map((l) => l.id)).toEqual(["impact", "evidence", "writer"]);
     expect(links.find((l) => l.id === "impact")?.href).toBe("/business?tab=impact&orgId=org-1");
-    expect(links.find((l) => l.id === "evidence")?.href).toBe("/business?tab=evidence&orgId=org-1");
+    expect(links.find((l) => l.id === "evidence")?.href).toBe("/business?tab=achievements&orgId=org-1");
     expect(links.find((l) => l.id === "writer")?.href).toBe("/ai?tab=writer&orgId=org-1");
   });
 

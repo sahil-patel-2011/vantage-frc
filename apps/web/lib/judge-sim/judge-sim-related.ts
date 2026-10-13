@@ -5,7 +5,7 @@ import { withOrgHref } from "../nav/product-nav";
 export const JUDGE_SIM_RELATED_LINKS = [
   { id: "impact", label: "Community Impact", kind: "hub" as const, tab: "impact" },
   { id: "impact-essay", label: "Impact Essay", kind: "hub" as const, tab: "impact-essay" },
-  { id: "evidence", label: "Awards", kind: "hub" as const, tab: "evidence" },
+  { id: "evidence", label: "Awards", kind: "hub" as const, tab: "achievements" },
   { id: "award-tracker", label: "Award tracker", kind: "hub" as const, tab: "award-tracker" },
   { id: "media-kit", label: "Media Kit", kind: "hub" as const, tab: "media-kit" },
 ] as const;
@@ -179,7 +179,7 @@ export function judgeSimNextActions(input: {
           id: "evidence",
           label: "Open Awards",
           detail: "Award evidence stays blank until your team uploads it.",
-          href: hubHref("/business", "evidence", null),
+          href: hubHref("/business", "achievements", null),
         },
       ];
     }
@@ -207,7 +207,7 @@ export function judgeSimNextActions(input: {
         id: "evidence",
         label: "Open Awards",
         detail: "Keep award packets grounded in uploaded evidence.",
-        href: hubHref("/business", "evidence", orgId),
+        href: hubHref("/business", "achievements", orgId),
       },
     ];
   }
@@ -237,7 +237,7 @@ export function judgeSimNextActions(input: {
         id: "evidence",
         label: "Open Awards",
         detail: "Award evidence stays available while the simulator reloads.",
-        href: hubHref("/business", "evidence", orgId),
+        href: hubHref("/business", "achievements", orgId),
       },
     ];
   }
@@ -278,7 +278,7 @@ export function judgeSimNextActions(input: {
         id: "evidence",
         label: "Open Awards",
         detail: "Award packets stay blank until real uploads exist.",
-        href: hubHref("/business", "evidence", orgId),
+        href: hubHref("/business", "achievements", orgId),
       },
     );
     return actions.slice(0, 4);
@@ -317,7 +317,7 @@ export function judgeSimNextActions(input: {
       id: "evidence",
       label: "Open Awards",
       detail: "Keep award packets grounded in uploaded evidence.",
-      href: hubHref("/business", "evidence", orgId),
+      href: hubHref("/business", "achievements", orgId),
     },
   ];
 

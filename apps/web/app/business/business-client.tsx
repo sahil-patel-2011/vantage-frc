@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { pushAppNavigation } from "../../lib/nav/soft-navigation";
 import { HubPanelSkeleton } from "../../components/product-hub";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
@@ -38,7 +40,7 @@ import {
   writeTabToUrl,
   type Tab,
 } from "./business-helpers";
-import { Budget, Evidence, Grants, Overview } from "./business-panels";
+import { AwardHistory, Budget, Evidence, Grants, Overview } from "./business-panels";
 import "../product-hub.css";
 import { withWaitlistLink } from "../../components/waitlist-link";
 import { MoneyManagersLine } from "../team/admin/money-managers-line";
@@ -72,6 +74,7 @@ async function persistBusinessSnapshot(
 }
 
 export default function BusinessClient({ initialTab = null }: { initialTab?: string | null }) {
+  const router = useRouter();
   const access = useClientAccessProfile();
   const [view, setView] = useState<BusinessPortalView | null>(null);
   // `?tab=` as the server saw it, so the server HTML already has the right heading.
@@ -302,7 +305,7 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
           const destination = workspaceTabs.find(entry => entry.id === next);
           if (!destination) return;
           if (isTab(next)) selectTab(next);
-          else if (destination.legacyHref) window.location.assign(hubLegacyContextHref(destination.legacyHref, window.location.search, orgId ?? null));
+          else if (destination.legacyHref) pushAppNavigation(path => router.push(path), hubLegacyContextHref(destination.legacyHref, window.location.search, orgId ?? null));
         }} />
         {live ? (
           <MoneyAddMenu orgId={orgId ?? null} canManageFinances={live.canManageFinances} viewOnly={live.role === "viewer"} />
@@ -443,7 +446,8 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
             <PartnerPlacementsPanel orgId={live.orgId} seasonYear={live.seasonYear} canManage={live.canManageFinance} />
           ) : null}
           {tab === "grants" ? <Grants view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
-          {tab === "evidence" ? <Evidence view={live} busy={busy} submit={submit} /> : null}
+          {tab === "evidence" ? <Evidence view={live} /> : null}
+          {tab === "achievements" ? <AwardHistory view={live} busy={busy} submit={submit} /> : null}
         </>
       ) : null}
     </PageMain>

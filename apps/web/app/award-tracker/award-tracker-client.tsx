@@ -174,7 +174,7 @@ function AwardTrackerShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={hubHref("/business", "evidence", orgId)}>Open Awards</Button>
+          <Button as="a" variant="primary" href={withOrgHref("/team/awards", orgId)}>Start an award submission</Button>
         ) : null}
       </EmptyState>
     </main>

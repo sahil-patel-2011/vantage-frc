@@ -838,6 +838,8 @@ export const memberLlmKeys = pgTable(
     kmsKeyId: text("kms_key_id").notNull(),
     baseUrl: text("base_url"),
     model: text("model"),
+    shareScope: text("share_scope").notNull().default("personal"),
+    shareUserIds: uuid("share_user_ids").array().notNull().default(sql`'{}'::uuid[]`),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     createdAt: timestamps.createdAt,
     updatedAt: timestamps.updatedAt,

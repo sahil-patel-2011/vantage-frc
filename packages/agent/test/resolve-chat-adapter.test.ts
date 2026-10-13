@@ -17,6 +17,8 @@ function fakeClient(handlers: Array<(sql: string, params?: unknown[]) => QueryRe
   let index = 0;
   return {
     query: vi.fn(async (sql: string, params?: unknown[]) => {
+      if (/^(?:SAVEPOINT|RELEASE SAVEPOINT|ROLLBACK TO SAVEPOINT)/.test(sql)) return { rowCount: 0, rows: [] };
+      if (sql.includes("to_regprocedure('public.shared_member_llm_keys(uuid)')")) return { rowCount: 1, rows: [{ ready: false }] };
       const handler = handlers[index++];
       if (!handler) throw new Error(`Unexpected query: ${sql}`);
       return handler(sql, params);

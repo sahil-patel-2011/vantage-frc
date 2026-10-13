@@ -23,41 +23,42 @@ export async function GET(request: Request) {
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) throw new Error("orgId is required");
     const data = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      const [policy, members, features, models, usage, entitlement, wallet, usagePolicy, manage] = await Promise.all([
-        client.query(`SELECT daily_spend_limit_usd AS "dailySpendLimitUsd",
+      // A transaction has one pg connection; await its reads without overlapping queries.
+  const [policy, members, features, models, usage, entitlement, wallet, usagePolicy, manage] = [
+        await client.query(`SELECT daily_spend_limit_usd AS "dailySpendLimitUsd",
           monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
           monthly_token_limit AS "monthlyTokenLimit",warning_thresholds AS "warningThresholds",
           enforce_byo_token_limits AS "enforceByoTokenLimits",model_allowlist_enabled AS "modelAllowlistEnabled",
           provider_allowlist_enabled AS "providerAllowlistEnabled",kill_switch AS "killSwitch",prompt_caching_enabled AS "promptCachingEnabled"
           FROM org_api_budget_policies WHERE org_id=$1`, [orgId]),
-        client.query(`SELECT l.user_id AS "userId",u.name,u.email,l.daily_spend_limit_usd AS "dailySpendLimitUsd",
+        await client.query(`SELECT l.user_id AS "userId",u.name,u.email,l.daily_spend_limit_usd AS "dailySpendLimitUsd",
           l.monthly_spend_limit_usd AS "monthlySpendLimitUsd",l.daily_token_limit AS "dailyTokenLimit",
           l.monthly_token_limit AS "monthlyTokenLimit",
           COALESCE((to_jsonb(l) ->> 'ai_blocked')::boolean,false) AS "aiBlocked"
           FROM memberships m JOIN users u ON u.id=m.user_id
           LEFT JOIN org_api_member_limits l ON l.org_id=m.org_id AND l.user_id=m.user_id WHERE m.org_id=$1`, [orgId]),
-        client.query(`SELECT feature,daily_spend_limit_usd AS "dailySpendLimitUsd",
+        await client.query(`SELECT feature,daily_spend_limit_usd AS "dailySpendLimitUsd",
           monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
           monthly_token_limit AS "monthlyTokenLimit" FROM org_api_feature_limits WHERE org_id=$1`, [orgId]),
-        client.query(`SELECT provider,model,allowed,daily_spend_limit_usd AS "dailySpendLimitUsd",
+        await client.query(`SELECT provider,model,allowed,daily_spend_limit_usd AS "dailySpendLimitUsd",
           monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
           monthly_token_limit AS "monthlyTokenLimit" FROM org_api_model_limits WHERE org_id=$1`, [orgId]),
-        client.query(`SELECT COALESCE(sum(cost_usd) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS "dailySpend",
+        await client.query(`SELECT COALESCE(sum(cost_usd) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS "dailySpend",
           COALESCE(sum(cost_usd),0)::text AS "monthlySpend",
           COALESCE(sum(total_tokens) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS "dailyTokens",
           COALESCE(sum(total_tokens),0)::text AS "monthlyTokens"
           FROM ai_usage_events WHERE org_id=$1 AND created_at>=date_trunc('month',now())`, [orgId]),
-        client.query(`SELECT e.plan_code AS "planCode",e.status,
+        await client.query(`SELECT e.plan_code AS "planCode",e.status,
           p.included_allowance_usd AS "includedAllowance"
           FROM org_entitlements e JOIN pricing_plans p ON p.code=e.plan_code WHERE e.org_id=$1`, [orgId]),
-        client.query(`SELECT COALESCE(sum(amount_usd),0)::text AS balance FROM wallet_ledger WHERE org_id=$1`, [orgId]),
-        client.query(`SELECT payg_enabled AS "paygEnabled",overage_spend_cap_usd AS "spendCap",
+        await client.query(`SELECT COALESCE(sum(amount_usd),0)::text AS balance FROM wallet_ledger WHERE org_id=$1`, [orgId]),
+        await client.query(`SELECT payg_enabled AS "paygEnabled",overage_spend_cap_usd AS "spendCap",
           kill_switch AS "killSwitch" FROM org_usage_policies WHERE org_id=$1`, [orgId]),
-        client.query<{ allowed: boolean }>(
+        await client.query<{ allowed: boolean }>(
           `SELECT has_org_capability($1::uuid, 'manage_api_keys'::org_capability) AS allowed`,
           [orgId],
         ),
-      ]);
+      ];
       const row = usage.rows[0] as Record<string, string>;
       const elapsedDays = Math.max(1, new Date().getUTCDate());
       const monthlyLimit = Number(policy.rows[0]?.monthlySpendLimitUsd ?? 0);

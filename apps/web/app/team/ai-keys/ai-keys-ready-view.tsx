@@ -33,6 +33,7 @@ import {
   type RoutingPrefs,
 } from "./ai-keys-model";
 import { MyFreeGeminiKey } from "./ai-keys-my-free-key";
+import { AiKeySharing } from "./ai-key-sharing";
 import { TeamKeyList } from "./ai-keys-team-list";
 import { AiCreditLine } from "../../../components/ai-credit-line";
 import { WebResearchCard } from "./ai-keys-web-research";
@@ -390,7 +391,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           {/* Personal keys and a personal model are for the few who want them. */}
           <details className="ai-keys-fold" id="settings-your-key" open={(payload.memberKeys ?? []).length > 0}>
             <summary>
-              <h2 className="ai-keys-fold-title">Just for you: your own key or model</h2>
+              <h2 className="ai-keys-fold-title">Your keys and sharing</h2>
             </summary>
           <section className="app-card soft-panel ai-keys-mine" aria-label="My personal AI keys">
             <span className="eyebrow">MINE</span>
@@ -430,6 +431,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                         Remove
                       </Button>
                     </span>
+                    {orgId && row.id ? <AiKeySharing orgId={orgId} row={row} ready={payload.sharingReady === true} members={payload.sharingMembers ?? []} onSaved={() => void props.reload()} /> : null}
                     {row.id && editingMine === row.id ? (
                       <form
                         className="ai-keys-edit"

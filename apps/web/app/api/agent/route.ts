@@ -188,6 +188,8 @@ export async function POST(request: Request) {
       const skill = skillSummary(turnSkill, usedIds);
       return {
         ...sent,
+        // Return the committed turn's exact messages; no second round trip to paint a reply.
+        messages: await repository.getMessages(body.threadId),
         skill,
         skillNotice: pinnedRefused?.reason ?? null,
         skillOutputs,

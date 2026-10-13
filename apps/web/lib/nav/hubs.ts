@@ -338,11 +338,6 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ...nest("evidence", [
         { id: "fundraisers", label: "Fundraisers", legacyHref: "/fundraisers" },
         { id: "impact", label: "Impact", legacyHref: "/impact" },
-        { id: "award-tracker", label: "Award tracker", legacyHref: "/award-tracker" },
-        { id: "awards-workbench", label: "Awards", legacyHref: "/team/awards" },
-        { id: "impact-essay", label: "Impact essay", legacyHref: "/impact-essay" },
-        { id: "judge-sim", label: "Judge pitch", legacyHref: "/judge-sim" },
-        { id: "mock-judging", label: "Mock judging", legacyHref: "/mock-judging" },
         { id: "media-kit", label: "Media kit", legacyHref: "/media?tab=kit" },
         { id: "outreach-calendar", label: "Outreach calendar", legacyHref: "/outreach-calendar" },
         // The former Media hub, now tools of Outreach. Same pages, one fewer
@@ -351,6 +346,14 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "content-drafts", label: "Post drafts", legacyHref: "/media?tab=drafts" },
         { id: "content-reminders", label: "Posting reminders", legacyHref: "/media?tab=reminders" },
         { id: "media-library", label: "Photos & video", legacyHref: "/media-library" },
+      ]),
+      { id: "achievements", label: "Awards" },
+      ...nest("achievements", [
+        { id: "awards-workbench", label: "Award submissions", legacyHref: "/team/awards", featured: true },
+        { id: "award-tracker", label: "Submission tracker", legacyHref: "/award-tracker" },
+        { id: "impact-essay", label: "Impact essay", legacyHref: "/impact-essay" },
+        { id: "judge-sim", label: "Judge pitch", legacyHref: "/judge-sim" },
+        { id: "mock-judging", label: "Mock judging", legacyHref: "/mock-judging" },
       ]),
     ],
   },

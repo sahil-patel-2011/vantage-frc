@@ -234,7 +234,7 @@ export function poolLimitsForUrl(connectionString: string): {
   connectionTimeoutMillis?: number;
 } {
   if (postgresHostKind(connectionString) === "supabase") {
-    return { max: 3, idleTimeoutMillis: 10_000 };
+    return { max: 3, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 10_000 };
   }
   // Default local URLs point at localhost:5432. Playwright CI has no Postgres,
   // and node-postgres's default connectionTimeoutMillis of 0 waits forever on

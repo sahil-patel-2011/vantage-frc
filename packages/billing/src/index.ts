@@ -412,33 +412,34 @@ async function enforceApiBudgets<T>(
   tier: string,
   keySource: MeterKeySource,
 ) {
+  // A transaction has one pg connection; await its reads without overlapping queries.
   const [policyResult, memberResult, featureResult, modelResult, usageResult, safetyResult] =
-    await Promise.all([
-      input.client.query(
+    [
+      await input.client.query(
         `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit,
           enforce_byo_token_limits,model_allowlist_enabled,provider_allowlist_enabled,kill_switch
          FROM org_api_budget_policies WHERE org_id=$1`,
         [input.orgId],
       ),
       // ai_blocked is read through to_jsonb so a database without 0730 reads "not blocked".
-      input.client.query(
+      await input.client.query(
         `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit,
           COALESCE((to_jsonb(l) ->> 'ai_blocked')::boolean, false) AS ai_blocked
          FROM org_api_member_limits l WHERE org_id=$1 AND user_id=$2`,
         [input.orgId, input.userId],
       ),
-      input.client.query(
+      await input.client.query(
         `SELECT daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
          FROM org_api_feature_limits WHERE org_id=$1 AND feature=$2`,
         [input.orgId, input.feature],
       ),
-      input.client.query(
+      await input.client.query(
         `SELECT allowed,daily_spend_limit_usd,monthly_spend_limit_usd,daily_token_limit,monthly_token_limit
          FROM org_api_model_limits WHERE org_id=$1 AND provider=$2 AND model IN ($3,'*')
          ORDER BY CASE WHEN model=$3 THEN 0 ELSE 1 END LIMIT 1`,
         [input.orgId, input.provider ?? "", input.model ?? ""],
       ),
-      input.client.query(
+      await input.client.query(
         `SELECT
           COALESCE(sum(cost_usd) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS org_day_cost,
           COALESCE(sum(cost_usd),0)::text AS org_month_cost,
@@ -459,13 +460,13 @@ async function enforceApiBudgets<T>(
          FROM ai_usage_events WHERE org_id=$1 AND created_at>=date_trunc('month',now())`,
         [input.orgId, input.userId, input.feature, input.provider ?? "", input.model ?? ""],
       ),
-      input.client.query(
+      await input.client.query(
         `SELECT max_daily_spend_usd AS daily_spend_limit_usd,
           max_monthly_spend_usd AS monthly_spend_limit_usd,max_daily_tokens AS daily_token_limit,
           max_monthly_tokens AS monthly_token_limit FROM platform_api_safety_caps WHERE tier=$1`,
         [tier],
       ),
-    ]);
+    ];
   const policy = policyResult.rows[0] as Record<string, unknown> | undefined;
   const member = memberResult.rows[0] as Record<string, unknown> | undefined;
   const feature = featureResult.rows[0] as Record<string, unknown> | undefined;
