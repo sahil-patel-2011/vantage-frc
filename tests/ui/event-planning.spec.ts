@@ -20,6 +20,12 @@ for (const width of [390, 768, 1440]) {
     await expect(dialog.getByLabel("First day", { exact: true })).toHaveValue("2026-10-15");
     await expect(dialog.getByLabel("Last day", { exact: true })).toHaveValue("2026-10-17");
     expect(posted).toBeNull();
+    await dialog.locator(".competition-planner-fields").evaluate(node => { node.scrollTop = node.scrollHeight; });
+    const explanation = await dialog.getByText(/A later manual selection takes priority/).boundingBox();
+    const footer = await dialog.locator(".competition-planner-actions").boundingBox();
+    expect(explanation && footer && explanation.y + explanation.height <= footer.y).toBe(true);
+    await expect(dialog.getByRole("button", { name: "Close dialog", exact: true })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Add to team calendar", exact: true })).toHaveClass(/is-primary/);
     await accessible(page);
     await page.screenshot({ path: info.outputPath(`competition-${width}.png`) });
     await dialog.getByRole("button", { name: "Add to team calendar", exact: true }).click();
@@ -56,6 +62,8 @@ test("save an undated scrimmage without activating it or adding a calendar row",
   await expect(save).toBeVisible();
   const [action, bounds] = await Promise.all([save.boundingBox(), dialog.boundingBox()]);
   expect(action && bounds && action.y >= bounds.y && action.y + action.height <= bounds.y + bounds.height).toBe(true);
+  const close = await dialog.getByRole("button", { name: "Close dialog", exact: true }).boundingBox();
+  expect(close && bounds && close.y >= bounds.y && close.y + close.height <= bounds.y + bounds.height).toBe(true);
   await accessible(page);
   await page.screenshot({ path: info.outputPath("unlisted-short.png") });
   await dialog.getByRole("button", { name: "Save event", exact: true }).click();
