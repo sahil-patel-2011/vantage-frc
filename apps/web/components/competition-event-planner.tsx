@@ -169,6 +169,7 @@ function CompetitionEventDetails({ year, event, activeKey, busy, message, onBack
       {error || message ? <p role="alert" className="competition-planner-message">{error || message}</p> : null}
       <div className="competition-planner-actions"><Button type="submit" disabled={busy || (!event && !name.trim())}>{busy ? "Saving…" : calendar ? event?.calendarId ? "Save calendar dates" : "Add to team calendar" : "Save event"}</Button>
         {event && !event.catalogId && event.eventKey !== activeKey ? <button type="button" className="text-button" disabled={busy} onClick={() => void onSave({ eventKey: event.eventKey, intent: "activate" })}>Make active now</button> : null}
+        {event?.eventKey === activeKey ? <button type="button" className="text-button" disabled={busy} onClick={() => void onSave({ eventKey: null, intent: "activate" })}>Stop following this event</button> : null}
       </div>
     </form>}
   </div>;

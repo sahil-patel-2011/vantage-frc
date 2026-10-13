@@ -3,6 +3,7 @@
 // No demo defaults: empty orgs show empty states until leads create subteams.
 
 import type { TaskOnCalendar } from "./calendar/tasks-on-calendar";
+import { competitionCalendarDays } from "./events/event-planning";
 
 export const SUBTEAM_EVENT_KINDS = [
   "practice",
@@ -82,6 +83,7 @@ export type CalendarEvent = {
   driverSessionId: string | null;
   competitionEventKey?: string | null;
   competitionAutoActivate?: boolean;
+  competitionTimeZone?: string | null;
   createdBy?: string | null;
   createdByName: string | null;
   /** Current user's RSVP, when the RSVP table is available. */
@@ -157,6 +159,7 @@ export type SubteamCalendarContext = {
   role: string | null;
   userId: string | null;
   canManage: boolean;
+  canManageCompetition?: boolean;
 };
 
 export const CALENDAR_FEED_SCOPES = ["personal", "org", "subteam"] as const;
@@ -251,10 +254,12 @@ export type DayBucket = { day: string; label: string; items: CalendarEvent[] };
 export function groupEventsByDay(events: CalendarEvent[]): DayBucket[] {
   const byDay = new Map<string, CalendarEvent[]>();
   for (const event of sortEvents(events)) {
-    const day = localDayKey(new Date(event.startsAt));
+    const days = event.competitionEventKey ? competitionCalendarDays(event) : [localDayKey(new Date(event.startsAt))];
+    for (const day of days) {
     const list = byDay.get(day) ?? [];
     list.push(event);
     byDay.set(day, list);
+    }
   }
   return [...byDay.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
@@ -380,10 +385,12 @@ export function startOfWeek(date: Date): Date {
 function eventsByLocalDay(events: CalendarEvent[]): Map<string, CalendarEvent[]> {
   const map = new Map<string, CalendarEvent[]>();
   for (const event of sortEvents(events)) {
-    const day = localDayKey(new Date(event.startsAt));
+    const days = event.competitionEventKey ? competitionCalendarDays(event) : [localDayKey(new Date(event.startsAt))];
+    for (const day of days) {
     const list = map.get(day) ?? [];
     list.push(event);
     map.set(day, list);
+    }
   }
   return map;
 }
@@ -478,6 +485,7 @@ export function formatHourLabel(hour: number): string {
 }
 
 export function isAllDayCalendarEvent(event: CalendarEvent): boolean {
+  if (event.competitionEventKey) return true;
   const start = new Date(event.startsAt);
   if (Number.isNaN(start.getTime())) return true;
   const end = event.endsAt ? new Date(event.endsAt) : null;

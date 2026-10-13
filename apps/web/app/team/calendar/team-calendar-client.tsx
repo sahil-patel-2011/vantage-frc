@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Modal, askConfirm } from "../../../components/ui";
+import { competitionCalendarLabel } from "../../../lib/events/event-planning";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { ViewOnlyNote } from "../../../components/view-only-note";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
@@ -501,11 +502,11 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         events={view.events}
         busy={busy}
         canDelete={
-          canDeleteCalendarEvent({
+          (event.competitionEventKey ? view.context.canManageCompetition === true : canDeleteCalendarEvent({
             role: view.context.role,
             userId: view.context.userId,
             authorId: event.createdBy,
-          }) && !isReadonlyCalendarEvent(event)
+          })) && !isReadonlyCalendarEvent(event)
         }
         scopePrompt={scopeEventId === event.id}
         onScopePick={(scope) => {
@@ -517,11 +518,11 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         }}
         onCancelScope={() => setScopeEventId(null)}
         canEdit={
-          canDeleteCalendarEvent({
+          (event.competitionEventKey ? view.context.canManageCompetition === true : canDeleteCalendarEvent({
             role: view.context.role,
             userId: view.context.userId,
             authorId: event.createdBy,
-          }) && !isReadonlyCalendarEvent(event)
+          })) && !isReadonlyCalendarEvent(event)
         }
         editing={editEventId === event.id}
         onStartEdit={() => {
@@ -939,7 +940,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
               <h2>Coming up</h2>
               <ZoneNote />
               {upcoming.length === 0 ? <p className="tc-muted">Nothing scheduled yet.</p> : <ul className="tc-upcoming">
-                {upcoming.map(event => <li key={event.id}><button type="button" className="tc-upcoming-btn" onClick={() => setSelectedEventId(event.id)}><strong>{event.title}</strong><span>{fmtWhen(event.startsAt)} · {event.subteamName || "Whole team"}{event.myRsvp === "going" ? " · going" : ""}</span></button></li>)}
+                {upcoming.map(event => <li key={event.id}><button type="button" className="tc-upcoming-btn" onClick={() => setSelectedEventId(event.id)}><strong>{event.title}</strong><span>{event.competitionEventKey ? competitionCalendarLabel(event) : fmtWhen(event.startsAt)} · {event.subteamName || "Whole team"}{event.myRsvp === "going" ? " · going" : ""}</span></button></li>)}
               </ul>}
               {canManage ? <details className="tc-find-time"><summary>Find a time</summary><AiScheduler onUse={usePick} /></details> : null}
             </aside>

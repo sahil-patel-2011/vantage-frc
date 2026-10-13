@@ -45,6 +45,8 @@ CREATE POLICY calendar_competition_lead_update ON subteam_calendar_events
 CREATE POLICY calendar_competition_delete_guard ON subteam_calendar_events
   AS RESTRICTIVE FOR DELETE TO vantage_app
   USING (competition_event_key IS NULL OR can_manage_scouting(org_id));
+CREATE POLICY calendar_competition_lead_delete ON subteam_calendar_events
+  FOR DELETE TO vantage_app USING (competition_event_key IS NOT NULL AND can_manage_scouting(org_id));
 
 -- Existing cron schedules are disabled. Advance approved plans when a member
 -- next opens any team feature. This narrowly scoped function lets a reader

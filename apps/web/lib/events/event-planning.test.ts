@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { competitionDay, dateSchedule, organizerEvent, organizerEvents, parseCompetitionSchedule, parseEventYear, plannedLastDay } from "./event-planning";
+import { competitionCalendarDays, competitionCalendarLabel, competitionDay, dateSchedule, organizerEvent, organizerEvents, parseCompetitionSchedule, parseEventYear, plannedLastDay } from "./event-planning";
 
 describe("competition planning", () => {
   it("finds organizer-published GRITS dates without inventing next year's dates", () => {
@@ -25,6 +25,12 @@ describe("competition planning", () => {
     const spring = dateSchedule("2026-03-08", "2026-03-08", false, "America/New_York");
     expect(Date.parse(spring.endsAt) - Date.parse(spring.startsAt)).toBe(23 * 3600000);
     expect(spring.autoActivate).toBe(false);
+  });
+  it("shows every inclusive venue day and never shows the exclusive end", () => {
+    const row = { ...dateSchedule("2026-10-15", "2026-10-17", true, "America/New_York"), competitionTimeZone: "America/New_York" };
+    expect(competitionCalendarDays(row)).toEqual(["2026-10-15", "2026-10-16", "2026-10-17"]);
+    expect(competitionCalendarLabel(row)).toMatch(/15.*17/);
+    expect(competitionCalendarLabel(row)).not.toMatch(/18/);
   });
   it("rejects malformed times, bad zones and unsupported spans", () => {
     const valid = dateSchedule("2026-10-15", "2026-10-17", true, "America/New_York");

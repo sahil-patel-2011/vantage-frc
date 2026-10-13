@@ -95,3 +95,23 @@ export function competitionDay(instant: string, zone?: string | null): string {
 export function plannedLastDay(endsAt: string, zone?: string | null): string {
   return competitionDay(new Date(Date.parse(endsAt) - 1).toISOString(), zone);
 }
+
+export function competitionCalendarDays(event: { startsAt: string; endsAt: string | null; competitionTimeZone?: string | null }): string[] {
+  const first = competitionDay(event.startsAt, event.competitionTimeZone);
+  const last = event.endsAt ? plannedLastDay(event.endsAt, event.competitionTimeZone) : first;
+  const days: string[] = [];
+  const cursor = new Date(`${first}T00:00:00Z`);
+  // Product schedules are bounded to 31 days; a corrupt historical row must
+  // not allocate an unbounded array while painting the calendar.
+  for (let i = 0; i < 32 && cursor.toISOString().slice(0, 10) <= last; i++) {
+    days.push(cursor.toISOString().slice(0, 10)); cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return days;
+}
+
+export function competitionCalendarLabel(event: { startsAt: string; endsAt: string | null; competitionTimeZone?: string | null }): string {
+  const first = competitionDay(event.startsAt, event.competitionTimeZone);
+  const last = event.endsAt ? plannedLastDay(event.endsAt, event.competitionTimeZone) : first;
+  const formatter = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  return `All day · ${formatter.formatRange(new Date(`${first}T12:00:00Z`), new Date(`${last}T12:00:00Z`))}`;
+}

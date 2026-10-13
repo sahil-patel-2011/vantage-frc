@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../../components/ui";
 import { CompetitionEventPlanner } from "../../../components/competition-event-planner";
+import { competitionCalendarLabel } from "../../../lib/events/event-planning";
 import {
   EMPTY_REPEAT_DRAFT,
   OccurrenceScopeChoice,
@@ -311,7 +312,7 @@ export function EventCard({
                 : event.competitionEventKey ? "Competition" : SUBTEAM_EVENT_KIND_LABELS[event.kind]}
         </span>
         <span>
-          {fmtRange(event.startsAt, event.endsAt)}
+          {event.competitionEventKey ? competitionCalendarLabel(event) : fmtRange(event.startsAt, event.endsAt)}
         </span>
         {event.source === "tba" ? (
           <span className={event.bumper === "red" ? "tc-alliance-red" : "tc-alliance-blue"}>

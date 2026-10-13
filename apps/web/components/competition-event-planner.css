@@ -14,6 +14,7 @@
 .competition-planner-badge { flex-shrink: 0; font-size: 11px; color: var(--muted); }
 .competition-planner-footer,.competition-planner-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .competition-planner-footer { border-top: 1px solid var(--line); padding-top: 14px; }
+.competition-planner-actions { position: sticky; bottom: 0; padding: 12px 0; background: var(--surface); border-top: 1px solid var(--line); }
 .competition-planner-detail h3 { margin: 0; font-size: 20px; }
 .competition-planner-detail form { display: grid; gap: 16px; }
 .competition-planner-dates { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
