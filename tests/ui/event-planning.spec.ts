@@ -37,10 +37,10 @@ for (const width of [390, 768, 1440]) {
   });
 }
 
-test("save an undated scrimmage without activating it or adding a calendar row", async ({ page, context }) => {
+test("save an undated scrimmage without activating it or adding a calendar row", async ({ page, context }, info) => {
   await page.setViewportSize({ width: 390, height: 691 });
   await isolateUi(page, context);
-  await page.route("**/api/command?**", route => route.fulfill({ json: { status: "setup_required", orgId, canSetEvent: true, eventKey: null, matches: [], setupSteps: [], links: {} } }));
+  await page.route("**/api/command?**", route => route.fulfill({ json: { status: "setup_required", orgId, canSetEvent: true, eventKey: null, matches: [], scoutQueue: [], coverage: { upcomingUnscouted: 0 }, prediction: { status: "empty" }, setupSteps: [], links: {} } }));
   await page.route("**/api/context/event?**", route => route.fulfill({ json: { canSetEvent: true, activeEventKey: null, events: [] } }));
   let posted: Record<string, unknown> | null = null;
   await page.route("**/api/context/event", route => { posted = route.request().postDataJSON(); return route.fulfill({ json: { ok: true, eventKey: "2027custom-6925a000-shop-scrimmage", eventName: "Shop scrimmage", scheduled: false } }); });
@@ -57,6 +57,7 @@ test("save an undated scrimmage without activating it or adding a calendar row",
   const [action, bounds] = await Promise.all([save.boundingBox(), dialog.boundingBox()]);
   expect(action && bounds && action.y >= bounds.y && action.y + action.height <= bounds.y + bounds.height).toBe(true);
   await accessible(page);
+  await page.screenshot({ path: info.outputPath("unlisted-short.png") });
   await dialog.getByRole("button", { name: "Save event", exact: true }).click();
   await expect.poll(() => posted).toMatchObject({ intent: "save", create: { name: "Shop scrimmage", year: 2027, startDate: null, endDate: null } });
   expect(posted).not.toHaveProperty("schedule");
