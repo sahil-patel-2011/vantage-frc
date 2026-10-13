@@ -191,6 +191,44 @@ describeWithDatabase(
       } finally { await client.query("ROLLBACK"); client.release(); }
     });
 
+
+    it("releases automatic activation locks before long request work", async () => {
+      const owner="00000000-0000-4000-8000-000000000026", org="10000000-0000-4000-8000-000000000026";
+      const event="2026custom-12345678-concurrency";
+      const setup=await pool.connect();
+      try {
+        await setup.query(`INSERT INTO users(id,email) VALUES($1,'plan-concurrency@example.test')`,[owner]);
+        await setup.query(`INSERT INTO profiles(user_id,date_of_birth) VALUES($1,'2000-01-01')`,[owner]);
+        await setup.query(`INSERT INTO organizations(id,name,slug) VALUES($1,'Concurrent plan','concurrent-plan')`,[org]);
+        await setup.query(`INSERT INTO memberships(org_id,user_id,role) VALUES($1,$2,'owner')`,[org,owner]);
+        await setup.query(`INSERT INTO events_ref(event_key,year,name,org_id,created_by) VALUES($1,2026,'Concurrent competition',$2,$3)`,[event,org,owner]);
+        await setup.query("BEGIN"); await setup.query("SET LOCAL ROLE vantage_app");
+        await setup.query("SELECT set_config('app.user_id',$1,true)",[owner]);
+        await setup.query(`INSERT INTO subteam_calendar_events(org_id,title,kind,starts_at,ends_at,created_by,competition_event_key,competition_auto_activate) VALUES($1,'Concurrent competition','event',now()-interval '1 hour',now()+interval '4 hours',$2,$3,true)`,[org,owner,event]);
+        await setup.query("COMMIT");
+      } finally { setup.release(); }
+      const { withRls, requestPool } = await import("./index");
+      let startWork!: () => void, releaseWork!: () => void;
+      const started = new Promise<void>(resolve => { startWork=resolve; });
+      const gate = new Promise<void>(resolve => { releaseWork=resolve; });
+      const slow = withRls({ userId:owner,orgId:org }, async () => { startWork(); await gate; });
+      await started;
+      const check=await pool.connect();
+      try {
+        await check.query("BEGIN");
+        // Fails immediately if the long callback still holds a context lock.
+        expect((await check.query("SELECT active_event_key FROM org_active_context WHERE org_id=$1 FOR UPDATE NOWAIT",[org])).rows[0].active_event_key).toBe(event);
+      } finally { await check.query("ROLLBACK");check.release();releaseWork();await slow; }
+      // Already-applied plans also take no conflicting row lock.
+      const normal=withRls({ userId:owner,orgId:org }, async () => {
+        const available=await pool.connect();
+        try { await available.query("BEGIN");await available.query("SELECT org_id FROM org_active_context WHERE org_id=$1 FOR UPDATE NOWAIT",[org]); }
+        finally { await available.query("ROLLBACK");available.release(); }
+      });
+      await normal;
+      await requestPool.end();
+    });
+
     it("delegates scouting without global admin and revokes it immediately at RLS", async () => {
       const lead="00000000-0000-4000-8000-000000000003", member="00000000-0000-4000-8000-000000000004";
       const owner="00000000-0000-4000-8000-000000000001", org="10000000-0000-4000-8000-000000000001", foreign="10000000-0000-4000-8000-000000000002";

@@ -236,7 +236,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           hasActiveEvent={Boolean(snap?.eventKey)}
           error={snap?.status === "setup_required" ? snap.message : undefined}
           canSetEvent={snap?.canSetEvent}
-          onSelectEvent={snap?.canSetEvent ? () => setEventOpen(true) : undefined}
+          onSelectEvent={() => setEventOpen(true)}
         />
         {eventPicker}
       </>
@@ -255,7 +255,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           // the one fix that helps when it is the wrong event: pick another.
           error={snap?.message}
           canSetEvent={snap?.canSetEvent}
-          onSelectEvent={snap?.canSetEvent ? () => setEventOpen(true) : undefined}
+          onSelectEvent={() => setEventOpen(true)}
         >
           <p className="edc-freshness" role="status">
             {scoutEventLabel({ eventName: snap?.eventName, eventKey: snap?.eventKey }) ?? "Active event"}
