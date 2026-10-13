@@ -139,8 +139,9 @@ describe("memberKeyFields", () => {
 
   it("says plainly that a personal key is private and reversible", () => {
     const body = MEMBER_KEY_BODY.toLowerCase();
-    expect(body).toContain("overrides the team key");
-    expect(body).toMatch(/remove it/);
+    expect(body).toContain("private by default");
+    expect(body).toContain("take priority");
+    expect(body).toMatch(/turn sharing off or remove your key/);
   });
 });
 

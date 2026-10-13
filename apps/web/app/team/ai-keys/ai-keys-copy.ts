@@ -102,7 +102,7 @@ export const MEMBER_KEY_HEADLINE = "Your personal keys";
 export const MY_FREE_KEY_HEADLINE = "Add your own free Google AI Studio key";
 
 export const MY_FREE_KEY_BODY =
-  "Google gives every account its own free allowance. With your own key, your questions use your allowance instead of the team's, and nobody else can see or spend it.";
+  "Your questions use this key’s provider allowance before the team’s connection. Your key stays hidden, and you choose whether anyone else can use its credits.";
 
 /** Only shown when the team has a Google key: the resolver falls back to it (resolve-chat-adapter). */
 export const MY_FREE_KEY_TEAM_BACKUP =
@@ -112,7 +112,7 @@ export const MY_FREE_KEY_SCHOOL_NOTE =
   "School accounts often have AI Studio turned off, so use a personal Google account if it says you do not have access.";
 
 export const MEMBER_KEY_BODY =
-  "Your keys are private by default and take priority over the team’s connection. You can share your provider allowance with this team or selected teammates below. Nobody else can view or edit your key.";
+  "Your keys are private by default and take priority over the team’s connection. You can share your provider allowance with this team or selected teammates below. Nobody else can view or edit your key. Turn sharing off or remove your key at any time.";
 
 /**
  * The parity fields. `save_member_key` in /api/organizations/ai-keys honours a
