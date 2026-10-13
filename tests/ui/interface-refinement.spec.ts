@@ -150,7 +150,7 @@ test("admin navigation and Platform settings stay usable on a short laptop scree
   expect(pin && scrollBounds && footer && pin.y >= scrollBounds.y && pin.y + pin.height <= scrollBounds.y + scrollBounds.height && scrollBounds.y + scrollBounds.height <= footer.y).toBe(true);
   const business = sidebar.locator(".app-sidebar-workspace > summary").filter({ hasText: "Business" });
   await business.scrollIntoViewIfNeeded(); await business.click();
-  await expect(sidebar.locator(".app-sidebar-workspace").filter({ has: business })).toHaveAttribute("open", "");
+  await expect.poll(() => business.evaluate(element => element.parentElement?.hasAttribute("open"))).toBe(true);
   await accessible(page);
   await page.screenshot({ path: info.outputPath("admin-short-laptop.png"), fullPage: true });
 });
