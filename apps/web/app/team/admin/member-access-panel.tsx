@@ -396,9 +396,10 @@ export function MemberAccessPanel({
         ) : null}
 
         {limited ? (
-          <details className="member-access-advanced">
-            <summary>Advanced: sections and extra powers</summary>
-            {/* A job preset is the advanced way in: before Advanced it read as a second kind of role next to Student / Mentor / Parent. */}
+          // Sections and extra powers are shown, not folded under "Advanced": they are what most
+          // owners came here to change.
+          <div className="member-access-advanced">
+            {/* A job preset fills in the choices below; it is not a second kind of role next to Student / Mentor / Parent. */}
             {presets.length > 0 ? (
               <div className="member-access-preset">
                 <label>
@@ -509,10 +510,11 @@ export function MemberAccessPanel({
             </section>
 
             <p className="app-muted member-access-note">
-              Custom roles like &ldquo;Scouting lead&rdquo; live on{" "}
-              <a href={withOrgHref("/team/admin/presets", orgId)}>Custom roles</a>.
+              See everyone at once on{" "}
+              <a href={withOrgHref("/team/admin/permissions", orgId)}>Roles and permissions</a>. Custom roles like
+              &ldquo;Scouting lead&rdquo; live on <a href={withOrgHref("/team/admin/presets", orgId)}>Custom roles</a>.
             </p>
-          </details>
+          </div>
         ) : !isOwnerRow ? (
           <p className="app-muted member-access-note">Mentors and coaches can open every section.</p>
         ) : null}

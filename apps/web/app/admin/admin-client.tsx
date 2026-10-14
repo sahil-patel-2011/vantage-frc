@@ -383,6 +383,18 @@ function TeamPanel({
         <dd>{org.ownerEmail ?? (org.pendingOwnerEmail ? `Invited: ${org.pendingOwnerEmail}${expired ? " (expired)" : ""}` : "Nobody yet")}</dd>
       </dl>
 
+      <section className="ac-panel-section" aria-label="Members and permissions">
+        <h3>Members and permissions</h3>
+        <p className="ac-message ac-muted">
+          Change anyone&rsquo;s access and which parts of the app they can open. For the platform owner.
+        </p>
+        <div>
+          <Button as="a" variant="primary" href={`/admin/teams/members?orgId=${encodeURIComponent(org.id)}`}>
+            Manage members and permissions
+          </Button>
+        </div>
+      </section>
+
       {noOwner ? (
         <section className="ac-panel-section" aria-label="Owner invite">
           <h3>Owner invite</h3>
@@ -636,7 +648,7 @@ function AdminClientInner({ children }: { children?: React.ReactNode }) {
         title="Teams"
         description={
           organizations.length
-            ? `${organizations.length} team${organizations.length === 1 ? "" : "s"}${waitingOnOwner ? ` · ${waitingOnOwner} waiting for an owner` : ""}. Open a team for its owner invite, AI credit and delete.`
+            ? `${organizations.length} team${organizations.length === 1 ? "" : "s"}${waitingOnOwner ? ` · ${waitingOnOwner} waiting for an owner` : ""}. Open a team for its members and permissions, owner invite, AI credit and delete.`
             : "Create each team and invite its owner by email."
         }
       >

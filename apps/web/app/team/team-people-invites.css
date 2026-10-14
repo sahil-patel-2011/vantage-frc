@@ -12,6 +12,32 @@
   }
 }
 
+/* People heading with the way to the one-table Roles and permissions view. */
+.team-admin-people-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.team-admin-people-grid-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.team-admin-people-grid-link:hover,
+.team-admin-people-grid-link:focus-visible {
+  border-color: var(--accent);
+}
+
 /* People: search and role filter once the list is long. */
 .team-admin-people-find {
   display: flex;

@@ -1,0 +1,201 @@
+/* Roles and permissions grid (Team admin and Platform admin). Tokens only. */
+
+.perm-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.perm-grid-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.perm-grid-switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.perm-grid-switch button {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-pill, 999px);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.perm-grid-switch button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 16%, transparent);
+}
+
+.perm-grid-lede {
+  flex: 1 1 260px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.perm-grid-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius, 16px);
+  background: var(--surface);
+}
+
+.perm-grid table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.perm-grid th,
+.perm-grid td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+  vertical-align: middle;
+  background: var(--surface);
+}
+
+.perm-grid thead th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.perm-grid tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* The name stays in view while the table scrolls sideways on a phone. */
+.perm-grid thead th:first-child,
+.perm-grid-person {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+}
+
+.perm-grid-person {
+  min-width: 150px;
+  max-width: 220px;
+  font-weight: 400;
+}
+
+.perm-grid-person,
+.perm-grid-role {
+  text-align: left;
+}
+
+.perm-grid-person strong,
+.perm-grid-person small,
+.perm-grid-role strong,
+.perm-grid-role small {
+  display: block;
+}
+
+.perm-grid-person small,
+.perm-grid-role small {
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.perm-grid-role {
+  min-width: 150px;
+}
+
+.perm-grid-role select {
+  width: 100%;
+  min-height: 36px;
+  border-radius: var(--radius-sm, 12px);
+}
+
+.perm-grid-cell label {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.perm-grid-cell input {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.perm-grid-cell input:disabled {
+  cursor: not-allowed;
+}
+
+.perm-grid-cell small {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.perm-grid-all {
+  color: var(--positive, var(--accent));
+  font-weight: 700;
+}
+
+.perm-grid tr.is-dirty > * {
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
+.perm-grid-changed {
+  display: block;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.perm-grid-person .perm-grid-error,
+.perm-grid-status[data-tone="error"] {
+  color: var(--critical);
+}
+
+.perm-grid-status {
+  margin: 0;
+  font-size: 14px;
+}
+
+.perm-grid-savebar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 12px;
+  padding: 10px 12px 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 14%, transparent);
+}
+
+.perm-grid-savebar > span {
+  margin-right: auto;
+  font-weight: 600;
+}

@@ -72,6 +72,11 @@ The `web` healthcheck probes the existing `/api/auth/status` route. Sign-in live
   (0733 trigger). A `memberships` insert fails until that user's profile has a 13+ `date_of_birth`
   (`enforce_member_age`, 0703), so make someone a team owner only after they finish onboarding.
 
+- The platform owner sets any team's member access from Platform admin › Teams › a team ›
+  Members and permissions (`/admin/teams/members?orgId=`), backed by the owner-only SQL functions
+  in `0736`. Owners/mentors get the same grid at `/team/admin/permissions`. Both pages need a
+  signed-in session; signed out, every product route 307s to `/signin`. Migration 0736 must be
+  applied wherever this code is deployed.
 - Media is temporarily disabled with the shared `MEDIA_ENABLED` switch in
   `apps/web/lib/media-availability.ts`. It gates media routes, hub tabs, upload
   routing, scouting media queues and photo controls. Set it to true and redeploy

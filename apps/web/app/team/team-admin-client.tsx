@@ -749,6 +749,11 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           onPasswordReset={(member) => setResetTarget(member)}
           onRemove={(member) => setRemoveTarget(member)}
           onStepDown={() => setStepDownOpen(true)}
+          permissionsHref={
+            actor.role === "owner" || actor.role === "admin"
+              ? `/team/admin/permissions?orgId=${encodeURIComponent(orgId)}`
+              : undefined
+          }
         />
         </>
       )}
