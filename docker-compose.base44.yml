@@ -24,6 +24,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - BASE44_PREVIEW_MODE
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
       - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
