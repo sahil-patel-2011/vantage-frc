@@ -28,6 +28,8 @@ type FetchState =
   | { kind: "error"; message: string; status: number | null };
 
 const SOURCE_TONE: Record<SearchSourceId, BadgeTone> = {
+  teams: "info",
+  matches: "info",
   help: "info",
   tasks: "info",
   inventory: "good",
