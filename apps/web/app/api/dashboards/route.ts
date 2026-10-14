@@ -223,7 +223,7 @@ export async function GET(request: Request) {
       };
     });
 
-    return Response.json(data);
+    return Response.json({ ...data, userId: session.user.id }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) {
     return fail(error, error instanceof Error && error.message.includes("Authentication") ? 401 : 400);
   }

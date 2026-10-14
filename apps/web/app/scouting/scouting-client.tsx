@@ -106,6 +106,7 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
   }, []);
   // Local reports can reopen before the server's list catches up.
   const [savedHere, setSavedHere] = useState<SavedScoutReport[]>([]);
+  const [deviceReports, setDeviceReports] = useState<MyEntry[]>([]);
   // Wait for live data before choosing a robot; cached assignments may already be covered.
   const [settled, setSettled] = useState(false);
   // After a save with nothing next (the last qual), no robot is picked until the scout taps one.
@@ -170,7 +171,7 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
   const type = tab === "pit" ? "pit" : "match";
   // Saved confirmations, local coverage and score checks belong to one event/account.
   useLayoutEffect(() => {
-    setLastSaved(null); setSavedHere([]); setSaveReceipt(null); setOfficialFlags([]);
+    setLastSaved(null); setSavedHere([]); setDeviceReports([]); setSaveReceipt(null); setOfficialFlags([]);
   }, [data?.eventKey, data?.scoutIdentity?.userId]);
   // Preserve a linked pit team or report; ordinary task changes start fresh.
   const previousType = useRef(type);
@@ -541,7 +542,7 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
   // tapping a "Done" robot used to start over, and saving made a second report. Your reports are
   // all of them (not the team's latest 30), and the check runs again when fresh data arrives for
   // the robot on screen, as long as nothing has been typed yet.
-  const mine = useMemo(() => myReports(data), [data]);
+  const mine = useMemo(() => myReports(data, deviceReports), [data, deviceReports]);
   useEffect(() => {
     if (editingRef.current && editingRef.current.key !== draftKey) {
       editingRef.current = null;
@@ -650,6 +651,11 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
       return;
     }
     setLastSaved({ clientId: entryClientId, schemaId: schema.id, schema, type, eventKey: data.eventKey, userId: data.scoutIdentity?.userId, matchKey, teamKey, payload: answers, confidence });
+    setDeviceReports(current => [
+      ...current.filter(report => report.clientId !== entryClientId),
+      { id: entryClientId, clientId: entryClientId, type, matchKey: type === "match" ? matchKey : null,
+        teamKey: storedTeam, schemaId: schema.id, payload: answers, confidence, updatedAt: new Date().toISOString() },
+    ]);
     if (type === "match") {
       setSavedHere((current) => [
         ...current.filter((row) => !(row.matchKey === matchKey && row.teamKey === storedTeam)),
@@ -937,6 +943,7 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
       teamKey={teamKey}
       payload={payload}
       savedHere={savedHere}
+      deviceReports={deviceReports}
       confidence={confidence}
       entryClientId={entryClientId}
       draftSavedAt={draftSavedAt}

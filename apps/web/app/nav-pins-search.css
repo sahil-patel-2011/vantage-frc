@@ -344,7 +344,8 @@ body.has-app-shell .soft-drawer .soft-drawer-toolbar {
     border-top: 1px solid var(--line-soft);
     background: color-mix(in srgb, var(--surface-2) 70%, var(--bg));
   }
-  .app-sidebar nav.app-sidebar-footer a {
+  .app-sidebar nav.app-sidebar-footer :is(a, .app-sidebar-admin-placeholder) {
+    display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 4px;
@@ -353,7 +354,7 @@ body.has-app-shell .soft-drawer .soft-drawer-toolbar {
     font-size: 12px;
     text-align: center;
   }
-  .app-sidebar nav.app-sidebar-footer a > svg {
+  .app-sidebar nav.app-sidebar-footer :is(a, .app-sidebar-admin-placeholder) > svg {
     width: 22px;
     height: 22px;
   }

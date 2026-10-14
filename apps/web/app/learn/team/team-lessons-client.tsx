@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { Button, EmptyState, PageHeader, Modal } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import type { LessonSummary, LessonsListView } from "../../../lib/team-lessons/types";
 import { lessonEditHref, lessonFetch, lessonHref, useLessonOrg, whenText } from "./lesson-shared";
@@ -82,6 +82,8 @@ export function TeamLessonsClient() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState<"editor" | "pdf" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [newLesson, setNewLesson] = useState<"editor" | "pdf" | null>(null);
+  const [newTitle, setNewTitle] = useState("");
 
   const load = useCallback(async () => {
     if (!orgId) return;
@@ -96,12 +98,12 @@ export function TeamLessonsClient() {
   }, [load]);
 
   async function create(start: "editor" | "pdf") {
-    if (!orgId || creating) return;
+    if (!orgId || creating || !newTitle.trim()) return;
     setCreating(start);
     setNotice(null);
     const result = await lessonFetch<{ id: string }>("/api/team-lessons", {
       method: "POST",
-      body: JSON.stringify({ orgId }),
+      body: JSON.stringify({ orgId, title: newTitle.trim() }),
     });
     if (result.ok && result.data?.id) {
       const href = lessonEditHref(result.data.id, orgId);
@@ -160,7 +162,7 @@ export function TeamLessonsClient() {
   const hasAny = view.published.length + view.drafts.length > 0;
   const newButton =
     view.canCreate && hasAny ? (
-      <Button variant="primary" disabled={creating !== null} onClick={() => void create("editor")}>
+      <Button variant="primary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("editor"); }}>
         {creating === "editor" ? "Creating…" : "New lesson"}
       </Button>
     ) : undefined;
@@ -168,7 +170,18 @@ export function TeamLessonsClient() {
   return (
     <main className="module-page team-lessons-page">
       {header(newButton)}
-      {notice ? (
+      <Modal open={newLesson !== null} onClose={() => { if (!creating) setNewLesson(null); }} title="New lesson">
+        <form onSubmit={event => { event.preventDefault(); if (newLesson) void create(newLesson); }}>
+          <p className="app-muted">Name your lesson to start writing. Nothing is created until you continue.</p>
+          <label>Lesson title<input data-autofocus value={newTitle} maxLength={160} onChange={event => setNewTitle(event.target.value)} placeholder="e.g. Wiring a motor controller" /></label>
+          <div className="team-lesson-card-actions">
+            <Button variant="secondary" type="button" disabled={creating !== null} onClick={() => setNewLesson(null)}>Cancel</Button>
+            <Button variant="primary" type="submit" disabled={creating !== null || !newTitle.trim()}>{creating ? "Creating…" : newLesson === "pdf" ? "Continue to PDF upload" : "Start writing"}</Button>
+          </div>
+          {notice ? <p role="alert">{notice}</p> : null}
+        </form>
+      </Modal>
+      {notice && !newLesson ? (
         <p className="team-lesson-notice" role="alert">
           {notice}
         </p>
@@ -181,10 +194,10 @@ export function TeamLessonsClient() {
             description="Make one in two ways. Write it here: one step at a time, each with an optional example and when to use it — Vantage saves as you type. Or upload a PDF your team already has. Either way, finish with practice questions that Vantage checks."
           >
             <div className="team-lesson-empty-actions">
-              <Button variant="primary" disabled={creating !== null} onClick={() => void create("editor")}>
+              <Button variant="primary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("editor"); }}>
                 {creating === "editor" ? "Creating…" : "Write a lesson"}
               </Button>
-              <Button variant="secondary" disabled={creating !== null} onClick={() => void create("pdf")}>
+              <Button variant="secondary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("pdf"); }}>
                 {creating === "pdf" ? "Creating…" : "Upload a PDF"}
               </Button>
             </div>

@@ -83,9 +83,17 @@ export type Bootstrap = {
   myEntries?: MyEntry[];
   /** Every robot anyone on the team has a match report for at this event. */
   scouted?: Array<{ matchKey: string; teamKey: string }>;
+  /** Every robot with a pit report, so the next visit is available without another request. */
+  pitScouted?: string[];
+  roster?: import("../../lib/intel/offline-teams").OfflineRosterTeam[];
+  rosterComplete?: boolean;
   /** Our own team number, when the team has one. */
   teamNumber?: number | null;
 };
+
+export function scoutRosterFor(data: Bootstrap | null | undefined): import("../../lib/intel/offline-teams").OfflineRosterTeam[] | undefined {
+  return data?.rosterComplete === true && Array.isArray(data.roster) ? data.roster : undefined;
+}
 
 export type MyEntry = {
   id: string;
@@ -102,24 +110,23 @@ export type MyEntry = {
 /** The scout's own reports, newest first: the full list when the bootstrap has it. */
 export function myReports(
   data: Pick<Bootstrap, "myEntries" | "recentEntries" | "scoutIdentity"> | null | undefined,
+  deviceReports: readonly MyEntry[] = [],
 ): MyEntry[] {
   if (!data) return [];
-  if (data.myEntries) return data.myEntries;
   const me = data.scoutIdentity?.userId;
-  if (!me) return [];
-  return (data.recentEntries ?? [])
-    .filter((entry) => entry.scoutUserId === me)
-    .map((entry) => ({
-      id: entry.id,
-      type: entry.type === "pit" ? "pit" : "match",
-      matchKey: entry.matchKey,
-      teamKey: entry.teamKey,
-      clientId: entry.clientId ?? null,
-      schemaId: entry.schemaId,
-      payload: entry.payload ?? null,
-      confidence: entry.confidence,
-      updatedAt: entry.updatedAt,
-    }));
+  const serverReports = data.myEntries ?? (me ? (data.recentEntries ?? [])
+    .filter(entry => entry.scoutUserId === me)
+    .map(entry => ({ id: entry.id, type: entry.type === "pit" ? "pit" as const : "match" as const,
+      matchKey: entry.matchKey, teamKey: entry.teamKey, clientId: entry.clientId ?? null,
+      schemaId: entry.schemaId, payload: entry.payload ?? null, confidence: entry.confidence, updatedAt: entry.updatedAt })) : []);
+  const reports = new Map<string, MyEntry>(serverReports.map(report => [report.clientId ?? report.id, report]));
+  const instant = (report: MyEntry) => { const time = Date.parse(report.updatedAt); return Number.isFinite(time) ? time : 0; };
+  for (const report of deviceReports) {
+    const key = report.clientId ?? report.id;
+    const current = reports.get(key);
+    if (!current || instant(current) < instant(report)) reports.set(key, report);
+  }
+  return [...reports.values()].sort((a, b) => instant(b) - instant(a));
 }
 
 /** Every robot with a match report from anyone on the team (for the "Done" ticks). */

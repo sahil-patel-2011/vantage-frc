@@ -3,6 +3,11 @@ import { MEDIA_ENABLED } from "../media-availability";
 import { PLATFORM_ADMIN_COMMAND, commandCatalog, commandCatalogFor, isTeamAdminCommand, searchCommands, type CommandEntry } from "./command-search";
 
 describe("the admin console in search", () => {
+  it("offers normal work first, while retaining admin in recently used places", () => {
+    const catalog = commandCatalogFor({ platformAdmin: true });
+    expect(searchCommands("", catalog, { limit: 4 }).some(hit => hit.href === "/admin")).toBe(false);
+    expect(searchCommands("", catalog, { limit: 4, recentHrefs: ["/admin"] })[0]?.href).toBe("/admin");
+  });
   it("is found by 'admin' for platform admins, ahead of a team's own admin pages", () => {
     const admin = commandCatalogFor({ platformAdmin: true });
     const hits = searchCommands("admin", admin, { limit: 8, canManageTeam: false });

@@ -221,6 +221,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   const sectionTabs = (
     <ToolStrip
       aria-label="Strategy sections"
+      presentation="segments"
       value={tab}
       onChange={(id) => setTab(id as StrategyTab)}
       items={[
@@ -330,7 +331,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
 
       <DataSourceDegradedBanner health={view?.dataSourceHealth} canOpenTeamData={canSync} />
 
-      {view ? <TbaKeyHint view={view} /> : null}
+      {view && tab !== "picks" ? <TbaKeyHint view={view} /> : null}
 
       {tab === "picks" ? (
         <PickListWorkbench orgId={orgId} embedded />

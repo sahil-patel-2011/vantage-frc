@@ -4,6 +4,8 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../security/public-error";
 import { sessionIsFresh } from "../team-lifecycle/model";
+import { z } from "zod";
+import { parseSecureJson, RequestSecurityError } from "../security/request";
 
 /**
  * The shared shape of a platform-admin route: a session, a withRls transaction that first checks
@@ -63,6 +65,9 @@ export function isMissingSchema(error: unknown): boolean {
 }
 
 export function adminErrorResponse(error: unknown, fallback: string, mapped?: (error: unknown) => AdminRouteError | null): Response {
+  if (error instanceof RequestSecurityError) {
+    return Response.json({ error: error.message }, { status: error.status, headers: NO_STORE });
+  }
   if (error instanceof PlatformAdminRequiredError) {
     return Response.json({ error: "Not found" }, { status: 404, headers: NO_STORE });
   }
@@ -85,8 +90,7 @@ export function adminErrorResponse(error: unknown, fallback: string, mapped?: (e
 }
 
 export async function readJsonBody(request: Request): Promise<Record<string, unknown>> {
-  const body = (await request.json().catch(() => null)) as unknown;
-  return body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
+  return parseSecureJson(request, z.record(z.string(), z.unknown()), { maxBytes: 65_536 });
 }
 
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

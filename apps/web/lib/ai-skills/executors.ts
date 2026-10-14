@@ -532,8 +532,12 @@ const EXECUTORS: Record<string, Executor> = {
         answers: entry.trustedLabeled, excludedFields: entry.excludedFields, updatedAt: entry.updatedAt })) });
     }
     // Optional summaries must not prevent access to saved scouting if one is unavailable.
-    const intel = await withSavepoint(ctx.client, () => viewSkill([computeOvernightIntelView], "No overnight intel brief yet.")(ctx, skill), null);
-    const video = await withSavepoint(ctx.client, () => insightSkill("video_scout_summary", "No video review notes yet.")(ctx, skill), null);
+    // Ordinary scouting questions use saved observations. Optional research must
+    // not add unrelated "no video notes" messages, or delay this read.
+    const intel = /\b(overnight|intel|research)\b/i.test(ctx.request)
+      ? await withSavepoint(ctx.client, () => viewSkill([computeOvernightIntelView], "No overnight intel brief yet.")(ctx, skill), null) : null;
+    const video = /\b(video|timestamp|footage)\b/i.test(ctx.request)
+      ? await withSavepoint(ctx.client, () => insightSkill("video_scout_summary", "No video review notes yet.")(ctx, skill), null) : null;
     const okOne = [intel, video].find((part) => part?.status === "ok");
     return {
       ...output(skill, ctx, {

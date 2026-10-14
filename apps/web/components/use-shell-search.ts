@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { searchCommands, type CommandEntry, type CommandHit } from "../lib/nav/command-search";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { loadRoster, searchRosterOffline, type OfflineRosterTeam } from "../lib/intel/offline-teams";
 import { navResultRows, type NavResultRow, type SearchHit } from "./app-shell-model";
 
 /**
@@ -37,7 +38,18 @@ export function useShellSearch({
   const [searchLoading, setSearchLoading] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [recentHrefs, setRecentHrefs] = useState<string[]>([]);
+  const [roster, setRoster] = useState<{ orgId: string; teams: OfflineRosterTeam[] } | null>(null);
+  const [searchError, setSearchError] = useState("");
   const requestId = useRef(0);
+
+  useEffect(() => {
+    if (!active || !orgId) return;
+    let cancelled = false;
+    void loadRoster(orgId).then(saved => {
+      if (!cancelled && saved) setRoster({ orgId, teams: saved.roster });
+    });
+    return () => { cancelled = true; };
+  }, [active, orgId]);
 
   // Every opening starts clean, with this device's recent places.
   useEffect(() => {
@@ -49,6 +61,7 @@ export function useShellSearch({
     setQuery("");
     setSearchHits([]);
     setSearchLoading(false);
+    setSearchError("");
     setCursor(0);
   }, [active]);
 
@@ -61,21 +74,24 @@ export function useShellSearch({
       requestId.current += 1;
       setSearchHits([]);
       setSearchLoading(false);
+      setSearchError("");
       return;
     }
     const id = ++requestId.current;
     const controller = new AbortController();
     setSearchHits([]);
+    setSearchError("");
     setSearchLoading(true);
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams({ q });
       if (orgId) params.set("orgId", orgId);
-      void fetch(`/api/search?${params.toString()}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]) })
+      void fetch(`/api/search?${params.toString()}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(5_000)]) })
         .then(async (response) =>
-          response.ok ? ((await response.json()) as { status?: string; results?: SearchHit[] }) : null,
+          response.ok ? ((await response.json()) as { status?: string; results?: SearchHit[]; message?: string }) : Promise.reject(new Error("Search unavailable")),
         )
         .then((data) => {
           if (id !== requestId.current) return;
+          if (data?.status !== "ready") setSearchError(data?.message ?? "Live team search is unavailable. Try again shortly.");
           const rows = data?.status === "ready" && Array.isArray(data.results) ? data.results.slice(0, 8) : [];
           setSearchHits(rows.map((row) => ({ title: row.title, subtitle: row.subtitle, href: row.href, sourceLabel: row.sourceLabel })));
           setSearchLoading(false);
@@ -84,6 +100,7 @@ export function useShellSearch({
           if (id !== requestId.current) return;
           setSearchHits([]);
           setSearchLoading(false);
+          setSearchError("Live search couldn't respond. You can still open a page or a saved team below.");
         });
     }, 220);
     return () => { window.clearTimeout(timer); controller.abort(); requestId.current += 1; };
@@ -106,10 +123,15 @@ export function useShellSearch({
     setCursor(0);
   }, [query]);
 
-  const rows: NavResultRow[] = useMemo(
-    () => navResultRows(commandHits, queryActive ? searchHits.filter(hit => isAllowed(hit.href)) : []),
-    [commandHits, queryActive, searchHits, isAllowed],
-  );
+  const localHits = useMemo<SearchHit[]>(() => !queryActive || !orgId ? [] :
+    searchRosterOffline(roster?.orgId === orgId ? roster.teams : [], query).slice(0, 8).map(team => ({
+      title: `Team ${team.teamNumber}`, subtitle: team.nickname, sourceLabel: "Saved event roster",
+      href: `/competition?tab=teams&sub=lookup&team=${team.teamNumber}&orgId=${encodeURIComponent(orgId)}`,
+    })), [orgId, query, queryActive, roster]);
+  const mergedHits = useMemo(() => [...localHits, ...searchHits].filter((hit, index, all) =>
+    isAllowed(hit.href) && all.findIndex(other => other.href === hit.href) === index), [localHits, searchHits, isAllowed]);
+  const rows: NavResultRow[] = useMemo(() => navResultRows(commandHits, queryActive ? mergedHits : []),
+    [commandHits, queryActive, mergedHits]);
   const activeIndex = rows.length ? Math.min(cursor, rows.length - 1) : -1;
 
   const openFullSearch = useCallback(() => {
@@ -186,8 +208,9 @@ export function useShellSearch({
     setQuery,
     queryActive,
     commandHits,
-    searchHits: queryActive ? searchHits : [],
+    searchHits: queryActive ? mergedHits : [],
     searchLoading: queryActive && searchLoading,
+    searchError: queryActive ? searchError : "",
     rows,
     activeIndex,
     setCursor,

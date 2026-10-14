@@ -6,10 +6,13 @@ export interface RateLimiter {
 
 const buckets = new Map<string, { count: number; resetAt: number }>();
 let memoryRequests = 0;
+let lastSweepAt = 0;
+const MAX_MEMORY_BUCKETS = 10_000;
 
 function sweepExpiredBuckets(now: number) {
   memoryRequests += 1;
-  if (memoryRequests % 1_000 !== 0 && buckets.size < 10_000) return;
+  if (memoryRequests % 1_000 !== 0 && now - lastSweepAt < 60_000) return;
+  lastSweepAt = now;
   for (const [key, bucket] of buckets) {
     if (bucket.resetAt <= now) buckets.delete(key);
   }
@@ -26,6 +29,9 @@ export class MemoryRateLimiter implements RateLimiter {
     sweepExpiredBuckets(now);
     const bucket = buckets.get(identifier);
     if (!bucket || bucket.resetAt <= now) {
+      // Reject new identities at capacity; evicting live buckets would let
+      // attackers reset their own limits by flooding fresh identities.
+      if (!bucket && buckets.size >= MAX_MEMORY_BUCKETS) return false;
       buckets.set(identifier, { count: 1, resetAt: now + this.windowMs });
       return true;
     }
@@ -48,6 +54,7 @@ export class RedisRateLimiter implements RateLimiter {
     const key = `vantage:${this.namespace}:${identifier}:${Math.floor(Date.now() / (this.windowSeconds * 1000))}`;
     const response = await fetch(`${this.url}/pipeline`, {
       method: "POST",
+      signal: AbortSignal.timeout(3_000),
       headers: { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" },
       body: JSON.stringify([
         ["INCR", key],
@@ -56,7 +63,8 @@ export class RedisRateLimiter implements RateLimiter {
     });
     if (!response.ok) throw new Error("Rate limiter unavailable");
     const values = (await response.json()) as Array<{ result: number }>;
-    return Number(values[0]?.result ?? this.limit + 1) <= this.limit;
+    const count = Number(values[0]?.result);
+    return Number.isFinite(count) && count > 0 && count <= this.limit;
   }
 }
 

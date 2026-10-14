@@ -24,9 +24,9 @@ describe("the platform owner (0733)", () => {
     expect(other).toMatchObject({ isOwner: false, canAdd: false, canRemoveOthers: false, canRemoveSelf: true, canTransfer: false });
   });
 
-  it("falls back to the old rules on a database without an owner yet", () => {
+  it("does not offer privilege changes when the owner schema is missing", () => {
     const legacy = platformAdminAbilities([admin({ you: true }), admin({ userId: "b" })]);
-    expect(legacy).toMatchObject({ canAdd: true, canRemoveOthers: true, canTransfer: true });
+    expect(legacy).toMatchObject({ canAdd: false, canRemoveOthers: false, canRemoveSelf: false, canTransfer: false });
   });
 });
 

@@ -37,6 +37,7 @@ import { Icon, type IconName } from "./icon";
 import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
 import { listenInboxUpdates } from "../lib/notifications/inbox-events";
+import { onTeamDataChanged } from "../lib/team-data-changed";
 import { watchSessionBoundary } from "../lib/offline/identity";
 import { pathnameIsBareShell } from "../lib/nav/shell-body-class";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
@@ -377,6 +378,23 @@ export default function AppShell() {
   }), [me.userId, orgId]);
 
   useEffect(() => {
+    if (!orgId || !me.userId) return;
+    let stopped = false;
+    let controller: AbortController | null = null;
+    const stop = onTeamDataChanged(orgId, () => {
+      controller?.abort(); controller = new AbortController();
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(5_000)]);
+      const revision = ++notificationRevision.current;
+      void fetch(`/api/notifications?mode=count&orgId=${encodeURIComponent(orgId)}`, { cache: "no-store", signal })
+        .then(async response => response.ok ? response.json() : null)
+        .then(data => {
+          if (!stopped && !signal.aborted && revision === notificationRevision.current && data?.userId === me.userId && data.orgId === orgId) setUnreadCount(Math.max(0, Number(data.unreadCount) || 0));
+        }).catch(() => undefined);
+    });
+    return () => { stopped = true; controller?.abort(); stop(); };
+  }, [orgId, me.userId]);
+
+  useEffect(() => {
     if (entryScreen) return;
     const controller = new AbortController();
     const revision = pinsRevision.current;
@@ -575,7 +593,7 @@ export default function AppShell() {
       <NextActionsDedupe routeKey={`${pathname}:${locationTick}`} />
       {!onboarding ? <AppShellSidebar groups={visibleNavGroups} pins={pins} pathname={pathname} pathSearch={pathSearch}
         orgId={orgId} orgLabel={orgLabel} collapsed={sidebarCollapsed} onCollapse={toggleSidebar}
-        platformAdmin={me.platformAdmin === true} onEditPins={openIslandEditor} allowed={navHrefAllowed} /> : null}
+        platformAdmin={me.platformAdmin} onEditPins={openIslandEditor} allowed={navHrefAllowed} /> : null}
       <AppShellTopbar
         showBack={showBack}
         onBack={() => navigate(backHref)}

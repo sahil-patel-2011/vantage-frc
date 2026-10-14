@@ -50,7 +50,7 @@ const MESSAGES: Record<PlatformAdminErrorCode, { status: number; message: string
   },
   setup_required: {
     status: 503,
-    message: "Platform admin changes need database migration 0727. Run the migrations, then try again.",
+    message: "Platform admin changes need the platform-owner schema (migration 0733). Apply it before changing administrators.",
   },
   owner_only: { status: 403, message: "Only the platform owner can change who is a platform admin." },
   owner_protected: {
@@ -109,17 +109,28 @@ export async function listPlatformAdmins(client: PoolClient, userId: string): Pr
 }
 
 export async function addPlatformAdmin(client: PoolClient, email: string): Promise<string> {
+  await requirePlatformOwnerSchema(client);
   const result = await client.query<{ id: string }>(`SELECT platform_admin_add($1::text) AS id`, [email]);
   return result.rows[0]!.id;
 }
 
 export async function removePlatformAdmin(client: PoolClient, userId: string): Promise<void> {
+  await requirePlatformOwnerSchema(client);
   await client.query(`SELECT platform_admin_remove($1::uuid)`, [userId]);
 }
 
 export async function transferPlatformAdmin(client: PoolClient, email: string): Promise<string> {
+  await requirePlatformOwnerSchema(client);
   const result = await client.query<{ id: string }>(`SELECT platform_admin_transfer($1::text) AS id`, [email]);
   return result.rows[0]!.id;
+}
+
+async function requirePlatformOwnerSchema(client: PoolClient): Promise<void> {
+  const result = await client.query<{ ready: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid='platform_admins'::regclass
+      AND attname='is_owner' AND NOT attisdropped) AS ready`,
+  );
+  if (!result.rows[0]?.ready) throw new PlatformAdminError("setup_required");
 }
 
 /** What the page can offer, so it never shows a button the database will refuse. */
@@ -127,8 +138,8 @@ export function platformAdminAbilities(admins: PlatformAdmin[]) {
   const count = admins.length;
   const ownerKnown = admins.some((admin) => admin.owner);
   if (!ownerKnown) {
-    // Before 0733: any admin manages the list, never the last one.
-    return { isOwner: false, canAdd: true, canRemoveOthers: count > 1, canRemoveSelf: count > 1, canTransfer: true };
+    // Read-only compatibility: an unknown owner never grants management rights.
+    return { isOwner: false, canAdd: false, canRemoveOthers: false, canRemoveSelf: false, canTransfer: false };
   }
   const isOwner = admins.some((admin) => admin.you && admin.owner);
   return {

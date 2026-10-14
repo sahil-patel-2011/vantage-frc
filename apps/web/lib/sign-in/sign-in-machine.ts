@@ -296,21 +296,15 @@ export function canRetrySubmittedCode(state: SignInFlowState, now: number): bool
 export function signInStepCopy(
   state: Pick<SignInFlowState, "step" | "channel" | "email" | "emailHint">,
   inviteHeadline?: string | null,
-  publicSignup = false,
+  _publicSignup = false,
 ): { title: string; sub: string } {
   const invite = inviteHeadline?.trim() || null;
   if (state.step === "code") {
     const target =
       state.channel === "email-2fa" ? state.emailHint : state.email || state.emailHint;
-    // A first sign-in cannot promise a code was sent: codes only go to invited addresses.
-    const conditional = state.channel === "email-otp" && !invite && !publicSignup;
     return {
       title: invite ?? "Check your email",
-      sub: conditional
-        ? target
-          ? `If ${target} is on a Vantage team, a 6-digit code is on its way.`
-          : "If this address is on a Vantage team, a 6-digit code is on its way."
-        : target
+      sub: target
           ? `Enter the 6-digit code sent to ${target}.`
           : "Enter the 6-digit code we sent.",
     };
@@ -325,8 +319,7 @@ export function signInStepCopy(
     title: invite ?? "Sign in",
     sub: invite
       ? "Sign in with the address the invite was sent to, then accept."
-      : publicSignup ? "Enter your email to sign in or create an account. You must be 13 or older."
-        : "Use the email your team invited. We’ll send it a 6-digit code.",
+      : "Enter your email. After verification, you can join your team with its six-digit code. You must be 13 or older.",
   };
 }
 
@@ -574,8 +567,10 @@ export function postAuthDestination(input: {
   if (inviteToken) return inviteReturnPath(inviteToken);
 
   const next = onboardingReturnPath(input.nextPath, "/dashboard");
+  if (new URL(next, "https://vantage.invalid").pathname === "/join-team") return next;
   if (!input.gate) return next;
   if (input.gate.complete && input.gate.accessStatus === "approved") return next;
+  if (input.gate.accessStatus === "none") return "/join-team";
   return `/onboarding?next=${encodeURIComponent(next)}`;
 }
 

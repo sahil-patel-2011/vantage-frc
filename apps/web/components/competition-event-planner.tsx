@@ -56,6 +56,7 @@ export function CompetitionEventPlanner({ orgId, initialEventKey, onChanged, onA
     const timer = window.setTimeout(async () => {
       try {
         const params = new URLSearchParams({ orgId, year: String(year), q: query, scope });
+        if (query.trim()) params.set("allSeasons", "1");
         const response = await fetch(`/api/context/event?${params}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]), cache: "no-store" });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error ?? "Couldn't load events. Try again.");
@@ -128,25 +129,26 @@ export function CompetitionEventPlanner({ orgId, initialEventKey, onChanged, onA
   }, [orgId, year, loading, failed, busy, query, scope, directory, refreshDirectory]);
 
   const canManage = directory?.canSetEvent === true;
-  if (selected || adding) return <CompetitionEventDetails key={selected?.eventKey ?? `new:${year}`} year={year} event={selected} activeKey={directory?.activeEventKey ?? null} busy={busy} message={message} onBack={() => { if (!busy) { setSelected(null); setAdding(false); setMessage(""); } }} onSave={save} orgId={orgId} canManage={canManage} preferActivation={Boolean(onActive)} />;
+  if (selected || adding) return <CompetitionEventDetails key={selected?.eventKey ?? `new:${year}`} year={selected?.year ?? year} event={selected} activeKey={directory?.activeEventKey ?? null} busy={busy} message={message} onBack={() => { if (!busy) { setSelected(null); setAdding(false); setMessage(""); } }} onSave={save} orgId={orgId} canManage={canManage} preferActivation={Boolean(onActive)} />;
 
   return <div className="competition-planner">
     <p className="competition-planner-intro">Find a competition, prepare in advance, or put it on the whole team&rsquo;s calendar.</p>
     <div className="competition-planner-search">
-      <input type="search" aria-label="Search competitions" placeholder="Search names, cities, or event keys" value={query} disabled={busy} onChange={e => { setQuery(e.target.value); setMessage(""); }} />
-      <label><span>Season</span><input aria-label="Competition season" type="number" min="1992" max="2100" value={year} disabled={busy} onChange={e => setYear(Number(e.target.value))} /></label>
+      <input type="search" aria-label="Search competitions" placeholder="Search all seasons: names, cities, or event keys" value={query} disabled={busy} onChange={e => { setQuery(e.target.value); setMessage(""); }} />
+      <label><span>Browse season</span><input aria-label="Competition season" type="number" min="1992" max="2100" value={year} disabled={busy || Boolean(query.trim())} onChange={e => setYear(Number(e.target.value))} /></label>
     </div>
     <div className="competition-planner-scopes" role="group" aria-label="Competition directory">
       {(["all", "offseason", "saved"] as Scope[]).map(value => <button key={value} type="button" aria-pressed={scope === value} disabled={busy} onClick={() => { setScope(value); setMessage(""); }}>{value === "all" ? "All events" : value === "offseason" ? "Offseason" : "Saved"}</button>)}
     </div>
+    {query.trim() ? <p className="competition-planner-note">Searching published and saved events across all cached seasons.</p> : null}
     {message ? <p role={failed ? "alert" : "status"} className="competition-planner-message">{message}</p> : null}
     {refreshingDirectory || directoryMessage ? <p role="status" className="competition-planner-note">{refreshingDirectory ? "Finding published events. You can keep browsing or add your own." : directoryMessage}</p> : null}
     {loading ? <p role="status">Finding events…</p> : failed ? <Button variant="secondary" type="button" onClick={() => setRetry(n => n + 1)}>Try again</Button> : directory?.events.length ? <ul className="competition-planner-list">
       {directory.events.map(event => <li key={event.eventKey}><button type="button" disabled={busy} onClick={() => { setSelected(event); setMessage(""); }}>
-        <span><strong>{event.name}</strong><small>{whenWhere(event)}</small></span>
+        <span><strong>{event.name}</strong><small>{event.year} · {whenWhere(event)}</small></span>
         <span className="competition-planner-badge">{event.eventKey === directory.activeEventKey ? "Active" : event.calendarId ? "On calendar" : event.custom || event.eventType === 99 || event.eventType === 100 ? "Offseason" : "View"}</span>
       </button></li>)}
-    </ul> : <p>No matching {scope === "saved" ? "saved " : ""}events for {year}. {canManage ? "Add an unlisted event below, including any offseason competition." : "Ask your scouting lead to add an unlisted event."}</p>}
+    </ul> : <p>No matching {scope === "saved" ? "saved " : ""}events {query.trim() ? "in the saved directory" : `for ${year}`}. {canManage ? "Add an unlisted event below, including any offseason competition." : "Ask your scouting lead to add an unlisted event."}</p>}
     {canManage ? <div className="competition-planner-footer"><Button type="button" variant="secondary" disabled={busy} onClick={() => { setAdding(true); setMessage(""); }}>Add an unlisted event</Button><button className="text-button" type="button" disabled={busy || refreshingDirectory} onClick={() => void refreshDirectory()}>{refreshingDirectory ? "Finding published events…" : "Refresh published events"}</button></div> : !loading && !failed ? <p className="competition-planner-note">Everyone can prepare. A scouting lead sets the event and its team calendar dates.</p> : null}
   </div>;
 }

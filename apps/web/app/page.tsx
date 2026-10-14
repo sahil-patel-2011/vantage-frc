@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PUBLIC_SIGNUP_DATE_LABEL } from "@vantage/core/public-signup";
 import { WaitlistSection } from "../components/marketing/waitlist-section";
 import { MarketingHeroActions, SiteFooter, SiteHeader } from "../components/marketing/site-header";
 import { FAQ } from "../components/marketing/faq";
@@ -14,7 +13,7 @@ export const revalidate = 86_400;
 export const metadata: Metadata = marketingPageMetadata({
   title: "Vantage — your FRC team, connected",
   description:
-    `Plan, scout, build and learn in one place: pit-first scouting that works offline, team tasks, hours and money, GitHub pull request reviews and guided lessons for FRC teams. Free to use. Teams are set up from ${PUBLIC_SIGNUP_DATE_LABEL}.`,
+    `Plan, scout, build and learn in one place: pit-first scouting that works offline, team tasks, hours and money, GitHub pull request reviews and guided lessons for FRC teams. Free to use. Existing teams can sign in. Public registration is being prepared.`,
   path: "/",
 });
 

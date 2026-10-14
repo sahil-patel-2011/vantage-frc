@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     if (!session) return privateJson({ error: "Your session ended. Sign in again." }, 401);
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (orgId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orgId)) return privateJson({ error: "Choose a valid team." }, 400);
-    const view = await withRls({ userId: session.user.id }, async (client) => {
+    const view = await withRls({ userId: session.user.id, orgId: orgId ?? undefined }, async (client) => {
       const desk = await loadPickDesk(client, { userId: session.user.id, requestedOrg: orgId });
       if (orgId && !desk.orgId) return null;
       if (desk.orgId) {

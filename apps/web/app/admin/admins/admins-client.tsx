@@ -155,7 +155,7 @@ export default function AdminsClient() {
         ) : null}
       </PageHeader>
 
-      {data.setupRequired ? <p className="ac-message ac-muted">Managing platform admins needs database migration 0727.</p> : null}
+      {data.setupRequired ? <p className="ac-message ac-muted">Platform admin changes are unavailable until migration 0733 establishes the platform owner. Existing access is unchanged.</p> : null}
       {!data.sessionFresh ? (
         <p className="ac-message">
           Changes here need a sign-in from the last 24 hours. <a href="/signin?next=/admin/admins">Sign in again</a> first.

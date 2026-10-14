@@ -37,6 +37,7 @@ import { MyReports } from "./my-reports";
 import {
   myReports,
   scoutedRobots,
+  scoutRosterFor,
   type Bootstrap,
   type MyEntry,
   type ConflictCandidate,
@@ -103,6 +104,7 @@ export type ScoutingReadyViewProps = {
   payload: Record<string, unknown>;
   /** Robots saved on this phone since the page opened, before the server list catches up. */
   savedHere: Array<{ matchKey: string; teamKey: string }>;
+  deviceReports: import("./scouting-model").MyEntry[];
   confidence: "high" | "normal" | "low";
   entryClientId: string;
   draftSavedAt: string | null;
@@ -181,6 +183,7 @@ export function ScoutingReadyView({
   teamKey,
   payload,
   savedHere,
+  deviceReports,
   confidence,
   entryClientId,
   draftSavedAt,
@@ -233,7 +236,8 @@ export function ScoutingReadyView({
   // showed "Back to next" on the match Save had moved to.
   // Every robot the team has scouted at the event (not only the latest 30 entries), plus this phone's saves.
   const scouted = useMemo(() => [...scoutedRobots(data), ...savedHere], [data, savedHere]);
-  const mine = useMemo(() => myReports(data).filter(report => report.type === type), [data, type]);
+  const pitRoster = useMemo(() => scoutRosterFor(data), [data]);
+  const mine = useMemo(() => myReports(data, deviceReports).filter(report => report.type === type), [data, deviceReports, type]);
   // Matches this scout already watched, so reopening the tab does not send them back to one.
   const myMatchKeys = useMemo(() => {
     const keys = new Set<string>(savedHere.map((entry) => entry.matchKey));
@@ -677,6 +681,7 @@ return (
                 onTeamKey={setTeamKey}
                 savedTeamKey={saveReceipt?.entryType === "pit" ? saveReceipt.teamKey : null}
                 ownTeamNumber={data?.teamNumber ?? null}
+                initialRoster={pitRoster}
               />
               <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
             </>

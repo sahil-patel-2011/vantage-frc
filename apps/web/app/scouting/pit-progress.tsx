@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadRoster, saveRoster, type OfflineRosterTeam } from "../../lib/intel/offline-teams";
 import { listPendingEntries } from "../../lib/scout-offline";
 import { useScoutQueueRefresh } from "../../lib/scouting/use-queue-refresh";
@@ -19,6 +19,7 @@ export function PitProgress({
   onTeamKey,
   savedTeamKey = null,
   ownTeamNumber = null,
+  initialRoster,
 }: {
   orgId: string | null | undefined;
   eventKey: string;
@@ -28,20 +29,33 @@ export function PitProgress({
   savedTeamKey?: string | null;
   /** Our own robot needs no pit visit; counting it made this "of 24" while Home said "of 23". */
   ownTeamNumber?: number | null;
+  initialRoster?: RosterTeam[];
 }) {
   const [teams, setTeams] = useState<RosterTeam[] | null>(null);
   const [savedHere, setSavedHere] = useState<string[]>([]);
   const [query, setQuery] = useState("");
   const [queuedTeams, setQueuedTeams] = useState<string[]>([]);
+  const queueScope = useRef("");
+  queueScope.current = `${orgId ?? ""}:${eventKey}`;
   const refreshQueue = useCallback(async () => {
     if (!orgId) return;
+    const scope = `${orgId}:${eventKey}`;
     const entries = await listPendingEntries(orgId);
+    if (queueScope.current !== scope) return;
     setQueuedTeams(entries.filter(entry => entry.type === "pit" && entry.eventKey === eventKey).map(entry => entry.teamKey));
+  }, [orgId, eventKey]);
+  useEffect(() => {
+    queueScope.current = `${orgId ?? ""}:${eventKey}`;
+    return () => { queueScope.current = ""; };
   }, [orgId, eventKey]);
   useScoutQueueRefresh(refreshQueue);
   useEffect(() => {
     if (savedTeamKey) setSavedHere((prev) => (prev.includes(savedTeamKey) ? prev : [...prev, savedTeamKey]));
   }, [savedTeamKey]);
+  useEffect(() => {
+    setSavedHere([]); setQueuedTeams([]); setQuery("");
+    void refreshQueue();
+  }, [orgId, eventKey, refreshQueue]);
   const roster = useMemo(
     () =>
       teams?.filter((team) => team.teamNumber !== ownTeamNumber).map((team) =>
@@ -53,26 +67,34 @@ export function PitProgress({
   useEffect(() => {
     if (!orgId) return;
     let active = true;
+    let liveAccepted = false;
     setTeams(null);
-    setSavedHere([]);
-    setQueuedTeams([]);
-    setQuery("");
-    void fetch(`/api/intel/teams?orgId=${encodeURIComponent(orgId)}&q=`, { cache: "no-store" })
+    if (initialRoster?.length) {
+      setTeams(initialRoster);
+      void saveRoster(orgId, initialRoster, eventKey).catch(() => undefined);
+      return () => { active = false; };
+    }
+    // The saved event roster paints first; the live read replaces it quietly.
+    void loadRoster(orgId, eventKey).then(saved => { if (active && !liveAccepted && saved) setTeams(saved.roster); });
+    const controller = new AbortController();
+    void fetch(`/api/intel/teams?orgId=${encodeURIComponent(orgId)}&q=`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]) })
       .then((response) => (response.ok ? response.json() : null))
-      .then((body: { roster?: RosterTeam[] } | null) => {
-        if (active && Array.isArray(body?.roster)) {
+      .then((body: { roster?: RosterTeam[]; activeEvent?: { eventKey?: string } | null } | null) => {
+        if (active && body?.activeEvent?.eventKey === eventKey && Array.isArray(body.roster)) {
+          liveAccepted = true;
           setTeams(body!.roster);
-          void saveRoster(orgId, body!.roster).catch(() => undefined);
+          void saveRoster(orgId, body!.roster, eventKey).catch(() => undefined);
         }
       })
       .catch(async () => {
-        const saved = await loadRoster(orgId);
+        const saved = await loadRoster(orgId, eventKey);
         if (active && saved) setTeams(saved.roster);
       });
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [orgId]);
+  }, [orgId, eventKey, initialRoster]);
 
   if (!roster?.length || !roster.some((team) => typeof team.pitScouted === "number")) return null;
   const missing = roster.filter((team) => (team.pitScouted ?? 0) === 0);

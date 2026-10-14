@@ -46,6 +46,9 @@ export async function GET(request: Request) {
         matches: withMatchStatus(base.matches as Array<{ matchKey: string }>, extras.matchStatus),
         myEntries: extras.myEntries,
         scouted: extras.scouted,
+        pitScouted: extras.pitScouted,
+        roster: extras.roster,
+        rosterComplete: extras.rosterComplete,
         teamNumber: extras.teamNumber,
       };
     });

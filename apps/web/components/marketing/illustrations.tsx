@@ -47,11 +47,10 @@ function QuickScoutPhone() {
         <span className="is-blue">Blue 3</span>
       </div>
       <div className="mx-phases">
-        <span>Before</span>
         <span className="is-on">Auto</span>
         <span>Teleop</span>
         <span>Endgame</span>
-        <span>After</span>
+        <span>Review</span>
       </div>
       <div className="mx-tiles">
         <span className="is-held">

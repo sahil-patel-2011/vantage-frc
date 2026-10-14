@@ -19,6 +19,7 @@ import {
 import "../product-hub.css";
 import "./notifications.css";
 import { inboxText, inboxWhen } from "../../lib/notifications/inbox-words";
+import { onTeamDataChanged } from "../../lib/team-data-changed";
 
 type NotifItem = {
   id: string;
@@ -217,6 +218,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
     void load();
     return () => { loadGeneration.current += 1; };
   }, [load]);
+  useEffect(() => onTeamDataChanged(scopeOrgId ?? "", () => { void refreshInbox.current(); }), [scopeOrgId]);
 
   useEffect(() => listenInboxUpdates(data => {
     if (data.mutation && data.userId === viewRef.current?.userId && !ownInboxUpdate(data)) void refreshInbox.current();

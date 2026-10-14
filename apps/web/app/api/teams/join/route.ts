@@ -76,6 +76,8 @@ async function invitedTeam(token: string) {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user.emailVerified) return Response.json({ error: "Verify your email before entering a team code.", code: "auth_required" }, { status: 401, headers: noStore });
     const body = await parseSecureJson(request, input),
       ip = anonymizeIp(clientIp(request), "team-code-join");
     if (!(await limiter.allow(ip)))
@@ -86,7 +88,6 @@ export async function POST(request: Request) {
     // Someone already on this team who enters its code is told so, with a way Home, instead of
     // being handed a new (scout) invitation for a team they are on. Only their own membership
     // is read, so this says nothing about anyone else.
-    const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
     if (session) {
       const member = await ownMembership(session.user.id, body.teamNumber);
       if (member) {
@@ -106,12 +107,12 @@ export async function POST(request: Request) {
     const token = randomBytes(32).toString("base64url");
     const result = await requestPool.query<{ id: string | null }>(
       "SELECT request_team_code_invite($1,$2,$3,$4,$5) AS id",
-      [body.teamNumber, body.pin, body.email.toLowerCase(), ip, token],
+      [body.teamNumber, body.pin, session.user.email.toLowerCase(), ip, token],
     );
     if (!result.rows[0]?.id) {
       // Locked out (five wrong tries for this address, or many from this network) is not the
       // same as a typo: say when to try again instead of "wait fifteen minutes" on every miss.
-      const retryAt = await lockedUntil(body.teamNumber, body.email.toLowerCase(), ip);
+      const retryAt = await lockedUntil(body.teamNumber, session.user.email.toLowerCase(), ip);
       if (retryAt)
         return Response.json(
           {

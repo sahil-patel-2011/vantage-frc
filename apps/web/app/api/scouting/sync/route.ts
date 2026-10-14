@@ -6,6 +6,7 @@ import type { SyncEntry } from "@vantage/scouting";
 import type { PoolClient } from "@neondatabase/serverless";
 import { headers } from "next/headers";
 import { mediaLinkJobsAfterMint } from "../../../../lib/scouting/attach-media-wire";
+import { recordScoutSyncNotifications } from "../../../../lib/scouting/sync-notifications";
 import {
   backfillScoutMediaFromPayload,
   linkScoutMediaToEntry,
@@ -117,6 +118,7 @@ export async function POST(request: Request) {
             results.push({ ...ack, clientId: entry.clientId });
           }
           const linked = await stampLinkedMediaAfterMint(client, body.orgId!, results, body.entries!);
+          await recordScoutSyncNotifications(client, body.orgId!, session.user.id, results, body.entries!);
           return { acknowledgements: results, mediaLinked: linked };
         },
       );
@@ -185,6 +187,7 @@ export async function POST(request: Request) {
           }
         }
         const linked = await stampLinkedMediaAfterMint(client, body.orgId!, acks, body.entries!);
+        await recordScoutSyncNotifications(client, body.orgId!, session.user.id, acks, body.entries!);
         return { acknowledgements: acks, rejected: failures, mediaLinked: linked };
       },
     );

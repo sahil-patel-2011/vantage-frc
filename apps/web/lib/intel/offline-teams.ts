@@ -26,17 +26,18 @@ export type OfflineRosterTeam = {
 const ROSTER_VARIANT = "roster";
 const teamVariant = (teamNumber: number) => `team:${teamNumber}`;
 
-export async function saveRoster(orgId: string, roster: OfflineRosterTeam[]): Promise<void> {
+export async function saveRoster(orgId: string, roster: OfflineRosterTeam[], eventKey?: string): Promise<void> {
   try {
     await putFeatureSnapshot("intel", orgId, roster, ROSTER_VARIANT);
+    if (eventKey) await putFeatureSnapshot("intel", orgId, roster, `${ROSTER_VARIANT}:${eventKey}`);
   } catch {
     // Best effort: the live list already painted.
   }
 }
 
-export async function loadRoster(orgId: string): Promise<{ roster: OfflineRosterTeam[]; cachedAt: string } | null> {
+export async function loadRoster(orgId: string, eventKey?: string): Promise<{ roster: OfflineRosterTeam[]; cachedAt: string } | null> {
   try {
-    const row = await getFeatureSnapshot<OfflineRosterTeam[]>("intel", orgId, ROSTER_VARIANT);
+    const row = await getFeatureSnapshot<OfflineRosterTeam[]>("intel", orgId, eventKey ? `${ROSTER_VARIANT}:${eventKey}` : ROSTER_VARIANT);
     return row && Array.isArray(row.data) ? { roster: row.data, cachedAt: row.cachedAt } : null;
   } catch {
     return null;

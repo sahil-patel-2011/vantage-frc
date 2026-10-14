@@ -131,9 +131,10 @@ export const DashboardGridItem = memo(function DashboardGridItem({
           transform: `translate3d(${box.left}px, ${box.top}px, 0)`,
           width: `${box.width}px`,
           height: `${box.height}px`,
-          // Read mode keeps the saved columns and order, but lets each card fit its content.
-          // Edit mode still uses the precise saved cell positions and dimensions.
-          gridColumn: editing ? undefined : `${item.x + 1} / span ${item.w}`,
+          // Natural-height rows differ from the edit grid's saved heights.
+          // Let CSS place each card in reading order instead of leaving its
+          // old x-coordinate as an empty column after a shorter row.
+          gridColumn: editing ? undefined : `span ${item.w}`,
           "--dash-order": item.y * 12 + item.x,
           "--dash-min-h": `${box.height}px`,
         } as CSSProperties

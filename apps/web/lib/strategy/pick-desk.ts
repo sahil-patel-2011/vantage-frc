@@ -161,22 +161,24 @@ export async function loadPickDesk(
     ties: number | null;
     rank: number | null;
   }>(
-    `SELECT DISTINCT ON (m.team_key)
-        m.team_key AS "teamKey",
-        t.team_number AS "teamNumber",
-        t.nickname,
-        m.epa_total AS "epaTotal",
-        m.epa_auto AS "epaAuto",
-        m.epa_endgame AS "epaEndgame",
-        m.source,
-        m.wins, m.losses, m.ties, m.rank
-     FROM team_event_metrics m
-     LEFT JOIN teams_ref t ON t.team_key = m.team_key
-     WHERE m.event_key = $1
-     ORDER BY m.team_key,
+    `WITH roster AS (
+       SELECT team_key FROM team_event_metrics WHERE event_key=$1
+       UNION SELECT jsonb_array_elements_text(red_alliance->'teamKeys') FROM matches_ref WHERE event_key=$1
+       UNION SELECT jsonb_array_elements_text(blue_alliance->'teamKeys') FROM matches_ref WHERE event_key=$1
+       UNION SELECT team_key FROM match_scout_entries WHERE event_key=$1 AND org_id=$2::uuid
+       UNION SELECT team_key FROM pit_scout_entries WHERE event_key=$1 AND org_id=$2::uuid
+     )
+     SELECT DISTINCT ON (r.team_key)
+        r.team_key AS "teamKey", t.team_number AS "teamNumber", t.nickname,
+        m.epa_total AS "epaTotal", m.epa_auto AS "epaAuto", m.epa_endgame AS "epaEndgame",
+        COALESCE(m.source, 'scouting') AS source, m.wins, m.losses, m.ties, m.rank
+     FROM roster r
+     LEFT JOIN team_event_metrics m ON m.team_key=r.team_key AND m.event_key=$1
+     LEFT JOIN teams_ref t ON t.team_key=r.team_key
+     ORDER BY r.team_key,
        CASE m.source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
        m.synced_at DESC NULLS LAST`,
-    [row.eventKey],
+    [row.eventKey, row.orgId],
   );
 
   const teamKeys = metrics.rows.map((item) => item.teamKey);

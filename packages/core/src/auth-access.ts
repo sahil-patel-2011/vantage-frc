@@ -17,6 +17,7 @@ export type AuthEmailAccessReason =
   | "existing_user"
   | "pending_invite"
   | "public_signup"
+  | "identity_only"
   | "denied";
 
 export type AuthEmailAccess = {
@@ -38,7 +39,7 @@ export function isPlatformOwnerEmail(email: string) {
  * Resolve whether an email may authenticate under waitlist-only policy.
  * Allowed: platform owner, existing user, or non-expired pending invite.
  */
-export async function resolveAuthEmailAccess(email: string): Promise<AuthEmailAccess> {
+export async function resolveAuthEmailAccess(email: string, options: { identityOnly?: boolean } = {}): Promise<AuthEmailAccess> {
   const normalized = normalizeEmail(email);
   if (!normalized) {
     return { allowed: false, reason: "denied", email: normalized };
@@ -51,6 +52,11 @@ export async function resolveAuthEmailAccess(email: string): Promise<AuthEmailAc
   }
   if (isPublicSignupOpen()) {
     return { allowed: true, reason: "public_signup", email: normalized };
+  }
+  // An identity grants no team access. Invites, team codes and server-side
+  // membership checks still control entry into each workspace.
+  if (options.identityOnly && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized) && normalized.length <= 254) {
+    return { allowed: true, reason: "identity_only", email: normalized };
   }
   const connectionString = authConnectionString();
   if (!connectionString) {

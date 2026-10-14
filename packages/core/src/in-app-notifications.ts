@@ -45,6 +45,7 @@ const TYPE_PREF: Record<string, InAppPrefKey | null> = {
   calendar_updated: "calendarEvents",
   match_alert: "matchAlerts",
   scout_reminder: "scoutReminders",
+  scout_report_synced: "scoutReminders",
   scouting_coverage_gap: "scoutReminders",
   sync_failure: "syncFailures",
   product_update: "productUpdates",

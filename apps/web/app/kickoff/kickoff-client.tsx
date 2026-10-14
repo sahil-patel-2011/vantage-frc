@@ -1,6 +1,6 @@
 "use client";
 
-import { currentSeasonYear, lastPublishedPack, packForYear } from "@vantage/game-year";
+import { availableSeasonYears, currentSeasonYear, lastPublishedPack, packForYear } from "@vantage/game-year";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -210,7 +210,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
   }
 
   const orgId = view.context.orgId ?? "";
-  const yearSet = new Set<number>([view.context.defaultSeasonYear, currentSeasonYear()]);
+  const yearSet = new Set<number>(availableSeasonYears([view.context.defaultSeasonYear]));
   const prior = lastPublishedPack();
   if (prior) yearSet.add(prior.year);
   for (const entry of view.actions) yearSet.add(entry.seasonYear);

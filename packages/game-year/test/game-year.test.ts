@@ -5,9 +5,16 @@ import {
   isManualPublished,
   lastPublishedPack,
   packForYear,
+  availableSeasonYears,
 } from "../src";
 
 describe("game-year packs", () => {
+  it("recognizes published REEFSCAPE and retains historical seasons with saved work", () => {
+    expect(packForYear(2025).gameName).toBe("REEFSCAPE");
+    expect(isManualPublished(2025)).toBe(true);
+    expect(packForYear(2025).brief?.headline).toContain("Coral");
+    expect(availableSeasonYears([2023], new Date("2026-10-14T12:00:00Z"))).toEqual([2027, 2026, 2025, 2023]);
+  });
   it("keeps released/passed fuel separate from scoring and asks about both tower climbs", () => {
     const pack = packForYear(2026);
     expect(pack.scoringKeys).not.toContain("fuel_passed");

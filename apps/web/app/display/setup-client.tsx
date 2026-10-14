@@ -107,7 +107,9 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     setLoadError("");
     setErrorStatus(null);
     try {
-      const r = await fetch(`/api/display/boards?orgId=${encodeURIComponent(orgId)}`);
+      const r = await fetch(`/api/display/boards?orgId=${encodeURIComponent(orgId)}`, {
+        cache: "no-store", signal: AbortSignal.timeout(8_000),
+      });
       const d = (await r.json()) as {
         boards?: Board[];
         tokens?: TokenRow[];

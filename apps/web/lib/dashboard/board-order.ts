@@ -21,6 +21,7 @@ import {
   packDashboardLayout,
   packKeepingOrder,
   scaleLayoutToCols,
+  fillRowEnds,
   type DashboardWidgetLayout,
 } from "./catalog";
 
@@ -87,7 +88,7 @@ export function packStable(
  */
 export function displayBoard(view: readonly DashboardWidgetLayout[], cols: number): DashboardWidgetLayout[] {
   const order = readingOrder(view);
-  return packInOrder(scaleLayoutToCols([...view], DASHBOARD_COLUMNS, cols), cols, order);
+  return fillRowEnds(packInOrder(scaleLayoutToCols([...view], DASHBOARD_COLUMNS, cols), cols, order), cols);
 }
 
 /**

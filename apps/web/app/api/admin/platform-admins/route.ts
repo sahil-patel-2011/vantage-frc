@@ -38,7 +38,7 @@ export async function GET() {
           admins,
           abilities: platformAdminAbilities(admins),
           sessionFresh: sessionIsFresh(session.session.createdAt),
-          setupRequired: false,
+          setupRequired: !admins.some(admin => admin.owner),
         };
       } catch (error) {
         if (!isMissingSchema(error)) throw error;

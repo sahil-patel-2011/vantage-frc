@@ -166,8 +166,8 @@ export function StrategyShell({
                 Review last match ({matchLabel(lastMatch.compLevel, lastMatch.matchNumber)})
               </Button>
             ) : (
-              <Button as="a" variant="primary" href={strategyBriefingHref(orgId)}>
-                Open pre-match briefing
+              <Button as="a" variant="primary" href={withOrgHref("/schedule", orgId ?? null)}>
+                See the full event schedule
               </Button>
             )}
             {/* Where the team stands is the other question with no match ahead. (This used to

@@ -33,6 +33,9 @@ export async function GET(request: Request) {
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? 40) || 40));
 
     const data = await withRls({ userId: session.user.id, orgId: orgId ?? undefined }, async (client) => {
+      if (url.searchParams.get("mode") === "count") return {
+        userId: session.user.id, orgId, unreadCount: await unreadNotificationCount(client, session.user.id, orgId),
+      };
       const rows = await client.query<NotificationRow>(
         `SELECT id, org_id AS "orgId", type, payload,
                 read_at::text AS "readAt", created_at::text AS "createdAt"

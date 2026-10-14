@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     const yearParam = url.searchParams.get("year");
     const year = parseEventYear(yearParam);
     const scope = url.searchParams.get("scope") ?? "all";
+    const allSeasons = q.length > 0 && url.searchParams.get("allSeasons") === "1";
     if (!orgId) throw new Error("orgId is required");
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
@@ -48,7 +49,7 @@ export async function GET(request: Request) {
                 , COALESCE(c.recurrence_timezone, e.timezone) AS "timeZone"
          FROM events_ref e
          LEFT JOIN subteam_calendar_events c ON c.competition_event_key = e.event_key AND c.org_id = $3::uuid
-         WHERE e.year = $1
+         WHERE ($5::boolean OR e.year = $1)
            AND ($4 = 'all' OR ($4 = 'offseason' AND (e.event_type IN (99, 100) OR e.org_id IS NOT NULL))
              OR ($4 = 'saved' AND (c.id IS NOT NULL OR e.org_id = $3::uuid)))
            AND (
@@ -57,10 +58,10 @@ export async function GET(request: Request) {
              OR e.name ILIKE '%' || $2 || '%'
              OR COALESCE(e.city, '') ILIKE '%' || $2 || '%'
            )
-         ORDER BY c.id IS NOT NULL DESC, e.org_id IS NOT NULL DESC,
+         ORDER BY c.id IS NOT NULL DESC, e.org_id IS NOT NULL DESC, e.year DESC,
                   e.start_date NULLS LAST, e.name
          LIMIT 250`,
-        [year, q, orgId, scope],
+        [year, q, orgId, scope, allSeasons],
       );
 
       const published = await client.query<{ count: number }>(
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
         canSetEvent: await canManageScouting(client, orgId),
         year,
         publishedCount: published.rows[0]?.count ?? 0,
-        events: [...(scope === "saved" ? [] : organizerEvents(year, q, events.rows)), ...events.rows.map(row => ({ ...row,
+        events: [...(scope === "saved" ? [] : organizerEvents(allSeasons ? null : year, q, events.rows)), ...events.rows.map(row => ({ ...row,
           plannedStart: row.plannedStart ? new Date(row.plannedStart).toISOString() : null,
           plannedEnd: row.plannedEnd ? new Date(row.plannedEnd).toISOString() : null,
         }))],
