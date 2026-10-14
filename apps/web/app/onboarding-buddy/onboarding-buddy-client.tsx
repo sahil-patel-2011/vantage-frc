@@ -269,10 +269,6 @@ export default function OnboardingBuddyClient() {
     memberCount,
     canOpenTeamData: canSync,
   });
-  const relatedLinks = onboardingBuddyRelatedLinks(orgId, {
-    include: [...ONBOARDING_BUDDY_RELATED_INCLUDE],
-    canOpenTeamData: canSync,
-  });
   const teamHref = hubWorkbenchHref("team", "onboarding-buddy", orgId);
   const showTiles = shouldShowOnboardingBuddySummaryTiles({
     memberCount,
@@ -364,13 +360,6 @@ export default function OnboardingBuddyClient() {
         title="Onboarding Buddy"
         description="Auto-pair new members with a tenured buddy and track a first-week plan. Suggestions use only real membership records."
       >
-        <div className="onboarding-buddy-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
 
       <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />

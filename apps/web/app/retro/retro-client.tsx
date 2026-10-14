@@ -273,9 +273,6 @@ export default function RetroClient() {
     openActionCount,
     learnedItemCount,
   });
-  const relatedLinks = retroRelatedLinks(orgId, {
-    include: [...RETRO_RELATED_INCLUDE],
-  });
   const teamHref = hubWorkbenchHref("team", "retro", orgId);
   const showTiles = shouldShowRetroSummaryTiles({
     sessionCount,
@@ -392,11 +389,6 @@ export default function RetroClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { Icon } from "./icon";
-import { AskAiTopbarLink } from "./ask-ai-button";
 import { islandTabIsActive } from "./app-shell-model";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import { mainMenuSearch, mainMenuSections } from "../lib/nav/main-menu";
@@ -66,8 +65,7 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
     </div>
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
       {platformAdmin ? <a className="app-sidebar-admin" href="/admin" title="Platform admin" aria-current={pathname.startsWith("/admin") ? "page" : undefined}><Icon name="shield" /><span>Admin</span></a> : platformAdmin === undefined ? <span className="app-sidebar-admin-placeholder" aria-hidden="true"><Icon name="shield" /><span>…</span></span> : null}
-      {/* Ask AI opens on the current page's skill, the same link as the top bar's (lib/ai-skills). */}
-      {allowed("/ai?tab=chat") && !pins.some(pin => pin.href === "/ai" || pin.href === "/ai?tab=chat") ? <AskAiTopbarLink orgId={orgId || null} label="Ask AI" /> : null}
+      {/* No Ask AI row here: the top bar's sparkles button is the one way in, on every screen size. */}
       {[{ href: "/help", label: "Help", icon: "book" as const }, { href: SETTINGS_HREF, label: "Settings", icon: "gear" as const }]
         .filter(item => allowed(item.href)).map(item => <a key={item.href} data-tour={item.href === "/help" ? "feedback" : undefined} title={item.label} href={withOrgHref(item.href, orgId)} aria-current={(item.href === SETTINGS_HREF ? isSettingsPath(pathname) : pathname === item.href.split("?")[0]) ? "page" : undefined}><Icon name={item.icon} /><span>{item.label}</span></a>)}
     </nav>

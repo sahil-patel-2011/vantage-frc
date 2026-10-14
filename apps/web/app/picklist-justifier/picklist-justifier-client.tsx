@@ -263,9 +263,6 @@ export default function PicklistJustifierClient() {
     slotCount,
     contradictionCount,
   });
-  const relatedLinks = picklistJustifierRelatedLinks(orgId, {
-    include: [...PICKLIST_JUSTIFIER_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "picklist-justifier", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
 
@@ -367,11 +364,6 @@ export default function PicklistJustifierClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Pick-list Justifier" fromCache={fromCache} cachedAt={cachedAt} />

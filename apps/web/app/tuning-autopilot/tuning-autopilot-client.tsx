@@ -275,9 +275,6 @@ export default function TuningAutopilotClient() {
     hasSuggestion,
     converged,
   });
-  const relatedLinks = tuningAutopilotRelatedLinks(orgId, {
-    include: [...TUNING_AUTOPILOT_RELATED_INCLUDE],
-  });
   const buildHref = hubWorkbenchHref("build", "tuning-autopilot", orgId);
   const cadHref = hubHref("/build", "cad", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
@@ -386,11 +383,6 @@ export default function TuningAutopilotClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

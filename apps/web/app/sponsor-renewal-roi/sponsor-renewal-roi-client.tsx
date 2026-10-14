@@ -12,7 +12,6 @@ import {
   ProgressMeter,
   SoftBlockSkeleton,
   StatTile, Button, askConfirm } from "../../components/ui";
-import { AskAiButton } from "../../components/ask-ai-button";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import type { SponsorRenewalRoiView } from "../../lib/sponsor-renewal-roi/compute-sponsor-renewal-roi";
 import type { SponsorRenewalRiskTier } from "../../lib/sponsor-renewal-roi/types";
@@ -282,9 +281,6 @@ export default function SponsorRenewalRoiClient() {
     sponsorCount,
     scoredCount,
   });
-  const relatedLinks = sponsorRenewalRoiRelatedLinks(orgId, {
-    include: [...SPONSOR_RENEWAL_ROI_RELATED_INCLUDE],
-  });
   const businessHref = hubWorkbenchHref("business", "sponsor-renewal-roi", orgId);
   const showTiles = shouldShowSponsorRenewalRoiSummaryTiles(sponsorCount);
 
@@ -378,8 +374,6 @@ export default function SponsorRenewalRoiClient() {
         title="Sponsor Renewal-Risk Score & ROI Report"
         description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions."
       >
-        {/* One way into AI: Ask AI opens on this page's skill with its records. */}
-        <AskAiButton orgId={orgId} />
         <div className="srr-header-actions">
           {view.seasons.length > 0 ? (
             <label className="app-muted srr-filter">
@@ -400,11 +394,6 @@ export default function SponsorRenewalRoiClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

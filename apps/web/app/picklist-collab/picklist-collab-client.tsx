@@ -210,7 +210,6 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
   }, [activeListId, embedded]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
-  const inScoutApp = useInScoutApp();
   const listCount = view?.status === "live" ? view.lists.length : 0;
   const totalEntries = view?.status === "live" ? view.summary.totalEntries : 0;
 
@@ -223,11 +222,6 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
     setupStepIds: view?.status === "setup_required" ? view.steps.map((step) => step.id) : [],
   });
   const shellCopy = picklistCollabShellCopy(shell);
-  const relatedLinks = inScoutApp || embedded
-    ? []
-    : picklistCollabRelatedLinks(orgId, {
-        include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
-      });
   const competitionHref = hubWorkbenchHref("competition", "picklist-collab", orgId);
   const showTiles = shouldShowPicklistCollabSummaryTiles({ listCount, totalEntries });
 
@@ -335,11 +329,6 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
               Download CSV
             </Button>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
         <Button type="button" variant="secondary" disabled={busy} onClick={() => load()}>{refreshing ? "Refreshing…" : "Refresh saved list"}</Button>
       </PicklistHeader>

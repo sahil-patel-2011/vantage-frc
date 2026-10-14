@@ -4,7 +4,7 @@ import { RoleProfilesPanel } from "../../role-profiles-panel";
 import "../../team-admin.css";
 
 export const metadata = {
-  title: "Access and roles",
+  title: "Custom roles",
   description: "Define access once, like Scouting lead, and give it to someone in one click.",
 };
 
@@ -18,7 +18,7 @@ export default async function AccessPresetsPage({
   if (!orgId) {
     return (
       <main className="module-page team-admin-page soft-gate">
-        <PageHeader breadcrumbs="Settings › Access and roles" title="Access and roles" />
+        <PageHeader breadcrumbs="Settings › Custom roles" title="Custom roles" />
         <EmptyState soft badge="Needs setup" badgeTone="setup" title="Choose your team" description="Custom roles belong to one team.">
           <Button as="a" variant="primary" href="/workspace">
             Choose your team
@@ -30,12 +30,13 @@ export default async function AccessPresetsPage({
   return (
     <main className="module-page team-admin-page">
       <PageHeader
-        breadcrumbs="Settings › Access and roles"
-        title="Access and roles"
+        breadcrumbs="Settings › Custom roles"
+        title="Custom roles"
         description="Define access once, like Scouting lead, then give it to someone from their Access panel on Team admin."
       >
         <nav className="team-admin-settings-links" aria-label="Team settings">
           <a href={withOrgHref("/team/admin", orgId)}>‹ Team admin</a>
+          <a href={withOrgHref("/team/admin/permissions", orgId)}>Roles and permissions</a>
         </nav>
       </PageHeader>
       <RoleProfilesPanel orgId={orgId} />

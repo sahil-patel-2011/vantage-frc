@@ -328,9 +328,6 @@ export default function SeasonReportClient() {
     snapshotCount,
   });
   const aiHref = hubWorkbenchHref("ai", "season-report", orgId);
-  const relatedLinks = seasonReportRelatedLinks(orgId, {
-    include: [...SEASON_REPORT_RELATED_INCLUDE],
-  });
 
   if (shell === "loading") {
     return (
@@ -412,11 +409,6 @@ export default function SeasonReportClient() {
         description="Log build reliability, results, budget, and outreach notes through the season, then generate a state-of-the-team retrospective grounded in only what you recorded."
       >
         <div className="season-report-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season

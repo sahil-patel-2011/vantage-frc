@@ -23,8 +23,11 @@ export function TeamAdminPeople({
   onPasswordReset,
   onRemove,
   onStepDown,
+  permissionsHref,
 }: {
   members: Member[];
+  /** The one-table view of everyone's access (Roles and permissions). */
+  permissionsHref?: string;
   actorUserId: string | null;
   actorRole: string | null;
   busyUserId: string | null;
@@ -42,7 +45,14 @@ export function TeamAdminPeople({
   );
   return (
     <section className="team-admin-people" id="people" aria-labelledby="people-title">
-      <h2 id="people-title">People ({members.length})</h2>
+      <div className="team-admin-people-head">
+        <h2 id="people-title">People ({members.length})</h2>
+        {permissionsHref ? (
+          <a className="team-admin-people-grid-link" href={permissionsHref}>
+            Roles and permissions for everyone
+          </a>
+        ) : null}
+      </div>
       {searchable ? (
         <div className="team-admin-people-find" role="search">
           <label>

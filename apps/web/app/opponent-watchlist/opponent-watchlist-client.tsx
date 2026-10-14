@@ -256,9 +256,6 @@ export default function OpponentWatchlistClient() {
     entryCount,
     alertCount,
   });
-  const relatedLinks = opponentWatchlistRelatedLinks(orgId, {
-    include: [...OPPONENT_WATCHLIST_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "opponent-watchlist", orgId);
   const lineupHref = withOrgHref("/scouting/lineup", orgId);
 
@@ -344,13 +341,6 @@ export default function OpponentWatchlistClient() {
         title="Opponent Watchlist"
         description="Track opponent teams personally and get notified when their stored rating or next scheduled match changes."
       >
-        <div className="opponent-watchlist-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Opponent Watchlist" fromCache={fromCache} cachedAt={cachedAt} />
 

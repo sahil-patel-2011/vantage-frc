@@ -26,8 +26,9 @@ const config: NextConfig = {
   supportsImmutableAssets: false,
   // A browser shard visits many cold routes. CI's runner can be killed
   // while Turbopack's default auto eviction retains their compiled state.
-  // Use its supported disk-snapshot eviction in CI dev sessions only.
-  ...(process.env.CI === "true" && process.env.NODE_ENV === "development"
+  // Use its supported disk-snapshot eviction in CI dev sessions only, and in the
+  // Base44 sandbox (BASE44_PREVIEW_MODE=1), whose 8 GB VM OOM-killed the dev server.
+  ...((process.env.CI === "true" || process.env.BASE44_PREVIEW_MODE === "1") && process.env.NODE_ENV === "development"
     ? { experimental: { turbopackMemoryEviction: "full" as const } }
     : {}),
   // Dev only. 127.0.0.1 is the local stand-in for the Scouting host (see

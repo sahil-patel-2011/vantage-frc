@@ -11,7 +11,6 @@ import {
   Panel,
   SoftBlockSkeleton,
   StatTile, Button, askConfirm } from "../../components/ui";
-import { AskAiButton } from "../../components/ask-ai-button";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import {
   MATCHING_GIFT_PLEDGE_STATUSES,
@@ -251,9 +250,6 @@ export default function MatchingGiftFinderClient() {
     contactCount,
     matchCount,
   });
-  const relatedLinks = matchingGiftFinderRelatedLinks(orgId, {
-    include: [...MATCHING_GIFT_FINDER_RELATED_INCLUDE],
-  });
   const businessHref = hubWorkbenchHref("business", "matching-gift-finder", orgId);
   const showTiles = shouldShowMatchingGiftFinderSummaryTiles(contactCount);
 
@@ -349,15 +345,6 @@ export default function MatchingGiftFinderClient() {
         title="Matching Gift Multiplier Finder"
         description="Match household-employer contacts against employer matching-gift programs, draft HR request letters, and track pledge status."
       >
-        {/* One way into AI: Ask AI opens on this page's skill with its records. */}
-        <AskAiButton orgId={orgId} />
-        <div className="mgf-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
 
       <OfflineBanner feature="Matching Gift Finder" fromCache={fromCache} cachedAt={cachedAt} />

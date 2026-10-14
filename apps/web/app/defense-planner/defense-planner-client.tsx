@@ -284,9 +284,6 @@ export default function DefensePlannerClient() {
     matchupCount,
     hasProfile,
   });
-  const relatedLinks = defensePlannerRelatedLinks(orgId, {
-    include: [...DEFENSE_PLANNER_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "defense-planner", orgId);
   const showTiles = shouldShowDefensePlannerSummaryTiles({ matchupCount, hasProfile });
 
@@ -400,11 +397,6 @@ export default function DefensePlannerClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

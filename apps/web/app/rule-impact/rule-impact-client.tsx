@@ -291,9 +291,6 @@ export default function RuleImpactClient() {
     blockedCount,
     openAssessmentCount,
   });
-  const relatedLinks = ruleImpactRelatedLinks(orgId, {
-    include: [...RULE_IMPACT_RELATED_INCLUDE],
-  });
   const buildHref = hubWorkbenchHref("build", "rule-impact", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);
 
@@ -400,11 +397,6 @@ export default function RuleImpactClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

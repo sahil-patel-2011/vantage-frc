@@ -249,9 +249,6 @@ export default function BatteryRotationClient() {
     chargeShortfallCount: summary?.chargeShortfallCount ?? 0,
     upcomingAssignments: summary?.upcomingAssignments ?? 0,
   });
-  const relatedLinks = batteryRotationRelatedLinks(orgId, {
-    include: [...BATTERY_ROTATION_RELATED_INCLUDE],
-  });
   const competitionHref = withOrgHref("/competition", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
 
@@ -335,13 +332,6 @@ export default function BatteryRotationClient() {
         title="Battery rotation & charge planner"
         description="Schedule which pack runs which match from internal-resistance trends vs. match cadence and charge time."
       >
-        <div className="battery-rotation-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Battery Rotation" fromCache={fromCache} cachedAt={cachedAt} />
 

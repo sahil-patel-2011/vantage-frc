@@ -37,8 +37,12 @@ app access, replacement of auth/tenant persistence, and hosted acceptance proof.
 # Base44 dev environment notes
 
 Run the stack with `docker compose -f docker-compose.base44.yml up -d` (web on host port 3000).
-Services: `db` (postgres 17) → `install` (npm install) → `migrate` (`npm run db:migrate`) →
-`roles` (creates the `vantage_*_login` logins the app URLs use) → `web` (`next dev`).
+Services: `db` (postgres 17) → `web`. On startup `web` runs `npm install` at the workspace
+root, `npm run db:migrate`, creates the `vantage_*_login` logins the app URLs use, then
+starts `next dev`. All of that takes about 3 seconds. It sits in `web` deliberately: the
+platform's health validation flags any stopped compose service, including one-shot jobs that
+exited 0. So don't split setup back into separate services. Look for the `login ready:` lines
+in `docker compose logs web`.
 
 Non-obvious findings:
 
@@ -47,17 +51,38 @@ Non-obvious findings:
   build (`node:22-alpine`) works, so all Node services run on Alpine. If `node_modules` was
   installed by a glibc image, delete it and reinstall.
 - `.next` and `/root/.cache/next-swc` live in named volumes, not the bind mount.
+- **Dev-server memory.** Every cold route `next dev` compiles adds memory; uncapped it grew about
+  150 MB per route and the 8 GB VM OOM-killed it after about 50 routes. `NODE_OPTIONS=--max-old-space-size=2048`
+  (compose) holds 60 cold routes to about 3 GB, and memory falls back near 1.4 GB when idle. When
+  its worker is killed, `next dev` exits **0**, which `restart: on-failure` ignores. So the startup
+  script runs it as a child, forwards stop signals (clean exit 0), and otherwise exits 1 so compose
+  restarts it. For page sweeps, still walk routes one at a time, never concurrently.
 - Local Postgres has no SSL, so every connection URL carries `?sslmode=disable`.
   `scripts/run-migrations.mjs` was taught to honour `sslmode=disable` (it previously only skipped
   SSL for `localhost` hostnames).
 - Migrations create the group roles (`vantage_app`, `vantage_auth`, `vantage_marketing`,
-  `vantage_worker`) as NOLOGIN; the `roles` service adds one login per group.
+  `vantage_worker`) as NOLOGIN; the `web` startup then adds one login per group.
 - The app boots without external credentials — Stripe/Resend/CAD surfaces report
   `setup_required` by design. Outside production, sign-in emails go to an in-memory mailbox;
   use `npm run dev:otp` to read a code.
 
 Verify: `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` → 200.
+The `web` healthcheck probes the existing `/api/auth/status` route. Sign-in lives at `/signin`
+(`/sign-in` 307-redirects), and the header "Sign in" link does a full page load.
 
+- A browser log saying `No link element found for chunk …css` right after a "Compiled" line is
+  a dev-only CSS hot-reload race when a stylesheet is edited while a tab is open. A fresh page
+  load clears it; it is not an app defect.
+
+- Provisioning people by SQL: the first `platform_admins` row becomes the single platform owner
+  (0733 trigger). A `memberships` insert fails until that user's profile has a 13+ `date_of_birth`
+  (`enforce_member_age`, 0703), so make someone a team owner only after they finish onboarding.
+
+- The platform owner sets any team's member access from Platform admin › Teams › a team ›
+  Members and permissions (`/admin/teams/members?orgId=`), backed by the owner-only SQL functions
+  in `0736`. Owners/mentors get the same grid at `/team/admin/permissions`. Both pages need a
+  signed-in session; signed out, every product route 307s to `/signin`. Migration 0736 must be
+  applied wherever this code is deployed.
 - Media is temporarily disabled with the shared `MEDIA_ENABLED` switch in
   `apps/web/lib/media-availability.ts`. It gates media routes, hub tabs, upload
   routing, scouting media queues and photo controls. Set it to true and redeploy

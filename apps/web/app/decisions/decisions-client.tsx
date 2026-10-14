@@ -309,9 +309,6 @@ export default function DecisionsClient() {
     openCount,
   });
   const aiHref = hubHref("/ai", "decisions", orgId);
-  const relatedLinks = decisionsRelatedLinks(orgId, {
-    include: [...DECISIONS_RELATED_INCLUDE],
-  });
   const embedded = isAiHubEmbed();
 
   if (shell === "loading") {
@@ -389,11 +386,6 @@ export default function DecisionsClient() {
   const Root = embedded ? "div" : "main";
   const headerActions = (
     <div className="decision-log-header-actions">
-      {relatedLinks.map((link) => (
-        <Button as="a" variant="secondary" key={link.id} href={link.href}>
-          {link.label}
-        </Button>
-      ))}
       {view.seasons.length > 0 ? (
         <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
           Season

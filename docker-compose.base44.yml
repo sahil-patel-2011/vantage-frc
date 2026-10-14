@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17
+    restart: on-failure
     environment:
       - POSTGRES_PASSWORD=vantage_dev
       - POSTGRES_DB=vantage
@@ -11,40 +12,6 @@ services:
       retries: 20
     volumes:
       - db-data:/var/lib/postgresql/data
-
-  install:
-    image: node:22-alpine
-    working_dir: /app
-    volumes:
-      - .:/app
-    command: sh -c "npm install --no-audit --no-fund"
-
-  migrate:
-    image: node:22-alpine
-    working_dir: /app
-    volumes:
-      - .:/app
-    environment:
-      - DATABASE_ADMIN_URL=postgres://postgres:vantage_dev@db:5432/vantage?sslmode=disable
-    depends_on:
-      db:
-        condition: service_healthy
-      install:
-        condition: service_completed_successfully
-    command: sh -c "npm run db:migrate"
-
-  roles:
-    image: postgres:17
-    environment:
-      - PGPASSWORD=vantage_dev
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    command: >
-      sh -c "for r in app auth marketing worker; do
-        psql -h db -U postgres -d vantage -c \"DO \\$$\\$$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'vantage_$${r}_login') THEN CREATE ROLE vantage_$${r}_login LOGIN PASSWORD 'vantage_dev'; END IF; END \\$$\\$$;\";
-        psql -h db -U postgres -d vantage -c \"GRANT vantage_$${r} TO vantage_$${r}_login\";
-      done"
 
   web:
     image: node:22-alpine
@@ -57,6 +24,9 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
+      - BASE44_PREVIEW_MODE
+      # Cap the V8 heap so GC reclaims compiled-route state before the 8 GB VM OOM-kills it.
+      - NODE_OPTIONS=--max-old-space-size=2048
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
       - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
@@ -70,11 +40,50 @@ services:
     env_file:
       - /run/base44/app.env
     depends_on:
-      roles:
-        condition: service_completed_successfully
+      db:
+        condition: service_healthy
     tty: true
     stdin_open: true
-    command: sh -c "/app/node_modules/.bin/next dev --port 3000 --hostname 0.0.0.0"
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/auth/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 120s
+    # Startup (stops on the first failure): install from the workspace root, apply migrations,
+    # add one login per vantage_* group role (migrations create them NOLOGIN), then start next dev.
+    command:
+      - sh
+      - -ec
+      - |
+        cd /app
+        npm install --no-audit --no-fund
+        npm run db:migrate
+        node <<'JS'
+        const pg = require("pg");
+        (async () => {
+          const db = new pg.Client({ connectionString: process.env.DATABASE_ADMIN_URL });
+          await db.connect();
+          for (const group of ["app", "auth", "marketing", "worker"]) {
+            const login = "vantage_" + group + "_login";
+            const { rowCount } = await db.query("SELECT 1 FROM pg_roles WHERE rolname = $$1", [login]);
+            if (rowCount === 0) await db.query("CREATE ROLE " + login + " LOGIN PASSWORD 'vantage_dev'");
+            await db.query("GRANT vantage_" + group + " TO " + login);
+            console.log("login ready: " + login);
+          }
+          await db.end();
+        })().catch((err) => { console.error(err); process.exit(1); });
+        JS
+        cd /app/apps/web
+        # `next dev` exits 0 when its worker is OOM-killed, which `restart: on-failure` ignores.
+        # Run it as a child: forward stop signals for a clean exit, otherwise exit 1 so compose restarts it.
+        /app/node_modules/.bin/next dev --port 3000 --hostname 0.0.0.0 &
+        pid=$$!
+        trap 'kill -TERM $$pid 2>/dev/null; wait $$pid; exit 0' TERM INT
+        wait $$pid || true
+        echo "next dev exited unexpectedly; exiting 1 so compose restarts the service" >&2
+        exit 1
 
 volumes:
   db-data:

@@ -16,7 +16,7 @@ Use cobalt only for actions, active state, provenance signals, and the decision 
 
 ## Interface accent
 
-Signal cobalt is the mark's colour. The product interface (the app and the Scouting app) has one
+Signal cobalt is the mark's colour. The product interface (the app, the Scouting app and sign-in) has one
 accent token, `--accent`, defined once in `app/macos-product.css`:
 
 - Light: `#075DCC` (white text on it 6.1:1; on white 6.1:1)

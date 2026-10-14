@@ -303,9 +303,6 @@ export default function EventDayPlanClient() {
     blockCount,
     conflictCount,
   });
-  const relatedLinks = eventDayPlanRelatedLinks(orgId, {
-    include: [...EVENT_DAY_PLAN_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "event-day-plan", orgId);
   const showTiles = shouldShowEventDayPlanSummaryTiles(blockCount);
 
@@ -437,11 +434,6 @@ export default function EventDayPlanClient() {
               }}
             />
           </label>
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

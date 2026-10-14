@@ -274,9 +274,6 @@ export default function RiskBurndownClient() {
     openRiskCount,
     highSeverityOpenCount,
   });
-  const relatedLinks = riskBurndownRelatedLinks(orgId, {
-    include: [...RISK_BURNDOWN_RELATED_INCLUDE],
-  });
   const teamHref = hubWorkbenchHref("team", "risk-burndown", orgId);
   const risksHref = withOrgHref("/risks", orgId);
 
@@ -383,11 +380,6 @@ export default function RiskBurndownClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

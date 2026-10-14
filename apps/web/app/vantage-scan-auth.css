@@ -30,8 +30,8 @@
   color: var(--muted, #5a6578);
 }
 
-/* The product's teal accent, the colour of the marketing site's and the app's primary buttons: one
-   product, one primary colour (it was a separate blue here). Light and dark both come from tokens. */
+/* The product accent (macos-product.css), the colour of the marketing site's and the app's primary
+   buttons: one product, one primary colour. Light and dark both come from tokens. */
 .signin-submit,
 .signin-page .signin-submit {
   background: var(--accent);

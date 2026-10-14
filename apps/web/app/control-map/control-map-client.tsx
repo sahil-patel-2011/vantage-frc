@@ -325,9 +325,6 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
     driverCount,
     operatorCount,
   });
-  const relatedLinks = controlMapRelatedLinks(orgId, {
-    include: [...CONTROL_MAP_RELATED_INCLUDE],
-  });
   const buildHref = hubHref("/build", "fmea", orgId);
   const subsystemsHref = withOrgHref("/subsystems", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
@@ -421,13 +418,6 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
         title={`Control Map — ${seasonYear}`}
         description="Driver-station cheat sheet: every controller input → robot action. Keep it in sync with Subsystems and FMEA."
       >
-        <div className="control-map-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Control Map" fromCache={fromCache} cachedAt={cachedAt} />
 

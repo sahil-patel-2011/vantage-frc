@@ -234,9 +234,6 @@ export default function CounterBookClient() {
   });
   const shellCopy = counterBookShellCopy(shell);
   const nextActions = counterBookNextActions({ orgId, shell, reportCount });
-  const relatedLinks = counterBookRelatedLinks(orgId, {
-    include: [...COUNTER_BOOK_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "counter-book", orgId);
 
   const mutate = useCallback(
@@ -321,13 +318,6 @@ export default function CounterBookClient() {
         title="Opponent Counter-book"
         description="One-page counter-strategy per likely playoff opponent — tendencies and failure triggers pulled only from your team's own scouted matches."
       >
-        <div className="counter-book-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Counter-book" fromCache={fromCache} cachedAt={cachedAt} />
 

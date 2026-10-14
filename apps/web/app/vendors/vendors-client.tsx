@@ -275,9 +275,6 @@ export default function VendorsClient() {
     preferredCount,
     missingContactCount,
   });
-  const relatedLinks = vendorsRelatedLinks(orgId, {
-    include: [...VENDORS_RELATED_INCLUDE],
-  });
   const buildHref = withOrgHref("/build", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
   const leadTimesHref = hubHref("/business", "vendor-lead-times", orgId);
@@ -362,13 +359,6 @@ export default function VendorsClient() {
         title="Vendor Directory"
         description="Your team's known suppliers — COTS, raw stock, tools, and services — with contacts, lead times, and ratings. Purchase orders pick a vendor from this directory."
       >
-        <div className="vendors-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Vendors" fromCache={fromCache} cachedAt={cachedAt} />
 

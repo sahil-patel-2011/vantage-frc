@@ -209,9 +209,6 @@ export default function MatchNotesTimelineClient() {
     entryCount,
     matchCount,
   });
-  const relatedLinks = matchNotesTimelineRelatedLinks(orgId, {
-    include: [...MATCH_NOTES_TIMELINE_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "match-notes-timeline", orgId);
 
   const mutate = useCallback(
@@ -313,11 +310,6 @@ export default function MatchNotesTimelineClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Match notes" fromCache={fromCache} cachedAt={cachedAt} />

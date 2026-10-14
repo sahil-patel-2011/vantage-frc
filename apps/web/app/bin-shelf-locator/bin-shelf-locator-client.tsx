@@ -249,9 +249,6 @@ export default function BinShelfLocatorClient() {
     locationCount,
     itemCount,
   });
-  const relatedLinks = binShelfLocatorRelatedLinks(orgId, {
-    include: [...BIN_SHELF_LOCATOR_RELATED_INCLUDE],
-  });
   const buildHref = hubWorkbenchHref("build", "bin-shelf-locator", orgId);
   const showTiles = shouldShowBinShelfLocatorSummaryTiles(locationCount);
 
@@ -340,13 +337,6 @@ export default function BinShelfLocatorClient() {
         title="Bin/Shelf Locator"
         description="Assign put-away locations, print QR labels, and find parts."
       >
-        <div className="bsl-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Bin/Shelf Locator" fromCache={fromCache} cachedAt={cachedAt} />
 

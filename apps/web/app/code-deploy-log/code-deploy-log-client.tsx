@@ -276,9 +276,6 @@ export default function CodeDeployLogClient() {
     deployCount,
     matchLinkedCount,
   });
-  const relatedLinks = codeDeployLogRelatedLinks(orgId, {
-    include: [...CODE_DEPLOY_LOG_RELATED_INCLUDE],
-  });
   const buildHref = hubWorkbenchHref("build", "code-deploy-log", orgId);
   const showTiles = shouldShowCodeDeployLogSummaryTiles(deployCount);
 
@@ -385,11 +382,6 @@ export default function CodeDeployLogClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Code Deploy Log" fromCache={fromCache} cachedAt={cachedAt} />

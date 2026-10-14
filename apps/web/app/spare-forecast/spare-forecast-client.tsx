@@ -290,9 +290,6 @@ export default function SpareForecastClient() {
   // Header strip drops destinations the Next-actions panel already offers.
   const nextActionHrefs = new Set(nextActions.map((action) => action.href));
   const fmeaHref = hubHref("/build", "fmea", orgId);
-  const relatedLinks = spareForecastRelatedLinks(orgId, {
-    include: [...SPARE_FORECAST_RELATED_INCLUDE],
-  }).filter((link) => !nextActionHrefs.has(link.href));
   const buildHref = withOrgHref("/build", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
@@ -408,11 +405,6 @@ export default function SpareForecastClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

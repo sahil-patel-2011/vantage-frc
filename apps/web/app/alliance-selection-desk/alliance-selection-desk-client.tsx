@@ -429,9 +429,6 @@ export default function AllianceSelectionDeskClient() {
     conflictCount,
     filledSlots,
   });
-  const relatedLinks = allianceSelectionDeskRelatedLinks(orgId, {
-    include: [...ALLIANCE_SELECTION_DESK_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "alliance-selection-desk", orgId);
   const showTiles = shouldShowAllianceSelectionDeskSummaryTiles(sessionCount);
 
@@ -560,11 +557,6 @@ export default function AllianceSelectionDeskClient() {
               </Button>
             </>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

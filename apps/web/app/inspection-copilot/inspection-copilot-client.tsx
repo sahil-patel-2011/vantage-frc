@@ -4,13 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
 import type { InspectionCopilotView } from "../../lib/inspection-copilot/compute-inspection-copilot";
-import {
-  INSPECTION_COPILOT_RELATED_INCLUDE,
-  classifyInspectionCopilotShell,
-  inspectionCopilotNextActions,
-  inspectionCopilotRelatedLinks,
-  inspectionCopilotShellCopy,
-} from "../../lib/inspection-copilot/inspection-copilot-related";
+import { classifyInspectionCopilotShell, inspectionCopilotNextActions, inspectionCopilotShellCopy } from "../../lib/inspection-copilot/inspection-copilot-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -162,9 +156,6 @@ export default function InspectionCopilotClient() {
     flaggedCount,
     criticalCount,
   });
-  const relatedLinks = inspectionCopilotRelatedLinks(orgId, {
-    include: [...INSPECTION_COPILOT_RELATED_INCLUDE],
-  });
   const competitionHref = hubHref("/competition", "command", orgId);
   const batteriesHref = hubHref("/team", "batteries", orgId);
   const fmeaHref = hubHref("/build", "fmea", orgId);
@@ -275,11 +266,6 @@ export default function InspectionCopilotClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

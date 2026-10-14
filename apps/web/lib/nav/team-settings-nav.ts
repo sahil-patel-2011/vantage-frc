@@ -10,12 +10,13 @@
 
 import { settingsBreadcrumb } from "./settings-nav";
 
-export type TeamSettingsPageId = "people" | "profile" | "security" | "ai" | "connectors" | "chat" | "data";
+export type TeamSettingsPageId = "people" | "permissions" | "profile" | "security" | "ai" | "connectors" | "chat" | "data";
 
 export type TeamSettingsPage = { id: TeamSettingsPageId; label: string; href: string };
 
 export const TEAM_SETTINGS_PAGES: readonly TeamSettingsPage[] = [
   { id: "people", label: "Members and invites", href: "/team/admin" },
+  { id: "permissions", label: "Roles and permissions", href: "/team/admin/permissions" },
   { id: "profile", label: "Team profile", href: "/team/admin/profile" },
   { id: "security", label: "Team security", href: "/team/security" },
   { id: "ai", label: "Team AI keys", href: "/team/ai-keys" },

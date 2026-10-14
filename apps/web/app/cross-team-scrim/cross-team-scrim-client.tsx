@@ -291,10 +291,6 @@ export default function CrossTeamScrimClient() {
     upcomingCount,
     canOpenTeamData: canSync,
   });
-  const relatedLinks = crossTeamScrimRelatedLinks(orgId, {
-    include: [...CROSS_TEAM_SCRIM_RELATED_INCLUDE],
-    canOpenTeamData: canSync,
-  });
   const teamHref = hubWorkbenchHref("team", "cross-team-scrim", orgId);
   const showTiles = shouldShowCrossTeamScrimSummaryTiles({ inviteCount, upcomingCount });
 
@@ -403,11 +399,6 @@ export default function CrossTeamScrimClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
