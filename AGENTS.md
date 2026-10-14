@@ -39,8 +39,9 @@ app access, replacement of auth/tenant persistence, and hosted acceptance proof.
 Run the stack with `docker compose -f docker-compose.base44.yml up -d` (web on host port 3000).
 Services: `db` (postgres 17) → `install` (npm install) → `migrate` (`npm run db:migrate`, then
 creates the `vantage_*_login` logins the app URLs use) → `web` (`next dev`). `install` and
-`migrate` are one-shot jobs that exit 0; keep one-shots on the Node image (a stopped `postgres`
-image container gets flagged as a dead database).
+`migrate` are one-shot jobs: `Exited (0)` is their success state, and `web` waits on it via
+`service_completed_successfully`. Platform health checks may still flag the exited job; confirm
+exit code 0 and the `login ready:` lines in `docker compose logs migrate` instead of restructuring.
 
 Non-obvious findings:
 
