@@ -37,11 +37,12 @@ app access, replacement of auth/tenant persistence, and hosted acceptance proof.
 # Base44 dev environment notes
 
 Run the stack with `docker compose -f docker-compose.base44.yml up -d` (web on host port 3000).
-Services: `db` (postgres 17) → `install` (npm install) → `migrate` (`npm run db:migrate`, then
-creates the `vantage_*_login` logins the app URLs use) → `web` (`next dev`). `install` and
-`migrate` are one-shot jobs: `Exited (0)` is their success state, and `web` waits on it via
-`service_completed_successfully`. Platform health checks may still flag the exited job; confirm
-exit code 0 and the `login ready:` lines in `docker compose logs migrate` instead of restructuring.
+Services: `db` (postgres 17) → `web`. On startup `web` runs `npm install` at the workspace
+root, `npm run db:migrate`, creates the `vantage_*_login` logins the app URLs use, then
+`exec`s `next dev`. All of that takes about 3 seconds. It sits in `web` deliberately: the
+platform's health validation flags any stopped compose service, including one-shot jobs that
+exited 0. So don't split setup back into separate services. Look for the `login ready:` lines
+in `docker compose logs web`.
 
 Non-obvious findings:
 
@@ -54,7 +55,7 @@ Non-obvious findings:
   `scripts/run-migrations.mjs` was taught to honour `sslmode=disable` (it previously only skipped
   SSL for `localhost` hostnames).
 - Migrations create the group roles (`vantage_app`, `vantage_auth`, `vantage_marketing`,
-  `vantage_worker`) as NOLOGIN; the `migrate` service then adds one login per group.
+  `vantage_worker`) as NOLOGIN; the `web` startup then adds one login per group.
 - The app boots without external credentials — Stripe/Resend/CAD surfaces report
   `setup_required` by design. Outside production, sign-in emails go to an in-memory mailbox;
   use `npm run dev:otp` to read a code.
