@@ -39,7 +39,7 @@ app access, replacement of auth/tenant persistence, and hosted acceptance proof.
 Run the stack with `docker compose -f docker-compose.base44.yml up -d` (web on host port 3000).
 Services: `db` (postgres 17) → `web`. On startup `web` runs `npm install` at the workspace
 root, `npm run db:migrate`, creates the `vantage_*_login` logins the app URLs use, then
-`exec`s `next dev`. All of that takes about 3 seconds. It sits in `web` deliberately: the
+starts `next dev`. All of that takes about 3 seconds. It sits in `web` deliberately: the
 platform's health validation flags any stopped compose service, including one-shot jobs that
 exited 0. So don't split setup back into separate services. Look for the `login ready:` lines
 in `docker compose logs web`.
@@ -51,6 +51,12 @@ Non-obvious findings:
   build (`node:22-alpine`) works, so all Node services run on Alpine. If `node_modules` was
   installed by a glibc image, delete it and reinstall.
 - `.next` and `/root/.cache/next-swc` live in named volumes, not the bind mount.
+- **Dev-server memory.** Every cold route `next dev` compiles adds memory; uncapped it grew about
+  150 MB per route and the 8 GB VM OOM-killed it after about 50 routes. `NODE_OPTIONS=--max-old-space-size=2048`
+  (compose) holds 60 cold routes to about 3 GB, and memory falls back near 1.4 GB when idle. When
+  its worker is killed, `next dev` exits **0**, which `restart: on-failure` ignores. So the startup
+  script runs it as a child, forwards stop signals (clean exit 0), and otherwise exits 1 so compose
+  restarts it. For page sweeps, still walk routes one at a time, never concurrently.
 - Local Postgres has no SSL, so every connection URL carries `?sslmode=disable`.
   `scripts/run-migrations.mjs` was taught to honour `sslmode=disable` (it previously only skipped
   SSL for `localhost` hostnames).

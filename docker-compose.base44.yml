@@ -25,6 +25,8 @@ services:
     environment:
       - NODE_ENV=development
       - BASE44_PREVIEW_MODE
+      # Cap the V8 heap so GC reclaims compiled-route state before the 8 GB VM OOM-kills it.
+      - NODE_OPTIONS=--max-old-space-size=2048
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
       - BASE44_PUBLIC_HOST_SUFFIX=${BASE44_PUBLIC_HOST_SUFFIX}
@@ -74,7 +76,14 @@ services:
         })().catch((err) => { console.error(err); process.exit(1); });
         JS
         cd /app/apps/web
-        exec /app/node_modules/.bin/next dev --port 3000 --hostname 0.0.0.0
+        # `next dev` exits 0 when its worker is OOM-killed, which `restart: on-failure` ignores.
+        # Run it as a child: forward stop signals for a clean exit, otherwise exit 1 so compose restarts it.
+        /app/node_modules/.bin/next dev --port 3000 --hostname 0.0.0.0 &
+        pid=$$!
+        trap 'kill -TERM $$pid 2>/dev/null; wait $$pid; exit 0' TERM INT
+        wait $$pid || true
+        echo "next dev exited unexpectedly; exiting 1 so compose restarts the service" >&2
+        exit 1
 
 volumes:
   db-data:
