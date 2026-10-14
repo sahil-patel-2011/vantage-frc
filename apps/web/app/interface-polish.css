@@ -359,6 +359,7 @@ body.has-app-shell .admin-shell { display: grid; grid-template-columns: 180px mi
 body.has-app-shell .admin-console-nav { display: flex; flex-direction: column; position: sticky; top: 92px; align-self: start; margin: 0; border: 0; overflow: visible; gap: 4px; }
 .admin-console-label { display: flex; gap: 8px; align-items: center; margin: 0 10px 16px; font-size: 12px; color: var(--muted); }
 .admin-console-label svg { width: 16px; height: 16px; }
+.admin-console-picker { display: none; }
 body.has-app-shell .admin-console-nav a { display: flex; gap: 10px; min-height: 44px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 500; margin: 0; }
 .admin-console-nav a svg { width: 18px; height: 18px; }
 body.has-app-shell .admin-console-nav a.is-active { color: var(--accent); background: var(--accent-soft); }
@@ -396,7 +397,10 @@ body.has-app-shell .tc-page .tc-timed-head { position: sticky; top: 0; z-index: 
   .ask-history-rail { display: none; }
   .ask-page .ch-history-mobile, .ask-page .ch-new-chat-mobile { display: inline-flex; }
   body.has-app-shell .admin-shell { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; }
-  body.has-app-shell .admin-console-nav { position: static; flex-direction: row; overflow: auto; padding-bottom: 8px; }
+  body.has-app-shell .admin-console-nav { position: static; display: block; overflow: visible; padding: 0; }
+  body.has-app-shell .admin-console-nav > a { display: none; }
+  .admin-console-picker { display: grid; gap: 8px; color: var(--muted); font-size: 12px; }
+  .admin-console-picker select { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--field-line, var(--line)); border-radius: 12px; background: var(--surface); color: var(--ink); font: 500 16px var(--font-sans); }
   .admin-console-label { display: none; }
   body.has-app-shell .tc-page .tc-layout { grid-template-columns: minmax(0, 1fr); }
 }

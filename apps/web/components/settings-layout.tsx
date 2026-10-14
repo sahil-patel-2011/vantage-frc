@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useId, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { pushAppNavigation } from "../lib/nav/soft-navigation";
 import { ROLE_LABELS, type AccessRole } from "@vantage/core/role-words";
@@ -117,12 +117,19 @@ const PLATFORM_ROWS: Array<{ id: string; href: string; label: string; detail: st
   { id: "platform-health", href: "/admin/health", label: "Health", detail: "Email, sign-in, data sync and the database", icon: "activity" },
 ];
 
-function PlatformSettings() {
+function matchesSettingsSearch(item: { label: string; detail: string; keywords?: string[] }, query: string) {
+  const text = [item.label, item.detail, ...(item.keywords ?? [])].join(" ").toLocaleLowerCase();
+  return query.trim().toLocaleLowerCase().split(/\s+/).every(word => text.includes(word));
+}
+
+function PlatformSettings({ query = "" }: { query?: string }) {
+  const rows = PLATFORM_ROWS.filter(item => matchesSettingsSearch(item, query));
+  if (!rows.length) return null;
   return (
     <section aria-labelledby="settings-group-platform" className="settings-list is-detailed">
       <h2 className="settings-group-label" id="settings-group-platform">Platform</h2>
       <ul className="settings-group">
-        {PLATFORM_ROWS.map((item) => (
+        {rows.map((item) => (
           <li key={item.id}>
             <a href={item.href} className="settings-row">
               <i className="settings-row-icon" aria-hidden="true"><Icon name={item.icon} /></i>
@@ -158,6 +165,7 @@ export function SettingsList({
   failed = false,
   onRetry,
   detailed = false,
+  showTeamNotice = true,
 }: {
   items: SettingsNavItem[];
   orgId: string;
@@ -168,6 +176,7 @@ export function SettingsList({
   failed?: boolean;
   onRetry?: () => void;
   detailed?: boolean;
+  showTeamNotice?: boolean;
 }) {
   const team = items.filter((item) => item.scope === "team");
   const lead = settingsRoleTier(role) === "owner-admin";
@@ -193,7 +202,7 @@ export function SettingsList({
         <h2 className="settings-group-label">{group.label}</h2>
         <ul className="settings-group">{group.items.map(row)}</ul>
       </section>)}
-      {(orgId || teamLabel) && !team.length ? (
+      {showTeamNotice && (orgId || teamLabel) && !team.length ? (
         <section aria-labelledby="settings-group-team">
           <h2 className="settings-group-label" id="settings-group-team">
             Team settings
@@ -268,18 +277,38 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
 
 /** /settings: the list itself, with a line under each row. */
 export function SettingsHome() {
+  const [query, setQuery] = useState("");
+  const searchId = useId();
+  const searchRef = useRef<HTMLInputElement>(null);
   const search = useLocationSearch();
   const orgId = new URLSearchParams(search).get("orgId") ?? "";
   const viewer = useSettingsViewer(orgId);
   const items = visibleSettingsNav(viewer.role);
+  const matches = items.filter(item => matchesSettingsSearch(item, query));
+  const platformMatches = viewer.platformAdmin ? PLATFORM_ROWS.filter(item => matchesSettingsSearch(item, query)).length : 0;
+  const matchCount = matches.length + platformMatches;
   return (
     <main className="module-page settings-home" id="main-content">
       <header className="settings-home-head">
         <h1>Settings</h1>
         <p>Everything you can change about your account, and the team settings your role allows.</p>
       </header>
+      <div className="settings-search">
+        <label className="sr-only" htmlFor={searchId}>Find a setting</label>
+        <Icon name="search" />
+        <input id={searchId} ref={searchRef} type="search" placeholder="Find a setting…" value={query}
+          onChange={event => setQuery(event.target.value)} />
+        {query ? <button type="button" aria-label="Clear settings search" onClick={() => {
+          setQuery("");
+          searchRef.current?.focus();
+        }}><Icon name="x" /></button> : null}
+      </div>
+      {query.trim() ? <p className="settings-search-status" role="status">
+        {matchCount ? `${matchCount} ${matchCount === 1 ? "setting" : "settings"} found.` : viewer.ready ? "No settings found. Try a name like notifications, invites, or AI." : ""}
+        {viewer.failed ? <> Team settings couldn&apos;t load. <button type="button" className="settings-retry" onClick={viewer.retry}>Try again</button></> : !viewer.ready ? " Loading team settings…" : null}
+      </p> : null}
       <SettingsList
-        items={items}
+        items={matches}
         orgId={orgId || viewer.teamId}
         activeId={null}
         role={viewer.role}
@@ -288,8 +317,9 @@ export function SettingsHome() {
         failed={viewer.failed}
         onRetry={viewer.retry}
         detailed
+        showTeamNotice={!query.trim()}
       />
-      {viewer.platformAdmin ? <PlatformSettings /> : null}
+      {viewer.platformAdmin ? <PlatformSettings query={query} /> : null}
     </main>
   );
 }

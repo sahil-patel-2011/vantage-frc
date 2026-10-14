@@ -58,8 +58,11 @@ export function AccountProfilePanel({
   onSignOut: () => void;
 }) {
   return (
-    <Panel className="account-panel">
+    <>
+    <Panel className="account-panel account-profile-details">
       <form className="account-form" onSubmit={(event) => void onSave(event)}>
+        <fieldset className="account-field-group">
+        <legend>About you</legend>
         <label>
           Display name
           <input
@@ -70,6 +73,7 @@ export function AccountProfilePanel({
             required
           />
         </label>
+        <div className="account-field-pair">
         <label>
           First name
           <input
@@ -88,6 +92,8 @@ export function AccountProfilePanel({
             autoComplete="family-name"
           />
         </label>
+        </div>
+        <div className="account-field-pair">
         <label>
           Date of birth
           <input
@@ -109,19 +115,17 @@ export function AccountProfilePanel({
             <option value="other">Something else (alum, volunteer, sponsor)</option>
           </select>
         </label>
+        </div>
         <p className="app-muted">
-          Your access (owner, mentor, student) is set on Team admin. Mentors, coaches and parents count as adults
-          for the team&rsquo;s chat safety rules; your date of birth is used the same way and nobody on the team sees it.
+          Your date of birth stays private. Your role and age help apply the team&rsquo;s chat safety rules.
+          Team admins manage what you can access.
         </p>
-        <label>
-          Sign-in email
-          <input value={account.email ?? ""} readOnly disabled />
-        </label>
-        <RecoveryEmailSettings suggested={recoveryEmail} />
+        </fieldset>
         {/* Phone codes only when Vantage can actually send a text; otherwise the buttons
             did nothing but fail. */}
         {account.phoneOtp?.configured || account.phoneVerified ? (
-          <>
+          <fieldset className="account-field-group account-phone-group">
+        <legend>Text codes</legend>
         <label>
           Phone number for text codes
           <input
@@ -151,9 +155,9 @@ export function AccountProfilePanel({
             Verify phone
           </Button>
         </div>
-          </>
+          </fieldset>
         ) : null}
-        <div className="account-actions">
+        <div className="account-actions account-profile-save">
           <Button variant="primary" type="submit" disabled={busy}>
             {busy ? "Saving…" : "Save profile"}
           </Button>
@@ -165,5 +169,11 @@ export function AccountProfilePanel({
         </div>
       </form>
     </Panel>
+    <Panel className="account-panel account-signin-details">
+      <header><h2>Sign-in and recovery</h2><p>Confirm a recovery email here to keep a second way into your account.</p></header>
+      <dl className="account-signin-email"><dt>Sign-in email</dt><dd>{account.email || "Not available"}</dd></dl>
+      <RecoveryEmailSettings suggested={recoveryEmail} />
+    </Panel>
+    </>
   );
 }

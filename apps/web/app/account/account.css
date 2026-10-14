@@ -459,6 +459,27 @@
 /* The profile form's select looks like its inputs (it was an unstyled 23px box on desktop too). */
 .account-form select{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font:inherit}
 
+.account-field-group { display: grid; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.account-field-group legend { padding: 0 0 16px; font-size: 17px; font-weight: 600; color: var(--ink); }
+.account-field-group p { margin: 0; font-size: 13px; line-height: 1.55; }
+.account-field-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.account-field-pair > label { min-width: 0; }
+.account-field-pair :is(input, select) { box-sizing: border-box; width: 100%; min-width: 0; }
+.account-phone-group { padding-top: 16px; }
+.account-profile-save { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 12px; padding-top: 16px; margin-top: 4px; border-top: 1px solid var(--line-soft); }
+.account-signin-details { margin-top: 20px; display: grid; gap: 20px; }
+.account-signin-details h2 { margin: 0; font-size: 17px; font-weight: 600; }
+.account-signin-details header p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.account-signin-email { display: grid; gap: 6px; margin: 0; padding-bottom: 20px; border-bottom: 1px solid var(--line-soft); }
+.account-signin-email dt { font-size: 13px; color: var(--muted); }
+.account-signin-email dd { margin: 0; font-size: 15px; overflow-wrap: anywhere; }
+.account-signin-details .account-recovery-label { color: var(--ink); font-size: 13px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.account-signin-details input { box-sizing: border-box; min-height: 44px; padding: 10px 12px; color: var(--ink); background: var(--bg); border: 1px solid var(--field-line, var(--line)); border-radius: var(--radius-sm); font: inherit; }
+@media (max-width: 600px) {
+  .account-field-pair { grid-template-columns: minmax(0, 1fr); }
+  .account-signin-details input { font-size: 16px; }
+}
+
 .appearance-save { position: sticky; bottom: 20px; z-index: 2; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 6px 24px color-mix(in srgb, var(--ink) 8%, transparent); }
 .appearance-save .appearance-actions { margin: 0; }
 .appearance-save > p { margin: 10px 0 0; font-size: 13px; }

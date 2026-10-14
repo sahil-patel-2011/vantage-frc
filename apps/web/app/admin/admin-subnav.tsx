@@ -1,11 +1,12 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useId, useState } from "react";
+import { pushAppNavigation } from "../../lib/nav/soft-navigation";
 import { ADMIN_FEEDBACK_NEW_EVENT, newFeedbackBadge } from "../../lib/feedback/admin-feedback";
 import "./admin-feedback-badge.css";
 import "./admin-console.css";
-import { ADMIN_DESTINATIONS, activeAdminDestination } from "../../lib/admin/admin-nav";
+import { ADMIN_DESTINATIONS, MORE_PAGES, activeAdminDestination } from "../../lib/admin/admin-nav";
 import { Icon } from "../../components/icon";
 
 export { ADMIN_DESTINATIONS, MORE_PAGES, activeAdminDestination, type AdminDestinationId } from "../../lib/admin/admin-nav";
@@ -26,7 +27,11 @@ function NewCount({ label }: { label: string }) {
  */
 export function AdminSubnav({ newFeedback = null }: { newFeedback?: number | null }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const pickerId = useId();
   const active = activeAdminDestination(pathname);
+  const currentTool = MORE_PAGES.find(page => pathname === page.href || pathname.startsWith(`${page.href}/`));
+  const pickerValue = currentTool?.href ?? ADMIN_DESTINATIONS.find(dest => dest.id === active)?.href ?? "/admin";
   const [feedbackNew, setFeedbackNew] = useState<number | null>(newFeedback);
 
   useEffect(() => {
@@ -47,6 +52,22 @@ export function AdminSubnav({ newFeedback = null }: { newFeedback?: number | nul
   return (
     <nav className="admin-console-nav" aria-label="Platform admin">
       <p className="admin-console-label"><Icon name="shield" /> Platform admin</p>
+      <label className="admin-console-picker" htmlFor={pickerId}>
+        <span>Platform admin</span>
+        <select id={pickerId} value={pickerValue} onChange={event => {
+          const destination = [...ADMIN_DESTINATIONS, ...MORE_PAGES].find(item => item.href === event.target.value);
+          if (destination) pushAppNavigation(path => router.push(path), destination.href);
+        }}>
+          <optgroup label="Manage Vantage">
+            {ADMIN_DESTINATIONS.map(dest => <option key={dest.id} value={dest.href}>
+              {dest.id === "more" ? "All admin tools" : dest.label}{dest.id === "feedback" && badge ? ` (${badge} new)` : ""}
+            </option>)}
+          </optgroup>
+          <optgroup label="Other tools">
+            {MORE_PAGES.map(page => <option key={page.href} value={page.href}>{page.label}</option>)}
+          </optgroup>
+        </select>
+      </label>
       {ADMIN_DESTINATIONS.map((dest) => {
         const isActive = dest.id === active;
         return (
