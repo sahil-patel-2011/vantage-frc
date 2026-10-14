@@ -538,6 +538,13 @@
 }
 .dialogTitle { margin: 0; font-size: 21px; font-weight: 550; letter-spacing: -.03em; }
 .dialogClose {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border: 0;
   background: none;
   padding: 4px;
@@ -547,6 +554,7 @@
   border-radius:var(--radius-xs);
   line-height: 0;
 }
+.dialogClose:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dialogClose:hover { background: var(--surface-2); }
 .dialogClose svg { width: 18px; height: 18px; }
 .dialogBody { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--muted); }

@@ -43,7 +43,7 @@ export const SETTINGS_GROUP_LABELS: Record<SettingsScope, string> = {
 export const SETTINGS_NAV: SettingsNavItem[] = [
   // You — every member.
   { id: "profile", label: "Profile", href: "/account", icon: "users", scope: "personal", requiredRole: "member",
-    detail: "Your name, sign-in email and phone",
+    detail: "Your personal details, sign-in and recovery",
     keywords: ["profile", "my name", "name", "email", "phone", "recovery email", "account", "me"] },
   { id: "appearance", label: "Appearance", href: "/account?tab=appearance", icon: "display", scope: "personal", requiredRole: "member",
     detail: "Light or dark, motion, and your pinned apps",

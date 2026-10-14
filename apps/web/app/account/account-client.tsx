@@ -61,7 +61,7 @@ async function persistAccountSnapshot(data: AccountOfflineCache): Promise<void> 
 }
 
 const SECTION_COPY: Record<Tab, { title: string; description: string }> = {
-  profile: { title: "Profile", description: "Your name, sign-in email and phone, and the account actions." },
+  profile: { title: "Profile", description: "Your personal details and ways to sign in." },
   appearance: { title: "Appearance", description: "Light or dark, motion and density, and your pinned apps." },
   notifications: { title: "Notifications", description: "What Vantage tells you about, and how." },
 };
