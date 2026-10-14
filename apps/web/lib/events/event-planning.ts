@@ -30,9 +30,9 @@ const ORGANIZER_EVENTS: PlannedCompetition[] = [{
   sourceUrl: "https://gafirst.org/events/grits-2026",
 }];
 
-export function organizerEvents(year: number, query: string, stored: readonly PlannedCompetition[]): PlannedCompetition[] {
+export function organizerEvents(year: number | null, query: string, stored: readonly PlannedCompetition[]): PlannedCompetition[] {
   const q = query.trim().toLowerCase();
-  return ORGANIZER_EVENTS.filter(event => event.year === year
+  return ORGANIZER_EVENTS.filter(event => (year === null || event.year === year)
     && (!q || [event.name, event.city, event.stateProv].join(" ").toLowerCase().includes(q))
     && !stored.some(row => row.name.toLowerCase().replace(/[^a-z0-9]/g, "") === event.name.toLowerCase().replace(/[^a-z0-9]/g, "")
       || (event.catalogId === "grits-2026" && /^grits(?:\s+2026)?$/i.test(row.name.trim()))));

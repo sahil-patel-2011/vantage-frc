@@ -19,6 +19,7 @@
 type Queryable = {
   query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
 };
+type RosterTeam = import("../intel/offline-teams").OfflineRosterTeam;
 
 export type MyScoutEntry = {
   id: string;
@@ -46,6 +47,9 @@ export type MatchStatus = {
 export type BootstrapExtras = {
   myEntries: MyScoutEntry[];
   scouted: ScoutedRobot[];
+  pitScouted: string[];
+  roster: RosterTeam[];
+  rosterComplete: boolean;
   matchStatus: MatchStatus[];
   teamNumber: number | null;
 };
@@ -59,7 +63,7 @@ export async function loadBootstrapExtras(
     [input.orgId],
   );
   const teamNumber = team.rows[0]?.teamNumber ?? null;
-  if (!input.eventKey) return { myEntries: [], scouted: [], matchStatus: [], teamNumber };
+  if (!input.eventKey) return { myEntries: [], scouted: [], pitScouted: [], roster: [], rosterComplete: false, matchStatus: [], teamNumber };
 
   const mine = await client.query<MyScoutEntry>(
     `SELECT e.id::text AS id, 'match' AS type, e.match_key AS "matchKey", e.team_key AS "teamKey",
@@ -74,10 +78,18 @@ export async function loadBootstrapExtras(
      LIMIT 1000`,
     [input.orgId, input.eventKey, input.userId],
   );
-  const scouted = await client.query<ScoutedRobot>(
-    `SELECT DISTINCT match_key AS "matchKey", team_key AS "teamKey"
+  const scouted = await client.query<{ type: string; matchKey: string | null; teamKey: string; nickname: string | null }>(
+    `WITH coverage AS (SELECT DISTINCT 'match' AS type, match_key AS "matchKey", team_key AS "teamKey"
      FROM match_scout_entries
-     WHERE org_id = $1::uuid AND event_key = $2 AND match_key IS NOT NULL`,
+     WHERE org_id = $1::uuid AND event_key = $2 AND match_key IS NOT NULL
+     UNION SELECT DISTINCT 'pit', NULL::text, team_key FROM pit_scout_entries
+     WHERE org_id = $1::uuid AND event_key = $2
+     UNION SELECT 'roster', NULL::text, team_key FROM (
+       SELECT team_key FROM team_event_metrics WHERE event_key=$2
+       UNION SELECT jsonb_array_elements_text(red_alliance->'teamKeys') FROM matches_ref WHERE event_key=$2
+       UNION SELECT jsonb_array_elements_text(blue_alliance->'teamKeys') FROM matches_ref WHERE event_key=$2
+     ) event_teams)
+     SELECT coverage.*, t.nickname FROM coverage LEFT JOIN teams_ref t ON t.team_key=coverage."teamKey"`,
     [input.orgId, input.eventKey],
   );
   const status = await client.query<MatchStatus>(
@@ -87,7 +99,19 @@ export async function loadBootstrapExtras(
      FROM matches_ref WHERE event_key = $1`,
     [input.eventKey],
   );
-  return { myEntries: mine.rows, scouted: scouted.rows, matchStatus: status.rows, teamNumber };
+  const roster = new Map<string, RosterTeam>();
+  for (const row of scouted.rows) {
+    const teamNumber = Number(row.teamKey.replace(/^frc/, ""));
+    if (!Number.isInteger(teamNumber) || teamNumber <= 0) continue;
+    const team = roster.get(row.teamKey) ?? { teamKey: row.teamKey, teamNumber, nickname: row.nickname, epaTotal: null, scouted: 0, pitScouted: 0 };
+    if (row.type === "match") team.scouted++;
+    if (row.type === "pit") team.pitScouted = 1;
+    roster.set(row.teamKey, team);
+  }
+  return { myEntries: mine.rows, roster: [...roster.values()], rosterComplete: scouted.rows.some(row => row.type === "roster"),
+    scouted: scouted.rows.flatMap(row => row.type === "match" && row.matchKey ? [{ matchKey: row.matchKey, teamKey: row.teamKey }] : []),
+    pitScouted: scouted.rows.filter(row => row.type === "pit").map(row => row.teamKey),
+    matchStatus: status.rows, teamNumber };
 }
 
 /** Put each match's status fields on the bootstrap's match rows. */

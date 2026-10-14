@@ -388,6 +388,29 @@ async function loadBillingFacts(
   };
 }
 
+/** Read-only chat preflight, without unrelated connector/research probes or provider calls. */
+export async function probeChatAvailability(client: PoolClient, input: { orgId: string; userId: string }) {
+  const model = await probeChatModel(client, input);
+  const billing = await loadBillingFacts(client, input.orgId, model);
+  if (!billing.configured) return { configured: false, reason: "missing_context:billing_account", message: "AI hasn't been enabled for this team yet." };
+  if (billing.killSwitch || billing.platformKillSwitch || billing.hostedAllowanceExhausted) {
+    return { configured: false, reason: "usage_cap", message: "Your team's AI is paused or its hosted allowance has been used. Check AI limits or connect your own key." };
+  }
+  // The resolver may serve the member's paired desktop without a provider key.
+  if (!model.ok) {
+    const bridge = await withSavepoint(client, () => client.query(
+      `SELECT 1 FROM ai_bridge_devices WHERE org_id=$1::uuid AND paired_by=$2::uuid
+       AND revoked_at IS NULL AND prefer_when_online
+       AND (engines #>> '{codex,available}' = 'true' OR engines #>> '{claude,available}' = 'true')
+       AND last_heartbeat_at > now() - ($3::int * interval '1 millisecond') LIMIT 1`,
+      [input.orgId, input.userId, BRIDGE_ONLINE_WINDOW_MS],
+    ), null);
+    if (bridge?.rowCount) return { configured: true, reason: null, message: null };
+  }
+  return model.ok ? { configured: true, reason: null, message: null }
+    : { configured: false, reason: model.reason, message: model.reason === "no_model_provider" ? "AI isn't connected yet." : "Your AI connection isn't available. Check its settings." };
+}
+
 /** Gather every fact once. Throws when the user is not a member of `orgId`. */
 export async function loadAiCapabilityFacts(
   client: PoolClient,

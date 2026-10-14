@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { countdownLabel } from "../dashboard/widgets";
 import { matchClock } from "../dashboard/widgets/live-countdown";
@@ -12,6 +12,7 @@ import type { CommandSnapshot } from "../../lib/command/types";
 import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, readOrgIdFromSearch } from "../../lib/nav/resolve-org";
 import { requestMe } from "../../lib/nav/me-request";
 import { visibilityPollDelay } from "../../lib/perf/visibility-poll";
+import { OfflineBanner } from "../../components/offline-banner";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import {
   EventDayShell,
@@ -37,6 +38,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
+  const loadGeneration = useRef(0);
+  const loadAbort = useRef<AbortController | null>(null);
   // Home's setup action opens the picker, then keeps the team on Event day.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("pickEvent") !== "1") return;
@@ -63,56 +66,44 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   }, []);
 
   const load = useCallback(async (id: string) => {
-    if (!id) {
-      setLoading(false);
-      setSnap(null);
-      setFetchFailed(false);
-      setFromCache(false);
-      return;
-    }
+    const generation = ++loadGeneration.current;
+    loadAbort.current?.abort();
+    const controller = new AbortController(); loadAbort.current = controller;
+    const current = () => generation === loadGeneration.current && !controller.signal.aborted;
+    if (!id) { setLoading(false); setSnap(null); setFetchFailed(false); setFromCache(false); return; }
     try {
       const response = await fetch(`/api/command?orgId=${encodeURIComponent(id)}`, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+        cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
+      if (!current()) return;
+      if (response.status === 401 || response.status === 403) {
+        setSnap(null); setFromCache(false); setFetchFailed(true); setLoading(false);
+        setError("Your session or team access changed. Sign in again.");
+        void clearFeatureSnapshot("competition", id).catch(() => undefined);
+        return;
+      }
       if (!response.ok) {
-        const cached = await getFeatureSnapshot<CommandSnapshot>("competition", id);
-        if (cached) {
-          setSnap(cached.data);
-          setCachedAt(cached.cachedAt);
-          setFromCache(true);
-          setError("");
-          setFetchFailed(false);
-          setLoading(false);
-          return;
-        }
         const body = await response.json().catch(() => ({}));
-        setError(body.error ?? "Could not load Event day");
-        setFetchFailed(true);
-        setLoading(false);
-        return;
+        throw new Error(body.error ?? "Could not load Event day.");
       }
-      const data = (await response.json()) as CommandSnapshot;
-      setSnap(data);
-      setError("");
-      setFetchFailed(false);
-      setFromCache(false);
-      setCachedAt(new Date().toISOString());
-      setLoading(false);
-      await putFeatureSnapshot("competition", id, data);
-    } catch {
-      const cached = await getFeatureSnapshot<CommandSnapshot>("competition", id);
-      if (cached) {
-        setSnap(cached.data);
-        setCachedAt(cached.cachedAt);
-        setFromCache(true);
-        setError("");
-        setFetchFailed(false);
-        setLoading(false);
-        return;
+      const data = await response.json() as CommandSnapshot;
+      if (!current()) return;
+      setSnap(data); setError(""); setFetchFailed(false); setFromCache(false);
+      setCachedAt(new Date().toISOString()); setLoading(false);
+      void putFeatureSnapshot("competition", id, data).catch(() => undefined);
+    } catch (error) {
+      if (!current()) return;
+      const cached = await getFeatureSnapshot<CommandSnapshot>("competition", id).catch(() => null);
+      if (!current()) return;
+      // A cached "no event" setup answer predates activation; it cannot tell us
+      // the current event. Only useful event data may be shown as an offline copy.
+      if (cached?.data.orgId === id && cached.data.eventKey && cached.data.status !== "setup_required") {
+        setSnap(cached.data); setCachedAt(cached.cachedAt); setFromCache(true);
+        setError(""); setFetchFailed(false);
+      } else {
+        setSnap(null); setFromCache(false); setFetchFailed(true);
+        setError(error instanceof Error ? error.message : "Couldn't refresh Event day. Try again.");
       }
-      setError("Could not load Event day");
-      setFetchFailed(true);
       setLoading(false);
     }
   }, []);
@@ -160,6 +151,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
+      loadGeneration.current++; loadAbort.current?.abort();
       if (timer !== null) window.clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
@@ -253,6 +245,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
           canSetEvent={snap?.canSetEvent}
           onSelectEvent={() => setEventOpen(true)}
         >
+          <OfflineBanner feature="Event day" fromCache={fromCache} cachedAt={cachedAt} />
           <p className="edc-freshness" role="status">
             {scoutEventLabel({ eventName: snap?.eventName, eventKey: snap?.eventKey }) ?? "Active event"}
             {" · "}

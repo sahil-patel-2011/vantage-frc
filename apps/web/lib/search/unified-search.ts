@@ -359,8 +359,11 @@ export async function computeUnifiedSearch(
   // plain try/catch here could not deliver, because all the sources share one
   // transaction and the first failure aborted it for every source after it.
   // Unified search then returned nothing at all, from a 200, for any query.
+  // The palette's team/match lookup needn't scan tasks, inventory or every note.
+  const sources = /^(?:frc\s*)?\d+$|^(?:qm|qf|sf|f)\s*\d+(?:-\d+)?$/i.test(query)
+    ? SEARCH_SOURCES.filter(source => source.id === "teams" || source.id === "matches") : SEARCH_SOURCES;
   const settled = await Promise.all(
-    SEARCH_SOURCES.map((source) =>
+    sources.map((source) =>
       withSavepoint(
         client,
         () => source.run(client, orgId, pattern, PER_SOURCE_LIMIT),

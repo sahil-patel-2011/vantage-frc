@@ -59,83 +59,36 @@ export async function loadDashboardSnapshot(
     includeHomeStrip?: boolean;
   },
 ): Promise<{ context: Record<string, unknown>; widgets: Record<string, WidgetPayload> }> {
-  const [org, tbaMeta, profileMeta] = await Promise.all([
-    client.query<{
-      name: string;
-      teamNumber: number | null;
-      eventKey: string | null;
-      eventName: string | null;
-      fundingModel: string | null;
-    }>(
-      // funding_model is read through to_jsonb so Home survives a deployment
-      // whose migrations have not been run yet. Selecting the column directly
-      // raises 42703 ("column o.funding_model does not exist"), and because
-      // this runs inside a Promise.all that killed the whole dashboard — every
-      // student saw a raw Postgres error instead of their team. to_jsonb yields
-      // NULL for a column that is not there and the real value once 0651 lands.
-      `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName",
-              to_jsonb(o) ->> 'funding_model' AS "fundingModel"
+  // These facts belong to one core context read. Five round trips here used
+  // to delay every widget, even on an otherwise empty Home board.
+  const org = await client.query<{
+    name: string; teamNumber: number | null; eventKey: string | null; eventName: string | null;
+    fundingModel: string | null; credential: boolean; cache: boolean; teamRole: string | null;
+    hasScoutingSchemas: boolean; hasAiProvider: boolean;
+  }>(
+    `SELECT o.name, o.team_number AS "teamNumber", c.active_event_key AS "eventKey", e.name AS "eventName",
+            to_jsonb(o) ->> 'funding_model' AS "fundingModel", p.team_role AS "teamRole",
+            EXISTS(SELECT 1 FROM data_source_credentials WHERE source='tba' AND disabled_at IS NULL
+              AND (org_id IS NULL OR org_id=$1::uuid)) AS credential,
+            (EXISTS(SELECT 1 FROM matches_ref LIMIT 1) OR EXISTS(SELECT 1 FROM team_event_metrics LIMIT 1)) AS cache,
+            EXISTS(SELECT 1 FROM scout_schemas WHERE org_id=$1::uuid AND year=e.year) AS "hasScoutingSchemas",
+            (EXISTS(SELECT 1 FROM org_llm_keys WHERE org_id=$1::uuid) OR
+             EXISTS(SELECT 1 FROM org_provider_configs WHERE org_id=$1::uuid AND enabled=true AND key_ciphertext IS NOT NULL)) AS "hasAiProvider"
        FROM organizations o
-       LEFT JOIN org_active_context c ON c.org_id = o.id
-       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
-       WHERE o.id = $1`,
-      [input.orgId],
-    ),
-    client.query<{ credential: boolean; cache: boolean }>(
-      `SELECT
-         EXISTS(
-           SELECT 1 FROM data_source_credentials
-           WHERE source = 'tba' AND disabled_at IS NULL
-             AND (org_id IS NULL OR org_id = $1)
-         ) AS credential,
-         EXISTS(SELECT 1 FROM matches_ref LIMIT 1)
-           OR EXISTS(SELECT 1 FROM team_event_metrics LIMIT 1) AS cache`,
-      [input.orgId],
-    ),
-    client.query<{ teamRole: string | null; primaryFocus: string | null }>(
-      `SELECT team_role AS "teamRole", primary_focus AS "primaryFocus"
-       FROM profiles WHERE user_id = $1`,
-      [input.userId],
-    ),
-  ]);
+       LEFT JOIN org_active_context c ON c.org_id=o.id
+       LEFT JOIN events_ref e ON e.event_key=c.active_event_key
+       LEFT JOIN profiles p ON p.user_id=$2::uuid
+      WHERE o.id=$1::uuid`,
+    [input.orgId, input.userId],
+  );
   const row = org.rows[0];
-  if (!row) {
-    return {
-      context: { setupRequired: true },
-      widgets: {},
-    };
-  }
-
+  if (!row) return { context: { setupRequired: true }, widgets: {} };
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const eventKey = row.eventKey;
-  const platformEnvKey = platformTbaEnvConfigured();
-  const tbaConfigured =
-    platformEnvKey || Boolean(tbaMeta.rows[0]?.credential) || Boolean(tbaMeta.rows[0]?.cache);
-
-  const [scoutingMeta, aiMeta] = await Promise.all([
-    eventKey
-      ? client.query<{ count: string }>(
-          `SELECT count(*)::text AS count FROM scout_schemas WHERE org_id = $1 AND year = (
-             SELECT year FROM events_ref WHERE event_key = $2
-           )`,
-          [input.orgId, eventKey],
-        )
-      : Promise.resolve({ rows: [{ count: "0" }] }),
-    client.query<{ hasKey: boolean }>(
-      `SELECT EXISTS(
-         SELECT 1 FROM org_llm_keys WHERE org_id = $1
-       ) OR EXISTS(
-         SELECT 1 FROM org_provider_configs
-         WHERE org_id = $1 AND enabled = true AND key_ciphertext IS NOT NULL
-       ) AS "hasKey"`,
-      [input.orgId],
-    ),
-  ]);
-
-  const hasScoutingSchemas = Number(scoutingMeta.rows[0]?.count ?? 0) > 0;
-  const hasAiProvider = Boolean(aiMeta.rows[0]?.hasKey);
-
-  const teamRole = profileMeta.rows[0]?.teamRole ?? null;
+  const tbaConfigured = platformTbaEnvConfigured() || Boolean(row.credential) || Boolean(row.cache);
+  const hasScoutingSchemas = Boolean(row.hasScoutingSchemas);
+  const hasAiProvider = Boolean(row.hasAiProvider);
+  const teamRole = row.teamRole ?? null;
   const audience = homeAudienceFromTeamRole(teamRole);
 
   const context: Record<string, unknown> = {

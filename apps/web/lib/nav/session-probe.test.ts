@@ -12,7 +12,7 @@ describe("probeSessionUser", () => {
   it("asks the auth route, never /api/me, and reads who is signed in", async () => {
     const fetchSpy = answer({ user: { id: "u1", email: "sam@example.test", name: " Sam Scout ", image: null } });
     vi.stubGlobal("fetch", fetchSpy);
-    await expect(probeSessionUser()).resolves.toEqual({ id: "u1", email: "sam@example.test", name: "Sam Scout", image: null });
+    await expect(probeSessionUser()).resolves.toEqual({ id: "u1", email: "sam@example.test", name: "Sam Scout", image: null, emailVerified: false });
     expect(fetchSpy.mock.calls.map((call) => (call as unknown[])[0])).toEqual(["/api/auth/get-session"]);
   });
 

@@ -249,8 +249,8 @@ function MyDayShell({
           </Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={emptyReason === "no_upcoming" ? scheduleHref : commandHref}>
-            {emptyReason === "no_upcoming" ? "Open Schedule" : "Open Event Day"}
+          <Button as="a" variant="primary" href={scheduleHref}>
+            See the full event schedule
           </Button>
         ) : null}
       </EmptyState>

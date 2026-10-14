@@ -25,7 +25,7 @@ export function forgetEntryTraces(): void {
       const keys: string[] = [];
       for (let index = 0; index < storage.length; index += 1) {
         const key = storage.key(index);
-        if (key?.startsWith(ONBOARDING_ANSWERS_PREFIX)) keys.push(key);
+        if (key?.startsWith(ONBOARDING_ANSWERS_PREFIX) || key?.startsWith("vantage.appsScriptSecret.")) keys.push(key);
       }
       for (const key of keys) storage.removeItem(key);
     } catch {

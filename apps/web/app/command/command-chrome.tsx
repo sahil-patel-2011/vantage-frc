@@ -153,7 +153,8 @@ export function EventDayShell({
           <Button variant="primary" type="button" onClick={onSelectEvent}>
             Choose or plan an event
           </Button>
-        ) : shell === "empty" && !notOnSchedule ? (
+        ) : null}
+        {shell === "empty" ? (
           <Button as="a" variant="secondary" href={scheduleHref}>
             See the full schedule
           </Button>

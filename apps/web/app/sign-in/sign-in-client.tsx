@@ -34,7 +34,6 @@ import {
   resendSecondsRemaining,
   restoreInviteNextPath,
   sanitizeCodeInput,
-  showCodeHelp,
   signInFlowReducer,
   signInStepCopy,
   signInUnavailableCopy,
@@ -824,7 +823,7 @@ export default function SignInClient({
             onResend={() => void resend()}
             onSwitchAccount={(href) => void signOutAndRedirect(href)}
             inviteHelp={
-              !inviteToken && !status.publicSignup && showCodeHelp(flow, clock, { resentOnce }) ? { waitlistHref } : null
+              null
             }
           />
         )}

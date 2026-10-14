@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { availableSeasonYears } from "@vantage/game-year";
 import { useRouter } from "next/navigation";
 import { pushAppNavigation } from "../../lib/nav/soft-navigation";
 import { HubPanelSkeleton } from "../../components/product-hub";
@@ -411,7 +412,7 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
           <label className="biz-season">
             Season
             <select value={live.seasonYear} onChange={(event) => void load(Number(event.target.value))}>
-              {live.seasons.map(season => <option key={season} value={season}>{season}</option>)}
+              {availableSeasonYears(live.seasons).map(season => <option key={season} value={season}>{season}</option>)}
             </select>
           </label>
           {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}

@@ -65,7 +65,7 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
     </nav>
     </div>
     <nav className="app-sidebar-footer" aria-label="Workspace utilities">
-      {platformAdmin ? <a className="app-sidebar-admin" href="/admin" title="Platform admin" aria-current={pathname.startsWith("/admin") ? "page" : undefined}><Icon name="shield" /><span>Admin</span></a> : null}
+      {platformAdmin ? <a className="app-sidebar-admin" href="/admin" title="Platform admin" aria-current={pathname.startsWith("/admin") ? "page" : undefined}><Icon name="shield" /><span>Admin</span></a> : platformAdmin === undefined ? <span className="app-sidebar-admin-placeholder" aria-hidden="true"><Icon name="shield" /><span>…</span></span> : null}
       {/* Ask AI opens on the current page's skill, the same link as the top bar's (lib/ai-skills). */}
       {allowed("/ai?tab=chat") && !pins.some(pin => pin.href === "/ai" || pin.href === "/ai?tab=chat") ? <AskAiTopbarLink orgId={orgId || null} label="Ask AI" /> : null}
       {[{ href: "/help", label: "Help", icon: "book" as const }, { href: SETTINGS_HREF, label: "Settings", icon: "gear" as const }]

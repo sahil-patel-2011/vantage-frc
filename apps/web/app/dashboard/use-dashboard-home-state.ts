@@ -236,8 +236,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     if (stored) qs.set("boardId", stored);
     try {
       const response = await fetch(`/api/dashboards?${qs.toString()}`, {
-        cache: "no-store",
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+        cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
       if (!current()) return;
       if (response.status === 401 || response.status === 403) {

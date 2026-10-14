@@ -518,7 +518,7 @@ export const PLATFORM_ADMIN_COMMAND: CommandEntry = {
   href: "/admin",
   kind: "destination",
   keywords: ["admin", "admin console", "platform admin", "platform", "all teams", "add a team", "create team", "provision", "owners", "waitlist"],
-  featured: true,
+  featured: false,
 };
 
 /** This person's palette: the member catalog, plus the admin console for platform admins only. */

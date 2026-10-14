@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button, TextField, TextareaField } from "../../components/ui";
 import {
   appsScriptSource,
@@ -32,30 +32,16 @@ export default function AppsScriptConnect({
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // One secret per team in this browser, kept until it connects: reopening the page shows
-  // the same script, so a script copied earlier still matches what Connect sends.
-  // Generated after mount so server and client render the same markup.
-  const storageKey = `vantage.appsScriptSecret.${orgId}`;
+  const submitting = useRef(false);
+  // Keep signing credentials only in this mounted form. Remove the old browser
+  // copy without reading it; existing encrypted server connections stay intact.
   useEffect(() => {
-    let kept: string;
     try {
-      kept = window.localStorage.getItem(storageKey) ?? "";
-    } catch {
-      kept = "";
-    }
-    // Updating keeps the secret the script already has; only a new connection makes one.
-    const next = isAppsScriptSecret(kept) ? kept : mode === "update" ? "" : newAppsScriptSecret();
-    setSecret((current) => current || next);
-  }, [storageKey, mode]);
-  useEffect(() => {
-    if (!isAppsScriptSecret(secret.trim().toLowerCase())) return;
-    try {
-      window.localStorage.setItem(storageKey, secret.trim().toLowerCase());
-    } catch {
-      // storage blocked: the secret lasts until the page closes
-    }
-  }, [secret, storageKey]);
+      window.localStorage.removeItem(`vantage.appsScriptSecret.${orgId}`);
+    } catch { /* Storage can be blocked. */ }
+    setSecret(mode === "update" ? "" : newAppsScriptSecret());
+    setUrl(""); setCopied(false); setError(null);
+  }, [orgId, mode]);
 
   const cleanSecret = secret.trim().toLowerCase();
   const secretOk = isAppsScriptSecret(cleanSecret);
@@ -73,11 +59,14 @@ export default function AppsScriptConnect({
   }
 
   async function connect() {
+    if (submitting.current || !urlOk || !secretOk) return;
+    submitting.current = true;
     setBusy(true);
     setError(null);
     try {
       const response = await fetch("/api/integrations/google/apps-script", {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, url: url.trim(), secret: cleanSecret }),
       });
@@ -90,6 +79,7 @@ export default function AppsScriptConnect({
     } catch {
       setError("Could not reach Vantage. Check your connection and try again.");
     }
+    submitting.current = false;
     setBusy(false);
   }
 
@@ -167,6 +157,7 @@ export default function AppsScriptConnect({
         </li>
       </ol>
       <div className="apps-script-fields">
+        <p className="app-muted">This draft secret lasts while this page is open. If you already copied a script, paste its secret under Advanced before connecting.</p>
         <TextField
           label="Web app URL"
           placeholder="e.g. https://script.google.com/macros/s/…/exec"

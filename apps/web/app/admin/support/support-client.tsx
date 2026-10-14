@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
 import {
   SUPPORT_TICKET_STATUSES,
@@ -19,14 +19,21 @@ export default function AdminSupportClient() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, { status: SupportTicketStatus; response: string }>>({});
+  const loadRequest = useRef<AbortController | null>(null);
+  const saving = useRef(false);
 
   const load = useCallback(async (status: SupportTicketStatus | "", q: string) => {
+    loadRequest.current?.abort();
+    const controller = new AbortController();
+    loadRequest.current = controller;
     setLoading(true);
     const params = new URLSearchParams();
     if (status) params.set("status", status);
     if (q.trim()) params.set("q", q.trim());
-    const response = await fetch(`/api/admin/support${params.toString() ? `?${params}` : ""}`);
+    try {
+    const response = await fetch(`/api/admin/support${params.toString() ? `?${params}` : ""}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]) });
     const data = await response.json();
+    if (controller.signal.aborted || loadRequest.current !== controller) return;
     if (!response.ok) {
       setMessage(data.error ?? "Could not load tickets.");
       setTickets([]);
@@ -47,11 +54,16 @@ export default function AdminSupportClient() {
         return merged;
       });
     }
-    setLoading(false);
+    } catch {
+      if (!controller.signal.aborted && loadRequest.current === controller) setMessage("Couldn’t load tickets. Check your connection and try again.");
+    } finally {
+      if (loadRequest.current === controller && !controller.signal.aborted) setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     void load(statusFilter, query);
+    return () => { loadRequest.current?.abort(); };
   }, [load, statusFilter, query]);
 
   const summary = useMemo(() => {
@@ -62,12 +74,14 @@ export default function AdminSupportClient() {
 
   async function save(ticketId: string) {
     const draft = drafts[ticketId];
-    if (!draft) return;
+    if (!draft || saving.current) return;
+    saving.current = true;
     setBusyId(ticketId);
     setMessage("");
     try {
       const response = await fetch("/api/admin/support", {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           ticketId,
@@ -89,7 +103,10 @@ export default function AdminSupportClient() {
           response: updated.adminResponse ?? "",
         },
       }));
+    } catch {
+      setMessage("Couldn’t confirm the update. Your response is still here; refresh the ticket before retrying.");
     } finally {
+      saving.current = false;
       setBusyId(null);
     }
   }

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { getPublicAuthCapabilities } from "@vantage/core";
 import { isBackupMode } from "@vantage/db/backup-mode";
-import { PUBLIC_SIGNUP_DATE_LABEL } from "@vantage/core/public-signup";
 import { productForHost } from "../../lib/products/products";
 import SignInClient from "../sign-in/sign-in-client";
 import { safeAppPath } from "../../lib/security/safe-navigation";
@@ -10,7 +9,7 @@ import { BackupModeNotice } from "./backup-mode-notice";
 
 export const dynamic = "force-dynamic";
 
-const DESCRIPTION = `Sign in with Google or email. Teams are set up from ${PUBLIC_SIGNUP_DATE_LABEL}, with early access by invitation.`;
+const DESCRIPTION = `Sign in with Google or email. Existing teams can sign in, with early access by invitation.`;
 
 export async function generateMetadata({
   searchParams,

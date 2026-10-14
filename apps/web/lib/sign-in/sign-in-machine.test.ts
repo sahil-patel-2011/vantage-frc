@@ -27,7 +27,7 @@ describe("explicit verification recovery", () => {
     for (const nextPath of ["/signin", "/sign-in?next=%2Fsignin", "/onboarding", "/onboarding?next=%2Fdashboard", "/access-unavailable", "https://external.example"]) {
       expect(postAuthDestination({ nextPath, gate: { complete: true, accessStatus: "approved" } })).toBe("/dashboard");
     }
-    expect(postAuthDestination({ nextPath: "/onboarding", gate: { complete: false, accessStatus: "none" } })).toBe("/onboarding?next=%2Fdashboard");
+    expect(postAuthDestination({ nextPath: "/onboarding", gate: { complete: false, accessStatus: "none" } })).toBe("/join-team");
   });
   const typed = () => run(initialSignInState(), { type: "code_sent", now: NOW, email: "scout@team.org" }, { type: "code_changed", code: "402917" });
   it("lets a network failure retry its retained digits without requiring a new email", () => {
@@ -61,11 +61,9 @@ describe("sign-in flow transitions", () => {
     expect(sent.step).toBe("code");
     expect(sent.email).toBe("scout@team254.org");
     expect(sent.code).toBe("");
-    // The server answers 200 for unknown addresses, so delivery is conditional.
-    // The card's own line says "If … is on a Vantage team, a code is on its way", so there is
-    // no second notice repeating it.
+    // Identity verification precedes the separate membership-code step.
     expect(sent.notice).toBeNull();
-    expect(signInStepCopy(sent).sub).toMatch(/if scout@team254\.org is on a Vantage team/i);
+    expect(signInStepCopy(sent).sub).toBe("Enter the 6-digit code sent to scout@team254.org.");
     expect(codeSecondsRemaining(sent, NOW)).toBe(1800);
 
     const typing = run(sent, { type: "code_changed", code: "40 29 17" });
@@ -363,7 +361,7 @@ describe("invite context preservation", () => {
     ).toBe("/scouting");
     expect(
       postAuthDestination({ nextPath: "/scouting", gate: { complete: false, accessStatus: "none" } }),
-    ).toBe("/onboarding?next=%2Fscouting");
+    ).toBe("/join-team");
     // No gate answer (offline / setup_required) must not invent an onboarding bounce.
     expect(postAuthDestination({ nextPath: "/scouting", gate: null })).toBe("/scouting");
   });
@@ -387,7 +385,7 @@ describe("invite context preservation", () => {
 
   it("offers account creation and accurate code delivery when signup is enabled", () => {
     const identity = initialSignInState({ email: "new@example.test" });
-    expect(signInStepCopy(identity, null, true).sub).toContain("create an account");
+    expect(signInStepCopy(identity, null, true).sub).toContain("After verification");
     const code = run(identity, { type: "code_sent", now: NOW, email: "new@example.test" });
     expect(signInStepCopy(code, null, true).sub).toBe("Enter the 6-digit code sent to new@example.test.");
     expect(signInStepCopy(identity, "You’re joining Team 254", true).sub).toContain("address the invite was sent to");

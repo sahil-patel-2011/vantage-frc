@@ -50,8 +50,7 @@ function googleSocialProvider(callbackOrigin: string | null) {
       // always name the address registered on the Google client.
       ...(callbackOrigin ? { redirectURI: `${callbackOrigin}/api/auth/callback/google` } : {}),
       prompt: "select_account",
-      // New Google users are gated by databaseHooks.user.create.before
-      // (platform owner / existing / pending invite only).
+      // Google creates an identity; team membership is a separate server gate.
       disableSignUp: false,
       disableImplicitSignUp: false,
     },
@@ -142,7 +141,7 @@ function buildAuth() {
     user: {
       create: {
         before: async (user) => {
-          const access = await resolveAuthEmailAccess(user.email);
+          const access = await resolveAuthEmailAccess(user.email, { identityOnly: true });
           if (!access.allowed) {
             // A 403 carrying the sentence, not a bare Error: that surfaced as
             // an empty 500, which the code screen could only call a server fault.
@@ -182,10 +181,9 @@ function buildAuth() {
        * the screen then told them codes only go to invited addresses, which
        * theirs was. Only Google could create an invited account, which strands
        * every student whose school account is not Google. A new user created
-       * through this plugin still passes databaseHooks.user.create.before
-       * (platform owner / existing user / pending invite, else waitlist), and
-       * sendVerificationOTP below sends nothing to an address that gate would
-       * refuse, so opening this does not let anyone mail an arbitrary inbox.
+       * through this plugin creates only an identity after email verification.
+       * Team membership still requires a valid invitation or team code;
+       * onboarding and RLS never treat a new account as workspace approval.
        */
       disableSignUp: false,
       rateLimit: {
@@ -198,10 +196,10 @@ function buildAuth() {
           ? undefined
           : ({ email, type }) => deterministicLocalOtp(email, type),
       sendVerificationOTP: async (message) => {
-        // Codes go only to addresses that could sign in. The endpoint still
-        // answers 200 either way, so this reveals nothing about who is invited.
+        // Verify identity before asking for a team code. The existing OTP
+        // rate limit applies equally to new and returning addresses.
         if (message.type === "sign-in") {
-          const access = await resolveAuthEmailAccess(message.email);
+          const access = await resolveAuthEmailAccess(message.email, { identityOnly: true });
           if (!access.allowed) {
             await auditAuthEvent({
               action: "otp.suppressed",
@@ -218,7 +216,7 @@ function buildAuth() {
           );
         }
         if (message.type === "sign-in") {
-          const access = await resolveAuthEmailAccess(message.email);
+          const access = await resolveAuthEmailAccess(message.email, { identityOnly: true });
           if (!access.allowed) return;
         }
         const emailProvider = createEmailProvider();

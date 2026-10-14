@@ -136,6 +136,7 @@ export function AppShellSearchPalette({
             rowsTabbable={false}
             fullSearchButton={false}
           />
+          {search.searchError ? <p className="app-muted" role="status">{search.searchError}</p> : null}
         </div>
         <footer className="search-palette-foot">
           <p className="search-palette-keys" aria-hidden="true">

@@ -203,7 +203,7 @@ export default function ChatClient({
   // A send that fails because AI is off keeps the thread and the typed question on screen with a
   // "Not sent" note; it used to swap the whole thread for a setup card and the question was gone.
   const [notSent, setNotSent] = useState<string | null>(null);
-  const [aiConnection, setAiConnection] = useState<{ configured: boolean; reason: string | null } | null>(null);
+  const [aiConnection, setAiConnection] = useState<{ configured: boolean; reason: string | null; message?: string | null } | null>(null);
   const [sending, setSending] = useState(false);
   const sendPending = useRef(false);
   const loadRequest = useRef<AbortController | null>(null);
@@ -250,7 +250,8 @@ export default function ChatClient({
       if (!response.ok) {
         if (silent) throw new Error("The change was saved, but chat settings couldn’t refresh. Reopen this chat to load them.");
         if (threadId) { setStatus(data.error || "Couldn’t load that conversation. Select it again to retry."); return; }
-        setHttpStatus(response.status); setLoadError(data.error || "Couldn’t load your chats."); return;
+        setHttpStatus(response.status); setLoadError(data.error || "Couldn’t load your chats.");
+        setAiConnection({ configured: false, reason: "check_unavailable", message: "Couldn't check your AI connection. Retry before sending; your question stays here." }); return;
       }
       if (!silent) { setHttpStatus(response.status); setLoadError(null); }
       setThreads(data.threads ?? []); setMemories(data.memories ?? []);
@@ -268,7 +269,7 @@ export default function ChatClient({
       if (controller.signal.aborted) return;
       if (silent) throw error;
       if (threadId) setStatus("Couldn’t load that conversation. Select it again to retry.");
-      else { setHttpStatus(null); setLoadError("Couldn’t reach the server. Your chats haven’t been deleted."); }
+      else { setHttpStatus(null); setLoadError("Couldn’t reach the server. Your chats haven’t been deleted."); setAiConnection({ configured: false, reason: "check_unavailable", message: "Couldn't reach Vantage to check AI. Retry before sending; your question stays here." }); }
     } finally {
       if (loadRequest.current === controller) {
         loadRequest.current = null;
@@ -360,6 +361,10 @@ export default function ChatClient({
     event.preventDefault();
     const question = text.trim();
     if (!question || sendPending.current || bg.busy) return;
+    if (orgId && aiConnection?.configured !== true) {
+      setStatus(aiConnection?.message ?? "Wait for the AI connection check, or connect AI before sending. Your question stays here.");
+      return;
+    }
     sendPending.current = true;
     followLatest.current = true;
     setCutoffCode(null);
@@ -837,9 +842,10 @@ export default function ChatClient({
           ) : null}
 
           <form className="ch-composer ask-composer" onSubmit={send}>
+            {orgId && !aiConnection && !notSent ? <p className="ch-composer-note" role="status">Checking your AI connection… You can write your question while it loads.</p> : null}
             {aiConnection?.configured === false && !notSent ? <p className="ch-composer-note" role="status">
-              {aiConnection.reason === "no_model_provider" ? "AI isn't connected yet. Your question will stay here until it can be sent." : "Your AI connection isn't available. Check it before sending."}{" "}
-              <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI</button>
+              {aiConnection.message ?? (aiConnection.reason === "no_model_provider" ? "AI isn't connected yet. Your question will stay here until it can be sent." : "Your AI connection isn't available. Check it before sending.")}{" "}
+              {aiConnection.reason === "check_unavailable" ? <button type="button" className="chat-connect-inline" onClick={() => void load()}>Retry connection check</button> : aiConnection.reason === "usage_cap" ? <a className="chat-connect-inline" href={withOrgHref("/ai/connect", orgId)}>Check AI settings</a> : <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI</button>}
             </p> : null}
             {pinned && conversationEmpty ? <SkillStarters skillId={pinned} onPick={(starter) => pickStarter(null, starter)} /> : null}
             {thread?.scope === "team" ? (
@@ -877,7 +883,7 @@ export default function ChatClient({
                   setSkillNotice(null);
                 }}
               />
-              <Button variant="primary" type="submit" disabled={sending || bg.busy || !text.trim()}>
+              <Button variant="primary" type="submit" disabled={sending || bg.busy || !text.trim() || Boolean(orgId && aiConnection?.configured !== true)}>
                 {sending || bg.busy ? "Working…" : "Send"}
               </Button>
             </div>

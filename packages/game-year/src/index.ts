@@ -1,6 +1,7 @@
 import { FIELD_CENTRIC_FIELDS, withFieldCentric } from "./field-centric";
 import { BIOCORE_2027 } from "./packs/biocore-2027";
 import { REBUILT_2026 } from "./packs/rebuilt-2026";
+import { REEFSCAPE_2025 } from "./packs/reefscape-2025";
 import type { GameYearPack, SchemaDefinition } from "./types";
 
 export type {
@@ -15,6 +16,7 @@ export type {
 export { BIOCORE_2027, FIELD_CENTRIC_FIELDS, REBUILT_2026, withFieldCentric };
 
 const PACKS: Record<number, GameYearPack> = {
+  2025: REEFSCAPE_2025,
   2026: REBUILT_2026,
   2027: BIOCORE_2027,
 };
@@ -24,6 +26,12 @@ export function currentSeasonYear(now: Date = new Date()): number {
   const year = now.getUTCFullYear();
   // FRC season year is the kickoff calendar year. August starts next-season planning.
   return month >= 7 ? year + 1 : year;
+}
+
+/** Same recent seasons across workspaces, plus every year with saved work. */
+export function availableSeasonYears(saved: readonly number[] = [], now: Date = new Date()): number[] {
+  const current = currentSeasonYear(now);
+  return [...new Set([current, current - 1, current - 2, ...saved.filter(year => Number.isInteger(year) && year >= 1992 && year <= 2100)])].sort((a, b) => b - a);
 }
 
 export function packForYear(year: number): GameYearPack {

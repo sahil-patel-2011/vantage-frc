@@ -12,12 +12,13 @@ export type SessionUser = {
   email: string | null;
   name: string | null;
   image: string | null;
+  emailVerified: boolean;
 };
 
 const FRESH_MS = 5_000;
 let entry: { at: number; promise: Promise<SessionUser | null | undefined> } | null = null;
 
-type SessionBody = { user?: { id?: unknown; email?: unknown; name?: unknown; image?: unknown } | null } | null;
+type SessionBody = { user?: { id?: unknown; email?: unknown; name?: unknown; image?: unknown; emailVerified?: unknown } | null } | null;
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -34,7 +35,7 @@ export function probeSessionUser(): Promise<SessionUser | null | undefined> {
       if (body === undefined) return undefined;
       const id = text(body?.user?.id);
       if (!id) return null;
-      return { id, email: text(body?.user?.email), name: text(body?.user?.name), image: text(body?.user?.image) };
+      return { id, email: text(body?.user?.email), name: text(body?.user?.name), image: text(body?.user?.image), emailVerified: body?.user?.emailVerified === true };
     })
     .catch(() => undefined);
   entry = { at: now, promise };

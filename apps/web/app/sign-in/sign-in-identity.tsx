@@ -187,7 +187,7 @@ export function SignInIdentityStep({
       )}
       {/* The other way in comes after the main one, as on Apple and Google sign-in pages. */}
       {invited ? null : (
-        <p className="signin-email-hint">New to your team? <a className="signin-link" href="/join-team">Join with a team code</a></p>
+        <p className="signin-email-hint">Verify your email first. You can enter your team’s six-digit join code next.</p>
       )}
     </>
   );

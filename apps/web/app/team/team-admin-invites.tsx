@@ -84,6 +84,7 @@ export function TeamAdminInvitesPanel({
         <p className="app-muted">
           They join when they verify this email. You can also share your team’s join code below.
         </p>
+        {tip ? <p className="app-muted team-admin-tenure-hint" role="note">{tip}</p> : null}
         <div className="team-invite-fields has-lifetime">
           <label>
             Email
@@ -150,11 +151,6 @@ export function TeamAdminInvitesPanel({
         {deliveryBanner && !inviteNotice ? (
           <p className="app-muted team-invite-delivery" role="note">
             {deliveryBanner.title}. {deliveryBanner.detail}
-          </p>
-        ) : null}
-        {tip ? (
-          <p className="app-muted team-admin-tenure-hint" role="note">
-            {tip}
           </p>
         ) : null}
         {inviteNotice ? (

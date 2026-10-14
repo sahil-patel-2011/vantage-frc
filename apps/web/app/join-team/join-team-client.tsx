@@ -24,6 +24,8 @@ export default function JoinTeamClient() {
   const submitting = useRef(false);
   const errorRef = useRef<HTMLParagraphElement | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [sessionFailed, setSessionFailed] = useState(false);
   const [alreadyOn, setAlreadyOn] = useState<TeamJoinMember | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -37,10 +39,11 @@ export default function JoinTeamClient() {
     }
     // Shared with the consent banner: one session check per page.
     void probeSessionUser().then((user) => {
-      if (cancelled || !user?.email) return;
-      setEmail(user.email);
-      setSessionEmail(user.email);
-    });
+      if (cancelled) return;
+      if (user?.email && user.emailVerified) { setEmail(user.email); setSessionEmail(user.email); }
+      setSessionFailed(user === undefined);
+      setSessionChecked(true);
+    }).catch(() => { if (!cancelled) { setSessionChecked(true); setSessionFailed(true); } });
     return () => {
       cancelled = true;
     };
@@ -48,7 +51,7 @@ export default function JoinTeamClient() {
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (submitting.current || !/^[0-9]{1,5}$/.test(team) || Number(team) < 1 || pin.length !== 6 || !email.trim()) return;
+    if (!sessionEmail || submitting.current || !/^[0-9]{1,5}$/.test(team) || Number(team) < 1 || pin.length !== 6) return;
     submitting.current = true;
     setBusy(true);
     setError("");
@@ -99,13 +102,20 @@ export default function JoinTeamClient() {
       </main>
     );
   }
+  if (!sessionEmail) return (
+    <main className="join-team-page"><section className="join-team-card" aria-labelledby="join-team-title">
+      <VantageLogo /><h1 id="join-team-title">{sessionFailed ? "Couldn’t check your account" : sessionChecked ? "Start with your email" : "Checking your account…"}</h1>
+      <p className="app-muted">{sessionFailed ? "Check your connection and try again. Your team code hasn’t been submitted." : "Verify your email, then enter your team’s six-digit join code."}</p>
+      {sessionFailed ? <Button variant="primary" onClick={() => window.location.reload()}>Try again</Button> : sessionChecked ? <Button as="a" variant="primary" href="/signin?next=%2Fjoin-team">Continue with email</Button> : null}
+    </section></main>
+  );
   return (
     <main className="join-team-page">
       <section className="join-team-card" aria-labelledby="join-team-title">
         <VantageLogo />
         <h1 id="join-team-title">Join your team</h1>
         <p className="app-muted">
-          Enter your team’s code, then verify your email to join. Your team’s owner and mentors
+          Your email is verified. Enter your team’s six-digit code to join. Your team’s owner and mentors
           see who joined and choose what you can do.
         </p>
         <form onSubmit={(event) => void submit(event)}>
@@ -139,18 +149,6 @@ export default function JoinTeamClient() {
               aria-describedby="join-team-code-hint"
               onChange={(event) => setPin(joinCodeDigits(event.target.value))}
               placeholder="Six numbers"
-            />
-          </FormRow>
-          <FormRow label="Your email">
-            <input
-              required
-              type="email"
-              autoComplete="email"
-              readOnly={Boolean(sessionEmail)}
-              disabled={busy}
-              aria-describedby={sessionEmail ? "join-team-identity" : undefined}
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
             />
           </FormRow>
           {sessionEmail ? <p className="join-team-identity" id="join-team-identity">Joining as {sessionEmail}. <button type="button" disabled={busy} onClick={async () => {

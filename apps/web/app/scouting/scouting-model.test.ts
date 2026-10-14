@@ -1,5 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { SCOUT_ENTRY_CSV_COLUMNS, openAssignment } from "./scouting-model";
+import { SCOUT_ENTRY_CSV_COLUMNS, openAssignment, myReports, type MyEntry } from "./scouting-model";
+
+describe("reports saved before the live list catches up", () => {
+  const report = (id: string, type: "match" | "pit", updatedAt: string): MyEntry => ({
+    id, clientId: id, type, matchKey: type === "match" ? "e_qm5" : null,
+    teamKey: "frc3091", payload: { notes: id }, confidence: "normal", updatedAt,
+  });
+  it("counts both types immediately without duplicating an acknowledged save", () => {
+    const match = report("match", "match", "2026-10-14T10:00:00Z");
+    const pit = report("pit", "pit", "2026-10-14T10:01:00Z");
+    const merged = myReports({ myEntries: [match], recentEntries: [] }, [match, pit]);
+    expect(merged.map(row => row.id)).toEqual(["pit", "match"]);
+    expect(merged.filter(row => row.type === "match")).toHaveLength(1);
+    expect(merged.filter(row => row.type === "pit")).toHaveLength(1);
+  });
+  it("prefers a later server edit even when timestamps use different formats", () => {
+    const server = report("same", "match", "2026-10-14 11:00:00+00");
+    const local = report("same", "match", "2026-10-14T10:00:00Z");
+    expect(myReports({ myEntries: [server], recentEntries: [] }, [local])).toEqual([server]);
+  });
+  it("merges a local save with the legacy recent-report fallback", () => {
+    const local = report("local", "pit", "2026-10-14T10:00:00Z");
+    expect(myReports({ recentEntries: [] }, [local])).toEqual([local]);
+  });
+});
 
 describe("SCOUT_ENTRY_CSV_COLUMNS", () => {
   it("exports identity and confidence with the row", () => {

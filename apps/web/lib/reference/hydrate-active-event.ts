@@ -5,6 +5,9 @@ import { after } from "next/server";
 import { runOnDemandEventRefresh } from "./run-ingest";
 
 const inflight = new Map<string, Promise<void>>();
+// Public reference freshness only: never memberships, credentials or tenant reports.
+const freshnessCache = new Map<string, { at: number; value: EventCacheFreshness }>();
+const FRESHNESS_TTL_MS = 30_000;
 
 export type EventCacheFreshness = {
   matchCount: number;
@@ -17,6 +20,8 @@ export async function readEventCacheFreshness(
   client: PoolClient,
   eventKey: string,
 ): Promise<EventCacheFreshness> {
+  const cached = freshnessCache.get(eventKey);
+  if (isTbaEventKey(eventKey) && cached && Date.now() - cached.at < FRESHNESS_TTL_MS) return cached.value;
   const result = await client.query<EventCacheFreshness>(
     `SELECT
        (SELECT COUNT(*)::int FROM matches_ref WHERE event_key = $1) AS "matchCount",
@@ -25,7 +30,7 @@ export async function readEventCacheFreshness(
        (SELECT MAX(synced_at)::text FROM team_event_metrics WHERE event_key = $1 AND source = 'statbotics') AS "epaSyncedAt"`,
     [eventKey],
   );
-  return (
+  const value = (
     result.rows[0] ?? {
       matchCount: 0,
       matchSyncedAt: null,
@@ -33,6 +38,11 @@ export async function readEventCacheFreshness(
       epaSyncedAt: null,
     }
   );
+  if (isTbaEventKey(eventKey)) {
+    if (freshnessCache.size >= 128) freshnessCache.delete(freshnessCache.keys().next().value!);
+    freshnessCache.set(eventKey, { at: Date.now(), value });
+  }
+  return value;
 }
 
 /**
@@ -110,6 +120,7 @@ async function refreshEventOnce(eventKey: string, orgId: string): Promise<void> 
     .catch(() => undefined)
     .finally(() => {
       inflight.delete(eventKey);
+      freshnessCache.delete(eventKey);
     });
   inflight.set(eventKey, pending);
   await pending;

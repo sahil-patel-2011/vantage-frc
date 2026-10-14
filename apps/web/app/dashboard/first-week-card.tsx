@@ -53,7 +53,7 @@ export function useFirstWeek(orgId: string, userId: string) {
   useEffect(() => {
     const requestGeneration = ++generation.current;
     mutation.current?.abort(); mutation.current = null;
-    setBusy(null); setError(""); setLoadedFor(null);
+    setBusy(null); setError("");
     if (!orgId || !userId) return;
     const controller = new AbortController();
     let cancelled = false;
@@ -61,18 +61,22 @@ export function useFirstWeek(orgId: string, userId: string) {
       cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
     })
       .then(async response => {
-        if (!response.ok) throw new Error("Checklist could not load. Try again shortly.");
+        if (cancelled || generation.current !== requestGeneration) return undefined;
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) { setView(null); setLoadedFor(null); }
+          throw new Error("Checklist could not load. Try again shortly.");
+        }
         const next = await response.json() as RoleOnboardingView;
         if (next.status !== "live" || next.orgId !== orgId || !Array.isArray(next.tracks)) throw new Error("Checklist is unavailable. Try again shortly.");
         return next;
       })
       .catch(() => {
         if (!cancelled && generation.current === requestGeneration) setError("Checklist could not load. Try again shortly.");
-        return null;
+        return undefined;
       })
       .then((next) => {
         if (cancelled || generation.current !== requestGeneration) return;
-        setView(next);
+        if (next !== undefined) setView(next);
         setLoadedFor(scope);
       });
     return () => {
