@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17
+    restart: on-failure
     environment:
       - POSTGRES_PASSWORD=vantage_dev
       - POSTGRES_DB=vantage
@@ -74,6 +75,13 @@ services:
         condition: service_completed_successfully
     tty: true
     stdin_open: true
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/auth/status').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 90s
     command: sh -c "/app/node_modules/.bin/next dev --port 3000 --hostname 0.0.0.0"
 
 volumes:

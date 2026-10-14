@@ -57,6 +57,12 @@ Non-obvious findings:
   use `npm run dev:otp` to read a code.
 
 Verify: `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` → 200.
+The `web` healthcheck probes the existing `/api/auth/status` route. Sign-in lives at `/signin`
+(`/sign-in` 307-redirects), and the header "Sign in" link does a full page load.
+
+- A browser log saying `No link element found for chunk …css` right after a "Compiled" line is
+  a dev-only CSS hot-reload race when a stylesheet is edited while a tab is open. A fresh page
+  load clears it; it is not an app defect.
 
 - Provisioning people by SQL: the first `platform_admins` row becomes the single platform owner
   (0733 trigger). A `memberships` insert fails until that user's profile has a 13+ `date_of_birth`
