@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, EmptyState, PageHeader, Panel } from "../../../components/ui";
-import { adminProvisionHref, adminRelatedLinks } from "../../../lib/admin";
+import { adminProvisionHref } from "../../../lib/admin";
 import "../admin-flow.css";
 
 /** What `publicSignupStatus()` reports, straight from the admin route. */
@@ -96,18 +96,7 @@ export default function WaitlistAdminClient() {
         breadcrumbs="Platform / Waitlist"
         title="Waitlist"
         description="Review launch interest, mark outreach, and jump to team provisioning when you are ready to invite an owner. Real entries only."
-      >
-        <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
-          {adminRelatedLinks({
-            active: "waitlist",
-            include: ["teams", "health", "support", "releases"],
-          }).map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </PageHeader>
+      />
 
       {/*
         The doors, above the queue.

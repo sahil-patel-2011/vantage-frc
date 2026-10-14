@@ -4,7 +4,7 @@ import { OutageContactsLine } from "../outage-contacts";
 import "../admin-console.css";
 
 export const metadata = {
-  title: "More · Platform admin",
+  title: "All admin tools · Platform admin",
 };
 
 /**
@@ -14,7 +14,7 @@ export const metadata = {
 export default function AdminMorePage() {
   return (
     <main className="module-page admin-control ac-page">
-      <PageHeader title="More" description="Pages you open now and then." />
+      <PageHeader title="All admin tools" description="Less-used platform tools and outage contacts." />
       <ul className="ac-list">
         {MORE_PAGES.map((page) => (
           <li key={page.href}>

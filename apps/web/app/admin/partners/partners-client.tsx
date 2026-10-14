@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
-import { adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 import "./partners.css";
 
@@ -142,9 +141,6 @@ export default function AdminPartnersClient() {
     }
   }
 
-  const related = adminRelatedLinks({
-    include: ["teams", "health", "support", "releases", "waitlist", "audit"],
-  });
   const activeCount = sponsors.filter((row) => row.status === "active").length;
 
   return (
@@ -154,36 +150,8 @@ export default function AdminPartnersClient() {
         title="App sponsors & AI partners"
         description="Track Microsoft Azure, Anthropic, OpenAI, and other partners. Partner logos appear on AI surfaces only when status is active. API keys stay in env or on the team's own keys page — never here."
       >
-        <nav className="admin-related" aria-label="Related admin">
-          {related.map((link) => (
-            <a key={link.id} href={link.href}>{link.label}</a>
-          ))}
-          <a href="/admin/outreach">Org outreach</a>
-        </nav>
+        <Button as="a" variant="secondary" href="/ai?tab=chat">Test AI chat</Button>
       </PageHeader>
-
-      <section className="admin-ai-smoke" aria-label="AI entry points">
-        <header>
-          <h2>AI tools for platform admin</h2>
-          <p className="app-muted">
-            Check that routing and key vaults still work.
-          </p>
-        </header>
-        <div className="admin-ai-smoke-links">
-          <Button as="a" variant="primary" href="/admin/models">
-            Models &amp; keys
-          </Button>
-          <Button as="a" variant="secondary" href="/admin/sponsored">
-            Sponsored AI policy
-          </Button>
-          <Button as="a" variant="secondary" href="/ai">
-            Open AI hub
-          </Button>
-          <Button as="a" variant="secondary" href="/ai?tab=chat">
-            Test AI chat
-          </Button>
-        </div>
-      </section>
 
       {message ? (
         <p className={`telemetry-status${ok ? " success" : ""}`} role="status">

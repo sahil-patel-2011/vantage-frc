@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
-import { adminRelatedLinks } from "../../../lib/admin";
 import "../admin-flow.css";
 
 type Release = {
@@ -168,17 +167,7 @@ export default function AdminReleasesClient() {
         title="Product releases"
         description="Stage feature flags and release notes by audience (all, paid, Max, or specific plan codes). Publishing emails users with product-update prefs on (default) and posts to the inbox."
       >
-        <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
-          {adminRelatedLinks({
-            active: "releases",
-            include: ["teams", "health", "support", "waitlist"],
-          }).map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <a href="/whats-new">What’s new</a>
-        </nav>
+        <Button as="a" variant="secondary" href="/whats-new">Preview what’s new</Button>
       </PageHeader>
 
       {delivery?.status === "setup_required" ? (

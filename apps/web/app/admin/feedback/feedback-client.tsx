@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EmptyState, PageHeader, Panel, ToolStrip } from "../../../components/ui";
-import { adminRelatedLinks } from "../../../lib/admin";
 import {
   ADMIN_FEEDBACK_NEW_EVENT,
   FEEDBACK_LIST_LIMIT,
@@ -136,15 +135,7 @@ export default function AdminFeedbackClient() {
         breadcrumbs="Platform / Feedback"
         title="Feedback"
         description="Problems and ideas people send from the feedback button, newest first. They go to the Vantage team, not to the sender's own team."
-      >
-        <nav className="settings-inline-links admin-related" aria-label="Platform shortcuts">
-          {adminRelatedLinks({ active: "feedback", include: ["support", "teams", "releases"] }).map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-        </nav>
-      </PageHeader>
+      />
 
       <div className="cards">
         <article className="card">

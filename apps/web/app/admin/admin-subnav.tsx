@@ -60,7 +60,7 @@ export function AdminSubnav({ newFeedback = null }: { newFeedback?: number | nul
         }}>
           <optgroup label="Manage Vantage">
             {ADMIN_DESTINATIONS.map(dest => <option key={dest.id} value={dest.href}>
-              {dest.id === "more" ? "All admin tools" : dest.label}{dest.id === "feedback" && badge ? ` (${badge} new)` : ""}
+              {dest.label}{dest.id === "feedback" && badge ? ` (${badge} new)` : ""}
             </option>)}
           </optgroup>
           <optgroup label="Other tools">
