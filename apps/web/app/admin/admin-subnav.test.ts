@@ -12,7 +12,7 @@ describe("platform admin navigation", () => {
       "Health",
       "Feedback",
       "Platform admins",
-      "More",
+      "All admin tools",
     ]);
   });
 

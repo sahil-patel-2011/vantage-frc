@@ -130,6 +130,7 @@ body.has-app-shell .settings-frame {
 .settings-navigation > a svg { width: 16px; height: 16px; }
 .settings-navigation > label { min-width: 0; max-width: 100%; }
 .settings-navigation select { width: min(260px, 100%); min-height: 44px; border-radius: 12px; padding: 8px 32px 8px 12px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--field-line, var(--line)); }
+body.has-app-shell .settings-frame > .settings-pane > main.module-page,
 body.has-app-shell .settings-pane > main { width: 100%; max-width: none; margin: 0; padding: 0; }
 body.has-app-shell .account-workspace { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
 body.has-app-shell .account-page { max-width: 760px; }
@@ -244,6 +245,9 @@ body.has-app-shell .ask-composer textarea:focus { outline: none; box-shadow: non
 .ask-page .ch-msg-body { font-size: 15px; line-height: 1.75; }
 .ask-page .ch-messages { max-height: min(50dvh, 560px); overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 
+@media (max-width: 650px) {
+  body.has-app-shell .app-page-header { align-items: stretch; }
+}
 @media (max-width: 600px) {
   body.has-app-shell .module-page { padding: 22px 18px 32px; }
   body.has-app-shell .workspace-hub-header { gap: 12px; margin-bottom: 20px; }

@@ -15,7 +15,7 @@ export const ADMIN_DESTINATIONS = [
   { id: "health", href: "/admin/health", label: "Health" },
   { id: "feedback", href: "/admin/feedback", label: "Feedback" },
   { id: "admins", href: "/admin/admins", label: "Platform admins" },
-  { id: "more", href: "/admin/more", label: "More" },
+  { id: "more", href: "/admin/more", label: "All admin tools" },
 ] as const;
 
 export type AdminDestinationId = (typeof ADMIN_DESTINATIONS)[number]["id"];
