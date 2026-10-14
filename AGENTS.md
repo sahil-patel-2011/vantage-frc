@@ -37,8 +37,10 @@ app access, replacement of auth/tenant persistence, and hosted acceptance proof.
 # Base44 dev environment notes
 
 Run the stack with `docker compose -f docker-compose.base44.yml up -d` (web on host port 3000).
-Services: `db` (postgres 17) → `install` (npm install) → `migrate` (`npm run db:migrate`) →
-`roles` (creates the `vantage_*_login` logins the app URLs use) → `web` (`next dev`).
+Services: `db` (postgres 17) → `install` (npm install) → `migrate` (`npm run db:migrate`, then
+creates the `vantage_*_login` logins the app URLs use) → `web` (`next dev`). `install` and
+`migrate` are one-shot jobs that exit 0; keep one-shots on the Node image (a stopped `postgres`
+image container gets flagged as a dead database).
 
 Non-obvious findings:
 
@@ -51,7 +53,7 @@ Non-obvious findings:
   `scripts/run-migrations.mjs` was taught to honour `sslmode=disable` (it previously only skipped
   SSL for `localhost` hostnames).
 - Migrations create the group roles (`vantage_app`, `vantage_auth`, `vantage_marketing`,
-  `vantage_worker`) as NOLOGIN; the `roles` service adds one login per group.
+  `vantage_worker`) as NOLOGIN; the `migrate` service then adds one login per group.
 - The app boots without external credentials — Stripe/Resend/CAD surfaces report
   `setup_required` by design. Outside production, sign-in emails go to an in-memory mailbox;
   use `npm run dev:otp` to read a code.

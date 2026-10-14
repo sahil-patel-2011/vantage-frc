@@ -32,20 +32,27 @@ services:
         condition: service_healthy
       install:
         condition: service_completed_successfully
-    command: sh -c "npm run db:migrate"
-
-  roles:
-    image: postgres:17
-    environment:
-      - PGPASSWORD=vantage_dev
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    command: >
-      sh -c "for r in app auth marketing worker; do
-        psql -h db -U postgres -d vantage -c \"DO \\$$\\$$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'vantage_$${r}_login') THEN CREATE ROLE vantage_$${r}_login LOGIN PASSWORD 'vantage_dev'; END IF; END \\$$\\$$;\";
-        psql -h db -U postgres -d vantage -c \"GRANT vantage_$${r} TO vantage_$${r}_login\";
-      done"
+    # Migrations create the vantage_* group roles as NOLOGIN; then add one login per group for the app URLs.
+    command:
+      - sh
+      - -ec
+      - |
+        npm run db:migrate
+        node <<'JS'
+        const pg = require("pg");
+        (async () => {
+          const db = new pg.Client({ connectionString: process.env.DATABASE_ADMIN_URL });
+          await db.connect();
+          for (const group of ["app", "auth", "marketing", "worker"]) {
+            const login = "vantage_" + group + "_login";
+            const { rowCount } = await db.query("SELECT 1 FROM pg_roles WHERE rolname = $$1", [login]);
+            if (rowCount === 0) await db.query("CREATE ROLE " + login + " LOGIN PASSWORD 'vantage_dev'");
+            await db.query("GRANT vantage_" + group + " TO " + login);
+            console.log("login ready: " + login);
+          }
+          await db.end();
+        })().catch((err) => { console.error(err); process.exit(1); });
+        JS
 
   web:
     image: node:22-alpine
@@ -71,7 +78,7 @@ services:
     env_file:
       - /run/base44/app.env
     depends_on:
-      roles:
+      migrate:
         condition: service_completed_successfully
     tty: true
     stdin_open: true
