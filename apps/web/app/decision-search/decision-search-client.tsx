@@ -316,9 +316,6 @@ export default function DecisionSearchClient() {
     queryCount,
   });
   const aiHref = hubWorkbenchHref("ai", "decision-search", orgId);
-  const relatedLinks = decisionSearchRelatedLinks(orgId, {
-    include: [...DECISION_SEARCH_RELATED_INCLUDE],
-  });
 
   if (shell === "loading") {
     return (
@@ -400,11 +397,6 @@ export default function DecisionSearchClient() {
         description="Semantic search over decisions, design reviews, and notebook entries you indexed — grounded only in real text."
       >
         <div className="decision-search-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
               Season

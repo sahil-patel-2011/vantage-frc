@@ -270,9 +270,6 @@ export default function BuildBurndownClient() {
     hasPlan,
     remainingTasks,
   });
-  const relatedLinks = buildBurndownRelatedLinks(orgId, {
-    include: [...BUILD_BURNDOWN_RELATED_INCLUDE],
-  });
   const teamHref = hubWorkbenchHref("team", "build-burndown", orgId);
   const showTiles = shouldShowBuildBurndownSummaryTiles({ taskCount, hasPlan });
 
@@ -379,11 +376,6 @@ export default function BuildBurndownClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Build Burndown" fromCache={fromCache} cachedAt={cachedAt} />

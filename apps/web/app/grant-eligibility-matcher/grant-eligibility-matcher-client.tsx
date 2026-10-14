@@ -262,9 +262,6 @@ export default function GrantEligibilityMatcherClient() {
     eligibleCount,
     deadlineCount,
   });
-  const relatedLinks = grantEligibilityMatcherRelatedLinks(orgId, {
-    include: [...GRANT_ELIGIBILITY_MATCHER_RELATED_INCLUDE],
-  });
   const businessHref = hubWorkbenchHref("business", "grant-eligibility-matcher", orgId);
   const showTiles = shouldShowGrantEligibilityMatcherSummaryTiles(eligibleCount, catalogSize);
 
@@ -350,13 +347,6 @@ export default function GrantEligibilityMatcherClient() {
         title="Grant Eligibility Matcher"
         description="Grants your team actually qualifies for, matched against your recorded team profile — with a deadline radar. Distinct from Grant Report."
       >
-        <div className="gem-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
 
       <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />

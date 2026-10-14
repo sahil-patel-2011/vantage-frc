@@ -251,9 +251,6 @@ export default function CadChangeRadarClient() {
     diffCount,
     unreadCount,
   });
-  const relatedLinks = cadChangeRadarRelatedLinks(orgId, {
-    include: [...CAD_CHANGE_RADAR_RELATED_INCLUDE],
-  });
   const buildHref = hubWorkbenchHref("build", "cad-change-radar", orgId);
   const showTiles = shouldShowCadChangeRadarSummaryTiles(snapshotCount, diffCount);
 
@@ -339,13 +336,6 @@ export default function CadChangeRadarClient() {
         title="CAD Change Impact Radar"
         description="Snapshot tracked parameters on every Onshape release, diff them automatically, and notify who it affects."
       >
-        <div className="ccr-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
 

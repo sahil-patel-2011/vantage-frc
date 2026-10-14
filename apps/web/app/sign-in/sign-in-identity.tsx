@@ -35,7 +35,6 @@ export function SignInIdentityStep({
   onPasswordSubmit,
   onPasswordChange,
   onCodeChange,
-  invited = false,
 }: {
   googleAvailable: boolean;
   emailAvailable: boolean;
@@ -60,8 +59,6 @@ export function SignInIdentityStep({
   onPasswordSubmit: (event: FormEvent) => void;
   onPasswordChange: (password: string) => void;
   onCodeChange: (code: string) => void;
-  /** Signing in to accept an invitation: no "join with a team code" detour. */
-  invited?: boolean;
 }) {
   const entryHint = email.trim().length > 3 ? emailEntryHint(email) : null;
   return (
@@ -184,10 +181,6 @@ export function SignInIdentityStep({
             </p>
           ) : null}
         </form>
-      )}
-      {/* The other way in comes after the main one, as on Apple and Google sign-in pages. */}
-      {invited ? null : (
-        <p className="signin-email-hint">Verify your email first. You can enter your team’s six-digit join code next.</p>
       )}
     </>
   );

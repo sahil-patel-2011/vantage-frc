@@ -269,9 +269,6 @@ export default function SketchToBriefClient() {
     draftCount,
     ruleFlagCount,
   });
-  const relatedLinks = sketchToBriefRelatedLinks(orgId, {
-    include: [...SKETCH_TO_BRIEF_RELATED_INCLUDE],
-  });
   const buildHref = hubWorkbenchHref("build", "sketch-to-brief", orgId);
   const kickoffHref = hubHref("/build", "kickoff", orgId);
   const cadHref = hubHref("/build", "cad", orgId);
@@ -379,11 +376,6 @@ export default function SketchToBriefClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

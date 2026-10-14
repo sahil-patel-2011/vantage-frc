@@ -782,7 +782,6 @@ export default function SignInClient({
             }
             onPasswordChange={setPassword}
             onCodeChange={(code) => dispatch({ type: "code_changed", code })}
-            invited={invited}
           />
         ) : notInvited ? (
           <SignInNotInvited

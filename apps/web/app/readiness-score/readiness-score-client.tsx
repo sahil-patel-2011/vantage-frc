@@ -312,9 +312,6 @@ export default function ReadinessScoreClient() {
     subsystemCount,
     fixCount,
   });
-  const relatedLinks = readinessScoreRelatedLinks(orgId, {
-    include: [...READINESS_SCORE_RELATED_INCLUDE],
-  });
   const buildHref = hubWorkbenchHref("build", "readiness-score", orgId);
   const showTiles = shouldShowReadinessScoreSummaryTiles(subsystemCount);
 
@@ -441,11 +438,6 @@ export default function ReadinessScoreClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

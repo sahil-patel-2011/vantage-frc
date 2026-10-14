@@ -245,9 +245,6 @@ export default function VendorLeadTimesClient() {
     openReorderCount,
     overdueCount,
   });
-  const relatedLinks = vendorLeadTimesRelatedLinks(orgId, {
-    include: [...VENDOR_LEAD_TIMES_RELATED_INCLUDE],
-  });
   const businessHref = hubWorkbenchHref("business", "vendor-lead-times", orgId);
   const ordersHref = hubHref("/business", "orders", orgId);
   const spareHref = hubHref("/build", "spare-forecast", orgId);
@@ -335,13 +332,6 @@ export default function VendorLeadTimesClient() {
         title="Vendor Lead Times"
         description="Track real vendor shipping lead times and calculate the latest date to reorder parts so they still arrive in time."
       >
-        <div className="vendor-lead-times-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Vendor Lead Times" fromCache={fromCache} cachedAt={cachedAt} />
 

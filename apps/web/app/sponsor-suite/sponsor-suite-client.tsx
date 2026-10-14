@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
-import { AskAiButton } from "../../components/ask-ai-button";
 import { reminderKindLabel, tierLabel } from "../../lib/sponsor-suite";
 import type { SponsorSuiteView } from "../../lib/sponsor-suite/compute-sponsor-suite";
 import {
@@ -273,9 +272,6 @@ export default function SponsorSuiteClient() {
     sponsorCount,
     deckCount,
   });
-  const relatedLinks = sponsorSuiteRelatedLinks(orgId, {
-    include: [...SPONSOR_SUITE_RELATED_INCLUDE],
-  });
   const businessHref = hubWorkbenchHref("business", "sponsor-suite", orgId);
 
   const mutate = useCallback(
@@ -368,8 +364,6 @@ export default function SponsorSuiteClient() {
         title="Sponsor Suite"
         description="Generate pitch/renewal decks, an end-of-season ROI report, and thank-you/renewal reminders — grounded in your recorded sponsors and contributions. Deck and ROI generation are metered."
       >
-        {/* One way into AI: Ask AI opens on this page's skill with its records. */}
-        <AskAiButton orgId={orgId} />
         <div className="sponsor-suite-header-actions">
           {view.seasons.length > 0 ? (
             <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -390,11 +384,6 @@ export default function SponsorSuiteClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />

@@ -255,9 +255,6 @@ export default function MatchCopilotClient() {
     calloutCount,
     hasAiBrief,
   });
-  const relatedLinks = matchCopilotRelatedLinks(orgId, {
-    include: [...MATCH_COPILOT_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "match-copilot", orgId);
   const strategyHref = hubHref("/competition", "strategy", orgId);
 
@@ -340,13 +337,6 @@ export default function MatchCopilotClient() {
         title="Match Copilot"
         description="A glanceable 60-second brief for your next match — fusing opponent ratings, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts."
       >
-        <div className="match-copilot-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
 
       <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />

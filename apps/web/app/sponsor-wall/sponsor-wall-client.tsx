@@ -260,9 +260,6 @@ export default function SponsorWallClient() {
     publishedCount,
     canManage,
   });
-  const relatedLinks = sponsorWallRelatedLinks(orgId, {
-    include: [...SPONSOR_WALL_RELATED_INCLUDE],
-  });
   const businessHref = hubWorkbenchHref("business", "sponsor-wall", orgId);
 
   const mutate = useCallback(
@@ -347,13 +344,6 @@ export default function SponsorWallClient() {
         title="Sponsor Wall"
         description="Build a public thank-you wall for your sponsors — logos, tiers, and shout-outs from real entries only."
       >
-        <div className="sponsor-wall-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Sponsor Wall" fromCache={fromCache} cachedAt={cachedAt} />
 

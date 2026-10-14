@@ -24,7 +24,7 @@ import {
   type AwardTrackerShellKind,
 } from "../../lib/award-tracker/award-tracker-related";
 import type { AwardSubmission, AwardSubmissionStatus, AwardType } from "../../lib/award-tracker/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -284,9 +284,6 @@ export default function AwardTrackerClient() {
     submissionCount,
     dueSoonCount,
   });
-  const relatedLinks = awardTrackerRelatedLinks(orgId, {
-    include: [...AWARD_TRACKER_RELATED_INCLUDE],
-  });
   const businessHref = hubWorkbenchHref("business", "award-tracker", orgId);
 
   const mutate = useCallback(
@@ -392,11 +389,6 @@ export default function AwardTrackerClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />

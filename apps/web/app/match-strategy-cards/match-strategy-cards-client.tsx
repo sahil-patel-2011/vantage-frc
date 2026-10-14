@@ -286,9 +286,6 @@ export default function MatchStrategyCardsClient() {
     needsAutoFlexibility,
     needsDeploySafety,
   });
-  const relatedLinks = matchStrategyCardsRelatedLinks(orgId, {
-    include: [...MATCH_STRATEGY_CARDS_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "match-strategy-cards", orgId);
   const showTiles = shouldShowMatchStrategyCardsSummaryTiles(cardCount);
 
@@ -438,13 +435,6 @@ export default function MatchStrategyCardsClient() {
         title="Match cards"
         description="A printable game plan for each of our matches: roles, auto, defense and the robots to watch."
       >
-        <div className="msc-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
 
       <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />

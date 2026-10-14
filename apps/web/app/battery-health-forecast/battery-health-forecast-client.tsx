@@ -263,9 +263,6 @@ export default function BatteryHealthForecastClient() {
     retireSoonCount: summary?.retireSoonCount ?? 0,
     overdueCount: summary?.overdueCount ?? 0,
   });
-  const relatedLinks = batteryHealthForecastRelatedLinks(orgId, {
-    include: [...BATTERY_HEALTH_FORECAST_RELATED_INCLUDE],
-  });
   const buildHref = withOrgHref("/build", orgId);
   const rotationHref = hubHref("/competition", "battery-rotation", orgId);
 
@@ -349,13 +346,6 @@ export default function BatteryHealthForecastClient() {
         title="Battery Health Forecast"
         description="Predict battery end-of-life from cycle count and internal-resistance history. Forecasts use only what you log."
       >
-        <div className="battery-health-forecast-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Battery Health Forecast" fromCache={fromCache} cachedAt={cachedAt} />
 

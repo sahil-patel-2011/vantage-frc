@@ -246,9 +246,6 @@ export default function EpaTrendAlertsClient() {
     watchlistCount,
     alertCount,
   });
-  const relatedLinks = epaTrendAlertsRelatedLinks(orgId, {
-    include: [...EPA_TREND_ALERTS_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "epa-trend-alerts", orgId);
 
   const mutate = useCallback(
@@ -333,13 +330,6 @@ export default function EpaTrendAlertsClient() {
         title="Rating alerts"
         description="Watch teams you might face and get flagged when their stored rating moves meaningfully between events."
       >
-        <div className="epa-trend-alerts-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Rating alerts" fromCache={fromCache} cachedAt={cachedAt} />
 

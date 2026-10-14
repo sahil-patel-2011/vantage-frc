@@ -279,9 +279,6 @@ export default function BusFactorClient() {
     entryCount,
     flagCount,
   });
-  const relatedLinks = busFactorRelatedLinks(orgId, {
-    include: [...BUS_FACTOR_RELATED_INCLUDE],
-  });
   const teamHref = hubWorkbenchHref("team", "bus-factor", orgId);
   const showTiles = shouldShowBusFactorSummaryTiles(entryCount);
 
@@ -399,11 +396,6 @@ export default function BusFactorClient() {
               ))}
             </select>
           </label>
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

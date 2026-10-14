@@ -13,7 +13,6 @@ import {
 } from "../../lib/sign-in";
 import type { InvitePreview } from "../../lib/invite";
 import { inviteBannerBody } from "./sign-in-model";
-import { EARLY_ACCESS_HREF } from "../../components/marketing/launch-availability";
 
 export function SignInCard({
   titleId,
@@ -57,12 +56,10 @@ export function SetupShell({ copy }: { copy: SignInSetupCopy }) {
 export function AccessFooter({ publicSignup = false }: { publicSignup?: boolean }) {
   const waitlistHref = useWaitlistHref();
   if (publicSignup) return <p className="signin-waitlist">After email verification, you can create your team or join through an invitation or approved request.</p>;
+  // One quiet way forward for a new team; joining an existing team is already in the subtitle.
   return (
     <p className="signin-waitlist">
-      <span>Join an existing team after email verification. Setting up a new team? <a href={EARLY_ACCESS_HREF}>Request early access</a>.</span>
-      <a className="signin-waitlist-btn" href={waitlistHref}>
-        Join the waitlist
-      </a>
+      New team? <a href={waitlistHref}>Join the waitlist</a>
     </p>
   );
 }

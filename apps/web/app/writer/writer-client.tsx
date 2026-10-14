@@ -261,7 +261,6 @@ export default function WriterClient({ orgId: orgIdProp }: { orgId?: string | nu
             Review and edit each draft before sending.
           </p>
         </div>
-        {orgId ? <AskAiButton orgId={orgId} skill="writing" /> : null}
       </header>
 
       {orgId ? <AiHubRelated orgId={orgId} active="writer" /> : null}

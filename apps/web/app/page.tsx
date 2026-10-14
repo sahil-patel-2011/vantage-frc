@@ -4,7 +4,6 @@ import { MarketingHeroActions, SiteFooter, SiteHeader } from "../components/mark
 import { FAQ } from "../components/marketing/faq";
 import { HeroStage } from "../components/marketing/illustrations";
 import { DepthSections, SeasonOverview, TrustSection } from "../components/marketing/home-sections";
-import { LaunchAvailability } from "../components/marketing/launch-availability";
 import { ScrollReveal } from "../components/marketing/scroll-reveal";
 import { marketingPageMetadata, organizationSoftwareJsonLd } from "../lib/marketing/seo";
 
@@ -42,7 +41,6 @@ export default function Home() {
                 team shares. Free for FRC teams.
               </p>
               <MarketingHeroActions />
-              <LaunchAvailability />
             </div>
             <HeroStage />
           </div>

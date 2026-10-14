@@ -268,9 +268,6 @@ export default function AlliancePartnerBriefClient() {
     partnerCount,
     hasBrief,
   });
-  const relatedLinks = alliancePartnerBriefRelatedLinks(orgId, {
-    include: [...ALLIANCE_PARTNER_BRIEF_RELATED_INCLUDE],
-  });
   const competitionHref = hubWorkbenchHref("competition", "alliance-partner-brief", orgId);
   const allianceBoardHref = withOrgHref("/strategy/draft", orgId);
 
@@ -356,13 +353,6 @@ export default function AlliancePartnerBriefClient() {
         title="Alliance-Partner Brief"
         description="Once alliance selection is finalized, an auto-brief on your actual partners' roles and strengths — grounded in event metrics and your own scouting."
       >
-        <div className="alliance-partner-brief-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
       <OfflineBanner feature="Alliance-Partner Brief" fromCache={fromCache} cachedAt={cachedAt} />
 

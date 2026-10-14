@@ -267,9 +267,6 @@ export default function JudgeSimClient() {
     sessionCount,
     evidenceCount,
   });
-  const relatedLinks = judgeSimRelatedLinks(orgId, {
-    include: [...JUDGE_SIM_RELATED_INCLUDE],
-  });
   const businessHref = hubWorkbenchHref("business", "judge-sim", orgId);
 
   const mutate = useCallback(
@@ -375,11 +372,6 @@ export default function JudgeSimClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />

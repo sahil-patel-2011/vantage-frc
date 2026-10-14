@@ -424,9 +424,6 @@ export default function SeasonPlanningWorkspaceClient() {
     goalsTotal,
     milestonesTotal,
   });
-  const relatedLinks = seasonPlanningRelatedLinks(orgId, {
-    include: [...SEASON_PLANNING_RELATED_INCLUDE],
-  });
   const teamHref = hubWorkbenchHref("team", "season-planning-workspace", orgId);
   const showTiles = shouldShowSeasonPlanningSummaryTiles({ goalsTotal, milestonesTotal });
 
@@ -537,11 +534,6 @@ export default function SeasonPlanningWorkspaceClient() {
               Export milestones .ics
             </Button>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
 

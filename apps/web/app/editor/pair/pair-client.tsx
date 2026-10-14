@@ -178,10 +178,6 @@ export default function PairClient({
     hasCode: Boolean(code.trim()),
     canConnect,
   });
-  const relatedLinks = pairRelatedLinks(orgId || null, {
-    include: [...PAIR_RELATED_INCLUDE],
-    canConnect,
-  });
   const buildHref = hubHref("/build", "code", orgId || null);
   const showTiles = shouldShowPairSummaryTiles({ deviceCount });
 
@@ -260,13 +256,6 @@ export default function PairClient({
         title="Pair VS Code"
         description="Approve a short code from the Vantage VS Code extension. Only machines you control — passwords never enter the editor."
       >
-        <div className="pair-header-actions">
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
-        </div>
       </PageHeader>
 
       {showTiles ? (

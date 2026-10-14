@@ -289,9 +289,6 @@ export default function OutreachCalendarClient() {
   });
   const shellCopy = outreachCalendarShellCopy(shell);
   const nextActions = outreachCalendarNextActions({ orgId, shell, eventCount });
-  const relatedLinks = outreachCalendarRelatedLinks(orgId, {
-    include: [...OUTREACH_CALENDAR_RELATED_INCLUDE],
-  });
 
   const mutate = useCallback(
     async (payload: Record<string, unknown>) => {
@@ -396,11 +393,6 @@ export default function OutreachCalendarClient() {
               </select>
             </label>
           ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
         </div>
       </PageHeader>
       <OfflineBanner feature="Outreach Calendar" fromCache={fromCache} cachedAt={cachedAt} />
