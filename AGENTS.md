@@ -58,6 +58,10 @@ Non-obvious findings:
 
 Verify: `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` → 200.
 
+- Provisioning people by SQL: the first `platform_admins` row becomes the single platform owner
+  (0733 trigger). A `memberships` insert fails until that user's profile has a 13+ `date_of_birth`
+  (`enforce_member_age`, 0703), so make someone a team owner only after they finish onboarding.
+
 - Media is temporarily disabled with the shared `MEDIA_ENABLED` switch in
   `apps/web/lib/media-availability.ts`. It gates media routes, hub tabs, upload
   routing, scouting media queues and photo controls. Set it to true and redeploy
