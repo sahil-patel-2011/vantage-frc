@@ -1,7 +1,7 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ROLE_HINTS, ROLE_LABELS } from "@vantage/core/role-words";
-import { Button, ConfirmDialog, FormRow } from "../../components/ui";
+import { Button, ConfirmDialog, FormRow, Modal } from "../../components/ui";
 import { joinCodeAccessSentence, joinCodeDigits } from "../../lib/team/join-code-flow";
 
 type JoinRole = "scout" | "viewer";
@@ -20,27 +20,43 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
     [editing, setEditing] = useState(false),
     [pin, setPin] = useState(""),
     [disable, setDisable] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [denied, setDenied] = useState(false);
+  const [qr, setQr] = useState<string | null>(null);
+  const [qrBusy, setQrBusy] = useState(false);
+  const [loadedOrg, setLoadedOrg] = useState("");
+  const generation = useRef(0);
   const load = useCallback(async () => {
-    setError("");
+    const epoch = ++generation.current;
+    setError(""); setLoading(true); setDenied(false); setQr(null);
     try {
       const response = await fetch(
         `/api/organizations/join-code?orgId=${encodeURIComponent(orgId)}`,
+        { cache: "no-store", signal: AbortSignal.timeout(15_000) },
       );
-      if (response.status === 403) return;
       const data = await response.json();
+      if (epoch !== generation.current) return;
+      if (response.status === 403) {
+        setDenied(true); setError(data.error || "Only a team owner or admin can manage the join code."); setCode(null); return;
+      }
       if (!response.ok)
         throw new Error(data.error || "Could not load the join code.");
-      setCode(data);
+      setCode(data); setLoadedOrg(orgId);
     } catch (error) {
+      if (epoch !== generation.current) return;
       setError(
         error instanceof Error ? error.message : "Could not load the join code.",
       );
-    }
+    } finally { if (epoch === generation.current) setLoading(false); }
   }, [orgId]);
   useEffect(() => {
+    setCode(null); setLoadedOrg(""); setBusy(false); setCopied(false); setEditing(false); setDisable(false); setPin("");
     void load();
+    return () => { generation.current++; };
   }, [load]);
   async function post(body: Record<string, unknown>) {
+    if (busy || loading || loadedOrg !== orgId) return;
+    const epoch = ++generation.current;
     setBusy(true);
     setError("");
     setCopied(false);
@@ -49,42 +65,47 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orgId, ...body }),
+        signal: AbortSignal.timeout(15_000),
       });
       const data = await response.json();
+      if (epoch !== generation.current) return;
       if (!response.ok) throw new Error(data.error || "That didn't save. Try again.");
       setCode((current) => ({ ...(current ?? { pin: null, enabled: false }), ...data }));
       setEditing(false);
       setDisable(false);
       setPin("");
+      setQr(null);
     } catch (error) {
+      if (epoch !== generation.current) return;
       setError(error instanceof Error ? error.message : "That didn't save. Try again.");
     } finally {
-      setBusy(false);
+      if (epoch === generation.current) setBusy(false);
     }
   }
   const helpId = `team-code-help-${orgId}`;
-  if (!code && !error) return null;
-  const joinRole: JoinRole = code?.joinRole === "scout" ? "scout" : "viewer";
-  const on = Boolean(code?.enabled && code.pin);
+  const visibleCode = loadedOrg === orgId ? code : null;
+  const joinRole: JoinRole = visibleCode?.joinRole === "scout" ? "scout" : "viewer";
+  const on = Boolean(visibleCode?.enabled && visibleCode.pin);
+  const joinLink = () => `${window.location.origin}/join-team#${new URLSearchParams({ team: String(visibleCode?.teamNumber ?? ""), code: visibleCode?.pin ?? "" })}`;
   return (
     <section className="team-code-panel" aria-labelledby={`team-code-title-${orgId}`}>
       <div className="team-code-head">
         <h2 id={`team-code-title-${orgId}`}>Team join code</h2>
-        <span className={`team-code-state${on ? " is-on" : ""}`}>{on ? "On" : "Off"}</span>
+        <span className={`team-code-state${on ? " is-on" : ""}`}>{loading ? "Loading…" : !visibleCode ? "Unavailable" : on ? "On" : "Off"}</span>
       </div>
       <p className="app-muted" id={helpId}>
-        {joinCodeAccessSentence({ enabled: on, joinRole, teamNumber: code?.teamNumber })}
+        {loading ? "Loading the team's join code…" : visibleCode ? joinCodeAccessSentence({ enabled: on, joinRole, teamNumber: visibleCode.teamNumber }) : "The join code could not be shown. Email invitations are still available above."}
       </p>
       {error ? (
         <p role="alert">
           {error}{" "}
-          <Button variant="secondary" onClick={() => void load()}>
+          {!denied ? <Button variant="secondary" disabled={loading || busy} onClick={() => void load()}>
             Retry
-          </Button>
+          </Button> : null}
         </p>
       ) : null}
 
-      {code ? (
+      {visibleCode ? (
         <fieldset className="team-code-role" disabled={busy}>
           <legend>People who join with the code get</legend>
           {(["viewer", "scout"] as const).map((role) => (
@@ -117,7 +138,7 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
               setError("");
               try {
                 await navigator.clipboard.writeText(
-                  `${window.location.origin}/join-team\nTeam ${code.teamNumber ?? ""}\nTeam join code: ${code.pin}`,
+                  joinLink(),
                 );
                 setCopied(true);
               } catch {
@@ -125,8 +146,17 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
               }
             }}
           >
-            {copied ? "Copied" : "Copy code"}
+            {copied ? "Copied" : "Copy invite link"}
           </Button>
+          <Button variant="secondary" disabled={busy || qrBusy} onClick={async () => {
+            const epoch = generation.current; setQrBusy(true);
+            try {
+              const QRCode = await import("qrcode");
+              const image = await QRCode.toDataURL(joinLink(), { width: 280, margin: 2 });
+              if (epoch === generation.current) setQr(image);
+            } catch { if (epoch === generation.current) setError("Could not create the QR code. Copy the invite link instead."); }
+            finally { setQrBusy(false); }
+          }}>{qrBusy ? "Creating QR…" : "Show QR code"}</Button>
           <Button variant="ghost" disabled={busy} onClick={() => setEditing((current) => !current)}>
             New code
           </Button>
@@ -134,7 +164,7 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
             Turn off
           </Button>
         </div>
-      ) : code ? (
+      ) : visibleCode ? (
         <div className="team-code-actions">
           <Button
             variant="secondary"
@@ -147,6 +177,10 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
           </Button>
         </div>
       ) : null}
+      <Modal open={Boolean(qr)} title="Join your team" onClose={() => setQr(null)}>
+        {qr ? <img src={qr} width={280} height={280} style={{ maxWidth: "100%", height: "auto" }} alt="Scan to open the team invitation" /> : null}
+        <p>Scan, then verify your email to join Team {visibleCode?.teamNumber}. Keep this invitation within your team.</p>
+      </Modal>
       {editing ? (
         <div className="team-code-edit">
           <FormRow label="New join code (optional)">

@@ -61,6 +61,7 @@ export function FormBuilderShell({
   errorStatus,
   onRetry,
   children,
+  embedded = false,
 }: {
   orgId?: string | null;
   shell: FormBuilderShellKind;
@@ -70,6 +71,7 @@ export function FormBuilderShell({
   errorStatus?: number | null;
   onRetry?: () => void;
   children?: ReactNode;
+  embedded?: boolean;
 }) {
   const actions = formBuilderNextActions({ orgId, shell, entryType });
   const copy = formBuilderShellCopy(shell, { entryType });
@@ -93,16 +95,17 @@ export function FormBuilderShell({
   const workspaceHref = orgId ? withOrgHref("/workspace", orgId) : "/workspace";
   const commandHref = hubHref("/competition", "command", orgId);
   const scoutingHref = hubHref("/competition", "scouting", orgId);
+  const Root = embedded ? "section" : "main";
 
   return (
-    <main className="module-page sfb-page soft-gate">
-      <PageHeader
+    <Root className="module-page sfb-page soft-gate">
+      {!embedded ? <PageHeader
         breadcrumbs="Competition / Form builder"
         title="Scouting form builder"
         description="Publish match or pit forms. Scouts and Coverage stay blank until a real version exists."
       >
         <FormBuilderRelatedStrip orgId={orgId} />
-      </PageHeader>
+      </PageHeader> : null}
       {children}
       <EmptyState
         soft
@@ -138,6 +141,6 @@ export function FormBuilderShell({
         
       </EmptyState>
       {shell === "ready" ? <FormBuilderNextActionsPanel actions={actions} /> : null}
-    </main>
+    </Root>
   );
 }

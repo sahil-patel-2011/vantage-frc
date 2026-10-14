@@ -1,5 +1,7 @@
 "use client";
 
+import { onTeamDataChanged } from "../../lib/team-data-changed";
+
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { scoutingQualityHref, type QualityQuery } from "../../lib/scouting/quality-navigation";
@@ -224,6 +226,7 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
       if (current()) { setFetchFailed(true); setMessage("Could not refresh scouting. Your unsent answers stay on this device."); }
     } finally { if (current()) { bootstrapReading.current = false; setLoading(false); setSettled(true); } }
   }, [orgId, bootstrapUrl, requestedEventKey, loadTrust]);
+  useEffect(() => onTeamDataChanged(orgId, () => { void refreshLive(); }), [orgId, refreshLive]);
   const sync = useCallback(async () => {
     if (!orgId || !navigator.onLine) return;
     setSyncState("syncing");

@@ -11,6 +11,7 @@ import {
   type GitHubContextRequest,
 } from "../../../lib/github";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
+import { probeChatModel } from "../../../lib/ai/capabilities";
 import { buildHistoryContext } from "../../../lib/chat/history-context";
 import { aiSkillById, canSaveSkillDraft } from "../../../lib/ai-skills/catalog";
 import type { SkillPageContext } from "../../../lib/ai-skills/executors";
@@ -62,6 +63,7 @@ export async function GET(request: Request) {
           ? await getOrgPromptCachingEnabled(client, orgId)
           : true; // platform default since 0448 — personal chats cache too
       const facts = orgId ? await loadSkillAccessFacts(client, orgId, session.user.id) : null;
+      const model = orgId && facts?.role ? await withSavepoint(client, () => probeChatModel(client, { orgId, userId: session.user.id }), null) : null;
       return {
         threads: await repository.listThreads(),
         memories: await repository.listUserMemories(session.user.id),
@@ -70,6 +72,7 @@ export async function GET(request: Request) {
         promptCachingEnabled,
         // Which Ask AI skills this member may use here, and in plain words why not.
         role: facts?.role ?? null,
+        aiConnection: model ? { configured: model.ok, reason: model.ok ? null : model.reason } : null,
         skills: facts ? skillAvailabilityList(facts) : [],
       };
     });

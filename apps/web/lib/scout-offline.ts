@@ -1,6 +1,7 @@
 "use client";
 
 import { MEDIA_PAUSED_MESSAGE } from "./media-availability";
+import { notifyTeamDataChanged } from "./team-data-changed";
 import { cacheJsonBytes, checkCacheSpace } from "./offline/storage-budget";
 import type { SyncEntry } from "@vantage/scouting";
 import { partitionByOrgId } from "@vantage/scouting";
@@ -495,6 +496,7 @@ async function drainOutboxNow(user: string, orgId: string): Promise<Omit<SyncOut
     // Keep the three-pass limit; unacknowledged rows remain queued for retry.
     if (!changedDuringUpload && !drain.accepted.length && !drain.rejected.length && !drain.isolated.length) break;
   }
+  if (count > 0) notifyTeamDataChanged({ orgId, kind: "scouting" });
   return { count, validations, quarantined, sent, setAside, failure };
 }
 

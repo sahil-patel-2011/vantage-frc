@@ -203,6 +203,7 @@ export default function ChatClient({
   // A send that fails because AI is off keeps the thread and the typed question on screen with a
   // "Not sent" note; it used to swap the whole thread for a setup card and the question was gone.
   const [notSent, setNotSent] = useState<string | null>(null);
+  const [aiConnection, setAiConnection] = useState<{ configured: boolean; reason: string | null } | null>(null);
   const [sending, setSending] = useState(false);
   const sendPending = useRef(false);
   const loadRequest = useRef<AbortController | null>(null);
@@ -254,6 +255,7 @@ export default function ChatClient({
       if (!silent) { setHttpStatus(response.status); setLoadError(null); }
       setThreads(data.threads ?? []); setMemories(data.memories ?? []);
       setPromptCachingEnabled(Boolean(data.promptCachingEnabled));
+      setAiConnection(data.aiConnection ?? null);
       if (Array.isArray(data.skills)) setAvailability(data.skills);
       if (typeof data.role === "string") setRole(data.role);
       if (data.memorySettings) {
@@ -277,6 +279,7 @@ export default function ChatClient({
 
   useEffect(() => {
     setThread(null); setMessages([]); setThreads([]); setConnectOpen(false);
+    setAiConnection(null); setNotSent(null);
     void load();
     return () => { loadRequest.current?.abort(); };
   }, [orgId]);
@@ -834,6 +837,10 @@ export default function ChatClient({
           ) : null}
 
           <form className="ch-composer ask-composer" onSubmit={send}>
+            {aiConnection?.configured === false && !notSent ? <p className="ch-composer-note" role="status">
+              {aiConnection.reason === "no_model_provider" ? "AI isn't connected yet. Your question will stay here until it can be sent." : "Your AI connection isn't available. Check it before sending."}{" "}
+              <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI</button>
+            </p> : null}
             {pinned && conversationEmpty ? <SkillStarters skillId={pinned} onPick={(starter) => pickStarter(null, starter)} /> : null}
             {thread?.scope === "team" ? (
               <div className="ch-composer-note">Shared with your team · teammates see this message</div>
@@ -907,7 +914,7 @@ export default function ChatClient({
           </div> : null}
         </section>
 
-        <ChatConnectDialog key={orgId} open={connectOpen} orgId={orgId} onClose={() => setConnectOpen(false)} onConnected={() => { setNotSent(null); setStatus("AI connected. Send your question when you’re ready."); }} />
+        <ChatConnectDialog key={orgId} open={connectOpen} orgId={orgId} onClose={() => setConnectOpen(false)} onConnected={() => { setNotSent(null); setAiConnection({ configured: true, reason: null }); setStatus("AI connected. Send your question when you’re ready."); void load(undefined, true).catch(() => setStatus("AI connected. Reopen this chat to refresh its settings.")); }} />
         {shell === "ready" || shell === "empty" ? (
         <Modal open={contextOpen} onClose={() => setContextOpen(false)} title="Chat settings" className="ch-settings-dialog">
         {memoryNotice ? <p className={`ch-status${memoryNotice.error ? " ch-not-sent" : ""}`} role={memoryNotice.error ? "alert" : "status"}>{memoryNotice.text}</p> : null}

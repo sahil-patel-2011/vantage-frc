@@ -16,7 +16,7 @@ export function waitlistUnavailableMessage(): string {
  * When teams get set up, said the same way on Home, sign-in and the waitlist. The waitlist used to
  * promise "usually within a few days" beside a sign-in page that said December 1 (QA A1-05).
  */
-export const LAUNCH_TIMELINE = `Teams are set up from ${PUBLIC_SIGNUP_DATE_LABEL}. Early-access teams hear from us sooner.`;
+export const LAUNCH_TIMELINE = `Public team registration is planned from ${PUBLIC_SIGNUP_DATE_LABEL}. Existing early-access teams can sign in now.`;
 
 export function waitlistJoinedCopy(recorded: { email: string; team: string } | null): { body: string; kept: string } {
   const who = recorded?.email ? recorded.email : "you";

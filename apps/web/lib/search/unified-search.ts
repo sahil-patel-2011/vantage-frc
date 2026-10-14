@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
 import { searchHelpArticles } from "../help";
+import { matchLabel } from "../scouting/next-match";
 
 // ---------------------------------------------------------------------------
 // Unified global search.
@@ -15,7 +16,7 @@ import { searchHelpArticles } from "../help";
 // docs without a CMS. To add a DB-backed feature, append a SearchSource.
 // ---------------------------------------------------------------------------
 
-export type SearchSourceId = "tasks" | "inventory" | "impact" | "knowledge" | "help";
+export type SearchSourceId = "teams" | "matches" | "tasks" | "inventory" | "impact" | "knowledge" | "help";
 
 export type SearchResult = {
   /** Row primary key (uuid). */
@@ -90,6 +91,40 @@ type SearchSource = {
 };
 
 export const SEARCH_SOURCES: SearchSource[] = [
+  {
+    id: "teams", label: "Teams",
+    run: async (client, orgId, pattern, limit) => {
+      // Team identities are public reference data. Membership is resolved before this registry runs.
+      const { rows } = await client.query<{ teamKey: string; teamNumber: number; nickname: string | null }>(
+        `SELECT team_key AS "teamKey", team_number AS "teamNumber", nickname FROM teams_ref
+         WHERE EXISTS (SELECT 1 FROM memberships WHERE org_id = $1::uuid)
+           AND (team_number::text ILIKE $2 ESCAPE '\\' OR team_key ILIKE $2 ESCAPE '\\' OR nickname ILIKE $2 ESCAPE '\\')
+         ORDER BY (team_number::text = trim($2, '%')) DESC, team_number LIMIT $3`,
+        [orgId, pattern, limit],
+      );
+      return rows.map(row => ({ id: row.teamKey, source: "teams" as const, sourceLabel: "Teams", title: `Team ${row.teamNumber}`,
+        subtitle: row.nickname, href: `/competition?tab=teams&sub=lookup&team=${row.teamNumber}&orgId=${encodeURIComponent(orgId)}`, updatedAt: null }));
+    },
+  },
+  {
+    id: "matches", label: "Matches",
+    run: async (client, orgId, pattern, limit) => {
+      const { rows } = await client.query<{ matchKey: string; compLevel: string; matchNumber: number; eventName: string }>(
+        `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber", e.name AS "eventName"
+         FROM org_active_context c JOIN matches_ref m ON m.event_key = c.active_event_key JOIN events_ref e ON e.event_key = m.event_key
+         WHERE c.org_id = $1::uuid AND (m.match_key ILIKE $2 ESCAPE '\\' OR
+           (CASE m.comp_level WHEN 'qm' THEN 'Qual ' || m.match_number::text
+             WHEN 'ef' THEN 'Eighth ' || m.set_number::text || '-' || m.match_number::text
+             WHEN 'sf' THEN 'Semi ' || m.set_number::text || '-' || m.match_number::text
+             WHEN 'qf' THEN 'Quarter ' || m.set_number::text || '-' || m.match_number::text
+             WHEN 'f' THEN 'Final ' || m.set_number::text || '-' || m.match_number::text ELSE m.comp_level || ' ' || m.match_number::text END) ILIKE $2 ESCAPE '\\'
+           OR (upper(m.comp_level) || CASE WHEN m.comp_level = 'qm' THEN m.match_number::text ELSE m.set_number::text || '-' || m.match_number::text END) ILIKE $2 ESCAPE '\\')
+         ORDER BY m.event_time NULLS LAST, m.comp_level, m.set_number, m.match_number LIMIT $3`, [orgId, pattern, limit],
+      );
+      return rows.map(row => ({ id: row.matchKey, source: "matches" as const, sourceLabel: "Matches", title: matchLabel(row), subtitle: row.eventName,
+        href: `/competition?tab=scouting&scoutTab=match&matchKey=${encodeURIComponent(row.matchKey)}&orgId=${encodeURIComponent(orgId)}`, updatedAt: null }));
+    },
+  },
   {
     id: "tasks",
     label: "Build Tasks",
@@ -343,7 +378,8 @@ export async function computeUnifiedSearch(
     });
 
   // Help first for topic jumps (island, Automode, credits…), then org data.
-  const results = [...helpHits, ...dataHits].slice(0, TOTAL_LIMIT);
+  const competitionHits = dataHits.filter(hit => hit.source === "teams" || hit.source === "matches");
+  const results = [...competitionHits, ...helpHits, ...dataHits.filter(hit => hit.source !== "teams" && hit.source !== "matches")].slice(0, TOTAL_LIMIT);
 
   return {
     status: "ready",

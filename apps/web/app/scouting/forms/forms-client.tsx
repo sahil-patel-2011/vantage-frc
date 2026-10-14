@@ -33,6 +33,7 @@ import { SCOUTING_LOAD_TIMEOUT_MS } from "../../../lib/scouting/load-state";
 import { PUBLISH_CHECK_TIMEOUT_MS, PUBLISH_TIMEOUT_MS, publishCheckMessage, publishOutcomeAfterTimeout, type PublishCheck } from "../../../lib/scouting/publish-confirm";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { FormBuilderShell } from "./forms-chrome";
+import { notifyTeamDataChanged } from "../../../lib/team-data-changed";
 import { defaultQuestions, formStatusLine, initialFormType, type FormBuilderMode, type SchemasPayload } from "./forms-model";
 import { FormsTabletPreview } from "./forms-tablet-preview";
 import { FormQuestionCard } from "./forms-question-card";
@@ -378,12 +379,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
 
   function addQuestion(kind?: AnswerKind) {
     const question = newDraftQuestion(kind ? { kind, label: kind === "section" ? "Teleop" : "" } : undefined);
-    setQuestions(previous => {
-      const next = previous.slice();
-      const index = previous.findIndex(item => item.id === focusedQuestionId);
-      next.splice(index < 0 ? next.length : index + 1, 0, question);
-      return next;
-    });
+    setQuestions(previous => [...previous, question]);
     questionFocusRef.current = question.id;
     setEditingQuestionId(question.id);
   }
@@ -507,6 +503,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
       loadSchemaIntoDraft(schema, type, year, false);
       if (cleanupFailed) setDraftError("Publication succeeded, but the old device draft could not be removed.");
       setPublished({ id: published.id, version: published.version });
+      notifyTeamDataChanged({ orgId, kind: "forms" });
     };
     try {
       const response = await fetch("/api/scouting/schemas", {
@@ -578,6 +575,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
   if (loadedOrg === orgId && loadError && !payload) {
     return (
       <FormBuilderShell
+        embedded={embedded}
         orgId={orgId}
         shell="error"
         entryType={type}
@@ -592,7 +590,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
 
   if (!payload || loadedOrg !== orgId) {
     return (
-      <FormBuilderShell orgId={orgId} shell="loading" entryType={type}>
+      <FormBuilderShell embedded={embedded} orgId={orgId} shell="loading" entryType={type}>
         <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
       </FormBuilderShell>
     );
@@ -629,7 +627,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
 
   if (shell === "setup") {
     return (
-      <FormBuilderShell orgId={orgId} shell="setup" entryType={type}>
+      <FormBuilderShell embedded={embedded} orgId={orgId} shell="setup" entryType={type}>
         <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
         {!payload.canManageSchemas ? (
           <EmptyState

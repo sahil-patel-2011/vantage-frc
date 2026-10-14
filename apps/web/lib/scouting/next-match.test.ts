@@ -26,6 +26,19 @@ const schedule = orderedSchedule([
 ]);
 
 describe("next match for a scout", () => {
+  it("keeps first games of each traditional playoff set ahead of later games", () => {
+    const playoff = (set: number, game: number): ScheduleMatch => ({ matchKey: `2026test_qf${set}m${game}`, compLevel: "qf", matchNumber: game });
+    expect(orderedSchedule([playoff(1, 2), playoff(10, 1), playoff(2, 1), playoff(1, 1)]).map(matchLabel))
+      .toEqual(["Quarter 1-1", "Quarter 2-1", "Quarter 10-1", "Quarter 1-2"]);
+  });
+  it("uses scheduled chronology when playoff games are explicitly timed", () => {
+    const timed: ScheduleMatch[] = [
+      { matchKey: "2026test_sf2m1", compLevel: "sf", matchNumber: 1, matchTime: "2026-10-13T15:00:00Z" },
+      { matchKey: "2026test_sf1m2", compLevel: "sf", matchNumber: 2, matchTime: "2026-10-13T14:00:00Z" },
+    ];
+    expect(orderedSchedule(timed).map(matchLabel)).toEqual(["Semi 1-2", "Semi 2-1"]);
+    expect(matchLabel({ matchKey: "2026test_sf2m1", matchNumber: 1 })).toBe("Semi 2-1");
+  });
   it("orders quals before playoffs and labels both", () => {
     expect(schedule.map((m) => m.matchKey)).toEqual(["2027test_qm1", "2027test_qm2", "2027test_qm3", "2027test_sf1m1"]);
     expect(matchLabel(schedule[0]!)).toBe("Qual 1");

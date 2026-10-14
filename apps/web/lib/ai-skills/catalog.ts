@@ -550,14 +550,14 @@ export const AI_SKILLS: readonly AiSkill[] = [
     group: "scouting",
     purpose: "What your scouts, video notes and overnight intel say about other teams.",
     starters: ["What did our scouts say about our next opponents?", "What came out of overnight intel?", "Sum up our video notes"],
-    reads: ["Overnight intel brief", "Video review notes", "Scouting entries (through the team tools)"],
+    reads: ["Saved match and pit scouting observations", "Overnight intel brief", "Video review notes"],
     libModules: ["lib/overnight-intel", "lib/ai-insights (video_scout_summary)"],
     keywords: /\b(scout(?:s|ing|ed)?|overnight|intel|video notes?|opponents?)\b/i,
     access: { minRole: "viewer", hub: "competition" },
     home: { label: "Open Scouting", path: "/competition?tab=scouting" },
     pages: ["/competition?tab=scouting", "/scouting", "/scout", "/video", "/video-analysis", "/overnight-intel", "/intel", "/dossier", "/teams", "/opponent-watchlist", "/competition?tab=teams", "/competition?tab=video", "/competition?tab=overnight-intel", "/competition?tab=intel"],
     saveDraft: null,
-    guidance: ["Skill: Scouting insight.", NO_INVENTION, "Say whether each point is a scout's observation or a number from event data."].join(" "),
+    guidance: ["Skill: Scouting insight.", NO_INVENTION, "Start with saved match and pit observations. Use their custom field labels and confidence; never restore excluded contradicted fields. Say whether each point is a scout's observation or a number from event data. A bounded recent sample is not all teams or the next opponents; use team tools for a named robot."].join(" "),
   },
 
   // ── Writing ────────────────────────────────────────────────────────────────

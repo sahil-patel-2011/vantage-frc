@@ -35,6 +35,11 @@ const SCHEDULE: ScheduledMatch[] = [
 ];
 
 describe("buildScoutTargets", () => {
+  it("distinguishes semifinal sets that each contain match one", () => {
+    const matches = [2, 10].map(set => ({ matchKey: `2026gagai_sf${set}m1`, compLevel: "sf", matchNumber: 1, redAlliance: { teamKeys: ["frc254"] } }));
+    expect(buildScoutTargets({ matches }).map(row => row.matchLabel)).toEqual(["Semi 2-1", "Semi 10-1"]);
+    expect(describeMatchKey("2026gagai_sf2m1")).toBe("Semifinal 2-1");
+  });
   it("does not hide the schedule from someone who has an assignment", () => {
     // This is the whole point. The old selector replaced the schedule with your
     // assignments, so a scout who was given one match could not record the one
@@ -99,7 +104,7 @@ describe("groupScoutTargets", () => {
    */
   it("splits the schedule into one group per match", () => {
     const groups = groupScoutTargets(buildScoutTargets({ matches: SCHEDULE }));
-    expect(groups.map((g) => g.label)).toEqual(["QM 3", "QM 4"]);
+    expect(groups.map((g) => g.label)).toEqual(["Qual 3", "Qual 4"]);
     expect(groups[0]?.options.length).toBe(6);
     expect(groups[1]?.options.length).toBe(2);
   });
@@ -109,7 +114,7 @@ describe("groupScoutTargets", () => {
     expect(groups[0]?.label).toBe(YOUR_MATCHES_GROUP_LABEL);
     expect(groups[0]?.options.map((o) => o.teamKey)).toEqual(["frc6925"]);
     // ...and it is not repeated inside its own match's group.
-    const qm3 = groups.find((g) => g.label === "QM 3");
+    const qm3 = groups.find((g) => g.label === "Qual 3");
     expect(qm3?.options.some((o) => o.teamKey === "frc6925")).toBe(false);
   });
 
@@ -126,7 +131,7 @@ describe("groupScoutTargets", () => {
 
   it("keeps the schedule in schedule order", () => {
     const groups = groupScoutTargets(buildScoutTargets({ matches: [...SCHEDULE].reverse() }));
-    expect(groups.map((g) => g.label)).toEqual(["QM 4", "QM 3"]);
+    expect(groups.map((g) => g.label)).toEqual(["Qual 4", "Qual 3"]);
   });
 
   it("falls back to the label when a cached row predates matchLabel", () => {
