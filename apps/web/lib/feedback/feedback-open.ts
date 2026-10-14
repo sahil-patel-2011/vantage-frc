@@ -1,9 +1,9 @@
 import { isBugKind, type BugKind } from "./bug-report";
 
 /**
- * One way to open the Send feedback dialog from anywhere: the corner button, the account menu,
- * the Help page. They do not import the dialog; they say so on window and the button, which
- * owns the dialog, listens. A page that cannot reach it can still fall back to /report-bug.
+ * Help opens the shared Send feedback dialog without importing it. The app frame hosts the
+ * dialog and listens on window; no floating duplicate action is needed. A page that cannot
+ * reach it can still fall back to /report-bug.
  */
 export const FEEDBACK_OPEN_EVENT = "vantage:feedback-open";
 

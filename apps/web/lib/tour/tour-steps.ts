@@ -81,7 +81,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: "feedback",
     target: "feedback",
     title: "Tell us anything",
-    body: "Found a bug or have an idea? Tap here any time.",
+    body: "Found a bug or have an idea? Open Help, then Send feedback. Help also keeps the manual and support together.",
     prefer: "top",
   },
 ] as const;
