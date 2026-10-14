@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { type Me, type MembershipOption } from "./app-shell-model";
+import { type Me } from "./app-shell-model";
 import { withOrgHref } from "../lib/nav/product-nav";
-import { SETTINGS_HREF } from "../lib/nav/settings-nav";
 import { Icon } from "./icon";
-import { FeedbackBugIcon } from "./feedback-bug-icon";
-import { openFeedback } from "../lib/feedback/feedback-open";
 
 function menuItems(menu: HTMLElement | null): HTMLElement[] {
   return menu ? [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)')] : [];
@@ -26,9 +23,8 @@ export function AppShellAccountMenu({
   open,
   me,
   accountLabel,
-  orgLabel,
-  rolePlanCue,
   orgId,
+  minimal = false,
   signingOut,
   onClose,
   onSignOut,
@@ -36,16 +32,10 @@ export function AppShellAccountMenu({
   open: boolean;
   me: Me;
   accountLabel: string | null;
-  orgLabel: string;
-  rolePlanCue: string;
   orgId: string;
-  memberships: MembershipOption[];
-  orderedMemberships: MembershipOption[];
-  recentOrgIds: string[];
+  minimal?: boolean;
   signingOut: boolean;
   onClose: () => void;
-  switchWorkspaceHref: (nextOrgId: string) => string;
-  onWorkspaceSwitch: (nextOrgId: string) => void;
   onSignOut: () => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -84,38 +74,10 @@ export function AppShellAccountMenu({
         <div className="soft-account-pop-head">
           <strong>{accountLabel ?? "Signed-in user"}</strong>
           <span>{me.email ?? "Account"}</span>
-          <div className="soft-account-context">
-            <span className="soft-account-org" title={orgLabel}>{orgLabel}</span>
-            <span className="soft-account-role">{rolePlanCue}</span>
-          </div>
         </div>
-        {/* One place for settings, yours and the team's (what your role allows): the same word
-            and the same page from this menu, the phone menu and the sidebar. Team admin is a
-            section of it ("Members and invites"), not a second menu item. */}
-        <a className="soft-account-destination" role="menuitem" href={withOrgHref(SETTINGS_HREF, orgId)} onClick={onClose}>
-          <Icon name="gear" /><span>Settings</span>
-        </a>
-        {/* The Help center keeps the manual, support and feedback together. */}
-        <a className="soft-account-destination" role="menuitem" href={withOrgHref("/help", orgId)} onClick={onClose}>
-          <Icon name="book" /><span>Help</span>
-        </a>
-        {/* The same dialog as the round bug button in the corner (components/feedback-button.tsx). */}
-        <button
-          className="soft-account-destination"
-          role="menuitem"
-          type="button"
-          onClick={() => {
-            onClose();
-            openFeedback();
-          }}
-        >
-          <FeedbackBugIcon size={18} /><span>Send feedback</span>
-        </button>
-        {me.platformAdmin ? (
-          <a className="soft-account-destination" role="menuitem" href="/admin" onClick={onClose}>
-            <Icon name="shield" /><span>Platform admin</span>
-          </a>
-        ) : null}
+        {!minimal ? <a className="soft-account-destination" role="menuitem" href={withOrgHref("/account", orgId)} onClick={onClose}>
+          <Icon name="users" /><span>Your profile</span>
+        </a> : null}
         <button
           role="menuitem"
           type="button"

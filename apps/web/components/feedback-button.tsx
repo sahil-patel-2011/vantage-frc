@@ -42,7 +42,7 @@ function CheckIcon() {
 
 type Phase = "idle" | "sending" | "sent";
 
-export function FeedbackButton({ orgId, signedIn }: { orgId?: string | null; signedIn: boolean }) {
+export function FeedbackButton({ orgId, signedIn, showTrigger = true }: { orgId?: string | null; signedIn: boolean; showTrigger?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<BugKind>("bug");
@@ -172,7 +172,7 @@ export function FeedbackButton({ orgId, signedIn }: { orgId?: string | null; sig
     setError(result.message);
   };
 
-  const showButton = signedIn && feedbackButtonAllowedOn(pathname);
+  const showButton = showTrigger && signedIn && feedbackButtonAllowedOn(pathname);
   const nearLimit = text.length >= COUNT_FROM;
 
   return (

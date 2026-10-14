@@ -27,7 +27,6 @@ import {
   pathAllowedByHubAccess,
   pathAllowedBySponsors,
 } from "../lib/nav/hub-access-filter";
-import { listRecentOrgIds, rememberRecentOrg, sortMembershipsByRecent } from "../lib/nav/recent-teams";
 import { commandCatalogFor } from "../lib/nav/command-search";
 import { isSettingsPath, settingsRoleTier } from "../lib/nav/settings-nav";
 import { pushAppNavigation, softNavigationTarget } from "../lib/nav/soft-navigation";
@@ -56,7 +55,6 @@ import {
   teamLabelFor,
   shellTitleForPath,
   showBackForPath,
-  switchWorkspaceHrefFor,
   type Me,
   type MembershipOption,
 } from "./app-shell-model";
@@ -129,7 +127,6 @@ export default function AppShell() {
   const [islandEditorOpen, setIslandEditorOpen] = useState(false);
   const [memberships, setMemberships] = useState<MembershipOption[]>([]);
   const [teamsLoaded, setTeamsLoaded] = useState(false);
-  const [recentOrgIds, setRecentOrgIds] = useState<string[]>([]);
   const [pathSearch, setPathSearch] = useState("");
   const [shortcutHint, setShortcutHint] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -284,7 +281,6 @@ export default function AppShell() {
   }, [pathname]);
 
   useEffect(() => {
-    setRecentOrgIds(listRecentOrgIds());
     const mac = /mac|iphone|ipad|ipod/i.test(window.navigator.platform || window.navigator.userAgent);
     setShortcutHint(mac ? "⌘K" : "Ctrl K");
   }, []);
@@ -524,11 +520,6 @@ export default function AppShell() {
     suggestWhenEmpty: true,
   });
 
-  const orderedMemberships = useMemo(
-    () => sortMembershipsByRecent(memberships, recentOrgIds),
-    [memberships, recentOrgIds],
-  );
-
   // Onboarding is a short, focused flow: its tabs and shortcuts only bounced back to it.
   const onboarding = pathname === "/onboarding";
   // The invite landing and the 404 keep the product's styles but not its chrome: the person
@@ -564,15 +555,6 @@ export default function AppShell() {
     setPaletteOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
-  }, []);
-
-  const switchWorkspaceHref = useCallback(
-    (nextOrgId: string) => switchWorkspaceHrefFor(pathname, pathSearch, nextOrgId),
-    [pathname, pathSearch],
-  );
-
-  const onWorkspaceSwitch = useCallback((nextOrgId: string) => {
-    setRecentOrgIds(rememberRecentOrg(nextOrgId));
   }, []);
 
   async function handleSignOut() {
@@ -616,13 +598,8 @@ export default function AppShell() {
         me={me}
         initial={initial}
         accountLabel={accountLabel}
-        rolePlanCue={rolePlanCue}
         memberships={memberships}
-        orderedMemberships={orderedMemberships}
-        recentOrgIds={recentOrgIds}
         signingOut={signingOut}
-        switchWorkspaceHref={switchWorkspaceHref}
-        onWorkspaceSwitch={onWorkspaceSwitch}
         onSignOut={() => void handleSignOut()}
       />
       {entryScreen ? null : <LegalUpdateBanner />}
@@ -666,7 +643,7 @@ export default function AppShell() {
         shortcutHint={shortcutHint}
       />
       <AppTour />
-      <FeedbackButton orgId={orgId} signedIn={Boolean(me.userId) && !entryScreen} />
+      <FeedbackButton orgId={orgId} signedIn={Boolean(me.userId) && !entryScreen} showTrigger={false} />
       {entryScreen ? null : <StatusEcho />}
       {onboarding ? null : (
       <AppShellIsland

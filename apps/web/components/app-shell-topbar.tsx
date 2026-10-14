@@ -47,13 +47,8 @@ export function AppShellTopbar({
   me,
   initial,
   accountLabel,
-  rolePlanCue,
   memberships,
-  orderedMemberships,
-  recentOrgIds,
   signingOut,
-  switchWorkspaceHref,
-  onWorkspaceSwitch,
   onSignOut,
 }: {
   showBack: boolean;
@@ -85,13 +80,8 @@ export function AppShellTopbar({
   me: Me;
   initial: string;
   accountLabel: string | null;
-  rolePlanCue: string;
   memberships: MembershipOption[];
-  orderedMemberships: MembershipOption[];
-  recentOrgIds: string[];
   signingOut: boolean;
-  switchWorkspaceHref: (nextOrgId: string) => string;
-  onWorkspaceSwitch: (nextOrgId: string) => void;
   onSignOut: () => void;
 }) {
   // View only (0715): say so once, calmly, so a refused button is never a surprise.
@@ -198,16 +188,10 @@ export function AppShellTopbar({
             open={accountMenuOpen}
             me={me}
             accountLabel={accountLabel}
-            orgLabel={orgLabel}
-            rolePlanCue={rolePlanCue}
             orgId={orgId}
-            memberships={memberships}
-            orderedMemberships={orderedMemberships}
-            recentOrgIds={recentOrgIds}
+            minimal={minimal}
             signingOut={signingOut}
             onClose={onCloseAccount}
-            switchWorkspaceHref={switchWorkspaceHref}
-            onWorkspaceSwitch={onWorkspaceSwitch}
             onSignOut={onSignOut}
           />
         </div>

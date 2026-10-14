@@ -158,12 +158,10 @@ export function AppShellNavPanel({
             />
           </nav>
         )}
-        {/* The menu is for going places. Who you are (Team admin, Platform admin, Sign out) lives
-            in the avatar menu at the top right, on every screen size, so neither repeats the other.
-            Your apps are edited from their own heading, so the toolbar keeps Settings and Help. */}
+        {/* App utilities have one location; the avatar holds only personal account actions. */}
         {!queryActive ? <footer className="soft-drawer-foot soft-drawer-toolbar" aria-label="Help and settings">
           <a href={withOrgHref(SETTINGS_HREF, orgId)} onClick={closeNav}><Icon name="gear" /><span>Settings</span></a>
-          <a href={withOrgHref("/help", orgId)} onClick={closeNav}><Icon name="book" /><span>Help</span></a>
+          <a href={withOrgHref("/help", orgId)} data-tour="feedback" onClick={closeNav}><Icon name="book" /><span>Help</span></a>
           {platformAdmin ? <a href="/admin" onClick={closeNav}><Icon name="shield" /><span>Admin</span></a> : null}
         </footer> : null}
       </aside>
