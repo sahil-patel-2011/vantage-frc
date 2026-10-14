@@ -1,7 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { platformTbaEnvConfigured } from "@vantage/reference";
 import { loadDataSourceHealth } from "../../../lib/reference-health";
 import { computeStrategyView } from "../../../lib/strategy/compute-strategy";
 import {
@@ -41,11 +40,10 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const requestedOrg = url.searchParams.get("orgId");
   const matchKey = url.searchParams.get("matchKey");
-  const tbaConfigured = platformTbaEnvConfigured();
   const refresh = briefingRequestsStrategyRefresh({ refresh: url.searchParams.get("refresh") });
 
   try {
-    // Load computes from Neon last-good cache; ?refresh=1 is the briefing on-demand recompute.
+    // Compute from saved reference data; ?refresh=1 requests a recompute.
     const view = await loadStrategyView({
       userId: session.user.id,
       requestedOrg,
@@ -54,42 +52,9 @@ export async function GET(request: Request) {
     });
     return Response.json(view);
   } catch (error) {
-    // Server log only: the member sees the setup card below.
+    // A failed read is not proof that the team or active event is missing.
     console.error("strategy load failed:", error instanceof Error ? error.message : error);
-    return Response.json(
-      {
-        status: "setup_required",
-        message: "Could not load strategy context. Choose your team and confirm database access.",
-        steps: [
-          {
-            id: "workspace",
-            label: "Choose your team",
-            detail: "Pick which FRC team you are working as.",
-            href: "/workspace",
-          },
-          {
-            id: "event",
-            label: "Set active event",
-            detail: "Set the active competition context",
-            href: "/workspace",
-          },
-          {
-            id: "tba",
-            label: "Sync Team Data",
-            detail: tbaConfigured
-              ? "Platform TBA key is set — open Admin → Live Data to sync if stale"
-              : "Sync Team Data under Team → Data, or ask whoever set up this site to add a Blue Alliance key.",
-            href: "/team/data",
-          },
-        ],
-        orgId: null,
-        eventKey: null,
-        eventName: null,
-        teamNumber: null,
-        tbaConfigured,
-      } satisfies StrategyView,
-      { status: 200 },
-    );
+    return Response.json({ error: "The match plan couldn't load from your team's saved data. Try again; your active event has not been cleared." }, { status: 503 });
   }
 }
 

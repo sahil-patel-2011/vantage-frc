@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fieldsForMatchStage, matchFieldStages } from "./match-form-flow";
+import { availableMatchStages, fieldsForMatchStage, matchFieldStages, reachableMatchStage } from "./match-form-flow";
 import type { FieldDefinition } from "@vantage/scouting";
 const fields: FieldDefinition[] = [
   { key: "start", label: "Starting position", type: "field_position" },
@@ -11,6 +11,16 @@ const fields: FieldDefinition[] = [
   { key: "notes", label: "Notes", type: "text" },
 ];
 describe("match form flow", () => {
+  it("opens a notes-only custom form on its questions instead of a blank Before phase", () => {
+    const stages = availableMatchStages([{ key: "notes", label: "Notes", type: "text" }]);
+    expect(stages).toEqual(["review"]);
+    expect(reachableMatchStage("pre", stages)).toBe("review");
+  });
+  it("skips headings with no answers and advances the clock to the next populated phase", () => {
+    const stages = availableMatchStages([{ key: "autoHeader", label: "Auto", type: "section_header" }, { key: "climb", label: "Climb", type: "boolean" }]);
+    expect(stages).toEqual(["endgame", "review"]);
+    expect(reachableMatchStage("auto", stages)).toBe("endgame");
+  });
   it("keeps only phase actions while carrying section context", () => {
     expect(fieldsForMatchStage(fields, "auto").map(field => field.key)).toEqual(["autoHeader", "fuel"]);
     expect(fieldsForMatchStage(fields, "teleop").map(field => field.key)).toEqual(["teleop", "cycles"]);

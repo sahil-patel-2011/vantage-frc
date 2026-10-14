@@ -513,17 +513,36 @@ const EXECUTORS: Record<string, Executor> = {
   "code-review": codeReview,
   cad,
   "scouting-insight": async (ctx, skill) => {
-    const [intel, video] = await Promise.all([
-      viewSkill([computeOvernightIntelView], "No overnight intel brief yet.")(ctx, skill),
-      insightSkill("video_scout_summary", "No video review notes yet.")(ctx, skill),
-    ]);
-    const okOne = [intel, video].find((part) => part.status === "ok");
+    // Saved observations are the primary source, using the same labels and
+    // contradicted-field exclusions as the existing per-team scouting tool.
+    const namedTeam = /\b(?:team\s*|frc)(\d{1,5})\b/i.exec(ctx.request)?.[1];
+    const requestedTeam = ctx.page.teamKey ?? (namedTeam ? `frc${namedTeam}` : null);
+    const teams = ctx.activeEventKey ? (await ctx.client.query<{ teamKey: string; matchCount: number; pitCount: number }>(
+      `SELECT "teamKey", count(*) FILTER (WHERE type = 'match')::int AS "matchCount", count(*) FILTER (WHERE type = 'pit')::int AS "pitCount"
+       FROM (SELECT team_key AS "teamKey", 'match' AS type, updated_at FROM match_scout_entries WHERE org_id=$1::uuid AND event_key=$2
+             UNION ALL SELECT team_key, 'pit', updated_at FROM pit_scout_entries WHERE org_id=$1::uuid AND event_key=$2) observations
+       WHERE ($3::text IS NULL OR "teamKey"=$3) GROUP BY "teamKey" ORDER BY max(updated_at) DESC, "teamKey" LIMIT 6`,
+      [ctx.orgId, ctx.activeEventKey, requestedTeam],
+    )).rows : [];
+    const registry = createVantageToolRegistry({ requestText: ctx.request });
+    const snapshots: unknown[] = [];
+    for (const team of teams) {
+      const entries = await withSavepoint(ctx.client, async () => await registry.invoke("scouting.team", { client: ctx.client, orgId: ctx.orgId, userId: ctx.userId, activeEventKey: ctx.activeEventKey }, { teamKey: team.teamKey }) as Array<Record<string, unknown>>, []);
+      snapshots.push({ ...team, recentReports: entries.slice(0, 8).map(entry => ({ entryType: entry.entryType, matchKey: entry.matchKey, confidence: entry.confidence,
+        answers: entry.trustedLabeled, excludedFields: entry.excludedFields, updatedAt: entry.updatedAt })) });
+    }
+    // Optional summaries must not prevent access to saved scouting if one is unavailable.
+    const intel = await withSavepoint(ctx.client, () => viewSkill([computeOvernightIntelView], "No overnight intel brief yet.")(ctx, skill), null);
+    const video = await withSavepoint(ctx.client, () => insightSkill("video_scout_summary", "No video review notes yet.")(ctx, skill), null);
+    const okOne = [intel, video].find((part) => part?.status === "ok");
     return {
-      ...(okOne ?? intel),
+      ...output(skill, ctx, {
+        status: teams.length || okOne ? "ok" : "empty",
+        summary: teams.length ? `Saved match and pit observations for ${teams.length} ${requestedTeam ? "requested" : "recently scouted"} team${teams.length === 1 ? "" : "s"} at ${ctx.activeEventKey}.` : okOne?.summary ?? "No saved scouting observations at this event yet.",
+      }),
       classification: "scout_observation",
-      summary: okOne ? okOne.summary : "No overnight intel or video notes yet. Scouting entries for a team still come through when you name the team.",
-      highlights: [...intel.highlights, ...video.highlights].slice(0, 8),
-      data: { overnightIntel: intel.data, videoNotes: video.data },
+      highlights: [...teams.map(team => `Team ${team.teamKey.replace(/^frc/, "")}: ${team.matchCount} match report(s), ${team.pitCount} pit report(s).`), ...(intel?.highlights ?? []), ...(video?.highlights ?? [])].slice(0, 8),
+      data: { scouting: boundForModel(snapshots, { maxItems: 16, maxText: 300, maxDepth: 7 }), sampleNote: "Up to six recently scouted teams and eight recent reports per team; these are observations, not official scores. Ask about a named team for its details.", overnightIntel: intel?.data ?? null, videoNotes: video?.data ?? null },
     };
   },
   writing,

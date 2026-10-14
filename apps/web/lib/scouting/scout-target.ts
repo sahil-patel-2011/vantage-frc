@@ -15,6 +15,8 @@
  * be typed in.
  */
 
+import { matchLabel } from "./next-match";
+
 export type ScoutAssignment = {
   matchKey: string;
   teamKey: string;
@@ -81,12 +83,12 @@ export function buildScoutTargets(input: {
     const id = `${assignment.matchKey}|${assignment.teamKey}`;
     if (assigned.has(id)) continue;
     assigned.add(id);
-    const matchLabel = `${(assignment.compLevel || "match").toUpperCase()} ${assignment.matchNumber}`;
+    const label = matchLabel({ ...assignment, compLevel: assignment.compLevel || null });
     options.push({
       matchKey: assignment.matchKey,
       teamKey: assignment.teamKey,
-      label: `${matchLabel} · ${teamLabel(assignment.teamKey)}`,
-      matchLabel,
+      label: `${label} · ${teamLabel(assignment.teamKey)}`,
+      matchLabel: label,
       assigned: true,
     });
   }
@@ -101,12 +103,12 @@ export function buildScoutTargets(input: {
       const id = `${match.matchKey}|${teamKey}`;
       if (assigned.has(id)) continue;
       assigned.add(id);
-      const matchLabel = `${(match.compLevel || "match").toUpperCase()} ${match.matchNumber}`;
+      const label = matchLabel(match);
       options.push({
         matchKey: match.matchKey,
         teamKey,
-        label: `${matchLabel} · ${teamLabel(teamKey)}`,
-        matchLabel,
+        label: `${label} · ${teamLabel(teamKey)}`,
+        matchLabel: label,
         assigned: false,
       });
     }
@@ -211,10 +213,10 @@ const MATCH_LEVEL_LABEL: Record<CompLevel, string> = {
  * so the raw key is not something to read back after a save.
  */
 export function describeMatchKey(matchKey: string): string {
-  const match = /_(qm|qf|sf|f)(\d+)$/.exec(matchKey.trim());
+  const match = /_(qm|qf|sf|f)(\d+)(?:m(\d+))?$/.exec(matchKey.trim());
   if (!match) return matchKey;
   const level = match[1] as CompLevel;
-  return `${MATCH_LEVEL_LABEL[level]} ${Number(match[2])}`;
+  return `${MATCH_LEVEL_LABEL[level]} ${Number(match[2])}${match[3] ? `-${Number(match[3])}` : ""}`;
 }
 
 /** What to tell someone when the schedule has nothing in it. */

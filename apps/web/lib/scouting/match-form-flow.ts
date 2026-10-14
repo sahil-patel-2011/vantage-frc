@@ -1,4 +1,4 @@
-import type { FieldDefinition } from "@vantage/scouting";
+import { isLayoutOnlyField, type FieldDefinition } from "@vantage/scouting";
 export type ScoutFormStage = "all" | "pre" | "auto" | "teleop" | "endgame" | "review";
 export const SCOUT_STAGE_LABELS: Record<ScoutFormStage, string> = { all: "All answers", pre: "Before the match", auto: "Auto", teleop: "Teleop", endgame: "Endgame", review: "Review and save" };
 const words = (value: string) => value.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ").toLowerCase();
@@ -28,4 +28,18 @@ export function fieldsForMatchStage(fields: readonly FieldDefinition[], stage: S
   if (stage === "all" || stage === "review") return [...fields];
   const stages = matchFieldStages(fields);
   return fields.filter(field => stages.get(field.key) === stage || stages.get(field.key) == null);
+}
+
+/** Only show phases with questions. Review is the single view of all answers. */
+export function availableMatchStages(fields: readonly FieldDefinition[]): ScoutFormStage[] {
+  const stages = matchFieldStages(fields);
+  const present = new Set(fields.filter(field => !isLayoutOnlyField(field)).map(field => stages.get(field.key)));
+  const phases: ScoutFormStage[] = (["pre", "auto", "teleop", "endgame"] as const).filter(stage => present.has(stage));
+  return [...phases, "review"];
+}
+
+export function reachableMatchStage(stage: ScoutFormStage, available: readonly ScoutFormStage[]): ScoutFormStage {
+  if (available.includes(stage)) return stage;
+  const order: ScoutFormStage[] = ["pre", "auto", "teleop", "endgame", "review"];
+  return available.find(candidate => order.indexOf(candidate) >= order.indexOf(stage)) ?? "review";
 }

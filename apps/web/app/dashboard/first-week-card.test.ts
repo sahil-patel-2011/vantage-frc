@@ -71,4 +71,10 @@ describe("setupHeroFrom", () => {
     expect(setupHeroFrom(view([{ ...setup([]), dismissed: true }]))).toBeNull();
     expect(setupHeroFrom(null)).toBeNull();
   });
+  it("counts the displayed checkmarks even if a cached aggregate disagrees", () => {
+    const hero = setupHeroFrom(view([{ ...setup(["invite", "event", "scouting"]), doneCount: 2 }]))!;
+    expect(hero.doneCount).toBe(3);
+    expect(hero.totalCount).toBe(4);
+    expect(hero.nextKey).toBe("calendar");
+  });
 });

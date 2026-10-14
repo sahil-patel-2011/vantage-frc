@@ -5,6 +5,7 @@ import { Button } from "../../components/ui";
 import type { RoleOnboardingView, StartCheckView, StartTrackView } from "../../lib/role-onboarding/types";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { isMemberRole, pickFirstWeek } from "../../lib/role-onboarding/first-week-order";
+import { onTeamDataChanged } from "../../lib/team-data-changed";
 
 type NextCheck = { track: StartTrackView; check: StartCheckView };
 
@@ -45,6 +46,9 @@ export function useFirstWeek(orgId: string, userId: string) {
   const generation = useRef(0);
   const mutation = useRef<AbortController | null>(null);
   const retry = useCallback(() => setReload(value => value + 1), []);
+  useEffect(() => onTeamDataChanged(orgId, () => {
+    if (!mutation.current) retry();
+  }), [orgId, retry]);
 
   useEffect(() => {
     const requestGeneration = ++generation.current;
@@ -177,7 +181,9 @@ const SETUP_STEP_ACTION: Record<string, { cta: string; href?: string }> = {
 export function setupHeroFrom(view: RoleOnboardingView | null): SetupHero | null {
   if (!view || view.status !== "live") return null;
   const setup = view.tracks.find((track) => track.key === "team_setup" && !track.dismissed);
-  if (!setup || setup.doneCount >= setup.totalCount) return null;
+  if (!setup) return null;
+  const doneCount = setup.checks.filter(check => check.done).length;
+  if (doneCount >= setup.checks.length) return null;
   const next = setup.checks.find((check) => !check.done);
   if (!next) return null;
   const action = SETUP_STEP_ACTION[next.key];
@@ -188,8 +194,8 @@ export function setupHeroFrom(view: RoleOnboardingView | null): SetupHero | null
     detail: next.detail.replace(/\s*Ticks once[^.]*\.\s*$/i, "").trim(),
     href: action?.href ?? next.href ?? "/start",
     cta: action?.cta ?? next.label,
-    doneCount: setup.doneCount,
-    totalCount: setup.totalCount,
+    doneCount,
+    totalCount: setup.checks.length,
     steps: setup.checks.map((check) => ({
       key: check.key,
       label: check.label,

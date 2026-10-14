@@ -357,6 +357,8 @@ export function Field({
           </div>
           <div className="scout-counter-state">
             <small>{typeof value === "number" ? "Recorded" : "Not recorded"}</small>
+            {max == null || max - min > 5 ? <button type="button" aria-label={`${field.label}: add five`} disabled={max != null && count >= max}
+              onClick={() => onChange(max == null ? count + 5 : Math.min(max, count + 5))}>+5</button> : null}
             <button type="button" aria-label={`${field.label}: ${typeof value === "number" ? "clear answer" : `record ${min === 0 ? "zero" : min}`}`}
               onClick={() => onChange(typeof value === "number" ? undefined : min)}>
               {typeof value === "number" ? "Clear" : min === 0 ? "Record 0" : `Record ${min}`}

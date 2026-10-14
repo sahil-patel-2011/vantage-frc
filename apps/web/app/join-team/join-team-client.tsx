@@ -27,6 +27,14 @@ export default function JoinTeamClient() {
   const [alreadyOn, setAlreadyOn] = useState<TeamJoinMember | null>(null);
   useEffect(() => {
     let cancelled = false;
+    // Fragments prefill the form without putting a shared code in server URLs.
+    const invitation = new URLSearchParams(window.location.hash.slice(1));
+    const invitedTeam = teamNumberDigits(invitation.get("team") ?? "");
+    const invitedPin = joinCodeDigits(invitation.get("code") ?? "");
+    if (/^[0-9]{1,5}$/.test(invitedTeam) && Number(invitedTeam) > 0 && invitedPin.length === 6) {
+      setTeam(invitedTeam); setPin(invitedPin);
+      window.history.replaceState({}, "", window.location.pathname + window.location.search);
+    }
     // Shared with the consent banner: one session check per page.
     void probeSessionUser().then((user) => {
       if (cancelled || !user?.email) return;

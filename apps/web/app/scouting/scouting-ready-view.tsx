@@ -48,10 +48,11 @@ import { ScoutQuarantinePanel } from "./scouting-quarantine";
 import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
 import ScoutingTrustPanel from "./scouting-trust-panel";
-import { fieldsForMatchStage, SCOUT_STAGE_LABELS, type ScoutFormStage } from "../../lib/scouting/match-form-flow";
+import { availableMatchStages, fieldsForMatchStage, reachableMatchStage, SCOUT_STAGE_LABELS, type ScoutFormStage } from "../../lib/scouting/match-form-flow";
 import { NextMatchCard } from "./next-match-card";
 import { MatchFormControls, MatchTimer } from "./match-timer";
 import { ScoutSaveConfirmation } from "./scout-save-confirmation";
+import { focusInvalidScoutField } from "./scouting-form-focus";
 import { ScoutViewSwitcher } from "./scout-view-switcher";
 import "./match-mode.css";
 import "./scout-flow.css";
@@ -232,7 +233,7 @@ export function ScoutingReadyView({
   // showed "Back to next" on the match Save had moved to.
   // Every robot the team has scouted at the event (not only the latest 30 entries), plus this phone's saves.
   const scouted = useMemo(() => [...scoutedRobots(data), ...savedHere], [data, savedHere]);
-  const mine = useMemo(() => myReports(data), [data]);
+  const mine = useMemo(() => myReports(data).filter(report => report.type === type), [data, type]);
   // Matches this scout already watched, so reopening the tab does not send them back to one.
   const myMatchKeys = useMemo(() => {
     const keys = new Set<string>(savedHere.map((entry) => entry.matchKey));
@@ -241,8 +242,21 @@ export function ScoutingReadyView({
   }, [mine, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
   const [confirmRunning, setConfirmRunning] = useState(false);
-  const [stage, setStage] = useState<ScoutFormStage>("pre");
-  useEffect(() => { setStage("pre"); setConfirmRunning(false); }, [type, matchKey, teamKey]);
+  const stages = useMemo(() => availableMatchStages(formFields), [formFields]);
+  const firstStage = stages[0] ?? "review";
+  const [selectedStage, setStage] = useState<ScoutFormStage>(firstStage);
+  const stage = reachableMatchStage(selectedStage, stages);
+  const initialStage = useRef(firstStage);
+  initialStage.current = firstStage;
+  useEffect(() => { setStage(initialStage.current); setConfirmRunning(false); }, [type, matchKey, teamKey, schema?.id]);
+  const focusFields = useRef(formFields);
+  focusFields.current = formFields;
+  useEffect(() => {
+    if (!validationIssues.length || type !== "match") return;
+    setStage("review");
+    const frame = requestAnimationFrame(() => focusInvalidScoutField(focusFields.current, validationIssues));
+    return () => cancelAnimationFrame(frame);
+  }, [validationIssues, type]);
   const collecting = type === "match" && Boolean(context) && stage !== "all" && stage !== "review";
   const activeFields = type === "match" && context ? fieldsForMatchStage(formFields, stage) : formFields;
   const undo = undoableScoutAction(payload);
@@ -348,13 +362,13 @@ return (
           {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey })}
         </strong>
       ) : null}
-      <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
+      {!embedded ? <span className={`scout-sync-pill ${online ? "online" : "offline"}`}>
         {online ? "Online" : "Offline"} · {formatScoutingMetric(counts.entries, true)} queued
         {embedded || counts.media === 0 ? null : <> · {formatScoutingMetric(counts.media, true)} files</>}
-      </span>
+      </span> : null}
       {/* Saving already sends an entry when there is signal. The button is for
           the moment something is actually waiting to go. */}
-      {counts.entries + counts.media > 0 || syncState === "degraded" ? (
+      {!embedded && (counts.entries + counts.media > 0 || syncState === "degraded") ? (
         <Button variant="secondary" type="button" onClick={() => void sync()}>
           Sync now
         </Button>
@@ -603,7 +617,7 @@ return (
             </p>
           ) : null}
 
-          {saveReceipt ? (
+          {saveReceipt?.entryType === type ? (
             <ScoutSaveConfirmation receipt={saveReceipt} onDismiss={() => setSaveReceipt(null)} onFix={fixLastSave} />
           ) : null}
 
@@ -703,7 +717,7 @@ return (
                     resetDisabled={Boolean(matchCapture(payload))}
                     onPhaseChange={phase => {
                       if (phase === "pre") return;
-                      setStage(current => current === "review" ? current : phase === "done" ? "review" : phase === "transition" ? "auto" : phase);
+                      setStage(current => current === "review" ? current : reachableMatchStage(phase === "done" ? "review" : phase === "transition" ? "auto" : phase, stages));
                     }}
                     resetKey={`${matchKey}|${teamKey}`}
                     seasonYear={data?.eventKey ? Number(data.eventKey.slice(0,4)) : schema?.year ?? null}
@@ -716,7 +730,7 @@ return (
                     }} />
                 ) : null}
               </div>
-              <MatchFormControls stage={stage} onStageChange={setStage} undoButton={onUndo ? <button type="button" disabled={!undo} onClick={onUndo} title={undo ? `Undo ${undo.changes.map(change => formFields.find(field => field.key === change.field)?.label ?? change.field).join(", ")}` : "Nothing to undo"}>Undo last answer</button> : null} />
+              <MatchFormControls stage={stage} stages={stages} onStageChange={setStage} undoButton={onUndo ? <button type="button" disabled={!undo} onClick={onUndo} title={undo ? `Undo ${undo.changes.map(change => formFields.find(field => field.key === change.field)?.label ?? change.field).join(", ")}` : "Nothing to undo"}>Undo last answer</button> : null} />
             </>
           ) : null}
 
@@ -830,11 +844,6 @@ return (
             className="scout-save-button"
             disabled={!canSave || saving}
             onClick={() => {
-              if (type === "match" && context && stage !== "review") {
-                setStage("review");
-                setConfirmRunning(false);
-                return;
-              }
               // Saving at "AUTO 0:02" was allowed without a word; a nudge, not a block. The nudge
               // was a browser confirm, whose Cancel looked like Save doing nothing on a phone: now
               // the button asks, and a second tap saves.
@@ -846,7 +855,7 @@ return (
               void submit();
             }}
           >
-            {saving ? "Saving on this device…" : canSave && type === "match" && context && stage !== "review" ? "Review answers" : confirmRunning && canSave
+            {saving ? "Saving on this device…" : confirmRunning && canSave
               ? "Tap again to save"
               : !canSave
               ? type === "match"

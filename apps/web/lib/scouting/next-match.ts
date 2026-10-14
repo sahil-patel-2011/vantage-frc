@@ -112,14 +112,20 @@ const LEVEL_LABEL: Record<string, string> = { qm: "Qual", ef: "Eighth", qf: "Qua
 
 export function orderedSchedule(matches: ScheduleMatch[]): ScheduleMatch[] {
   return [...matches].sort((a, b) => {
-    const level = (LEVEL_ORDER[a.compLevel ?? "qm"] ?? 9) - (LEVEL_ORDER[b.compLevel ?? "qm"] ?? 9);
-    return level || a.matchNumber - b.matchNumber || a.matchKey.localeCompare(b.matchKey);
+    const level = (LEVEL_ORDER[levelOf(a)] ?? 9) - (LEVEL_ORDER[levelOf(b)] ?? 9);
+    if (level) return level;
+    const time = (match: ScheduleMatch) => Date.parse(match.matchTime ?? match.predictedTime ?? match.plannedTime ?? match.actualTime ?? "");
+    const at = time(a), bt = time(b);
+    if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return at - bt;
+    if (Number.isFinite(at) !== Number.isFinite(bt)) return Number.isFinite(at) ? -1 : 1;
+    const set = (key: string) => Number(/_(?:ef|qf|sf|f)(\d+)m\d+$/i.exec(key)?.[1] ?? 0);
+    return a.matchNumber - b.matchNumber || set(a.matchKey) - set(b.matchKey) || a.matchKey.localeCompare(b.matchKey);
   });
 }
 
 export function matchLabel(match: ScheduleMatch): string {
-  const level = match.compLevel ?? "qm";
-  const set = /_(?:ef|qf|sf)(\d+)m\d+$/.exec(match.matchKey)?.[1];
+  const level = levelOf(match);
+  const set = /_(?:ef|qf|sf|f)(\d+)m\d+$/i.exec(match.matchKey)?.[1];
   const base = LEVEL_LABEL[level] ?? level.toUpperCase();
   return set ? `${base} ${set}-${match.matchNumber}` : `${base} ${match.matchNumber}`;
 }

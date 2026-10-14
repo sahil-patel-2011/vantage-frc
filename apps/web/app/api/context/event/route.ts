@@ -63,11 +63,15 @@ export async function GET(request: Request) {
         [year, q, orgId, scope],
       );
 
+      const published = await client.query<{ count: number }>(
+        `SELECT count(*)::int AS count FROM events_ref WHERE year = $1 AND org_id IS NULL`, [year],
+      );
       return {
         role: membership.rows[0]!.role,
         activeEventKey: membership.rows[0]!.eventKey,
         canSetEvent: await canManageScouting(client, orgId),
         year,
+        publishedCount: published.rows[0]?.count ?? 0,
         events: [...(scope === "saved" ? [] : organizerEvents(year, q, events.rows)), ...events.rows.map(row => ({ ...row,
           plannedStart: row.plannedStart ? new Date(row.plannedStart).toISOString() : null,
           plannedEnd: row.plannedEnd ? new Date(row.plannedEnd).toISOString() : null,

@@ -70,7 +70,7 @@ export function useShellSearch({
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams({ q });
       if (orgId) params.set("orgId", orgId);
-      void fetch(`/api/search?${params.toString()}`, { cache: "no-store", signal: controller.signal })
+      void fetch(`/api/search?${params.toString()}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]) })
         .then(async (response) =>
           response.ok ? ((await response.json()) as { status?: string; results?: SearchHit[] }) : null,
         )
@@ -107,8 +107,8 @@ export function useShellSearch({
   }, [query]);
 
   const rows: NavResultRow[] = useMemo(
-    () => navResultRows(commandHits, queryActive ? searchHits : []),
-    [commandHits, queryActive, searchHits],
+    () => navResultRows(commandHits, queryActive ? searchHits.filter(hit => isAllowed(hit.href)) : []),
+    [commandHits, queryActive, searchHits, isAllowed],
   );
   const activeIndex = rows.length ? Math.min(cursor, rows.length - 1) : -1;
 

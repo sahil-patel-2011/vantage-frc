@@ -8,7 +8,7 @@ import { definitionFromDraft, type DraftQuestion } from "../../../lib/scouting/f
 import { ScoutingAnswerField } from "../scouting-answer-field";
 import { ScoutChoice } from "../scout-choice";
 import { MatchFormControls } from "../match-timer";
-import { fieldsForMatchStage, type ScoutFormStage } from "../../../lib/scouting/match-form-flow";
+import { availableMatchStages, fieldsForMatchStage, reachableMatchStage, type ScoutFormStage } from "../../../lib/scouting/match-form-flow";
 import { MEDIA_ENABLED } from "../../../lib/media-availability";
 import type { OfficialFlag } from "../scouting-model";
 import "../scout-flow.css";
@@ -36,7 +36,9 @@ export function FormsTabletPreview({ title, questions, type }: { title: string; 
   const [stage, setStage] = useState<ScoutFormStage>("pre");
   const phaseFields = useMemo(() => withInferredPhaseRules(definition.fields.filter(field => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image"))), [definition]);
   const reachable = visibleFields(phaseFields, payload);
-  const displayed = type === "match" ? fieldsForMatchStage(reachable, stage) : reachable;
+  const stages = availableMatchStages(reachable);
+  const currentStage = reachableMatchStage(stage, stages);
+  const displayed = type === "match" ? fieldsForMatchStage(reachable, currentStage) : reachable;
   const answerable = reachable.filter(field => !isLayoutOnlyField(field)).length;
 
   return (
@@ -53,7 +55,7 @@ export function FormsTabletPreview({ title, questions, type }: { title: string; 
           <strong>Signed-in member</strong>
           <small className="app-muted">{SCOUT_IDENTITY_LOCK_COPY.detail}</small>
         </div>
-        {type === "match" ? <MatchFormControls stage={stage} onStageChange={setStage} /> : null}
+        {type === "match" ? <MatchFormControls stage={currentStage} stages={stages} onStageChange={setStage} /> : null}
         {definition.fields.length > 0 && displayed.length === 0 ? <p className="app-muted">No questions for this phase. Use the phase controls to continue.</p> : null}
         {definition.fields.length === 0 ? (
           <p className="app-muted">Add a question to see it here.</p>
@@ -70,7 +72,7 @@ export function FormsTabletPreview({ title, questions, type }: { title: string; 
             />
           ))
         )}
-        {type === "pit" || stage === "review" ? <ScoutChoice
+        {type === "pit" || currentStage === "review" ? <ScoutChoice
           label="How sure are you?"
           options={CONFIDENCE_OPTIONS}
           value={confidence}

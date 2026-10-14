@@ -1,5 +1,7 @@
 "use client";
 
+import { onTeamDataChanged } from "../../lib/team-data-changed";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   readStoredBoardId,
@@ -413,6 +415,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("online", onResume);
     window.addEventListener("vantage:dashboard-refresh", onResume);
+    const stopTeamRefresh = onTeamDataChanged(orgId, onResume);
 
     return () => {
       cancelled = true;
@@ -422,6 +425,7 @@ export function useDashboardHomeState(initialOrgId = "") {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("online", onResume);
       window.removeEventListener("vantage:dashboard-refresh", onResume);
+      stopTeamRefresh();
     };
   }, [orgId, userId, meLoaded, meFailed, me.teamRole, loadHome, loadSnapshot]);
 

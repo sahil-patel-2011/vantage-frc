@@ -37,12 +37,9 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
-  // Opened from Home's "Pick your event" step: the picker opens at once, and choosing an
-  // event goes straight back to the setup list instead of leaving the owner on Event day.
-  const [fromSetup, setFromSetup] = useState(false);
+  // Home's setup action opens the picker, then keeps the team on Event day.
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("pickEvent") !== "1") return;
-    setFromSetup(true);
     setEventOpen(true);
   }, []);
   const [tick, setTick] = useState(0);
@@ -181,9 +178,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
 
   const eventPicker = (
     <CommandEventPicker open={eventOpen} orgId={orgId} onClose={() => setEventOpen(false)}
-      onChanged={() => void load(orgId)} onActive={(eventKey) => {
+      onChanged={() => void load(orgId)} onActive={() => {
         setEventOpen(false);
-        if (fromSetup && eventKey) window.location.assign(`/dashboard?orgId=${encodeURIComponent(orgId)}`);
       }} />
   );
 

@@ -132,9 +132,10 @@ export function MatchTimer({ fields, resetKey, storageKey, onStarted, seasonYear
 }
 
 /** Phase navigation stays in normal flow, so it never covers the live input on a phone. */
-export function MatchFormControls({ stage, onStageChange, undoButton }: { stage: ScoutFormStage; onStageChange?: (stage: ScoutFormStage) => void; undoButton?: ReactNode }) {
+export function MatchFormControls({ stage, stages = ["pre", "auto", "teleop", "endgame", "review"], onStageChange, undoButton }: { stage: ScoutFormStage; stages?: readonly ScoutFormStage[]; onStageChange?: (stage: ScoutFormStage) => void; undoButton?: ReactNode }) {
+  if (stages.length <= 1 && !undoButton) return null;
   return <div className="scout-phase-controls">
-      <TabBar className="scout-phase-tabs" aria-label="Match form section" value={stage} onChange={id => onStageChange?.(id as ScoutFormStage)}
-        tabs={(["all", "pre", "auto", "teleop", "endgame", "review"] as const).map(key => ({ id: key, label: STAGE_LABEL[key] }))} />{undoButton}
+      {stages.length > 1 ? <TabBar className="scout-phase-tabs" aria-label="Match form section" value={stage} onChange={id => onStageChange?.(id as ScoutFormStage)}
+        tabs={stages.map(key => ({ id: key, label: STAGE_LABEL[key] }))} /> : null}{undoButton}
     </div>;
 }
