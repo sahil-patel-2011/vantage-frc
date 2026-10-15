@@ -49,7 +49,7 @@ async function persistRisksSnapshot(orgHint: string, seasonHint: string, data: R
 }
 
 function RisksRelated({ orgId }: { orgId: string }) {
-  // FMEA, Knowledge and Batteries come from the Team row beside it; this row adds Subsystems.
+  // failure log, Knowledge and Batteries come from the Team row beside it; this row adds Subsystems.
   const primary = risksRelatedLinks(orgId, { include: ["subsystems"] });
   return (
     <div className="risks-related">
@@ -90,7 +90,7 @@ function NextActions({
     <section className="risks-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>Prioritized from logged season risks — scores stay blank until you enter real L×I.</p>
+        <p>Prioritized from logged season risks — scores stay blank until you enter a likelihood and impact.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -253,7 +253,7 @@ export default function RisksClient() {
         <PageHeader
           breadcrumbs="Team / Risk Register"
           title="Risk Register"
-          description="Proactive season risks scored with real likelihood × impact. Distinct from FMEA failure logging."
+          description="Proactive season risks scored with real likelihood × impact. Distinct from logged failure logging."
         />
         <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
@@ -283,7 +283,7 @@ export default function RisksClient() {
         <PageHeader
           breadcrumbs="Team / Risk Register"
           title="Risk Register"
-          description="Identify what could derail the season — score likelihood × impact, assign mitigations, and track closure. Separate from FMEA’s O×S×D failure log."
+          description="Identify what could derail the season — score likelihood × impact, assign mitigations, and track closure. Separate from the failure log, which records what already broke."
         />
         <OfflineBanner feature="Risk Register" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState soft badge="Needs setup" badgeTone="setup" title={view.message}>
@@ -308,7 +308,7 @@ export default function RisksClient() {
         description={
           <>
             Identify what could derail your season — mechanism failures, schedule slips, funding gaps,
-            driver availability. Score each by likelihood × impact. For things that already broke, use FMEA.
+            driver availability. Score each by likelihood × impact. For things that already broke, use failure log.
           </>
         }
       >
@@ -332,7 +332,7 @@ export default function RisksClient() {
               </select>
             </label>
           ) : null}
-          {/* FMEA, Knowledge, Batteries and Subsystems are in the related rows just below. */}
+          {/* failure log, Knowledge, Batteries and Subsystems are in the related rows just below. */}
         </div>
       </PageHeader>
 
@@ -362,7 +362,7 @@ export default function RisksClient() {
         <EmptyState
           soft
           title="No season risks logged yet"
-          description="Add schedule, technical, funding, or people risks with real L×I scores. Top score stays blank until then. FMEA is for failures that already happened."
+          description="Add schedule, technical, funding, or people risks scored likelihood × impact. The top score stays blank until then. The failure log is for things that already broke."
         />
       ) : (
         <div className="risks-layout">
@@ -526,7 +526,7 @@ function AddRiskForm({ busy, mutate }: { busy: boolean; mutate: Mutate }) {
       }}
     >
       <h2>Add risk</h2>
-      <p>Proactive season risk — not an FMEA failure. Score will be L×I from the values you set.</p>
+      <p>Proactive season risk — not a logged failure. Its score is likelihood × impact, from the values you set.</p>
       <FormGrid min={130}>
         <FormRow label="Risk" wide>
           <input value={form.title} onChange={set("title")} placeholder="Climber winch could fail under load" required />
@@ -657,7 +657,7 @@ function RiskCard({
           <p className="warn">No mitigation recorded yet.</p>
         )}
         <div className="risks-row-links">
-          <a href={hubHref("/team", "fmea", orgId)}>Log in FMEA if it fails →</a>
+          <a href={hubHref("/team", "fmea", orgId)}>Log in failure log if it fails →</a>
           <a href={hubHref("/team", "knowledge", orgId)}>Document in Knowledge →</a>
         </div>
       </div>

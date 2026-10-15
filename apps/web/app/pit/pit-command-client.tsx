@@ -502,7 +502,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         </Button>
         {/* Batteries / Match checklist / Event day are linked once, in Next actions below. */}
         <div className="pit-next">
-          <span>NEXT MATCH</span>
+          <span>Next match</span>
           <strong>{matchLabel(data.nextMatch)}</strong>
           <b>{countdown(data, now)}</b>
         </div>
@@ -541,7 +541,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
       {shell === "empty" ? null : (
       <section className={`pit-gate ${data.gate.state}`}>
         <div className="pit-gate-state">
-          <span>RELEASE GATE</span>
+          <span>Release gate</span>
           <strong>{data.gate.state === "empty" ? "—" : data.gate.state.toUpperCase()}</strong>
           <small>
             {data.gate.state === "go"
@@ -554,7 +554,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
           </small>
         </div>
         <div className="pit-reasons">
-          <span>WHY</span>
+          <span>Why</span>
           <ul>
             {data.gate.reasons.length ? null : <li>No reasons logged</li>}
             {data.gate.reasons.map((r) => (
@@ -606,10 +606,10 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         <section className="pit-repeat" aria-label="Repeat failure patterns">
           <header>
             <div>
-              <span>SEASON PATTERN</span>
+              <span>Season pattern</span>
               <h2>Repeat failures</h2>
             </div>
-            <a href={fmeaHref}>Open FMEA log</a>
+            <a href={fmeaHref}>Open failure log log</a>
           </header>
           <ul>
             {data.repeatAlerts.map((alert) => (
@@ -652,7 +652,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         <section className="pit-capture">
           <header>
             <div>
-              <span>FAST CAPTURE</span>
+              <span>Fast capture</span>
               <h2>
                 {form.kind === "battery"
                   ? "Battery check"
@@ -769,7 +769,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         <article className="pit-card" id="pit-issues">
           <header>
             <div>
-              <span>ROBOT</span>
+              <span>Robot</span>
               <h2>Open issues</h2>
             </div>
             <b>{showSummary ? formatPitMetric(data.issues.length, loaded) : "—"}</b>
@@ -803,7 +803,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         <article className="pit-card" id="pit-maintenance">
           <header>
             <div>
-              <span>WORK QUEUE</span>
+              <span>Work queue</span>
               <h2>Maintenance</h2>
             </div>
             <b>{showSummary ? formatPitMetric(data.maintenance.length, loaded) : "—"}</b>
@@ -843,7 +843,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
         <article className="pit-card pit-battery" id="pit-batteries">
           <header>
             <div>
-              <span>POWER</span>
+              <span>Power</span>
               <h2>Battery rack</h2>
             </div>
             <b>

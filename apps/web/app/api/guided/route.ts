@@ -161,7 +161,7 @@ export async function POST(request: Request) {
   } catch (error) {
     // Lead sign-offs need migration 0719: say so instead of passing a database message on.
     if ((error as { code?: string } | null)?.code === "42P01") {
-      return Response.json({ status: "setup_required", passed: false, message: "Lead sign-offs need a database update (0719). Ask your team's owner." }, { status: 503 });
+      return Response.json({ status: "setup_required", passed: false, message: "Lead sign-offs aren't available for your team yet. The Vantage team has been told." }, { status: 503 });
     }
     return failResponse(error, "Could not check that step");
   }

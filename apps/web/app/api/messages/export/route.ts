@@ -98,8 +98,7 @@ export async function POST(request: Request) {
       }
       if (!(await supportsYouthProtection(client))) {
         throw new Error(
-          "Message-history export requires migration 0455_chat_youth_protection. Until it runs, " +
-            "private messages cannot be exported and no supervision rule is enforced.",
+          "Exporting message history isn't available for your team yet. The Vantage team has been told. Until then private messages can't be exported.",
         );
       }
 

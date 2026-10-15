@@ -83,7 +83,7 @@ export async function GET(request: Request) {
     return Response.json(
       setupRequiredFallback(
         null,
-        "Could not load scouting voice notes. Choose your team and confirm database access.",
+        "Could not load scouting voice notes. Check that you've chosen your team, then try again.",
       ),
       { status: 200 },
     );

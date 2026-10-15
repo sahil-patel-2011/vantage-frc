@@ -153,7 +153,7 @@ export default function ScoutSchemaNegotiateClient() {
       if (!response.ok || !isScoutSchemaNegotiateView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Schema sync. Showing the last copy on this device.");
+          setError("Could not refresh form versions. Showing the last copy on this device.");
           setFetchFailed(false);
           return;
         }
@@ -169,7 +169,7 @@ export default function ScoutSchemaNegotiateClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Schema sync. Showing the last copy on this device.");
+        setError("Could not refresh form versions. Showing the last copy on this device.");
         setFetchFailed(false);
         return;
       }
@@ -216,10 +216,10 @@ export default function ScoutSchemaNegotiateClient() {
       breadcrumbs={
         <>
           <a href={competitionHref}>Competition</a>
-          {" / Schema sync"}
+          {" / Form versions"}
         </>
       }
-      title="Schema sync"
+      title="Form versions"
       description="Keep scout entries from an older tablet form instead of dropping them."
     >
       <SchemaSyncRelated orgId={orgId} />
@@ -246,7 +246,7 @@ export default function ScoutSchemaNegotiateClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Schema sync" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Form versions" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           title={failure ? failure.title : "Loading…"}
           description={failure ? failure.description : "Checking your team."}
@@ -272,7 +272,7 @@ export default function ScoutSchemaNegotiateClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Schema sync" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Form versions" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="telemetry-status" role="alert">
               {error}
@@ -298,7 +298,7 @@ export default function ScoutSchemaNegotiateClient() {
   return (
     <main className="module-page">
       {header}
-      <OfflineBanner feature="Schema sync" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Form versions" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
         <p className="telemetry-status" role="alert">
           {error}
@@ -318,7 +318,7 @@ export default function ScoutSchemaNegotiateClient() {
 function SummaryTiles({ view }: { view: LiveView }) {
   const { summary } = view;
   const tiles = [
-    { label: "Active schema", value: summary.activeVersionTag ?? "None set" },
+    { label: "Active form version", value: summary.activeVersionTag ?? "None set" },
     { label: "Known versions", value: String(summary.knownVersionCount) },
     { label: "Pending", value: String(summary.pending) },
     { label: "Reconciled", value: String(summary.reconciled) },
@@ -359,7 +359,7 @@ function VersionsPanel({ view }: { view: LiveView }) {
           <li key={version.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
             <div>
               <strong>{version.versionTag}</strong>
-              {version.isActive ? <span className="app-badge good" style={{ marginLeft: 8 }}>ACTIVE</span> : null}
+              {version.isActive ? <span className="app-badge good" style={{ marginLeft: 8 }}>Active</span> : null}
               <small className="app-muted" style={{ display: "block" }}>
                 {version.fieldKeys.length} field(s): {version.fieldKeys.join(", ") || "none"}
               </small>
@@ -471,7 +471,7 @@ function RegisterVersionForm({
       }}
       style={{ display: "grid", gap: 10 }}
     >
-      <h2 style={{ margin: 0 }}>Register schema version</h2>
+      <h2 style={{ margin: 0 }}>Save a form version</h2>
       <FormGrid min={160}>
         <FormRow label="Version tag">
           <input value={form.versionTag} onChange={set("versionTag")} placeholder="v3" required />

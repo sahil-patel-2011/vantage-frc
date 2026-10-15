@@ -271,7 +271,7 @@ export default function DecisionsClient() {
       setBusy(true);
       setError("");
       void fetch("/api/decisions", {
-        method: "POST",
+        method: "Post",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
@@ -474,7 +474,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <div className="decision-log-stats">
         <div>
           <span className={`app-badge ${s.total === 0 ? "setup" : "good"}`}>
-            {s.total === 0 ? "EMPTY" : "LOGGED"}
+            {s.total === 0 ? "Empty" : "Logged"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season log</h2>
           <small className="app-muted">Real decision records only.</small>

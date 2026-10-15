@@ -7,6 +7,7 @@ import type { CodeMap } from "../../lib/github/code-map";
 import { duplicateCanIds } from "../../lib/github/code-map";
 import type { PrReviewFinding } from "../../lib/github/pr-review";
 import "./code-pr.css";
+import { statusLabel } from "../../lib/ui/status-label";
 
 type Review = {
   id: string;
@@ -95,7 +96,7 @@ function Findings({ review, repo }: { review: Review; repo: string }) {
           {review.findings.map((finding, index) => (
             <li key={`${finding.file}:${finding.line}:${index}`} className={`sev-${finding.severity}`}>
               <div className="cpr-finding-head">
-                <span className={`cpr-sev ${finding.severity}`}>{finding.severity}</span>
+                <span className={`cpr-sev ${finding.severity}`}>{statusLabel(finding.severity)}</span>
                 <strong>{finding.title}</strong>
               </div>
               <a className="cpr-where" href={blobHref(repo, review.headSha, finding.file, finding.line)} target="_blank" rel="noreferrer">

@@ -194,8 +194,8 @@ export const SCOUT_ENTRY_CSV_COLUMNS: CsvColumn<RecentEntry>[] = [
   { key: "scoutName", header: "Scout", hint: "Who submitted it" },
   { key: "source", header: "Source", hint: "How it arrived (form, QR handoff, sync)" },
   { key: "confidence", header: "Confidence", hint: "Scout's own confidence flag" },
-  { key: "payload", header: "Answers (JSON)", value: entry => entry.payload },
-  { key: "observations", header: "Observation history (versioned JSON)", value: entry => entry.payload?.[ACTION_HISTORY_KEY] ?? null },
+  { key: "payload", header: "Answers (raw data)", value: entry => entry.payload },
+  { key: "observations", header: "Observation history (raw data)", value: entry => entry.payload?.[ACTION_HISTORY_KEY] ?? null },
   {
     key: "updatedAt",
     header: "Updated at",

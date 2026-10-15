@@ -2,12 +2,12 @@
 import { useEffect } from "react";
 export default function QuickActions({ orgId }: { orgId: string }) {
   const actions: Array<[string, string, string, string]> = [
-    ["S","SCOUT NOW","Open offline form",`/scouting?orgId=${orgId}`],
-    ["P","PIT COMMAND","Release robot + log battery",`/pit?orgId=${orgId}`],
-    ["I","TEAM INTEL","Lookup or compare",`/intel?orgId=${orgId}`],
-    ["D","TEAM DOSSIER","Season fact cards",`/dossier?orgId=${orgId}`],
-    ["A","VANTAGE AGENT","Plan with context",`/chat?orgId=${orgId}`],
-    ["C","CAD AGENT","Bind Onshape, then sketch live",`/cad?orgId=${orgId}`],
+    ["S","Scout now","Open offline form",`/scouting?orgId=${orgId}`],
+    ["P","Pit command","Release robot + log battery",`/pit?orgId=${orgId}`],
+    ["I","Team intel","Lookup or compare",`/intel?orgId=${orgId}`],
+    ["D","Team dossier","Season fact cards",`/dossier?orgId=${orgId}`],
+    ["A","Ask AI","Plan with context",`/chat?orgId=${orgId}`],
+    ["C","CAD agent","Bind Onshape, then sketch live",`/cad?orgId=${orgId}`],
   ];
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

@@ -38,7 +38,7 @@ export function SummaryTiles({
               checkCount === 0 ? "setup" : criticalCount > 0 ? "danger" : flaggedCount > 0 ? "demo" : "good"
             }`}
           >
-            {checkCount === 0 ? "EMPTY" : criticalCount > 0 ? "CRITICAL" : flaggedCount > 0 ? "FLAGS" : "CLEAN"}
+            {checkCount === 0 ? "Empty" : criticalCount > 0 ? "Critical" : flaggedCount > 0 ? "Flags" : "Clean"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season readiness</h2>
           <small className="app-muted">Logged measurements only.</small>

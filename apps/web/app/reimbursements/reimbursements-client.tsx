@@ -61,7 +61,7 @@ const ACTION_DONE: Record<ReimbursementAction, string> = {
   withdraw: "Withdrawn. It is a draft again.",
   approve: "Approved. Mark it paid once the money has gone back.",
   deny: "Denied. The person who filed it sees your reason.",
-  mark_paid: "Marked paid and recorded in the team ledger.",
+  mark_paid: "Marked paid and recorded in the team's money record.",
   unmark_paid: "Payment undone. It is approved and not paid again.",
   reopen: "Reopened as a draft. The denial note stays on it so you can see what to fix.",
 };
@@ -493,7 +493,7 @@ export default function ReimbursementsClient() {
           </>
         }
         title="Reimbursements"
-        description="Money someone on the team already spent out of their own pocket — filed with a receipt, approved once, paid once, and recorded in the team ledger."
+        description="Money someone on the team already spent out of their own pocket — filed with a receipt, approved once, paid once, and recorded in the team's money record."
       />
       <OfflineBanner feature="Reimbursements" fromCache={fromCache} cachedAt={cachedAt} />
 

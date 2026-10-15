@@ -58,8 +58,7 @@ async function policyPayload(client: PoolClient, orgId: string, userId: string) 
       adultAdmins: [] as { userId: string; name: string; memberRole: string }[],
       modes: DM_MODE_COPY,
       setupMessage:
-        "Chat safety settings are not available on this database yet. Run migration " +
-        "0455_chat_youth_protection to turn on the two-adult rule for private messages.",
+        "Chat safety settings (the two-adult rule for private messages) aren't available for your team yet. The Vantage team has been told.",
     };
   }
 

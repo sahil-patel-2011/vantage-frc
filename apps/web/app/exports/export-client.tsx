@@ -269,7 +269,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
     }
     await downloadBlob(response, "vantage-export-inventory.pdf");
     setOk(true);
-    setMessage("Provenance inventory PDF downloaded.");
+    setMessage("Export record (PDF) downloaded.");
     setBusy(false);
   }
 

@@ -25,7 +25,7 @@ function teamNumberOrNull(value: unknown): number | null {
 
 const SETUP_REQUIRED_FALLBACK: EpaTrendAlertsView = {
   status: "setup_required",
-  message: "Could not load rating alerts. Choose your team and confirm database access.",
+  message: "Could not load rating alerts. Check that you've chosen your team, then try again.",
   steps: [
     { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
   ],

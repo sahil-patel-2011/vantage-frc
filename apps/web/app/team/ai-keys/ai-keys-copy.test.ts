@@ -55,7 +55,7 @@ describe("ENDPOINT_EXAMPLES", () => {
 
 describe("PAGE_DESCRIPTION", () => {
   it("says 'any' where the other keys are offered, so the examples are not the allowlist", () => {
-    expect(OTHER_KEYS_TITLE.toLowerCase()).toContain("any openai-compatible");
+    expect(OTHER_KEYS_TITLE.toLowerCase()).toContain("works like openai");
   });
 
   it("names a local runner, which is the case teams assume is excluded", () => {
@@ -133,7 +133,7 @@ describe("memberKeyFields", () => {
 
   it("promises the same endpoint freedom the team form gets", () => {
     const hint = MEMBER_KEY_BASE_URL_HINT.toLowerCase();
-    expect(hint).toContain("openai-compatible");
+    expect(hint).toContain("works like openai");
     expect(hint.includes("ollama") || hint.includes("lm studio")).toBe(true);
   });
 

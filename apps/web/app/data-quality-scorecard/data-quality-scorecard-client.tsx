@@ -259,7 +259,7 @@ export default function DataQualityScorecardClient() {
         </>
       }
       title="Data Quality Scorecard"
-      description="Org scouting data-quality over the season — coverage against expected fields, cross-scout disagreement, and drift from consensus. Built only from what you log."
+      description="Your scouting data quality over the season — coverage against expected fields, cross-scout disagreement, and drift from consensus. Built only from what you log."
     >
       {view?.status === "live" && view.seasons.length > 0 ? (
         <label className="app-muted" style={{ display: "flex", gap: 6, alignItems: "center" }}>

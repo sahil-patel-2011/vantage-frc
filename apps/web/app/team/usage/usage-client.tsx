@@ -97,7 +97,7 @@ const FEATURE_LABELS: Record<string, string> = {
   cad: "CAD",
   coding: "Coding",
   maintenance: "Maintenance",
-  chat: "Assistant chat",
+  chat: "Ask AI",
 };
 
 // Ask AI turns meter under their skill id ("sponsorships"): show them as "Ask AI · Sponsorships".

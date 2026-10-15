@@ -8,6 +8,6 @@ export default function SyncIndicator() {
     return () => { removeEventListener("online", update); removeEventListener("offline", update); };
   }, []);
   return <span className={`sync-indicator ${online ? "online" : "offline"}`} role="status">
-    <i /> {online ? "ONLINE · SYNC READY" : "OFFLINE · SAVING LOCALLY"}
+    <i /> {online ? "Online · ready to sync" : "Offline · saving on this device"}
   </span>;
 }

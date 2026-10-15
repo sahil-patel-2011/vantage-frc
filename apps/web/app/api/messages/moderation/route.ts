@@ -35,7 +35,7 @@ function fail(error: unknown) {
   const message = publicErrorMessage(error, "");
   if (code === "42P01" || code === "42883" || /org_message_reports|moderate_remove_org_message/.test(message)) {
     return Response.json(
-      { error: "Chat moderation needs a database update (migration 0674).", status: "setup_required" },
+      { error: "Chat moderation isn't available for your team yet. The Vantage team has been told.", status: "setup_required" },
       { status: 503 },
     );
   }

@@ -13,7 +13,7 @@ type AuditEvent = {
 };
 
 const ACTION_LABELS: Record<string, string> = {
-  "member.capabilities.updated": "Updated member capabilities",
+  "member.capabilities.updated": "Updated member permissions",
   "member.promoted_admin": "Promoted member to admin",
   "member.role.updated": "Changed member role",
   "invite.created": "Sent invitation",
@@ -84,7 +84,7 @@ export default function AuditLogClient({ orgId }: { orgId: string }) {
       <p className="app-muted">
         {denied
           ? "An owner or admin reads membership and access changes."
-          : `Every capability, role, invitation, and authentication-policy change is recorded here. Showing the${events.length ? ` most recent ${events.length}` : " latest"} events.`}
+          : `Every permission, role, invitation, and authentication-policy change is recorded here. Showing the${events.length ? ` most recent ${events.length}` : " latest"} events.`}
       </p>
       {message && <p role="status" className="telemetry-status">{message}</p>}
       {loading && <p className="app-muted">Loading audit log…</p>}

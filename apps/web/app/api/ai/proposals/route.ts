@@ -35,7 +35,7 @@ function fail(error: unknown) {
   }
   if (isMissingTable(error)) {
     return Response.json(
-      { error: "AI proposals need a database update (migration 0673).", status: "setup_required" },
+      { error: "AI suggestions aren't available for your team yet. The Vantage team has been told.", status: "setup_required" },
       { status: 503 },
     );
   }

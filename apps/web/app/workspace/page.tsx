@@ -227,7 +227,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
       </header>
       <section className={`active-event ${data.context.eventKey ? "" : "inactive"}`}>
         <div>
-          <span className="eyebrow">ACTIVE EVENT</span>
+          <span className="eyebrow">Active event</span>
           <h1>{data.context.eventName ?? "No event selected"}</h1>
           {data.context.eventName?.trim() ? null : (
             <p>
@@ -263,13 +263,13 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
       </aside>
       <section className="now-next">
         <div>
-          <span className="eyebrow">NOW / NEXT</span>
+          <span className="eyebrow">Now and next</span>
           <h2>Match queue</h2>
         </div>
         {data.next.length ? (
           data.next.map((match: Record<string, unknown>, index) => (
             <article key={String(match.matchKey)}>
-              <span>{index === 0 ? "NEXT" : "AFTER"}</span>
+              <span>{index === 0 ? "Next" : "After"}</span>
               <strong>
                 {String(match.compLevel).toUpperCase()} {String(match.matchNumber)}
               </strong>

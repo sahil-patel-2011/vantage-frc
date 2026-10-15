@@ -43,7 +43,7 @@ function fail(error: unknown) {
   const message = publicErrorMessage(error, "Attendance request failed");
   if (/attendance_|relation .* does not exist/i.test(message)) {
     return Response.json(
-      { error: "Apply the Team Attendance migration first (0047_attendance)." },
+      { error: "Attendance isn't available for your team yet. The Vantage team has been told." },
       { status: 503 },
     );
   }

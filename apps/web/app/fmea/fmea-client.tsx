@@ -93,7 +93,7 @@ function NextActions({
     <section className="fmea-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>Prioritized from logged failures — RPN stays blank until you score real O×S×D.</p>
+        <p>Sorted by risk score. A score stays blank until you rate how often it happens, how bad it is and how hard it is to spot.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -128,7 +128,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
   viewRef.current = view;
 
   const orgId = view && "orgId" in view ? view.orgId : null;
-  const crumbs = embed === "build" ? "Build / FMEA" : "Team / FMEA";
+  const crumbs = embed === "build" ? "Build / Failure log" : "Team / Failure log";
 
   const load = useCallback((seasonOverride?: number) => {
     void (async () => {
@@ -180,7 +180,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         if (!response.ok || !isFmeaView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh FMEA. Showing the last copy on this device.");
+            setError("Could not refresh the failure log. Showing the last copy on this device.");
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -197,7 +197,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh FMEA. Showing the last copy on this device.");
+          setError("Could not refresh the failure log. Showing the last copy on this device.");
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -264,10 +264,10 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       <Root className="module-page fmea-page">
         <PageHeader
           breadcrumbs={crumbs}
-          title="Failure Log (FMEA)"
-          description="Capture in-match and pit failures with real O×S×D scores."
+          title="Failure log"
+          description="Log what broke in matches and the pit, and how risky it is."
         />
-        <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading failure log…"}
@@ -294,10 +294,10 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       <Root className="module-page fmea-page">
         <PageHeader
           breadcrumbs={crumbs}
-          title="Failure Log (FMEA)"
+          title="Failure log"
           description="Capture every in-match and pit failure against a subsystem. Score occurrence, severity, and detection from real events only."
         />
-        <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
           <p className="fmea-alert" role="alert">
             {error}
@@ -321,7 +321,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
     <Root className="module-page fmea-page">
       <PageHeader
         breadcrumbs={crumbs}
-        title="Failure Log (FMEA)"
+        title="Failure log"
         description={
           <>
             Track what broke, prioritize repairs, and record the fix.
@@ -352,7 +352,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
 
         </div>
       </PageHeader>
-      <OfflineBanner feature="FMEA" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p className="fmea-alert" role="alert">
@@ -395,7 +395,7 @@ function BatteryReliabilitySignals({ view }: { view: LiveView }) {
   if (!view.batterySignals?.length) return null;
   return (
     <Panel className="fmea-panel">
-      <h2>Battery reliability → FMEA</h2>
+      <h2>Battery reliability → Failure log</h2>
       <p>Derived from your logged pack measurements. Promote one into the failure log when you confirm a mode.</p>
       <ul className="fmea-battery-signals">
         {view.batterySignals.map((signal) => (
@@ -423,7 +423,7 @@ function SummaryTiles({ view }: { view: LiveView }) {
       value: String(s.byLevel.critical + s.byLevel.high),
       tone: s.byLevel.critical + s.byLevel.high > 0 ? "critical" : "",
     },
-    { label: "Top RPN", value: formatRpnDisplay(s.highestRpn, hasActive), tone: "" },
+    { label: "Top risk score", value: formatRpnDisplay(s.highestRpn, hasActive), tone: "" },
     { label: "Needs fix", value: String(s.needsFix.length), tone: s.needsFix.length > 0 ? "warn" : "" },
   ];
   return (
@@ -468,11 +468,11 @@ function SubsystemHotspots({ view, orgId }: { view: LiveView; orgId: string | nu
             <div className="who">
               <strong>{row.subsystemName}</strong>
               <span className={`fmea-badge ${row.level}`}>
-                {row.count}× · avg RPN {row.avgRpn}
+                {row.count}× · average risk {row.avgRpn}
               </span>
             </div>
             <div className="meta">
-              max RPN {row.maxRpn}
+              highest {row.maxRpn}
               {row.openCount > 0 ? ` · ${row.openCount} open` : ""}
             </div>
           </li>
@@ -486,20 +486,20 @@ function TopFailures({ view }: { view: LiveView }) {
   if (view.summary.topFailures.length === 0) {
     return (
       <Panel className="fmea-panel">
-        <h2>Highest RPN</h2>
-        <p>No active failures — keep logging when something breaks. No demo RPN is shown.</p>
+        <h2>Highest risk</h2>
+        <p>No open failures. Keep logging when something breaks.</p>
       </Panel>
     );
   }
   return (
     <Panel className="fmea-panel">
-      <h2>Highest RPN</h2>
+      <h2>Highest risk</h2>
       <ol className="fmea-top-list">
         {view.summary.topFailures.map((evaluation) => (
           <li key={evaluation.failure.id}>
             <div className="who">
               <strong>{evaluation.failure.title}</strong>
-              <span className={`fmea-badge ${evaluation.level}`}>RPN {evaluation.rpn}</span>
+              <span className={`fmea-badge ${evaluation.level}`}>Risk {evaluation.rpn}</span>
             </div>
             <div className="meta">
               {evaluation.failure.subsystemName} · {fmeaContextLabel(evaluation.failure.context)} ·{" "}
@@ -759,7 +759,7 @@ function FailureList({
   return (
     <Panel className="fmea-panel">
       <h2>Season log</h2>
-      <p>Risk rows ranked by RPN from logged O×S×D — empty fields stay blank.</p>
+      <p>Ranked by risk score (how often × how bad × how hard to spot). Empty ratings stay blank.</p>
       <div className="fmea-risk-list">
         {view.evaluations.map((evaluation) => (
           <FailureCard
@@ -813,8 +813,8 @@ function FailureCard({
           </div>
         </div>
         <div className="fmea-risk-scores">
-          <span className="fmea-rpn" title="Risk priority number from logged O×S×D">
-            <em>RPN</em>
+          <span className="fmea-rpn" title="Risk score: how often × how bad × how hard to spot">
+            <em>Risk</em>
             <strong>{evaluation.rpn}</strong>
           </span>
           <span className="fmea-osd">{formatOsdFactors(f)}</span>

@@ -16,6 +16,7 @@ import {
   type RunFn,
 } from "./batteries-model";
 import { AssignRow } from "./batteries-assign";
+import { statusLabel } from "../../lib/ui/status-label";
 
 export function BatteriesFleetColumn({
   view,
@@ -179,7 +180,7 @@ export function BatteriesFleetColumn({
                               {pack.cartSlot.label}
                             </span>
                           ) : null}
-                          {pack.status !== "active" ? <span className="batt-badge">{pack.status}</span> : null}
+                          {pack.status !== "active" ? <span className="batt-badge">{statusLabel(pack.status)}</span> : null}
                           {pack.assignment ? <span className="batt-badge">{pack.assignment}</span> : null}
                           {breakInCue ? (
                             <span className="batt-badge aging">Break in</span>
@@ -264,7 +265,7 @@ export function BatteriesFleetColumn({
                                         orgId,
                                         id: pack.id,
                                         status: "quarantine",
-                                        note: "Quarantined from UI",
+                                        note: "Set aside",
                                       },
                                       `q:${pack.id}`,
                                     ),

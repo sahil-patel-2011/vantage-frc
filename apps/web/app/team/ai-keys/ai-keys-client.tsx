@@ -390,7 +390,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       setMessage(
         data.reachabilityWarning
           ? `Local connector saved. ${data.reachabilityWarning}`
-          : "Local OpenAI-compatible connector encrypted and saved.",
+          : "Local AI connector encrypted and saved.",
       );
       await load();
     } finally {
@@ -428,7 +428,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
 
   async function removeLocal() {
     if (!orgId) return;
-    if (!(await askConfirm({ title: "Remove the local OpenAI-compatible connector?", body: null, confirmLabel: "Remove connector", tone: "destructive" }))) return;
+    if (!(await askConfirm({ title: "Remove the local AI connector?", body: null, confirmLabel: "Remove connector", tone: "destructive" }))) return;
     setBusyLocal(true);
     setMessage("");
     setMessageIsError(false);

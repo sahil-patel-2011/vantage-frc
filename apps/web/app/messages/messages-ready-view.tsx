@@ -828,7 +828,7 @@ export function MessagesReadyView({
                                   : "No teammates to mention yet. An owner or admin invites people."
                                 : activeMention.query
                                   ? `No org member matches @${activeMention.query}`
-                                  : "Type a name to mention a teammate in this organization."}
+                                  : "Type a name to mention a teammate on your team."}
                             </p>
                             <small>Esc to dismiss · mentions stay inside this team</small>
                             {members.length === 0 && canManageChannels ? (

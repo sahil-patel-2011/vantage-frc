@@ -67,7 +67,7 @@ function PitMeshRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related scouting tools">
       <a href={hubHref("/competition", "scouting", orgId)}>Scouting</a>
-      <a href={hubHref("/competition", "scout-schema-negotiate", orgId)}>Schema sync</a>
+      <a href={hubHref("/competition", "scout-schema-negotiate", orgId)}>Form versions</a>
       <a href={withOrgHref("/scouting/lineup", orgId)}>Coverage</a>
     </nav>
   );

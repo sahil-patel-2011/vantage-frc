@@ -265,7 +265,7 @@ export default function DecisionSearchClient() {
       if (payload.action === "search") setCutoffCode(null);
       try {
         const response = await fetch("/api/decision-search", {
-          method: "POST",
+          method: "Post",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
@@ -481,7 +481,7 @@ function IndexStatsPanel({ view, loaded }: { view: LiveView; loaded: boolean }) 
           <span
             className={`app-badge ${view.documents.length === 0 ? "setup" : "good"}`}
           >
-            {view.documents.length === 0 ? "EMPTY" : "INDEXED"}
+            {view.documents.length === 0 ? "Empty" : "Indexed"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Search corpus</h2>
           <small className="app-muted">

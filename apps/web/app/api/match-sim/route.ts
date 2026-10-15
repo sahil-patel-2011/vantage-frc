@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     return Response.json(view);
   } catch {
     return Response.json(
-      setupResponse("Could not load the match simulator. Choose your team and confirm database access."),
+      setupResponse("Could not load the match simulator. Check that you've chosen your team, then try again."),
       { status: 200 },
     );
   }

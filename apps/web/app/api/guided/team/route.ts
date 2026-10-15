@@ -23,7 +23,7 @@ function fail(error: unknown) {
   if (error instanceof HttpError) return Response.json({ error: error.message }, { status: error.status });
   // 42P01: migration 0719 is not applied yet — a setup state, not a crash.
   if ((error as { code?: string } | null)?.code === "42P01") {
-    return Response.json({ status: "setup_required", error: "Lead sign-offs need database migration 0719." }, { status: 503 });
+    return Response.json({ status: "setup_required", error: "Lead sign-offs aren't available for your team yet. The Vantage team has been told." }, { status: 503 });
   }
   return Response.json({ error: publicErrorMessage(error, "Couldn't load team progress") }, { status: 500 });
 }

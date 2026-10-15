@@ -43,7 +43,7 @@ function fail(error: unknown) {
   if (/logistics_|relation .* does not exist/i.test(message)) {
     return Response.json({
       status: "setup_required",
-      message: "Apply the event logistics migration first (0165_event_logistics_travel).",
+      message: "Travel and logistics isn't available for your team yet. The Vantage team has been told.",
     });
   }
   const status = error instanceof HttpError ? error.status : 400;

@@ -381,7 +381,7 @@ export default function SubsystemSignoffClient() {
             </label>
           ) : null}
           <Button as="a" variant="secondary" href={hubHref("/build", "fmea", orgId)}>
-            FMEA
+            failure log
           </Button>
           <Button as="a" variant="secondary" href={hubHref("/build", "cad", orgId)}>
             CAD

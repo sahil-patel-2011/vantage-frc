@@ -736,7 +736,7 @@ export default function VideoRescoutClient() {
           soft
           badge="Schema required"
           badgeTone="setup"
-          title="Match schema required"
+          title="Set up a match scouting form first"
           description="Configure a real match scouting schema before timeline scoring."
         >
           <Button as="a" variant="primary" href={hubHref("/competition", "scouting", orgId)}>
