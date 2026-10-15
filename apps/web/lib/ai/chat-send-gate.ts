@@ -3,13 +3,13 @@
  * connection check (`probeChatAvailability`) and by the send path (POST /api/agent) right
  * after the adapter resolves, so the two can no longer disagree.
  *
- * Why it exists: `resolveOrgChatAdapterWithProvenance` happily resolves a member's personal key
- * (`member_llm_keys`, incl. shared member keys) or the platform's free OpenRouter pool, but
- * `meteredAI` (packages/billing/src/index.ts, the key-source block after the kill switch) only
- * counts TEAM keys (`detectOrgByokKeySource`: org_provider_configs + org_llm_keys). On a free team
- * with no team key and no sponsored promo it throws "Free organizations must configure a BYO AI
- * key", which `failMeteredAi` shows as "No usable AI connection…". The check said "ready", Send
- * was enabled, and the question failed only after sending.
+ * Why it exists: the resolver answers with a member's personal key (`member_llm_keys`, incl. keys
+ * a teammate shared), a team key, or the platform's free OpenRouter pool, and `meteredAI`
+ * (packages/billing/src/index.ts, the key-source block after the kill switch) decides whether
+ * that turn may run. Billing used to count only TEAM keys, so on a free team a personal key was
+ * refused after Send ("No usable AI connection…"). Billing now counts the caller's own and
+ * shared personal keys too (`detectOrgByokKeySource(client, orgId, userId)`), and this gate
+ * asks the same question with the same reads.
  *
  * This mirrors that decision with billing's own building blocks (same queries, same order of
  * truth) and no writes: `maybeNotifySponsoredPromoExpired` is never called here.
@@ -30,9 +30,15 @@ const UNGATED_SOURCES: ReadonlySet<ResolvedModelSource> = new Set<ResolvedModelS
   "subscription-bridge",
 ]);
 
+/**
+ * Keys billing counts as the team's own spend: an enabled team key or connector, and a member's
+ * own or shared personal key (`memberHasUsableKey` in @vantage/billing) — the resolver labels
+ * both own and shared personal keys "member-key".
+ */
 const TEAM_KEY_SOURCES: ReadonlySet<ResolvedModelSource> = new Set<ResolvedModelSource>([
   "org-key",
   "local-connector",
+  "member-key",
 ]);
 
 export type ChatSendBlock = {
@@ -76,7 +82,7 @@ export function canConnectForTeam(role: string | null | undefined): boolean {
  */
 export async function chatSendBlock(
   client: PoolClient,
-  input: { orgId: string; source: ResolvedModelSource },
+  input: { orgId: string; userId?: string | null; source: ResolvedModelSource },
 ): Promise<ChatSendBlock | null> {
   if (UNGATED_SOURCES.has(input.source)) return null;
   // The resolver only labels a model "org-key" / "local-connector" when it came from an enabled
@@ -92,7 +98,7 @@ export async function chatSendBlock(
   if (!tier) return null;
   // Paid tiers fall back to hosted credits; their limits are checked elsewhere.
   if (tier !== "free") return null;
-  if (await detectOrgByokKeySource(client, input.orgId)) return null;
+  if (await detectOrgByokKeySource(client, input.orgId, input.userId)) return null;
   const promo = await resolveSponsoredPromoForOrg(client, input.orgId);
   if (promo.eligible) return null;
   if (promo.reason === "promo_expired") {

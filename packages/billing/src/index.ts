@@ -287,6 +287,8 @@ function isLoopbackProviderUrl(value: string | null | undefined): boolean {
 export async function detectOrgByokKeySource(
   client: PoolClient,
   orgId: string,
+  /** The person the call is for: their own key, or one a teammate shared with them, counts too. */
+  userId?: string | null,
 ): Promise<"byo" | "local" | null> {
   const providers = await client.query<{
     kind: string;
@@ -326,7 +328,44 @@ export async function detectOrgByokKeySource(
     [orgId],
   );
   if (keys.rows.length > 0) return "byo";
+  if (userId && (await memberHasUsableKey(client, orgId, userId))) return "byo";
   return null;
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether this member can run AI on a personal key: their own enabled key for this team, or
+ * one a teammate shared with them (0734). The chat resolver uses these before any hosted key,
+ * so a turn on one is the member's own spend: a free team is not refused for lack of a team
+ * key, and a paid team is not charged hosted credits for it. Read through to_regclass /
+ * to_regprocedure so a database without those objects answers false instead of aborting the
+ * request's transaction.
+ */
+export async function memberHasUsableKey(client: PoolClient, orgId: string, userId: string): Promise<boolean> {
+  // Worker and system calls carry ids that are not a person's uuid; a failed cast would abort
+  // the transaction the metered call runs in.
+  if (!UUID_PATTERN.test(userId) || !UUID_PATTERN.test(orgId)) return false;
+  const ready = await client.query<{ own: boolean; shared: boolean }>(
+    `SELECT to_regclass('public.member_llm_keys') IS NOT NULL AS own,
+            to_regprocedure('public.shared_member_llm_keys(uuid)') IS NOT NULL AS shared`,
+  );
+  if (!ready.rows[0]?.own) return false;
+  const found = await client.query<{ usable: boolean }>(
+    ready.rows[0].shared
+      ? `SELECT EXISTS (
+           SELECT 1 FROM member_llm_keys k
+            WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid
+              AND COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true)
+         ) OR EXISTS (SELECT 1 FROM shared_member_llm_keys($1::uuid)) AS usable`
+      : `SELECT EXISTS (
+           SELECT 1 FROM member_llm_keys k
+            WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid
+              AND COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true)
+         ) AS usable`,
+    [orgId, userId],
+  );
+  return Boolean(found.rows[0]?.usable);
 }
 
 function isExternalKeySource(source: MeterKeySource): boolean {
@@ -777,7 +816,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     // time reclassifies from the truthful receipt.provider so the bill is enforced.
     keySource = "subscription_bridge";
   } else {
-    const detected = await detectOrgByokKeySource(input.client, input.orgId);
+    const detected = await detectOrgByokKeySource(input.client, input.orgId, input.userId);
     if (detected) {
       keySource = detected;
     } else if (account.tier === "free") {
@@ -805,7 +844,10 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
        LIMIT 1`,
       [input.orgId],
     );
-    if (!key.rows.length) throw new Error("Free organizations must configure a BYO AI key");
+    // A member's own (or shared) key is a bring-your-own key too.
+    if (!key.rows.length && !(input.userId && (await memberHasUsableKey(input.client, input.orgId, input.userId)))) {
+      throw new Error("Free organizations must configure a BYO AI key");
+    }
   }
   if (keySource === "sponsored") {
     const promo = await resolveSponsoredPromoForOrg(input.client, input.orgId);
@@ -907,7 +949,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
   // provider bill is recorded as an external $0 source and escapes credit enforcement.
   let settledKeySource = keySource;
   if (keySource === "subscription_bridge" && receipt.provider !== "subscription-bridge") {
-    settledKeySource = (await detectOrgByokKeySource(input.client, input.orgId)) ?? "platform";
+    settledKeySource = (await detectOrgByokKeySource(input.client, input.orgId, input.userId)) ?? "platform";
   }
   // Re-read the wallet UNDER `FOR UPDATE` here and only here. The pre-call read was
   // unlocked (it could not hold a lock across invoke), so these are the first balances
