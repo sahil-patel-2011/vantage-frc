@@ -76,8 +76,12 @@ describe("form-builder", () => {
     expect(slugifyKey("Auto Score", used)).toBe("auto_score_2");
   });
 
-  it("parses option lists", () => {
-    expect(parseOptions("none, partial\nfull")).toEqual(["none", "partial", "full"]);
+  it("parses option lists: one per line, or an older comma list on one line", () => {
+    expect(parseOptions("none\npartial\nfull")).toEqual(["none", "partial", "full"]);
+    expect(parseOptions("none, partial, full")).toEqual(["none", "partial", "full"]);
+    // An option may contain a comma once options are one per line.
+    expect(parseOptions("Coral, low\nAlgae")).toEqual(["Coral, low", "Algae"]);
+    expect(parseOptions(serializeOptions(["Coral, low"]))).toEqual(["Coral, low"]);
   });
 
   it("round-trips draft ↔ definition for answer kinds", () => {
@@ -179,7 +183,7 @@ describe("form-builder", () => {
   it("edits MC/dropdown option rows", () => {
     expect(needsOptionEditor("mc")).toBe(true);
     expect(needsOptionEditor("short")).toBe(false);
-    expect(serializeOptions(["none", "park", "climb"])).toBe("none, park, climb");
+    expect(serializeOptions(["none", "park", "climb"])).toBe("none\npark\nclimb");
     expect(addOption(["a"], "b")).toEqual(["a", "b"]);
     expect(updateOptionAt(["a", "b"], 1, "beta")).toEqual(["a", "beta"]);
     expect(removeOption(["a", "b", "c"], 1)).toEqual(["a", "c"]);

@@ -94,9 +94,10 @@ export function useCoverageData(orgId: string, eventKey: string | undefined, qua
     } finally { if (valid()) { reading.current = false; setRefreshing(false); } }
   }, [cacheKey, eventKey, focusMatch, orgId, qualsOnly]);
 
-  const mutate = useCallback(async (body: CoverageCommand) => {
+  /** Resolves true when the server confirmed the change with nothing refused. */
+  const mutate = useCallback(async (body: CoverageCommand): Promise<boolean> => {
     const before = current.current;
-    if (writing.current || reading.current || refreshing || fromCache || before?.status !== "live") return;
+    if (writing.current || reading.current || refreshing || fromCache || before?.status !== "live") return false;
     writing.current = true;
     controller.current?.abort();
     const id = ++generation.current;
@@ -107,7 +108,7 @@ export function useCoverageData(orgId: string, eventKey: string | undefined, qua
       const response = await fetch("/api/scouting/coverage", { method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...body, orgId, eventKey: before.eventKey, qualsOnly, ...(focusMatch ? { focusMatchKey: focusMatch } : {}) }), signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) });
       const data: unknown = await response.json().catch(() => null);
-      if (!mounted.current || id !== generation.current) return;
+      if (!mounted.current || id !== generation.current) return false;
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           setView(null); current.current = null; setFetchFailed(true); setFailureStatus(response.status);
@@ -116,7 +117,7 @@ export function useCoverageData(orgId: string, eventKey: string | undefined, qua
         } else { setFromCache(true); }
         const message = data && typeof data === "object" && "error" in data && typeof data.error === "string" ? data.error : "Could not save assignments. Refresh to check the saved result before retrying.";
         setError(message);
-        return;
+        return false;
       }
       if (!isCoverageView(data, { orgId, eventKey: before.eventKey, qualsOnly }) || data.status !== "live") throw new Error("Unconfirmed assignment view");
       const result = assignmentResult("assignmentResult" in data ? data.assignmentResult : null, body.action);
@@ -128,10 +129,12 @@ export function useCoverageData(orgId: string, eventKey: string | undefined, qua
       setNotice(assignmentNotice(result));
       setError(result.refused.join(" "));
       void putFeatureSnapshot("lineup", orgId, data, cacheKey).catch(() => {});
+      return result.refused.length === 0;
     } catch {
-      if (!mounted.current || id !== generation.current) return;
+      if (!mounted.current || id !== generation.current) return false;
       setFromCache(true);
       setError("The saved result could not be confirmed. Refresh before retrying; the server may have received your change.");
+      return false;
     } finally { writing.current = false; if (mounted.current && id === generation.current) setBusy(false); }
   }, [cacheKey, focusMatch, fromCache, orgId, qualsOnly, refreshing]);
 

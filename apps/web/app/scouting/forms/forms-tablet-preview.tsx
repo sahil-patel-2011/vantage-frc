@@ -11,7 +11,9 @@ import { MatchFormControls } from "../match-timer";
 import { availableMatchStages, fieldsForMatchStage, reachableMatchStage, type ScoutFormStage } from "../../../lib/scouting/match-form-flow";
 import { MEDIA_ENABLED } from "../../../lib/media-availability";
 import type { OfficialFlag } from "../scouting-model";
+import { QuickTile } from "../../scout/match/quick-scout-tiles";
 import "../scout-flow.css";
+import "../../scout/match/quick-scout.css";
 
 /** The scout form's own confidence row, so the preview ends where the real form does. */
 const CONFIDENCE_OPTIONS = [
@@ -22,7 +24,8 @@ const CONFIDENCE_OPTIONS = [
 const NO_FLAGS: OfficialFlag[] = [];
 
 /**
- * What a scout sees, drawn by the scout form's own field component.
+ * What a scout sees: the quick tiles (what Scout home opens) or the full form, drawn by the
+ * scouting screens' own components.
  *
  * The old preview drew plain number boxes and "Select…" dropdowns with
  * lowercase options, while the stands got −/+ steppers and big buttons. This
@@ -32,6 +35,9 @@ const NO_FLAGS: OfficialFlag[] = [];
 export function FormsTabletPreview({ title, questions, type }: { title: string; questions: DraftQuestion[]; type: EntryType }) {
   const definition = useMemo(() => definitionFromDraft(title, questions), [title, questions]);
   const [payload, setPayload] = useState<Record<string, unknown>>({});
+  // Scouts open the quick tiles from Scout home, so that is what the preview shows first; the
+  // full form (the "Full form" link on the quick screen) is one tap away.
+  const [view, setView] = useState<"quick" | "full">("quick");
   const [confidence, setConfidence] = useState("normal");
   const [stage, setStage] = useState<ScoutFormStage>("pre");
   const phaseFields = useMemo(() => withInferredPhaseRules(definition.fields.filter(field => MEDIA_ENABLED || (field.type !== "robot_image" && field.widget !== "robot_image"))), [definition]);
@@ -55,10 +61,32 @@ export function FormsTabletPreview({ title, questions, type }: { title: string; 
           <strong>Signed-in member</strong>
           <small className="app-muted">{SCOUT_IDENTITY_LOCK_COPY.detail}</small>
         </div>
+        <div className="sfb-preview-view" role="group" aria-label="Preview as">
+          <button type="button" aria-pressed={view === "quick"} onClick={() => setView("quick")}>Quick tiles</button>
+          <button type="button" aria-pressed={view === "full"} onClick={() => setView("full")}>Full form</button>
+        </div>
         {type === "match" ? <MatchFormControls stage={currentStage} stages={stages} onStageChange={setStage} /> : null}
         {definition.fields.length > 0 && displayed.length === 0 ? <p className="app-muted">No questions for this phase. Use the phase controls to continue.</p> : null}
         {definition.fields.length === 0 ? (
           <p className="app-muted">Add a question to see it here.</p>
+        ) : view === "quick" ? (
+          <div className="qs-grid">
+            {displayed.filter((field) => !isLayoutOnlyField(field)).map((field) => (
+              <QuickTile
+                key={field.key}
+                field={field}
+                value={payload[field.key]}
+                orgId=""
+                onChange={(value) => setPayload((current) => ({ ...current, [field.key]: value }))}
+                onStep={(delta) =>
+                  setPayload((current) => {
+                    const now = typeof current[field.key] === "number" ? (current[field.key] as number) : 0;
+                    return { ...current, [field.key]: Math.max(0, now + delta) };
+                  })
+                }
+              />
+            ))}
+          </div>
         ) : (
           displayed.map((field) => (
             <ScoutingAnswerField

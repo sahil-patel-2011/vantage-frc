@@ -179,6 +179,8 @@
 .qs-toggle small{color:var(--muted);font-size:12.5px}
 .qs-toggle.is-on{border-color:color-mix(in srgb,var(--qs-team) 55%,var(--line));background:color-mix(in srgb,var(--qs-team) 9%,var(--surface))}
 .qs-toggle.is-on .qs-toggle-check{background:var(--qs-team);border-color:var(--qs-team)}
+.qs-toggle.is-off{border-color:color-mix(in srgb,var(--ink) 30%,var(--line));background:var(--surface-2)}
+.qs-toggle.is-off .qs-toggle-check{background:var(--muted);border-color:var(--muted);color:var(--surface)}
 
 .qs-choice{margin:0;min-height:0}
 .qs-choice legend{float:left;width:100%;margin-bottom:8px}

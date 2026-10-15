@@ -169,6 +169,8 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
   const [focusMatch, setFocusMatch] = useState(initialMatchKey);
   const [liveUpdates, setLiveUpdates] = useState(false);
   const { view, error, notice, fetchFailed, failureStatus, busy, fromCache, cachedAt, refreshing, load, mutate } = useCoverageData(orgId, eventKey, qualsOnly, focusMatch);
+  // A pick in a menu applies straight away, so the change that just landed can be taken back.
+  const [undo, setUndo] = useState<{ label: string; command: Parameters<typeof mutate>[0] } | null>(null);
   const controlsDisabled = busy || refreshing || fromCache;
   const updatedAt = view?.generatedAt ?? "";
   useEffect(() => {
@@ -317,7 +319,20 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
       {fromCache ? <p className="app-muted">This copy is read-only. Refresh to check current assignments and permissions before making changes.</p> : null}
 
       {view.qualsOnly !== qualsOnly ? <p className="lineup-notice" role="status">Showing {view.qualsOnly ? "qualification matches" : "all matches"} until the selected filter finishes loading. Assignment changes are paused.</p> : null}
-      {notice ? <p className="lineup-notice" role="status">{notice}</p> : null}
+      {notice ? (
+        <p className="lineup-notice" role="status">
+          {notice}
+          {undo ? (
+            <>
+              {" "}
+              <button type="button" className="text-button lineup-undo" disabled={controlsDisabled}
+                onClick={() => { const command = undo.command; setUndo(null); void mutate(command); }}>
+                Undo
+              </button>
+            </>
+          ) : null}
+        </p>
+      ) : null}
       {error ? (
         <p className="form-message" role="status">
           {error}
@@ -442,7 +457,13 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
                             <span>{scout.name}{scout.role === "backup" ? " · backup" : ""}</span>
                             {view.canAssign ? (
                               <label>Reassign {scout.name}
-                                <select value={scout.userId} disabled={controlsDisabled} onChange={event => void mutate({ action: "swap", matchKey: slot.matchKey, teamKey: slot.teamKey, fromUserId: scout.userId, toUserId: event.target.value })}>
+                                <select value={scout.userId} disabled={controlsDisabled} onChange={async event => {
+                                  const toUserId = event.target.value;
+                                  setUndo(null);
+                                  if (await mutate({ action: "swap", matchKey: slot.matchKey, teamKey: slot.teamKey, fromUserId: scout.userId, toUserId })) {
+                                    setUndo({ label: "swap", command: { action: "swap", matchKey: slot.matchKey, teamKey: slot.teamKey, fromUserId: toUserId, toUserId: scout.userId } });
+                                  }
+                                }}>
                                   {!view.scouts.some(member => member.userId === scout.userId) ? <option value={scout.userId}>{scout.name} · no longer a member</option> : null}
                                   {view.scouts.filter(member => member.userId === scout.userId || !slot.assignedScouts?.some(assigned => assigned.userId === member.userId)).map(member => <option key={member.userId} value={member.userId}>{member.name}{member.isMe ? " (me)" : ""}</option>)}
                                 </select>
@@ -471,7 +492,14 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
                       </ul>
                     ) : slot.assignmentCount ? <p className="app-muted">Assignment details unavailable. Refresh to view scouts.</p> : view.canAssign ? (
                       <label className="lineup-assign">Assign a scout
-                        <select value="" disabled={controlsDisabled} onChange={event => { if (event.target.value) void mutate({ action: "assign", matchKey: slot.matchKey, teamKey: slot.teamKey, userId: event.target.value }); }}>
+                        <select value="" disabled={controlsDisabled} onChange={async event => {
+                          const userId = event.target.value;
+                          if (!userId) return;
+                          setUndo(null);
+                          if (await mutate({ action: "assign", matchKey: slot.matchKey, teamKey: slot.teamKey, userId })) {
+                            setUndo({ label: "assign", command: { action: "unassign", matchKey: slot.matchKey, teamKey: slot.teamKey, userId } });
+                          }
+                        }}>
                           <option value="">Choose a scout…</option>
                           {/* Scouts first; owners, admins and leads can scout too but are listed apart. */}
                           {scoutGroups(view.scouts).map(group => group.members.length ? (
