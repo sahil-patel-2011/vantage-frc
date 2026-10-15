@@ -442,3 +442,58 @@ export function shouldReloadWeb(input: {
   if (input.staleAssetSeen && !input.windowFocused) return true;
   return input.idleMs >= IDLE_BEFORE_WEB_RELOAD_MS && !input.windowFocused;
 }
+
+
+// ---------------------------------------------------------------------------
+// Web releases: "Vantage has been updated" with what changed
+// ---------------------------------------------------------------------------
+
+/**
+ * Every web deploy ships with a release entry (apps/web/release-notes.json), served at
+ * /api/web-release. The shell asks before switching to it, showing what changed, instead of
+ * reloading under the person.
+ */
+export type WebRelease = { id: string; headline: string; changes: string[]; date: string | null };
+
+/** How often the shell asks the web app which release it is serving. */
+export const WEB_RELEASE_CHECK_MS = 5 * 60 * 1000;
+/** "Later" asks again after this long (or on the next launch). */
+export const WEB_RELEASE_LATER_MS = 2 * 60 * 60 * 1000;
+
+export function parseWebRelease(raw: unknown): WebRelease | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as Record<string, unknown>;
+  const id = typeof value.id === "string" ? value.id.trim() : "";
+  const headline = typeof value.headline === "string" ? value.headline.trim() : "";
+  if (!id || !headline) return null;
+  const changes = Array.isArray(value.changes)
+    ? value.changes.filter((line): line is string => typeof line === "string" && line.trim().length > 0).map((line) => line.trim()).slice(0, 12)
+    : [];
+  return { id, headline, changes, date: typeof value.date === "string" ? value.date : null };
+}
+
+/**
+ * Whether to ask now. Never for the release the page is already on, never again before a
+ * "Later" runs out, and never over a live match screen someone is looking at.
+ */
+export function decideWebReleasePrompt(input: {
+  loadedId: string | null;
+  latest: WebRelease | null;
+  dismissedId?: string | null;
+  dismissedUntil?: number | null;
+  now: number;
+  currentUrl: string;
+  windowFocused: boolean;
+}): "none" | "prompt" {
+  const { latest, loadedId } = input;
+  if (!latest || !loadedId || latest.id === loadedId) return "none";
+  if (input.dismissedId === latest.id && (input.dismissedUntil ?? 0) > input.now) return "none";
+  if (isLiveOpsUrl(input.currentUrl) && input.windowFocused) return "none";
+  return "prompt";
+}
+
+/** The dialog's body: the changes as a short list, in plain words. */
+export function webReleaseDetail(release: WebRelease): string {
+  const lines = release.changes.map((line) => `• ${line}`);
+  return lines.length ? lines.join("\n") : "Reload to get the latest version.";
+}

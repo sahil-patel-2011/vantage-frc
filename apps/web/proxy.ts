@@ -68,6 +68,8 @@ const PUBLIC_PREFIXES = [
   "/api/waitlist",
   // Uptime monitor: says only whether the database answers.
   "/api/health",
+  // Which release is live and what changed in it (the desktop app's update prompt). No team data.
+  "/api/web-release",
   // Outage handling works while the database (and so every session) is down: the public
   // "limited" flag reads no database, and the outage console and its API (/api/status/outage)
   // are authorized by the HMAC-signed link in the owner's alert email, checked in each route.
