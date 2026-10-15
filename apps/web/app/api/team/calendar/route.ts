@@ -27,7 +27,6 @@ import { notifyCalendarEvent } from "../../../../lib/notify-calendar";
 import {
   attendanceDateFromStart,
   CALENDAR_FEED_SCOPES,
-  defaultSeasonYear,
   canDeleteCalendarEvent,
   eventsForMySubteams,
   filterEventsBySubteam,
@@ -1363,6 +1362,8 @@ export async function POST(request: Request) {
               action.kind === "practice" || action.kind === "build" || action.kind === "meeting" || action.kind === "outreach"
                 ? action.kind
                 : "other";
+            // The local day, and the season it belongs to (that day's year — the app's one rule).
+            const occurredOn = attendanceDateFromStart(action.startsAt, typeof body.timeZone === "string" ? body.timeZone : null);
             const inserted = await client.query<{ id: string }>(
               `INSERT INTO attendance_events
                  (org_id, title, kind, occurred_on, credit_hours, season_year, created_by)
@@ -1372,9 +1373,9 @@ export async function POST(request: Request) {
                 action.orgId,
                 action.title,
                 kind,
-                attendanceDateFromStart(action.startsAt),
+                occurredOn,
                 action.attendanceCreditHours,
-                defaultSeasonYear(new Date(action.startsAt)),
+                Number(occurredOn.slice(0, 4)),
                 userId,
               ],
             );
