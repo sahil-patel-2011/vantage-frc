@@ -59,13 +59,32 @@ import "./scouting-workspace.css";
 
 // Tabs most scouts never open load on first visit: team profiles, the trust checks (zod schemas)
 // and the QR handoff (jsQR + qrcode) were most of the scouting page's first-load JavaScript.
+// The handoff is still fetched right after load (useWarmHandoffPanel) so it works offline.
 const tabLoading = () => <p className="app-muted" role="status">Loading…</p>;
 const ScoutingTeamProfiles = dynamic(
   () => import("./scouting-team-profiles").then((mod) => mod.ScoutingTeamProfiles),
   { loading: tabLoading },
 );
 const ScoutingTrustPanel = dynamic(() => import("./scouting-trust-panel"), { loading: tabLoading });
-const ScoutHandoffPanel = dynamic(() => import("./scout-handoff-panel"), { loading: tabLoading });
+const loadHandoffPanel = () => import("./scout-handoff-panel");
+const ScoutHandoffPanel = dynamic(loadHandoffPanel, { loading: tabLoading });
+
+/**
+ * QR handoff is for phones with no signal, when a chunk fetched on first tap could never arrive.
+ * Fetch it once the page is idle instead: out of the first load, but downloaded (and kept by the
+ * service worker's asset cache) while the phone still has a connection.
+ */
+function useWarmHandoffPanel() {
+  useEffect(() => {
+    const warm = () => void loadHandoffPanel().catch(() => undefined);
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(warm, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(warm, 1500);
+    return () => window.clearTimeout(id);
+  }, []);
+}
 import { PitProgress } from "./pit-progress";
 import { ScoutActionHistoryView } from "./scout-action-history";
 import { issueForField } from "../../lib/scouting/invalid-fields";
@@ -237,6 +256,7 @@ export function ScoutingReadyView({
   submit,
   setMessage,
 }: ScoutingReadyViewProps) {
+  useWarmHandoffPanel();
   const context =
     type === "match" ? scoutContext({ matches: data?.matches ?? [], matchKey, teamKey }) : null;
   const canSave = Boolean(schema) && (type === "match" ? Boolean(matchKey && teamKey) : Boolean(teamKey));
