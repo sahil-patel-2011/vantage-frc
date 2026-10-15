@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+    <title>Vantage — Local AI</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f6f2;
+        --panel: #ffffff;
+        --ink: #17150f;
+        --muted: #5c574b;
+        --line: #e4e1d7;
+        --primary: #1f4fd6;
+        --primary-ink: #ffffff;
+        --good: #1f7a45;
+        --warn: #8a5a00;
+        --danger: #a3341f;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #14130f;
+          --panel: #1d1b16;
+          --ink: #f2f0e9;
+          --muted: #a9a494;
+          --line: #2c2a23;
+          --primary: #6e9bff;
+          --primary-ink: #071014;
+          --good: #6fd39a;
+          --warn: #f0c060;
+          --danger: #ff9d87;
+        }
+      }
+      * { box-sizing: border-box; margin: 0; }
+      body {
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        padding: 24px;
+      }
+      main { width: min(36rem, 100%); margin: 0 auto; display: grid; gap: 14px; }
+      header h1 { font-size: 1.3rem; }
+      header p, .card p, li { color: var(--muted); font-size: 0.93rem; line-height: 1.55; }
+      .tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; background: color-mix(in srgb, var(--primary) 12%, var(--panel)); color: var(--primary); vertical-align: middle; }
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 10px; }
+      .card h2 { font-size: 1rem; }
+      .line { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .state { font-size: 0.88rem; font-weight: 600; }
+      .ok { color: var(--good); }
+      .warn { color: var(--warn); }
+      .bad { color: var(--danger); }
+      ol { padding-left: 1.2rem; display: grid; gap: 4px; }
+      label { display: grid; gap: 6px; font-size: 0.88rem; font-weight: 600; }
+      select, input[type="text"] { font: inherit; min-height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); width: 100%; }
+      .row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+      button { font: inherit; min-height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+      button.primary { background: var(--primary); color: var(--primary-ink); border-color: transparent; }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .code { font: 600 1.4rem ui-monospace, "Cascadia Mono", Menlo, monospace; letter-spacing: 0.08em; }
+      .switch { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+      .switch input { width: 20px; height: 20px; }
+      .error { color: var(--danger); font-size: 0.9rem; }
+      [hidden] { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Local AI <span class="tag">Experimental</span></h1>
+        <p>
+          Answer Vantage's AI requests with a model running on this computer in LM Studio, instead of a cloud
+          service. Your requests stay on this machine while it's on; when it's off, Vantage uses your team's
+          normal AI.
+        </p>
+      </header>
+
+      <section class="card" aria-labelledby="req-title">
+        <div class="line"><h2 id="req-title">This computer</h2><span id="req-state" class="state"></span></div>
+        <p id="req-detail"></p>
+      </section>
+
+      <section class="card" aria-labelledby="lm-title">
+        <div class="line"><h2 id="lm-title">LM Studio</h2><span id="lm-state" class="state"></span></div>
+        <div id="lm-setup">
+          <ol>
+            <li>Install LM Studio from lmstudio.ai.</li>
+            <li>In LM Studio, search for a Qwen model of about 8–9 billion parameters (a 4-bit file is about 6 GB) and download it.</li>
+            <li>Load the model, then turn on the local server (Developer → Start server).</li>
+          </ol>
+        </div>
+        <label id="model-field" hidden>
+          Model
+          <select id="model"></select>
+        </label>
+        <details>
+          <summary>Server address</summary>
+          <label style="margin-top: 8px">
+            Address on this computer
+            <input id="base-url" type="text" spellcheck="false" />
+          </label>
+        </details>
+        <div class="row"><button id="refresh" type="button">Check again</button></div>
+      </section>
+
+      <section class="card" aria-labelledby="pair-title">
+        <div class="line"><h2 id="pair-title">Your Vantage account</h2><span id="pair-state" class="state"></span></div>
+        <p id="pair-detail"></p>
+        <div id="pair-code" hidden>
+          <p>Approve this code in the window that opened (signed in as you):</p>
+          <p class="code" id="code"></p>
+        </div>
+        <div class="row">
+          <button id="cancel-pair" type="button" hidden>Cancel</button>
+          <button id="unpair" type="button" hidden>Unpair this computer</button>
+          <button id="pair" type="button" class="primary">Pair this computer</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="run-title">
+        <div class="line"><h2 id="run-title">Use Local AI</h2><span id="run-state" class="state"></span></div>
+        <label class="switch"><input id="enabled" type="checkbox" /> Answer my AI requests on this computer</label>
+        <p>
+          Chat is covered by default. To use the local model for every AI feature (strategy, kickoff, CAD
+          briefs), choose "Everything" for this computer on Team → Personal AI connection in Vantage.
+        </p>
+        <p id="error" class="error" role="alert" hidden></p>
+      </section>
+    </main>
+    <script>
+      const api = window.vantageDesktop && window.vantageDesktop.localAi;
+      const $ = (id) => document.getElementById(id);
+      function set(id, text, tone) {
+        const el = $(id);
+        el.textContent = text;
+        el.className = "state" + (tone ? " " + tone : "");
+      }
+      function render(s) {
+        if (!s) return;
+        const req = s.requirements;
+        set("req-state", req.ok ? "Ready" : "Not enough", req.ok ? "ok" : "bad");
+        $("req-detail").textContent = req.ok
+          ? req.ramGb + " GB memory" + (req.freeDiskGb >= 0 ? " · " + req.freeDiskGb + " GB free disk" : "") + ". Needs 16 GB memory and 15 GB free disk."
+          : req.problems.join(" ");
+
+        set("lm-state", s.reachable ? (s.models.length ? "Running" : "No model loaded") : "Not found", s.reachable && s.models.length ? "ok" : "warn");
+        $("lm-setup").hidden = s.reachable && s.models.length > 0;
+        $("model-field").hidden = !s.models.length;
+        const select = $("model");
+        select.replaceChildren(...s.models.map((id) => {
+          const option = document.createElement("option");
+          option.value = id;
+          option.textContent = id;
+          option.selected = id === s.model;
+          return option;
+        }));
+        if (document.activeElement !== $("base-url")) $("base-url").value = s.baseUrl;
+
+        set("pair-state", s.paired ? "Paired" : s.pairing ? "Waiting for approval" : "Not paired", s.paired ? "ok" : "warn");
+        $("pair-detail").textContent = s.paired
+          ? "This computer answers requests for the account that approved it."
+          : "Pairing links this computer to your account so it only ever receives your own requests.";
+        $("pair-code").hidden = !s.pairing;
+        $("code").textContent = s.pairing ? s.pairing.userCode : "";
+        $("pair").hidden = s.paired || Boolean(s.pairing);
+        $("cancel-pair").hidden = !s.pairing;
+        $("unpair").hidden = !s.paired;
+
+        const canRun = req.ok && s.paired;
+        $("enabled").checked = s.enabled;
+        $("enabled").disabled = !canRun && !s.enabled;
+        set("run-state",
+          s.enabled && s.running ? (s.reachable && s.model ? "On · " + s.jobsServed + " answered" : "On · waiting for LM Studio") : "Off",
+          s.enabled && s.running && s.reachable ? "ok" : "");
+        $("error").hidden = !s.lastError;
+        $("error").textContent = s.lastError || "";
+      }
+      if (!api) {
+        document.querySelector("main").innerHTML = "<p>Open this page from the Vantage desktop app.</p>";
+      } else {
+        api.onState(render);
+        api.status().then(render);
+        $("refresh").addEventListener("click", () => api.refresh().then(render));
+        $("model").addEventListener("change", (event) => api.setModel(event.target.value).then(render));
+        $("base-url").addEventListener("change", (event) => api.setBaseUrl(event.target.value).then(render));
+        $("pair").addEventListener("click", () => api.pair().then(render));
+        $("cancel-pair").addEventListener("click", () => api.cancelPairing().then(render));
+        $("unpair").addEventListener("click", () => api.unpair().then(render));
+        $("enabled").addEventListener("change", (event) => api.setEnabled(event.target.checked).then(render));
+      }
+    </script>
+  </body>
+</html>

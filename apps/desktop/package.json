@@ -1,7 +1,7 @@
 {
   "name": "@vantage/desktop",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Vantage desktop shell for FRC teams \u2014 signed-in product in a native window.",
   "author": "Vantage",
   "repository": {
@@ -48,6 +48,7 @@
       "offline.html",
       "gate.html",
       "update.html",
+      "local-ai.html",
       "package.json"
     ],
     "protocols": [

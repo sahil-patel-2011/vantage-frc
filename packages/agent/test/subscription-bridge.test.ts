@@ -557,6 +557,54 @@ describe("resolver fall-through order with a bridge", () => {
     expect(resolved.degraded).toBeUndefined();
   });
 
+  it("routes to a desktop that offers only its Local AI (LM Studio) engine, naming no engine", async () => {
+    const enqueue = vi.fn(async (_input: { requestedEngine: string | null }) => ({ jobId: "job-local" }));
+    const localTransport = { ...stubTransport(async () => ({ state: "done", result: { text: "Defend 254.", model: "local:qwen3-8b" } })), enqueue };
+    const client = routedClient([
+      {
+        match: /FROM ai_bridge_devices/,
+        rows: [
+          {
+            engines: { lmstudio: { available: true, model: "qwen3-8b", version: "lm-studio" } },
+            lastHeartbeatAt: new Date().toISOString(),
+            preferWhenOnline: true,
+          },
+        ],
+      },
+    ]);
+    const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
+      orgId: "org-1",
+      userId: "user-1",
+      promptCachingEnabled: false,
+      feature: "chat",
+      bridgeTransport: localTransport,
+      decrypt: async () => "unused",
+    });
+    expect(resolved.adapter).toBeInstanceOf(SubscriptionBridgeChatAdapter);
+    await resolved.adapter.complete({ message: "plan match 50", context: [] });
+    expect(enqueue.mock.calls[0]?.[0]).toMatchObject({ requestedEngine: null });
+    expect(resolved.adapter.model).toBe("local:qwen3-8b");
+  });
+
+  it("ignores a Local AI engine that is switched off or has no model loaded", async () => {
+    const client = routedClient([
+      {
+        match: /FROM ai_bridge_devices/,
+        rows: [{ engines: { lmstudio: { available: false } }, lastHeartbeatAt: new Date().toISOString(), preferWhenOnline: true }],
+      },
+      { match: /FROM org_llm_keys/, rows: [anthropicKeyRow] },
+    ]);
+    const resolved = await resolveOrgChatAdapterWithProvenance(client as never, {
+      orgId: "org-1",
+      userId: "user-1",
+      promptCachingEnabled: false,
+      feature: "chat",
+      bridgeTransport: transport,
+      decrypt: async () => "sk-ant",
+    });
+    expect(resolved.adapter).not.toBeInstanceOf(SubscriptionBridgeChatAdapter);
+  });
+
   it("skips a stale bridge, resolves the normal chain, and says degraded: bridge-offline", async () => {
     const client = routedClient([
       {

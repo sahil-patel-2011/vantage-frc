@@ -15,7 +15,15 @@ import { useOnline } from "../../../lib/offline/use-online";
 
 type Org = { id: string; name: string; role: string };
 
-type EngineReport = { available?: boolean; version?: string | null; authenticated?: boolean | null };
+type EngineReport = { available?: boolean; version?: string | null; authenticated?: boolean | null; model?: string | null };
+
+/** The desktop app's Local AI bridge (apps/desktop preload); absent in a browser. */
+type DesktopLocalAi = { open: () => Promise<void> };
+function desktopLocalAi(): DesktopLocalAi | null {
+  if (typeof window === "undefined") return null;
+  const bridge = (window as { vantageDesktop?: { localAi?: DesktopLocalAi } }).vantageDesktop?.localAi;
+  return bridge && typeof bridge.open === "function" ? bridge : null;
+}
 
 type Device = {
   id: string;
@@ -48,6 +56,9 @@ const ENGINE_LABELS: Record<string, { name: string; plan: string }> = {
 };
 
 function engineLine(id: string, report: EngineReport): string {
+  if (id === "lmstudio") {
+    return report.available ? `Local AI on this computer · ${report.model ?? "model loaded"}` : "Local AI: off or LM Studio not running";
+  }
   const meta = ENGINE_LABELS[id] ?? { name: id, plan: "" };
   if (!report.available) return `${meta.name}: not installed`;
   const auth =
@@ -96,6 +107,12 @@ export default function AiBridgeClient({
       : (organizations[0]?.id ?? ""),
   );
   const [code, setCode] = useState(initialCode);
+  // Only inside the desktop app; read after mount so the server render and the first client
+  // render agree.
+  const [localAi, setLocalAi] = useState<DesktopLocalAi | null>(null);
+  useEffect(() => {
+    setLocalAi(desktopLocalAi());
+  }, []);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -262,6 +279,18 @@ export default function AiBridgeClient({
         description="Use your own Codex account and computer for your Vantage requests. Your terminal conversations stay separate."
       />
       <OfflineBanner fromCache={fromCache} cachedAt={cachedAt} feature={AI_BRIDGE_FEATURE_LABEL} />
+      {localAi ? (
+        <section className="app-card ai-bridge-local" aria-labelledby="ai-bridge-local-title">
+          <h2 id="ai-bridge-local-title">Local AI on this computer <span className="app-badge">Experimental</span></h2>
+          <p className="app-muted">
+            Run a model in LM Studio on this computer (16 GB memory and 15 GB free disk) and pair it here. Your
+            requests are answered locally while it&apos;s on; your team&apos;s normal AI takes over when it&apos;s off.
+          </p>
+          <Button type="button" variant="secondary" onClick={() => void localAi.open()}>
+            Set up Local AI
+          </Button>
+        </section>
+      ) : null}
 
       {organizations.length === 0 ? (
         <EmptyState
@@ -364,7 +393,9 @@ export default function AiBridgeClient({
                         {device.bridgeVersion ? ` · bridge v${device.bridgeVersion}` : ""}
                       </p>
                       <ul className="ai-bridge-engines">
-                        {Object.keys(ENGINE_LABELS).map((engineId) => (
+                        {/* The desktop app's Local AI reports only its own engine; a CLI connector
+                            reports Claude and ChatGPT. Each lists what it actually offers. */}
+                        {(device.engines.lmstudio ? ["lmstudio"] : Object.keys(ENGINE_LABELS)).map((engineId) => (
                           <li key={engineId}>{engineLine(engineId, device.engines[engineId] ?? { available: false })}</li>
                         ))}
                       </ul>

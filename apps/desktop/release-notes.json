@@ -1,5 +1,17 @@
 {
   "$comment": "What each desktop release changed, written for the person deciding whether to press Update — not a changelog. The release workflow reads the entry matching apps/desktop/package.json version and publishes it in latest.json, which is what the update window renders. Keep every line in plain words: no selector names, no hook names, no file paths. If a line would not mean anything to a student in a pit, it does not belong here.",
+  "0.2.0": {
+    "headline": "Local AI (experimental): answer your AI requests with a model on this computer.",
+    "added": [
+      "Local AI: pair this computer, load a Qwen model in LM Studio, and your Vantage AI requests are answered here instead of in the cloud (press Ctrl+Shift+L, or open Team → Personal AI connection)",
+      "Checks the computer first: Local AI needs 16 GB of memory and 15 GB of free disk space",
+      "When Local AI is off or LM Studio isn't running, your team's normal AI answers as before"
+    ],
+    "fixed": [],
+    "next": [
+      "Pre-match strategy that writes itself before each match"
+    ]
+  },
   "0.1.0": {
     "headline": "Predictions now work at off-season events, and the app updates itself.",
     "added": [

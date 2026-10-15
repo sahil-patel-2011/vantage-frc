@@ -3,6 +3,7 @@ import {
   BrowserWindow,
   ipcMain,
   Menu,
+  safeStorage,
   screen,
   session,
   shell,
@@ -11,7 +12,7 @@ import {
   type WebContents,
 } from "electron";
 import { promises as fs } from "node:fs";
-import { hostname } from "node:os";
+import { hostname, totalmem } from "node:os";
 import { join, resolve } from "node:path";
 import { runLinkFlow, type LinkState } from "./link";
 import {
@@ -34,6 +35,7 @@ import {
 } from "./window-state";
 import { NET_ERR, offlineReasonFromLoadError, shellWaitlistUrl } from "./shell-copy";
 import { UpdateService, type UpdateStatus } from "./update-service";
+import { LocalAiService, type LocalAiConfig, type LocalAiStatus } from "./local-ai-service";
 
 const PARTITION = "persist:vantage";
 const DEEP_LINK_SCHEME = "vantage-frc";
@@ -41,6 +43,106 @@ const startOrigin = sanitizeAppOrigin(process.env.VANTAGE_URL);
 const appHost = new URL(startOrigin).hostname;
 
 const updates = new UpdateService(startOrigin);
+
+// ---------------------------------------------------------------------------
+// Local AI (experimental): LM Studio on this computer answers the person's AI requests
+// ---------------------------------------------------------------------------
+
+let localAiWindow: BrowserWindow | null = null;
+
+function localAiConfigFile(): string {
+  return join(app.getPath("userData"), "local-ai.json");
+}
+
+/** The device token is kept with the OS keychain when one is available, never in plain text if it can be helped. */
+async function readLocalAiConfig(): Promise<Partial<LocalAiConfig> | null> {
+  try {
+    const raw = JSON.parse(await fs.readFile(localAiConfigFile(), "utf8")) as Partial<LocalAiConfig> & { deviceTokenSealed?: string };
+    let deviceToken = raw.deviceToken ?? null;
+    if (raw.deviceTokenSealed && safeStorage.isEncryptionAvailable()) {
+      deviceToken = safeStorage.decryptString(Buffer.from(raw.deviceTokenSealed, "base64"));
+    }
+    return { ...raw, deviceToken };
+  } catch {
+    return null;
+  }
+}
+
+async function writeLocalAiConfig(config: LocalAiConfig): Promise<void> {
+  const { deviceToken, ...rest } = config;
+  const sealed = deviceToken && safeStorage.isEncryptionAvailable()
+    ? { deviceTokenSealed: safeStorage.encryptString(deviceToken).toString("base64"), deviceToken: null }
+    : { deviceToken };
+  await fs.writeFile(localAiConfigFile(), JSON.stringify({ ...rest, ...sealed }, null, 2), { encoding: "utf8", mode: 0o600 });
+}
+
+async function systemCapacity(): Promise<{ totalMemBytes: number; freeDiskBytes: number | null }> {
+  let freeDiskBytes: number | null;
+  try {
+    const stats = await fs.statfs(app.getPath("home"));
+    freeDiskBytes = Number(stats.bavail) * Number(stats.bsize);
+  } catch {
+    freeDiskBytes = null;
+  }
+  return { totalMemBytes: totalmem(), freeDiskBytes };
+}
+
+/** The approval page, signed in as the app's own session, in a window of its own. */
+function openLocalAiApproval(url: string) {
+  if (!isAllowedNavigation(url)) return;
+  const approval = new BrowserWindow({
+    width: 760,
+    height: 720,
+    title: "Approve Local AI",
+    backgroundColor: "#f7f6f2",
+    autoHideMenuBar: true,
+    webPreferences: { partition: PARTITION, contextIsolation: true, nodeIntegration: false, sandbox: true },
+  });
+  approval.setMenuBarVisibility(false);
+  void approval.loadURL(url);
+}
+
+const localAi = new LocalAiService({
+  origin: startOrigin,
+  machineName: hostname() || "Vantage desktop",
+  bridgeVersion: `vantage-desktop-local-${app.getVersion()}`,
+  fetcher: (input, init) => fetch(input, init),
+  readConfig: readLocalAiConfig,
+  writeConfig: writeLocalAiConfig,
+  system: systemCapacity,
+  openApproval: openLocalAiApproval,
+  onStatus: (status: LocalAiStatus) => {
+    if (localAiWindow && !localAiWindow.isDestroyed()) localAiWindow.webContents.send("desktop-local-ai:state", status);
+  },
+});
+
+function openLocalAiWindow() {
+  if (localAiWindow && !localAiWindow.isDestroyed()) {
+    localAiWindow.focus();
+    return;
+  }
+  localAiWindow = new BrowserWindow({
+    width: 600,
+    height: 820,
+    minWidth: 420,
+    minHeight: 560,
+    title: "Vantage — Local AI",
+    backgroundColor: "#f7f6f2",
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  localAiWindow.setMenuBarVisibility(false);
+  localAiWindow.on("closed", () => {
+    localAiWindow = null;
+  });
+  void localAiWindow.loadFile(join(__dirname, "..", "local-ai.html"));
+  void localAi.refreshModels();
+}
 
 /** Cached session state; refreshed from the cookie jar on every change event. */
 let signedIn = false;
@@ -230,6 +332,35 @@ function startLinkFlow(window: BrowserWindow) {
       if (signedIn) applyGate(window);
     }
   });
+}
+
+/** The hosted app may only ask to OPEN the Local AI window; every setting stays on the local page. */
+function senderIsAppOrShell(event: IpcMainInvokeEvent): boolean {
+  if (senderIsShellPage(event)) return true;
+  try {
+    const url = event.senderFrame?.url ?? event.sender.getURL();
+    return typeof url === "string" && new URL(url).origin === new URL(startOrigin).origin;
+  } catch {
+    return false;
+  }
+}
+
+function installLocalAiIpc() {
+  ipcMain.handle("desktop-local-ai:open", (event) => {
+    if (!senderIsAppOrShell(event)) return;
+    openLocalAiWindow();
+  });
+  ipcMain.handle("desktop-local-ai:status", (event) => (senderIsShellPage(event) ? localAi.status() : null));
+  ipcMain.handle("desktop-local-ai:refresh", (event) => (senderIsShellPage(event) ? localAi.refreshModels() : null));
+  ipcMain.handle("desktop-local-ai:set-model", (event, model: unknown) =>
+    senderIsShellPage(event) && typeof model === "string" ? localAi.setModel(model) : null);
+  ipcMain.handle("desktop-local-ai:set-base-url", (event, url: unknown) =>
+    senderIsShellPage(event) && typeof url === "string" ? localAi.setBaseUrl(url) : null);
+  ipcMain.handle("desktop-local-ai:pair", (event) => (senderIsShellPage(event) ? localAi.pair() : null));
+  ipcMain.handle("desktop-local-ai:cancel-pairing", (event) => (senderIsShellPage(event) ? localAi.cancelPairing() : null));
+  ipcMain.handle("desktop-local-ai:unpair", (event) => (senderIsShellPage(event) ? localAi.unpair() : null));
+  ipcMain.handle("desktop-local-ai:set-enabled", (event, enabled: unknown) =>
+    senderIsShellPage(event) ? localAi.setEnabled(enabled === true) : null);
 }
 
 function installShellIpc() {
@@ -495,6 +626,7 @@ function installShortcuts(window: BrowserWindow) {
       if (key === "0") return handled(), void contents.setZoomLevel(0);
       if (key === "=" || key === "+") return handled(), void contents.setZoomLevel(contents.getZoomLevel() + 0.5);
       if (key === "-") return handled(), void contents.setZoomLevel(contents.getZoomLevel() - 0.5);
+      if (key === "l" && input.shift) return handled(), openLocalAiWindow();
       if (key === "o" && input.shift) {
         const href = contents.getURL() || startOrigin;
         if (shouldOpenExternally(href) && isAllowedNavigation(href)) void shell.openExternal(href);
@@ -611,6 +743,8 @@ if (!gotLock) {
     installShellIpc();
     installLinkIpc();
     installUpdateIpc();
+    installLocalAiIpc();
+    void localAi.start();
     updates.watchSession(ses);
     void updates.start(broadcastUpdateStatus);
 
@@ -635,6 +769,7 @@ if (!gotLock) {
    * relaunches Vantage itself.
    */
   app.on("before-quit", () => {
+    localAi.stop();
     updates.stop();
     updates.installOnQuit();
   });
