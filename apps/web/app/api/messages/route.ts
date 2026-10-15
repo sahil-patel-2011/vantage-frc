@@ -497,7 +497,7 @@ async function waitForThreadUpdates(
   conversationId: string,
   since: string,
   waitMs: number,
-): Promise<void> {
+): Promise<boolean> {
   const { userId, orgId } = context;
   const deadline = Date.now() + waitMs;
   let first = true;
@@ -512,11 +512,12 @@ async function waitForThreadUpdates(
       return hasThreadUpdates(client, orgId, conversationId, since, pinsSupported);
     });
     first = false;
-    if (done) return;
+    if (done) return true;
     const remaining = deadline - Date.now();
-    if (remaining <= 0) return;
+    if (remaining <= 0) return false;
     await sleep(Math.min(LONG_POLL_TICK_MS, remaining));
   }
+  return false;
 }
 
 function normalizeClaimedMentionIds(raw: unknown): string[] {
@@ -1364,7 +1365,18 @@ export async function GET(request: Request) {
     if (!orgId) throw new Error("orgId is required");
 
     if (conversationId && since && waitMs > 0 && !NON_THREAD_MODES.has(mode)) {
-      await waitForThreadUpdates({ userId: session.user.id, orgId }, conversationId, since, waitMs);
+      const changed = await waitForThreadUpdates({ userId: session.user.id, orgId }, conversationId, since, waitMs);
+      if (!changed) {
+        // Nothing new in this thread: answer with the inbox only (other conversations' unread
+        // counts still move) instead of re-reading the thread and rewriting its read state.
+        // An open chat tab ran that full reload every few seconds even when nobody typed.
+        const quiet = await withRls({ userId: session.user.id, orgId }, async (client) => {
+          await requireMembership(client, orgId, session.user.id);
+          const conversations = await listInbox(client, orgId, session.user.id);
+          return { unchanged: true, conversations, unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0) };
+        });
+        return Response.json(quiet);
+      }
     }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {

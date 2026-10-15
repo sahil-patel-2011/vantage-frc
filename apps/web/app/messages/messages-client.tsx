@@ -320,6 +320,8 @@ export default function MessagesClient({
         throw new Error(data.error || "Could not load messages.");
       }
       applyInbox(data.conversations ?? []);
+      // A long poll that saw nothing new carries the inbox only; the thread stays as it is.
+      if (data.unchanged) return false;
       if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
       // Refreshed on every poll, not just the initial load: a supervisor added to an existing
       // thread (policy tightened after the fact) has to show up without a manual reload.
