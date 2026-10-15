@@ -118,22 +118,21 @@ for (const width of [390, 1440]) {
       await page.goto(`/competition?orgId=${orgId}`);
       const tasks = page.getByRole("tablist", { name: "Scouting task", exact: true });
       await tasks.getByRole("tab", { name: "Pit", exact: true }).click();
-      const team = page.getByRole("textbox", { name: "Team number", exact: true });
-      await expect(team).toHaveValue("");
+      // One field finds a team: the pit search (the separate Team number box shows only when
+      // there is no pit list). A fresh selection means no team chip is pressed.
+      const pressed = page.locator('.pit-progress button[aria-pressed="true"]');
+      await expect(pressed).toHaveCount(0);
       await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveCount(0);
       await page.reload();
       await expect(tasks.getByRole("tab", { name: "Pit", exact: true })).toHaveAttribute("aria-selected", "true");
-      await team.fill("0");
-      await expect(team).toHaveValue("0");
-      await expect(team).toHaveAttribute("aria-invalid", "true");
-      const search = page.getByRole("searchbox", { name: "Find an unvisited pit", exact: true });
+      const search = page.getByRole("searchbox", { name: "Team number or name", exact: true });
       await search.fill("9999");
       await page.getByRole("button", { name: /^Pit scout team 9999/ }).click();
-      await expect(team).toHaveValue("9999");
+      await expect(pressed).toHaveCount(1);
       await page.getByRole("textbox", { name: "Notes", exact: true }).fill(marker);
       await page.locator(".scout-save-button").click();
       await expect(page.locator("#scout-save-confirmation")).toContainText("Saved pit report for 9999");
-      await expect(team).toHaveValue("");
+      await expect(pressed).toHaveCount(0);
       await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveCount(0);
       await expect.poll(async () => (await db.query("SELECT count(*)::int AS n FROM pit_scout_entries WHERE org_id=$1 AND payload->>'notes'=$2", [orgId, marker])).rows[0].n).toBe(1);
       await expect(page.getByRole("button", { name: /^Pit scout team 9999/ })).toHaveCount(0);
@@ -143,7 +142,56 @@ for (const width of [390, 1440]) {
       await page.getByRole("textbox", { name: "Notes", exact: true }).fill("Discard this draft");
       page.once("dialog", dialog => dialog.accept());
       await page.getByRole("button", { name: "Cancel report", exact: true }).click();
-      await expect(team).toHaveValue("");
+      await expect(pressed).toHaveCount(0);
+      await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveCount(0);
+      const audit = await new AxeBuilder({ page }).include(".scout-page").analyze();
+      expect(audit.violations).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: info.outputPath(`match-correction-${width}.png`), fullPage: true });
+    } finally {
+      await db.query("DELETE FROM match_scout_entries WHERE org_id=$1 AND payload->>'notes'=$2", [orgId, marker]);
+      if(schemaId) await db.query("DELETE FROM scout_schemas WHERE org_id=$1 AND id=$2",[orgId,schemaId]);
+      await db.end();
+    }
+  });
+}
+
+for (const width of [390, 1440]) {
+  test(`pit search, save and cancel leave a fresh robot selection at ${width}px`, async ({ page, context }, info) => {
+    test.setTimeout(120_000);
+    expect(await signInAs(context, "owner")).toBe(true);
+    const db = testDatabase();
+    const marker = `Pit reset ${randomUUID()}`;
+    try {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`/competition?orgId=${orgId}`);
+      const tasks = page.getByRole("tablist", { name: "Scouting task", exact: true });
+      await tasks.getByRole("tab", { name: "Pit", exact: true }).click();
+      // One field finds a team: the pit search (the separate Team number box shows only when
+      // there is no pit list). A fresh selection means no team chip is pressed.
+      const pressed = page.locator('.pit-progress button[aria-pressed="true"]');
+      await expect(pressed).toHaveCount(0);
+      await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveCount(0);
+      await page.reload();
+      await expect(tasks.getByRole("tab", { name: "Pit", exact: true })).toHaveAttribute("aria-selected", "true");
+      const search = page.getByRole("searchbox", { name: "Team number or name", exact: true });
+      await search.fill("9999");
+      await page.getByRole("button", { name: /^Pit scout team 9999/ }).click();
+      await expect(pressed).toHaveCount(1);
+      await page.getByRole("textbox", { name: "Notes", exact: true }).fill(marker);
+      await page.locator(".scout-save-button").click();
+      await expect(page.locator("#scout-save-confirmation")).toContainText("Saved pit report for 9999");
+      await expect(pressed).toHaveCount(0);
+      await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveCount(0);
+      await expect.poll(async () => (await db.query("SELECT count(*)::int AS n FROM pit_scout_entries WHERE org_id=$1 AND payload->>'notes'=$2", [orgId, marker])).rows[0].n).toBe(1);
+      await expect(page.getByRole("button", { name: /^Pit scout team 9999/ })).toHaveCount(0);
+      await search.fill("118");
+      await page.getByRole("button", { name: /^Pit scout team 118/ }).click();
+      await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveValue("");
+      await page.getByRole("textbox", { name: "Notes", exact: true }).fill("Discard this draft");
+      page.once("dialog", dialog => dialog.accept());
+      await page.getByRole("button", { name: "Cancel report", exact: true }).click();
+      await expect(pressed).toHaveCount(0);
       await expect(page.getByRole("textbox", { name: "Notes", exact: true })).toHaveCount(0);
       const audit = await new AxeBuilder({ page }).include(".scout-page").analyze();
       expect(audit.violations).toEqual([]);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { loadRoster, saveRoster, type OfflineRosterTeam } from "../../lib/intel/offline-teams";
 import { listPendingEntries } from "../../lib/scout-offline";
 import { useScoutQueueRefresh } from "../../lib/scouting/use-queue-refresh";
@@ -20,6 +20,7 @@ export function PitProgress({
   savedTeamKey = null,
   ownTeamNumber = null,
   initialRoster,
+  fallback = null,
 }: {
   orgId: string | null | undefined;
   eventKey: string;
@@ -30,6 +31,9 @@ export function PitProgress({
   /** Our own robot needs no pit visit; counting it made this "of 24" while Home said "of 23". */
   ownTeamNumber?: number | null;
   initialRoster?: RosterTeam[];
+  /** The plain team-number field, shown only when there is no pit list to search. One way to
+   * find a team, not two inputs ("Find an unvisited pit" above "Team number"). */
+  fallback?: ReactNode;
 }) {
   const [teams, setTeams] = useState<RosterTeam[] | null>(null);
   const [savedHere, setSavedHere] = useState<string[]>([]);
@@ -50,7 +54,10 @@ export function PitProgress({
   }, [orgId, eventKey]);
   useScoutQueueRefresh(refreshQueue);
   useEffect(() => {
-    if (savedTeamKey) setSavedHere((prev) => (prev.includes(savedTeamKey) ? prev : [...prev, savedTeamKey]));
+    if (!savedTeamKey) return;
+    setSavedHere((prev) => (prev.includes(savedTeamKey) ? prev : [...prev, savedTeamKey]));
+    // A saved visit starts the next one: an empty search, the unvisited pits showing again.
+    setQuery("");
   }, [savedTeamKey]);
   useEffect(() => {
     setSavedHere([]); setQueuedTeams([]); setQuery("");
@@ -96,10 +103,13 @@ export function PitProgress({
     };
   }, [orgId, eventKey, initialRoster]);
 
-  if (!roster?.length || !roster.some((team) => typeof team.pitScouted === "number")) return null;
+  if (!roster?.length || !roster.some((team) => typeof team.pitScouted === "number")) return <>{fallback}</>;
   const missing = roster.filter((team) => (team.pitScouted ?? 0) === 0);
   const visited = roster.length - missing.length;
   const needle = query.trim().toLowerCase().replace(/^frc/, "");
+  // A typed team number that is not an unvisited pit (already visited, or not on the list) still
+  // opens: the search box is also the team-number field.
+  const typedNumber = /^\d{1,5}$/.test(needle) ? Number(needle) : null;
   const choices = missing.filter(team => !needle || String(team.teamNumber).startsWith(needle) || team.nickname?.toLowerCase().includes(needle))
     .sort((a,b) => a.teamNumber - b.teamNumber);
 
@@ -115,8 +125,8 @@ export function PitProgress({
       </header>
       {missing.length ? (
         <>
-        <label className="pit-progress-search"><span className="sr-only">Find an unvisited pit</span>
-          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Find a team to visit" />
+        <label className="pit-progress-search"><span className="sr-only">Team number or name</span>
+          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Team number or name" />
         </label>
         <ul>
           {choices.slice(0, 16).map((team) => {
@@ -136,10 +146,26 @@ export function PitProgress({
           })}
           {choices.length > 16 ? <li className="pit-progress-more">+{choices.length - 16} · search to find them</li> : null}
         </ul>
-        {choices.length === 0 ? <p className="app-muted">No unvisited pits match “{query}”. You can still type a team number below.</p> : null}
+        {typedNumber != null && !choices.some((team) => team.teamNumber === typedNumber) ? (
+          <button
+            type="button"
+            className="pit-progress-typed"
+            aria-pressed={teamKey === `frc${typedNumber}`}
+            aria-label={`Pit scout team ${typedNumber}`}
+            onClick={() => onTeamKey(`frc${typedNumber}`)}
+          >
+            Scout team {typedNumber}
+          </button>
+        ) : null}
+        {choices.length === 0 && typedNumber == null ? (
+          <p className="app-muted">No unvisited pits match “{query}”. Type a team number to scout it anyway.</p>
+        ) : null}
         </>
       ) : (
-        <p className="app-muted">Every team at this event has a pit report.</p>
+        <>
+          <p className="app-muted">Every team at this event has a pit report.</p>
+          {fallback}
+        </>
       )}
     </section>
   );

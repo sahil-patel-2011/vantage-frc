@@ -47,10 +47,18 @@ export async function GET(request: Request) {
          FROM org_active_context WHERE org_id = $1::uuid LIMIT 1`,
         [orgId],
       );
+      // The same rule POST enforces, answered here so the owner sees "Turn on the event board"
+      // with the boards instead of waiting on a second request (and seeing "an owner or admin…").
+      const admin = await client.query(
+        `SELECT 1 FROM memberships
+         WHERE org_id = $1 AND user_id = $2 AND role IN ('owner', 'admin')`,
+        [orgId, session.user.id],
+      );
       return {
         boards,
         tokens,
         activeEventKey: ctx.rows[0]?.activeEventKey ?? null,
+        canManage: Boolean(admin.rowCount),
       };
     });
     return Response.json(data);

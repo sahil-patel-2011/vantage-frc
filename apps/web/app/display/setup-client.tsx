@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ActionMenu, EmptyState, PageHeader, Button, Modal, askConfirm } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Button, Modal, TextBlockSkeleton, askConfirm } from "../../components/ui";
 import {
   PRESET_META,
   PRESET_WIDGETS,
@@ -87,14 +87,16 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
   const [minted, setMinted] = useState<MintedToken | null>(null);
   const [showOlderLinks, setShowOlderLinks] = useState(false);
   const [pairChoice, setPairChoice] = useState<PairChoice>("");
-  const [canSync, setCanSync] = useState(false);
+  // null until we know: the owner briefly read "An owner or admin turns the event board on".
+  const [canSync, setCanSync] = useState<boolean | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     void fetchProductSession(orgId).then((session) => {
       if (cancelled) return;
       const membership = session?.memberships?.find((entry) => entry.orgId === orgId);
-      setCanSync(strategyCanSync(membership?.role ?? session?.role));
+      // The boards answer (canManage) wins when it has arrived.
+      setCanSync((current) => current ?? strategyCanSync(membership?.role ?? session?.role));
     });
     return () => {
       cancelled = true;
@@ -114,6 +116,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         boards?: Board[];
         tokens?: TokenRow[];
         activeEventKey?: string | null;
+        canManage?: boolean;
         error?: string;
       };
       if (!r.ok) {
@@ -127,6 +130,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
       setBoards(d.boards ?? []);
       setTokens(d.tokens ?? []);
       setActiveEventKey(d.activeEventKey ?? null);
+      if (typeof d.canManage === "boolean") setCanSync(d.canManage);
     } catch {
       setFetchFailed(true);
       setMessage("Network error: couldn't load the Pit TV boards.");
@@ -410,7 +414,10 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
           ) : null}
 
           {loading && !boards.length ? (
-            <p className="display-empty">Loading boards…</p>
+            <div className="display-empty" role="status" aria-busy="true">
+              <span className="sr-only">Loading boards</span>
+              <TextBlockSkeleton lines={3} />
+            </div>
           ) : (
             <EventBoardCard
               orgId={orgId}
