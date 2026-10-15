@@ -336,3 +336,9 @@
 .strategy-evaluation p, .strategy-evaluation small { color: var(--muted); }
 .strategy-evaluation dl > div { padding: 12px 0; border-top: 1px solid var(--line); }
 .strategy-evaluation dd { margin: 6px 0 0; }
+
+/* Team history: one short paragraph per robot's team, no table. */
+.strategy-history-list { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.strategy-history-list li { padding-top: 10px; border-top: 1px solid var(--line); }
+.strategy-history-list p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.strategy-history-list p:first-child { color: var(--ink); }

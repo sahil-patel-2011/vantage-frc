@@ -79,6 +79,8 @@ export type WinLeverInput = {
   /** Opponent robots, with the ratings the prediction already computed. */
   opponents: Array<{ teamKey: string; rating: number }>;
   engineId?: StrategyEngineId;
+  /** Same per-year field summaries the prediction used, so the levers agree with it. */
+  seasonScales?: import("./season-scale").SeasonScale[];
 };
 
 /**
@@ -93,7 +95,7 @@ export function winLevers(input: WinLeverInput): WinLever[] {
     input.engineId ?? "weighted-current-v1",
   );
   const rateWith = (operational?: TeamOperationalSignal) =>
-    rateTeam(input.teamKey, input.currentYear, input.seasons, operational, policy).rating;
+    rateTeam(input.teamKey, input.currentYear, input.seasons, operational, policy, input.seasonScales).rating;
 
   const baseRating = rateWith(input.operational);
   const opponentTotal = input.opponents.reduce((total, row) => total + row.rating, 0);

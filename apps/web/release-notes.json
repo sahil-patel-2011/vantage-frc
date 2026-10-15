@@ -2,6 +2,19 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2402,
+      "date": "2026-10-15",
+      "headline": "Predictions use ten seasons of history, fairly compared",
+      "changes": [
+        "Win chances weigh up to ten seasons, this season first and each earlier one counting about half as much",
+        "A past game's numbers are compared on this season's scale, since every game scores differently",
+        "A long past season can no longer outweigh this season's first event",
+        "Strategy shows each team's history in words: top 10% for years running, climbing, or slipping",
+        "Platform admins can load ten past seasons of team ratings in one step",
+        "Sign-in and account recovery buttons now match the app's blue"
+      ]
+    },
+    {
       "pr": 2400,
       "date": "2026-10-15",
       "headline": "Fewer buttons, and errors only when something failed",

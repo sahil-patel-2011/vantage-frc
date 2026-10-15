@@ -150,6 +150,11 @@ export type StrategyView =
       playbook: StrategyPlaybookView;
       matchup: AllianceMatchup;
       tendencies: OpponentTendency[];
+      /**
+       * Each team's recent seasons in words ("top 10% in 4 of its last 5 seasons", "climbing"),
+       * read against each year's whole field. Empty lines when there is no season history.
+       */
+      teamTrends?: Record<string, { direction: "rising" | "steady" | "falling" | "new" | "unknown"; lines: string[] }>;
       pickListHints: PickListHint[];
       /** Which scout entries influenced reliability/foul/capability callouts. */
       scoutProvenance: ScoutProvenanceRef[];

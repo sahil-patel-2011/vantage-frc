@@ -127,7 +127,9 @@ export {
   type StrategyEngineSummary,
   type StrategyEngineTier,
 } from "./engine-tier";
-export { seasonWeight } from "./season-weight";
+export { seasonWeight, seasonSampleWeight, SEASON_WEIGHTS, MAX_SEASONS_COUNTED } from "./season-weight";
+export * from "./season-scale";
+export * from "./team-trend";
 export {
   allianceWinProbability,
   buildAllianceWinBreakdown,
@@ -327,10 +329,10 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
   const breakdown = buildAllianceWinBreakdown(engineInput);
   const operations = new Map((input.operations ?? []).map((value) => [value.teamKey, value]));
   const red = input.red.map((team) =>
-    rateTeam(team, input.currentYear, input.seasons, operations.get(team), policy),
+    rateTeam(team, input.currentYear, input.seasons, operations.get(team), policy, input.seasonScales),
   );
   const blue = input.blue.map((team) =>
-    rateTeam(team, input.currentYear, input.seasons, operations.get(team), policy),
+    rateTeam(team, input.currentYear, input.seasons, operations.get(team), policy, input.seasonScales),
   );
   const sum = (values: typeof red, key: keyof (typeof red)[number]) =>
     values.reduce((total, value) => total + Number(value[key] ?? 0), 0);
@@ -366,7 +368,7 @@ export function predictMatch(input: MatchPredictionInput): MatchPrediction {
 
   const seasonBit = policy.thisSeasonOnly
     ? "this-season signals only"
-    : "season weights 1.0 / 0.55 / 0.30";
+    : `up to ten seasons weighted 1.0 / 0.55 / 0.30 …${input.seasonScales?.length ? ", each on this season's scale" : ""}`;
   const factors: PredictionFactor[] = [
     {
       name: "weighted scoring",
