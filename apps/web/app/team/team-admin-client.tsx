@@ -138,6 +138,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     setAccessRequests(data.accessRequests);
     setProviders(data.providers);
     setDeliveryMode(data.deliveryMode);
+    if (data.actor?.role) setActor(data.actor);
   }, []);
 
   const load = useCallback(async () => {
@@ -223,12 +224,18 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
 
       let nextMembers: Member[] = viewRef.current?.members ?? [];
       const membersLoaded = membersResult.ok;
+      // Who is looking: the members answer if it came, else the (faster) invites answer — so the
+      // owner keeps the Mentor choice and their own row stays "you" even when members is slow.
+      const actorSource = membersLoaded ? membersData : invitesResult.ok ? data : null;
+      const nextActor = actorSource && typeof actorSource.actorRole === "string"
+        ? {
+            userId: typeof actorSource.actorUserId === "string" ? actorSource.actorUserId : null,
+            role: actorSource.actorRole,
+          }
+        : (viewRef.current?.actor ?? null);
+      if (nextActor) setActor(nextActor);
       if (membersLoaded) {
         nextMembers = Array.isArray(membersData.members) ? (membersData.members as Member[]) : [];
-        setActor({
-          userId: typeof membersData.actorUserId === "string" ? membersData.actorUserId : null,
-          role: typeof membersData.actorRole === "string" ? membersData.actorRole : null,
-        });
         setMembershipFetchFailed(false);
         setMembershipErrorStatus(null);
         setMembershipErrorMessage("");
@@ -260,6 +267,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
           membersData.hubAccessByUser && typeof membersData.hubAccessByUser === "object"
             ? (membersData.hubAccessByUser as Record<string, HubAccessRow[]>)
             : (viewRef.current?.hubAccessByUser ?? {}),
+        ...(nextActor ? { actor: nextActor } : {}),
       };
       applySnapshot(snapshot);
       setFromCache(false);
@@ -689,6 +697,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         lifetimeHours={lifetimeHours}
         setLifetimeHours={setLifetimeHours}
         canInviteMentor={actor.role === "owner"}
+        roleKnown={actor.role !== null}
         emailRef={emailRef}
         inviteBusy={inviteBusy}
         inviteNotice={inviteNotice}
