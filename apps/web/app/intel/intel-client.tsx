@@ -6,7 +6,7 @@ import {
   UsageCutoffBanner,
   resolveCutoffErrorCode,
 } from "../../components/usage-cutoff-banner";
-import { EmptyState, PageHeader } from "../../components/ui";
+import { EmptyState, PageHeader, Skeleton } from "../../components/ui";
 import {
   classifyIntelShell,
   intelNextActions,
@@ -47,6 +47,7 @@ import {
   searchRosterOffline,
 } from "../../lib/intel/offline-teams";
 import type { EventRatingRow } from "../../lib/intel/lovat-lookup";
+import { classifyLookupFailure, teamSearchEmptyCopy } from "../../lib/intel/team-search";
 import { useAppleMotion } from "../../lib/motion/use-apple-motion";
 import "./intel.css";
 
@@ -173,8 +174,24 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  // A search in flight, and what the last finished search found nothing for. While either is
+  // set the previous team's board steps aside, so 3091 no longer sits there looking like the
+  // answer to "254".
+  const [searching, setSearching] = useState(false);
+  const [notFound, setNotFound] = useState<string | null>(null);
+  // One lookup at a time: a newer search or team tap cancels the older request.
+  const lookupAbortRef = useRef<AbortController | null>(null);
   const viewRef = useRef<IntelBoardView | null>(null);
   viewRef.current = view;
+
+  function startLookup(): { controller: AbortController; signal: AbortSignal } {
+    lookupAbortRef.current?.abort();
+    const controller = new AbortController();
+    lookupAbortRef.current = controller;
+    return { controller, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) };
+  }
+
+  useEffect(() => () => lookupAbortRef.current?.abort(), []);
 
   const chemistryHref = comparison
     ? withOrgHref(
@@ -236,69 +253,87 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
 
   async function search(event: FormEvent) {
     event.preventDefault();
-    setStatus("Looking up teams…");
+    const asked = query.trim();
+    if (!asked) return;
+    const { controller, signal } = startLookup();
+    // The previous answer is stale the moment a new search starts.
+    setResults([]);
+    setNotFound(null);
+    setSearching(true);
+    setStatus("");
     setFetchFailed(false);
     setErrorStatus(null);
     setCutoffCode(null);
     try {
-      const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=${encodeURIComponent(query)}`, {
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-      });
+      const response = await fetch(`/api/intel/teams?orgId=${orgId}&q=${encodeURIComponent(asked)}`, { signal });
       const data = (await response.json()) as {
         teams?: IntelSearchTeam[];
         activeEvent?: IntelActiveEvent | null;
         error?: string;
       };
+      if (controller.signal.aborted) return;
       if (!response.ok) {
         setErrorStatus(response.status);
-        if (viewRef.current) {
-          setFromCache(true);
-          setStatus("Could not refresh the lookup. Showing the last copy on this device.");
-          setFetchFailed(false);
-        } else {
-          setFetchFailed(true);
-          setResults([]);
-          setStatus(data.error ?? "Could not search teams");
-        }
+        setStatus(data.error ?? "Could not search teams. Try again.");
         setMessageKind("error");
         return;
       }
-      setResults(data.teams ?? []);
+      const teams = data.teams ?? [];
+      setResults(teams);
+      setNotFound(teams.length ? null : teamSearchEmptyCopy(asked));
       if (data.activeEvent) {
         setView((current) => (current ? { ...current, activeEvent: data.activeEvent ?? current.activeEvent } : current));
       }
       setStatus("");
       setMessageKind("success");
-    } catch {
-      // No signal: search the event's saved team list instead of failing.
-      const saved = roster.length ? roster : ((await loadRoster(orgId))?.roster ?? []);
-      if (saved.length) {
-        setResults(
-          searchRosterOffline(saved, query).map((team) => ({
-            teamKey: team.teamKey,
-            teamNumber: team.teamNumber,
-            nickname: team.nickname,
-            city: null,
-            stateProv: null,
-            atActiveEvent: true,
-          })),
-        );
-        setStatus("Offline — searched this event's teams saved on this device.");
-        setMessageKind("success");
-        setFetchFailed(false);
+    } catch (error) {
+      const failure = classifyLookupFailure(error, {
+        superseded: controller.signal.aborted,
+        online: typeof navigator === "undefined" || navigator.onLine !== false,
+      });
+      if (failure === "superseded") return;
+      if (failure === "timeout") {
+        // Slow is not offline: say so and leave the search box ready for another try.
+        setStatus("Search is taking longer than usual. Try again in a moment.");
+        setMessageKind("error");
         return;
       }
-      if (viewRef.current) {
-        setFromCache(true);
-        setStatus("Could not refresh the lookup. Showing the last copy on this device.");
-        setFetchFailed(false);
+      // No signal (or the connection dropped): search the event's saved team list instead.
+      const saved = roster.length ? roster : ((await loadRoster(orgId))?.roster ?? []);
+      if (lookupAbortRef.current !== controller) return;
+      const matches = searchRosterOffline(saved, asked).map((team) => ({
+        teamKey: team.teamKey,
+        teamNumber: team.teamNumber,
+        nickname: team.nickname,
+        city: null,
+        stateProv: null,
+        atActiveEvent: true,
+      }));
+      setResults(matches);
+      if (saved.length) {
+        setNotFound(matches.length ? null : teamSearchEmptyCopy(asked, { offline: true }));
+        setStatus(matches.length ? "Offline — searched this event's teams saved on this device." : "");
+        setMessageKind("success");
       } else {
-        setFetchFailed(true);
-        setResults([]);
-        setStatus("Network error — please try again.");
+        setStatus(
+          failure === "offline"
+            ? "You're offline and this device has no saved team list yet. Search again when you're back online."
+            : "Couldn't reach Vantage. Check your connection and try again.",
+        );
+        setMessageKind("error");
       }
-      setMessageKind("error");
+    } finally {
+      if (lookupAbortRef.current === controller) setSearching(false);
     }
+  }
+
+  /** Back to the open team after a search: drops the search answer, keeps the board. */
+  function clearSearch() {
+    lookupAbortRef.current?.abort();
+    setResults([]);
+    setNotFound(null);
+    setSearching(false);
+    setStatus("");
   }
 
   /** No signal, or the lookup failed: show this team as saved on the device, if it is. */
@@ -307,6 +342,8 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
     const board = saved ? boardFromTeamResponse(saved.data, viewRef.current?.activeEvent ?? null) : null;
     if (!saved || !board) return false;
     setView(board);
+    setResults([]);
+    setNotFound(null);
     setSummary("");
     setComparison(null);
     setFromCache(true);
@@ -318,16 +355,28 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
   }
 
   async function select(teamNumber: number) {
+    const { controller, signal } = startLookup();
+    setSearching(false);
     setStatus(`Loading Team ${teamNumber}…`);
+    setMessageKind("success");
     setLoadingTeam(true);
     setFetchFailed(false);
     setErrorStatus(null);
     setCutoffCode(null);
+    // "Showing the last copy" is only true when the board on screen is this same team.
+    const sameTeam = () => viewRef.current?.intel.team.teamNumber === teamNumber;
     try {
-      const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`, {
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-      });
-      const data = (await response.json()) as TeamResponse;
+      const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`, { signal });
+      const data = (await response.json()) as TeamResponse & { notFound?: boolean };
+      if (controller.signal.aborted) return;
+      if (response.ok && !data.team && data.notFound) {
+        // Not in Vantage's shared team list: a plain answer, not "could not refresh".
+        setResults([]);
+        setNotFound(teamSearchEmptyCopy(String(teamNumber)));
+        setStatus("");
+        if (!sameTeam()) rememberTeamInUrl(viewRef.current?.intel.team.teamNumber ?? null);
+        return;
+      }
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           setView(null);
@@ -341,10 +390,12 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
           return;
         }
         if (await showSavedTeam(teamNumber)) return;
-        if (viewRef.current) {
+        if (sameTeam()) {
           setFromCache(true);
           setStatus("Could not refresh this team. Showing the last copy on this device.");
           setFetchFailed(false);
+        } else if (viewRef.current) {
+          setStatus(data.error ?? `Could not load Team ${teamNumber}. Try again.`);
         } else {
           setErrorStatus(response.status);
           setFetchFailed(true);
@@ -354,10 +405,12 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
         return;
       }
       if (!data.team) {
-        if (viewRef.current) {
+        if (sameTeam()) {
           setFromCache(true);
           setStatus("Could not refresh this team. Showing the last copy on this device.");
           setFetchFailed(false);
+        } else if (viewRef.current) {
+          setStatus(`Could not load Team ${teamNumber}. Try again.`);
         } else {
           setFetchFailed(true);
           setStatus("Could not load team");
@@ -369,6 +422,8 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
       void saveTeamResponse(orgId, teamNumber, data);
       rememberTeamInUrl(teamNumber);
       setView(next);
+      setResults([]);
+      setNotFound(null);
       setSummary("");
       setComparison(null);
       setStatus("");
@@ -376,19 +431,35 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
       setFromCache(false);
       setCachedAt(null);
       await persistIntelSnapshot(orgId, next);
-    } catch {
-      if (await showSavedTeam(teamNumber)) return;
-      if (viewRef.current) {
+    } catch (error) {
+      const failure = classifyLookupFailure(error, {
+        superseded: controller.signal.aborted,
+        online: typeof navigator === "undefined" || navigator.onLine !== false,
+      });
+      if (failure === "superseded") return;
+      if (failure !== "timeout" && (await showSavedTeam(teamNumber))) return;
+      if (lookupAbortRef.current !== controller) return;
+      if (sameTeam()) {
         setFromCache(true);
-        setStatus("Could not refresh this team. Showing the last copy on this device.");
+        setStatus(
+          failure === "timeout"
+            ? "This team is taking longer than usual to refresh. Showing the last copy on this device."
+            : "Could not refresh this team. Showing the last copy on this device.",
+        );
         setFetchFailed(false);
+      } else if (viewRef.current) {
+        setStatus(
+          failure === "timeout"
+            ? `Team ${teamNumber} is taking longer than usual to load. Try again in a moment.`
+            : `Could not load Team ${teamNumber} — check your connection and try again.`,
+        );
       } else {
         setFetchFailed(true);
-        setStatus("Network error — please try again.");
+        setStatus(failure === "timeout" ? "This is taking longer than usual. Try again in a moment." : "Network error — please try again.");
       }
       setMessageKind("error");
     } finally {
-      setLoadingTeam(false);
+      if (lookupAbortRef.current === controller) setLoadingTeam(false);
     }
   }
 
@@ -554,6 +625,9 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
     }
   }
 
+  // A search in flight or its answer on screen: the open team's board steps aside (a Back link
+  // brings it back), so it is never mistaken for the answer to the new search.
+  const boardAside = searching || results.length > 0 || notFound != null;
   const findingCount = view?.intel.findings.length ?? 0;
   const readyActions = intelNextActions({
     orgId,
@@ -589,13 +663,27 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
         </div>
       ) : null}
 
+      {searching ? <IntelSearchSkeleton query={query.trim()} /> : null}
+
+      {notFound ? (
+        <p className="intel-empty intel-not-found" role="status">
+          {notFound}
+        </p>
+      ) : null}
+
       <IntelSearchResults results={results} onSelect={(teamNumber) => void select(teamNumber)} />
 
-      {!view && results.length === 0 && roster.length > 0 ? (
+      {view && boardAside && !searching ? (
+        <button type="button" className="text-button intel-roster-back" onClick={clearSearch}>
+          ← Back to Team {view.intel.team.teamNumber}
+        </button>
+      ) : null}
+
+      {!view && !searching && results.length === 0 && roster.length > 0 ? (
         <IntelEventRoster roster={roster} onSelect={(teamNumber) => void select(teamNumber)} />
       ) : null}
 
-      {shell === "empty" && results.length === 0 && roster.length === 0 ? (
+      {shell === "empty" && !searching && !notFound && results.length === 0 && roster.length === 0 ? (
         <EmptyState
           soft
           badge={emptyCopy.badge}
@@ -605,7 +693,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
         />
       ) : null}
 
-      {shell === "ready" && view ? (
+      {shell === "ready" && view && !boardAside ? (
         <>
           {roster.length > 0 ? (
             <button
@@ -614,6 +702,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
               onClick={() => {
                 setView(null);
                 setResults([]);
+                setNotFound(null);
                 setSummary("");
                 setComparison(null);
                 rememberTeamInUrl(null);
@@ -680,5 +769,23 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
         </>
       ) : null}
     </Container>
+  );
+}
+
+/** Placeholder cards while a search runs, shaped like the result cards that replace them. */
+function IntelSearchSkeleton({ query }: { query: string }) {
+  return (
+    <section className="intel-results intel-results-loading" aria-busy="true" aria-label="Searching teams">
+      <span className="intel-visually-hidden" role="status">
+        {query ? `Searching for ${query}…` : "Searching…"}
+      </span>
+      {[0, 1, 2].map((index) => (
+        <div key={index} className="intel-result-skeleton" aria-hidden="true">
+          <Skeleton width="40%" height={16} />
+          <Skeleton width="80%" height={13} />
+          <Skeleton width="55%" height={12} />
+        </div>
+      ))}
+    </section>
   );
 }

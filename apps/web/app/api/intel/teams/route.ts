@@ -2,6 +2,7 @@ import { IntelResearchRepository } from "@vantage/intel-research/repository";
 import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth";
 import type { EventRatingRow } from "../../../../lib/intel/lovat-lookup";
 import { canEditLookupNotes, parseLookupNote } from "../../../../lib/intel/lookup-notes";
+import { searchTeamsRef } from "../../../../lib/intel/team-search";
 import { loadEventOpr } from "../../../../lib/opr/alliance-results";
 
 export async function GET(request: Request) {
@@ -16,7 +17,8 @@ export async function GET(request: Request) {
         const activeEvent = await repository.getActiveEvent(orgId!);
         if (Number.isInteger(teamNumber) && teamNumber > 0) {
           const intel = await repository.getTeamIntel(orgId!, teamNumber);
-          if (!intel) return { team: null, activeEvent };
+          // Not in the shared team cache: say so (the page explains it), never wait on TBA here.
+          if (!intel) return { team: null, notFound: true, activeEvent };
           const [observations, similarTeams, field] = await Promise.all([
             repository.getScoutObservations(orgId!, intel.team.teamKey, true),
             repository.getSimilarTeams(intel.team.teamKey),
@@ -78,7 +80,8 @@ export async function GET(request: Request) {
           const roster = activeEvent?.eventKey ? await repository.eventRoster(orgId!, activeEvent.eventKey) : [];
           return { teams: [], roster, activeEvent };
         }
-        return { teams: await repository.searchTeams(orgId!, query), activeEvent };
+        // Every team Vantage knows (teams_ref), number first, then names — not only the event's.
+        return { teams: await searchTeamsRef(client, orgId!, query), activeEvent };
       }),
     );
   } catch (error) {
