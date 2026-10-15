@@ -4,7 +4,7 @@ import { conflictClosedReason, conflictFieldLabel, conflictScoutName, conflictTi
 describe("conflict card words", () => {
   it("names the match and robot plainly", () => {
     expect(conflictTitle("2026gacmp_qm7", "frc3310")).toBe("Qual 7 · 3310");
-    expect(conflictTitle("2026gacmp_sf2m1", "frc118")).toBe("Semi 2-1 · 118");
+    expect(conflictTitle("2026gacmp_sf2m1", "frc118")).toBe("Playoff 2 · 118");
   });
 
   it("takes the field label from the form, else spells the key out", () => {

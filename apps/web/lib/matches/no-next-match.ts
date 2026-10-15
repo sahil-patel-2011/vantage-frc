@@ -6,6 +6,7 @@
  * and none of them said the most common reason: every match at this event is already played.
  */
 
+import { matchLabelFromKey as sharedLabelFromKey } from "./match-label";
 import type { PoolClient } from "@neondatabase/serverless";
 import { matchStillAheadSql } from "./match-ahead-sql";
 
@@ -35,14 +36,9 @@ export function matchShortLabel(compLevel: string, matchNumber: number, setNumbe
   return `${level} ${setNumber}-${matchNumber}`;
 }
 
-/** "2026gacmp_qm28" -> "Qual 28", "…_sf2m1" -> "Semi 2-1". The raw key if it is not a match key. */
+/** "2026gacmp_qm28" -> "Qual 28", "…_sf2m1" -> "Playoff 2" (lib/matches/match-label). The raw key if it is not a match key. */
 export function matchLabelFromKey(matchKey: string): string {
-  const match = /_(qm|ef|qf|sf|f)(\d+)(?:m(\d+))?$/i.exec(matchKey.trim());
-  if (!match) return matchKey;
-  const level = match[1]!.toLowerCase();
-  const first = Number(match[2]);
-  if (level === "qm" || !match[3]) return matchShortLabel(level, first);
-  return matchShortLabel(level, Number(match[3]), first);
+  return sharedLabelFromKey(matchKey) ?? matchKey;
 }
 
 export function noNextMatchMessage(summary: OurMatchSummary | null): string {

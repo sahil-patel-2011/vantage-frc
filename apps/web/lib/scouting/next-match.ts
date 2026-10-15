@@ -8,6 +8,7 @@
  */
 
 import { isMatchPlayed, type PlayStateMatch } from "./play-state";
+import { matchLabel as sharedMatchLabel } from "../matches/match-label";
 
 export type ScheduleMatch = {
   matchKey: string;
@@ -108,7 +109,6 @@ export type MatchCard = {
 };
 
 const LEVEL_ORDER: Record<string, number> = { qm: 0, ef: 1, qf: 2, sf: 3, f: 4 };
-const LEVEL_LABEL: Record<string, string> = { qm: "Qual", ef: "Eighth", qf: "Quarter", sf: "Semi", f: "Final" };
 
 export function orderedSchedule(matches: ScheduleMatch[]): ScheduleMatch[] {
   return [...matches].sort((a, b) => {
@@ -123,14 +123,19 @@ export function orderedSchedule(matches: ScheduleMatch[]): ScheduleMatch[] {
   });
 }
 
+/** The app's one match name (lib/matches/match-label): "Qual 33", "Playoff 5", "Final 2". */
 export function matchLabel(match: ScheduleMatch): string {
   const level = levelOf(match);
   const set = /_(?:ef|qf|sf|f)(\d+)m\d+$/i.exec(match.matchKey)?.[1];
-  const base = LEVEL_LABEL[level] ?? level.toUpperCase();
-  return set ? `${base} ${set}-${match.matchNumber}` : `${base} ${match.matchNumber}`;
+  return sharedMatchLabel({
+    compLevel: level,
+    setNumber: set ? Number(set) : null,
+    matchNumber: match.matchNumber,
+    matchKey: match.matchKey,
+  });
 }
 
-/** "Qual 33" / "Semi 2-1" from a match key alone, the way the robot tiles name it. Null if unreadable. */
+/** "Qual 33" / "Playoff 5" from a match key alone, the way the robot tiles name it. Null if unreadable. */
 export function labelForMatchKey(matchKey: string): string | null {
   const parsed = /_(qm|ef|qf|sf|f)(\d+)(?:m(\d+))?$/i.exec(matchKey.trim());
   if (!parsed) return null;

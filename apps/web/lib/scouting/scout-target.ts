@@ -15,6 +15,7 @@
  * be typed in.
  */
 
+import { matchLabelFromKey } from "../matches/match-label";
 import { matchLabel } from "./next-match";
 
 export type ScoutAssignment = {
@@ -216,7 +217,9 @@ export function describeMatchKey(matchKey: string): string {
   const match = /_(qm|qf|sf|f)(\d+)(?:m(\d+))?$/.exec(matchKey.trim());
   if (!match) return matchKey;
   const level = match[1] as CompLevel;
-  return `${MATCH_LEVEL_LABEL[level]} ${Number(match[2])}${match[3] ? `-${Number(match[3])}` : ""}`;
+  // Playoffs use the app's one name ("Playoff 5", "Final 2" — lib/matches/match-label).
+  if (level !== "qm") return matchLabelFromKey(matchKey) ?? matchKey;
+  return `${MATCH_LEVEL_LABEL[level]} ${Number(match[2])}`;
 }
 
 /** What to tell someone when the schedule has nothing in it. */
