@@ -1,13 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, askConfirm } from "../../../../components/ui";
+import { Button, Skeleton, askConfirm } from "../../../../components/ui";
+import { FEATURE_API_TIMEOUT_MS } from "../../../../lib/nav/resolve-org";
 import { isOnshapeApiCheck, onshapeInputLabel } from "../../../../lib/guided/checks-onshape";
 import type { CheckResult, GuidedStep, GuidedTrack } from "../../../../lib/guided/types";
 
 type Done = Record<string, string>;
 type StepState = { busy: boolean; result: CheckResult | null };
 type Signoff = { stepId: string; status: "requested" | "approved" | "declined"; note: string | null };
+type LoadError = "signin" | "failed";
+
+/** A check can read Onshape or GitHub, which are slow; past this the student hears so instead of waiting. */
+const CHECK_TIMEOUT_MS = 30_000;
+
+function timedOut(error: unknown): boolean {
+  return error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError");
+}
+
+async function readJson<T>(response: Response): Promise<T | null> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
 
 /** The team in the address bar, so a member of two teams asks the right team's leads. */
 function orgFromUrl(): string | null {
@@ -117,7 +134,7 @@ function StepInput({
 export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
   const [done, setDone] = useState<Done>({});
   const [loaded, setLoaded] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [inputs, setInputs] = useState<Record<string, { url: string; text: string; values: Record<string, string> }>>({});
   const [states, setStates] = useState<Record<string, StepState>>({});
   const [openId, setOpenId] = useState<string | null>(null);
@@ -135,17 +152,27 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
     const org = orgFromUrl();
     const response = await fetch(`/api/guided?track=${encodeURIComponent(track.id)}${org ? `&orgId=${encodeURIComponent(org)}` : ""}`, {
       cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     }).catch(() => null);
-    if (!response?.ok) {
-      setLoadError(response?.status === 401 ? "Sign in to save your progress." : "Couldn't load your progress. Checks still work.");
+    const data = response?.ok
+      ? await readJson<{ done?: Array<{ stepId: string; completedAt: string }>; signoffs?: Signoff[] }>(response)
+      : null;
+    if (!response?.ok || !data || !Array.isArray(data.done)) {
+      setLoadError(response?.status === 401 ? "signin" : "failed");
       setLoaded(true);
       return;
     }
-    const data = (await response.json()) as { done: Array<{ stepId: string; completedAt: string }>; signoffs?: Signoff[] };
+    setLoadError(null);
     setDone(Object.fromEntries(data.done.map((row) => [row.stepId, row.completedAt])));
     setSignoffs(Object.fromEntries((data.signoffs ?? []).map((row) => [row.stepId, row])));
     setLoaded(true);
   }, [track.id]);
+
+  const retryLoad = () => {
+    setLoaded(false);
+    setLoadError(null);
+    void load();
+  };
 
   useEffect(() => {
     void load();
@@ -179,6 +206,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
       setSavedUrl(input.url.trim());
     }
     setStates((prev) => ({ ...prev, [step.id]: { busy: true, result: prev[step.id]?.result ?? null } }));
+    let failure: unknown = null;
     const response = await fetch("/api/guided", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -188,10 +216,24 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
         orgId: orgFromUrl(),
         input: { url: input.url, text: input.text, values: { ...input.values, ...extra } },
       }),
-    }).catch(() => null);
-    const result = response?.ok
-      ? ((await response.json()) as CheckResult & { pending?: boolean })
-      : { passed: false, message: response?.status === 401 ? "Sign in to run checks." : "Couldn't run the check. Try again." };
+      signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
+    }).catch((error: unknown) => {
+      failure = error;
+      return null;
+    });
+    const body = response ? await readJson<CheckResult & { pending?: boolean; error?: string }>(response) : null;
+    const result: CheckResult & { pending?: boolean } =
+      response?.ok && body && typeof body.message === "string"
+        ? body
+        : {
+            passed: false,
+            message:
+              response?.status === 401
+                ? "Sign in to run checks."
+                : timedOut(failure)
+                  ? "The check took too long to answer. Nothing was saved. Try again in a minute."
+                  : (body?.message ?? body?.error ?? "Couldn't run the check. Try again."),
+          };
     setStates((prev) => ({ ...prev, [step.id]: { busy: false, result } }));
     if ("pending" in result && result.pending) {
       setSignoffs((prev) => ({ ...prev, [step.id]: { stepId: step.id, status: "requested", note: null } }));
@@ -221,6 +263,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ trackId: track.id, stepId: step.id, action, orgId: orgFromUrl() }),
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
     }).catch(() => null);
     if (!response?.ok) {
       // Nothing changed on the server, so nothing changes here either.
@@ -263,15 +306,38 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
         </div>
       </header>
 
-      <div className="guided-progress" role="status" aria-live="polite">
-        <span>
-          {!loaded ? "Loading your progress…" : `${doneCount} of ${track.steps.length} steps checked`}
-          {loadError ? ` · ${loadError}` : ""}
-        </span>
+      <div className="guided-progress" role="status" aria-live="polite" aria-busy={!loaded}>
+        {!loaded ? (
+          <span>
+            <span className="sr-only">Loading your progress</span>
+            <Skeleton width="11em" height={14} />
+          </span>
+        ) : loadError ? null : (
+          <span>{`${doneCount} of ${track.steps.length} steps checked`}</span>
+        )}
         <span className="guided-bar" aria-hidden="true">
           <i style={{ width: `${(doneCount / Math.max(1, track.steps.length)) * 100}%` }} />
         </span>
       </div>
+      {loaded && loadError ? (
+        <div className="guided-load-error" role="alert">
+          {loadError === "signin" ? (
+            <>
+              <p>Sign in to save your progress. You can read every step without signing in.</p>
+              <Button as="a" variant="secondary" href={`/signin?next=${encodeURIComponent(`/learn/guided/${track.id}`)}`}>
+                Sign in
+              </Button>
+            </>
+          ) : (
+            <>
+              <p>Couldn&apos;t load your progress. Checks still work, and a passed check is still saved.</p>
+              <Button variant="secondary" onClick={retryLoad}>
+                Retry
+              </Button>
+            </>
+          )}
+        </div>
+      ) : null}
 
       <ol className="guided-steps">
         {track.steps.map((step, index) => {

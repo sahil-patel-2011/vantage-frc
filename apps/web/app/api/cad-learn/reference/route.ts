@@ -8,6 +8,7 @@ import {
   failResponse,
   isLead,
   readReferenceParts,
+  requestedOrgId,
   resolveMembership,
   upsertReferencePart,
 } from "../../../../lib/cad-learn/store";
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) throw new HttpError(401, "Authentication required");
-    const requestedOrg = new URL(request.url).searchParams.get("orgId");
+    const requestedOrg = requestedOrgId(new URL(request.url).searchParams.get("orgId"));
 
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await resolveMembership(client, session.user.id, requestedOrg);
@@ -53,13 +54,15 @@ export async function GET(request: Request) {
   }
 }
 
-type Body = { lessonId?: string; url?: string };
+type Body = { lessonId?: string; url?: string; orgId?: string | null };
 
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) throw new HttpError(401, "Authentication required");
-    const body = (await request.json()) as Body;
+    const userId = session.user.id;
+    const body = (await request.json().catch(() => ({}))) as Body;
+    const requestedOrg = requestedOrgId(body.orgId);
 
     const lessonId = String(body.lessonId ?? "");
     if (!gradableLessons().some((lesson) => lesson.id === lessonId)) {
@@ -68,61 +71,66 @@ export async function POST(request: Request) {
     const url = String(body.url ?? "").trim();
     if (!url) throw new HttpError(400, "Paste the Onshape URL of the reference part");
 
-    const result = await withRls({ userId: session.user.id }, async (client) => {
-      const membership = await resolveMembership(client, session.user.id);
+    // 1. A short transaction: is the caller a lead on the named team, and their Onshape token.
+    const prepared = await withRls({ userId }, async (client) => {
+      const membership = await resolveMembership(client, userId, requestedOrg);
       if (!isLead(membership)) {
         throw new HttpError(403, "Only an owner or admin can set the reference part for a lesson");
       }
-
-      const access = await acquireOnshape(client, membership.orgId, session.user.id);
+      const access = await acquireOnshape(client, membership.orgId, userId);
       if (!access.ok) {
         // Setup-required, not an error page: the lead needs to connect Onshape.
-        return { status: "not_connected" as const, message: access.message };
+        return { ready: false as const, response: { status: "not_connected" as const, message: access.message } };
       }
+      return { ready: true as const, orgId: membership.orgId, http: access.http };
+    });
+    if (!prepared.ready) return Response.json(prepared.response);
+    const { orgId, http } = prepared;
 
-      let bound;
-      try {
-        bound = await resolveOnshapeBind(url, access.http);
-      } catch (error) {
-        throw new HttpError(400, publicErrorMessage(error, "That is not an Onshape document URL"));
-      }
+    // 2. Onshape, with no database transaction open.
+    let bound;
+    try {
+      bound = await resolveOnshapeBind(url, http);
+    } catch (error) {
+      throw new HttpError(400, publicErrorMessage(error, "That is not an Onshape document URL"));
+    }
 
-      const read = await readOnshapeMassProperties(access.http, {
-        documentId: bound.documentId,
-        workspaceId: bound.workspaceId,
-        elementId: bound.elementId,
-      });
-      if (!read.ok) {
-        // Nothing is written. A reference row only ever exists because a real
-        // measurement succeeded.
-        return { status: "cannot_read" as const, reason: read.reason, message: read.message };
-      }
+    const read = await readOnshapeMassProperties(http, {
+      documentId: bound.documentId,
+      workspaceId: bound.workspaceId,
+      elementId: bound.elementId,
+    });
+    if (!read.ok) {
+      // Nothing is written. A reference row only ever exists because a real
+      // measurement succeeded.
+      return Response.json({ status: "cannot_read" as const, reason: read.reason, message: read.message });
+    }
 
+    // 3. A second short transaction stores it. 0613's policy re-checks the lead role.
+    await withRls({ userId }, async (client) => {
       await upsertReferencePart(client, {
-        orgId: membership.orgId,
+        orgId,
         lessonId,
-        userId: session.user.id,
+        userId,
         documentId: bound.documentId,
         workspaceId: bound.workspaceId,
         elementId: bound.elementId,
         material: CAD_LEARN_MATERIAL,
         measured: read.value,
       });
-
-      return {
-        status: "measured" as const,
-        lessonId,
-        material: CAD_LEARN_MATERIAL,
-        massKg: read.value.massKg,
-        principalInertiaKgM2: read.value.principalInertiaKgM2,
-        densityKgM3: read.value.densityKgM3,
-        // A reference with no principal moments can still grade mass, and the
-        // lead should know that before students start submitting.
-        gradesInertia: read.value.principalInertiaKgM2 !== null,
-      };
     });
 
-    return Response.json(result);
+    return Response.json({
+      status: "measured" as const,
+      lessonId,
+      material: CAD_LEARN_MATERIAL,
+      massKg: read.value.massKg,
+      principalInertiaKgM2: read.value.principalInertiaKgM2,
+      densityKgM3: read.value.densityKgM3,
+      // A reference with no principal moments can still grade mass, and the
+      // lead should know that before students start submitting.
+      gradesInertia: read.value.principalInertiaKgM2 !== null,
+    });
   } catch (error) {
     return failResponse(error, "Could not set the reference part");
   }

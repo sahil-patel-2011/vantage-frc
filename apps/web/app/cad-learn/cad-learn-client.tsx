@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
+import { Skeleton, TextBlockSkeleton } from "../../components/ui";
 import {
   CAD_COMMUNITY_LINKS,
   CAD_REFERENCE,
@@ -15,7 +16,7 @@ import {
   getFeatureSnapshot,
   putFeatureSnapshot,
 } from "../../lib/offline/feature-cache";
-import { classifyCadLearnShell } from "../../lib/cad-learn/cad-learn-related";
+import { classifyCadLearnShell, type CadLearnShellKind } from "../../lib/cad-learn/cad-learn-related";
 import "../cad/cad-setup.css";
 import { CadLearnEmptyCard, CadLearnHeader, CadLearnNextActions } from "./cad-learn-chrome";
 import { ExploreOnshapeBoard } from "./cad-learn-explore";
@@ -34,6 +35,13 @@ async function persistCadLearnSnapshot(orgHint: string, data: CadLearnView): Pro
   }
 }
 
+/** What a grader says when the team could not load, matching the card at the top of the page. */
+function unavailableReasonFor(shell: CadLearnShellKind): string {
+  if (shell === "signin") return "Sign in to grade your part.";
+  if (shell === "setup") return "Choose your team to grade your part.";
+  return "Your team didn't load. Retry at the top of the page to grade your part.";
+}
+
 export default function CadLearnClient() {
   const [view, setView] = useState<CadLearnView | null>(null);
   const [ready, setReady] = useState(false);
@@ -41,7 +49,8 @@ export default function CadLearnClient() {
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [refreshError, setRefreshError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  const [authBlocked, setAuthBlocked] = useState(false);
+  // 401 → signed out (sign in); 403 → signed in but not on that team (choose your team).
+  const [authBlocked, setAuthBlocked] = useState<"signin" | "team" | null>(null);
   const elements = useRef(new Map<string, HTMLElement>());
   const viewed = useRef(new Set<string>());
   const viewRef = useRef<CadLearnView | null>(null);
@@ -51,6 +60,15 @@ export default function CadLearnClient() {
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
     let hadCache = Boolean(viewRef.current);
+    // The live request and the copy on this device start together; the copy paints first if it
+    // wins, and the live answer replaces it either way.
+    const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
+    const live = fetch(`/api/cad-learn/progress${query}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+    });
+    // Handled below; this only stops a fast failure being reported as unhandled while the cache reads.
+    live.catch(() => undefined);
     try {
       const cached = await getFeatureSnapshot<CadLearnView>("cad-learn", orgHint || "_");
       if (!viewRef.current && cached?.data && isCadLearnView(cached.data)) {
@@ -61,24 +79,20 @@ export default function CadLearnClient() {
         hadCache = true;
       }
     } catch {
-      // IndexedDB missing or blocked; live fetch still runs.
+      // IndexedDB missing or blocked; the live request is already running.
     }
     setRefreshError("");
     setFetchFailed(false);
-    setAuthBlocked(false);
+    setAuthBlocked(null);
     try {
-      const query = orgHint ? `?orgId=${encodeURIComponent(orgHint)}` : "";
-      const response = await fetch(`/api/cad-learn/progress${query}`, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-      });
+      const response = await live;
       if (response.status === 401 || response.status === 403) {
         await clearFeatureSnapshot("cad-learn", orgHint || "_");
         if (orgHint) await clearFeatureSnapshot("cad-learn", orgHint);
         setView(null);
         setFromCache(false);
         setCachedAt(null);
-        setAuthBlocked(true);
+        setAuthBlocked(response.status === 401 ? "signin" : "team");
         setFetchFailed(false);
         return;
       }
@@ -123,11 +137,15 @@ export default function CadLearnClient() {
   }, [load]);
 
   const post = useCallback(async (lessonId: string, action: "view" | "complete" | "reopen") => {
+    // Progress saves to the team on screen; without one loaded there is nowhere to save it.
+    const orgId = viewRef.current?.orgId;
+    if (!orgId) return;
     try {
       await fetch("/api/cad-learn/progress", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ lessonId, action }),
+        body: JSON.stringify({ lessonId, action, orgId }),
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
     } catch {
       /* progress is a convenience; a failed write must not break the page */
@@ -146,7 +164,7 @@ export default function CadLearnClient() {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           const id = entry.target.id;
-          if (!id || viewed.current.has(id)) continue;
+          if (!id || viewed.current.has(id) || !viewRef.current) continue;
           viewed.current.add(id);
           void post(id, "view");
         }
@@ -187,19 +205,21 @@ export default function CadLearnClient() {
   const remainingMinutes = remainingLessons.reduce((sum, lesson) => sum + lesson.minutes, 0);
   const firstUndoneId = remainingLessons[0]?.id ?? null;
 
+  // The lessons are static and paint at once. Only the team parts (next actions, progress,
+  // Explore, graders) wait on the network, and they show placeholders while they do.
+  const teamLoading = !view && !ready;
+  let shell: CadLearnShellKind | null = null;
   if (!view) {
-    const shell = classifyCadLearnShell({ ready, fetchFailed, authBlocked });
-    return (
-      <main className="module-page cl-page">
-        <CadLearnHeader orgId={null} />
-        <OfflineBanner feature="CAD Learn" fromCache={fromCache} cachedAt={cachedAt} />
-        <CadLearnEmptyCard
-          shell={shell}
-          onRetry={shell === "error" ? () => void load() : undefined}
-        />
-      </main>
-    );
+    shell = teamLoading
+      ? "loading"
+      : classifyCadLearnShell({
+          ready,
+          fetchFailed,
+          authBlocked: authBlocked === "team",
+          signedOut: authBlocked === "signin",
+        });
   }
+  const unavailableReason = shell && shell !== "loading" ? unavailableReasonFor(shell) : null;
 
   return (
     <main className="module-page cl-page">
@@ -210,22 +230,41 @@ export default function CadLearnClient() {
           {refreshError}
         </p>
       ) : null}
-      {view.orgId ? (
+      {view?.orgId ? (
         <CadLearnNextActions
           orgId={view.orgId}
           firstUndoneId={firstUndoneId}
           remainingLessons={remainingLessons.length}
         />
       ) : null}
+      {teamLoading ? (
+        <section className="app-card soft-panel cad-next-actions" aria-busy="true" aria-label="Next actions">
+          <span className="sr-only">Loading your progress</span>
+          <TextBlockSkeleton lines={2} />
+        </section>
+      ) : null}
+      {shell && shell !== "loading" ? (
+        <CadLearnEmptyCard
+          shell={shell}
+          onRetry={
+            shell === "error"
+              ? () => {
+                  setReady(false);
+                  void load();
+                }
+              : undefined
+          }
+        />
+      ) : null}
 
       <OnshapeEditBoard />
-      <ExploreOnshapeBoard orgId={view.orgId} />
+      {view || teamLoading ? <ExploreOnshapeBoard orgId={view?.orgId ?? null} pending={teamLoading} /> : null}
 
       <div className="cl-shell">
         <nav className="cl-side" aria-label="CAD track sections">
           <p className="cl-side-title">CAD onboarding</p>
           <div className="cl-side-group">
-            <a href="#explore">Explore Onshape</a>
+            {view || teamLoading ? <a href="#explore">Explore Onshape</a> : null}
             <a href="#reference">Which tool do I want</a>
           </div>
           {CAD_TRACK.map((unit) => (
@@ -260,13 +299,22 @@ export default function CadLearnClient() {
             ) : (
               <p className="cl-lead">The lessons stay on this page even if your team has not loaded yet.</p>
             )}
-            {ready ? (
+            {view ? (
               <p className="cl-progress">
                 {completed.size} of {lessons.length} lessons done
                 {remainingMinutes > 0 ? ` · about ${Math.round(remainingMinutes / 30) * 30} min left` : " · all done"}
                 <span className="cl-muted"> · full track {Math.round(totalCadMinutes() / 60)}h</span>
               </p>
-            ) : null}
+            ) : teamLoading ? (
+              <p className="cl-progress" aria-hidden="true">
+                <Skeleton width="16em" height={14} />
+              </p>
+            ) : (
+              <p className="cl-progress">
+                {lessons.length} lessons
+                <span className="cl-muted"> · full track {Math.round(totalCadMinutes() / 60)}h</span>
+              </p>
+            )}
           </header>
 
           {CAD_TRACK.map((unit) => (
@@ -285,6 +333,8 @@ export default function CadLearnClient() {
                   done={completed.has(lesson.id)}
                   onToggle={() => toggle(lesson.id)}
                   view={view}
+                  teamLoading={teamLoading}
+                  unavailableReason={unavailableReason}
                   onChanged={() => void load()}
                   registerRef={registerRef}
                 />

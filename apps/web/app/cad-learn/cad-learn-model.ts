@@ -37,6 +37,8 @@ export type TeamRow = {
 export type CadLearnView = {
   orgId: string;
   orgName: string;
+  /** Whose page this is. Older cached copies lack it. */
+  viewerId?: string;
   canManage: boolean;
   progress: ProgressRow[];
   references: ReferenceRow[];
