@@ -95,6 +95,8 @@ export class UpdateService {
   private webReleaseLoaded: string | null = null;
   private webReleaseDismissed: { id: string; until: number } | null = null;
   private webReleasePromptOpen = false;
+  private webReleaseLoadSeq = 0;
+  private webReleaseLoadPending = false;
 
   constructor(origin: string) {
     this.origin = origin;
@@ -136,20 +138,27 @@ export class UpdateService {
 
   /** Remember the release a freshly loaded page belongs to, so it is never offered again. */
   noteWebPageLoaded() {
+    // Only the newest page load may set the baseline: an older answer still in flight, or a
+    // check that runs in between, must not stamp the wrong release on this page.
+    const load = ++this.webReleaseLoadSeq;
     this.webReleaseLoaded = null;
+    this.webReleaseLoadPending = true;
     void this.fetchWebRelease().then((release) => {
-      if (release && this.webReleaseLoaded === null) this.webReleaseLoaded = release.id;
+      if (load !== this.webReleaseLoadSeq) return;
+      this.webReleaseLoadPending = false;
+      if (release) this.webReleaseLoaded = release.id;
     });
   }
 
   async checkWebRelease(): Promise<boolean> {
-    if (this.webReleasePromptOpen) return false;
+    if (this.webReleasePromptOpen || this.webReleaseLoadPending) return false;
     const window = BrowserWindow.getAllWindows()[0];
     if (!window || window.isDestroyed()) return false;
     const latest = await this.fetchWebRelease();
     if (!latest) return false;
     if (this.webReleaseLoaded === null) {
-      this.webReleaseLoaded = latest.id;
+      // No baseline yet (the page-load answer failed): take this one, unless a newer load began.
+      if (!this.webReleaseLoadPending) this.webReleaseLoaded = latest.id;
       return false;
     }
     const decision = decideWebReleasePrompt({
@@ -527,7 +536,8 @@ export class UpdateService {
     // offered with its release notes ("Vantage has been updated"), not swapped in silently.
     if (!pageBroken) {
       void this.checkWebRelease().then((asked) => {
-        if (asked || this.webReleaseDismissed) return;
+        // Asked, put off, or the dialog is open right now: never swap the page under it.
+        if (asked || this.webReleaseDismissed || this.webReleasePromptOpen) return;
         this.staleAssetSeen = false;
         window.webContents.reloadIgnoringCache();
       });
