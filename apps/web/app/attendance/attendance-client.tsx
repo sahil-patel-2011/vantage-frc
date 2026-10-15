@@ -5,7 +5,6 @@ import { availableSeasonYears } from "@vantage/game-year";
 import { EmptyState, PageHeader, Button, useConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
-import { TeamHubRelated } from "../../components/team-hub-related";
 import {
   ATTENDANCE_KIND_LABELS,
   ATTENDANCE_KINDS,
@@ -22,9 +21,7 @@ import {
 } from "../../lib/attendance";
 import {
   ATTENDANCE_LIST_FILTERS,
-  ATTENDANCE_TEAM_RELATED_INCLUDE,
   attendanceCalendarHref,
-  attendanceNextActions,
   attendancePracticeHref,
   filterAttendanceEvents,
   formatEventEvidence,
@@ -70,50 +67,6 @@ function fmtDate(ymd: string): string {
   const date = new Date(`${ymd}T12:00:00`);
   if (Number.isNaN(date.getTime())) return ymd;
   return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-}
-
-function NextActions({
-  orgId,
-  eventCount,
-  emptyRollCount,
-  canManage,
-  selectedEventId,
-  selectedOccurredOn,
-}: {
-  orgId?: string | null;
-  eventCount: number;
-  emptyRollCount: number;
-  canManage: boolean;
-  selectedEventId?: string | null;
-  selectedOccurredOn?: string | null;
-}) {
-  const actions = attendanceNextActions({
-    orgId,
-    eventCount,
-    emptyRollCount,
-    canManage,
-    selectedEventId,
-    selectedOccurredOn,
-  });
-  if (actions.length === 0) return null;
-  return (
-    <section className="att-next-actions" aria-label="Next actions">
-      <header>
-        <h2>Next actions</h2>
-        <p>Each one opens the page where you finish the work.</p>
-      </header>
-      <ol>
-        {actions.map((action) => (
-          <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
 }
 
 function CreateEventForm({
@@ -375,22 +328,8 @@ function SessionDetail({
               addPerson(personName);
             }}
           >
-            <h3>Add by name</h3>
-            {openMembers.length > 0 ? (
-              <div className="att-suggestions" aria-label="Team members not yet marked">
-                {openMembers.slice(0, 16).map((member) => (
-                  <button
-                    key={member.userId}
-                    type="button"
-                    className="att-chip"
-                    disabled={busy}
-                    onClick={() => addPerson(member.name, member.attendanceRole ?? role, member.userId)}
-                  >
-                    {member.name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            {/* Teammates are marked with one tap above; this form is for a guest or anyone not listed. */}
+            <h3>Add someone else</h3>
             <div className="att-form-grid">
               <label className="att-field wide">
                 <span>Name</span>
@@ -730,7 +669,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
   const summary = summarizeAttendance(events);
   const board = personAttendanceBoard(events);
   const busy = busyKey != null;
-  const emptyRollCount = events.filter((event) => event.entries.length === 0).length;
   const filtered = filterAttendanceEvents(events, listFilter, { members, query });
   const selected =
     filtered.find((event) => event.id === selectedId) ??
@@ -801,16 +739,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
       {/* The Team hub calls this tab People: it starts with who is on the team. */}
       {embedded && orgId ? <TeamRoster orgId={orgId} /> : null}
-      {!embedded ? (
-        <>
-          <TeamHubRelated
-            orgId={orgId}
-            active="attendance"
-            include={[...ATTENDANCE_TEAM_RELATED_INCLUDE]}
-            ariaLabel="Related team ops for attendance"
-          />
-        </>
-      ) : null}
 
       {error ? (
         <p className="telemetry-status" role="alert">
@@ -818,35 +746,12 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         </p>
       ) : null}
 
-      <section className="att-summary" aria-label="Attendance summary">
-        <div className="att-summary-tile">
-          <strong>{summary.eventCount}</strong>
-          <span>Events</span>
-        </div>
-        <div className="att-summary-tile">
-          <strong>{summary.entryCount}</strong>
-          <span>Marks</span>
-        </div>
-        <div className="att-summary-tile">
-          <strong>{summary.uniquePeople}</strong>
-          {/* Who was marked at a session, not how many are on the team ("0 People" under five names). */}
-          <span>People marked</span>
-        </div>
-        <div className="att-summary-tile">
-          <strong>{summary.totalHours}</strong>
-          <span>Credited hours</span>
-        </div>
-      </section>
-
-      {events.length === 0 || emptyRollCount > 0 ? (
-        <NextActions
-          orgId={orgId}
-          eventCount={events.length}
-          emptyRollCount={emptyRollCount}
-          canManage={canManage}
-          selectedEventId={selected?.id}
-          selectedOccurredOn={selected?.occurredOn}
-        />
+      {/* One line, not four tiles: the totals are context for the sessions below, not the page. */}
+      {summary.eventCount > 0 ? (
+        <p className="att-summary-line" aria-label="Attendance summary">
+          {summary.eventCount} {summary.eventCount === 1 ? "session" : "sessions"} · {summary.uniquePeople}{" "}
+          {summary.uniquePeople === 1 ? "person" : "people"} marked · {summary.totalHours} credited hours
+        </p>
       ) : null}
 
       {showCreate && canManage ? (

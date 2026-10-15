@@ -24,10 +24,7 @@ import {
   type BugbotChunkOutcome,
 } from "../../lib/code/scan-run";
 import {
-  CODE_COACH_RELATED_INCLUDE,
   CODE_COACH_SAMPLE,
-  codeCoachNextActions,
-  codeCoachRelatedLinks,
   groundedCodeCoachProposal,
 } from "../../lib/code/code-related";
 import {
@@ -105,16 +102,6 @@ export function CodeClient({
 
   const hasSource = Boolean(content.trim());
   const showMeteredBanner = Boolean(orgId) && related === "ai";
-  const relatedLinks = codeCoachRelatedLinks(orgId || null, {
-    include: [...CODE_COACH_RELATED_INCLUDE],
-    canConnect,
-  });
-  const nextActions = codeCoachNextActions({
-    orgId: orgId || null,
-    hasSource,
-    hasReview: Boolean(review),
-    canConnect,
-  });
   const budgetsHref = orgId ? hubHref("/ai", "budgets", orgId) : "/ai?tab=budgets";
   const keysHref = orgId ? withOrgHref("/team/ai-keys", orgId) : "/team/ai-keys";
 
@@ -836,16 +823,13 @@ export function CodeClient({
   return (
     <CodeReadyView
       orgId={orgId}
-      related={related}
       embedded={embedded}
-      relatedLinks={relatedLinks}
       budgetsHref={budgetsHref}
       keysHref={keysHref}
       githubHref={githubHref}
       canConnect={canConnect}
       showMeteredBanner={showMeteredBanner}
       cutoffCode={cutoffCode}
-      nextActions={nextActions}
       message={message}
       hasSource={hasSource}
       path={path}

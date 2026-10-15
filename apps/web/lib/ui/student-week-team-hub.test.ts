@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { attendanceNextActions } from "../attendance/attendance-related";
 import { githubNextActions, githubShellCopy } from "../github/github-related";
 import { inviteEmptyCopy } from "../invite/invite-flow";
 import { hubById, hubFeaturedMoreTabs } from "../nav/hubs";
@@ -47,14 +46,7 @@ describe("student-week Team hub People / invite / roles slice", () => {
     expect(empty.map((action) => action.id)).toEqual(["invite"]);
   });
 
-  it("People empty has one roll-call primary; GitHub setup is one Choose your team", () => {
-    const empty = attendanceNextActions({
-      orgId: "org-1",
-      eventCount: 0,
-      emptyRollCount: 0,
-      canManage: true,
-    });
-    expect(empty.map((action) => action.id)).toEqual(["first-roll"]);
+  it("GitHub setup is one Choose your team", () => {
     expect(githubShellCopy("setup").badge).toBe("Needs setup");
     expectPlainCopy(githubShellCopy("setup").description);
     const githubSetup = githubNextActions({ orgId: null, shell: "setup" });

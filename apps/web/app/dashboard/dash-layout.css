@@ -50,9 +50,7 @@
     grid-template-columns: 1fr;
   }
 
-  .dash-home > .dash-ready-cue {
-    grid-area: cue;
-  }
+  
 
   .dash-home > .dash-grid-wrap {
     grid-area: board;
@@ -67,10 +65,6 @@
  * one now: smaller, quieter, and no longer competing with the things that
  * change during an event.
  */
-.dash-ready-cue {
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
 
 /* One line for the cards that are empty right now (catalog.ts emptyHomeWidgets), instead
    of a stack of cards each saying "nothing yet". */
@@ -90,8 +84,7 @@
   body.has-app-shell .dash-home.scan-workbench { row-gap: 0; }
   .dash-home.scan-workbench > .dash-home-header,
   .dash-home.scan-workbench > .dash-now,
-  .dash-home.scan-workbench > .dash-role-strip,
-  .dash-home.scan-workbench > .dash-ready-cue { margin-bottom: 16px; }
+  .dash-home.scan-workbench > .dash-role-strip { margin-bottom: 16px; }
 
   /* A source failure is a page-wide status, not a second card in the left rail. */
   .dash-home.scan-workbench > .data-source-degraded-banner { grid-column: 1 / -1; }

@@ -2,7 +2,6 @@ import { type Dispatch, type SetStateAction } from "react";
 import type { Narration } from "../../lib/agent-narration/narration";
 import type { BugbotScanTarget } from "../../lib/bugbot";
 import type { CockpitPrefs } from "../../lib/cockpit/prefs";
-import type { CodeCoachNextAction, CodeCoachRelatedLink } from "../../lib/code/code-related";
 import type {
   BugbotFinding,
   BugbotHistoryRow,
@@ -22,9 +21,7 @@ import type {
 
 export type CodeReadyViewProps = {
   orgId: string;
-  related: "build" | "ai";
   embedded: boolean;
-  relatedLinks: CodeCoachRelatedLink[];
   budgetsHref: string;
   keysHref: string;
   githubHref: string;
@@ -32,7 +29,6 @@ export type CodeReadyViewProps = {
   canConnect: boolean;
   showMeteredBanner: boolean;
   cutoffCode: string | null;
-  nextActions: CodeCoachNextAction[];
   message: string | null;
   hasSource: boolean;
   path: string;

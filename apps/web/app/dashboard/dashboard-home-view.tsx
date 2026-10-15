@@ -59,7 +59,6 @@ import type { CustomizeRow } from "./dashboard-customize-sheet";
 import { DashboardHomeHeader } from "./dashboard-home-header";
 import { DashboardBoardSwitcher } from "./dashboard-board-bar";
 import { DashboardHomeSkeleton, DashboardNowCard } from "./dashboard-now-card";
-import { DashboardWorkspaceActions } from "./dashboard-workspace-actions";
 import { DashboardHomeDialogs, type HomeConfirm } from "./dashboard-home-dialogs";
 import { useHydrated } from "../../lib/ui/use-hydrated";
 import "./dashboard-edit.css";
@@ -591,10 +590,8 @@ export function DashboardHomeView(props: {
       {orgId ? (
         <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
           {showDailyBrief ? <DashboardNowCard now={now} setupHero={heroSetup} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
-          <DashboardWorkspaceActions orgId={orgId} role={role} hasEvent={Boolean(eventName || nextMatchData)} hasForms={props.hasScoutingSchemas}
-            primaryHref={heroSetup ? heroSetup.href : showDailyBrief ? now.href : undefined}
-            setupHrefs={surfaces.setup && setupHero ? setupHero.steps.filter((step) => !step.done).map((step) => step.href) : undefined}
-            hasTaskCard={displayLayout.some(item => item.type === "team_todos")} />
+          {/* Up next is Home's one main action. The row of quick-action tiles under it repeated
+              the menu (Scout, Tasks) as three more things that looked like the main action. */}
         </div>
       ) : null}
       {/* "Our next match · Open My Day" on top of the Next match card said the same thing twice,
@@ -644,17 +641,6 @@ export function DashboardHomeView(props: {
         <DashboardSetupBanner shell={dashShell} nextActions={nextActions} setupSteps={setupSteps} compact={sharedSetupPrompt} platformAdmin={me.platformAdmin === true} />
       ) : null}
 
-      {meLoaded && dashShell === "ready" && nextActions.length > 0 && !teamSetupCard && !showsOverview ? (
-        <p className="dash-ready-cue" role="status" {...dim}>
-          <span>{nextActions[0]?.detail ?? nextActions[0]?.label}</span>
-          {nextActions[0]?.href ? (
-            <Button as="a" variant="secondary" href={nextActions[0].href}>
-              {nextActions[0].label}
-            </Button>
-          ) : null}
-        </p>
-      ) : null}
-
       <OfflineBanner feature="Home" fromCache={fromCache} cachedAt={cachedAt} />
 
       {meLoaded && orgId && tbaConfigured !== false && viewLayout.some(item => ["next_match", "recent_result", "competition_snapshot", "prediction_summary", "match_schedule"].includes(item.type)) ? (
@@ -688,6 +674,13 @@ export function DashboardHomeView(props: {
               {/* One quiet control, the way a list says "Edit" in its own heading. Home refreshes
                   itself; the Refresh button lives on the "Synced" line under the cards. */}
               <div className="dash-board-tools">
+                {/* With one board there is no switcher, and the switcher was the only place to bring
+                    back the cards Home hides while they are empty. */}
+                {orgId && meLoaded && switcherBoards.length <= 1 && (props.quietWidgetCount ?? 0) > 0 ? (
+                  <button type="button" className="dash-board-customize dash-quiet-toggle" onClick={props.onToggleQuietWidgets}>
+                    {props.showQuietWidgets ? "Hide empty cards" : `Show ${props.quietWidgetCount} empty ${props.quietWidgetCount === 1 ? "card" : "cards"}`}
+                  </button>
+                ) : null}
                 {!previewing ? <button type="button" className="dash-board-customize"
                   ref={customizeRef}
                   data-testid="dash-customize" data-tour="customise"

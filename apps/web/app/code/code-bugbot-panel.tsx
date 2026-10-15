@@ -188,9 +188,8 @@ export function CodeBugbotPanel({
               />
             </label>
             <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
-              Subscription / your key uses the team or member key on{" "}
-              <a href="/team/ai-keys">AI keys</a> (Ollama, LM Studio, OpenAI, …). Ultra is the hosted SKU.
-              More knobs live under Account → Appearance → Cockpit.
+              On your plan, scans use your team&apos;s or your own key from{" "}
+              <a href="/team/ai-keys">AI keys</a>. Ultra runs on Vantage and is paid per scan from your team&apos;s credits.
             </p>
           </div>
 
@@ -371,16 +370,18 @@ export function CodeBugbotPanel({
           ) : null}
 
           <footer className="cdc-bugbot-actions">
-            {/* Secondary: the page's one filled button is Run risk review, above (A6-13). */}
-            <button
+            {/* Repo scan is its own tab, so it has its own one main button: the repo when GitHub
+                is linked, otherwise the file pasted on Review. */}
+            <Button
+              variant={githubConnected ? "secondary" : "primary"}
               type="button"
-              className="app-button secondary"
+              className="cdc-scan-file"
               disabled={busy || !orgId || !hasSource}
               onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: false })}
             >
               {bugbotMode === "ultra" ? `Scan file · $${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)}` : "Scan this file"}
-            </button>
-            <Button variant="secondary" type="button" disabled={busy || !orgId || !githubConnected || !selectedRepo} onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: true })}>
+            </Button>
+            <Button variant={githubConnected ? "primary" : "secondary"} type="button" className="cdc-scan-repo" disabled={busy || !orgId || !githubConnected || !selectedRepo} onClick={() => void runBugbot({ mode: bugbotMode, phase: "scan", scanRepo: true })}>
               {bugbotMode === "ultra"
                 ? `Scan repo · $${(scanPlan?.cost.totalUsd ?? BUGBOT_ULTRA_PRICES_USD.scan).toFixed(2)}`
                 : scanPlan
@@ -633,7 +634,7 @@ export function CodeBugbotPanel({
               badge="Idle"
               badgeTone="setup"
               title="No Bugbot pass yet"
-              description="Scan a connected repo or this file. Subscription uses your key. Ultra is the published hosted SKU. Findings stay empty until evidence is in the source."
+              description="Scan a connected repo or the file on Review. On your plan it uses your key; Ultra runs on Vantage and is paid per scan. Findings only appear when they quote your code."
             >
               {canConnect ? (
                 <Button as="a" variant="secondary" href={githubHref}>

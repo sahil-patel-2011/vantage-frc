@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../components/ui";
 import { canDeleteKickoffRow, type RuleNote } from "../../lib/kickoff";
 import type { RunFn } from "./kickoff-model";
 
@@ -79,7 +79,10 @@ export function RulesSection({
                         className="kick-link danger"
                         aria-label={`Delete ${note.question}`}
                         disabled={busy}
-                        onClick={() => void run({ action: "delete_rule_note", orgId, id: note.id }, rowKey)}
+                        onClick={async () => {
+                      if (!(await askConfirm({ title: `Delete this rules question?`, body: `“${note.question}” is removed for the whole team.`, confirmLabel: "Delete", tone: "destructive" }))) return;
+                      void run({ action: "delete_rule_note", orgId, id: note.id }, rowKey);
+                    }}
                       >
                         ✕
                       </button>

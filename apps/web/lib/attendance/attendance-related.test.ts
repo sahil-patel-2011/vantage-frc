@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { AttendanceEvent, AttendanceMember } from "../attendance";
-import { teamHubRelatedLinks } from "../team/team-related";
 import {
   ATTENDANCE_LIST_FILTERS,
-  ATTENDANCE_TEAM_RELATED_INCLUDE,
   attendanceCalendarHref,
   attendanceEventHref,
-  attendanceNextActions,
   attendancePracticeHref,
   filterAttendanceEvents,
   formatEventEvidence,
@@ -38,17 +35,6 @@ const members: AttendanceMember[] = [
 ];
 
 describe("attendance Soft-UI helpers", () => {
-  it("exposes Practice / Calendar / Messages in the Team strip", () => {
-    expect(ATTENDANCE_TEAM_RELATED_INCLUDE).toEqual(["practice", "calendar", "messages"]);
-    const links = teamHubRelatedLinks("org-1", {
-      active: "attendance",
-      include: ATTENDANCE_TEAM_RELATED_INCLUDE,
-    });
-    expect(links.map((l) => l.id)).toEqual(["practice", "calendar", "messages"]);
-    expect(links.every((l) => l.href.includes("orgId=org-1"))).toBe(true);
-    expect(links.every((l) => !/demo/i.test(l.label))).toBe(true);
-  });
-
   it("builds event deep links and Practice / Calendar cross-links", () => {
     expect(attendanceEventHref("org-1", { eventId: "ev-1", occurredOn: "2026-02-10" })).toBe(
       "/team?tab=attendance&orgId=org-1&eventId=ev-1&occurredOn=2026-02-10",
@@ -136,41 +122,4 @@ describe("attendance Soft-UI helpers", () => {
     expect(pickDefaultSession(events)).toBe(E1);
   });
 
-  it("builds empty-state next actions without DEMO rates", () => {
-    const empty = attendanceNextActions({
-      orgId: "org-1",
-      eventCount: 0,
-      emptyRollCount: 0,
-      canManage: true,
-    });
-    expect(empty.map((a) => a.id)).toEqual(["first-roll"]);
-    expect(empty.every((a) => !/demo|attendance\s*%/i.test(`${a.label} ${a.detail}`))).toBe(true);
-
-    const ready = attendanceNextActions({
-      orgId: "org-1",
-      eventCount: 2,
-      emptyRollCount: 1,
-      canManage: true,
-      selectedEventId: E1,
-    });
-    expect(ready[0]?.id).toBe("mark-empty");
-    expect(ready[0]?.label).toMatch(/^Mark /);
-    expect(ready.some((a) => a.id === "practice")).toBe(true);
-    expect(ready.some((a) => a.id === "calendar")).toBe(true);
-
-    const scout = attendanceNextActions({
-      orgId: "org-1",
-      eventCount: 2,
-      emptyRollCount: 1,
-      canManage: false,
-      selectedEventId: E1,
-    });
-    expect(scout[0]?.id).toBe("mark-empty");
-    expect(scout[0]?.label).toBe("Empty rolls wait on an owner or admin");
-    expect(scout[0]?.href).toContain("/team");
-
-    expect(attendanceNextActions({ eventCount: 0, emptyRollCount: 0, canManage: false }).map((a) => a.id)).toEqual([
-      "workspace",
-    ]);
-  });
 });
