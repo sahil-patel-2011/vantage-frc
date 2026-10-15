@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { noteServedKey, type ServedKey } from "@vantage/billing";
 import type {
   ChatAdapter,
   ChatMessage,
@@ -61,6 +62,12 @@ export type HttpChatAdapterConfig = {
   maxOutputTokens?: number;
   /** Anthropic `output_config.effort` for models that take it (Claude Haiku 5.5). */
   effort?: "low" | "medium" | "high";
+  /**
+   * The stored key this adapter calls with (a team or personal key), noted into the metered
+   * call's scope when a request succeeds so its usage row records which key paid — the source of
+   * each key's monthly spend and of keeping personal usage out of the team's totals.
+   */
+  servedKey?: ServedKey;
 };
 
 /**
@@ -143,6 +150,7 @@ export class HttpChatAdapter implements ChatAdapter {
   private readonly extraHeaders: Record<string, string>;
   private readonly maxOutputTokens: number | null;
   private readonly effort: "low" | "medium" | "high" | undefined;
+  private readonly servedKey: ServedKey | undefined;
 
   constructor(config: HttpChatAdapterConfig) {
     this.kind = config.provider;
@@ -173,6 +181,7 @@ export class HttpChatAdapter implements ChatAdapter {
     this.maxOutputTokens =
       config.maxOutputTokens && config.maxOutputTokens > 0 ? Math.floor(config.maxOutputTokens) : null;
     this.effort = config.effort;
+    this.servedKey = config.servedKey;
   }
 
   /**
@@ -234,10 +243,12 @@ export class HttpChatAdapter implements ChatAdapter {
   }) {
     const caching = input.promptCachingEnabled ?? this.promptCachingEnabled;
     const prepared = this.prepare(input.context, input.history ?? []);
-    if (this.kind === "anthropic") {
-      return this.completeAnthropic(input.message, prepared.context, prepared.history, input.tools ?? [], caching);
-    }
-    return this.completeOpenAi(input.message, prepared.context, prepared.history, input.tools ?? [], caching);
+    const result =
+      this.kind === "anthropic"
+        ? await this.completeAnthropic(input.message, prepared.context, prepared.history, input.tools ?? [], caching)
+        : await this.completeOpenAi(input.message, prepared.context, prepared.history, input.tools ?? [], caching);
+    if (this.servedKey) noteServedKey(this.servedKey);
+    return result;
   }
 
   estimateCostUsd(promptTokens: number, completionTokens: number): number {

@@ -1,4 +1,4 @@
-import { readOrgAllowance } from "@vantage/billing";
+import { readOrgAllowance, TEAM_USAGE_SQL } from "@vantage/billing";
 import { assertHubTabAccess, assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { withSavepoint } from "@vantage/db/savepoint";
@@ -66,7 +66,7 @@ export async function GET(request: Request) {
                      COALESCE(sum(cost_usd), 0)::text AS "monthlySpend",
                      COALESCE(sum(total_tokens) FILTER (WHERE created_at >= date_trunc('day', now())), 0)::text AS "dailyTokens",
                      COALESCE(sum(total_tokens), 0)::text AS "monthlyTokens"
-              FROM ai_usage_events WHERE org_id = $1::uuid AND created_at >= date_trunc('month', now())) u) AS usage,
+              FROM ai_usage_events WHERE org_id = $1::uuid AND created_at >= date_trunc('month', now()) AND ${TEAM_USAGE_SQL}) u) AS usage,
            (SELECT to_jsonb(e) FROM (
               SELECT oe.plan_code AS "planCode", oe.status::text AS status,
                      pp.included_allowance_usd::text AS "includedAllowance"

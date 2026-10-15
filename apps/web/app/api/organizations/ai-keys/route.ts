@@ -75,14 +75,47 @@ export type KeyRow = {
   lastErrorAt: string | null;
   baseUrl?: string | null;
   model?: string | null;
+  /** This calendar month's limit in USD (0736), or null for unlimited. */
+  monthlyLimitUsd: string | null;
+  /** What this key has spent this calendar month, from the usage rows it served. */
+  monthSpendUsd: string;
 };
 
-/** Never key material: the id, label, order, switch and what happened last. */
+/** Never key material: the id, label, order, switch, what happened last and this month's spend. */
 const KEY_ROW_COLUMNS = `k.id::text AS id, lower(k.provider) AS provider, k.label,
   COALESCE((to_jsonb(k) ->> 'priority')::int, 100) AS priority,
   COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true) AS enabled,
   k.created_at::text AS "createdAt", k.last_used_at::text AS "lastUsedAt",
-  to_jsonb(k) ->> 'last_error' AS "lastError", to_jsonb(k) ->> 'last_error_at' AS "lastErrorAt"`;
+  to_jsonb(k) ->> 'last_error' AS "lastError", to_jsonb(k) ->> 'last_error_at' AS "lastErrorAt",
+  to_jsonb(k) ->> 'monthly_spend_limit_usd' AS "monthlyLimitUsd",
+  (SELECT COALESCE(sum(e.cost_usd), 0)::text FROM ai_usage_events e
+    WHERE e.org_id = k.org_id AND e.metadata #>> '{servedKey,id}' = k.id::text
+      AND e.created_at >= date_trunc('month', now())) AS "monthSpendUsd"`;
+
+/** Largest monthly limit a key can carry, in USD: a typo guard, not a policy. */
+const MAX_MONTHLY_LIMIT_USD = 100_000;
+
+/**
+ * A monthly limit as sent by the page: a number of dollars, or null for unlimited. Undefined
+ * means the request does not change it.
+ */
+function parseMonthlyLimit(value: unknown): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  const amount = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
+  if (!Number.isFinite(amount) || amount < 0) throw new Error("Enter a monthly limit of $0 or more, or choose Unlimited.");
+  if (amount > MAX_MONTHLY_LIMIT_USD) throw new Error("Keep the monthly limit under $100,000.");
+  return Math.round(amount * 100) / 100;
+}
+
+async function keyLimitsReady(client: KeyClient): Promise<boolean> {
+  const result = await client.query<{ ready: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM information_schema.columns
+                     WHERE table_schema = 'public' AND table_name = 'member_llm_keys'
+                       AND column_name = 'monthly_spend_limit_usd') AS ready`,
+  );
+  return result.rows[0]?.ready === true;
+}
 
 /** A label for a new key: what the person typed, or "<Provider> key <n>". */
 function newKeyLabel(provider: ByokProvider, typed: unknown, existing: number): string {
@@ -382,6 +415,8 @@ export async function POST(request: Request) {
       freeSwarmModel?: string | null;
       shareScope?: "personal" | "team" | "selected";
       shareUserIds?: string[];
+      /** update_key: this key's limit for the calendar month in USD, or null for unlimited. */
+      monthlyLimitUsd?: number | string | null;
     };
     const { session, orgId } = await context(body.orgId);
     const action = body.action ?? "save_key";
@@ -613,6 +648,7 @@ export async function POST(request: Request) {
       const scope = body.scope === "member" ? "member" : "team";
       const table = scope === "member" ? "member_llm_keys" : "org_llm_keys";
       if (body.shareScope !== undefined && scope !== "member") throw new Error("Sharing is managed on your own personal key.");
+      const monthlyLimit = parseMonthlyLimit(body.monthlyLimitUsd);
       const loaded = await withRls({ userId: session.user.id, orgId }, async (client) => {
         // Team keys are the key managers'; RLS (owner/admin) backs this. A personal key is only
         // ever the caller's own (member_llm_keys_own).
@@ -682,6 +718,12 @@ export async function POST(request: Request) {
         ).rows[0];
         if (!still) throw new Error("That key is gone. Refresh the page.");
         if (body.shareScope !== undefined) await saveKeySharing(client, orgId, session.user.id, keyId, body.shareScope, body.shareUserIds);
+        if (monthlyLimit !== undefined) {
+          if (!(await keyLimitsReady(client))) {
+            throw new Error("Monthly limits need the latest database update. Ask your platform admin to run it.");
+          }
+          await client.query(`UPDATE ${table} SET monthly_spend_limit_usd = $2::numeric WHERE id = $1::uuid`, [keyId, monthlyLimit]);
+        }
         const touchesOrder = typeof body.label === "string" || typeof body.enabled === "boolean" || body.move === "up" || body.move === "down";
         if (touchesOrder && !(await multiKeyReady(client))) {
           throw new Error("Ordering and switching keys needs the latest database update. Ask your platform admin to run it.");

@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { CommitAndThrowError } from "@vantage/db";
 import { FINANCE_IN_AI_ACK_VERSION } from "./ai-policy-public";
+import { teamUsageSql } from "./key-limits";
 
 export { FINANCE_IN_AI_ACK_VERSION } from "./ai-policy-public";
 
@@ -401,7 +402,7 @@ export async function emitAbsoluteSpendAlerts(client: PoolClient, orgId: string)
             COALESCE(sum(a.cost_usd), 0)::text AS "monthlySpend"
      FROM org_ai_policies p
      LEFT JOIN ai_usage_events a
-       ON a.org_id = p.org_id AND a.created_at >= date_trunc('month', now())
+       ON a.org_id = p.org_id AND a.created_at >= date_trunc('month', now()) AND ${teamUsageSql("a")}
      WHERE p.org_id = $1
      GROUP BY p.org_id, p.daily_spend_alert_usd, p.monthly_spend_alert_usd`,
     [orgId],

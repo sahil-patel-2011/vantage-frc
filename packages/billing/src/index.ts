@@ -20,8 +20,10 @@ import {
 export { readOrgAllowance } from "./allowance";
 export * from "./credit-gifts";
 export * from "./served-key";
+export * from "./key-limits";
 import { CREDIT_GIFT_PROVIDER } from "./credit-gifts";
 import { withServedKeyScope } from "./served-key";
+import { KEY_UNDER_LIMIT_SQL, TEAM_USAGE_SQL, teamUsageSql } from "./key-limits";
 export type { AllowanceFeatureSpend, OrgAllowance } from "./allowance";
 
 export {
@@ -324,6 +326,7 @@ export async function detectOrgByokKeySource(
   const keys = await client.query(
     `SELECT 1 FROM org_llm_keys k
       WHERE k.org_id = $1::uuid AND COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true)
+        AND ${KEY_UNDER_LIMIT_SQL}
       LIMIT 1`,
     [orgId],
   );
@@ -357,11 +360,13 @@ export async function memberHasUsableKey(client: PoolClient, orgId: string, user
            SELECT 1 FROM member_llm_keys k
             WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid
               AND COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true)
-         ) OR EXISTS (SELECT 1 FROM shared_member_llm_keys($1::uuid)) AS usable`
+              AND ${KEY_UNDER_LIMIT_SQL}
+         ) OR EXISTS (SELECT 1 FROM shared_member_llm_keys($1::uuid) k WHERE ${KEY_UNDER_LIMIT_SQL}) AS usable`
       : `SELECT EXISTS (
            SELECT 1 FROM member_llm_keys k
             WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid
               AND COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true)
+              AND ${KEY_UNDER_LIMIT_SQL}
          ) AS usable`,
     [orgId, userId],
   );
@@ -496,7 +501,7 @@ async function enforceApiBudgets<T>(
           COALESCE(sum(cost_usd) FILTER(WHERE provider=$4 AND model=$5),0)::text AS model_month_cost,
           COALESCE(sum(total_tokens) FILTER(WHERE provider=$4 AND model=$5 AND created_at>=date_trunc('day',now())),0)::text AS model_day_tokens,
           COALESCE(sum(total_tokens) FILTER(WHERE provider=$4 AND model=$5),0)::text AS model_month_tokens
-         FROM ai_usage_events WHERE org_id=$1 AND created_at>=date_trunc('month',now())`,
+         FROM ai_usage_events WHERE org_id=$1 AND created_at>=date_trunc('month',now()) AND ${TEAM_USAGE_SQL}`,
         [input.orgId, input.userId, input.feature, input.provider ?? "", input.model ?? ""],
       ),
       await input.client.query(
@@ -599,7 +604,7 @@ async function emitBudgetWarnings(client: PoolClient, orgId: string) {
       COALESCE(sum(a.total_tokens) FILTER(WHERE a.created_at>=date_trunc('day',now())),0)::text AS "dailyTokens",
       COALESCE(sum(a.total_tokens),0)::text AS "monthlyTokens"
      FROM org_api_budget_policies p LEFT JOIN ai_usage_events a
-       ON a.org_id=p.org_id AND a.created_at>=date_trunc('month',now())
+       ON a.org_id=p.org_id AND a.created_at>=date_trunc('month',now()) AND ${teamUsageSql("a")}
      WHERE p.org_id=$1 GROUP BY p.org_id`,
     [orgId],
   );
@@ -876,7 +881,7 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     const totals = await input.client.query<{ used: string; grants: string }>(
       `SELECT
          COALESCE((SELECT SUM(cost_usd) FROM ai_usage_events
-           WHERE org_id = $1 AND created_at >= $2 AND created_at < $3), 0)::text AS used,
+           WHERE org_id = $1 AND created_at >= $2 AND created_at < $3 AND ${TEAM_USAGE_SQL}), 0)::text AS used,
          COALESCE((SELECT SUM(amount_usd) FROM ai_credit_grants WHERE org_id = $1), 0)::text AS grants`,
       [input.orgId, account.period_start, account.period_end]
     );

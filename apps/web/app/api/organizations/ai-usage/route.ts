@@ -7,6 +7,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import { TEAM_USAGE_SQL } from "@vantage/billing";
 
 async function context(orgId: string | undefined) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -62,6 +63,7 @@ export async function GET(request: Request) {
              FROM ai_usage_events
             WHERE org_id = $1::uuid
               AND key_source IN ('byo', 'local')
+              AND ${TEAM_USAGE_SQL}
               AND created_at >= now() - ($2::int * interval '1 day')
             ORDER BY created_at DESC
             LIMIT 200`,

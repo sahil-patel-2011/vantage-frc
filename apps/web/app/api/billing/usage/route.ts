@@ -1,4 +1,4 @@
-import { readOrgAllowance } from "@vantage/billing";
+import { readOrgAllowance, TEAM_USAGE_SQL, teamUsageSql } from "@vantage/billing";
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
@@ -34,6 +34,7 @@ export async function GET(request: Request) {
               AND a.org_id = m.org_id
               AND ($2::timestamptz IS NULL OR a.created_at >= $2::timestamptz)
               AND ($3::timestamptz IS NULL OR a.created_at < $3::timestamptz)
+              AND ${teamUsageSql("a")}
             WHERE m.org_id = $1::uuid
             GROUP BY u.id`,
           [orgId, periodStart, periodEnd],
@@ -44,6 +45,7 @@ export async function GET(request: Request) {
             WHERE org_id = $1::uuid
               AND ($2::timestamptz IS NULL OR created_at >= $2::timestamptz)
               AND ($3::timestamptz IS NULL OR created_at < $3::timestamptz)
+              AND ${TEAM_USAGE_SQL}
             GROUP BY provider, model
             ORDER BY cost DESC`,
           [orgId, periodStart, periodEnd],

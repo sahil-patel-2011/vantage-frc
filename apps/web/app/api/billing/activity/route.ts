@@ -2,6 +2,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import { TEAM_USAGE_SQL, teamUsageSql } from "@vantage/billing";
 
 // AI governance transparency: a read-only per-call activity log over the metered
 // usage ledger (ai_usage_events). Aggregate spend already lives at /api/billing/usage;
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
                   u.name AS "actorName", u.email AS "actorEmail"
            FROM ai_usage_events a
            LEFT JOIN users u ON u.id = a.user_id
-           WHERE a.org_id = $1
+           WHERE a.org_id = $1 AND ${teamUsageSql("a")}
            ORDER BY a.created_at DESC
            LIMIT ${EVENT_LIMIT}`,
           [orgId],
@@ -49,7 +50,7 @@ export async function GET(request: Request) {
           `SELECT key_source AS "keySource", count(*) AS calls,
                   COALESCE(sum(cost_usd),0) AS cost, COALESCE(sum(total_tokens),0) AS tokens
            FROM ai_usage_events
-           WHERE org_id=$1 AND created_at >= now() - ($2::text || ' days')::interval
+           WHERE org_id=$1 AND created_at >= now() - ($2::text || ' days')::interval AND ${TEAM_USAGE_SQL}
            GROUP BY key_source ORDER BY cost DESC`,
           [orgId, WINDOW_DAYS],
         ),
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
           `SELECT feature, count(*) AS calls, COALESCE(sum(cost_usd),0) AS cost,
                   COALESCE(sum(total_tokens),0) AS tokens
            FROM ai_usage_events
-           WHERE org_id=$1 AND created_at >= now() - ($2::text || ' days')::interval
+           WHERE org_id=$1 AND created_at >= now() - ($2::text || ' days')::interval AND ${TEAM_USAGE_SQL}
            GROUP BY feature ORDER BY cost DESC`,
           [orgId, WINDOW_DAYS],
         ),
@@ -66,7 +67,7 @@ export async function GET(request: Request) {
                   COALESCE(sum(total_tokens),0) AS tokens,
                   COALESCE(sum(cache_read_input_tokens),0) AS "cacheReadTokens"
            FROM ai_usage_events
-           WHERE org_id=$1 AND created_at >= now() - ($2::text || ' days')::interval`,
+           WHERE org_id=$1 AND created_at >= now() - ($2::text || ' days')::interval AND ${TEAM_USAGE_SQL}`,
           [orgId, WINDOW_DAYS],
         ),
       ]);
