@@ -34,17 +34,19 @@ export async function GET(request: Request) {
         return { schemas: [schema] };
       }
       const allowed = await canManageScouting(client, orgId!);
-      const context = await client.query<{ eventKey: string | null; year: number | null }>(
-        `SELECT c.active_event_key AS "eventKey", e.year
+      const context = await client.query<{ eventKey: string | null }>(
+        `SELECT c.active_event_key AS "eventKey"
          FROM org_active_context c
-         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
          WHERE c.org_id = $1`,
         [orgId],
       );
       const eventKey = context.rows[0]?.eventKey ?? null;
       const requestedYear = Number(new URL(request.url).searchParams.get("year"));
       const year = Number.isInteger(requestedYear) && requestedYear >= 1992 && requestedYear <= 2100
-        ? requestedYear : context.rows[0]?.year ?? latestScoutingYear();
+        // The latest published game (2026 REBUILT today), the same season every other page opens
+        // on. The active event's year opened the builder on a past game whenever last season's
+        // event was still selected; a lead can still pick that game from the list.
+        ? requestedYear : latestScoutingYear();
       if (!year) {
         return {
           userId: session.user.id,
