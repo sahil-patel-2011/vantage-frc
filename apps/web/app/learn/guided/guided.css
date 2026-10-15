@@ -108,3 +108,11 @@
 .guided-table td i { position: absolute; left: 12px; bottom: 6px; display: block; max-width: calc(100% - 24px); height: 3px; border-radius: 3px; background: var(--accent); }
 .guided-table td[data-done="all"] span { color: var(--success, #15803d); font-weight: 650; }
 .guided-table td[data-done="none"] span { color: var(--muted); }
+
+/* Onshape is off for this deployment: said before the student starts, not after Check my work. */
+.guided-onshape-off {
+  display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.5;
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+.guided-onshape-off p { margin: 0; }
+.guided-onshape-off strong { display: block; font-weight: 650; }

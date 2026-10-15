@@ -1,4 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
+import { stepNeedsOnshape } from "./onshape-availability";
 import { GUIDED_TRACKS } from "./tracks";
 import { GUIDED_PREFIX, guidedLessonId } from "./types";
 
@@ -188,7 +189,12 @@ export async function readPendingSignoffs(client: PoolClient, orgId: string): Pr
     const named = describeGuidedLesson(row.lessonId);
     if (!named) return [];
     const step = GUIDED_TRACKS.find((t) => t.id === named.trackId)?.steps.find((s) => s.id === named.stepId);
-    const what = step?.check.kind === "lead-signoff" ? step.check.what : step?.checkedBy ?? "";
+    const what =
+      step?.check.kind === "lead-signoff"
+        ? step.check.what
+        : step && stepNeedsOnshape(step.check)
+          ? `Onshape isn't switched on for Vantage, so check this in their Onshape document by eye. Normally: ${step.checkedBy}`
+          : step?.checkedBy ?? "";
     return [{ id: row.id, userId: row.userId, displayName: row.displayName, requestedAt: row.requestedAt, ...named, what }];
   });
 }
