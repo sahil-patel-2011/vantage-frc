@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MY_DAY_RELATED_INCLUDE,
   classifyMyDayShell,
+  formatMyDayEventMatches,
   formatMyDayMatchCount,
   isMyDayScheduleEmpty,
   myDayNextActions,
@@ -130,5 +131,17 @@ describe("myDayNextActions", () => {
       expect.arrayContaining(["scouting", "hours", "command", "strategy"]),
     );
     expect(JSON.stringify(actions)).not.toMatch(/Blue Alliance|TBA/);
+  });
+});
+
+describe("formatMyDayEventMatches", () => {
+  it("splits qualifications from playoffs so it matches Assignments", () => {
+    expect(formatMyDayEventMatches({ matchCount: 79, qualCount: 64 })).toBe("64 qualification matches · 15 playoff matches");
+    expect(formatMyDayEventMatches({ matchCount: 64, qualCount: 64 })).toBe("64 qualification matches");
+    expect(formatMyDayEventMatches({ matchCount: 1, qualCount: 1 })).toBe("1 qualification match");
+  });
+
+  it("falls back to the total for a copy saved before the split", () => {
+    expect(formatMyDayEventMatches({ matchCount: 79 })).toBe("79 event matches");
   });
 });

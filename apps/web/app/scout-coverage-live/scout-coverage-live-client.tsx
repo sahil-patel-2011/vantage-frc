@@ -313,7 +313,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
       <StatTile
         label="Played robots: report target met"
         value={formatScoutCoverageLiveRate(summary.coveragePct, loaded, { hasSchedule })}
-        unit={`${formatScoutCoverageLiveMetric(summary.coveredCount, loaded)} of ${formatScoutCoverageLiveMetric(summary.totalCells, loaded)} robots`}
+        unit={`${formatScoutCoverageLiveMetric(summary.coveredCount, loaded)} of ${formatScoutCoverageLiveMetric(summary.totalCells, loaded)} robot-matches`}
       />
       <StatTile
         label="Played matches: never scouted"

@@ -39,7 +39,7 @@ export function MyReports({
       <summary data-disclosure>
         <span>Your reports</span>
         <small>
-          {reports.length === 1 ? "1 at this event" : `${reports.length} at this event`}
+          {reports.length === 1 ? "1 of yours at this event" : `${reports.length} of yours at this event`}
           {pendingCount ? ` · ${pendingCount} waiting to upload` : ""}
         </small>
       </summary>

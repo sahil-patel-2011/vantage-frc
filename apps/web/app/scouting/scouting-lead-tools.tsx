@@ -51,8 +51,10 @@ export function ScoutingLeadTools({
         onToggle={(event) => setOpen((event.currentTarget as HTMLDetailsElement).open)}
       >
         <summary data-disclosure>
-          <span>{data?.canManageSchemas ? "Saved entries and lead tools" : "My saved entries"}</span>
-          <small>{entries.length ? `${entries.length} recent` : "Nothing saved yet"}</small>
+          {/* This list is the whole team's newest entries (match and pit), not yours: "Your
+              reports" beside it counts only yours, so the label says whose these are. */}
+          <span>{data?.canManageSchemas ? "Team entries and lead tools" : "Team's latest entries"}</span>
+          <small>{entries.length ? `${entries.length} newest from the team` : "Nothing saved yet"}</small>
         </summary>
         <div className="scout-lead-tools-body">
           <p><a href={`/scout?orgId=${encodeURIComponent(orgId)}`}>Prepare this device for scouting →</a></p>

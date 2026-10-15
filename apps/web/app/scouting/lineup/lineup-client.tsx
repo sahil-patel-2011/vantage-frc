@@ -388,7 +388,8 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
                   {formatLineupMetric(view.scope.playedScouted, loaded)} of{" "}
                   {formatLineupMetric(view.scope.playedRobots, loaded)}
                 </strong>
-                <small>robots in {formatLineupMetric(view.scope.playedMatches, loaded)} played matches</small>
+                {/* A robot in one match is one robot-match: the unit Teams counts too. */}
+                <small>robot-matches across {formatLineupMetric(view.scope.playedMatches, loaded)} played matches</small>
               </article>
               <article>
                 <span>Played: never scouted</span>
