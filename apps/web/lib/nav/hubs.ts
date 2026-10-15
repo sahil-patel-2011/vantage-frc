@@ -371,6 +371,9 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // The document vault (STL/STEP/DXF uploads, versions, subsystem links) — the
         // "where is the printable file" question, distinct from the live CAD model.
         { id: "cad-vault", label: "CAD vault", legacyHref: "/cad-vault", featured: true },
+        // Checks a DXF drawing in the browser (units, layers, dimensions, title block, text size)
+        // and says where Onshape part checks stand. The owner asked for an "AutoCAD checker".
+        { id: "cad-checker", label: "CAD checker", legacyHref: "/cad-checker", featured: true },
         // Assembly manual is not listed: it needs hosted Onshape sign-in and the nightly
         // background jobs, and neither is switched on for this deployment yet.
         { id: "cad-change-radar", label: "Change radar", legacyHref: "/cad-change-radar" },

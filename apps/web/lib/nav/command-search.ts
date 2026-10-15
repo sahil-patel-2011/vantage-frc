@@ -375,6 +375,11 @@ const KEYWORDS: Record<string, string[]> = {
     "team profile", "dossier", "about our team", "rookie year", "how long have we competed", "our awards",
     "our rank", "epa", "statbotics", "blue alliance", "tba", "team history", "where are we from",
   ],
+  "build:cad-checker": [
+    "checker", "cad check", "cad checker", "check my cad", "check my drawing", "drawing check", "check drawing",
+    "dxf", "dxf check", "dwg", "dwg check", "autocad", "autocad checker", "standards check", "drawing standards",
+    "title block", "layers", "shop drawing check", "before the shop",
+  ],
   "build:cad-vault": [
     "cad files", "stl", "step", "upload cad", "model files", "drawings", "dxf",
     "versions", "vault", "download cad", "print file",

@@ -1,0 +1,27 @@
+/* =============================================================================
+   Scan polish — cad-checker (build)
+   One title, one primary (Choose a DXF file), a pass / look-at-this / fail list
+   with red / amber / green edges, and an honest Onshape state. The file is
+   read on the device; a file that can't be read shows no results.
+   Empty stays empty. No demo metrics.
+   ========================================================================== */
+
+.product-hub--cad-checker,
+.scan-hub--cad-checker,
+.cad-checker-page {
+  --scan-group-a: "CAD";
+  --scan-group-b: "CODE";
+  --scan-group-c: "ROBOT";
+  min-width: 0;
+}
+
+.cad-checker-page .app-page-header p {
+  max-width: 62ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.cad-checker-page .soft-panel.scan-empty {
+  justify-items: start;
+  text-align: left;
+}
