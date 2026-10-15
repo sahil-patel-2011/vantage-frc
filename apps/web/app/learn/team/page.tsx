@@ -1,4 +1,6 @@
 import { TeamLessonsClient } from "./team-lessons-client";
+// The upload progress bar in "Upload a PDF lesson" (.guided-progress), as in the editor.
+import "../guided/guided.css";
 import "./team-lessons.css";
 
 export const metadata = {

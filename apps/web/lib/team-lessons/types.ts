@@ -97,6 +97,9 @@ export type PracticeAnswers = Record<string, number | string>;
 
 export type QuestionResult = { id: string; correct: boolean; feedback: string };
 
+/** What the submit action answers: the grade, and the kept attempt for a published lesson. */
+export type PracticeSubmission = { result: PracticeResult; stored: boolean; attempt: LessonAttempt | null };
+
 export type PracticeResult = {
   results: QuestionResult[];
   score: number;
@@ -129,7 +132,9 @@ export type LessonSummary = {
   updatedAt: string;
   publishedAt: string | null;
   canEdit: boolean;
-  best: { score: number; total: number; passed: boolean; at: string } | null;
+  /** Owners and admins for any lesson; the author for their own draft ("Discard draft"). */
+  canDelete: boolean;
+  best:{ score: number; total: number; passed: boolean; at: string } | null;
 };
 
 export type LessonsListView =

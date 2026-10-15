@@ -316,41 +316,60 @@ export function parsePracticeAnswers(input: unknown, body: LessonBody): Practice
 }
 
 /**
- * What still has to be filled in before a lesson can be published, in plain sentences.
- * An empty list means it can be published.
+ * Which field a publish problem is about, so the editor can link to it and mark it:
+ * `title`, `steps` (none yet), `pdf`, `step:<id>:title|text`, or
+ * `question:<id>:prompt|options|answer|accepted`.
  */
+export type LessonPublishIssue = { message: string; field: string };
+
+/**
+ * What still has to be filled in before a lesson can be published, one entry per missing
+ * thing, in page order. The editor lists these next to Publish (and does not ask "Publish this
+ * lesson?" while any remain); the publish action refuses with the same sentences.
+ */
+export function lessonPublishIssues(
+  meta: Pick<LessonMeta, "title">,
+  body: LessonBody,
+  options: { source: "editor" | "pdf"; hasPdf: boolean },
+): LessonPublishIssue[] {
+  const issues: LessonPublishIssue[] = [];
+  const add = (message: string, field: string) => issues.push({ message, field });
+  if (!meta.title.trim()) add("Give the lesson a title.", "title");
+  if (options.source === "pdf") {
+    if (!options.hasPdf) add("Upload the PDF, or switch back to writing steps.", "pdf");
+  } else {
+    if (body.steps.length === 0) add("Add at least one step.", "steps");
+    body.steps.forEach((step, index) => {
+      if (!step.title.trim()) add(`Step ${index + 1} needs a title.`, `step:${step.id}:title`);
+      if (!step.text.trim()) add(`Step ${index + 1} has no text yet.`, `step:${step.id}:text`);
+    });
+  }
+  body.practice.forEach((question, index) => {
+    const label = `Question ${index + 1}`;
+    const field = (part: string) => `question:${question.id}:${part}`;
+    if (!question.prompt.trim()) add(`${label} needs a question.`, field("prompt"));
+    if (question.kind === "choice") {
+      const options = question.options.map((option) => option.trim());
+      if (options.some((option) => !option)) add(`${label} has an empty option.`, field("options"));
+      else if (new Set(options.map((option) => option.toLowerCase())).size !== options.length) {
+        add(`${label} has two options that say the same thing.`, field("options"));
+      }
+    } else if (question.kind === "number") {
+      if (question.answer === null) add(`${label} has no answer. Enter the correct number.`, field("answer"));
+    } else if (!question.accepted.some((entry) => entry.trim())) {
+      add(`${label} has no answer. Add at least one accepted answer.`, field("accepted"));
+    }
+  });
+  return issues;
+}
+
+/** The same list as plain sentences. An empty list means the lesson can be published. */
 export function lessonPublishProblems(
   meta: Pick<LessonMeta, "title">,
   body: LessonBody,
   options: { source: "editor" | "pdf"; hasPdf: boolean },
 ): string[] {
-  const problems: string[] = [];
-  if (!meta.title.trim()) problems.push("Give the lesson a title.");
-  if (options.source === "pdf") {
-    if (!options.hasPdf) problems.push("Upload the PDF, or switch back to writing steps.");
-  } else {
-    if (body.steps.length === 0) problems.push("Add at least one step, or upload a PDF instead.");
-    body.steps.forEach((step, index) => {
-      if (!step.title.trim()) problems.push(`Step ${index + 1} needs a title.`);
-      if (!step.text.trim()) problems.push(`Step ${index + 1} has no text yet.`);
-    });
-  }
-  body.practice.forEach((question, index) => {
-    const label = `Question ${index + 1}`;
-    if (!question.prompt.trim()) problems.push(`${label} needs a question.`);
-    if (question.kind === "choice") {
-      const options = question.options.map((option) => option.trim());
-      if (options.some((option) => !option)) problems.push(`${label} has an empty option.`);
-      else if (new Set(options.map((option) => option.toLowerCase())).size !== options.length) {
-        problems.push(`${label} has two options that say the same thing.`);
-      }
-    } else if (question.kind === "number") {
-      if (question.answer === null) problems.push(`${label} needs the correct number.`);
-    } else if (!question.accepted.some((entry) => entry.trim())) {
-      problems.push(`${label} needs at least one accepted answer.`);
-    }
-  });
-  return problems;
+  return lessonPublishIssues(meta, body, options).map((issue) => issue.message);
 }
 
 export const EMPTY_LESSON_BODY: LessonBody = { steps: [], practice: [] };

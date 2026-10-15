@@ -17,6 +17,11 @@
 .team-lesson-banner p { margin: 0; }
 .team-lesson-empty-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .team-lesson-loading { display: grid; gap: 12px; }
+/* The loading words are for screen readers only, even if a later sheet restyles .sr-only. */
+.team-lesson-loading > [role="status"] {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 
 /* ---- list */
 .team-lesson-grid {
@@ -41,6 +46,13 @@
 .team-lesson-draft > div { display: grid; gap: 2px; min-width: 0; }
 .team-lesson-draft-title { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
 .team-lesson-draft span { font-size: 13px; }
+.team-lesson-draft-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; flex: none; }
+.team-lesson-discard { color: var(--critical); }
+.team-lesson-old-drafts { display: grid; gap: 8px; color: var(--muted); }
+.team-lesson-old-drafts > p { margin: 0; font-size: 13px; }
+.team-lesson-new-form { display: grid; gap: 12px; }
+.team-lesson-new-form > p { margin: 0; }
+.team-lesson-new-form .team-lesson-field-problem { margin: 0; font-size: 13px; }
 
 /* ---- player */
 .team-lesson-meta { margin: -8px 0 0; color: var(--muted); font-size: 13px; }
@@ -160,7 +172,6 @@ textarea.team-lesson-input { resize: vertical; min-height: 44px; }
 }
 .team-lesson-edit-section > h2 { margin: 0; font-size: 18px; }
 .team-lesson-edit-section > p { margin: 0; line-height: 1.5; }
-.team-lesson-pdf-card.is-highlighted { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
 .team-lesson-edit-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
 .team-lesson-edit-card {
   display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg);
@@ -179,6 +190,13 @@ textarea.team-lesson-input { resize: vertical; min-height: 44px; }
 }
 .team-lesson-problems p { margin: 0; }
 .team-lesson-problems ul { margin: 6px 0 0; padding-left: 20px; }
+.team-lesson-problems:focus { outline: none; }
+.team-lesson-problem-link {
+  min-height: 32px; padding: 2px 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: left;
+  text-decoration: underline; text-underline-offset: 2px; cursor: pointer;
+}
+.team-lesson-problem-link:hover { color: var(--accent); }
+.team-lesson-choice-edit [aria-invalid="true"] { border-color: var(--critical); }
 .team-lesson-footer { justify-content: flex-end; padding-top: 4px; }
 .team-lesson-history { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
 .team-lesson-history > p { margin: 8px 0; font-size: 13px; }

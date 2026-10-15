@@ -4,6 +4,36 @@ import { useEffect, useId, useState } from "react";
 import { MarkdownDocument } from "../../../../team/knowledge/markdown-document";
 
 /**
+ * What every editor field takes so "Finish these before publishing" can link to it:
+ * `fieldKey` (see lessonPublishIssues) marks the field for focusLessonField, and `invalid`
+ * outlines it while that problem is listed.
+ */
+type IssueProps = { fieldKey?: string; invalid?: boolean };
+
+/**
+ * Puts the cursor in the field a publish problem is about: the exact field when it is on the
+ * page, else its step or question card (a step shown as a preview has no text box), scrolled
+ * into the middle of the screen.
+ */
+export function focusLessonField(field: string): void {
+  const [kind, id] = field.split(":");
+  const root =
+    document.querySelector<HTMLElement>(`[data-lesson-field="${field}"]`) ??
+    (id ? document.querySelector<HTMLElement>(`[data-lesson-field="${kind}:${id}"]`) : null);
+  if (!root) return;
+  const candidates = root.matches("input, textarea")
+    ? [root]
+    : Array.from(root.querySelectorAll<HTMLElement>("input:not([type=radio]), textarea, button"));
+  // The first one a person can actually type in or press (not the hidden file picker).
+  const target =
+    candidates.find((element) => !element.hidden && !(element as HTMLInputElement).disabled && element.getClientRects().length > 0) ?? root;
+  if (target === root && !root.hasAttribute("tabindex")) root.setAttribute("tabindex", "-1");
+  const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  root.scrollIntoView({ block: "center", behavior: still ? "auto" : "smooth" });
+  target.focus({ preventScroll: true });
+}
+
+/**
  * A number typed as text, so "1." and "-" survive while someone is typing. The parent gets a
  * number (or null when empty); anything that isn't a number yet stays on screen, unsaved, with
  * a hint, instead of being replaced.
@@ -17,6 +47,8 @@ export function NumberField({
   integer = false,
   hint,
   suffix,
+  fieldKey,
+  invalid = false,
 }: {
   label: string;
   value: number | null;
@@ -26,7 +58,7 @@ export function NumberField({
   integer?: boolean;
   hint?: string;
   suffix?: string;
-}) {
+} & IssueProps) {
   const id = useId();
   const [raw, setRaw] = useState(value === null ? "" : String(value));
   const [problem, setProblem] = useState<string | null>(null);
@@ -62,7 +94,7 @@ export function NumberField({
   }
 
   return (
-    <label className="team-lesson-field" htmlFor={id}>
+    <label className="team-lesson-field" htmlFor={id} data-lesson-field={fieldKey}>
       <span>{label}</span>
       <span className="team-lesson-answer-row">
         <input
@@ -72,7 +104,7 @@ export function NumberField({
           inputMode={integer ? "numeric" : "decimal"}
           autoComplete="off"
           value={raw}
-          aria-invalid={problem ? true : undefined}
+          aria-invalid={problem || invalid ? true : undefined}
           aria-describedby={problem ? `${id}-problem` : undefined}
           onChange={(event) => read(event.target.value)}
         />
@@ -96,6 +128,8 @@ export function MarkdownField({
   rows = 6,
   optional = false,
   placeholder,
+  fieldKey,
+  invalid = false,
 }: {
   label: string;
   value: string;
@@ -104,12 +138,12 @@ export function MarkdownField({
   rows?: number;
   optional?: boolean;
   placeholder?: string;
-}) {
+} & IssueProps) {
   const id = useId();
   const [preview, setPreview] = useState(false);
   const near = value.length > maxLength * 0.9;
   return (
-    <div className="team-lesson-field">
+    <div className="team-lesson-field" data-lesson-field={fieldKey}>
       <div className="team-lesson-field-head">
         <label htmlFor={id}>
           {label}
@@ -131,6 +165,7 @@ export function MarkdownField({
           maxLength={maxLength}
           value={value}
           placeholder={placeholder}
+          aria-invalid={invalid ? true : undefined}
           onChange={(event) => onChange(event.target.value)}
         />
       )}
@@ -150,6 +185,8 @@ export function TextField({
   optional = false,
   placeholder,
   multiline = false,
+  fieldKey,
+  invalid = false,
 }: {
   label: string;
   value: string;
@@ -158,10 +195,10 @@ export function TextField({
   optional?: boolean;
   placeholder?: string;
   multiline?: boolean;
-}) {
+} & IssueProps) {
   const id = useId();
   return (
-    <label className="team-lesson-field" htmlFor={id}>
+    <label className="team-lesson-field" htmlFor={id} data-lesson-field={fieldKey}>
       <span>
         {label}
         {optional ? <span className="app-muted"> (optional)</span> : null}
@@ -174,6 +211,7 @@ export function TextField({
           maxLength={maxLength}
           value={value}
           placeholder={placeholder}
+          aria-invalid={invalid ? true : undefined}
           onChange={(event) => onChange(event.target.value)}
         />
       ) : (
@@ -184,6 +222,7 @@ export function TextField({
           maxLength={maxLength}
           value={value}
           placeholder={placeholder}
+          aria-invalid={invalid ? true : undefined}
           onChange={(event) => onChange(event.target.value)}
         />
       )}

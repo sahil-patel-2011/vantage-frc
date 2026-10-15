@@ -196,9 +196,38 @@ describe("POST /api/team-lessons/[id]", () => {
   it("lists what is missing instead of publishing an unfinished lesson", async () => {
     lesson = lessonRow({ status: "draft", createdBy: "member", body: { steps: [{ id: "s", title: "", text: "" }], practice: [] } });
     const response = await POST(json("POST", { orgId, action: "publish", version: 4 }), context);
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(400);
     expect((await response.json()).problems).toEqual(["Step 1 needs a title.", "Step 1 has no text yet."]);
     expect(sqlCalls().some((sql) => sql.includes("UPDATE team_lessons"))).toBe(false);
+  });
+
+  it("refuses an empty step and an unanswered question by API too, with the editor's list", async () => {
+    lesson = lessonRow({
+      status: "draft",
+      createdBy: "member",
+      body: {
+        steps: [
+          { id: "s-1", title: "Breakers", text: "Use 40 A." },
+          { id: "s-2", title: "Wires", text: "" },
+        ],
+        practice: [{ id: "q-1", kind: "number", prompt: "Breaker size?", answer: null, tolerance: 0 }],
+      },
+    });
+    const response = await POST(json("POST", { orgId, action: "publish", version: 4 }), context);
+    expect(response.status).toBe(400);
+    const result = await response.json();
+    expect(result.error).toBe("Finish these before publishing.");
+    expect(result.problems).toEqual(["Step 2 has no text yet.", "Question 1 has no answer. Enter the correct number."]);
+    expect(sqlCalls().some((sql) => sql.includes("UPDATE team_lessons"))).toBe(false);
+  });
+
+  it("refuses a lesson with no steps, but publishes a PDF lesson that has its PDF", async () => {
+    lesson = lessonRow({ status: "draft", createdBy: "member", body: { steps: [], practice: [] } });
+    const empty = await POST(json("POST", { orgId, action: "publish", version: 4 }), context);
+    expect(empty.status).toBe(400);
+    expect((await empty.json()).problems).toEqual(["Add at least one step."]);
+    lesson = lessonRow({ status: "draft", createdBy: "member", source: "pdf", pdfFileId: "44444444-4444-4444-8444-444444444444", body: { steps: [], practice: [] } });
+    expect((await POST(json("POST", { orgId, action: "publish", version: 4 }), context)).status).toBe(200);
   });
 
   it("publishes and always keeps that version in History", async () => {

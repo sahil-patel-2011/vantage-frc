@@ -7,6 +7,9 @@ import { LESSON_LIMITS, type LessonStep } from "../../../../../lib/team-lessons/
 import { StepView } from "../../lesson-shared";
 import { MarkdownField, TextField } from "./editor-fields";
 
+/** No field marked: the default before Publish has been pressed. */
+export const NO_ISSUES: ReadonlySet<string> = new Set();
+
 export function moveItem<T>(items: T[], from: number, to: number): T[] {
   if (to < 0 || to >= items.length || from === to) return items;
   const next = [...items];
@@ -22,6 +25,7 @@ function StepCard({
   onChange,
   onMove,
   onRemove,
+  invalid,
 }: {
   step: LessonStep;
   index: number;
@@ -29,11 +33,13 @@ function StepCard({
   onChange: (step: LessonStep) => void;
   onMove: (to: number) => void;
   onRemove: () => void;
+  invalid: ReadonlySet<string>;
 }) {
   const [preview, setPreview] = useState(false);
   const name = step.title.trim() || `Step ${index + 1}`;
+  const key = (part: string) => `step:${step.id}:${part}`;
   return (
-    <li className="team-lesson-edit-card" aria-label={`Step ${index + 1}`}>
+    <li className="team-lesson-edit-card" aria-label={`Step ${index + 1}`} data-lesson-field={`step:${step.id}`}>
       <div className="team-lesson-edit-card-head">
         <strong>Step {index + 1}</strong>
         <div className="team-lesson-edit-card-tools">
@@ -60,10 +66,14 @@ function StepCard({
             value={step.title}
             maxLength={LESSON_LIMITS.stepTitle}
             placeholder="Say what this step does, e.g. Image the roboRIO"
+            fieldKey={key("title")}
+            invalid={invalid.has(key("title"))}
             onChange={(title) => onChange({ ...step, title })}
           />
           <MarkdownField
             label="Text"
+            fieldKey={key("text")}
+            invalid={invalid.has(key("text"))}
             value={step.text}
             maxLength={LESSON_LIMITS.stepText}
             rows={8}
@@ -94,7 +104,16 @@ function StepCard({
   );
 }
 
-export function StepsEditor({ steps, onChange }: { steps: LessonStep[]; onChange: (steps: LessonStep[]) => void }) {
+export function StepsEditor({
+  steps,
+  onChange,
+  invalid = NO_ISSUES,
+}: {
+  steps: LessonStep[];
+  onChange: (steps: LessonStep[]) => void;
+  /** Fields listed under "Finish these before publishing" (lessonPublishIssues keys). */
+  invalid?: ReadonlySet<string>;
+}) {
   const full = steps.length >= LESSON_LIMITS.steps;
 
   async function remove(index: number) {
@@ -114,7 +133,7 @@ export function StepsEditor({ steps, onChange }: { steps: LessonStep[]; onChange
   }
 
   return (
-    <section className="team-lesson-edit-section" aria-labelledby="team-lesson-steps-title">
+    <section className="team-lesson-edit-section" aria-labelledby="team-lesson-steps-title" data-lesson-field="steps">
       <h2 id="team-lesson-steps-title">Steps</h2>
       <p className="app-muted">Students see one step at a time, with Back and Next. Keep each step to one idea.</p>
       {steps.length ? (
@@ -128,6 +147,7 @@ export function StepsEditor({ steps, onChange }: { steps: LessonStep[]; onChange
               onChange={(next) => onChange(steps.map((entry, at) => (at === index ? next : entry)))}
               onMove={(to) => onChange(moveItem(steps, index, to))}
               onRemove={() => void remove(index)}
+              invalid={invalid}
             />
           ))}
         </ol>
