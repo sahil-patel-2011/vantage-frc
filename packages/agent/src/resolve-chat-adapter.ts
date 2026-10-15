@@ -910,7 +910,11 @@ export async function resolveOrgChatAdapterWithProvenance(
         : engines.claude?.available
           ? ("claude" as const)
           : null;
-      if (online && engine) {
+      // The desktop app's Local AI (LM Studio on the person's own computer) reports an
+      // "lmstudio" engine. Its jobs go out with no engine named, which the claim function
+      // lets any of this person's paired devices take, so no new engine value is stored.
+      const localModel = !engine && Boolean(engines.lmstudio?.available);
+      if (online && (engine || localModel)) {
         const adapter = new SubscriptionBridgeChatAdapter({
           transport: input.bridgeTransport,
           orgId: input.orgId,

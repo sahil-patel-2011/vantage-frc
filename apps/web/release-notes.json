@@ -15,6 +15,17 @@
       ]
     },
     {
+      "pr": 2401,
+      "date": "2026-10-15",
+      "headline": "Local AI in the desktop app (experimental)",
+      "changes": [
+        "The desktop app can answer your AI requests with a model running on your own computer in LM Studio",
+        "It checks for 16 GB of memory and 15 GB of free disk first, and pairs to your account so it only receives your own requests",
+        "Team → Personal AI connection shows the computer's local model, and its Everything setting extends it to every AI feature",
+        "When the local model is off, your team's normal AI answers as before"
+      ]
+    },
+    {
       "pr": 2400,
       "date": "2026-10-15",
       "headline": "Fewer buttons, and errors only when something failed",
