@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { applyVoiceTranscriptToForm, isLayoutOnlyField, matchCapture, undoableScoutAction, type ScoutSchema } from "@vantage/scouting";
 import { MatchActivityRecorder } from "./match-activity-recorder";
@@ -7,7 +8,6 @@ import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
 import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
-import { ScoutingTeamProfiles } from "./scouting-team-profiles";
 import { ScoutingSharing } from "./scouting-sharing";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -46,9 +46,7 @@ import {
   type ScoutTab,
 } from "./scouting-model";
 import { ScoutQuarantinePanel } from "./scouting-quarantine";
-import ScoutHandoffPanel from "./scout-handoff-panel";
 import ScoutVoiceNotesPanel from "./scout-voice-notes-panel";
-import ScoutingTrustPanel from "./scouting-trust-panel";
 import { availableMatchStages, fieldsForMatchStage, reachableMatchStage, SCOUT_STAGE_LABELS, type ScoutFormStage } from "../../lib/scouting/match-form-flow";
 import { NextMatchCard } from "./next-match-card";
 import { MatchFormControls, MatchTimer } from "./match-timer";
@@ -58,6 +56,16 @@ import { ScoutViewSwitcher } from "./scout-view-switcher";
 import "./match-mode.css";
 import "./scout-flow.css";
 import "./scouting-workspace.css";
+
+// Tabs most scouts never open load on first visit: team profiles, the trust checks (zod schemas)
+// and the QR handoff (jsQR + qrcode) were most of the scouting page's first-load JavaScript.
+const tabLoading = () => <p className="app-muted" role="status">Loading…</p>;
+const ScoutingTeamProfiles = dynamic(
+  () => import("./scouting-team-profiles").then((mod) => mod.ScoutingTeamProfiles),
+  { loading: tabLoading },
+);
+const ScoutingTrustPanel = dynamic(() => import("./scouting-trust-panel"), { loading: tabLoading });
+const ScoutHandoffPanel = dynamic(() => import("./scout-handoff-panel"), { loading: tabLoading });
 import { PitProgress } from "./pit-progress";
 import { ScoutActionHistoryView } from "./scout-action-history";
 import { issueForField } from "../../lib/scouting/invalid-fields";

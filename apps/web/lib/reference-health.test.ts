@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { evaluateDataSourceHealth } from "./reference-health";
+import type { PoolClient } from "pg";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  DATA_SOURCE_HEALTH_TTL_MS,
+  evaluateDataSourceHealth,
+  loadDataSourceHealth,
+  resetDataSourceHealthMemo,
+} from "./reference-health";
 
 const now = new Date("2026-07-17T21:00:00.000Z");
 
@@ -123,5 +129,33 @@ describe("evaluateDataSourceHealth", () => {
     });
     expect(view.degraded).toBe(false);
     expect(view.mode).toBe("ok");
+  });
+});
+
+describe("loadDataSourceHealth memo", () => {
+  afterEach(() => {
+    resetDataSourceHealthMemo();
+    vi.useRealTimers();
+  });
+
+  const fakeClient = () => {
+    const query = vi.fn(async () => ({ rows: [] }));
+    return { client: { query } as unknown as PoolClient, query };
+  };
+
+  it("reads the shared sync health once per window, keeping each team's own link", async () => {
+    vi.useFakeTimers();
+    const first = fakeClient();
+    const second = fakeClient();
+    const a = await loadDataSourceHealth(first.client, "org-a");
+    const b = await loadDataSourceHealth(second.client, "org-b");
+    expect(first.query).toHaveBeenCalled();
+    expect(second.query).not.toHaveBeenCalled();
+    expect(a.teamDataHref).toContain("org-a");
+    expect(b.teamDataHref).toContain("org-b");
+
+    vi.advanceTimersByTime(DATA_SOURCE_HEALTH_TTL_MS);
+    await loadDataSourceHealth(second.client, "org-b");
+    expect(second.query).toHaveBeenCalled();
   });
 });
