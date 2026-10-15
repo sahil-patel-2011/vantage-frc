@@ -595,8 +595,6 @@ html[data-motion="reduced"] {
    one shape and one density rule — compact for a mouse, 44px for a thumb. */
 .hub-tool-chip,
 .help-cat-chip,
-.team-ops-nav a,
-.team-ops-nav span,
 .product-hub-related .app-button {
   display: inline-flex;
   align-items: center;
@@ -612,16 +610,12 @@ html[data-motion="reduced"] {
   white-space: nowrap;
 }
 .hub-tool-chip.is-active,
-.help-cat-chip[aria-pressed="true"],
-.team-ops-nav :where(a, span).active,
-.team-ops-nav :where(a, span)[aria-current="page"] {
+.help-cat-chip[aria-pressed="true"] {
   font-weight: 700;
 }
 @media (pointer: coarse) {
   .hub-tool-chip,
   .help-cat-chip,
-  .team-ops-nav a,
-  .team-ops-nav span,
   .product-hub-related .app-button {
     min-height: var(--control-h);
     padding: 0 16px;
@@ -909,7 +903,6 @@ main.content:has(> h1:only-child) > h1 {
 :is(body.has-app-shell, .scouting-product) section:is([aria-label="Next actions"], [class*="next-actions"])[data-all-repeats] {
   display: none !important;
 }
-
 
 /* --- Setup / integration cards --------------------------------------------- */
 :where(.product-hub-setup) {

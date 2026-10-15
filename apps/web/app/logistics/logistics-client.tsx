@@ -5,7 +5,6 @@ import { useBrowserValue } from "../../lib/use-browser-value";
 import { OfflineBanner } from "../../components/offline-banner";
 import { LogisticsRelated } from "../../components/logistics-related";
 import { PageHeader } from "../../components/ui";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { getFeatureSnapshot, putFeatureSnapshot, useOnline } from "../../lib/offline";
 import {
   checklistProgress,
@@ -261,7 +260,6 @@ export default function LogisticsClient({ embedded = false }: { embedded?: boole
       >
         <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
       </PageHeader>
-      {!embedded ? <TeamOpsNav orgId={orgId} active="logistics" /> : null}
       <OfflineBanner
         feature="Logistics"
         fromCache={fromCache}

@@ -290,14 +290,15 @@ body.has-app-shell .ask-page .ask-composer textarea { min-height: 48px; max-heig
 .chat-connect-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .chat-connect-settings { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; font-size: 13px; }
 
-/* One navigation column for platform operators; the page has room for the actual work. */
-body.has-app-shell .admin-shell { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; max-width: 1440px; margin-inline: auto; padding: 28px; }
-body.has-app-shell .admin-console-nav { display: flex; flex-direction: column; position: sticky; top: 92px; align-self: start; margin: 0; border: 0; overflow: visible; gap: 4px; }
-.admin-console-label { display: flex; gap: 8px; align-items: center; margin: 0 10px 16px; font-size: 12px; color: var(--muted); }
-.admin-console-label svg { width: 16px; height: 16px; }
+/* Admin keeps one left column, the app sidebar: its own sections are a row of tabs across the
+   top of the page (a picker on phones), not a second column beside the sidebar. */
+body.has-app-shell .admin-shell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; max-width: 1440px; margin-inline: auto; padding: 24px 28px 28px; }
+body.has-app-shell .admin-console-nav { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; margin: 0; padding: 0 0 12px; border: 0; border-bottom: 1px solid var(--line-soft); overflow-x: auto; scrollbar-width: none; }
+body.has-app-shell .admin-console-nav::-webkit-scrollbar { display: none; }
+.admin-console-label { display: none; }
 .admin-console-picker { display: none; }
-body.has-app-shell .admin-console-nav a { display: flex; gap: 10px; min-height: 44px; padding: 8px 12px; border-radius: 10px; font-size: 13px; font-weight: 500; margin: 0; }
-.admin-console-nav a svg { width: 18px; height: 18px; }
+body.has-app-shell .admin-console-nav a { display: inline-flex; align-items: center; gap: 8px; flex: none; min-height: 36px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 500; margin: 0; white-space: nowrap; }
+.admin-console-nav a svg { width: 16px; height: 16px; }
 body.has-app-shell .admin-console-nav a.is-active { color: var(--accent); background: var(--accent-soft); }
 body.has-app-shell .admin-console-nav a.is-active::after { display: none; }
 body.has-app-shell .admin-shell > main { min-width: 0; width: 100%; padding: 0; }

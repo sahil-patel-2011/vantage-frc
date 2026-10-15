@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
-import { TeamOpsNav } from "../../../components/team-ops-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
@@ -302,7 +301,6 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       >
         <TeamBackgroundRelated orgId={orgId} canEdit={view?.canEdit === true} />
       </PageHeader>
-      <TeamOpsNav orgId={orgId} within="admin" />
       <OfflineBanner feature="Team background" fromCache={fromCache} cachedAt={cachedAt} />
 
       <FundingProfileClient orgId={orgId} />

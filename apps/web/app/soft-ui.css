@@ -254,42 +254,6 @@ a.soft-profile-link:hover{background:color-mix(in srgb,var(--bg) 70%,transparent
 }
 .soft-panel-search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
 .soft-panel-search>svg{width:18px;height:18px;flex:none;color:var(--accent)}
-.soft-panel-search input{
-  flex:1;min-width:0;height:46px;border:0;background:transparent;color:var(--ink);
-  /* 16px keeps iOS Safari from zooming the page on focus. */
-  font:600 16px var(--font-source-sans),ui-sans-serif;
-}
-.soft-panel-search input:focus{outline:none}
-.soft-panel-search input::-webkit-search-cancel-button{display:none}
-.soft-panel-search kbd{
-  flex:none;padding:3px 6px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--bg);
-  color:var(--muted);font:700 11px/1.3 var(--font-source-sans),ui-sans-serif;
-}
-.soft-panel-search-clear{
-  display:grid;place-items:center;width:32px;height:32px;flex:none;border:0;border-radius:var(--radius-xs);
-  background:transparent;color:var(--muted);cursor:pointer;
-}
-.soft-panel-search-clear:hover{background:var(--bg);color:var(--ink)}
-.soft-panel-search-clear svg{width:15px;height:15px}
-/* Results replace the workspace list in place — no second overlay. */
-.soft-nav-results{display:block;padding:0 2px 12px}
-.soft-drawer[data-searching="true"]{overflow:hidden}
-.soft-drawer[data-searching="true"]>.soft-nav-results{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scroll-padding:6px}
-.soft-drawer[data-searching="true"]>:not(.soft-nav-results){flex-shrink:0}
-.soft-nav-results nav{display:grid}
-.soft-nav-results [role="option"]{
-  display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;min-height:46px;
-  margin:2px 0;padding:8px 10px;border-radius:var(--radius-xs);color:var(--ink);text-decoration:none;
-}
-.soft-nav-results [role="option"]:hover{background:var(--accent-soft)}
-.soft-nav-results [role="option"] svg{width:18px;height:18px;color:var(--muted)}
-.soft-nav-results [role="option"] small{color:var(--muted)}
-.soft-nav-results [role="option"] span{min-width:0;overflow-wrap:anywhere}
-.soft-nav-results [role="option"].is-active{
-  background:var(--accent-soft);
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent);
-}
-.soft-nav-results [role="option"].is-active svg{color:var(--accent)}
 /* Title + org crumb are one two-row block, so both baselines stay left-aligned
    and the pair centres as a unit inside the 44px topbar row. */
 .soft-page-head-copy{display:grid;gap:2px;align-content:center;min-width:0;overflow:hidden}
@@ -1848,29 +1812,18 @@ body.has-app-shell .admin-control .intel-panel small{display:block;margin-top:6p
 }
 
 /* Team ops cross-nav (Practice / Todos / Messages / Calendar…) */
-.team-ops-nav{
-  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
-  margin:0 0 14px;padding:0;max-width:100%;
-}
+
 /* Shape, size and type come from the shared chip rule in system.css — this was
    the fifth independently-invented "row of links to elsewhere" (34px tall, 12px
    /700, its own padding) sitting next to four others that had already been made
    into one control. Only colour and state are its own. The current page renders
    as a <span>, not a link, so both are styled. */
-.team-ops-nav :where(a,span){
-  border:1px solid var(--line);
-  background:var(--surface);color:var(--muted);
-}
-.team-ops-nav a:hover{color:var(--ink);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+
 /* Same "this one is current" treatment as .hub-tool-chip.is-active and
    .settings-bar-chip.is-active — a tinted plate, not a solid accent fill. Two
    chip strips can appear on one page (Logistics carries both), and they were
    marking the current item in two different visual languages. */
-.team-ops-nav :where(a,span).active, .team-ops-nav :where(a,span)[aria-current="page"]{
-  background:var(--accent-soft);
-  border-color:color-mix(in srgb,var(--accent) 55%,transparent);
-  color:var(--accent);
-}
+
 body.has-app-shell .messages-page .team-ops-header{
   display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;
   margin-bottom:12px;padding:0 clamp(14px,2vw,28px);
@@ -2311,21 +2264,6 @@ body.has-app-shell .command-group a span small{color:var(--muted);font:600 12px 
   .soft-topbar,.soft-drawer,.soft-island,.soft-focus-rail,.soft-focus-reopen,.soft-skip-link,.soft-outbox-status,.soft-account-pop,.soft-scrim{display:none!important}
   body.has-app-shell{padding:0!important}
   #main-content{padding:0!important}
-}
-
-.team-hq-strip{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px 16px;
-  margin:0 0 14px;
-}
-.team-hq-strip a{
-  color:var(--muted);
-  text-decoration:none;
-  font-size:13px;
-}
-.team-hq-strip a:hover{
-  color:var(--ink);
 }
 
 /* ============================================================================

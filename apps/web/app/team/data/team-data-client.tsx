@@ -17,7 +17,6 @@ import {
   type TeamDataShellKind,
 } from "../../../lib/team-data/team-data-related";
 import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
-import { TeamSettingsNav } from "../../../components/team-settings-nav";
 
 type InventoryRow = { label: string; count: number };
 
@@ -227,7 +226,6 @@ function TeamDataShell({
           <h1>Team data</h1>
           <p>{description}</p>
         </div>
-        {orgId ? <TeamSettingsNav orgId={orgId} current="data" /> : null}
       </header>
       {children}
       <EmptyState
@@ -604,7 +602,6 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             PDF inventory
           </Button>
         </div>
-        {orgId ? <TeamSettingsNav orgId={orgId} current="data" /> : null}
       </header>
 
       <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />

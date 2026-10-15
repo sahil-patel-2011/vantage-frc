@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TeamHubRelated } from "../../components/team-hub-related";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { ViewOnlyNote } from "../../components/view-only-note";
 import { useViewOnly } from "../../lib/nav/use-view-only";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, Button, askConfirm } from "../../components/ui";
@@ -323,7 +322,6 @@ export default function TodosClient({ embedded = false }: { embedded?: boolean }
               </Button>
             ) : null}
           </PageHeader>
-          <TeamOpsNav orgId={orgId} active="todos" />
           <TeamHubRelated
             orgId={orgId}
             active="todos"

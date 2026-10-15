@@ -205,7 +205,6 @@ body.has-app-shell .product-hub .product-hub-tabs.soft-tab-bar button[aria-selec
   [role="listbox"],
   .dash-card-action-options,
   .soft-workspace-picker,
-  .soft-nav-results,
   .messages-mention-menu
 ) {
   transform-origin: top right;

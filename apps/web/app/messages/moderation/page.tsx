@@ -1,6 +1,5 @@
 import { Button, EmptyState, PageHeader } from "../../../components/ui";
 import { ModerationPanel } from "../moderation-panel";
-import { TeamSettingsNav } from "../../../components/team-settings-nav";
 import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
 
 export const metadata = {
@@ -21,7 +20,6 @@ export default async function ChatModerationPage({
         title="Chat safety"
         description="Reports from members, and the rules for private messages. Removing a message leaves “Removed by a team admin” in its place."
       >
-        {orgId ? <TeamSettingsNav orgId={orgId} current="chat" /> : null}
       </PageHeader>
       {/* The DM rules and the child-safety export live with Chat's own settings; this page had
           only the reports, so an owner looking for "who can message whom" did not find them. */}

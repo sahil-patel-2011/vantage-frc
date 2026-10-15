@@ -1,5 +1,4 @@
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
-import { TeamOpsNav } from "../../../components/team-ops-nav";
 import TeamBackgroundClient from "./background-client";
 
 export const metadata = {
@@ -20,7 +19,6 @@ export default async function TeamBackgroundPage({
           title="Team background"
           description="Mission, history, demographics, and achievements for sponsorship and grant drafts — scoped to your team only."
         />
-        <TeamOpsNav within="admin" />
         <EmptyState
           soft
           badge="Needs setup"

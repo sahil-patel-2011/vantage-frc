@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { ViewOnlyNote } from "../../components/view-only-note";
 import { useViewOnly } from "../../lib/nav/use-view-only";
 import { priorityLabel, statusLabel } from "../../lib/tasks";
@@ -196,7 +195,6 @@ export default function TasksClient() {
           </label>
         ) : null}
       </PageHeader>
-      <TeamOpsNav orgId={orgId} within="todos" />
       <OfflineBanner feature="Task board" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (

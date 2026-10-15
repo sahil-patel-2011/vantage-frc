@@ -6,8 +6,6 @@ import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
 import type { PinDefinition } from "../lib/nav/pins";
 import { SETTINGS_HREF } from "../lib/nav/settings-nav";
 import { AppShellNavGroups } from "./app-shell-nav-groups";
-import { ShellSearchResults } from "./shell-search-results";
-import type { ShellSearch } from "./use-shell-search";
 
 function keepTabInsidePanel(event: KeyboardEvent<HTMLElement>) {
   if (event.key !== "Tab") return;
@@ -35,12 +33,10 @@ export function AppShellNavPanel({
   navOpen,
   closeNav,
   panelCloseRef,
-  searchInputRef,
   orgLabel,
   rolePlanCue,
   orgId,
-  search,
-  shortcutHint,
+  onOpenSearch,
   visibleNavGroups,
   pins,
   activeGroupLabel,
@@ -53,13 +49,11 @@ export function AppShellNavPanel({
   navOpen: boolean;
   closeNav: () => void;
   panelCloseRef: RefObject<HTMLButtonElement | null>;
-  searchInputRef: RefObject<HTMLInputElement | null>;
   orgLabel: string;
   rolePlanCue: string;
   orgId: string;
-  /** The menu's own search (phones and tablets). ⌘K opens the palette instead. */
-  search: ShellSearch;
-  shortcutHint: string;
+  /** Opens the search palette (the app's one search) in place of the menu. */
+  onOpenSearch: () => void;
   visibleNavGroups: ProductNavGroup[];
   /** "Your apps", already filtered to what this team may open. */
   pins: PinDefinition[];
@@ -71,14 +65,12 @@ export function AppShellNavPanel({
   /** Runs Vantage itself: the menu gets an Admin button beside Settings and Help. */
   platformAdmin?: boolean;
 }) {
-  const queryActive = search.queryActive;
   return (
     <>
       <button className={`soft-scrim soft-navigation-scrim${navOpen ? " open" : ""}`} type="button" aria-label="Close navigation" aria-hidden={!navOpen} inert={!navOpen} tabIndex={-1} onClick={closeNav} />
       <aside
         id="vantage-navigation-panel"
         className={`soft-drawer ${navOpen ? "open" : ""}`}
-        data-searching={queryActive}
         role="dialog"
         aria-modal={navOpen || undefined}
         aria-hidden={!navOpen}
@@ -111,59 +103,26 @@ export function AppShellNavPanel({
           </div>
         </div>
 
-        <div className="soft-panel-search">
+        {/* The app's one search: the palette, the same as ⌘K and Search in the top bar. The menu
+            used to keep a second search field with its own results. */}
+        <button type="button" className="soft-panel-search soft-panel-search-button" onClick={onOpenSearch}>
           <Icon name="search" />
-          <input
-            id="soft-nav-search"
-            ref={searchInputRef}
-            type="search"
-            role="combobox"
-            aria-label="Search pages, tools, and your team's data"
-            aria-expanded={search.rows.length > 0}
-            aria-controls={queryActive ? "soft-nav-results" : undefined}
-            aria-activedescendant={queryActive && search.activeIndex >= 0 ? `soft-nav-row-${search.activeIndex}` : undefined}
-            value={search.query}
-            placeholder="Search Vantage"
-            autoComplete="off"
-            onChange={(event) => search.setQuery(event.target.value)}
-            onKeyDown={search.onFieldKeyDown}
-          />
-          {search.query ? (
-            <button
-              type="button"
-              className="soft-panel-search-clear"
-              aria-label="Clear search"
-              onClick={() => {
-                search.setQuery("");
-                searchInputRef.current?.focus();
-              }}
-            >
-              <Icon name="x" />
-            </button>
-          ) : shortcutHint ? (
-            <kbd aria-hidden="true">{shortcutHint}</kbd>
-          ) : null}
-        </div>
+          <span>Search Vantage</span>
+        </button>
 
-        {queryActive ? (
-          <div className="soft-nav-results">
-            <ShellSearchResults search={search} idPrefix="soft-nav" orgId={orgId} shortcutHint={shortcutHint} />
-          </div>
-        ) : (
-          <nav className="soft-drawer-flat" aria-label="Main menu">
-            <AppShellNavGroups key={`${navOpen}-${orgId}-${pathname}-${pathSearch}`}
-              groups={visibleNavGroups} pins={pins} activeGroupLabel={activeGroupLabel}
-              pathname={pathname} pathSearch={pathSearch} orgId={orgId}
-              navHrefAllowed={navHrefAllowed} closeNav={closeNav} onEditPins={onEditPins}
-            />
-          </nav>
-        )}
+        <nav className="soft-drawer-flat" aria-label="Main menu">
+          <AppShellNavGroups key={`${navOpen}-${orgId}-${pathname}-${pathSearch}`}
+            groups={visibleNavGroups} pins={pins} activeGroupLabel={activeGroupLabel}
+            pathname={pathname} pathSearch={pathSearch} orgId={orgId}
+            navHrefAllowed={navHrefAllowed} closeNav={closeNav} onEditPins={onEditPins}
+          />
+        </nav>
         {/* App utilities have one location; the avatar holds only personal account actions. */}
-        {!queryActive ? <footer className="soft-drawer-foot soft-drawer-toolbar" aria-label="Help and settings">
+        <footer className="soft-drawer-foot soft-drawer-toolbar" aria-label="Help and settings">
           <a href={withOrgHref(SETTINGS_HREF, orgId)} onClick={closeNav}><Icon name="gear" /><span>Settings</span></a>
           <a href={withOrgHref("/help", orgId)} data-tour="feedback" onClick={closeNav}><Icon name="book" /><span>Help</span></a>
           {platformAdmin ? <a href="/admin" onClick={closeNav}><Icon name="shield" /><span>Admin</span></a> : null}
-        </footer> : null}
+        </footer>
       </aside>
     </>
   );

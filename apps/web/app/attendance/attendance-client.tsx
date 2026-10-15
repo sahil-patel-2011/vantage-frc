@@ -6,7 +6,6 @@ import { EmptyState, PageHeader, Button, useConfirm } from "../../components/ui"
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
 import { TeamHubRelated } from "../../components/team-hub-related";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   ATTENDANCE_KIND_LABELS,
   ATTENDANCE_KINDS,
@@ -678,7 +677,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
         {!embedded ? (
           <>
             <PageHeader breadcrumbs="Team / Attendance" title="Attendance" />
-            <TeamOpsNav active="attendance" />
           </>
         ) : null}
         <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
@@ -714,7 +712,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
               title="Attendance"
               description="Log who showed up to practice and meetings — real marks only."
             />
-            <TeamOpsNav active="attendance" />
           </>
         ) : null}
         <OfflineBanner feature="Attendance" fromCache={fromCache} cachedAt={cachedAt} />
@@ -806,7 +803,6 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       {embedded && orgId ? <TeamRoster orgId={orgId} /> : null}
       {!embedded ? (
         <>
-          <TeamOpsNav orgId={orgId} active="attendance" />
           <TeamHubRelated
             orgId={orgId}
             active="attendance"

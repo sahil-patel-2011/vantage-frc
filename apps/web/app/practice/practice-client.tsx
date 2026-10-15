@@ -3,7 +3,6 @@ import { Button, askConfirm } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TeamHubRelated } from "../../components/team-hub-related";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { OfflineBanner } from "../../components/offline-banner";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -516,7 +515,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   if (!view) {
     return (
       <Root className="practice-page">
-        <TeamOpsNav active="practice" />
         <header className="practice-hero">
           <div>
             <p className="practice-kicker">Team / Practice</p>
@@ -570,7 +568,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
   if (view.status === "setup_required") {
     return (
       <Root className="practice-page">
-        <TeamOpsNav active="practice" />
         <header className="practice-hero">
           <div>
             <p className="practice-kicker">Team / Practice</p>
@@ -605,7 +602,6 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
     <Root className={`practice-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <>
-          <TeamOpsNav orgId={orgId} active="practice" />
           <TeamHubRelated orgId={orgId} active="practice" include={[...PRACTICE_TEAM_RELATED_INCLUDE]} />
         </>
       ) : null}

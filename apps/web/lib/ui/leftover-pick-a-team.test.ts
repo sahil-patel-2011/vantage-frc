@@ -63,8 +63,9 @@ describe("leftover student chrome says Choose your team", () => {
       const src = readFileSync(join(WEB_ROOT, rel), "utf8");
       expect(src, rel).not.toMatch(/workspacePickerHref|onOpenTeams|Switch team/);
     }
-    // The sidebar's team card opens the team, or Your teams when none is chosen.
-    expect(readFileSync(join(WEB_ROOT, "components/app-shell-sidebar.tsx"), "utf8")).toMatch(/href=\{withOrgHref\(orgId \? "\/team" : "\/account\/teams", orgId\)\}/);
+    // The sidebar's team card is the one way to another team: it opens Your teams. (It used to
+    // say "Team overview" and open the team calendar, a third way to the same page.)
+    expect(readFileSync(join(WEB_ROOT, "components/app-shell-sidebar.tsx"), "utf8")).toMatch(/href=\{withOrgHref\("\/account\/teams", orgId\)\}/);
     expect(readFileSync(join(WEB_ROOT, "app/workspace/page.tsx"), "utf8")).toMatch(/href: "\/account\/teams"/);
     expect(readFileSync(join(WEB_ROOT, "lib/nav/settings-nav.ts"), "utf8")).toContain('/account/teams');
     const chat = readFileSync(join(WEB_ROOT, "app/messages/page.tsx"), "utf8");

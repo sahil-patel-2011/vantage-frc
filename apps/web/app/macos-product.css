@@ -85,8 +85,8 @@ body.has-app-shell .soft-drawer .soft-drawer-foot button { display: inline-flex;
 body.has-app-shell .soft-drawer .soft-drawer-foot svg { width: 24px; height: 24px; }
 body.has-app-shell .soft-panel-search { border-radius: 12px; background: var(--surface-2); box-shadow: none; }
 body.has-app-shell .soft-panel-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
-body.has-app-shell .soft-panel-search input { padding: 0; border: 0; border-radius: 0; background: transparent; font-size: 16px; font-weight: 400; box-shadow: none; }
-body.has-app-shell .soft-panel-search input:focus-visible { outline: none; border: 0; box-shadow: none; }
+body.has-app-shell .soft-panel-search-button { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border: 1px solid var(--line-soft); color: var(--muted); font: 400 16px var(--font-sans); text-align: left; cursor: pointer; }
+body.has-app-shell .soft-panel-search-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 body.has-app-shell .main-menu-app { border-radius: 12px; }
 body.has-app-shell .soft-drawer :is(.main-menu-app, .main-menu-section > nav > a)[aria-current="page"] { color: var(--accent); background: var(--accent-soft); box-shadow: none; }
 @supports not (backdrop-filter: blur(1px)) { body.has-app-shell .soft-drawer { background: var(--surface); } }
@@ -151,7 +151,6 @@ body.has-app-shell :is(.soft-tab-bar, .workspace-hub-tabs) > :is(a,button)::afte
 body.has-app-shell .workspace-hub-tabs { margin: -4px 0 24px; width: fit-content; flex-wrap: nowrap; }
 body.has-app-shell .hub-tool-chip { border-radius: 10px; font-weight: 500; background: var(--surface); border-color: var(--line-soft); }
 body.has-app-shell .hub-tool-chip.is-active { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
-body.has-app-shell .hub-context-actions { border-top: 1px solid var(--line-soft); margin-top: 24px; padding-top: 16px; }
 
 /* Forms read like native controls, with explicit labels and useful focus. */
 body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { font-weight: 550; font-size: 13px; min-height: var(--control-h); min-width: 44px; border-radius: var(--radius-control); padding: 9px 16px; letter-spacing: -.01em; box-shadow: var(--product-reflection), 0 1px 3px #00000005; transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
@@ -228,7 +227,13 @@ body.has-app-shell :is(.app-card,.soft-panel,.module-page) tbody tr:hover td { b
 }
 @media (prefers-reduced-motion: reduce) { .app-sidebar nav a { transition: none; } }
 html[data-motion="reduced"] .app-sidebar nav a { transition: none; }
-@media (max-width: 1099px) { .app-topbar-search { display: none; } }
+/* Phones and tablets: the same search, as a 44px icon beside Ask AI (the menu no longer keeps a
+   second search field). */
+@media (max-width: 1099px) {
+  .app-topbar-search { width: 44px; min-height: 44px; margin-right: 2px; padding: 0; justify-content: center; border-color: transparent; background: transparent; }
+  .app-topbar-search > :is(span, kbd) { display: none; }
+  .app-topbar-search > svg { width: 20px; height: 20px; color: var(--ink); }
+}
 @media (max-width: 640px) {
   body.has-app-shell .soft-topbar { height: 60px; padding-inline: 12px; }
   body.has-app-shell .soft-topbar-actions { gap: 2px; }

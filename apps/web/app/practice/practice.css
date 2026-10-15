@@ -13,7 +13,7 @@
   padding:28px clamp(15px,3vw,42px) 96px;
   color:var(--ink);
 }
-.practice-page > .team-ops-nav{margin-bottom:16px}
+
 .practice-page > .team-hub-related{margin-bottom:12px}
 .practice-page input,.practice-page select,.practice-page textarea{
   width:100%;min-height:44px;padding:10px;color:var(--ink);

@@ -11,7 +11,6 @@ import {
   CardGridSkeleton,
   Button,
 } from "../../components/ui";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import {
   LOGISTICS_RELATED_INCLUDE,
@@ -76,7 +75,6 @@ export function LogisticsShell({
         >
           <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
         </PageHeader>
-        <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
         {children}
         <div aria-busy="true" aria-label="Loading logistics">
           <TextBlockSkeleton lines={2} />
@@ -97,7 +95,6 @@ export function LogisticsShell({
         >
           <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
         </PageHeader>
-        <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
         {children}
         <ErrorState title={copy.title} message={error ?? copy.description} onRetry={onRetry} />
       </Root>
@@ -120,7 +117,6 @@ export function LogisticsShell({
       >
         <LogisticsRelated orgId={orgId} include={[...LOGISTICS_RELATED_INCLUDE]} />
       </PageHeader>
-      <TeamOpsNav orgId={orgId ?? undefined} active="logistics" />
       {children}
       <EmptyState
         soft

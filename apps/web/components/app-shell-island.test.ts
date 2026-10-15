@@ -29,11 +29,12 @@ function island(activeIslandTabHref: string | undefined, navOpen = false) {
 }
 
 describe("bottom bar", () => {
-  it("ends with Browse, a button that opens the menu of every page", () => {
-    // Renamed from "More" in 22ae8cce3 (Simplify product navigation); same button, same panel.
+  it("ends with More, a button that opens the menu of every page", () => {
+    // "More" is the tab bar's word for the rest of the app (iOS, Material); the top bar no longer
+    // has a second button that opens the same menu.
     const markup = island("/dashboard");
-    expect(markup).toMatch(/<a class="soft-island-more" href="#vantage-navigation-panel" role="button" aria-label="Browse all pages" aria-controls="vantage-navigation-panel" aria-expanded="false"/);
-    expect(markup).toContain("<span>Browse</span>");
+    expect(markup).toMatch(/<a class="soft-island-more" href="#vantage-navigation-panel" role="button" aria-label="More: every page" aria-controls="vantage-navigation-panel" aria-expanded="false"/);
+    expect(markup).toContain("<span>More</span>");
   });
 
   it("marks More as where you are when none of the four apps is", () => {

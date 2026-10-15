@@ -6,75 +6,6 @@ import { Icon } from "./icon";
 import { withOrgHref, type IslandTabDefinition } from "../lib/nav/product-nav";
 import { tourTargetForHref } from "../lib/tour/tour-steps";
 
-export function AppShellEventFocus({
-  eventFocus,
-  focusCollapsed,
-  onCollapse,
-  onExpand,
-}: {
-  eventFocus: {
-    title: string;
-    detail: string;
-    freshness: string;
-    tone: string;
-    actions: Array<{ label: string; href: string; emphasis: string }>;
-  };
-  focusCollapsed: boolean;
-  onCollapse: () => void;
-  onExpand: () => void;
-}) {
-  // The action for the page you are on is marked, not offered: "Brief" was a filled button on
-  // the briefing itself and on every other page, so it read as the current tab everywhere.
-  const pathname = usePathname() ?? "";
-  const isHere = (href: string) => {
-    const path = href.split(/[?#]/)[0] ?? "";
-    return path.length > 1 && pathname === path;
-  };
-  if (focusCollapsed) {
-    return (
-      <button
-        className={`soft-focus-reopen ${eventFocus.tone}`}
-        type="button"
-        onClick={onExpand}
-        aria-label={`Show event focus: ${eventFocus.title}`}
-      >
-        <span /> {eventFocus.title}
-      </button>
-    );
-  }
-  return (
-    <section className={`soft-focus-rail ${eventFocus.tone}`} aria-label="Event focus" aria-live="polite">
-      <span className="soft-focus-signal" aria-hidden="true" />
-      <div className="soft-focus-copy">
-        <strong>{eventFocus.title}</strong>
-        <span>{eventFocus.detail}</span>
-      </div>
-      <small>{eventFocus.freshness}</small>
-      <nav aria-label="Next match actions">
-        {eventFocus.actions.map((action) =>
-          isHere(action.href) ? (
-            <span className="is-current" aria-current="page" key={action.label}>
-              {action.label}
-            </span>
-          ) : (
-            <a className={action.emphasis} href={action.href} key={action.label}>
-              {action.label}
-            </a>
-          ),
-        )}
-      </nav>
-      <button
-        className="soft-focus-collapse"
-        type="button"
-        onClick={onCollapse}
-        aria-label="Collapse event focus"
-      >
-        ×
-      </button>
-    </section>
-  );
-}
-
 export function AppShellIsland({
   orgId,
   islandTabs,
@@ -206,7 +137,7 @@ export function AppShellIsland({
         className="soft-island-more"
         href="#vantage-navigation-panel"
         role="button"
-        aria-label="Browse all pages"
+        aria-label="More: every page"
         aria-controls="vantage-navigation-panel"
         aria-expanded={navOpen}
         aria-current={moreCurrent ? "location" : undefined}
@@ -221,7 +152,7 @@ export function AppShellIsland({
         }}
       >
         <Icon name="sidebar" />
-        <span>Browse</span>
+        <span>More</span>
       </a>
     </nav>
   );

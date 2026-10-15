@@ -37,8 +37,8 @@ describe("your apps: the catalog", () => {
     const hrefs = groups.flatMap((group) => group.items.map((item) => item.href));
     expect(new Set(hrefs).size).toBe(hrefs.length);
     for (const href of DEFAULT_PINS) expect(hrefs).toContain(href);
-    // The bottom bar's short names win: "Team chat", not a bare "Chat".
-    expect(pinDefinition("/team?tab=messages")?.label).toBe("Team chat");
+    // One name per place: the menu, the bar and search all say "Chat".
+    expect(pinDefinition("/team?tab=messages")?.label).toBe("Chat");
     expect(groups.find((group) => group.id === "team")?.items.map((item) => item.label)).toContain("Team resources");
   });
 
@@ -86,7 +86,7 @@ describe("your apps: saved values from before pins", () => {
     expect(resolveStoredPins(null, ["/dashboard", "/competition", "/rankings", "/ai?tab=chat"])).toEqual([
       "/dashboard", "/competition?tab=command", "/rankings", "/ai?tab=chat",
     ]);
-    expect(resolvePins(resolveStoredPins(null, custom)).map((pin) => pin.label)).toEqual(["Build", "Ask AI", "Team chat", "Business"]);
+    expect(resolvePins(resolveStoredPins(null, custom)).map((pin) => pin.label)).toEqual(["Build", "Ask AI", "Chat", "Business"]);
   });
 
   it("prefers the saved pins over the old bar, and ignores a broken list", () => {
