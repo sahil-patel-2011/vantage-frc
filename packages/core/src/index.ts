@@ -191,10 +191,13 @@ function buildAuth() {
         max: OTP_POLICY.requestLimit,
       },
       sendVerificationOnSignUp: false,
-      generateOTP:
-        process.env.NODE_ENV === "production"
-          ? undefined
-          : ({ email, type }) => deterministicLocalOtp(email, type),
+      // Only outside production, and only as a present key. Better Auth spreads these options over
+      // its defaults ({ generateOTP: default, ...options }), so an explicit `generateOTP:
+      // undefined` replaced the real generator and every sign-in code failed with
+      // "generateOTP is not a function".
+      ...(process.env.NODE_ENV === "production"
+        ? {}
+        : { generateOTP: ({ email, type }: { email: string; type: string }) => deterministicLocalOtp(email, type) }),
       sendVerificationOTP: async (message) => {
         // Verify identity before asking for a team code. The existing OTP
         // rate limit applies equally to new and returning addresses.

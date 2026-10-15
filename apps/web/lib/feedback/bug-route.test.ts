@@ -9,10 +9,16 @@ const state = vi.hoisted(() => ({
   session: null as { user: { id: string } } | null,
   query: vi.fn(),
   rateLimitOk: true,
+  afterCalls: 0,
 }));
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
-vi.mock("@vantage/core", () => ({ auth: { api: { getSession: async () => state.session } } }));
+vi.mock("@vantage/core", () => ({
+  auth: { api: { getSession: async () => state.session } },
+  resolveAuthBaseURL: () => "https://vantage.test",
+}));
+// The inbox email runs after the response; here it just records that it was queued.
+vi.mock("next/server", () => ({ after: (work: () => unknown) => { state.afterCalls += 1; void work; } }));
 vi.mock("@vantage/db", () => ({
   withRls: async (_context: unknown, work: (client: unknown) => Promise<unknown>) =>
     work({ query: state.query }),
@@ -52,6 +58,7 @@ describe("POST /api/feedback/bug", () => {
     });
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "ok", id: "report-1" });
+    expect(state.afterCalls).toBeGreaterThan(0);
 
     const [sql, params] = state.query.mock.calls[0] as [string, unknown[]];
     expect(sql).toContain("INSERT INTO bug_reports (org_id, user_id, kind,");
