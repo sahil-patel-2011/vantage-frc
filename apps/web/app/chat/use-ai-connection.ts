@@ -1,19 +1,54 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ChatConnectionNextStep, ChatConnectionState } from "../../lib/ai/chat-send-gate";
 
-export type AiConnection = { configured: boolean; reason: string | null; message?: string | null };
+/** Same shape the server's check and a refused send return (`lib/ai/chat-send-gate.ts`). */
+export type AiConnection = ChatConnectionState;
 
 const CHECK_FAILED: AiConnection = {
   configured: false,
   reason: "check_unavailable",
   message: "Couldn't check your AI connection. Retry before sending; your question stays here.",
+  nextStep: "retry",
 };
 const UNREACHABLE: AiConnection = {
   configured: false,
   reason: "check_unavailable",
   message: "Couldn't reach Vantage to check AI. Retry before sending; your question stays here.",
+  nextStep: "retry",
 };
+
+/**
+ * The one action the composer offers when AI can't answer. An older server sends no `nextStep`;
+ * fall back on the reason it does send.
+ */
+export function connectionNextStep(connection: AiConnection): ChatConnectionNextStep {
+  if (connection.nextStep) return connection.nextStep;
+  if (connection.reason === "check_unavailable") return "retry";
+  if (connection.reason === "usage_cap" || connection.reason === "provider_unavailable") return "settings";
+  if (connection.reason?.startsWith("missing_context:")) return "none";
+  return "connect";
+}
+
+/**
+ * A send refused with `setup_required`: the server's connection state when it sent one, else a
+ * not-configured state from its message. Never "configured", so Send stays off for the session.
+ */
+export function refusedConnection(data: { aiConnection?: unknown; message?: unknown; error?: unknown }): AiConnection {
+  const sent = data.aiConnection as AiConnection | null | undefined;
+  if (sent && typeof sent === "object" && sent.configured === false) return sent;
+  const message = typeof data.message === "string" ? data.message : typeof data.error === "string" ? data.error : null;
+  return { configured: false, reason: "provider_unavailable", message, nextStep: "settings" };
+}
+
+/** What the composer says when no message came with the state. */
+export function connectionMessage(connection: AiConnection): string {
+  if (connection.message) return connection.message;
+  return connection.reason === "no_model_provider"
+    ? "AI isn't connected for this team yet."
+    : "Your AI connection isn't available. Check its settings.";
+}
 
 /**
  * Whether AI can answer for this team, checked beside the chat list rather than inside it.

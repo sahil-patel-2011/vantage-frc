@@ -39,7 +39,10 @@ import {
   type SkillPreview,
 } from "./ask-ai-skills";
 import { BackgroundRunCard, backgroundRunLabel, useBackgroundWork } from "./background-work";
-import { useAiConnection } from "./use-ai-connection";
+import { connectionMessage, connectionNextStep, refusedConnection, useAiConnection } from "./use-ai-connection";
+
+/** The composer's AI-connection note; also the disabled Send button's accessible description. */
+const CONNECTION_NOTE_ID = "ch-ai-connection-note";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -307,7 +310,8 @@ export default function ChatClient({
       const cutoff = resolveCutoffErrorCode(response.status, data);
       if (cutoff) setCutoffCode(cutoff);
       if (data.code === "setup_required" || data.status === "setup_required") {
-        setNotSent(data.message ?? data.error ?? "A usable AI connection is needed to start chatting.");
+        setAiConnection(refusedConnection(data));
+        setNotSent("Your question is still here.");
       }
       setStatus(data.error ?? "Could not start a chat.");
       return null;
@@ -394,7 +398,9 @@ export default function ChatClient({
         if (cutoff) setCutoffCode(cutoff);
         if (data.skillPreview) setPreview(data.skillPreview as SkillPreview);
         if (data.code === "setup_required" || data.status === "setup_required") {
-          setNotSent(data.message ?? data.error ?? "AI isn't on for your team yet.");
+          // Keep the notice (and the disabled Send) for the rest of the session.
+          setAiConnection(refusedConnection(data));
+          setNotSent("Your question is still here.");
           setStatus("");
           return;
         }
@@ -473,6 +479,8 @@ export default function ChatClient({
   const showStatusShell =
     shell === "setup" || shell === "loading" || shell === "auth_required" || shell === "error";
   const connectionHref = aiConnectionHref(orgId);
+  /** Send waits for the check, and stays off while it says AI can't answer. */
+  const connectionBlocksSend = Boolean(orgId && aiConnection?.configured !== true);
   const hasSide = threads.length > 0 || bg.runs.length > 0;
   const conversationEmpty = !thread && !bg.selected;
   const lastUserQuestion = useMemo(
@@ -756,11 +764,28 @@ export default function ChatClient({
           ) : null}
 
           <form className="ch-composer ask-composer" onSubmit={send}>
-            {orgId && !aiConnection && !notSent ? <p className="ch-composer-note" role="status">Checking your AI connection… You can write your question while it loads.</p> : null}
-            {aiConnection?.configured === false && !notSent ? <p className="ch-composer-note" role="status">
-              {aiConnection.message ?? (aiConnection.reason === "no_model_provider" ? "AI isn't connected yet. Your question will stay here until it can be sent." : "Your AI connection isn't available. Check it before sending.")}{" "}
-              {aiConnection.reason === "check_unavailable" ? <button type="button" className="chat-connect-inline" onClick={() => void recheckAiConnection()}>Retry connection check</button> : aiConnection.reason === "usage_cap" ? <a className="chat-connect-inline" href={withOrgHref("/ai/connect", orgId)}>Check AI settings</a> : <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI</button>}
-            </p> : null}
+            {orgId && !aiConnection ? <p id={CONNECTION_NOTE_ID} className="ch-composer-note" role="status">Checking your AI connection…</p> : null}
+            {aiConnection?.configured === false ? (
+              <div id={CONNECTION_NOTE_ID} className="ch-connection-note" role="status">
+                <p>{connectionMessage(aiConnection)}</p>
+                {(() => {
+                  switch (connectionNextStep(aiConnection)) {
+                    case "connect":
+                      return <Button variant="primary" size="sm" type="button" onClick={() => setConnectOpen(true)}>Connect AI</Button>;
+                    case "team":
+                      return <Button as="a" variant="primary" size="sm" href={withOrgHref("/team/ai-keys", orgId)}>Connect AI for the team</Button>;
+                    case "ask_owner":
+                      return <p className="ch-connection-hint">Ask a team owner or admin to connect AI.</p>;
+                    case "settings":
+                      return <Button as="a" variant="secondary" size="sm" href={connectionHref}>Check AI settings</Button>;
+                    case "retry":
+                      return <Button variant="secondary" size="sm" type="button" onClick={() => void recheckAiConnection()}>Retry check</Button>;
+                    default:
+                      return null;
+                  }
+                })()}
+              </div>
+            ) : null}
             {pinned && conversationEmpty ? <SkillStarters skillId={pinned} onPick={(starter) => pickStarter(null, starter)} /> : null}
             {thread?.scope === "team" ? (
               <div className="ch-composer-note">Shared with your team · teammates see this message</div>
@@ -797,7 +822,12 @@ export default function ChatClient({
                   setSkillNotice(null);
                 }}
               />
-              <Button variant="primary" type="submit" disabled={sending || bg.busy || !text.trim() || Boolean(orgId && aiConnection?.configured !== true)}>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={sending || bg.busy || !text.trim() || connectionBlocksSend}
+                aria-describedby={connectionBlocksSend ? CONNECTION_NOTE_ID : undefined}
+              >
                 {sending || bg.busy ? "Working…" : "Send"}
               </Button>
             </div>
@@ -811,7 +841,8 @@ export default function ChatClient({
             </details>
             {notSent ? (
               <p className="ch-status ch-not-sent" role="alert">
-                <strong>Not sent.</strong> {notSent} <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI here</button>
+                <strong>Not sent.</strong> {notSent}
+                {aiConnection?.configured === false ? null : <> <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI here</button></>}
               </p>
             ) : status ? (
               <p className="ch-status" role="status">
@@ -834,7 +865,9 @@ export default function ChatClient({
           </div> : null}
         </section>
 
-        <ChatConnectDialog key={orgId} open={connectOpen} orgId={orgId} onClose={() => setConnectOpen(false)} onConnected={() => { setNotSent(null); setAiConnection({ configured: true, reason: null }); setStatus("AI connected. Send your question when you’re ready."); void load(undefined, true).catch(() => setStatus("AI connected. Reopen this chat to refresh its settings.")); }} />
+        {/* A saved key isn't proof Send will work (a personal key needs a team connection on a
+            free team), so ask the same check again instead of assuming "connected". */}
+        <ChatConnectDialog key={orgId} open={connectOpen} orgId={orgId} onClose={() => setConnectOpen(false)} onConnected={() => { setNotSent(null); setStatus("Your key is saved."); void recheckAiConnection(); void load(undefined, true).catch(() => setStatus("Your key is saved. Reopen this chat to refresh its settings.")); }} />
         {shell === "ready" || shell === "empty" ? (
         <ChatSettingsDialog
           open={contextOpen}

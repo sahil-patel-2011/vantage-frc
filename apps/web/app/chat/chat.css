@@ -282,6 +282,17 @@
   font-weight: 700;
   color: var(--warning);
 }
+/* Why Send is off, and the one thing to do about it — shown before anyone types. */
+.ch-connection-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.ch-connection-note > p { margin: 0; flex: 1 1 220px; }
+.ch-connection-note > .ch-connection-hint { flex: 0 1 auto; color: var(--muted); }
 .ch-composer textarea,
 .ch-context textarea,
 .ch-context input {
