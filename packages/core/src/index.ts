@@ -223,7 +223,22 @@ function buildAuth() {
           if (!access.allowed) return;
         }
         const emailProvider = createEmailProvider();
-        await emailProvider.sendOtp(message);
+        try {
+          await emailProvider.sendOtp(message);
+        } catch (error) {
+          // Never a silent failure: the server log and the audit trail say why, and the page gets a
+          // plain error with Resend and Account recovery instead of "check your email".
+          const reason = error instanceof Error ? error.message.slice(0, 200) : "unknown";
+          console.error("[auth] sign-in code not sent", emailProvider.name, message.type, reason);
+          await auditAuthEvent({
+            action: "otp.failed",
+            email: message.email,
+            success: false,
+            metadata: { type: message.type, provider: emailProvider.name, reason },
+          });
+          // eslint-disable-next-line preserve-caught-error -- SMTP errors can name the sending account; the reason is logged above.
+          throw new Error("We couldn't send your code. Try again in a moment.");
+        }
         await auditAuthEvent({
           action: "otp.sent",
           email: message.email,

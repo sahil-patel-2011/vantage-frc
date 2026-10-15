@@ -62,7 +62,7 @@ describe("sign-in-model", () => {
     expect(googleButtonLabel("google")).toBe("Opening Google…");
     expect(googleButtonLabel("idle")).toBe("Continue with Google");
     expect(emailSubmitLabel("sending")).toBe("Sending code…");
-    expect(emailSubmitLabel("idle")).toBe("Email me a sign-in code");
+    expect(emailSubmitLabel("idle")).toBe("Send code");
     expect(passwordSubmitLabel("reset", { resetSent: false, working: false })).toBe("Send reset code");
     expect(passwordSubmitLabel("reset", { resetSent: true, working: false })).toBe("Set new password");
     expect(passwordSubmitLabel("reset", { resetSent: false, working: true })).toBe("Requesting code…");

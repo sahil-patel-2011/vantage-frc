@@ -19,6 +19,8 @@ const APP_SHELL_EXEMPT_EXACT = new Set([
   "/terms",
   "/signin",
   "/sign-in",
+  // Account recovery is a signed-out page in the sign-in card: no app menu or tab bar.
+  "/account-recovery",
   "/offline",
   // The outage console: opened while the database is down, so no product chrome that would
   // call /api/me and friends. It brings its own page frame.
