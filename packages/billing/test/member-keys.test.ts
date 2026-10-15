@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { describe, expect, it, vi } from "vitest";
-import { detectOrgByokKeySource, memberHasUsableKey } from "../src";
+import { detectOrgByokKeySource, memberHasUsableKey, TEAM_USAGE_SQL, teamUsageSql } from "../src";
 
 const ORG = "00000000-0000-4000-8000-000000000001";
 const USER = "00000000-0000-4000-8000-00000000000a";
@@ -47,5 +47,28 @@ describe("detectOrgByokKeySource", () => {
     expect(await detectOrgByokKeySource(client({ usable: false }).client, ORG, USER)).toBeNull();
     // No person given (a team-level call): only team keys count, as before.
     expect(await detectOrgByokKeySource(client({ usable: true }).client, ORG)).toBeNull();
+  });
+});
+
+describe("per-key monthly limits", () => {
+  it("never counts a personal key, own or shared, once it has reached its limit", async () => {
+    const probe = client({ usable: true });
+    await memberHasUsableKey(probe.client, ORG, USER);
+    const keySql = probe.calls.find((sql) => /FROM member_llm_keys/.test(sql))!;
+    expect(keySql.match(/monthly_spend_limit_usd/g)?.length).toBeGreaterThanOrEqual(4);
+    expect(keySql).toMatch(/FROM shared_member_llm_keys\(\$1::uuid\) k WHERE/);
+  });
+
+  it("does the same for team keys", async () => {
+    const probe = client({ usable: false });
+    await detectOrgByokKeySource(probe.client, ORG, USER);
+    const teamSql = probe.calls.find((sql) => /FROM org_llm_keys/.test(sql))!;
+    expect(teamSql).toContain("monthly_spend_limit_usd");
+    expect(teamSql).toContain("{servedKey,id}");
+  });
+
+  it("team usage leaves out rows a personal key served", () => {
+    expect(TEAM_USAGE_SQL).toBe("COALESCE(metadata #>> '{servedKey,scope}', '') <> 'member'");
+    expect(teamUsageSql("a")).toBe("COALESCE(a.metadata #>> '{servedKey,scope}', '') <> 'member'");
   });
 });

@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./catalog": "./src/catalog.ts",
-    "./ai-policy": "./src/ai-policy-public.ts"
+    "./ai-policy": "./src/ai-policy-public.ts",
+    "./key-limits": "./src/key-limits.ts"
   },
   "scripts": { "typecheck": "tsc --noEmit" },
   "dependencies": {

@@ -112,7 +112,7 @@ export const MY_FREE_KEY_SCHOOL_NOTE =
   "School accounts often have AI Studio turned off, so use a personal Google account if it says you do not have access.";
 
 export const MEMBER_KEY_BODY =
-  "Your keys are private by default and take priority over the team’s connection. You can share your provider allowance with this team or selected teammates below. Nobody else can view or edit your key. Turn sharing off or remove your key at any time.";
+  "Your keys are private by default and take priority over the team’s connection. You can share your provider allowance with this team or selected teammates below. Nobody else can view or edit your key. What your key spends is yours: it never counts toward the team’s AI usage or limits, and you can give each key its own monthly limit. Turn sharing off or remove your key at any time.";
 
 /**
  * The parity fields. `save_member_key` in /api/organizations/ai-keys honours a

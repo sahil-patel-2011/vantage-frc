@@ -1,6 +1,6 @@
 import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import type { PoolClient } from "@neondatabase/serverless";
-import { readOrgAllowance } from "@vantage/billing";
+import { readOrgAllowance, TEAM_USAGE_SQL } from "@vantage/billing";
 import { probeChatModel } from "../ai/capabilities";
 import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
 import { withSavepoint } from "@vantage/db";
@@ -578,7 +578,7 @@ export async function loadDashboardSnapshot(
         [input.orgId],
       ),
       client.query<{ cost: string }>(
-        `SELECT COALESCE(sum(cost_usd), 0)::text AS cost FROM ai_usage_events WHERE org_id = $1`,
+        `SELECT COALESCE(sum(cost_usd), 0)::text AS cost FROM ai_usage_events WHERE org_id = $1 AND ${TEAM_USAGE_SQL}`,
         [input.orgId],
       ),
       client.query<{ balance: string }>(

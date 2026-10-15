@@ -22,6 +22,7 @@
  */
 
 import type { PoolClient } from "@neondatabase/serverless";
+import { TEAM_USAGE_SQL } from "./key-limits";
 
 export type AllowanceFeatureSpend = {
   feature: string;
@@ -103,6 +104,7 @@ export async function readOrgAllowance(client: PoolClient, orgId: string): Promi
       WHERE org_id = $1::uuid
         AND created_at >= $2::timestamptz
         AND created_at < $3::timestamptz
+        AND ${TEAM_USAGE_SQL}
       GROUP BY feature
       ORDER BY 3 DESC, feature`,
     [orgId, row.periodStart, row.periodEnd],

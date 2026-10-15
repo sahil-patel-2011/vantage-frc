@@ -15,6 +15,7 @@ import type {
   SubscriptionsSummary,
 } from "./types";
 import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
+import { TEAM_USAGE_SQL } from "@vantage/billing/key-limits";
 
 export const COST_CATEGORIES: CostCategory[] = [
   "registration",
@@ -192,7 +193,8 @@ export async function computeCostsView(
        FROM ai_usage_events
        WHERE org_id = $1
          AND created_at >= make_date($2::int, 1, 1)
-         AND created_at < make_date($2::int + 1, 1, 1)`,
+         AND created_at < make_date($2::int + 1, 1, 1)
+         AND ${TEAM_USAGE_SQL}`,
       [org.orgId, seasonYear],
     ),
     client.query<{ seasonYear: number }>(

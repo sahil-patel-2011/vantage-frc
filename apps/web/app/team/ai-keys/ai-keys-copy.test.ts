@@ -143,6 +143,12 @@ describe("memberKeyFields", () => {
     expect(body).toContain("take priority");
     expect(body).toMatch(/turn sharing off or remove your key/);
   });
+
+  it("says a personal key's spend is the member's own, never the team's", () => {
+    const body = MEMBER_KEY_BODY.toLowerCase();
+    expect(body).toContain("never counts toward the team");
+    expect(body).toContain("monthly limit");
+  });
 });
 
 describe("memberKeyEndpointHost", () => {

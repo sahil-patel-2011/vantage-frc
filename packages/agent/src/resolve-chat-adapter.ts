@@ -38,7 +38,7 @@ import {
 import { tryCreateSponsoredFailoverAdapter } from "./sponsored-provider-pool";
 import { resolveCreditGiftAdapter, type CreditGiftRouting } from "./credit-gift-adapter";
 import { KeyFailoverChatAdapter, type FailoverKey, type KeyAttemptResult } from "./key-failover-adapter";
-import type { CreditGiftLedger } from "@vantage/billing";
+import { KEY_UNDER_LIMIT_SQL, type CreditGiftLedger, type ServedKey } from "@vantage/billing";
 import { PetalsPublicPoolAdapter, tryCreatePetalsPublicAdapter } from "./petals-public-pool";
 import { isAiHordeModel, tryCreateAiHordeAdapter } from "./ai-horde-pool";
 import { isLocalOrLanOrigin } from "./model-tier";
@@ -585,6 +585,7 @@ async function loadRoutingPrefsAndPolicy(
 const KEY_ENABLED_SQL = `COALESCE((to_jsonb(k) ->> 'enabled')::boolean, true)`;
 const KEY_PRIORITY_SQL = `COALESCE((to_jsonb(k) ->> 'priority')::int, 100)`;
 
+
 export async function loadOrgLlmKeys(client: PoolClient, orgId: string): Promise<OrgKeyRow[]> {
   try {
     const result = await client.query<OrgKeyRow>(
@@ -595,7 +596,7 @@ export async function loadOrgLlmKeys(client: PoolClient, orgId: string): Promise
               k.key_auth_tag AS "keyAuthTag", k.encrypted_dek AS "encryptedDek",
               k.kms_key_id AS "kmsKeyId"
        FROM org_llm_keys k
-       WHERE k.org_id = $1 AND ${KEY_ENABLED_SQL}
+       WHERE k.org_id = $1 AND ${KEY_ENABLED_SQL} AND ${KEY_UNDER_LIMIT_SQL}
        ORDER BY ${KEY_PRIORITY_SQL}, k.created_at`,
       [orgId],
     );
@@ -629,7 +630,7 @@ export async function loadMemberLlmKeys(
               k.key_auth_tag AS "keyAuthTag", k.encrypted_dek AS "encryptedDek",
               k.kms_key_id AS "kmsKeyId"
          FROM member_llm_keys k
-        WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid AND ${KEY_ENABLED_SQL}
+        WHERE k.org_id = $1::uuid AND k.user_id = $2::uuid AND ${KEY_ENABLED_SQL} AND ${KEY_UNDER_LIMIT_SQL}
         ORDER BY ${KEY_PRIORITY_SQL}, k.created_at`,
       [orgId, userId],
     );
@@ -640,7 +641,8 @@ export async function loadMemberLlmKeys(
         `SELECT k.id, k.provider, k.label, k.base_url AS "baseUrl", k.model,
                 k.key_ciphertext AS "keyCiphertext", k.key_nonce AS "keyNonce",
                 k.key_auth_tag AS "keyAuthTag", k.encrypted_dek AS "encryptedDek", k.kms_key_id AS "kmsKeyId"
-         FROM shared_member_llm_keys($1::uuid) k ORDER BY k.priority, k.created_at, k.id`, [orgId],
+         FROM shared_member_llm_keys($1::uuid) k WHERE ${KEY_UNDER_LIMIT_SQL}
+         ORDER BY k.priority, k.created_at, k.id`, [orgId],
       )).rows;
     }, [] as OrgKeyRow[]);
     return [...result.rows, ...shared];
@@ -670,24 +672,25 @@ async function failoverOverKeys(
   rows: OrgKeyRow[],
   input: ResolveOrgChatAdapterInput,
   memberKeyIds: Set<string>,
-  build: (row: OrgKeyRow, apiKey: string) => HttpChatAdapter,
+  build: (row: OrgKeyRow, apiKey: string, servedKey: ServedKey) => HttpChatAdapter,
 ): Promise<ChatAdapter | null> {
+  const served = (row: OrgKeyRow) => servedKeyForRow(row, memberKeyIds);
   if (rows.length === 0) return null;
-  if (rows.length === 1) return build(rows[0]!, await decryptRow(rows[0]!, input.decrypt));
+  if (rows.length === 1) return build(rows[0]!, await decryptRow(rows[0]!, input.decrypt), served(rows[0]!));
   const keys: FailoverKey[] = [];
   for (const row of rows) {
     const apiKey = await decryptRow(row, input.decrypt).catch(() => "");
     if (!apiKey) continue;
-    keys.push({
-      id: row.id,
-      label: row.label?.trim() || row.provider,
-      scope: memberKeyIds.has(row.id) ? "member" : "org",
-      adapter: build(row, apiKey),
-    });
+    keys.push({ ...served(row), adapter: build(row, apiKey, served(row)) });
   }
-  if (keys.length === 0) return build(rows[0]!, "");
+  if (keys.length === 0) return build(rows[0]!, "", served(rows[0]!));
   if (keys.length === 1) return keys[0]!.adapter;
   return new KeyFailoverChatAdapter(keys as [FailoverKey, ...FailoverKey[]], (result) => noteKeyResult(client, result));
+}
+
+/** Which stored key a row is, for the usage row: a personal key ("member") or the team's ("org"). */
+function servedKeyForRow(row: OrgKeyRow, memberKeyIds: Set<string>): ServedKey {
+  return { id: row.id, label: row.label?.trim() || row.provider, scope: memberKeyIds.has(row.id) ? "member" : "org" };
 }
 
 /** Record a key's outcome (0727 note_llm_key_result). Bookkeeping: never fails a turn. */
@@ -713,6 +716,7 @@ function httpAdapterFromLlmKey(
   apiKey: string,
   model: string,
   prices: PromptCachePrices,
+  servedKey: ServedKey,
   effort?: ByokEffort,
 ): HttpChatAdapter {
   const baseUrl = row.baseUrl?.trim() || undefined;
@@ -726,6 +730,7 @@ function httpAdapterFromLlmKey(
       promptCachingEnabled: input.promptCachingEnabled,
       prices,
       fetchImpl: input.fetchImpl,
+      servedKey,
     });
   }
   const provider = normalized === "anthropic" || normalized === "openai" ? normalized : "openai";
@@ -737,6 +742,7 @@ function httpAdapterFromLlmKey(
     promptCachingEnabled: input.promptCachingEnabled,
     prices,
     fetchImpl: input.fetchImpl,
+    servedKey,
     ...(provider === "anthropic" && effort ? { effort } : {}),
   });
 }
@@ -959,6 +965,7 @@ export async function resolveOrgChatAdapterWithProvenance(
   const memberKeyIds = new Set(memberKeys.map((row) => row.id));
   const keyRowSource = (row: OrgKeyRow): ResolvedModelSource =>
     memberKeyIds.has(row.id) ? "member-key" : "org-key";
+  const servedKey = (row: OrgKeyRow) => servedKeyForRow(row, memberKeyIds);
 
   const orgProviders = await client.query<OrgProviderRow>(
     `SELECT id, kind, label, base_url AS "baseUrl", local_relay AS "localRelay",
@@ -1073,11 +1080,11 @@ export async function resolveOrgChatAdapterWithProvenance(
         );
         // Every Google key the member and the team hold, in their order: the member's first, the
         // team's as the last resort (0727 allows several per provider).
-        const keys = [apiKey];
+        const keys = [{ apiKey, row }];
         for (const other of orgKeys.rows.filter((r) => r !== row && isGoogleByokProvider(r.provider))) {
           try {
             const value = await decryptRow(other, input.decrypt);
-            if (value && !keys.includes(value)) keys.push(value);
+            if (value && !keys.some((key) => key.apiKey === value)) keys.push({ apiKey: value, row: other });
           } catch {
             // An unreadable key must not take a working key down with it.
           }
@@ -1088,11 +1095,12 @@ export async function resolveOrgChatAdapterWithProvenance(
               new HttpChatAdapter({
                 provider: "openai-compatible",
                 model: entry.model,
-                apiKey: key,
+                apiKey: key.apiKey,
                 baseUrl: GOOGLE_OPENAI_COMPAT_BASE,
                 promptCachingEnabled: input.promptCachingEnabled,
                 prices: entry.prices,
                 fetchImpl: input.fetchImpl,
+                servedKey: servedKey(key.row),
               }),
           ),
         ) as [HttpChatAdapter, ...HttpChatAdapter[]];
@@ -1115,6 +1123,7 @@ export async function resolveOrgChatAdapterWithProvenance(
             promptCachingEnabled: input.promptCachingEnabled,
             prices: pricesFromOption(chosen),
             fetchImpl: input.fetchImpl,
+            servedKey: servedKey(row),
             providerLabel: "openrouter",
             extraHeaders: openRouterRequestHeaders(),
           }),
@@ -1124,8 +1133,8 @@ export async function resolveOrgChatAdapterWithProvenance(
     }
     if (chosen.provider === "openai" || chosen.provider === "anthropic") {
       const rows = orgKeys.rows.filter((r) => normalizeProvider(r.provider) === chosen.provider);
-      const adapter = await failoverOverKeys(client, rows, input, memberKeyIds, (row, apiKey) =>
-        httpAdapterFromLlmKey(row, input, apiKey, chosen.modelId, pricesFromOption(chosen), chosen.effort),
+      const adapter = await failoverOverKeys(client, rows, input, memberKeyIds, (row, apiKey, served) =>
+        httpAdapterFromLlmKey(row, input, apiKey, chosen.modelId, pricesFromOption(chosen), served, chosen.effort),
       );
       if (adapter) return resolved(adapter, keyRowSource(rows[0]!));
     }
@@ -1178,6 +1187,7 @@ export async function resolveOrgChatAdapterWithProvenance(
           promptCachingEnabled: input.promptCachingEnabled,
           prices: { inputPerMillionUsd: 0, outputPerMillionUsd: 0 },
           fetchImpl: input.fetchImpl,
+          servedKey: servedKey(row),
           providerLabel: "openrouter",
           extraHeaders: openRouterRequestHeaders(),
         }),
@@ -1196,6 +1206,7 @@ export async function resolveOrgChatAdapterWithProvenance(
           promptCachingEnabled: input.promptCachingEnabled,
           prices,
           fetchImpl: input.fetchImpl,
+          servedKey: servedKey(row),
         }),
         keyRowSource(row),
       );
@@ -1205,7 +1216,7 @@ export async function resolveOrgChatAdapterWithProvenance(
     const model = firstListedModel(row.model) || DEFAULT_MODELS[provider];
     const apiKey = await decryptRow(row, input.decrypt);
     const prices = await catalogPrices(client, provider, model, DEFAULT_PRICES[provider]);
-    return resolved(httpAdapterFromLlmKey(row, input, apiKey, model, prices), keyRowSource(row));
+    return resolved(httpAdapterFromLlmKey(row, input, apiKey, model, prices, servedKey(row)), keyRowSource(row));
   }
 
   // Keyless local connector last chance.

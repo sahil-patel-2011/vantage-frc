@@ -1,14 +1,6 @@
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import {
-  FINANCE_IN_AI_ACK_VERSION,
-  knownAiFeatures,
-  knownAiTools,
-  mapOrgAiPolicyRow,
-  normalizeStringList,
-  normalizeThresholds,
-  parseOptionalUsd,
-} from "@vantage/billing";
+import { FINANCE_IN_AI_ACK_VERSION, knownAiFeatures, knownAiTools, mapOrgAiPolicyRow, normalizeStringList, normalizeThresholds, parseOptionalUsd, TEAM_USAGE_SQL } from "@vantage/billing";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
@@ -52,7 +44,7 @@ export async function GET(request: Request) {
                   COALESCE(sum(total_tokens) FILTER (WHERE created_at >= date_trunc('day', now())), 0)::text AS "dailyTokens",
                   COALESCE(sum(total_tokens), 0)::text AS "monthlyTokens"
            FROM ai_usage_events
-           WHERE org_id=$1 AND created_at >= date_trunc('month', now())`,
+           WHERE org_id=$1 AND created_at >= date_trunc('month', now()) AND ${TEAM_USAGE_SQL}`,
           [orgId],
         ),
         client.query(

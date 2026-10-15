@@ -35,6 +35,7 @@ import {
 import { MyFreeGeminiKey } from "./ai-keys-my-free-key";
 import { AiKeySharing } from "./ai-key-sharing";
 import { TeamKeyList } from "./ai-keys-team-list";
+import { KeySpendMeter } from "./ai-key-spend";
 import { AiCreditLine } from "../../../components/ai-credit-line";
 import { WebResearchCard } from "./ai-keys-web-research";
 import { AiTrainingCard } from "./ai-training-card";
@@ -411,6 +412,18 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                           ? ` · last used ${new Date(row.lastUsedAt).toLocaleDateString()}`
                           : " · not used yet"}
                       </small>
+                      {orgId && row.id ? (
+                        <KeySpendMeter
+                          orgId={orgId}
+                          keyId={row.id}
+                          scope="member"
+                          label={row.label || BYOK_PROVIDER_META[row.provider as ByokProvider]?.label || row.provider}
+                          spend={row}
+                          canEdit
+                          onSaved={props.reload}
+                          onMessage={props.notify}
+                        />
+                      ) : null}
                     </div>
                     <span className="ai-keys-list-actions">
                       {row.id ? (

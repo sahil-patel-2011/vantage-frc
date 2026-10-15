@@ -42,6 +42,9 @@ export const REQUIRED_PRODUCTION_MIGRATIONS = [
   // Personal-key inference grants: never publish enabled sharing before its RLS-safe resolver exists.
   "0734_personal_ai_key_sharing.sql",
   "0735_competition_calendar_planning.sql",
+  // Per-key monthly AI spend limits: the chat resolver and the AI keys page read
+  // member_llm_keys / org_llm_keys.monthly_spend_limit_usd.
+  "0736_ai_key_monthly_limits.sql",
 ];
 
 export const BACKUP_MODE_BUILD_NOTE =

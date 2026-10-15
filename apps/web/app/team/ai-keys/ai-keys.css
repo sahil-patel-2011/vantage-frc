@@ -681,3 +681,39 @@
   .ai-keys-list > li { flex-wrap: wrap; }
   .ai-keys-icon-btn { width: 44px; height: 44px; }
 }
+
+/* One key's spend this month against its own monthly limit (ai-key-spend.tsx). */
+.ai-key-spend { display: grid; gap: 6px; width: 100%; margin-top: 6px; }
+.ai-key-spend-line {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px;
+  color: var(--muted); font-size: 13px;
+}
+.ai-key-spend-line strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ai-key-spend-bar {
+  position: relative; height: 6px; overflow: hidden;
+  border-radius: var(--radius-pill); background: var(--line-soft);
+}
+.ai-key-spend-bar > span {
+  display: block; height: 100%; border-radius: inherit;
+  background: var(--accent); transition: width 200ms ease;
+}
+.ai-key-spend[data-level="high"] .ai-key-spend-bar > span { background: var(--warning); }
+.ai-key-spend[data-level="full"] .ai-key-spend-bar > span { background: var(--danger, #d92d20); }
+.ai-key-spend-note { color: var(--danger, #d92d20); font-size: 12.5px; }
+.ai-key-spend-edit { display: grid; gap: 8px; max-width: 26rem; }
+.ai-key-spend-edit label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.ai-key-spend-edit input {
+  min-height: 42px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); color: var(--ink);
+  font: inherit; font-size: 15px; font-weight: 400;
+}
+.ai-key-spend-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.ai-keys-mine-list li > div:has(> .ai-key-spend) { flex: 1 1 16rem; min-width: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-key-spend-bar > span { transition: none; }
+}
+@media (max-width: 420px) {
+  .ai-key-spend-edit input { min-height: 44px; font-size: 16px; }
+  .ai-keys-mine-list .ai-key-spend button { width: auto; }
+}

@@ -69,6 +69,10 @@ export type MemberKeyRow = {
   lastUsedAt: string | null;
   shareScope?: import("../../../lib/ai-keys/key-sharing").KeyShareScope;
   shareUserIds?: string[];
+  /** This calendar month's limit in USD, or null for unlimited (0736). */
+  monthlyLimitUsd?: string | null;
+  /** What this key has spent this calendar month: the member's own money, never the team's. */
+  monthSpendUsd?: string;
 };
 
 export type Payload = {

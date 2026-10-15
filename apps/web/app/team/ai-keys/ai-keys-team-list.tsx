@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { askConfirm } from "../../../components/ui";
 import type { ByokKeyStatus, ByokProvider } from "../../../lib/ai-keys/byok-providers";
 import type { ProviderMeta } from "./ai-keys-model";
+import { KeySpendMeter } from "./ai-key-spend";
 
 /*
   The team's AI keys as one list and one "Add a key" form.
@@ -27,6 +28,10 @@ export type TeamKeyRow = {
   lastError: string | null;
   /** One model, or several separated by a comma. Blank follows Model routing. */
   model?: string | null;
+  /** This calendar month's limit in USD, or null for unlimited (0736). */
+  monthlyLimitUsd?: string | null;
+  /** What this key has spent this calendar month. */
+  monthSpendUsd?: string;
 };
 
 function when(iso: string | null): string | null {
@@ -219,6 +224,18 @@ export function TeamKeyList({
                     {row.model ? ` · ${row.model}` : ""}
                   </small>
                   {row.lastError ? <small className="ai-keys-list-error">{row.lastError}</small> : null}
+                  {multiKey ? (
+                    <KeySpendMeter
+                      orgId={orgId}
+                      keyId={row.id}
+                      scope="team"
+                      label={row.label}
+                      spend={row}
+                      canEdit={canManage}
+                      onSaved={onChanged}
+                      onMessage={onMessage}
+                    />
+                  ) : null}
                 </span>
                 {canManage && multiKey ? (
                   <span className="ai-keys-list-actions">

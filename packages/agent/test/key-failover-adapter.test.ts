@@ -100,4 +100,73 @@ describe("team keys in the resolver", () => {
     expect(adapter).toBeInstanceOf(KeyFailoverChatAdapter);
     expect((adapter as KeyFailoverChatAdapter).keyCount).toBe(2);
   });
+
+  it("skips a key that reached its monthly limit, in SQL, for team and personal keys", async () => {
+    const sqls: string[] = [];
+    const client = {
+      query: vi.fn(async (sql: string) => {
+        sqls.push(sql);
+        return { rows: [], rowCount: 0 };
+      }),
+    };
+    await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      userId: "00000000-0000-4000-8000-00000000000a",
+      promptCachingEnabled: false,
+      feature: "chat",
+      decrypt: async (parts) => `sk-${parts.ciphertext}`,
+    }).catch(() => null);
+    const keySql = sqls.filter((sql) => /FROM (org_llm_keys|member_llm_keys|shared_member_llm_keys)/.test(sql) && !/to_reg/.test(sql));
+    expect(keySql.length).toBeGreaterThan(0);
+    for (const sql of keySql) {
+      expect(sql).toContain("monthly_spend_limit_usd");
+      expect(sql).toContain("date_trunc('month', now())");
+    }
+  });
+
+  it("records a single team key as the key that served the call", async () => {
+    const client = {
+      query: vi.fn(async (sql: string) => {
+        if (sql.includes("FROM org_llm_keys")) {
+          return {
+            rows: [{ id: "k1", provider: "openai", label: "Main", keyCiphertext: "c", keyNonce: "n", keyAuthTag: "t", encryptedDek: "d", kmsKeyId: "k" }],
+            rowCount: 1,
+          };
+        }
+        return { rows: [], rowCount: 0 };
+      }),
+    };
+    const fetchImpl = vi.fn(async () => ok());
+    const adapter = await resolveOrgChatAdapter(client as never, {
+      orgId: "org-1",
+      promptCachingEnabled: false,
+      feature: "chat",
+      fetchImpl: fetchImpl as never,
+      decrypt: async (parts) => `sk-${parts.ciphertext}`,
+    });
+    const { servedKey } = await withServedKeyScope(() => adapter.complete(ask));
+    expect(servedKey).toEqual({ id: "k1", label: "Main", scope: "org" });
+  });
+});
+
+describe("HttpChatAdapter served key", () => {
+  it("notes its stored key only when the request succeeds", async () => {
+    const make = (fetchImpl: typeof fetch) =>
+      new HttpChatAdapter({
+        provider: "openai",
+        model: "gpt-4.1-mini",
+        apiKey: "sk-x",
+        promptCachingEnabled: false,
+        prices: { inputPerMillionUsd: 0.4, outputPerMillionUsd: 1.6 },
+        fetchImpl,
+        servedKey: { id: "m1", label: "My key", scope: "member" },
+      });
+    const good = await withServedKeyScope(() => make(vi.fn(async () => ok()) as never).complete(ask));
+    expect(good.servedKey).toEqual({ id: "m1", label: "My key", scope: "member" });
+    let noted: unknown = "unset";
+    await withServedKeyScope(async () => {
+      await make(vi.fn(async () => new Response("{}", { status: 500 })) as never).complete(ask).catch(() => null);
+    }).then((result) => { noted = result.servedKey; });
+    expect(noted).toBeNull();
+  });
 });
