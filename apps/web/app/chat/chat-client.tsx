@@ -28,7 +28,6 @@ import {
 import { sponsorDraftKind } from "../../lib/ai-skills/sponsorships";
 import { hubHref } from "../../lib/nav/hubs";
 import { fetchProductSession } from "../../lib/nav/product-session";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import {
   SkillChip,
@@ -39,10 +38,10 @@ import {
   type SkillPreview,
 } from "./ask-ai-skills";
 import { BackgroundRunCard, backgroundRunLabel, useBackgroundWork } from "./background-work";
-import { connectionMessage, connectionNextStep, refusedConnection, useAiConnection } from "./use-ai-connection";
+import { refusedConnection, useAiConnection } from "./use-ai-connection";
+import { CONNECTION_NOTE_ID, ConnectionNote } from "./connection-note";
 
 /** The composer's AI-connection note; also the disabled Send button's accessible description. */
-const CONNECTION_NOTE_ID = "ch-ai-connection-note";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -764,28 +763,13 @@ export default function ChatClient({
           ) : null}
 
           <form className="ch-composer ask-composer" onSubmit={send}>
-            {orgId && !aiConnection ? <p id={CONNECTION_NOTE_ID} className="ch-composer-note" role="status">Checking your AI connection…</p> : null}
-            {aiConnection?.configured === false ? (
-              <div id={CONNECTION_NOTE_ID} className="ch-connection-note" role="status">
-                <p>{connectionMessage(aiConnection)}</p>
-                {(() => {
-                  switch (connectionNextStep(aiConnection)) {
-                    case "connect":
-                      return <Button variant="primary" size="sm" type="button" onClick={() => setConnectOpen(true)}>Connect AI</Button>;
-                    case "team":
-                      return <Button as="a" variant="primary" size="sm" href={withOrgHref("/team/ai-keys", orgId)}>Connect AI for the team</Button>;
-                    case "ask_owner":
-                      return <p className="ch-connection-hint">Ask a team owner or admin to connect AI.</p>;
-                    case "settings":
-                      return <Button as="a" variant="secondary" size="sm" href={connectionHref}>Check AI settings</Button>;
-                    case "retry":
-                      return <Button variant="secondary" size="sm" type="button" onClick={() => void recheckAiConnection()}>Retry check</Button>;
-                    default:
-                      return null;
-                  }
-                })()}
-              </div>
-            ) : null}
+            <ConnectionNote
+              orgId={orgId}
+              connection={aiConnection}
+              connectionHref={connectionHref}
+              onConnect={() => setConnectOpen(true)}
+              onRetry={() => void recheckAiConnection()}
+            />
             {pinned && conversationEmpty ? <SkillStarters skillId={pinned} onPick={(starter) => pickStarter(null, starter)} /> : null}
             {thread?.scope === "team" ? (
               <div className="ch-composer-note">Shared with your team · teammates see this message</div>
