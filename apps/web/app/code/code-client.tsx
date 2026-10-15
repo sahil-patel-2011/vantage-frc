@@ -151,14 +151,6 @@ export function CodeClient({
   }, [orgId]);
 
   useEffect(() => {
-    if (!focusBugbot) return;
-    const frame = requestAnimationFrame(() => {
-      document.getElementById("bugbot")?.scrollIntoView({ block: "start" });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [focusBugbot]);
-
-  useEffect(() => {
     setBugbotMode(cockpit.defaultBugbotMode);
     setInstructions(cockpit.bugbotInstructions);
     setIncludeScanTests(cockpit.includeScanTests);
@@ -824,6 +816,7 @@ export function CodeClient({
     <CodeReadyView
       orgId={orgId}
       embedded={embedded}
+      initialTab={focusBugbot ? "scan" : "review"}
       budgetsHref={budgetsHref}
       keysHref={keysHref}
       githubHref={githubHref}

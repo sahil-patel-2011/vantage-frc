@@ -99,4 +99,14 @@ describe("hub-access-filter", () => {
       expect(pathAllowedByHubAccess(path, competitionOnly), path).toBe(false);
     }
   });
+
+  it("checks Pit TV and Assignments as their hub tabs, not as open pages", () => {
+    const scoutOnly: ClientHubAccessRow[] = [{ hubId: "competition", allowedTabIds: ["scouting"] }];
+    expect(pathAllowedByHubAccess("/display", scoutOnly)).toBe(false);
+    expect(pathAllowedByHubAccess("/scout-coverage-live", scoutOnly)).toBe(false);
+    const withTv: ClientHubAccessRow[] = [{ hubId: "competition", allowedTabIds: ["scouting", "pit-tv", "scout-coverage-live"] }];
+    expect(pathAllowedByHubAccess("/display", withTv)).toBe(true);
+    expect(pathAllowedByHubAccess("/scout-coverage-live", withTv)).toBe(true);
+    expect(pathAllowedByHubAccess("/display", [{ hubId: "team", allowedTabIds: [] }])).toBe(false);
+  });
 });
