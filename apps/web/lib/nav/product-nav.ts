@@ -10,8 +10,7 @@
  * Account and admin settings live below the workspace list.
  */
 
-import { NAV_HUBS, PRODUCT_HUBS } from "./hubs";
-import { hubNavigationSections } from "./hub-navigation";
+import { PRODUCT_HUBS } from "./hubs";
 
 export type NavItemState = "setup" | "planned";
 
@@ -114,7 +113,7 @@ export const ORG_EXEMPT_HREFS = new Set([
 
 /**
  * Drawer IA — one hub row per pillar. Other workbenches hang off that row via
- * panelSubLinks; nested tools stay on the hub ToolStrip and Cmd+K.
+ * nested tools stay on the hub ToolStrip and Cmd+K.
  * Settings / Account / App manual live in the drawer footer, not here.
  */
 export const PRODUCT_NAV_GROUPS: ProductNavGroup[] = [
@@ -158,26 +157,6 @@ export const LOGISTICS_DEEP_LINKS: ProductNavItem[] = [
   { href: "/visit-invites", label: "Visit invites", icon: "users" },
 ];
 
-/**
- * All-panel leaves under a pillar.
- *
- * Hub rows already open the default workbench (Competition → Scout).
- * Repeating that name here printed it twice. The other workbenches stay
- * here so All can open Scouting / Chat / CAD without a second hop through
- * the hub TabBar. Forms and Assignments are canonical Competition
- * destinations (hub-navigation.ts), so they are listed too. Nested tools
- * (Alliance desk, Bugbot) stay off this list — they live on the workbench
- * ToolStrip.
- */
-export function panelSubLinks(group: ProductNavGroup): Array<{ href: string; label: string }> {
-  const hub = NAV_HUBS.find((entry) => entry.label === group.label);
-  if (!hub) return [];
-  const tabs = hubNavigationSections(hub, hub.tabs)
-    .filter((tab) => tab.id !== hub.defaultTab)
-    .map((tab) => ({ href: `${hub.href}?tab=${tab.id}`, label: tab.label }));
-  return tabs;
-}
-
 /** Quiet chrome destinations — Cmd+K / footer, never drawer accordion dumps. */
 export const SETTINGS_DEEP_LINKS: ProductNavItem[] = [
   { href: "/notifications", label: "Notifications", icon: "bell" },
@@ -215,29 +194,7 @@ export const ISLAND_TAB_CATALOG: IslandTabDefinition[] = [
   { href: "/files", label: "Files", icon: "grid" },
   { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
   { href: "/logistics", label: "Logistics", icon: "pin" },
-  { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
-
-];
-
-/**
- * Soft-UI pillars for Search (⌘K) shortcuts — hub roots only.
- */
-export const PILLAR_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
-  { href: "/competition", label: "Competition", icon: "swords" },
-  { href: "/team", label: "Team", icon: "users" },
-  { href: "/build", label: "Build", icon: "cube" },
-  { href: "/business", label: "Business", icon: "clipboard" },
-  { href: "/ai?tab=chat", label: "Ask AI", icon: "sparkles" },
-];
-
-/**
- * Glanceable ops under the pillars — four shortcuts only.
- */
-export const MORE_SHEET_LINKS: Array<{ href: string; label: string; icon: ProductNavIcon }> = [
-  { href: "/competition?tab=my-day", label: "My Day", icon: "calendar" },
-  { href: "/competition?tab=forms", label: "Forms", icon: "clipboard" },
-  { href: "/competition?tab=match-checklist", label: "Checklist", icon: "clipboard" },
-  { href: "/team?tab=messages", label: "Team chat", icon: "chat" },
+  { href: "/team?tab=messages", label: "Chat", icon: "chat" },
 ];
 
 /** @deprecated Prefer hub tabs + Cmd+K — kept for residual imports. */

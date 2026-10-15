@@ -263,7 +263,6 @@
 .product-hub-panel .todos-page {
   max-width: none;
 }
-.product-hub-panel .todos-page .app-page-header,
-.product-hub-panel .todos-page .team-ops-nav {
+.product-hub-panel .todos-page .app-page-header {
   display: none;
 }

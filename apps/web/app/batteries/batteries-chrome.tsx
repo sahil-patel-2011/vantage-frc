@@ -4,7 +4,6 @@ import { Button, EmptyState, PageHeader } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { TeamHubRelated } from "../../components/team-hub-related";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import {
   BATTERIES_BUILD_RELATED_INCLUDE,
   BATTERIES_TEAM_RELATED_INCLUDE,
@@ -39,7 +38,6 @@ export function BatteriesLoadShell({
   return (
     <main className="module-page batt-page">
       <PageHeader breadcrumbs={batteryCrumbs(embed)} title="Batteries" />
-      {!embed ? <TeamOpsNav active="batteries" /> : null}
       <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
       <EmptyState
         title={failure ? failure.title : "Loading batteries…"}
@@ -80,7 +78,6 @@ export function BatteriesSetupShell({
         title="Batteries"
         description="Track charge cycles, assignment, and competition readiness for every pack — from real logs only."
       />
-      {!embed ? <TeamOpsNav active="batteries" /> : null}
       <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
       <EmptyState title="Choose your team" description={message} badge="Needs setup" badgeTone="setup" soft>
         <Button as="a" variant="primary" href="/workspace">
@@ -157,7 +154,6 @@ export function BatteriesReadyHeader({
         ) : null}
       </PageHeader>
       <OfflineBanner feature="Batteries" fromCache={fromCache} cachedAt={cachedAt} />
-      {!embed ? <TeamOpsNav orgId={orgId} active="batteries" /> : null}
       {error ? (
         <p className="batt-alert" role="alert">
           {error}

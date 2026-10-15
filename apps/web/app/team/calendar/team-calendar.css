@@ -756,10 +756,6 @@
 
 .tc-travel{border-left:3px solid var(--accent);padding-left:10px}
 
-.tc-page > .team-hq-strip {
-  margin-bottom: 12px;
-}
-
 .tc-github-hint {
   margin: 0 0 12px;
   color: var(--muted);

@@ -8,7 +8,6 @@ import { fetchProductSession } from "../../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { strategyCanSync } from "../../../lib/strategy/strategy-related";
-import { TeamSettingsNav } from "../../../components/team-settings-nav";
 import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
 
 type AuthPolicy = {
@@ -167,7 +166,6 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         title="Team security"
         description="Choose how people sign in to your team. What each person can open is set on Team admin."
       >
-        {canManage ? <TeamSettingsNav orgId={orgId} current="security" /> : null}
         <p className="app-muted" style={{ margin: 0 }}>
           Your own sign-in is under <a href="/security">Account → Security</a>.
         </p>

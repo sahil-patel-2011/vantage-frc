@@ -1,5 +1,4 @@
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
-import { TeamOpsNav } from "../../../components/team-ops-nav";
 import TeamSlackClient from "./slack-client";
 
 export const metadata = {
@@ -20,7 +19,6 @@ export default async function TeamSlackPage({
           title="Slack"
           description="Connect Slack to Vantage team chat so both sides stay on this team only."
         />
-        <TeamOpsNav within="admin" />
         <EmptyState
           soft
           title="Choose your team"

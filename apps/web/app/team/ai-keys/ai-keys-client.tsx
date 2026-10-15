@@ -27,7 +27,6 @@ import {
 } from "./ai-keys-model";
 import { AiKeysReadyView } from "./ai-keys-ready-view";
 import "./ai-keys.css";
-import { TeamSettingsNav } from "../../../components/team-settings-nav";
 import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
 
 function isAiKeysPayload(value: unknown): value is Payload {
@@ -524,7 +523,6 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
         title="AI keys"
         description={PAGE_DESCRIPTION}
       >
-        <TeamSettingsNav orgId={orgId} current="ai" />
       </PageHeader>
 
       {orgId ? <RelatedStrip orgId={orgId} /> : null}

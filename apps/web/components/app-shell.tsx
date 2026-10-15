@@ -130,7 +130,6 @@ export default function AppShell() {
   const [teamsLoaded, setTeamsLoaded] = useState(false);
   const [pathSearch, setPathSearch] = useState("");
   const [shortcutHint, setShortcutHint] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const panelCloseRef = useRef<HTMLButtonElement>(null);
   const islandQueryOpened = useRef(false);
   // A save that lands wins over a late-arriving read of the old pins.
@@ -138,7 +137,6 @@ export default function AppShell() {
   const islandPressTimer = useRef<number | null>(null);
   const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
   const islandLongPressed = useRef(false);
-  const focusSearchOnOpen = useRef(false);
   const navOpenerRef = useRef<HTMLElement | null>(null);
   /** Focus goes back only after a real close, never on the first render. */
   const navWasOpenRef = useRef(false);
@@ -150,14 +148,13 @@ export default function AppShell() {
   useEffect(() => { watchSessionBoundary(); }, []);
   const activeGroupLabel = activeNav?.group.label;
 
-  const openNav = useCallback((options?: { focusSearch?: boolean }) => {
+  const openNav = useCallback(() => {
     if (!document.activeElement?.closest(".soft-drawer")) {
       // Ctrl/⌘+K from the page itself has <body> as the "opener"; focusing that again on close
       // dropped keyboard users at the top of the document. null sends focus to the search button.
       const active = document.activeElement;
       navOpenerRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
     }
-    focusSearchOnOpen.current = Boolean(options?.focusSearch);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
     setPaletteOpen(false);
@@ -177,9 +174,9 @@ export default function AppShell() {
   }, []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
 
-  /** Touch opens navigation without bringing up the software keyboard. */
+  /** The menu has no search field of its own: Search opens the one palette, at every size. */
   const toggleMenu = useCallback(() => {
-    openNav({ focusSearch: !window.matchMedia("(pointer: coarse)").matches });
+    openNav();
   }, [openNav]);
 
   const navigate = useCallback((href: string) => {
@@ -303,14 +300,11 @@ export default function AppShell() {
       return;
     }
     navWasOpenRef.current = true;
-    const wantsSearch = focusSearchOnOpen.current;
-    focusSearchOnOpen.current = false;
     const focusTimer = window.setTimeout(() => {
       // A person may already have moved to a destination while the drawer
       // animates. Delayed initial focus must not steal their next keystroke.
       if (document.activeElement?.closest(".soft-drawer")) return;
-      if (wantsSearch) searchInputRef.current?.focus();
-      else panelCloseRef.current?.focus();
+      panelCloseRef.current?.focus();
     }, 40);
     return () => window.clearTimeout(focusTimer);
   }, [navOpen]);
@@ -517,16 +511,7 @@ export default function AppShell() {
     const membershipRole = orgId ? memberships.find((row) => row.orgId === orgId)?.role : undefined;
     return settingsRoleTier(membershipRole ?? me.role) === "owner-admin";
   }, [memberships, me.role, orgId]);
-  // The menu's field and the palette each keep their own query; both forget it on closing.
-  const menuSearch = useShellSearch({
-    active: navOpen,
-    orgId,
-    catalog: paletteCatalog,
-    isAllowed: navHrefAllowed,
-    canManageTeam,
-    navigate,
-    onDone: closeNav,
-  });
+  // One search for the whole app: the palette (Search in the top bar, the menu, or ⌘K / Ctrl+K).
   const paletteSearch = useShellSearch({
     active: paletteOpen,
     orgId,
@@ -638,12 +623,10 @@ export default function AppShell() {
         navOpen={navOpen}
         closeNav={closeNav}
         panelCloseRef={panelCloseRef}
-        searchInputRef={searchInputRef}
         orgLabel={orgLabel}
         rolePlanCue={rolePlanCue}
         orgId={orgId}
-        search={menuSearch}
-        shortcutHint={shortcutHint}
+        onOpenSearch={openPalette}
         visibleNavGroups={visibleNavGroups}
         pins={pins}
         activeGroupLabel={activeGroupLabel}

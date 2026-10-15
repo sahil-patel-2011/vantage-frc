@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
-import { TeamOpsNav } from "../../../components/team-ops-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
@@ -350,7 +349,6 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
         <GettingStartedRelated orgId={orgId} />
       </PageHeader>
 
-      <TeamOpsNav orgId={orgId} />
       <OfflineBanner feature="Getting started" fromCache={fromCache} cachedAt={cachedAt} />
 
       {message ? (

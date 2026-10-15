@@ -139,12 +139,12 @@
   margin-inline: 0;
   max-width: none;
 }
-.product-hub-panel .team-ops-nav { display: none; }
+
 /* One row of links under a page title, not two. Where the header already carries the
    page's related tools, the Team-operations sibling strip (Practice · Attendance ·
    Logistics · Batteries) is a second row saying "elsewhere" — Logistics showed eight
    links above an empty page. The strip still shows on pages without a related row. */
-main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
+
 /* Hub already has the title — keep the feature's action row (Change event, Refresh). */
 .product-hub-panel .app-page-header .breadcrumbs,
 .product-hub-panel .app-page-header h1,
@@ -826,9 +826,7 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 .section-select select { min-height: 44px; min-width: 160px; max-width: 100%; padding: 10px 36px 10px 14px; border: 1px solid var(--line-soft, var(--line)); border-radius: 12px; background: var(--surface); color: var(--ink); font: 600 14px/1.3 var(--font-sans); box-shadow: 0 1px 3px color-mix(in srgb, var(--ink) 4%, transparent); cursor: pointer; }
 .section-select select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .section-select select:disabled { opacity: .6; cursor: wait; }
-.hub-context-actions { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 24px 0 8px; padding-top: 20px; border-top: 1px solid var(--line-soft, var(--line)); }
-.hub-context-actions a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); font: 550 14px/1.3 var(--font-sans); text-decoration: none; }
-.hub-context-actions a:hover { text-decoration: underline; }
+
 @media (max-width: 480px) { .workspace-hub-header .section-select { max-width: 58%; } .workspace-hub-header .section-select select { min-width: 0; width: 100%; } }
 .pick-list-view-action { display: flex; justify-content: flex-end; margin-bottom: 16px; }
 .pick-list-workspace .picklist-collab-page { padding: 0; width: 100%; min-width: 0; }

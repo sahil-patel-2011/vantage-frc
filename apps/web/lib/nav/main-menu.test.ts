@@ -24,11 +24,14 @@ describe("one main menu", () => {
     const sections = mainMenuSections(PRODUCT_NAV_GROUPS, () => true);
     const items = sections.flatMap(section => section.items);
     expect(new Set(items.map(item => item.href)).size).toBe(items.length);
-    expect(items.some(item => item.label === "Pit display")).toBe(true);
+    // Pit TV and Assignments open their own pages directly, not a hub that replaces itself.
+    expect(items).toContainEqual({ href: "/display", label: "Pit TV", icon: "display" });
+    expect(items.some(item => item.href === "/scout-coverage-live" && item.label === "Assignments")).toBe(true);
     expect(items.some(item => item.href === "/competition?tab=scouting")).toBe(true);
     expect(items.some(item => item.href === "/competition?tab=my-day")).toBe(true);
     expect(sections.find(section => section.id === "team")?.items).toContainEqual({ href: "/learn/team", label: "Team resources", icon: "book" });
-    expect(sections.map(section => section.label)).toEqual(["Competition", "Team", "Build", "Business", "AI"]);
+    // Four workspaces; Ask AI has its own door (sidebar footer, phone top bar), not a section.
+    expect(sections.map(section => section.label)).toEqual(["Competition", "Team", "Build", "Business"]);
   });
   it("marks My Day itself, not Event day, while you are on it", () => {
     expect(mainMenuSearch("/competition", "tab=my-day")).toBe("tab=my-day");
@@ -38,7 +41,7 @@ describe("one main menu", () => {
     const sections = mainMenuSections(PRODUCT_NAV_GROUPS, href => pathAllowedByHubAccess(href, access));
     expect(sections.some(section => section.id === "ai")).toBe(false);
     expect(sections.flatMap(section => section.items).some(item => item.href.includes("tab=strategy"))).toBe(false);
-    expect(sections.flatMap(section => section.items).some(item => item.label === "Pit display")).toBe(false);
+    expect(sections.flatMap(section => section.items).some(item => item.label === "Pit TV")).toBe(false);
     const sponsors = mainMenuSections(PRODUCT_NAV_GROUPS, href => pathAllowedBySponsors(href, false));
     expect(sponsors.flatMap(section => section.items).some(item => item.href.includes("tab=sponsors"))).toBe(false);
   });

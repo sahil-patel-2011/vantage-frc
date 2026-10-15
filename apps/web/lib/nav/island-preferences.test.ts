@@ -15,14 +15,14 @@ describe("island preferences", () => {
     expect(defaultIslandHrefs()).toEqual(["/dashboard", "/competition?tab=scouting", "/competition?tab=teams", "/competition?tab=strategy"]);
     expect(resolveIslandTabs(null).map((item) => item.label)).toEqual(["Home", "Scout", "Teams", "Match plan"]);
     expect(defaultIslandLabelList()).toBe("Home, Scout, Teams, and Match plan");
-    expect(islandCatalogLabelList()).toContain("Team chat");
+    expect(islandCatalogLabelList()).toContain("Chat");
     expect(islandCatalogLabelList()).not.toMatch(/Compete|Media/);
   });
 
   it("preserves a valid custom order", () => {
     const selection = ["/competition?tab=scouting", "/business", "/team?tab=messages", "/ai?tab=chat"];
     expect(isValidIslandSelection(selection)).toBe(true);
-    expect(resolveIslandTabs(selection).map((item) => item.label)).toEqual(["Scout", "Business", "Team chat", "Ask AI"]);
+    expect(resolveIslandTabs(selection).map((item) => item.label)).toEqual(["Scout", "Business", "Chat", "Ask AI"]);
   });
 
   it("rejects duplicates, unknown routes, the retired /ai and /media roots, and the wrong slot count", () => {

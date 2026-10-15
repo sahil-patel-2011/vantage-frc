@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../components/ui";
-import { TeamOpsNav } from "../../components/team-ops-nav";
 import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { isMemberRole, pickFirstWeek } from "../../lib/role-onboarding/first-week-order";
@@ -206,7 +205,6 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
         <PageHeader navPath="/start" title="Your first week" description={failure?.title ?? "Loading onboarding checklists…"}>
           <StartRelated orgId={orgId} />
         </PageHeader>
-        <TeamOpsNav orgId={orgId} active="start" />
         <OfflineBanner feature="Your first week" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
@@ -240,7 +238,6 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
           >
             <StartRelated orgId={orgId} />
           </PageHeader>
-          <TeamOpsNav orgId={orgId} active="start" />
           <OfflineBanner feature="Your first week" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="start-warn" role="status">
@@ -307,7 +304,6 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
               member={isMemberRole(view.teamRole) || (view.orgRole != null && view.orgRole !== "owner" && view.orgRole !== "admin")}
             />
           </PageHeader>
-          <TeamOpsNav orgId={view.orgId} active="start" />
           <OfflineBanner feature="Your first week" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p className="start-warn" role="status">

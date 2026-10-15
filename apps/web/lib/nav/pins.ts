@@ -13,6 +13,8 @@
  * saved bar. Pure and deterministic: the API route, the shell and the tests share it.
  */
 import { mainMenuSections } from "./main-menu";
+import { hubById } from "./hubs";
+import { hubNavigationSections } from "./hub-navigation";
 import {
   ISLAND_TAB_CATALOG,
   PRIMARY_TABS,
@@ -95,6 +97,19 @@ export function pinCatalog(allowed: (href: string) => boolean = () => true): Pin
       items: take([...section.items, ...(EXTRAS[section.id] ?? [])]),
     });
   }
+  // Ask AI's own pages are not a menu workspace (Ask AI has one door per screen size), but a
+  // person who pinned one keeps it.
+  const ai = hubById("ai");
+  groups.push({
+    id: "ai",
+    label: "AI",
+    icon: "sparkles",
+    items: take(hubNavigationSections(ai, ai.tabs).map((section) => ({
+      href: `${ai.href}?tab=${section.id}`,
+      label: section.label,
+      icon: (section.id === "budgets" ? "stats" : section.id === "decisions" ? "clipboard" : "sparkles") as ProductNavIcon,
+    }))),
+  });
   return groups.filter((group) => group.items.length > 0);
 }
 
