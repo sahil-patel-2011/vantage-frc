@@ -2,15 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { availableSeasonYears, currentSeasonYear } from "@vantage/game-year";
-import { useRouter } from "next/navigation";
-import { pushAppNavigation } from "../../lib/nav/soft-navigation";
 import { HubPanelSkeleton } from "../../components/product-hub";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { EmptyState, Button, PageMain } from "../../components/ui";
 import { hubPageTitle } from "../../lib/nav/hub-navigation";
-import { HubPagePicker } from "../../components/hub-page-picker";
-import { hubLegacyContextHref } from "../../lib/nav/hub-legacy-context";
 import { MoneyAddMenu } from "./money-add-menu";
 import { OfflineBanner } from "../../components/offline-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -86,7 +82,6 @@ async function persistBusinessSnapshot(
 }
 
 export default function BusinessClient({ initialTab = null }: { initialTab?: string | null }) {
-  const router = useRouter();
   const access = useClientAccessProfile();
   const [view, setView] = useState<BusinessPortalView | null>(null);
   // `?tab=` as the server saw it, so the server HTML already has the right heading.
@@ -251,10 +246,6 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
     [access.hubAccess, sponsorsAllowed],
   );
   const workbenchId = hubWorkbenchId(BUSINESS_HUB, tab);
-  const workspaceTabs = useMemo(() => filterTabsByHubAccess(
-    filterSponsorTabs(BUSINESS_HUB.tabs, sponsorsAllowed), access.hubAccess, "business",
-  ).filter(entry => visibleWorkbenches.some(root => root.id === (entry.group ?? entry.id))),
-  [access.hubAccess, sponsorsAllowed, visibleWorkbenches]);
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, "business");
 
   useEffect(() => {
@@ -351,12 +342,6 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
       <div className="workspace-hub-header">
         <div className="hub-bar-id"><span className="workspace-hub-eyebrow">Business</span><h1>{hubPageTitle(BUSINESS_HUB, tab)}</h1></div>
         <div className="workspace-hub-actions">
-        <HubPagePicker hub={BUSINESS_HUB} tabs={workspaceTabs} value={tab} onChange={next => {
-          const destination = workspaceTabs.find(entry => entry.id === next);
-          if (!destination) return;
-          if (isTab(next)) selectTab(next);
-          else if (destination.legacyHref) pushAppNavigation(path => router.push(path), hubLegacyContextHref(destination.legacyHref, window.location.search, orgId ?? null));
-        }} />
         {live ? (
           <MoneyAddMenu orgId={orgId ?? null} canManageFinances={live.canManageFinances} viewOnly={live.role === "viewer"} />
         ) : null}

@@ -29,8 +29,13 @@ describe("isTeamScopedPage", () => {
     expect(target?.searchParams.get("tab")).toBe("kickoff");
   });
 
+  it("opens Settings on the team you are working in, since it lists that team's settings", () => {
+    expect(isTeamScopedPage("/settings")).toBe(true);
+    expect(teamPageRedirect(new URL("https://x.test/settings"), TEAM)?.searchParams.get("orgId")).toBe(TEAM);
+  });
+
   it("leaves personal pages, platform admin and the steps before a team alone", () => {
-    for (const path of ["/", "/dashboard", "/account", "/account/teams", "/admin/teams", "/help/scouting", "/onboarding", "/invite", "/team-setup", "/security", "/settings", "/api/me", "/manifest.webmanifest"]) {
+    for (const path of ["/", "/dashboard", "/account", "/account/teams", "/admin/teams", "/help/scouting", "/onboarding", "/invite", "/team-setup", "/security", "/api/me", "/manifest.webmanifest"]) {
       expect(isTeamScopedPage(path)).toBe(false);
     }
   });

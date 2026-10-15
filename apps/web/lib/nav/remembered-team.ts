@@ -150,7 +150,7 @@ const PERSONAL_PAGES = [
   "/onboarding",
   "/roadmap",
   "/security",
-  "/settings",
+  // Not /settings: it lists "This team" too, so it opens on the team you are working in.
   "/support",
   "/team-setup",
 ];

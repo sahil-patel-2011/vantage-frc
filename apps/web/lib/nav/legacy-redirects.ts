@@ -50,6 +50,8 @@ export const LEGACY_HUB_REDIRECTS: LegacyRedirect[] = [
   { source: "/pick-clock", destination: "/competition?tab=pick-clock" },
   { source: "/chemistry", destination: "/competition?tab=chemistry" },
   { source: "/todos", destination: "/team?tab=todos" },
+  // "Work" is what the Team workbench is called; /work answered "This page is not here".
+  { source: "/work", destination: "/team?tab=todos" },
   { source: "/messages", destination: "/team?tab=messages" },
   { source: "/practice", destination: "/team?tab=practice" },
   { source: "/attendance", destination: "/team?tab=attendance" },
