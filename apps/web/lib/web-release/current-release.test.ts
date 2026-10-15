@@ -29,6 +29,9 @@ describe("current release", () => {
   it("reads pull request numbers and titles", () => {
     expect(pullRequestNumber("Merge pull request #12 from a/b")).toBe(12);
     expect(pullRequestNumber("Fix a thing")).toBeNull();
+    // A squash merge puts the number at the end of the title.
+    expect(pullRequestNumber("Clearer buttons (#2389)\n\n* details")).toBe(2389);
+    expect(releaseTitle("Clearer buttons (#2389)\n\n* details")).toBe("Clearer buttons");
     expect(releaseTitle("Fix a thing\n\nbody")).toBe("Fix a thing");
     expect(releaseTitle("")).toBeNull();
   });
