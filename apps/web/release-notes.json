@@ -2,6 +2,19 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2399,
+      "date": "2026-10-15",
+      "headline": "Faster first load",
+      "changes": [
+        "Home asks the server for its board once instead of twice when it opens",
+        "Home shows its outline the moment you tap it, before anything else arrives",
+        "Scouting opens with less to download: team profiles, data checks and QR handoff load when you open those tabs",
+        "Every app page skips about 190 KB of website styling it never used",
+        "The data-connection banner is checked once every 30 seconds instead of on every page load",
+        "The account recovery form keeps both name boxes inside the card"
+      ]
+    },
+    {
       "pr": 2395,
       "date": "2026-10-15",
       "headline": "An easier scouting form builder",

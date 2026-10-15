@@ -397,7 +397,19 @@ export function useDashboardHomeState(initialOrgId = "") {
       Home first so the layout is known and one request fetches every widget the
       board actually shows; `poll` is a no-op while another is in flight.
     */
-    void loadHome(orgId).finally(() => {
+    // mode=home now returns every widget's data with the board (api/dashboards), so a good
+    // answer is fresh data: polling straight after asked the server for the same snapshot again.
+    // Only a failed or empty answer falls back to the separate snapshot request.
+    void loadHome(orgId).then((ok) => {
+      if (cancelled) return;
+      if (ok === true) {
+        lastFull = Date.now();
+        lastRefresh = lastFull;
+        setWidgetsLoaded(true);
+        return;
+      }
+      void poll();
+    }, () => {
       if (!cancelled) void poll();
     });
 

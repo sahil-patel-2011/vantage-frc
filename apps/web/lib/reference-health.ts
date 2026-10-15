@@ -194,10 +194,39 @@ export function evaluateDataSourceHealth(input: {
   };
 }
 
+type HealthInputs = Omit<Parameters<typeof evaluateDataSourceHealth>[0], "orgId">;
+
+/** How long one instance reuses the shared reference-sync health before reading it again. */
+export const DATA_SOURCE_HEALTH_TTL_MS = 30_000;
+let healthMemo: { at: number; inputs: Promise<HealthInputs> } | null = null;
+
+/** Test hook: forget the memoized health so the next load reads the database. */
+export function resetDataSourceHealthMemo() {
+  healthMemo = null;
+}
+
+/**
+ * The TBA/Statbotics sync health is the same for every team (shared reference tables, one ingest
+ * worker), yet Home, Command, Dossier and Team data each re-read it with five queries on every
+ * request. One read per instance per 30 seconds is plenty for a banner the worker updates in minutes.
+ */
 export async function loadDataSourceHealth(
   client: PoolClient,
   orgId?: string | null,
 ): Promise<DataSourceHealthView> {
+  const now = Date.now();
+  if (!healthMemo || now - healthMemo.at >= DATA_SOURCE_HEALTH_TTL_MS) {
+    const inputs = readHealthInputs(client);
+    healthMemo = { at: now, inputs };
+    // A failed read is never reused.
+    inputs.catch(() => {
+      if (healthMemo?.inputs === inputs) healthMemo = null;
+    });
+  }
+  return evaluateDataSourceHealth({ ...(await healthMemo.inputs), orgId });
+}
+
+async function readHealthInputs(client: PoolClient): Promise<HealthInputs> {
   let cacheHasRows = false;
   try {
     const cache = await client.query<{ ok: boolean }>(
@@ -326,11 +355,5 @@ export async function loadDataSourceHealth(
     }
   }
 
-  return evaluateDataSourceHealth({
-    healthRows,
-    cursorRows,
-    freshness,
-    cacheHasRows,
-    orgId,
-  });
+  return { healthRows, cursorRows, freshness, cacheHasRows };
 }
