@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { summarizeScrimInvites, upcomingScrimInvites } from ".";
 import { crossTeamScrimSetupSteps, type CrossTeamScrimSetupStep } from "./cross-team-scrim-related";
 import type { ScrimDataShareScope, ScrimInvite, ScrimStatus, ScrimSummary } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const SCRIM_STATUSES: ScrimStatus[] = [
   "proposed",
@@ -42,7 +43,7 @@ export type CrossTeamScrimView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type InviteRow = {

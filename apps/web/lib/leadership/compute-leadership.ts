@@ -7,6 +7,7 @@ import type {
   LeadershipRole,
   LeadershipSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const LEADERSHIP_CATEGORY_VALUES: LeadershipCategory[] = [
   "leadership",
@@ -52,7 +53,7 @@ export type LeadershipView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type RoleRow = {

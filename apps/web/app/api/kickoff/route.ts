@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
+import { currentSeasonYear } from "@vantage/game-year";
 import { headers } from "next/headers";
 import {
   canDeleteKickoffRow,
@@ -114,19 +115,14 @@ export async function GET(request: Request) {
             orgName: null,
             teamNumber: null,
             role: null,
-            defaultSeasonYear: new Date().getFullYear(),
+            defaultSeasonYear: currentSeasonYear(),
           },
         } satisfies KickoffView;
       }
 
-      const season = await client.query<{ year: number }>(
-        `SELECT COALESCE(
-           (SELECT e.year FROM org_active_context c JOIN events_ref e ON e.event_key = c.active_event_key WHERE c.org_id = $1),
-           EXTRACT(YEAR FROM now())::int
-         ) AS year`,
-        [row.orgId],
-      );
-      const defaultSeasonYear = season.rows[0]?.year ?? new Date().getFullYear();
+      // The app's one season rule — not the active event's year, which opened Kickoff on a
+      // past game whenever last season's event was still selected.
+      const defaultSeasonYear = currentSeasonYear();
 
       const [actions, priorities, ruleNotes, nextSeasonSignals] = await Promise.all([
         client.query<ScoringAction>(

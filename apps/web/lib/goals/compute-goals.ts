@@ -8,6 +8,7 @@ import type {
   MetricType,
   SeasonGoal,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const GOAL_CATEGORIES: GoalCategory[] = ["competition", "technical", "outreach", "business", "team", "other"];
 export const METRIC_TYPES: MetricType[] = ["percent", "count", "currency", "binary"];
@@ -35,7 +36,7 @@ export type GoalsView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type GoalRow = {

@@ -6,9 +6,10 @@ import type {
   SponsorTierCalculatorSummary,
   SponsorTierDefinition,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 export type SponsorTierCalculatorSetupStep = {

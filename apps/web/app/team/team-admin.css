@@ -325,11 +325,23 @@
   scroll-margin-top: 96px;
 }
 
+/* Fields line up by their top edge, so every box sits at the same height however long the
+   helper text under it runs; Send gets its own row, right-aligned, instead of floating at the
+   bottom of the tallest helper. */
 .team-invite-fields {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 10px;
-  align-items: end;
+  align-items: start;
+}
+/* Email · Team access · Link works for; Send is on its own row now, so no column for it. */
+.team-invite-form .team-invite-fields.has-lifetime {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+@media (max-width: 720px) {
+  .team-invite-form .team-invite-fields.has-lifetime {
+    grid-template-columns: 1fr;
+  }
 }
 .team-invite-fields label {
   margin-bottom: 0;
@@ -341,6 +353,8 @@
 }
 .team-invite-fields > button {
   min-height: 44px;
+  grid-column: 1 / -1;
+  justify-self: end;
 }
 @media (max-width: 720px) {
   .team-invite-fields {

@@ -113,7 +113,19 @@ export async function GET(request: Request) {
       if (!allowed.rows[0]?.allowed) return null;
       const invites = await listOrganizationInvites(client, orgId);
       const adminTenure = await getAdminTenureSnapshot(client, orgId);
-      return { invites, adminTenure, delivery: inviteEmailDeliveryMode() };
+      // Who is asking, from this fast call: the invite form drew before the slower members call
+      // answered and treated the owner as "role unknown" — no Mentor option, "only the owner…".
+      const me = await client.query<{ role: string }>(
+        `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+        [orgId, actor],
+      );
+      return {
+        invites,
+        adminTenure,
+        delivery: inviteEmailDeliveryMode(),
+        actorUserId: actor,
+        actorRole: me.rows[0]?.role ?? null,
+      };
     });
     if (!data) return privateJson({ error: NOT_A_MANAGER, reason: "team_admin_only" }, { status: 403 });
     return privateJson(data);

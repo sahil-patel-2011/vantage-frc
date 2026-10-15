@@ -9,6 +9,7 @@ import type {
   AutonPathStats,
   AutonPathWithStats,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const AUTON_PATH_START_POSITIONS: AutonPathStartPosition[] = ["left", "center", "right", "other"];
 export const AUTON_PATH_RUN_OUTCOMES: AutonPathRunOutcome[] = ["success", "partial", "fail"];
@@ -79,5 +80,5 @@ export function summarizeLibrary(paths: AutonPathWithStats[]): AutonPathLibraryS
 }
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }

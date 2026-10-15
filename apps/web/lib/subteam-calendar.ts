@@ -4,6 +4,7 @@
 
 import type { TaskOnCalendar } from "./calendar/tasks-on-calendar";
 import { competitionCalendarDays } from "./events/event-planning";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const SUBTEAM_EVENT_KINDS = [
   "practice",
@@ -1116,8 +1117,5 @@ export function attendanceDateFromStart(startsAtIso: string): string {
 }
 
 export function defaultSeasonYear(now: Date = new Date()): number {
-  // FRC seasons are named by the year of the kickoff/competition spring.
-  const month = now.getUTCMonth(); // 0-indexed
-  const year = now.getUTCFullYear();
-  return month >= 8 ? year + 1 : year;
+  return sharedCurrentSeasonYear(now);
 }

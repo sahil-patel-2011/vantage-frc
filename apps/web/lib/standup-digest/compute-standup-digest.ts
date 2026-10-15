@@ -13,6 +13,7 @@ import {
   windowForDate,
 } from ".";
 import type { StandupDigestNote, StandupDigestRun, StandupDigestSummary } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type StandupDigestSetupStep = {
   id: string;
@@ -42,7 +43,7 @@ export type StandupDigestView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isDigestDate(value: unknown): value is string {

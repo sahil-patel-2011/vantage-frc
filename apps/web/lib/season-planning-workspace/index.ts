@@ -1,4 +1,5 @@
 import type { GoalCategory, SeasonPlanProgress, SeasonSignalProgress, WorkItemStatus } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type {
   GoalCategory,
@@ -36,7 +37,7 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
 export const WORK_ITEM_STATUSES: WorkItemStatus[] = ["planned", "in_progress", "done", "dropped"];
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 export function goalCategoryLabel(category: GoalCategory): string {

@@ -396,6 +396,7 @@ export async function loadMyDayView(
       label: freshnessLabel(syncedAt),
       feedKnown,
       matchCount: schedule.length,
+      qualCount: schedule.filter((entry) => entry.compLevel === "qm").length,
       ourMatchCount: built.matches.length,
     },
     logistics,

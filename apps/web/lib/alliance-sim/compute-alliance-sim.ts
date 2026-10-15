@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { ALLIANCE_SIM_ROLES, computeAllianceSimResult, isAllianceSimRole } from ".";
 import type { AllianceSimResult, AllianceSimRobot, AllianceSimRole, AllianceSimScenario } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type AllianceSimSetupStep = {
   id: string;
@@ -28,7 +29,7 @@ export type AllianceSimView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type ScenarioRow = {

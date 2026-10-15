@@ -90,6 +90,19 @@ export function myDaySetupSteps(orgId?: string | null): MyDaySetupStep[] {
   ];
 }
 
+/**
+ * "64 qualification matches · 15 playoff matches". Splitting the two keeps My Day's total from
+ * reading as a disagreement with Assignments, which lists qualifications only.
+ */
+export function formatMyDayEventMatches(freshness: { matchCount: number; qualCount?: number }): string {
+  const total = Math.max(0, Math.floor(Number(freshness.matchCount) || 0));
+  if (freshness.qualCount == null) return `${total.toLocaleString()} event matches`;
+  const quals = Math.min(total, Math.max(0, Math.floor(freshness.qualCount)));
+  const playoffs = total - quals;
+  const qualText = `${quals.toLocaleString()} qualification ${quals === 1 ? "match" : "matches"}`;
+  return playoffs > 0 ? `${qualText} · ${playoffs.toLocaleString()} playoff ${playoffs === 1 ? "match" : "matches"}` : qualText;
+}
+
 /** Real match counts only — never invent DEMO totals. */
 export function formatMyDayMatchCount(value: unknown, loaded: boolean): string {
   if (!loaded) return "…";

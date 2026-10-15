@@ -76,7 +76,7 @@ for (const width of [390, 1440]) for (const theme of ["light", "dark"]) test(`ma
   } }));
   await page.goto(`/competition?tab=teams&orgId=${orgId}`);
   const capabilities = page.getByRole("region", { name: "Recorded robot capabilities" });
-  await expect(capabilities.getByRole("heading", { name: "2 robots watched" })).toBeVisible();
+  await expect(capabilities.getByRole("heading", { name: "2 robots · 2 matches scouted" })).toBeVisible();
   await capabilities.getByText("Compare recorded capabilities", { exact: true }).click();
   const table = capabilities.getByRole("table");
   const shooting = table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: "Shooting · Observed throughput", exact: true }) });

@@ -16,6 +16,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { assessSustainability } from "./risk";
 import type { SustainabilityAssessment, SustainabilitySignals } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 /** How far ahead we look for a re-application window closing. */
 export const EXPIRY_LOOKAHEAD_DAYS = 120;
@@ -42,12 +43,9 @@ function toNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-/**
- * FRC seasons are named for the championship year and the next season kicks off in January,
- * so from September on we are already working the following year's season.
- */
+/** FRC season year: the app-wide rule from @vantage/game-year (the calendar year). */
 export function currentSeasonYear(now = new Date()): number {
-  return now.getUTCMonth() >= 8 ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function daysBetween(fromIso: string, now: Date): number {

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   currentSeasonYear,
   defaultMatchSchema,
+  openingSeasonYear,
+  upcomingGameYear,
   isManualPublished,
   lastPublishedPack,
   packForYear,
@@ -13,7 +15,7 @@ describe("game-year packs", () => {
     expect(packForYear(2025).gameName).toBe("REEFSCAPE");
     expect(isManualPublished(2025)).toBe(true);
     expect(packForYear(2025).brief?.headline).toContain("Coral");
-    expect(availableSeasonYears([2023], new Date("2026-10-14T12:00:00Z"))).toEqual([2027, 2026, 2025, 2023]);
+    expect(availableSeasonYears([2023], new Date("2026-10-14T12:00:00Z"))).toEqual([2026, 2025, 2024, 2023]);
   });
   it("keeps released/passed fuel separate from scoring and asks about both tower climbs", () => {
     const pack = packForYear(2026);
@@ -59,8 +61,22 @@ describe("game-year packs", () => {
     expect(pack.matchSchema.fields.some((field) => field.key === "auto_score")).toBe(true);
   });
 
-  it("treats August as the next season year", () => {
-    expect(currentSeasonYear(new Date("2026-08-17T12:00:00Z"))).toBe(2027);
-    expect(currentSeasonYear(new Date("2027-03-01T12:00:00Z"))).toBe(2027);
+  it("names the records season by the calendar year", () => {
+    expect(currentSeasonYear(new Date("2026-08-17T12:00:00Z"))).toBe(2026);
+    expect(currentSeasonYear(new Date("2026-12-31T12:00:00Z"))).toBe(2026);
+    expect(currentSeasonYear(new Date("2027-01-02T12:00:00Z"))).toBe(2027);
+  });
+
+  it("looks ahead to next year's game from August", () => {
+    expect(upcomingGameYear(new Date("2026-08-17T12:00:00Z"))).toBe(2027);
+    expect(upcomingGameYear(new Date("2027-03-01T12:00:00Z"))).toBe(2027);
+  });
+
+  it("opens on this season, or the latest earlier season with records", () => {
+    const now = new Date("2027-01-10T12:00:00Z");
+    expect(openingSeasonYear([2027, 2026], now)).toBe(2027);
+    expect(openingSeasonYear([2026, 2025], now)).toBe(2026);
+    expect(openingSeasonYear([2028], now)).toBe(2027);
+    expect(openingSeasonYear([], now)).toBe(2027);
   });
 });

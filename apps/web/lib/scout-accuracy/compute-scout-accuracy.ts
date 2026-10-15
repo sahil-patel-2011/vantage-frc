@@ -4,6 +4,7 @@ import type { ScoutAccuracyEntry, ScoutAccuracyScoutStat, ScoutAccuracySnapshotM
 import { resolveScoutOrg } from "../scout-org-access";
 import { scoutAccuracySetupSteps, type ScoutAccuracySetupStep } from "./scout-accuracy-related";
 import { RequestSecurityError } from "../security/request";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type { ScoutAccuracySetupStep };
 
@@ -29,7 +30,7 @@ export type ScoutAccuracyView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

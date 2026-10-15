@@ -18,6 +18,7 @@ import type {
   RuleImpactStatus,
   SubsystemCategory,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { RULE_CHANGE_CATEGORIES, RULE_CHANGE_SEVERITIES, RULE_IMPACT_ASSESSMENT_STATUSES, SUBSYSTEM_CATEGORIES };
 
@@ -49,7 +50,7 @@ export type RuleImpactView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isCategory(value: unknown): value is SubsystemCategory {

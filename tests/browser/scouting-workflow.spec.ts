@@ -34,10 +34,10 @@ for(const offline of [false,true]) test(`phase scouting, undo, review and ${offl
  await page.clock.fastForward(24000);await expect(phase.getByRole("tab",{name:"Teleop",exact:true})).toHaveAttribute("aria-selected","true");await expect(auto).toHaveCount(0);
  await page.getByLabel("Teleop cycles",{exact:true}).fill("8");
  await page.clock.fastForward(110000);await expect(phase.getByRole("tab",{name:"Endgame",exact:true})).toHaveAttribute("aria-selected","true");
- await phase.getByRole("tab",{name:"Review",exact:true}).click();await expect(auto).toHaveValue("7");await expect(page.getByLabel("Teleop cycles",{exact:true})).toHaveValue("8");
+ await phase.getByRole("tab",{name:"Summary",exact:true}).click();await expect(auto).toHaveValue("7");await expect(page.getByLabel("Teleop cycles",{exact:true})).toHaveValue("8");
  await page.getByLabel("Robot's points",{exact:true}).fill("47");
  await page.getByLabel("Notes",{exact:true}).fill(marker);
- await page.clock.fastForward(30000);await expect(phase.getByRole("tab",{name:"Review",exact:true})).toHaveAttribute("aria-selected","true");
+ await page.clock.fastForward(30000);await expect(phase.getByRole("tab",{name:"Summary",exact:true})).toHaveAttribute("aria-selected","true");
  const audit=await new AxeBuilder({page}).include(".scout-context-bar").analyze();expect(audit.violations).toEqual([]);
  await page.screenshot({path:info.outputPath(offline?"scout-review-offline.png":"scout-review-online.png")});
  let blockSync=offline;

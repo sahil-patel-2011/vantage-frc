@@ -7,6 +7,7 @@ import type {
   FailurePatternNoteStatus,
   FailurePatternSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { FAILURE_PATTERN_NOTE_STATUSES };
 
@@ -37,7 +38,7 @@ export type FailurePatternsView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isNoteStatus(value: unknown): value is FailurePatternNoteStatus {

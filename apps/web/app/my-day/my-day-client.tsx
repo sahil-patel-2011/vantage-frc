@@ -8,6 +8,7 @@ import type { MyDayMatch, MyDayScoutDuty, MyDayView } from "../../lib/my-day";
 import {
   MY_DAY_RELATED_INCLUDE,
   classifyMyDayShell,
+  formatMyDayEventMatches,
   formatMyDayMatchCount,
   myDayNextActions,
   myDayRelatedLinks,
@@ -200,7 +201,6 @@ function MyDayShell({
           },
         )
       : null;
-  const commandHref = hubHref("/competition", "command", orgId);
   const scheduleHref = withOrgHref("/schedule", orgId);
 
   return (
@@ -409,7 +409,7 @@ export default function MyDayClient({ embedded = false }: { embedded?: boolean }
         <p className="myday-freshness" role="status">
           {view.freshness.label}
           {" · "}
-          {formatMyDayMatchCount(view.freshness.matchCount, true)} event matches
+          {formatMyDayEventMatches(view.freshness)}
         </p>
       </MyDayShell>
     );

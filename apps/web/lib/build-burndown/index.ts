@@ -8,6 +8,7 @@ import type {
   BuildTaskStatus,
   BurndownPoint,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const BUILD_TASK_CATEGORIES: BuildTaskCategory[] = [
   "mechanical",
@@ -153,5 +154,5 @@ export function computeBurndownSeries(
 }
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }

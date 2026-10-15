@@ -63,6 +63,8 @@ export type MyDayFreshness = {
    */
   feedKnown?: boolean;
   matchCount: number;
+  /** Qualification matches within matchCount (the rest are playoffs). Absent on old cached copies. */
+  qualCount?: number;
   ourMatchCount: number;
 };
 

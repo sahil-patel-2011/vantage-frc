@@ -10,6 +10,7 @@ import type {
   SponsorSuiteReminderKind,
   SponsorSuiteRoiReport,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type SponsorSuiteSetupStep = {
   id: string;
@@ -43,7 +44,7 @@ export type SponsorSuiteView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

@@ -10,6 +10,7 @@ import type {
   SubsystemSignoffSummary,
   SubsystemStatus,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type SubsystemSignoffSetupStep = {
   id: string;
@@ -40,7 +41,7 @@ export type SubsystemSignoffView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type SubsystemRow = {

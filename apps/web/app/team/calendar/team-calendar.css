@@ -549,10 +549,6 @@
   border-bottom: 1px solid var(--line);
   margin-bottom: 4px;
 }
-.tc-quick-head h2 {
-  margin: 0;
-  font-size:var(--title-3);
-}
 .tc-quick-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

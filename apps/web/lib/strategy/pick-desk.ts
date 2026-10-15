@@ -451,7 +451,9 @@ export async function loadPickDesk(
     sources: pickModeSources(modeInfo.mode, baseSources),
     pickMode: modeInfo.mode,
     pickModeReason: modeInfo.reason,
-    scoutedTeams: modeInfo.scoutedTeams,
+    // Teams with at least one scouted match — what "with our notes" / "scouted" say. The
+    // 2+ entries threshold only decides the pick mode, and pickModeReason says so in words.
+    scoutedTeams: candidates.filter((candidate) => (candidate.scoutedMatches ?? 0) > 0).length,
     teamCount: modeInfo.teamCount,
     epaDrifts,
     strategySeats: seats.rows.map((seat) => ({

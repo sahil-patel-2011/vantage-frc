@@ -3,6 +3,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { meteredAI } from "@vantage/billing";
 import { buildKitItems, canDeleteSpareRobotKitChecklist, CHECKLIST_STATUSES, checklistRationale, summarizeChecklistItems } from ".";
 import type { ChecklistStatus, KitChecklistItem, SpareRobotKitChecklist } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { CHECKLIST_STATUSES };
 
@@ -35,7 +36,7 @@ export type SpareRobotKitView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isStatus(value: unknown): value is ChecklistStatus {

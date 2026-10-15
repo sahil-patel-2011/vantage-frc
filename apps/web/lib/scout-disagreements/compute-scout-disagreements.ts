@@ -13,6 +13,7 @@ import {
   scoutDisagreementsSetupSteps,
   type ScoutDisagreementsSetupStep,
 } from "./scout-disagreements-related";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const SCOUT_DISAGREEMENT_STATUSES: ScoutDisagreementStatus[] = ["open", "resolved", "dismissed"];
 
@@ -41,7 +42,7 @@ export type ScoutDisagreementsView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type ItemRow = {

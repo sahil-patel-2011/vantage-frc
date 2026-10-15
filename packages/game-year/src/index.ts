@@ -21,17 +21,41 @@ const PACKS: Record<number, GameYearPack> = {
   2027: BIOCORE_2027,
 };
 
+/**
+ * The one season every record belongs to: the calendar year. An FRC season is named for the
+ * year it competes in and kickoff is in January, so the calendar year is right without a
+ * rollover month to argue about — and it is the year The Blue Alliance puts on fall
+ * off-season events. Every season picker and default uses this; do not add a local copy.
+ */
 export function currentSeasonYear(now: Date = new Date()): number {
-  const month = now.getUTCMonth();
-  const year = now.getUTCFullYear();
-  // FRC season year is the kickoff calendar year. August starts next-season planning.
-  return month >= 7 ? year + 1 : year;
+  return now.getUTCFullYear();
+}
+
+/**
+ * The next game to prepare for. From August the following year's game is the one teams
+ * plan around, so the public game brief looks ahead. Not a records season: pickers and
+ * defaults use {@link currentSeasonYear}.
+ */
+export function upcomingGameYear(now: Date = new Date()): number {
+  return now.getUTCMonth() >= 7 ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
 }
 
 /** Same recent seasons across workspaces, plus every year with saved work. */
 export function availableSeasonYears(saved: readonly number[] = [], now: Date = new Date()): number[] {
   const current = currentSeasonYear(now);
   return [...new Set([current, current - 1, current - 2, ...saved.filter(year => Number.isInteger(year) && year >= 1992 && year <= 2100)])].sort((a, b) => b - a);
+}
+
+/**
+ * Which season a records page opens on when nobody picked one: this season, unless it has
+ * nothing yet and an earlier season does — then the latest season with records, so a page
+ * never opens empty in January while last season's work sits one click away.
+ */
+export function openingSeasonYear(savedYears: readonly number[], now: Date = new Date()): number {
+  const current = currentSeasonYear(now);
+  if (savedYears.includes(current)) return current;
+  const earlier = savedYears.filter(year => year < current).sort((a, b) => b - a);
+  return earlier[0] ?? current;
 }
 
 export function packForYear(year: number): GameYearPack {

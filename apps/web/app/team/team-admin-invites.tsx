@@ -30,6 +30,7 @@ export function TeamAdminInvitesPanel({
   lifetimeHours,
   setLifetimeHours,
   canInviteMentor,
+  roleKnown,
   emailRef,
   inviteBusy,
   inviteNotice,
@@ -55,6 +56,8 @@ export function TeamAdminInvitesPanel({
   setLifetimeHours: (value: number) => void;
   /** Only the owner invites a mentor or coach (the API says so too). */
   canInviteMentor: boolean;
+  /** False until we know who is looking: "only the owner can…" is never said to the owner. */
+  roleKnown: boolean;
   emailRef: RefObject<HTMLInputElement | null>;
   inviteBusy: boolean;
   inviteNotice: InviteNotice | null;
@@ -126,7 +129,7 @@ export function TeamAdminInvitesPanel({
             {/* The dropdown did not say what each choice can do. */}
             <small className="app-muted" id="team-invite-access-help">
               {ROLE_HINTS[role as keyof typeof ROLE_HINTS] ?? ""}
-              {!canInviteMentor ? " Only the owner can invite a mentor or coach." : ""}
+              {roleKnown && !canInviteMentor ? " Only the owner can invite a mentor or coach." : ""}
             </small>
           </label>
           <label>

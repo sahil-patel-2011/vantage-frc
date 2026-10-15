@@ -2,6 +2,8 @@
 // shared by the API, client UI, and unit tests. Matches migration 0047 (+ 0099
 // practice kind). No fabricated rates: empty orgs show empty states.
 
+import { currentSeasonYear } from "@vantage/game-year";
+
 export const ATTENDANCE_KINDS = ["meeting", "build", "practice", "competition", "outreach", "other"] as const;
 export type AttendanceKind = (typeof ATTENDANCE_KINDS)[number];
 
@@ -196,11 +198,9 @@ function seasonYearValue(value: unknown) {
   return year;
 }
 
+/** The app's one season rule (`@vantage/game-year`): the calendar year. */
 export function defaultSeasonYear(now = new Date()): number {
-  // The rule Budget and Business use: a season is named for the year it competes in and
-  // kickoff is in January, so it rolls over with the calendar. Rolling in September put
-  // People on an empty "2027" while Business showed 2026.
-  return now.getUTCFullYear();
+  return currentSeasonYear(now);
 }
 
 export type AttendanceAction =

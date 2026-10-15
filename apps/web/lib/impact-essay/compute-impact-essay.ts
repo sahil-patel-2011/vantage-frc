@@ -12,6 +12,7 @@ import type {
   ImpactEssaySponsor,
   ImpactEssayTeamEvent,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type ImpactEssaySetupStep = {
   id: string;
@@ -70,7 +71,7 @@ export type ImpactEssayView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

@@ -17,6 +17,7 @@ import {
 } from "./evaluate";
 import { receiveToInventory } from "./receive-to-inventory";
 import type { OrderMember, OrderRequest, OrderStatus, OrdersView } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { ORDER_STATUSES, canTransitionOrder, statusLabel, showBuyPanel, validateOrderSubmit } from "./evaluate";
 export type { OrderStatus };
@@ -88,7 +89,7 @@ function mapOrder(row: OrderRow): OrderRequest {
 }
 
 function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function orderHref(orgId: string, orderId: string, seasonYear?: number): string {

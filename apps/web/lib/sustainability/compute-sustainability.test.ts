@@ -6,22 +6,11 @@ import { describe, expect, it } from "vitest";
 import { EXPIRY_LOOKAHEAD_DAYS, currentSeasonYear } from "./compute-sustainability";
 
 describe("currentSeasonYear", () => {
-  it("names the season for the championship year", () => {
-    // January–August of 2026 is still the 2026 season.
+  it("names the season by the calendar year, the same rule every page uses", () => {
     expect(currentSeasonYear(new Date("2026-01-05T12:00:00Z"))).toBe(2026);
-    expect(currentSeasonYear(new Date("2026-04-20T12:00:00Z"))).toBe(2026);
-    expect(currentSeasonYear(new Date("2026-08-31T23:59:59Z"))).toBe(2026);
-  });
-
-  it("rolls to the next season from September, when the next build cycle starts", () => {
-    expect(currentSeasonYear(new Date("2026-09-01T00:00:00Z"))).toBe(2027);
-    expect(currentSeasonYear(new Date("2026-12-31T23:59:59Z"))).toBe(2027);
-  });
-
-  it("is stable across the calendar new year inside one season", () => {
-    const december = currentSeasonYear(new Date("2026-12-15T12:00:00Z"));
-    const january = currentSeasonYear(new Date("2027-01-15T12:00:00Z"));
-    expect(december).toBe(january);
+    expect(currentSeasonYear(new Date("2026-09-01T00:00:00Z"))).toBe(2026);
+    expect(currentSeasonYear(new Date("2026-12-31T23:59:59Z"))).toBe(2026);
+    expect(currentSeasonYear(new Date("2027-01-15T12:00:00Z"))).toBe(2027);
   });
 });
 

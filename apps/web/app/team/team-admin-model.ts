@@ -98,6 +98,8 @@ export type TeamAdminSnapshot = {
   deliveryMode: InviteDeliveryMode | null;
   /** Per-member hub allowlists (no rows = every section). Optional for older cached copies. */
   hubAccessByUser?: Record<string, Array<{ hubId: string; allowedTabIds: string[] }>>;
+  /** Who was looking. Without it a painted copy treated the owner as "role unknown". Optional for older copies. */
+  actor?: { userId: string | null; role: string | null };
 };
 
 export type { InviteDeliveryMode };

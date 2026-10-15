@@ -30,6 +30,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { MONEY_SOURCE_LABELS, isMoneySource, type MoneySource } from "../finance/ledger";
 import { formatUsd } from "../finance/format-usd";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type BudgetState =
   /** No budget, nothing recorded. The team has not started. */
@@ -102,9 +103,7 @@ export type BudgetView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  // An FRC season is named for the year it competes in; kickoff is early January,
-  // so the season year only rolls over at the calendar year.
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function cents(value: number): number {

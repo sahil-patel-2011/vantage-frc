@@ -10,6 +10,7 @@ import type {
   SeasonHorizon,
   SpareForecastLine,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { PURCHASE_REQUEST_STATUSES };
 
@@ -52,7 +53,7 @@ export type SpareForecastView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isStatus(value: unknown): value is PurchaseRequestStatus {

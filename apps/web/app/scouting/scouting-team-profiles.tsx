@@ -22,6 +22,7 @@ import { offlineSnapshotUser } from "../../lib/offline/identity";
 import { readRobotViewState, robotViewStorageKey, writeRobotViewState } from "../../lib/scouting/robot-view-state";
 import "./scouting-team-profiles.css";
 import type { ObservedRobot } from "../../lib/scouting/team-profiles";
+import { watchedSummary } from "../../lib/scouting/observed-counts";
 import { ScoutObservationExplorer } from "../intel/scout-observation-explorer";
 import { ObservedRobotComparison } from "./observed-robot-comparison";
 import { ScoutingEventTrends } from "./scouting-event-trends";
@@ -282,7 +283,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
       {cachedAt ? <p className="scout-cached-analysis" role="status">Saved analysis for {view.eventKey} · {new Date(cachedAt).toLocaleString()}. Reconnect for new reports.</p> : null}
       <header className="stp-head">
         <div>
-          <h2>{view.observations?.length ?? view.profiles.length} robots watched</h2>
+          <h2>{view.observations ? watchedSummary(view.observations) : `${view.profiles.length} robots watched`}</h2>
           <p>
             {view.basis === "phase"
               ? "Points by phase, from your own formulas."
@@ -425,7 +426,7 @@ function ObservedRobots({ robots, eventKey, showTrends = true }: { robots: Obser
   const reportRef = useRef<HTMLDivElement>(null);
   const robot = robots.find(item => item.teamKey === teamKey) ?? robots[0];
   return <section className="stp-observations" aria-label="Recorded robot capabilities">
-    <header><h2>{robots.length} robots watched</h2><p className="app-muted">Explore the answers your scouts recorded. A scoring formula is only needed to convert actions into points and rank picks.</p></header>
+    <header><h2>{watchedSummary(robots)}</h2><p className="app-muted">Explore the answers your scouts recorded. A scoring formula is only needed to convert actions into points and rank picks.</p></header>
     {showTrends ? <ScoutingEventTrends key={eventKey ?? "all"} robots={robots} eventKey={eventKey} teamDetailKeys={robots.map(robot => robot.teamKey)} onOpenTeam={teamKey => {
       setTeamKey(teamKey);
       requestAnimationFrame(() => { reportRef.current?.focus({ preventScroll: true }); reportRef.current?.scrollIntoView({ block: "start", behavior: "instant" }); });

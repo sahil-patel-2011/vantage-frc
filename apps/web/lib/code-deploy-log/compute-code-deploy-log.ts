@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { DEPLOY_STATUSES, DEPLOY_TYPES, summarizeDeployLog } from ".";
 import type { CodeDeployLogEntry, CodeDeployLogSummary, DeployStatus, DeployType } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { DEPLOY_STATUSES, DEPLOY_TYPES };
 
@@ -33,7 +34,7 @@ export type CodeDeployLogView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isDeployType(value: unknown): value is DeployType {

@@ -1,7 +1,7 @@
 import { matchSchemaForYear, pitSchemaForYear, validatePayload, type SchemaDefinition } from "@vantage/scouting";
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { visibleFields, withInferredPhaseRules } from "./context-visible";
-import { lastPublishedPack, packForYear } from "@vantage/game-year";
+import { availableSeasonYears, lastPublishedPack, packForYear } from "@vantage/game-year";
 import { answersToSave } from "./entry-answers";
 
 export type FreeScoutReport = {
@@ -24,6 +24,11 @@ export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-
 
 export function latestScoutingYear(now = new Date()): number {
   return lastPublishedPack(now.getUTCFullYear())?.year ?? now.getUTCFullYear();
+}
+/** The game picker's years: the app's shared season list (this season and the two before),
+ * plus the latest published game and whatever is selected. Same years as every other picker. */
+export function scoutingGameYears(selected?: number | null): number[] {
+  return availableSeasonYears([latestScoutingYear(), ...(selected ? [selected] : [])]);
 }
 export function scoutingGameLabel(year: number): string {
   const archived: Record<number, string> = { 2025: "REEFSCAPE", 2024: "CRESCENDO" };

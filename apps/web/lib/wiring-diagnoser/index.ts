@@ -11,6 +11,7 @@ import type {
   WireGauge,
   WiringDiagnosis,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const WIRE_GAUGES: WireGauge[] = ["22", "20", "18", "16", "14", "12", "10", "6", "4"];
 
@@ -35,7 +36,7 @@ export const WIRE_GAUGE_MAX_AMPS: Record<WireGauge, number> = {
 export const OVERSPEC_MARGIN = 0.8;
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));

@@ -4,6 +4,7 @@ import { meteredAI } from "@vantage/billing";
 import { DEFAULT_WEIGHT_LIMIT_LBS } from "../weight-budget";
 import { computeCurrentReading, computeMassReading, proposeTrimSubsystem, trimConfidence } from ".";
 import type { BudgetReconcilerReport, BudgetStatus, CurrentReading, MassReading, SubsystemContribution, TrimProposal } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type BudgetReconcilerSetupStep = {
   id: string;
@@ -35,7 +36,7 @@ export type BudgetReconcilerView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

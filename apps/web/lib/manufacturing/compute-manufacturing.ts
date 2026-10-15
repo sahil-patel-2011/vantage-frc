@@ -18,6 +18,7 @@ import type {
   SubsystemCoverageRow,
   SubsystemOption,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type ManufacturingSetupStep = {
   id: string;
@@ -54,9 +55,9 @@ export function todayIso(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
 }
 
-/** FRC season year: September onward belongs to the next January's game. */
+/** FRC season year: the app-wide rule from @vantage/game-year (the calendar year). */
 export function defaultSeasonYear(now: Date = new Date()): number {
-  return now.getUTCMonth() >= 8 ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

@@ -11,6 +11,7 @@ import type {
   WeightItem,
   WiringPowerSpec,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type InspectionCopilotSetupStep = {
   id: string;
@@ -38,7 +39,7 @@ export type InspectionCopilotView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function nonNegativeNumber(value: unknown): number {

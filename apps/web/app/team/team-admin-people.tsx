@@ -95,7 +95,9 @@ export function TeamAdminPeople({
                 </small>
               </div>
               <div className="team-member-actions">
-                {self ? (
+                {/* Until we know who is looking, no row offers actions: the owner's own row
+                    showed "Send password reset" and "Remove" while that was still unknown. */}
+                {actorUserId === null ? null : self ? (
                   <ActionMenu label="My team access" tone="row" maxSecondary={0} overflowLabel="More" actions={[
                     { id: "step-down", label: actorRole === "owner" ? "Hand over team" : "Change my access", onClick: onStepDown },
                   ]} />
@@ -120,12 +122,17 @@ export function TeamAdminPeople({
                               onClick: () => onAccess(member),
                             },
                           ]),
-                      {
-                        id: "reset",
-                        label: "Send password reset",
-                        hint: "They choose a new password from the email",
-                        onClick: () => onPasswordReset(member),
-                      },
+                      // The server refuses a mentor resetting an owner, so the menu does not offer it.
+                      ...(member.role === "owner" && actorRole !== "owner"
+                        ? []
+                        : [
+                            {
+                              id: "reset",
+                              label: "Send password reset",
+                              hint: "They choose a new password from the email",
+                              onClick: () => onPasswordReset(member),
+                            },
+                          ]),
                       ...(canManage
                         ? [
                             {

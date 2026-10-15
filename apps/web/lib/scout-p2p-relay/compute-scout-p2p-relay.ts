@@ -2,9 +2,10 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { summarizeRelay, summarizeSessionEntries } from ".";
 import type { RelayDeviceRole, RelayEntry, RelaySession, RelaySessionStatus, RelaySummary } from "./types";
 import { resolveScoutOrg } from "../scout-org-access";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 export type RelaySetupStep = {

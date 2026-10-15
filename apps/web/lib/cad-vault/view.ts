@@ -6,6 +6,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import type { CadFormat } from "./format-detect";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const CAD_DOCUMENT_KINDS = ["part", "assembly", "drawing", "print", "vendor", "other"] as const;
 export type CadDocumentKind = (typeof CAD_DOCUMENT_KINDS)[number];
@@ -91,7 +92,7 @@ export type CadVaultView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 /** Pure rollup: group document/version counts and bytes by linked subsystem. */
