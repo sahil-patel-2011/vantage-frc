@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { searchCommands, type CommandEntry, type CommandHit } from "../lib/nav/command-search";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
 import { withOrgHref } from "../lib/nav/product-nav";
+import { isCurrentDestination } from "../lib/nav/current-destination";
 import { loadRoster, searchRosterOffline, type OfflineRosterTeam } from "../lib/intel/offline-teams";
 import { navResultRows, type NavResultRow, type SearchHit } from "./app-shell-model";
 
@@ -103,7 +104,10 @@ export function useShellSearch({
           setSearchError("Live search couldn't respond. You can still open a page or a saved team below.");
         });
     }, 220);
-    return () => { window.clearTimeout(timer); controller.abort(); requestId.current += 1; };
+    // A superseded or closed search must not leave "Searching your team's data…" behind: the
+    // aborted request returns early (its id is stale), so clear the flag here; a newer search
+    // sets it again.
+    return () => { window.clearTimeout(timer); controller.abort(); requestId.current += 1; setSearchLoading(false); };
   }, [active, query, orgId]);
 
   const commandHits = useMemo<CommandHit[]>(
@@ -114,7 +118,8 @@ export function useShellSearch({
             isAllowed,
             recentHrefs,
             canManageTeam,
-          })
+          // Never suggest the page you are on: choosing it only reloaded it.
+          }).filter((hit) => typeof window === "undefined" || !isCurrentDestination(hit.href, window.location))
         : [],
     [active, canManageTeam, catalog, isAllowed, query, queryActive, recentHrefs, suggestWhenEmpty],
   );
