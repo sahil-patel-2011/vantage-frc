@@ -20,6 +20,12 @@ export type CockpitPrefs = {
   bugbotInstructions: string;
   /** Which Bugbot billing mode the workbench opens on. */
   defaultBugbotMode: CockpitBugbotMode;
+  /**
+   * Write the pre-match brief automatically when I open the match page and it is out of date
+   * (a newer match was played, or more scouting came in). The brief is shared, so one person's
+   * page keeps it current for the whole team. Default on.
+   */
+  autoMatchBriefs: boolean;
 };
 
 export const DEFAULT_COCKPIT_PREFS: CockpitPrefs = {
@@ -28,6 +34,7 @@ export const DEFAULT_COCKPIT_PREFS: CockpitPrefs = {
   includeScanTests: false,
   bugbotInstructions: "",
   defaultBugbotMode: "subscription",
+  autoMatchBriefs: true,
 };
 
 function asBool(value: unknown, fallback: boolean): boolean {
@@ -62,6 +69,7 @@ export function parseCockpitPrefs(value: unknown): CockpitPrefs {
     includeScanTests: asBool(record.includeScanTests, DEFAULT_COCKPIT_PREFS.includeScanTests),
     bugbotInstructions: clipBugbotInstructions(record.bugbotInstructions),
     defaultBugbotMode: asMode(record.defaultBugbotMode),
+    autoMatchBriefs: asBool(record.autoMatchBriefs, DEFAULT_COCKPIT_PREFS.autoMatchBriefs),
   };
 }
 
@@ -71,7 +79,8 @@ export function cockpitEquals(a: CockpitPrefs, b: CockpitPrefs): boolean {
     a.pauseLiveWhenHidden === b.pauseLiveWhenHidden &&
     a.includeScanTests === b.includeScanTests &&
     a.bugbotInstructions === b.bugbotInstructions &&
-    a.defaultBugbotMode === b.defaultBugbotMode
+    a.defaultBugbotMode === b.defaultBugbotMode &&
+    a.autoMatchBriefs === b.autoMatchBriefs
   );
 }
 

@@ -305,6 +305,9 @@ export async function loadLatestBrief(
     `SELECT callouts, generated_by AS "generatedBy"
      FROM match_copilot_briefs
      WHERE org_id = $1 AND match_key = $2
+       -- The pre-match strategy brief (lib/match-brief) shares this table with an object in
+       -- callouts; the copilot's own rows are arrays.
+       AND jsonb_typeof(callouts) = 'array'
      ORDER BY created_at DESC LIMIT 1`,
     [orgId, matchKey],
   );
