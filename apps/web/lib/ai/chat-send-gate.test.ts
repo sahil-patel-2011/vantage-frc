@@ -15,6 +15,8 @@ type Fixture = {
   providerConfigs?: Array<{ kind: string; baseUrl: string | null; localRelay: boolean }>;
   teamNumber?: number | null;
   bridgeOnline?: boolean;
+  /** The member's own (or a shared) enabled personal key in member_llm_keys. */
+  memberKey?: boolean;
 };
 
 /** The member's RLS client, answering by SQL shape — shared by the gate, the check and meteredAI. */
@@ -24,6 +26,8 @@ function fixtureClient(fixture: Fixture) {
   const query = vi.fn(async (sql: string) => {
     calls.push(sql);
     if (/pg_try_advisory_xact_lock/.test(sql)) return { rows: [{ locked: true }], rowCount: 1 };
+    if (/to_regclass\('public\.member_llm_keys'\)/.test(sql)) return { rows: [{ own: true, shared: true }], rowCount: 1 };
+    if (/FROM member_llm_keys/.test(sql)) return { rows: [{ usable: Boolean(fixture.memberKey) }], rowCount: 1 };
     if (/UNION ALL/.test(sql)) {
       const any = Boolean(fixture.teamKey) || Boolean(fixture.providerConfigs?.length);
       return any ? { rows: [{ "?column?": 1 }], rowCount: 1 } : empty;
@@ -91,7 +95,7 @@ async function meteredVerdict(fixture: Fixture, source: ResolvedModelSource): Pr
 }
 
 async function gateVerdict(fixture: Fixture, source: ResolvedModelSource): Promise<"refused" | "promo_expired" | "allowed"> {
-  const block = await chatSendBlock(fixtureClient(fixture) as never, { orgId: ORG, source });
+  const block = await chatSendBlock(fixtureClient(fixture) as never, { orgId: ORG, userId: USER, source });
   if (!block) return "allowed";
   return block.reason === "sponsored_promo_expired" ? "promo_expired" : "refused";
 }
@@ -104,13 +108,13 @@ afterEach(() => {
 describe("chatSendBlock agrees with meteredAI", () => {
   const TEAM_KEY_ROW: Fixture["providerConfigs"] = [{ kind: "openai-compatible", baseUrl: "https://api.example.com/v1", localRelay: false }];
   const cases: Array<[string, Fixture, ResolvedModelSource]> = [
-    // The audited bug: a personal key (or the free pool) on a free team with no team key.
-    ["personal key, free team, no team key", { tier: "free" }, "member-key"],
+    // The resolver answers "member-key" only when the member has a usable personal key.
+    ["personal key, free team, no team key", { tier: "free", memberKey: true }, "member-key"],
     ["free OpenRouter pool, free team, no team key", { tier: "free" }, "hosted"],
-    ["personal key, free team that has a team key", { tier: "free", teamKey: true }, "member-key"],
-    ["personal key, free team with a custom provider", { tier: "free", providerConfigs: TEAM_KEY_ROW }, "member-key"],
+    ["personal key, free team that has a team key", { tier: "free", teamKey: true, memberKey: true }, "member-key"],
+    ["personal key, free team with a custom provider", { tier: "free", providerConfigs: TEAM_KEY_ROW, memberKey: true }, "member-key"],
     ["team key, free team", { tier: "free", teamKey: true }, "org-key"],
-    ["personal key, paid team", { tier: "team" }, "member-key"],
+    ["personal key, paid team", { tier: "team", memberKey: true }, "member-key"],
     ["hosted key, paid team", { tier: "starter" }, "hosted"],
     ["volunteer swarm, free team", { tier: "free" }, "public-swarm"],
     ["platform gift, free team", { tier: "free" }, "gift"],
@@ -122,10 +126,22 @@ describe("chatSendBlock agrees with meteredAI", () => {
     });
   }
 
-  it("refuses exactly the turns meteredAI refuses", async () => {
-    expect(await gateVerdict({ tier: "free" }, "member-key")).toBe("refused");
+  it("lets a personal key answer on a free team, and refuses only a free team with no key at all", async () => {
+    expect(await gateVerdict({ tier: "free", memberKey: true }, "member-key")).toBe("allowed");
+    expect(await meteredVerdict({ tier: "free", memberKey: true }, "member-key")).toBe("allowed");
     expect(await gateVerdict({ tier: "free" }, "hosted")).toBe("refused");
-    expect(await gateVerdict({ tier: "free", teamKey: true }, "member-key")).toBe("allowed");
+    expect(await meteredVerdict({ tier: "free" }, "hosted")).toBe("refused");
+  });
+
+  it("bills a paid team's personal-key turn as the member's own key, not hosted credits", async () => {
+    const client = fixtureClient({ tier: "team", memberKey: true });
+    let keySource: string | null = null;
+    await meteredAI({
+      client: client as never, orgId: ORG, userId: USER, feature: "chat", requestId: crypto.randomUUID(),
+      estimatedCostUsd: 0.001, provider: "anthropic", model: "test-model",
+      invoke: async (source) => { keySource = source; return { value: "ok", usage: { promptTokens: 1, completionTokens: 1 }, costUsd: 0.001, provider: "anthropic", model: "test-model" } as never; },
+    }).catch(() => undefined);
+    expect(keySource).toBe("byo");
   });
 
   it("team 1111's sponsored window: open lets the free pool through, closed refuses it", async () => {
@@ -141,7 +157,7 @@ describe("chatSendBlock agrees with meteredAI", () => {
   });
 
   it("never runs a query for a team key, a swarm, a gift or a paired computer", async () => {
-    for (const source of ["org-key", "local-connector", "public-swarm", "gift", "subscription-bridge"] as const) {
+    for (const source of ["org-key", "local-connector", "member-key", "public-swarm", "gift", "subscription-bridge"] as const) {
       const client = fixtureClient({ tier: "free" });
       expect(await chatSendBlock(client as never, { orgId: ORG, source })).toBeNull();
       expect(client.calls).toEqual([]);
@@ -155,12 +171,15 @@ describe("probeChatAvailability answers what Send would do", () => {
   const probe = (fixture: Fixture, model: ModelProbe, role = "scout") =>
     probeChatAvailability(fixtureClient(fixture) as never, { orgId: ORG, userId: USER, role }, { probeModel: async () => model });
 
-  it("a personal key on a free team with no team connection is not 'configured'", async () => {
-    const member = await probe({ tier: "free" }, memberKey);
-    expect(member).toMatchObject({ configured: false, reason: "team_connection_required", nextStep: "ask_owner" });
-    expect(member.message).toMatch(/team has its own AI connection/);
-    const owner = await probe({ tier: "free" }, memberKey, "owner");
-    expect(owner).toMatchObject({ configured: false, nextStep: "team" });
+  it("a personal key is ready on a free team with no team connection", async () => {
+    expect(await probe({ tier: "free", memberKey: true }, memberKey)).toMatchObject({ configured: true });
+    expect(await probe({ tier: "free", memberKey: true }, memberKey, "owner")).toMatchObject({ configured: true });
+  });
+
+  it("the free pool on a free team with no key at all is not 'configured'", async () => {
+    const hostedPool: ModelProbe = { ok: true, source: "hosted", provider: "openai-compatible", model: "free-pool" };
+    const member = await probe({ tier: "free" }, hostedPool);
+    expect(member).toMatchObject({ configured: false, reason: "team_connection_required" });
   });
 
   it("the same key is ready once the team has its own key, or on a paid team", async () => {
@@ -175,8 +194,9 @@ describe("probeChatAvailability answers what Send would do", () => {
 
   it("no model: offers the in-chat dialog only where a personal key would be allowed to answer", async () => {
     expect(await probe({ tier: "team" }, noModel)).toMatchObject({ configured: false, reason: "no_model_provider", nextStep: "connect" });
-    expect(await probe({ tier: "free" }, noModel)).toMatchObject({ configured: false, reason: "no_model_provider", nextStep: "ask_owner" });
-    expect(await probe({ tier: "free" }, noModel, "admin")).toMatchObject({ nextStep: "team" });
+    // A personal key is accepted on every tier now, so Connect AI (save your own key) is the step.
+    expect(await probe({ tier: "free" }, noModel)).toMatchObject({ configured: false, reason: "no_model_provider", nextStep: "connect" });
+    expect(await probe({ tier: "free" }, noModel, "admin")).toMatchObject({ nextStep: "connect" });
   });
 
   it("no billing account says AI isn't turned on, with no button to press", async () => {

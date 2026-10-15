@@ -433,7 +433,7 @@ export async function probeChatAvailability(
     }
     // Would a personal key from the Connect AI dialog be allowed to answer here? On a free team
     // with no team connection it would not, so offer the team connection instead.
-    const personalKeyBlock = await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, source: "member-key" }), null);
+    const personalKeyBlock = await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, userId: input.userId, source: "member-key" }), null);
     return {
       configured: false,
       reason: "no_model_provider",
@@ -444,7 +444,7 @@ export async function probeChatAvailability(
   if (billing.platformKillSwitch || billing.hostedAllowanceExhausted) {
     return { configured: false, reason: "usage_cap", message: "This team has used its hosted AI for now. Check AI limits or connect your own key.", nextStep: "settings" };
   }
-  const block = await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, source: model.source }), null);
+  const block = await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, userId: input.userId, source: model.source }), null);
   return block ? chatConnectionForBlock(block, input.role) : CHAT_READY;
 }
 
@@ -481,7 +481,7 @@ export async function loadAiCapabilityFacts(
   );
 
   const sendBlock = model.ok
-    ? await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, source: model.source }), null)
+    ? await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, userId: input.userId, source: model.source }), null)
     : null;
 
   return {

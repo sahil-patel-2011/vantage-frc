@@ -197,7 +197,7 @@ export async function POST(request: Request) {
       });
       // The same gate the connection check runs: refuse here, in the check's words, a model
       // billing would refuse after the turn was written (unknown → let meteredAI decide).
-      const blocked = await withSavepoint(client, () => chatSendBlock(client, { orgId, source: resolvedChat.provenance.source }), null);
+      const blocked = await withSavepoint(client, () => chatSendBlock(client, { orgId, userId, source: resolvedChat.provenance.source }), null);
       if (blocked) throw new ChatSendBlockedError(blocked);
       const adapter = resolvedChat.adapter;
 
