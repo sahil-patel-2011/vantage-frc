@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "../../../components/ui";
+import { PageMain, Button } from "../../../components/ui";
 import {
   CAD_PAIR_APPROVED,
   CAD_PAIR_DESCRIPTION,
@@ -40,7 +40,7 @@ export default function PairClient({
   }
 
   return (
-    <main className="module-page cad-pair-page">
+    <PageMain className="module-page cad-pair-page">
       <form className="cad-pair-card" onSubmit={approve}>
         <div>
           <span className="breadcrumbs">CAD / Pair desktop</span>
@@ -130,6 +130,6 @@ export default function PairClient({
           </p>
         ) : null}
       </form>
-    </main>
+    </PageMain>
   );
 }

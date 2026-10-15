@@ -58,6 +58,8 @@ body.has-app-shell .dash-home .dash-workspace .dash-now-main > p { max-width: 60
 .dash-workspace .dash-now-quiet { color: var(--accent); font-size: 14px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .dash-workspace .dash-now-quiet:hover { text-decoration: underline; text-underline-offset: 4px; }
 .dash-workspace-actions { min-width: 0; }
+/* A single shortcut sits right under the card it follows, as a link, not a lone button. */
+.dash-workspace-actions.is-single { margin-top: -10px; padding-inline: 4px; }
 .dash-workspace-action-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 .dash-home .dash-workspace-action {
   display: flex;
