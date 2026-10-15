@@ -24,10 +24,16 @@ type ReleaseEnv = {
   VANTAGE_RELEASE_SHA?: string;
 };
 
-/** "Merge pull request #2392 from owner/branch\n\nTitle" → 2392. */
+/**
+ * The pull request a production commit came from, for either merge style:
+ * "Merge pull request #2392 from owner/branch" (a merge commit) or "Title (#2392)" (a squash).
+ */
 export function pullRequestNumber(message: string): number | null {
-  const match = /Merge pull request #(\d+)/.exec(message);
-  return match ? Number(match[1]) : null;
+  const merge = /Merge pull request #(\d+)/.exec(message);
+  if (merge) return Number(merge[1]);
+  const firstLine = message.split(/\r?\n/)[0] ?? "";
+  const squash = /\(#(\d+)\)\s*$/.exec(firstLine.trim());
+  return squash ? Number(squash[1]) : null;
 }
 
 /** The merged pull request's title (its second paragraph), or a plain commit's first line. */
@@ -35,7 +41,9 @@ export function releaseTitle(message: string): string | null {
   const parts = message.split(/\r?\n\s*\r?\n/).map((part) => part.trim()).filter(Boolean);
   if (!parts.length) return null;
   const first = parts[0]!.split(/\r?\n/)[0]!.trim();
-  const title = /^Merge pull request #\d+/.test(first) ? parts[1]?.split(/\r?\n/)[0]?.trim() : first;
+  const title = /^Merge pull request #\d+/.test(first)
+    ? parts[1]?.split(/\r?\n/)[0]?.trim()
+    : first.replace(/\s*\(#\d+\)\s*$/, "");
   return title ? title.slice(0, 160) : null;
 }
 

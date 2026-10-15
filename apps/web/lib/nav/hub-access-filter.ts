@@ -172,6 +172,16 @@ export function hubIdForPath(pathname: string): ClientHubId | null {
   return null;
 }
 
+/**
+ * Standalone pages that are a hub tab under another address. The menu links straight to them,
+ * so they are checked as that tab: a member who can't open Pit TV or Assignments can't pin or
+ * launch them either.
+ */
+const STANDALONE_HUB_TABS: Record<string, { hub: ClientHubId; tab: string }> = {
+  "/display": { hub: "competition", tab: "pit-tv" },
+  "/scout-coverage-live": { hub: "competition", tab: "scout-coverage-live" },
+};
+
 export function pathAllowedByHubAccess(
   href: string,
   rows: ClientHubAccessRow[] | null | undefined,
@@ -179,6 +189,8 @@ export function pathAllowedByHubAccess(
   if (clientHubUnrestricted(rows)) return true;
   const path = href.split("?")[0] ?? href;
   if (HUB_ACCESS_ALWAYS_PATHS.has(path)) return true;
+  const standalone = STANDALONE_HUB_TABS[path];
+  if (standalone) return clientCanAccessHub(rows, standalone.hub) && clientCanAccessHubTab(rows, standalone.hub, standalone.tab);
   const hubId = hubIdForPath(path);
   if (!hubId) return true;
   if (!clientCanAccessHub(rows, hubId)) return false;
