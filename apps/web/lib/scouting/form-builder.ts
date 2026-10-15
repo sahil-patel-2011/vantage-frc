@@ -292,11 +292,21 @@ export function parseOptions(optionsText: string): string[] {
     .filter(Boolean);
 }
 
-/** Persist option editor rows back into draft `optionsText`: one per line, always. */
+/**
+ * Persist option editor rows back into draft `optionsText`: one per line, each row ending in a
+ * line break. Rows are kept exactly as typed, blank ones too, so Add option shows a new empty
+ * row and a space can be typed between words; parseOptions tidies them when the form is saved.
+ */
 export function serializeOptions(options: string[]): string {
-  const rows = options.map((part) => part.trim()).filter(Boolean);
-  // A lone option still ends in a line break, so a comma inside it is never read as two.
-  return rows.length === 1 ? `${rows[0]}\n` : rows.join("\n");
+  return options.map((part) => part.replace(/\n/g, " ")).join("\n") + "\n";
+}
+
+/** The editor's rows, blanks included (an older one-line comma list reads as before). */
+export function parseOptionRows(optionsText: string): string[] {
+  if (!optionsText.includes("\n")) return parseOptions(optionsText);
+  const rows = optionsText.split("\n");
+  if (rows[rows.length - 1] === "") rows.pop();
+  return rows;
 }
 
 export function moveOption(options: string[], from: number, to: number): string[] {

@@ -31,6 +31,7 @@ import {
   moveQuestion,
   needsOptionEditor,
   newDraftQuestion,
+  parseOptionRows,
   parseOptions,
   removeOption,
   resolveDraftPublishStatus,
@@ -183,7 +184,11 @@ describe("form-builder", () => {
   it("edits MC/dropdown option rows", () => {
     expect(needsOptionEditor("mc")).toBe(true);
     expect(needsOptionEditor("short")).toBe(false);
-    expect(serializeOptions(["none", "park", "climb"])).toBe("none\npark\nclimb");
+    expect(serializeOptions(["none", "park", "climb"])).toBe("none\npark\nclimb\n");
+    // Add option shows a new empty row, and a row can be cleared and retyped.
+    expect(parseOptionRows(serializeOptions(addOption(["a", "b"])))).toEqual(["a", "b", ""]);
+    expect(parseOptionRows(serializeOptions(["a", "", "c"]))).toEqual(["a", "", "c"]);
+    expect(parseOptions(serializeOptions(["a", "", " c "]))).toEqual(["a", "c"]);
     expect(addOption(["a"], "b")).toEqual(["a", "b"]);
     expect(updateOptionAt(["a", "b"], 1, "beta")).toEqual(["a", "beta"]);
     expect(removeOption(["a", "b", "c"], 1)).toEqual(["a", "c"]);

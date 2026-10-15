@@ -5,7 +5,7 @@ import {
   ANSWER_KIND_OPTIONS,
   addOption,
   moveOption,
-  parseOptions,
+  parseOptionRows,
   removeOption,
   serializeOptions,
   updateOptionAt,
@@ -23,7 +23,7 @@ export function OptionEditor({
   kind: AnswerKind;
   onChange: (optionsText: string) => void;
 }) {
-  const options = parseOptions(optionsText);
+  const options = parseOptionRows(optionsText);
   const rows = options.length ? options : ["", ""];
 
   function commit(next: string[]) {
