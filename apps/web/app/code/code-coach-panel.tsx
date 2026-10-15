@@ -24,7 +24,6 @@ export type CodeCoachPanelProps = Pick<
   | "busy"
   | "runReview"
   | "runPropose"
-  | "runBugbot"
   | "review"
   | "proposal"
   | "coachNarrations"
@@ -43,7 +42,6 @@ export function CodeCoachPanel({
   busy,
   runReview,
   runPropose,
-  runBugbot,
   review,
   proposal,
   coachNarrations,
@@ -89,17 +87,13 @@ export function CodeCoachPanel({
               />
             </label>
             <footer className="cdc-actions">
-              <button type="button" className="primary-action" disabled={busy || !hasSource} onClick={runReview}>
+              {/* One main action. Scanning this file with Bugbot is on Repo scan ("Scan this
+                  file"), and the sample loads from the empty state above. */}
+              <Button variant={hasSource ? "primary" : "secondary"} type="button" disabled={busy || !hasSource} onClick={runReview}>
                 Run risk review
-              </button>
+              </Button>
               <Button variant="secondary" type="button" disabled={busy || !hasSource} onClick={runPropose}>
-                Build proposal (diff)
-              </Button>
-              <Button variant="secondary" type="button" disabled={busy || !hasSource || !orgId} onClick={() => void runBugbot()}>
-                Run AI Bugbot
-              </Button>
-              <Button variant="ghost" type="button" disabled={busy} onClick={() => { setContent(CODE_COACH_SAMPLE); setReview(null); setProposal(null); setMessage(null); }}>
-                Reset sample
+                Suggest a safer version
               </Button>
             </footer>
           </article>

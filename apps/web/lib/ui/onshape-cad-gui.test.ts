@@ -61,8 +61,9 @@ describe("Onshape CAD GUI human-edit slice", () => {
     expect(setup).toMatch(/OnshapeEditBoard/);
     expect(setup).toMatch(/Needs setup/);
 
+    // One Edit in Onshape: the viewport's. The top bar used to carry a second, equally loud one.
     const ready = readFileSync(join(WEB, "app/cad/cad-ready-view.tsx"), "utf8");
-    expect(ready).toMatch(/OnshapeEditButton/);
+    expect(ready).not.toMatch(/OnshapeEditButton/);
     expect(ready).toMatch(/variant=\{editHref \? "secondary" : "primary"\}/);
     expect(ready).not.toMatch(/cad-agent-open/);
   });

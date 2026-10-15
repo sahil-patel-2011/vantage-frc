@@ -12,8 +12,8 @@ import {
   PageHeader,
   Panel,
   SoftBlockSkeleton,
-  StatTile,
   Modal,
+  ActionMenu,
   ConfirmProvider,
   useConfirm,
 } from "../../components/ui";
@@ -32,13 +32,9 @@ import { PicklistTierList } from "./picklist-tier-list";
 import { orderPayload, type TierGroup } from "../../lib/picklist-collab/reorder";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
 import {
-  PICKLIST_COLLAB_RELATED_INCLUDE,
   classifyPicklistCollabShell,
-  formatPicklistCollabMetric,
-  picklistCollabRelatedLinks,
   picklistCollabSetupSteps,
   picklistCollabShellCopy,
-  shouldShowPicklistCollabSummaryTiles,
   type PicklistCollabShellKind,
 } from "../../lib/picklist-collab/picklist-collab-related";
 import type { PicklistCollabTier } from "../../lib/picklist-collab/types";
@@ -72,25 +68,8 @@ function Crumbs({ href }: { href: string }) {
   return (
     <>
       <a href={href}>Competition</a>
-      {" / Collaborative pick list"}
+      {" / Pick list"}
     </>
-  );
-}
-
-function RelatedStrip({ orgId }: { orgId?: string | null }) {
-  const inScoutApp = useInScoutApp();
-  const links = inScoutApp
-    ? []
-    : picklistCollabRelatedLinks(orgId, {
-        include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
-      });
-  if (!links.length) return null;
-  return (
-    <nav className="product-hub-related picklist-collab-related" aria-label="Related competition tools">
-      {links.map((link) => (
-        <a key={link.id} href={link.href}>{link.label}</a>
-      ))}
-    </nav>
   );
 }
 
@@ -131,7 +110,6 @@ function CollabShell({
         title="Collaborative pick list"
         description={description}
       >
-        {embedded ? null : <RelatedStrip orgId={orgId} />}
       </PicklistHeader>
       {children}
       {shell === "loading" ? (
@@ -210,9 +188,7 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
   }, [activeListId, embedded]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
-  const inScoutApp = useInScoutApp();
   const listCount = view?.status === "live" ? view.lists.length : 0;
-  const totalEntries = view?.status === "live" ? view.summary.totalEntries : 0;
 
   const shell = classifyPicklistCollabShell({
     loading: view == null && !fetchFailed,
@@ -223,13 +199,7 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
     setupStepIds: view?.status === "setup_required" ? view.steps.map((step) => step.id) : [],
   });
   const shellCopy = picklistCollabShellCopy(shell);
-  const relatedLinks = inScoutApp || embedded
-    ? []
-    : picklistCollabRelatedLinks(orgId, {
-        include: [...PICKLIST_COLLAB_RELATED_INCLUDE],
-      });
   const competitionHref = hubWorkbenchHref("competition", "picklist-collab", orgId);
-  const showTiles = shouldShowPicklistCollabSummaryTiles({ listCount, totalEntries });
 
   if (shell === "loading") {
     return (
@@ -266,7 +236,6 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
             title="Collaborative pick list"
             description={setupView.message}
           >
-            {embedded ? null : <RelatedStrip orgId={orgId} />}
           </PicklistHeader>
           <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
@@ -306,8 +275,10 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
     <Root className="module-page picklist-collab-page">
       <PicklistHeader embedded={embedded}
         breadcrumbs={<Crumbs href={competitionHref} />}
-        title="Collaborative pick list"
-        description="Compare team evidence, discuss picks and record your vote. Scouting leads manage the saved ranking."
+        title="Pick list"
+        description={view?.status === "live" && view.summary.totalEntries > 0
+          ? `${view.summary.totalEntries} ${view.summary.totalEntries === 1 ? "team" : "teams"} · ${view.summary.totalVotes} ${view.summary.totalVotes === 1 ? "vote" : "votes"} from ${view.summary.totalVoters} ${view.summary.totalVoters === 1 ? "person" : "people"}`
+          : "Compare team evidence, discuss picks and vote. Scouting leads manage the saved ranking."}
       >
         <div className="picklist-collab-header-actions">
           {view?.status === "live" && view.lists.length > 0 ? (
@@ -330,18 +301,18 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
               </select>
             </label>
           ) : null}
-          {view?.status === "live" && view.activeList && view.entries.length > 0 ? (
-            <Button variant="secondary" type="button" onClick={() => { const csv = picklistToCsv({ listName: view.activeList!.name, entries: sortEntriesWithFieldRating(view.entries, [], undefined, undefined, "hand") }); const blob = new Blob([csv], { type: "text/csv;charset=utf-8" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `${view.activeList!.name.replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "picklist"}.csv`; link.click(); URL.revokeObjectURL(url); }}>
-              Download CSV
-            </Button>
-          ) : null}
-          {relatedLinks.map((link) => (
-            <Button as="a" variant="secondary" key={link.id} href={link.href}>
-              {link.label}
-            </Button>
-          ))}
+          {/* The list's occasional actions live behind More; the page's own work is the ranking. */}
+          <ActionMenu
+            label="Pick list"
+            overflowOnly
+            actions={[
+              ...(view?.status === "live" && view.activeList && view.entries.length > 0
+                ? [{ id: "csv", label: "Download CSV", onClick: () => { const csv = picklistToCsv({ listName: view.activeList!.name, entries: sortEntriesWithFieldRating(view.entries, [], undefined, undefined, "hand") }); const blob = new Blob([csv], { type: "text/csv;charset=utf-8" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `${view.activeList!.name.replace(/[^\w.-]+/g, "-").replace(/^-|-$/g, "") || "picklist"}.csv`; link.click(); URL.revokeObjectURL(url); } }]
+                : []),
+              { id: "refresh", label: refreshing ? "Refreshing…" : "Refresh the saved list", disabled: busy, onClick: () => load() },
+            ]}
+          />
         </div>
-        <Button type="button" variant="secondary" disabled={busy} onClick={() => load()}>{refreshing ? "Refreshing…" : "Refresh saved list"}</Button>
       </PicklistHeader>
 
       <OfflineBanner feature="Collaborative pick list" fromCache={fromCache} cachedAt={cachedAt} />
@@ -352,23 +323,6 @@ function TeamDiscussion({ embedded, requestedOrg, onBusyChange, onDirtyChange }:
         </p>
       ) : null}
       {notice ? <p className="picklist-feedback" role="status">{notice}</p> : null}
-
-      {showTiles && view?.status === "live" ? (
-        <section className="picklist-collab-stats" aria-label="Pick list counts">
-          <StatTile
-            label="Teams tracked"
-            value={formatPicklistCollabMetric(view.summary.totalEntries, true)}
-          />
-          <StatTile
-            label="Votes cast"
-            value={formatPicklistCollabMetric(view.summary.totalVotes, true)}
-          />
-          <StatTile
-            label="Voters"
-            value={formatPicklistCollabMetric(view.summary.totalVoters, true)}
-          />
-        </section>
-      ) : null}
 
       {shell === "empty" ? (
         <div className="picklist-collab-layout">
@@ -444,7 +398,7 @@ function SummaryStatus({ view, busy, mutate, error }: { view: LiveView; busy: bo
                 : "good"
           }
         >
-          {status ?? "—"}
+          {status === "open" ? "Open" : status === "locked" ? "Locked" : status === "archived" ? "Archived" : "—"}
         </Badge>
         {view.canManage ? <div className="picklist-status-actions">
           {status !== "open" ? <Button type="button" variant="secondary" disabled={busy || !view.activeList?.revision} onClick={() => void mutate({ action: "update-list-status", status: "open" })}>Reopen list</Button> : <Button type="button" variant="secondary" disabled={busy || !view.activeList?.revision} onClick={() => setPending("locked")}>Lock ranking and votes</Button>}

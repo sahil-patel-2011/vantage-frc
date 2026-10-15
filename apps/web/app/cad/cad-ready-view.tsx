@@ -4,7 +4,6 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 import { PageMain, Button } from "../../components/ui";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { CAD_HUB_RELATED_INCLUDE, cadHubRelatedLinks } from "../../lib/cad/cad-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import type { ListedDocumentElements } from "../../lib/cad/list-document-elements";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
@@ -13,7 +12,6 @@ import { CadActivityPanel } from "./cad-activity-panel";
 import { CadStepPane } from "./cad-step-pane";
 import { CadToolsPanel, type CadToolRow } from "./cad-tools-panel";
 import { realReturnedId } from "./cad-session";
-import { OnshapeEditButton } from "./onshape-edit-board";
 import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
 import {
   MODE_LABELS,
@@ -174,14 +172,9 @@ export function CadReadyView({
           <span className={boundOk ? "on" : ""} title={state?.bound?.documentId ?? undefined}>
             {boundOk ? state?.bound?.documentName || "Part Studio linked" : "Not linked yet"}
           </span>
-          {editHref ? <OnshapeEditButton href={editHref} /> : null}
         </div>
       </header>
-      <nav className="product-hub-related cad-related" aria-label="Related CAD tools">
-        {cadHubRelatedLinks(orgId, { include: [...CAD_HUB_RELATED_INCLUDE] }).map((link) => (
-          <a key={link.id} href={link.href}>{link.label}</a>
-        ))}
-      </nav>
+      {/* One Edit in Onshape (on the viewport) and no row of related links: the Build tabs already go there. */}
 
       {!state && loadFailure ? (
         (() => {

@@ -2,15 +2,13 @@
 
 import { availableSeasonYears, currentSeasonYear, lastPublishedPack, packForYear } from "@vantage/game-year";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BuildHubRelated } from "../../components/build-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Button, TabBar } from "../../components/ui";
 import { kickoffSummary, type KickoffView } from "../../lib/kickoff";
-import { KICKOFF_BUILD_RELATED_INCLUDE, shouldShowKickoffSummaryTiles } from "../../lib/kickoff-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { NextActionsPanel, useHubEmbed } from "./kickoff-chrome";
+import { useHubEmbed } from "./kickoff-chrome";
 import { IntelligenceSection, prefetchKickoffIntelligence, type KickoffIntelPrefetch } from "./kickoff-intelligence";
 import type { ActionBody } from "./kickoff-model";
 import { PrioritySection } from "./kickoff-priority";
@@ -41,6 +39,8 @@ async function persistKickoffSnapshot(orgHint: string, data: KickoffView): Promi
   }
 }
 
+type KickoffSection = "overview" | "scoring" | "priorities" | "rules" | "next";
+
 export default function KickoffClient({ embedded = false }: { embedded?: boolean } = {}) {
   const embed = useHubEmbed();
   const Root = embedded || embed === "build" ? "section" : "main";
@@ -50,10 +50,9 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [section, setSection] = useState<KickoffSection>("overview");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
-  const [hasIntelligence, setHasIntelligence] = useState(false);
-  const [cadJobId, setCadJobId] = useState<string | null>(null);
   const [intelPrefetch, setIntelPrefetch] = useState<KickoffIntelPrefetch | null>(null);
   const intelPrefetchStarted = useRef(false);
 
@@ -124,11 +123,6 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
   useEffect(() => {
     void load();
   }, [load]);
-
-  const onIntelMeta = useCallback((meta: { hasIntelligence: boolean; cadJobId: string | null }) => {
-    setHasIntelligence(meta.hasIntelligence);
-    setCadJobId(meta.cadJobId);
-  }, []);
 
   const run = useCallback(
     async (body: ActionBody, key: string) => {
@@ -206,7 +200,6 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
           title="Kickoff & Game Analysis"
           description="Break the new game into scoring actions, rank them by value, and lock the design priorities."
         />
-        <BuildHubRelated active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
         <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState badge="Needs setup" badgeTone="setup" soft title="Choose your team" description={view.message}>
           <Button as="a" variant="primary" href="/workspace">
@@ -233,7 +226,6 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
   // Next-season notes are not filtered by the year picker: they are about the
   // season after this one, and there is only ever one of those to look at.
   const nextSeasonSignals = view.nextSeasonSignals ?? [];
-  const showTiles = shouldShowKickoffSummaryTiles(summary);
   const seasonControl = (
     <label className="kick-year">
       Season
@@ -247,11 +239,11 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
     <Root className="module-page kick-page">
       <PageHeader
         breadcrumbs={crumbs}
-        title="Kickoff & Game Analysis"
+        title="Kickoff"
         description={
           <>
-            Start from the {year} manual and kickoff transcript for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — structure the game, seed Strategy
-            priorities, and hand a CAD brief to Onshape/Fusion paths.
+            Read the {year} game for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"}: what scores, what to build first,
+            and which rules to check.
           </>
         }
       >
@@ -259,7 +251,6 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
       </PageHeader>
       {embedded || embed === "build" ? <div className="kick-embedded-controls">{seasonControl}</div> : null}
 
-      <BuildHubRelated orgId={orgId} active="kickoff" include={[...KICKOFF_BUILD_RELATED_INCLUDE]} />
       <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
       {/*
         This line used to be visible, and it said what the card directly below
@@ -291,88 +282,84 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
         </p>
       ) : null}
 
-      <GameBriefSection orgId={orgId} seasonYear={year} />
-
-      <NextActionsPanel
-        orgId={orgId}
-        seasonYear={year}
-        hasIntelligence={hasIntelligence}
-        actionCount={actions.length}
-        priorityCount={priorities.length}
-        openRuleCount={summary.openQuestions}
-        cadJobId={cadJobId}
+      {/* One page per question instead of ten stacked cards: the counts that used to be four
+          tiles are on the tabs, and the Next actions card (links to these same sections and to
+          Strategy and CAD) is gone. */}
+      <TabBar
+        tabs={[
+          { id: "overview", label: "Overview" },
+          { id: "scoring", label: summary.actions ? `Scoring · ${summary.actions}` : "Scoring" },
+          { id: "priorities", label: priorities.length ? `Priorities · ${priorities.length}` : "Priorities" },
+          { id: "rules", label: summary.openQuestions ? `Rules · ${summary.openQuestions} open` : "Rules" },
+          { id: "next", label: "Next season" },
+        ]}
+        value={section}
+        onChange={(id) => setSection(id as KickoffSection)}
+        aria-label="Kickoff"
+        panelId="kick-section"
+        className="kick-tabs"
       />
-
-      {showTiles ? (
-        <section className="kick-tiles">
-          <div className="app-card kick-tile soft-panel">
-            <span className="kick-tile-value">{summary.actions}</span>
-            <span className="kick-tile-label">Actions analyzed</span>
-          </div>
-          <div className="app-card kick-tile soft-panel">
-            <span className="kick-tile-value kick-tile-best">{summary.bestAction ?? "—"}</span>
-            <span className="kick-tile-label">Best value action</span>
-          </div>
-          <div className="app-card kick-tile soft-panel">
-            <span className="kick-tile-value">{summary.committed}</span>
-            <span className="kick-tile-label">Committed priorities</span>
-          </div>
-          <div className="app-card kick-tile soft-panel">
-            <span className="kick-tile-value">{summary.openQuestions}</span>
-            <span className="kick-tile-label">Open rules questions</span>
-          </div>
-        </section>
-      ) : null}
-
-      <IntelligenceSection
-        orgId={orgId}
-        seasonYear={year}
-        busyKey={busyKey}
-        setBusyKey={setBusyKey}
-        setError={setError}
-        cutoffCode={cutoffCode}
-        setCutoffCode={setCutoffCode}
-        onIntelMeta={onIntelMeta}
-        onApplied={load}
-        prefetch={intelPrefetch}
-      />
-      <ScoringSection
-        actions={actions}
-        orgId={orgId}
-        seasonYear={year}
-        role={view.context.role}
-        userId={view.context.userId}
-        busyKey={busyKey}
-        run={run}
-      />
-      <PrioritySection
-        priorities={priorities}
-        actions={actions}
-        orgId={orgId}
-        seasonYear={year}
-        role={view.context.role}
-        userId={view.context.userId}
-        busyKey={busyKey}
-        run={run}
-      />
-      <RulesSection
-        ruleNotes={ruleNotes}
-        orgId={orgId}
-        seasonYear={year}
-        role={view.context.role}
-        userId={view.context.userId}
-        busyKey={busyKey}
-        run={run}
-      />
-      {/* Last on the page on purpose: next year matters, but not before this
-          year's rules questions are answered. */}
-      <NextSeasonSection
-        signals={nextSeasonSignals}
-        orgId={orgId}
-        seasonYear={year + 1}
-        busyKey={busyKey}
-        run={run}
-      />
+      <div id="kick-section" role="tabpanel">
+        {section === "overview" ? (
+          <>
+            <GameBriefSection orgId={orgId} seasonYear={year} />
+            <IntelligenceSection
+              orgId={orgId}
+              seasonYear={year}
+              busyKey={busyKey}
+              setBusyKey={setBusyKey}
+              setError={setError}
+              cutoffCode={cutoffCode}
+              setCutoffCode={setCutoffCode}
+              onApplied={load}
+              prefetch={intelPrefetch}
+            />
+          </>
+        ) : null}
+        {section === "scoring" ? (
+          <ScoringSection
+            actions={actions}
+            orgId={orgId}
+            seasonYear={year}
+            role={view.context.role}
+            userId={view.context.userId}
+            busyKey={busyKey}
+            run={run}
+          />
+        ) : null}
+        {section === "priorities" ? (
+          <PrioritySection
+            priorities={priorities}
+            actions={actions}
+            orgId={orgId}
+            seasonYear={year}
+            role={view.context.role}
+            userId={view.context.userId}
+            busyKey={busyKey}
+            run={run}
+          />
+        ) : null}
+        {section === "rules" ? (
+          <RulesSection
+            ruleNotes={ruleNotes}
+            orgId={orgId}
+            seasonYear={year}
+            role={view.context.role}
+            userId={view.context.userId}
+            busyKey={busyKey}
+            run={run}
+          />
+        ) : null}
+        {section === "next" ? (
+          <NextSeasonSection
+            signals={nextSeasonSignals}
+            orgId={orgId}
+            seasonYear={year + 1}
+            busyKey={busyKey}
+            run={run}
+          />
+        ) : null}
+      </div>
     </Root>
   );
 }

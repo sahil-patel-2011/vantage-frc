@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../components/ui";
 import { canDeleteKickoffRow, PHASES, pointsPerSecond, rankActions, type Phase, type ScoringAction } from "../../lib/kickoff";
 import type { RunFn } from "./kickoff-model";
 
@@ -108,7 +108,10 @@ export function ScoringSection({
                     className="kick-link danger"
                     aria-label={`Delete ${action.label}`}
                     disabled={busy}
-                    onClick={() => void run({ action: "delete_action", orgId, id: action.id }, rowKey)}
+                    onClick={async () => {
+                      if (!(await askConfirm({ title: `Delete this scoring action?`, body: `“${action.label}” is removed for the whole team.`, confirmLabel: "Delete", tone: "destructive" }))) return;
+                      void run({ action: "delete_action", orgId, id: action.id }, rowKey);
+                    }}
                   >
                     ✕
                   </button>

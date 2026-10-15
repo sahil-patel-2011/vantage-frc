@@ -70,7 +70,8 @@ export function IntelligenceSection({
   onApplied: () => Promise<void>;
   cutoffCode: string | null;
   setCutoffCode: (code: string | null) => void;
-  onIntelMeta: (meta: { hasIntelligence: boolean; cadJobId: string | null }) => void;
+  /** Told whether a summary exists (and its CAD brief), for a caller that wants to know. */
+  onIntelMeta?: (meta: { hasIntelligence: boolean; cadJobId: string | null }) => void;
 }) {
   const [manualText, setManualText] = useState("");
   const [transcriptText, setTranscriptText] = useState("");
@@ -110,7 +111,7 @@ export function IntelligenceSection({
         if (cutoff) setCutoffCode(cutoff);
         setError(data.error ?? "Could not load game intelligence.");
         setIntelStatus("empty");
-        onIntelMeta({ hasIntelligence: false, cadJobId: null });
+        onIntelMeta?.({ hasIntelligence: false, cadJobId: null });
         return;
       }
       const nextRecords = data.records ?? [];
@@ -124,18 +125,18 @@ export function IntelligenceSection({
       );
       if (nextRecords.length) {
         setSelectedId((current) => current ?? nextRecords[0]!.id);
-        onIntelMeta({
+        onIntelMeta?.({
           hasIntelligence: true,
           cadJobId: nextRecords[0]?.cadJobId ?? null,
         });
       } else {
         setSelectedId(null);
-        onIntelMeta({ hasIntelligence: false, cadJobId: null });
+        onIntelMeta?.({ hasIntelligence: false, cadJobId: null });
       }
     } catch {
       setError("Network error — could not load game intelligence.");
       setIntelStatus("empty");
-      onIntelMeta({ hasIntelligence: false, cadJobId: null });
+      onIntelMeta?.({ hasIntelligence: false, cadJobId: null });
     }
   }, [orgId, seasonYear, onIntelMeta, setCutoffCode, setError, prefetch]);
 
@@ -145,7 +146,7 @@ export function IntelligenceSection({
 
   useEffect(() => {
     if (!selected) return;
-    onIntelMeta({ hasIntelligence: true, cadJobId: selected.cadJobId ?? null });
+    onIntelMeta?.({ hasIntelligence: true, cadJobId: selected.cadJobId ?? null });
   }, [selected, onIntelMeta]);
 
   async function runIntel(body: Record<string, unknown>, key: string) {

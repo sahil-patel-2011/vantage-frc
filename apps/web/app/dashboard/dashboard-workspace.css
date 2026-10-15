@@ -57,31 +57,10 @@ body.has-app-shell .dash-home .dash-workspace .dash-now-main > strong { font-siz
 body.has-app-shell .dash-home .dash-workspace .dash-now-main > p { max-width: 60ch; margin-bottom: 0; }
 .dash-workspace .dash-now-quiet { color: var(--accent); font-size: 14px; min-height: 44px; display: inline-flex; align-items: center; text-decoration: none; }
 .dash-workspace .dash-now-quiet:hover { text-decoration: underline; text-underline-offset: 4px; }
-.dash-workspace-actions { min-width: 0; }
+
 /* A single shortcut sits right under the card it follows, as a link, not a lone button. */
-.dash-workspace-actions.is-single { margin-top: -10px; padding-inline: 4px; }
-.dash-workspace-action-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.dash-home .dash-workspace-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  min-width: 0;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  border: 1px solid var(--line-soft);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--ink);
-  font: 500 13px/1.4 var(--font-sans);
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color 160ms, border-color 160ms, box-shadow 160ms;
-}
-.dash-workspace-action > svg { width: 22px; height: 22px; flex: none; color: var(--muted); }
-.dash-home .dash-workspace-action:hover { background: var(--surface-2); border-color: color-mix(in srgb, var(--ink) 18%, var(--line)); box-shadow: var(--shadow); }
-.dash-workspace-action:focus-visible, .dash-workspace .dash-now-quiet:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+.dash-workspace .dash-now-quiet:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 body.has-app-shell .dash-home.scan-workbench > .dash-role-strip { margin: 0; padding: 22px 24px; }
 body.has-app-shell .dash-home.scan-workbench > .dash-role-strip > ul { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .dash-home .dash-board-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; margin-bottom: 18px; padding-block: 8px; border-bottom: 1px solid var(--line-soft); }
@@ -125,7 +104,7 @@ body.has-app-shell .dash-home .dash-stat-row strong, body.has-app-shell .dash-ho
   body.has-app-shell .dash-home.scan-workbench { padding: 24px 16px 28px; gap: 22px; }
   body.has-app-shell .dash-home.scan-workbench > .dash-home-header { align-items: stretch; gap: 14px; }
   body.has-app-shell .dash-home .dash-hero-greeting { font-size: 30px; }
-  .dash-home .dash-workspace-action { padding: 10px 12px; }
+  
   .dash-home .dash-board-heading { align-items: flex-start; gap: 8px; }
   .dash-board-identity { flex: 1 1 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 12px; }
   .dash-board-identity .dash-board-chip-wrap { width: 100%; }
@@ -135,8 +114,6 @@ body.has-app-shell .dash-home .dash-stat-row strong, body.has-app-shell .dash-ho
   body.has-app-shell .dash-home:not(.is-editing) .dash-widget.app-card { padding: 20px; }
   body.has-app-shell .dash-home.scan-workbench > .dash-role-strip > ul { grid-template-columns: 1fr; }
 }
-@media (prefers-reduced-motion: reduce) { .dash-workspace-action { transition: none; } }
-html[data-motion="reduced"] .dash-workspace-action { transition: none; }
 
 /* "Your overview" and its Edit share one line, as a list heading does: the title side took the
    whole width (flex-basis 100%), so on a phone Edit dropped to a line of its own. */

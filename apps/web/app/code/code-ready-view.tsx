@@ -1,9 +1,7 @@
 "use client";
 
-import { BUGBOT_ULTRA_PRICES_USD } from "@vantage/agent/bugbot";
-import { AiHubRelated } from "../../components/ai-hub-related";
-import { BuildHubRelated } from "../../components/build-hub-related";
-import { EmptyState, Button, PageMain } from "../../components/ui";
+import { useEffect, useState } from "react";
+import { EmptyState, Button, PageMain, TabBar } from "../../components/ui";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -14,47 +12,65 @@ import type { CodeReadyViewProps } from "./code-view-props";
 
 export type { CodeReadyViewProps } from "./code-view-props";
 
+type CodeTab = "review" | "scan" | "pulls";
+
+/** In-page links (#cdc-source from Repo scan's "Paste a file", #bugbot) choose their tab. */
+function tabForHash(hash: string): CodeTab | null {
+  if (hash === "#cdc-source") return "review";
+  if (hash === "#bugbot") return "scan";
+  return null;
+}
+
+/*
+  Code review: one header, three tabs, one main button per tab.
+
+  It used to be about nine stacked blocks: a links strip, a fold of three billing cards and a
+  "Next actions" card, three "Flag / Explain / Correct" cards, the editor, Bugbot, the code map
+  and pull requests, with "Run AI Bugbot" and "Scan this file" doing the same thing, "Load
+  teaching sample" and "Reset sample" doing the same thing, and Connect GitHub twice. Now:
+
+    Review         paste or load a file, Run risk review (main), Build proposal
+    Repo scan      Bugbot on a connected repo or the pasted file
+    Pull requests  the code map and the team's pull requests
+
+  What a scan costs is said once, next to the scan, and in the line at the foot of the page.
+*/
 export function CodeReadyView(props: CodeReadyViewProps) {
-  const {
-    orgId,
-    related,
-    embedded,
-    relatedLinks,
-    budgetsHref,
-    keysHref,
-    githubHref,
-    canConnect,
-    showMeteredBanner,
-    cutoffCode,
-    nextActions,
-    message,
-  } = props;
+  const { orgId, embedded, budgetsHref, keysHref, showMeteredBanner, cutoffCode, message, initialTab } = props;
+  const [tab, setTab] = useState<CodeTab>(initialTab ?? "review");
+  // The hub's AI Bugbot tab (?tab=bugbot) opens on Repo scan, including after a soft navigation.
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
+
+  useEffect(() => {
+    const follow = () => {
+      const next = tabForHash(window.location.hash);
+      if (next) setTab(next);
+    };
+    follow();
+    window.addEventListener("hashchange", follow);
+    return () => window.removeEventListener("hashchange", follow);
+  }, []);
+
+  const tabs = [
+    { id: "review", label: "Review" },
+    { id: "scan", label: "Repo scan" },
+    ...(orgId ? [{ id: "pulls", label: "Pull requests" }] : []),
+  ];
+
   return (
     <PageMain className={`module-page cdc-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">{related === "ai" ? "AI / Code assist" : "Build / Code Coach"}</span>
-          <h1>FRC Code Coach</h1>
-          <p>
-            Flag risky robot-code patterns, explain why they fail under match pressure, then suggest a safer habit.
-            Review runs on this device against a fixed rule set. Every proposed change is a diff a person has to
-            approve, and nothing is ever pushed to a robot.
-          </p>
-        </div>
-        <div className="cdc-header-actions">
-          <span className="app-badge good">Local · proposal-only</span>
-          {/* Pair VS Code is in the links row right under the header. */}
-        </div>
-      </header>
-      ) : null}
-
-      {!embedded ? (
-        related === "ai" ? (
-          orgId ? <AiHubRelated orgId={orgId} active="code" /> : null
-        ) : (
-          <BuildHubRelated orgId={orgId} active="code" />
-        )
+        <header className="app-page-header">
+          <div>
+            <h1>Code review</h1>
+            <p>
+              Find risky robot-code patterns, learn why they fail on match day, and get a safer version to approve.
+              Nothing is ever pushed to your robot or to GitHub.
+            </p>
+          </div>
+        </header>
       ) : null}
 
       {!orgId ? (
@@ -62,124 +78,27 @@ export function CodeReadyView(props: CodeReadyViewProps) {
           soft
           badge="Needs setup"
           badgeTone="setup"
-          title="Choose your team to coach code"
-          description="Local pattern review works without a model key. Pairing VS Code, GitHub context, CAD, and AI chat need a team."
+          title="Choose your team for repo scans"
+          description="Reviewing a pasted file works without a team. Scanning GitHub and pull requests need one."
           className="product-hub-setup"
         >
-          <Button as="a" variant="primary" href="/workspace">
+          <Button as="a" variant="secondary" href="/workspace">
             Choose your team
           </Button>
         </EmptyState>
-      ) : !embedded ? (
-        <nav className="cdc-gov" aria-label="CAD, GitHub, and AI chat">
-          {relatedLinks.map((link) => (
-            <a key={link.id} href={link.href}>
-              {link.label}
-            </a>
-          ))}
-          <a href={budgetsHref}>Budgets</a>
-          <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
-        </nav>
       ) : null}
-
-      <details className="cdc-options">
-        <summary data-disclosure>AI options, connections and costs</summary>
-        {embedded && orgId ? (
-          <nav className="cdc-gov" aria-label="CAD, GitHub, and AI chat">
-            {relatedLinks.map(link => <a key={link.id} href={link.href}>{link.label}</a>)}
-            <a href={budgetsHref}>Budgets</a>
-            <a href={withOrgHref("/team/usage", orgId)}>AI usage</a>
-          </nav>
-        ) : null}
-      <section className="cdc-billing" aria-label="Local versus metered">
-        <article className="cdc-billing-local">
-          <span className="app-badge good">Local · free</span>
-          <h2>Code Coach pattern review</h2>
-          <p>
-            Risk rules run in the browser against pasted or loaded source. No provider key, no plan credits, and no
-            findings unless a rule matches evidence in your file.
-          </p>
-        </article>
-        <article className="cdc-billing-metered">
-          <span className="app-badge">Subscription</span>
-          <h2>Bugbot on your plan</h2>
-          <p>
-            Scan connected GitHub robot-code (or a pasted file) on your team's keys or plan allowance. Findings must
-            quote the source. Distinct from CAD briefs and chat.
-          </p>
-          <div className="cdc-billing-actions">
-            <Button as="a" variant="secondary" href="#bugbot">
-              AI Bugbot
-            </Button>
-            <Button as="a" variant="secondary" href={keysHref}>
-              AI keys
-            </Button>
-          </div>
-        </article>
-        <article className="cdc-billing-ultra">
-          <span className="app-badge">Bugbot Ultra</span>
-          <h2>Hosted API · published prices</h2>
-          <p>
-            Straight hosted pass that does not use your team's keys: ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} to scan, $
-            {BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} to propose a fix, ${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} to
-            recheck. Fixes stay diffs — never pushed to GitHub.
-          </p>
-          <div className="cdc-billing-actions">
-            <Button as="a" variant="secondary" href="#bugbot">
-              Ultra prices
-            </Button>
-            {canConnect ? (
-              <Button as="a" variant="secondary" href={githubHref}>
-                Connect GitHub
-              </Button>
-            ) : (
-              <Button as="a" variant="secondary" href="#cdc-source">
-                Paste a file
-              </Button>
-            )}
-          </div>
-        </article>
-      </section>
-
-      <section className="cdc-next-actions app-card soft-panel" aria-label="Next actions">
-        <header>
-          <h2>Next actions</h2>
-          <p className="app-muted">Setup and cross-links.</p>
-        </header>
-        <ol>
-          {nextActions.map((action) => (
-            <li key={action.id} className={action.primary ? "primary" : undefined}>
-              <a className="edc-next-action" href={action.href}>
-              <strong>{action.label}</strong>
-              <span>{action.detail}</span>
-            </a>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      </details>
 
       {showMeteredBanner ? <MeteredAiCutoffBanner orgId={orgId} className="cdc-cutoff" /> : null}
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} className="cdc-cutoff" /> : null}
 
-      <section className="cdc-flow" aria-label="Teach, don't just do">
-        <article>
-          <b>01 · Flag</b>
-          <h2>Catch the risky line</h2>
-          <p>Blocking loops, hard-coded CAN IDs, unbounded motor output, missing units, disabled-state writes.</p>
-        </article>
-        <article>
-          <b>02 · Explain</b>
-          <h2>Why it fails on match day</h2>
-          <p>Each finding carries a teaching note so students learn the failure mode — not just a red underline.</p>
-        </article>
-        <article>
-          <b>03 · Correct pattern</b>
-          <h2>Suggest a safer habit</h2>
-          <p>WPILib-aligned alternatives stay reviewable. Mentors approve diffs; simulation stays with the team.</p>
-        </article>
-      </section>
+      <TabBar
+        tabs={tabs}
+        value={tab}
+        onChange={(id) => setTab(id as CodeTab)}
+        aria-label="Code review"
+        panelId="cdc-tab-panel"
+        className="cdc-tabs"
+      />
 
       {message ? (
         <p role="status" className="telemetry-status">
@@ -187,9 +106,19 @@ export function CodeReadyView(props: CodeReadyViewProps) {
         </p>
       ) : null}
 
-      <CodeCoachPanel {...props} />
-      <CodeBugbotPanel {...props} />
-      {orgId ? <CodePullRequests orgId={orgId} /> : null}
+      <div id="cdc-tab-panel" role="tabpanel" aria-label={tabs.find((entry) => entry.id === tab)?.label}>
+        {tab === "review" ? <CodeCoachPanel {...props} /> : null}
+        {tab === "scan" ? <CodeBugbotPanel {...props} /> : null}
+        {tab === "pulls" && orgId ? <CodePullRequests orgId={orgId} /> : null}
+      </div>
+
+      {orgId ? (
+        <p className="app-muted cdc-foot">
+          Reviewing a pasted file runs on this device and is free. Repo scans use your team&apos;s{" "}
+          <a href={keysHref}>AI keys</a> or plan credits, within your <a href={budgetsHref}>AI limits</a> ·{" "}
+          <a href={withOrgHref("/team/usage", orgId)}>Usage</a>
+        </p>
+      ) : null}
     </PageMain>
   );
 }

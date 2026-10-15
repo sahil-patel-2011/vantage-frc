@@ -22,12 +22,16 @@ describe("one filled button per view", () => {
     expect(markDone).toMatch(/variant="secondary"/);
   });
 
-  it("Code keeps Run risk review as its one filled button", () => {
-    expect(read("app/code/code-coach-panel.tsx")).toMatch(/className="primary-action"[^>]*onClick=\{runReview\}/);
+  it("Code has one filled button per tab: Run risk review, then one scan", () => {
+    const coach = read("app/code/code-coach-panel.tsx");
+    // Empty editor: Load teaching sample is the one filled button; with code, Run risk review is.
+    expect(coach).toMatch(/variant=\{hasSource \? "primary" : "secondary"\} type="button" disabled=\{busy \|\| !hasSource\} onClick=\{runReview\}/);
+    expect(coach.match(/variant="primary"/g)?.length).toBe(1);
+    expect(coach).not.toMatch(/Run AI Bugbot|Reset sample/);
     const bugbot = read("app/code/code-bugbot-panel.tsx");
-    const scan = bugbot.slice(bugbot.indexOf('<footer className="cdc-bugbot-actions">'), bugbot.indexOf('"Scan this file"'));
-    expect(scan).toMatch(/className="app-button secondary"/);
-    expect(scan).not.toMatch(/primary-action/);
+    // Exactly one of the two scans is filled: the repo when GitHub is linked, else the file.
+    expect(bugbot).toMatch(/variant=\{githubConnected \? "secondary" : "primary"\}[\s\S]*?Scan this file/);
+    expect(bugbot).toMatch(/variant=\{githubConnected \? "primary" : "secondary"\}[^>]*className="cdc-scan-repo"/);
   });
 
   it("Hours' Clock in is the fallback to scanning, so secondary", () => {

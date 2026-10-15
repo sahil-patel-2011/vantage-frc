@@ -468,15 +468,7 @@ body.soft-nav-panel-open .soft-island{
 .dash-home .app-button.secondary{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:none}
 .dash-home .app-button.ghost{color:var(--ink);background:transparent;border-color:transparent;box-shadow:none}
 .dash-home .app-button.danger{color:#fff;background:var(--critical-fill);border-color:transparent;box-shadow:none}
-.dash-ready-cue{
-  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
-  margin:0 0 16px;padding:10px 14px;border-radius:var(--radius-sm);
-  border:1px solid var(--line);background:var(--surface);color:var(--ink);
-  font:600 13px/1.4 var(--font-source-sans),ui-sans-serif;
-}
-.dash-ready-cue strong{font-weight:700}
-.dash-ready-cue a{color:var(--accent);font:700 13px var(--font-source-sans),ui-sans-serif;text-decoration:none;white-space:nowrap}
-.dash-ready-cue a:hover{text-decoration:underline}
+
 .dash-edit-trigger{
   min-height:36px;padding:0 14px;font:700 13px var(--font-source-sans),ui-sans-serif;
   box-shadow:none;

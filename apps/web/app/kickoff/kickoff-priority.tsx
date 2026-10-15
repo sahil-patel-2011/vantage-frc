@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState, Button, askConfirm } from "../../components/ui";
 import { canDeleteKickoffRow, PRIORITY_STATUSES, type DesignPriority, type ScoringAction } from "../../lib/kickoff";
 import { hubHref } from "../../lib/nav/hubs";
 import type { RunFn } from "./kickoff-model";
@@ -114,7 +114,10 @@ export function PrioritySection({
                     className="kick-link danger"
                     aria-label={`Delete ${priority.capability}`}
                     disabled={busy}
-                    onClick={() => void run({ action: "delete_priority", orgId, id: priority.id }, rowKey)}
+                    onClick={async () => {
+                      if (!(await askConfirm({ title: `Delete this priority?`, body: `“${priority.capability}” is removed for the whole team.`, confirmLabel: "Delete", tone: "destructive" }))) return;
+                      void run({ action: "delete_priority", orgId, id: priority.id }, rowKey);
+                    }}
                   >
                     ✕
                   </button>

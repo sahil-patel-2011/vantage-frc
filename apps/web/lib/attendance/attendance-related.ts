@@ -1,18 +1,10 @@
 import { hubHref } from "../nav/hubs";
-import type { TeamHubRelatedId } from "../team/team-related";
 import {
   ATTENDANCE_KIND_LABELS,
   type AttendanceEvent,
   type AttendanceKind,
   type AttendanceMember,
 } from "../attendance";
-
-/** Focused Soft-UI Team strip when Attendance is open (never DEMO rates). */
-export const ATTENDANCE_TEAM_RELATED_INCLUDE: TeamHubRelatedId[] = [
-  "practice",
-  "calendar",
-  "messages",
-];
 
 export type AttendanceListFilter = "all" | "unmarked" | "empty" | AttendanceKind;
 
@@ -145,89 +137,3 @@ export function pickDefaultSession(
   return events[0]!.id;
 }
 
-/**
- * Soft-UI next actions for Attendance empty/setup/ready.
- * Points at Practice / Calendar — never DEMO attendance rates.
- */
-export function attendanceNextActions(input: {
-  orgId?: string | null;
-  eventCount: number;
-  emptyRollCount: number;
-  canManage: boolean;
-  selectedEventId?: string | null;
-  selectedOccurredOn?: string | null;
-}): AttendanceNextAction[] {
-  const orgId = input.orgId ?? null;
-
-  if (!orgId) {
-    return [
-      {
-        id: "workspace",
-        label: "Choose your team",
-        detail: "Choose your team before logging who showed up.",
-        href: "/workspace",
-        primary: true,
-      },
-    ];
-  }
-
-  const actions: AttendanceNextAction[] = [];
-
-  if (input.eventCount === 0) {
-    actions.push({
-      id: "first-roll",
-      label: input.canManage ? "Create the first roll call" : "Ask an admin for a roll call",
-      detail: input.canManage
-        ? "Add a practice or meeting with the date it happened — the board stays empty until you mark people."
-        : "Owners and admins create roll calls; presence stays blank until someone logs marks.",
-      href: attendanceEventHref(orgId),
-      primary: true,
-    });
-    return actions;
-  }
-
-  if (input.emptyRollCount > 0) {
-    actions.push(
-      input.canManage
-        ? {
-            id: "mark-empty",
-            label: `Mark ${input.emptyRollCount} empty roll${input.emptyRollCount === 1 ? "" : "s"}`,
-            detail: "One-tap team members who showed up — totals use only names you add.",
-            href: attendanceEventHref(orgId, {
-              eventId: input.selectedEventId,
-              occurredOn: input.selectedOccurredOn,
-            }),
-            primary: true,
-          }
-        : {
-            id: "mark-empty",
-            label: "Empty rolls wait on an owner or admin",
-            detail: "Owners and admins mark who showed up. Totals stay blank until they do.",
-            href: hubHref("/team", "messages", orgId),
-            primary: true,
-          },
-    );
-  }
-
-  actions.push({
-    id: "practice",
-    label: "Log Practice reps",
-    detail: "After roll call, time cycles on Practice — success rate stays blank until reps exist.",
-    href: attendancePracticeHref(orgId),
-    primary: actions.length === 0,
-  });
-  actions.push({
-    id: "calendar",
-    label: "Team calendar",
-    detail: "Upcoming practices and build blocks live on Calendar & subteams.",
-    href: attendanceCalendarHref(orgId),
-  });
-  actions.push({
-    id: "messages",
-    label: "Nudge in Messages",
-    detail: "Ask who is marking presence when the roll is still empty.",
-    href: hubHref("/team", "messages", orgId),
-  });
-
-  return actions.slice(0, 5);
-}

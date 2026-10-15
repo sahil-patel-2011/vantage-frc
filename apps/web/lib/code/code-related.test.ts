@@ -1,62 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   CODE_COACH_SAMPLE,
-  codeCoachNextActions,
-  codeCoachRelatedLinks,
   groundedCodeCoachProposal,
   isCodeCoachSampleContent,
 } from "./code-related";
-
-describe("codeCoachRelatedLinks", () => {
-  it("returns empty without org", () => {
-    expect(codeCoachRelatedLinks()).toEqual([]);
-  });
-
-  it("includes CAD, GitHub, and AI chat for a team", () => {
-    const links = codeCoachRelatedLinks("org-1");
-    expect(links.map((l) => l.id)).toEqual(
-      expect.arrayContaining(["cad", "github", "chat", "pair", "usage", "budgets"]),
-    );
-    expect(links.find((l) => l.id === "cad")?.href).toContain("/build");
-    expect(links.find((l) => l.id === "cad")?.href).toContain("tab=cad");
-    expect(links.find((l) => l.id === "github")?.href).toBe("/connectors/github?orgId=org-1#github-connection");
-    expect(links.find((l) => l.id === "chat")?.href).toContain("/ai");
-  });
-
-  it("drops the Team admin GitHub link when the member cannot connect", () => {
-    const links = codeCoachRelatedLinks("org-1", { canConnect: false });
-    expect(links.find((l) => l.id === "github")).toBeUndefined();
-    expect(links.some((link) => link.href.includes("/team/admin"))).toBe(false);
-  });
-});
-
-describe("codeCoachNextActions", () => {
-  it("asks for workspace when org is missing", () => {
-    const actions = codeCoachNextActions({});
-    expect(actions[0]?.id).toBe("workspace");
-    expect(actions[0]?.primary).toBe(true);
-  });
-
-  it("prioritizes paste / review before CAD and chat cross-links", () => {
-    const empty = codeCoachNextActions({ orgId: "org-1", hasSource: false });
-    expect(empty[0]?.id).toBe("paste");
-    expect(empty.some((a) => a.id === "cad")).toBe(true);
-    expect(empty.some((a) => a.id === "chat")).toBe(true);
-    expect(empty.some((a) => a.id === "bugbot")).toBe(true);
-
-    const ready = codeCoachNextActions({ orgId: "org-1", hasSource: true, hasReview: false });
-    expect(ready[0]?.id).toBe("review");
-  });
-
-  it("keeps a scout on the editor instead of Team admin", () => {
-    const actions = codeCoachNextActions({ orgId: "org-1", hasSource: true, canConnect: false });
-    const github = actions.find((action) => action.id === "github");
-    expect(github?.label).toBe("Ask an owner to connect GitHub");
-    expect(github?.href).toBe("#cdc-source");
-    expect(actions.some((action) => action.href.includes("/team/admin"))).toBe(false);
-    expect(actions[0]?.id).toBe("review");
-  });
-});
 
 describe("groundedCodeCoachProposal", () => {
   it("allows the teaching-sample diff only for sample content", () => {
