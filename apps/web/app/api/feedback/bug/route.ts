@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { z } from "zod";
 import {
   BUG_DESCRIPTION_MAX,
@@ -8,6 +9,7 @@ import {
   BUG_SEVERITIES,
   normalizeBugReport,
 } from "../../../../lib/feedback/bug-report";
+import { adminLink, mailFeedbackInbox } from "../../../../lib/feedback/inbox-mail";
 import { anonymizeIp, clientIp, createRateLimiter, rateLimitedResponse } from "../../../../lib/rate-limit";
 import { parseSecureJson, securityErrorResponse } from "../../../../lib/security/request";
 
@@ -63,13 +65,13 @@ export async function POST(request: Request) {
     // RLS enforces user_id = current_app_user_id(). The team on the page is only kept when the
     // reporter belongs to it: a stale or foreign ?orgId= must not cost them their note.
     const orgId = body.orgId ?? undefined;
-    const id = await withRls({ userId, ...(orgId ? { orgId } : {}) }, async (client) => {
-      const result = await client.query<{ id: string }>(
+    const saved = await withRls({ userId, ...(orgId ? { orgId } : {}) }, async (client) => {
+      const result = await client.query<{ id: string; orgId: string | null }>(
         `INSERT INTO bug_reports (org_id, user_id, kind, route, description, severity, app_area, client_info)
          VALUES (
            CASE WHEN $1::uuid IS NOT NULL AND is_org_member($1::uuid) THEN $1::uuid ELSE NULL END,
            $2::uuid, $3, $4, $5, $6, $7, $8::jsonb)
-         RETURNING id`,
+         RETURNING id, org_id::text AS "orgId"`,
         [
           orgId ?? null,
           userId,
@@ -81,8 +83,38 @@ export async function POST(request: Request) {
           JSON.stringify(report.clientInfo),
         ],
       );
-      return result.rows[0]?.id ?? null;
+      const row = result.rows[0];
+      const team = row?.orgId
+        ? (
+            await client.query<{ name: string | null; teamNumber: number | null }>(
+              `SELECT name, team_number AS "teamNumber" FROM organizations WHERE id = $1::uuid`,
+              [row.orgId],
+            )
+          ).rows[0] ?? null
+        : null;
+      return { id: row?.id ?? null, team };
     });
+    const id = saved.id;
+
+    // Every note also goes to the feedback inbox, after the response so it never slows the
+    // dialog down. The note is saved either way; email that isn't set up just isn't sent.
+    const teamLabel = saved.team?.teamNumber != null ? `Team ${saved.team.teamNumber}` : saved.team?.name ?? null;
+    after(() =>
+      mailFeedbackInbox({
+        subject: `[Vantage ${report.kind === "idea" ? "idea" : "problem"}] ${report.description.replace(/\s+/g, " ").slice(0, 70)}`,
+        lines: [
+          `${session.user.name || "A member"}${session.user.email ? ` <${session.user.email}>` : ""}${teamLabel ? ` · ${teamLabel}` : ""}`,
+          `Kind: ${report.kind}${report.severity ? ` · ${report.severity}` : ""}`,
+          report.route ? `Page: ${report.route}` : null,
+          report.clientInfo ? `Screen: ${JSON.stringify(report.clientInfo)}` : null,
+          "",
+          report.description,
+          "",
+          `Inbox: ${adminLink("/admin/feedback")}`,
+          id ? `Report id: ${id}` : null,
+        ],
+      }),
+    );
 
     return privateJson({ status: "ok", id });
   } catch (error) {

@@ -1,10 +1,8 @@
-import {
-  auth,
-  configuredPlatformOwnerEmail,
-  createEmailProvider,
-} from "@vantage/core";
+import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { after } from "next/server";
+import { adminLink, mailFeedbackInbox } from "../../../lib/feedback/inbox-mail";
 import {
   computeMemberTicketsView,
   submitSupportTicket,
@@ -25,6 +23,7 @@ function trimmed(value: unknown, max: number): string {
   return value.trim().slice(0, max);
 }
 
+/** A new ticket goes to the feedback inbox and the platform owner. Never fails the ticket. */
 async function notifyPlatformOwner(input: {
   ticketId: string;
   subject: string;
@@ -33,35 +32,23 @@ async function notifyPlatformOwner(input: {
   teamNumber: number | null;
   submitterEmail: string | null;
 }) {
-  try {
-    const to = configuredPlatformOwnerEmail();
-    if (!to) return;
-    const provider = createEmailProvider();
-    if (provider.name === "unconfigured") return;
-    const team =
-      input.teamNumber != null
-        ? `Team ${input.teamNumber}`
-        : input.orgName ?? "an organization";
-    const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3001";
-    await provider.sendFreeform({
-      to,
+  const team = input.teamNumber != null ? `Team ${input.teamNumber}` : input.orgName ?? "a team";
+  await mailFeedbackInbox(
+    {
       subject: `[Vantage support] ${input.subject}`,
-      text: [
+      lines: [
         `New support ticket from ${team}.`,
         input.submitterEmail ? `From: ${input.submitterEmail}` : null,
         `Subject: ${input.subject}`,
         "",
         input.body,
         "",
-        `Triage: ${baseUrl}/admin/support`,
+        `Triage: ${adminLink("/admin/support")}`,
         `Ticket id: ${input.ticketId}`,
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    });
-  } catch {
-    // Optional notify — never fail the ticket create path.
-  }
+      ],
+    },
+    { includeOwner: true },
+  );
 }
 
 export async function GET(request: Request) {
@@ -131,14 +118,15 @@ export async function POST(request: Request) {
       };
     });
 
-    void notifyPlatformOwner({
+    // After the response: a fire-and-forget promise can be cut off when the function ends.
+    after(() => notifyPlatformOwner({
       ticketId: result.ticket.id,
       subject: result.ticket.subject,
       body: result.ticket.body,
       orgName: result.orgName,
       teamNumber: result.teamNumber,
       submitterEmail: session.user.email ?? null,
-    });
+    }));
 
     const view = await withRls({ userId: session.user.id }, (client) =>
       computeMemberTicketsView(client, { userId: session.user.id, requestedOrg: orgId }),
