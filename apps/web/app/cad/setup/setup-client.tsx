@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { PageMain, Button, EmptyState, PageHeader } from "../../../components/ui";
 import {
   CAD_SETUP_ASK_MENTOR,
   CAD_SETUP_CONNECT,
@@ -308,7 +308,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
 
   if (!view) {
     return (
-      <main className="module-page cad-setup-page">
+      <PageMain className="module-page cad-setup-page">
         <PageHeader
           breadcrumbs="CAD / Setup"
           title={CAD_SETUP_TITLE}
@@ -346,7 +346,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </PageMain>
     );
   }
 
@@ -354,7 +354,7 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
   const q = `?orgId=${encodeURIComponent(orgId)}`;
 
   return (
-    <main className="module-page cad-setup-page">
+    <PageMain className="module-page cad-setup-page">
       <PageHeader breadcrumbs="CAD / Setup" title={CAD_SETUP_TITLE} description={CAD_SETUP_DESCRIPTION}>
         <CadSetupRelated orgId={orgId} />
       </PageHeader>
@@ -535,6 +535,6 @@ export default function CadSetupWizard({ orgId }: { orgId: string }) {
           hasDesktop={view.devices.some((device) => !device.revokedAt)}
         />
       ) : null}
-    </main>
+    </PageMain>
   );
 }

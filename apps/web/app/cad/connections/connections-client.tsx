@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClaudeConnectorWalkthrough } from "./claude-connector-walkthrough";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { Button, EmptyState, PageHeader, askConfirm } from "../../../components/ui";
+import { PageMain, Button, EmptyState, PageHeader, askConfirm } from "../../../components/ui";
 import {
   ONSHAPE_OAUTH_CTA,
   onshapeAccountLabel,
@@ -290,7 +290,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
 
   if (!view) {
     return (
-      <main className="module-page cad-connections-page">
+      <PageMain className="module-page cad-connections-page">
         <PageHeader
           breadcrumbs="CAD / Connections"
           title="CAD connections"
@@ -329,7 +329,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             </Button>
           ) : null}
         </EmptyState>
-      </main>
+      </PageMain>
     );
   }
 
@@ -340,7 +340,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
   });
   const desktopOnline = view.devices.some((d) => !d.revokedAt && d.lastSeenAt);
   return (
-        <main className="module-page cad-connections-page">
+        <PageMain className="module-page cad-connections-page">
           <PageHeader
             breadcrumbs="CAD / Connections"
             title="CAD connections"
@@ -457,6 +457,6 @@ export default function CadConnections({ orgId }: { orgId: string }) {
             onshapeAvailable={Boolean(view.onshapeOauthReady)}
             onshapeConnected={onshapeConnected}
           />
-        </main>
+        </PageMain>
       );
 }

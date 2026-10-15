@@ -41,6 +41,7 @@ export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   "business",
   "cad",
   "cad-change-radar",
+  "cad-checker",
   "cad-learn",
   "cad-review-queue",
   "cad-vault",

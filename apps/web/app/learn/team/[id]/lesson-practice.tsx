@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { Button } from "../../../../components/ui";
 import { passRuleSentence } from "../../../../lib/team-lessons/body";
-import type { LessonAttempt, PracticeResult, PublicQuestion } from "../../../../lib/team-lessons/types";
+import {
+  answersLocked,
+  firstToRevisit,
+  INITIAL_PRACTICE,
+  practicePayload,
+  practiceReducer,
+} from "../../../../lib/team-lessons/practice-state";
+import type { LessonAttempt, PracticeSubmission, PublicQuestion } from "../../../../lib/team-lessons/types";
 import { lessonFetch, whenText } from "../lesson-shared";
-
-type Submitted = { result: PracticeResult; stored: boolean; attempt: LessonAttempt | null };
 
 /** Tries listed under the practice; the summary's count matches this list. */
 const ATTEMPTS_SHOWN = 10;
@@ -86,37 +91,50 @@ export function LessonPractice({
   attempts: LessonAttempt[];
   onAttempt: (attempt: LessonAttempt) => void;
 }) {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState<Submitted | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, dispatch] = useReducer(practiceReducer, INITIAL_PRACTICE);
+  const { answers, submitted, error, phase } = state;
+  const locked = answersLocked(state);
+  const busy = phase === "checking";
+  const formRef = useRef<HTMLFormElement | null>(null);
+  /** Set by Try again: the question to put the cursor in once its field is enabled again. */
+  const focusAfterRetry = useRef<string | null>(null);
 
   async function check() {
-    setBusy(true);
-    setError(null);
-    const payload: Record<string, number | string> = {};
-    for (const question of questions) {
-      const value = answers[question.id];
-      if (value === undefined || value === "") continue;
-      payload[question.id] = question.kind === "choice" ? Number(value) : value;
-    }
-    const response = await lessonFetch<Submitted>(`/api/team-lessons/${lessonId}`, {
+    if (phase !== "answering") return;
+    dispatch({ type: "check" });
+    const response = await lessonFetch<PracticeSubmission>(`/api/team-lessons/${lessonId}`, {
       method: "POST",
-      body: JSON.stringify({ orgId, action: "submit", answers: payload }),
+      body: JSON.stringify({ orgId, action: "submit", answers: practicePayload(questions, answers) }),
     });
-    setBusy(false);
     if (!response.ok || !response.data) {
-      setError(response.error ?? (response.status === 0 ? "Couldn't reach Vantage. Your answers are still here; try again." : "Your answers couldn't be checked. Try again."));
+      dispatch({
+        type: "failed",
+        error: response.error ?? (response.status === 0 ? "Couldn't reach Vantage. Your answers are still here; try again." : "Your answers couldn't be checked. Try again."),
+      });
       return;
     }
-    setSubmitted(response.data);
+    dispatch({ type: "checked", submitted: response.data });
     if (response.data.attempt) onAttempt(response.data.attempt);
   }
 
   function retry() {
-    setSubmitted(null);
-    setError(null);
+    focusAfterRetry.current = firstToRevisit(submitted, questions.map((question) => question.id)) ?? questions[0]?.id ?? null;
+    dispatch({ type: "retry" });
   }
+
+  // After Try again the fields are enabled on the next render; then put the cursor in the
+  // first one marked "Not yet" (the checked option of a choice, else its first option).
+  useEffect(() => {
+    const id = focusAfterRetry.current;
+    if (phase !== "answering" || !id) return;
+    focusAfterRetry.current = null;
+    const target = formRef.current?.querySelector<HTMLElement>(`[id="team-lesson-q-${id}"]`);
+    const field =
+      target instanceof HTMLInputElement
+        ? target
+        : target?.closest("fieldset")?.querySelector<HTMLInputElement>("input:checked, input");
+    field?.focus();
+  }, [phase]);
 
   const byId = new Map(submitted?.result.results.map((result) => [result.id, result]) ?? []);
   const result = submitted?.result;
@@ -130,10 +148,11 @@ export function LessonPractice({
         {previewOnly ? " This is a preview of a draft, so results aren't saved." : ""}
       </p>
       <form
+        ref={formRef}
         className="team-lesson-questions"
         onSubmit={(event) => {
           event.preventDefault();
-          if (!submitted) void check();
+          void check();
         }}
       >
         <ol>
@@ -145,8 +164,8 @@ export function LessonPractice({
                   question={question}
                   number={index + 1}
                   value={answers[question.id] ?? ""}
-                  disabled={busy || Boolean(submitted)}
-                  onChange={(value) => setAnswers((prev) => ({ ...prev, [question.id]: value }))}
+                  disabled={locked}
+                  onChange={(value) => dispatch({ type: "answer", id: question.id, value })}
                 />
                 {graded ? (
                   <p className="team-lesson-feedback">
@@ -174,12 +193,15 @@ export function LessonPractice({
           ) : null}
         </div>
         <div className="team-lesson-actions">
+          {/* Separate keys on purpose. Without them React reused one <button> and flipped its
+              type from "button" to "submit" during the Try again click, so the browser then
+              submitted the form: the same answers were graded again and the fields locked. */}
           {submitted ? (
-            <Button variant={result?.passed ? "secondary" : "primary"} onClick={retry}>
+            <Button key="retry" variant={result?.passed ? "secondary" : "primary"} onClick={retry}>
               {result?.passed ? "Practice again" : "Try again"}
             </Button>
           ) : (
-            <Button variant="primary" type="submit" disabled={busy}>
+            <Button key="check" variant="primary" type="submit" disabled={busy}>
               {busy ? "Checking…" : "Check my answers"}
             </Button>
           )}

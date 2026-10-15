@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, Suspense, useState, type ReactNode } from "react";
 import { hubPageTitle } from "../lib/nav/hub-navigation";
-import { HubPagePicker } from "./hub-page-picker";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
 import { EmptyState, PageHeader, PageMain, Button } from "./ui";
@@ -14,7 +13,6 @@ import {
 import {
   hubById,
   hubPrimaryTabs,
-  hubTabsForMember,
   hubWorkbenchId,
   isHubTab,
   type ProductHubDef,
@@ -170,10 +168,6 @@ export function ProductHubShell({
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [manageReady, setManageReady] = useState(false);
   const workbenchId = hubWorkbenchId(hub, tab);
-  // One permitted destination list feeds the searchable workspace picker.
-  const workspaceTabs = useMemo(() => hubTabsForMember(hub.tabs.filter(entry =>
-    primaryTabs.some(root => root.id === (entry.group ?? entry.id)),
-  ), canManageTeam), [canManageTeam, hub, primaryTabs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -291,8 +285,9 @@ export function ProductHubShell({
           <h1>{hubPageTitle(hub, tab)}</h1>
         </div>
         <div className="workspace-hub-actions">
+          {/* No per-hub Browse picker: the bottom bar's Browse (phone) and the sidebar (desktop)
+              list every workbench, and each workbench's More tools lists the rest. */}
           {headerActions}
-          <HubPagePicker hub={hub} tabs={workspaceTabs} value={tab} onChange={selectTab} />
         </div>
       </div>
       <div

@@ -29,6 +29,7 @@ import {
 import { resolveScoutOrg } from "../scout-org-access";
 import { allianceScore, type TbaAllianceJson } from "../schedule/tba-cache";
 import { playedMatchKeys } from "./play-state";
+import { observableMatchSql } from "./scouted-counts";
 import { loadScoutRoleCoverage, type ScoutRoleCoverage } from "./schema-role-coverage";
 import {
   compareCoverageByWatchlist,
@@ -85,6 +86,11 @@ export type ScoutingCoverageView =
        * past them). Auto-assign skips them; the split below uses them.
        */
       playedMatchKeys: string[];
+      /**
+       * The matches `scope`'s "Played" figures cover: `playedMatchKeys` plus watchable matches
+       * that already have a report (see coverageScopePlayedKeys). Optional for older views.
+       */
+      scopePlayedMatchKeys?: string[];
       /** The same robots counted two ways, so every heading can name its scope. */
       scope: CoverageScopeSummary;
       scouts: CoverageScout[];
@@ -129,7 +135,60 @@ export type CoverageScopeSummary = {
   upcomingNoScout: number;
   /** Reports saved for matches not played yet (tests, or a scout ahead of the field). */
   reportsBeforePlay: number;
+  /**
+   * Robot-matches reported for a team that was not in that match's alliance (a wrong team
+   * number, usually). They count in the event totals but fill no slot, so the screen shows them
+   * as a data-quality note. Optional: absent on older saved views.
+   */
+  wrongRobotMatches?: number;
 };
+
+/**
+ * Which matches the "Played" figures cover.
+ *
+ * Play-state's rule (a result, a start time, or a later qual started) alone left out matches the
+ * event totals count: an off-season event that posts no results, or the minutes between the
+ * horn and TBA posting a result. A match that can have been watched (`observableMatchSql`) and
+ * has a report was watched, so it is played here too — and then every scouted robot-match in
+ * a scheduled slot sits in "Played: scouted", which adds up to `ScoutingTotals.robotMatches`
+ * when every report names a robot that was in its match.
+ *
+ * Without `observableMatchKeys` (an older caller) this is play-state's set unchanged.
+ */
+export function coverageScopePlayedKeys(
+  slots: ReadonlyArray<Pick<CoverageGapSlot, "matchKey" | "entryCount">>,
+  playedMatchKeys: ReadonlySet<string>,
+  observableMatchKeys?: ReadonlySet<string>,
+): Set<string> {
+  const played = new Set(playedMatchKeys);
+  if (!observableMatchKeys) return played;
+  for (const slot of slots) {
+    if ((Number(slot.entryCount) || 0) > 0 && observableMatchKeys.has(slot.matchKey)) played.add(slot.matchKey);
+  }
+  return played;
+}
+
+/**
+ * Distinct (team, match) report pairs that fill no scheduled slot: the team was not in that
+ * match's alliance. Only matches that can have been watched count, as in the event totals.
+ */
+export function countWrongRobotMatches(
+  entries: ReadonlyArray<{ matchKey: string; teamKey: string }>,
+  slots: ReadonlyArray<Pick<CoverageGapSlot, "matchKey" | "teamKey">>,
+  observableMatchKeys?: ReadonlySet<string>,
+): number {
+  const slotKeys = new Set(slots.map((slot) => `${slot.matchKey}|${slot.teamKey}`));
+  const scheduled = new Set(slots.map((slot) => slot.matchKey));
+  const wrong = new Set<string>();
+  for (const entry of entries) {
+    const key = `${entry.matchKey}|${entry.teamKey}`;
+    // A match with no alliances listed yet has no slots to compare against.
+    if (!scheduled.has(entry.matchKey) || slotKeys.has(key)) continue;
+    if (observableMatchKeys && !observableMatchKeys.has(entry.matchKey)) continue;
+    wrong.add(key);
+  }
+  return wrong.size;
+}
 
 export function summarizeCoverageScope(
   slots: ReadonlyArray<Pick<CoverageGapSlot, "matchKey" | "status" | "assignmentCount" | "entryCount">>,
@@ -276,13 +335,14 @@ export async function computeScoutingCoverageView(
 
   const qualsOnly = input.qualsOnly !== false;
 
-  const matches = await client.query<LineupMatchRow & { winningAlliance: string | null; postResultTime: string | null; actualTime: string | null }>(
+  const matches = await client.query<LineupMatchRow & { winningAlliance: string | null; postResultTime: string | null; actualTime: string | null; observable?: boolean | null }>(
     `SELECT match_key AS "matchKey", comp_level AS "compLevel", set_number AS "setNumber",
             match_number AS "matchNumber",
             red_alliance AS "redAlliance", blue_alliance AS "blueAlliance",
             COALESCE(actual_time, predicted_time, event_time)::text AS "eventTime",
             NULLIF(winning_alliance, '') AS "winningAlliance",
-            post_result_time::text AS "postResultTime", actual_time::text AS "actualTime"
+            post_result_time::text AS "postResultTime", actual_time::text AS "actualTime",
+            ${observableMatchSql("matches_ref")} AS "observable"
        FROM matches_ref
       WHERE event_key = $1::text
         AND ($2::boolean IS FALSE OR comp_level = 'qm')
@@ -359,7 +419,15 @@ export async function computeScoutingCoverageView(
     })),
   );
   const playedKeys = matches.rows.filter((row) => played.has(row.matchKey)).map((row) => row.matchKey);
-  const scope = summarizeCoverageScope(slots, played);
+  // The "Played" figures use the event totals' (team, match) rule (scouted-counts.ts): a
+  // watchable match with a report counts as played even before its result posts, and a report
+  // for a robot not in its match is named, not silently dropped.
+  const observable = new Set(matches.rows.filter((row) => row.observable === true).map((row) => row.matchKey));
+  const scopePlayed = coverageScopePlayedKeys(slots, played, observable);
+  const scope: CoverageScopeSummary = {
+    ...summarizeCoverageScope(slots, scopePlayed),
+    wrongRobotMatches: countWrongRobotMatches(entryScouts.rows, slots, observable),
+  };
   // The live window opens on the next match still to be played. Opening on the
   // first gap put it on Qual 1 at an event 30 matches in, where every gap is
   // already history.
@@ -384,6 +452,7 @@ export async function computeScoutingCoverageView(
     live,
     slots,
     playedMatchKeys: playedKeys,
+    scopePlayedMatchKeys: matches.rows.filter((row) => scopePlayed.has(row.matchKey)).map((row) => row.matchKey),
     scope,
     scouts,
     schemaRoles,

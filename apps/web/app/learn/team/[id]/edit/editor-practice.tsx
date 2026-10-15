@@ -12,7 +12,7 @@ import {
   type TextQuestion,
 } from "../../../../../lib/team-lessons/types";
 import { NumberField, TextField } from "./editor-fields";
-import { moveItem } from "./editor-steps";
+import { moveItem, NO_ISSUES } from "./editor-steps";
 
 const PASS_RULE = "With 4 questions or fewer, every answer has to be right to pass; with more, 80% passes.";
 
@@ -35,12 +35,22 @@ function blankQuestion(kind: QuestionKind): PracticeQuestion {
   return { id, kind, prompt: "", accepted: [""] };
 }
 
-function ChoiceFields({ question, onChange }: { question: ChoiceQuestion; onChange: (q: ChoiceQuestion) => void }) {
+type FieldsProps<Q> = { question: Q; onChange: (q: Q) => void; invalid: ReadonlySet<string> };
+
+function ChoiceFields({ question, onChange, invalid }: FieldsProps<ChoiceQuestion>) {
   const group = useId();
+  const field = `question:${question.id}:options`;
+  const flagged = invalid.has(field);
+  const seen = new Set<string>();
   return (
-    <fieldset className="team-lesson-choice-edit">
+    <fieldset className="team-lesson-choice-edit" data-lesson-field={field}>
       <legend>Options — mark the correct one</legend>
-      {question.options.map((option, index) => (
+      {question.options.map((option, index) => {
+        const said = option.trim().toLowerCase();
+        // Outline the empty option, or the second of two that say the same thing.
+        const bad = flagged && (!said || seen.has(said));
+        seen.add(said);
+        return (
         <div key={index} className="team-lesson-choice-row">
           <label className="team-lesson-correct">
             <input
@@ -58,6 +68,7 @@ function ChoiceFields({ question, onChange }: { question: ChoiceQuestion; onChan
             maxLength={LESSON_LIMITS.option}
             value={option}
             placeholder={`Option ${index + 1}`}
+            aria-invalid={bad ? true : undefined}
             onChange={(event) =>
               onChange({ ...question, options: question.options.map((entry, at) => (at === index ? event.target.value : entry)) })
             }
@@ -76,7 +87,8 @@ function ChoiceFields({ question, onChange }: { question: ChoiceQuestion; onChan
             ✕
           </Button>
         </div>
-      ))}
+        );
+      })}
       <Button
         variant="ghost"
         size="sm"
@@ -89,10 +101,18 @@ function ChoiceFields({ question, onChange }: { question: ChoiceQuestion; onChan
   );
 }
 
-function NumberFields({ question, onChange }: { question: NumberQuestion; onChange: (q: NumberQuestion) => void }) {
+function NumberFields({ question, onChange, invalid }: FieldsProps<NumberQuestion>) {
+  const field = `question:${question.id}:answer`;
   return (
     <div className="team-lesson-number-edit">
-      <NumberField label="Correct answer" value={question.answer} onChange={(answer) => onChange({ ...question, answer })} suffix={question.unit} />
+      <NumberField
+        label="Correct answer"
+        value={question.answer}
+        onChange={(answer) => onChange({ ...question, answer })}
+        suffix={question.unit}
+        fieldKey={field}
+        invalid={invalid.has(field)}
+      />
       <NumberField
         label="Accept answers within ±"
         value={question.tolerance}
@@ -113,9 +133,10 @@ function NumberFields({ question, onChange }: { question: NumberQuestion; onChan
   );
 }
 
-function TextFields({ question, onChange }: { question: TextQuestion; onChange: (q: TextQuestion) => void }) {
+function TextFields({ question, onChange, invalid }: FieldsProps<TextQuestion>) {
+  const field = `question:${question.id}:accepted`;
   return (
-    <fieldset className="team-lesson-choice-edit">
+    <fieldset className="team-lesson-choice-edit" data-lesson-field={field}>
       <legend>Accepted answers — capital letters and extra spaces don&apos;t matter</legend>
       {question.accepted.map((entry, index) => (
         <div key={index} className="team-lesson-choice-row">
@@ -125,6 +146,7 @@ function TextFields({ question, onChange }: { question: TextQuestion; onChange: 
             aria-label={`Accepted answer ${index + 1}`}
             maxLength={LESSON_LIMITS.acceptedText}
             value={entry}
+            aria-invalid={invalid.has(field) && !entry.trim() ? true : undefined}
             onChange={(event) =>
               onChange({ ...question, accepted: question.accepted.map((value, at) => (at === index ? event.target.value : value)) })
             }
@@ -155,9 +177,12 @@ function TextFields({ question, onChange }: { question: TextQuestion; onChange: 
 export function PracticeEditor({
   questions,
   onChange,
+  invalid = NO_ISSUES,
 }: {
   questions: PracticeQuestion[];
   onChange: (questions: PracticeQuestion[]) => void;
+  /** Fields listed under "Finish these before publishing" (lessonPublishIssues keys). */
+  invalid?: ReadonlySet<string>;
 }) {
   const full = questions.length >= LESSON_LIMITS.questions;
 
@@ -184,7 +209,7 @@ export function PracticeEditor({
       {questions.length ? (
         <ol className="team-lesson-edit-list">
           {questions.map((question, index) => (
-            <li key={question.id} className="team-lesson-edit-card" aria-label={`Question ${index + 1}`}>
+            <li key={question.id} className="team-lesson-edit-card" aria-label={`Question ${index + 1}`} data-lesson-field={`question:${question.id}`}>
               <div className="team-lesson-edit-card-head">
                 <strong>
                   Question {index + 1} · {KIND_LABEL[question.kind]}
@@ -212,14 +237,16 @@ export function PracticeEditor({
                 multiline
                 value={question.prompt}
                 maxLength={LESSON_LIMITS.prompt}
+                fieldKey={`question:${question.id}:prompt`}
+                invalid={invalid.has(`question:${question.id}:prompt`)}
                 onChange={(prompt) => set(index, { ...question, prompt })}
               />
               {question.kind === "choice" ? (
-                <ChoiceFields question={question} onChange={(next) => set(index, next)} />
+                <ChoiceFields question={question} invalid={invalid} onChange={(next) => set(index, next)} />
               ) : question.kind === "number" ? (
-                <NumberFields question={question} onChange={(next) => set(index, next)} />
+                <NumberFields question={question} invalid={invalid} onChange={(next) => set(index, next)} />
               ) : (
-                <TextFields question={question} onChange={(next) => set(index, next)} />
+                <TextFields question={question} invalid={invalid} onChange={(next) => set(index, next)} />
               )}
             </li>
           ))}

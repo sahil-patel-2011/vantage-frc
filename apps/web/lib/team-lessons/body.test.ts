@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   gradePractice,
   isGradable,
+  lessonPublishIssues,
   lessonPublishProblems,
   normalizeShortAnswer,
   parseLessonBody,
@@ -240,8 +241,8 @@ describe("lessonPublishProblems", () => {
       "Step 1 has no text yet.",
       "Question 1 needs a question.",
       "Question 1 has an empty option.",
-      "Question 2 needs the correct number.",
-      "Question 3 needs at least one accepted answer.",
+      "Question 2 has no answer. Enter the correct number.",
+      "Question 3 has no answer. Add at least one accepted answer.",
       "Question 4 has two options that say the same thing.",
     ]);
   });
@@ -249,11 +250,48 @@ describe("lessonPublishProblems", () => {
   it("needs steps for a written lesson and the file for a PDF lesson", () => {
     const empty: LessonBody = { steps: [], practice: [] };
     expect(lessonPublishProblems({ title: "x" }, empty, { source: "editor", hasPdf: false })).toEqual([
-      "Add at least one step, or upload a PDF instead.",
+      "Add at least one step.",
     ]);
     expect(lessonPublishProblems({ title: "x" }, empty, { source: "pdf", hasPdf: false })).toEqual([
       "Upload the PDF, or switch back to writing steps.",
     ]);
     expect(lessonPublishProblems({ title: "x" }, empty, { source: "pdf", hasPdf: true })).toEqual([]);
+  });
+
+  it("keeps a PDF lesson with no steps publishable, but still checks its questions", () => {
+    const pdfLesson: LessonBody = { steps: [], practice: [{ id: "q", kind: "text", prompt: "Name it", accepted: [" "] }] };
+    expect(lessonPublishProblems({ title: "x" }, pdfLesson, { source: "pdf", hasPdf: true })).toEqual([
+      "Question 1 has no answer. Add at least one accepted answer.",
+    ]);
+  });
+});
+
+describe("lessonPublishIssues", () => {
+  it("points each problem at the field the editor should open", () => {
+    const body: LessonBody = {
+      steps: [
+        { id: "s-a", title: "Wire it", text: "Done." },
+        { id: "s-b", title: "Test it", text: "  " },
+      ],
+      practice: [
+        { id: "q-a", kind: "number", prompt: "Volts?", answer: null, tolerance: 0 },
+        { id: "q-b", kind: "choice", prompt: "", options: ["A", ""], answer: 0 },
+      ],
+    };
+    expect(lessonPublishIssues({ title: "" }, body, { source: "editor", hasPdf: false })).toEqual([
+      { message: "Give the lesson a title.", field: "title" },
+      { message: "Step 2 has no text yet.", field: "step:s-b:text" },
+      { message: "Question 1 has no answer. Enter the correct number.", field: "question:q-a:answer" },
+      { message: "Question 2 needs a question.", field: "question:q-b:prompt" },
+      { message: "Question 2 has an empty option.", field: "question:q-b:options" },
+    ]);
+  });
+
+  it("names the steps list for an empty written lesson and the PDF for a PDF lesson without one", () => {
+    const empty: LessonBody = { steps: [], practice: [] };
+    expect(lessonPublishIssues({ title: "x" }, empty, { source: "editor", hasPdf: false })).toEqual([
+      { message: "Add at least one step.", field: "steps" },
+    ]);
+    expect(lessonPublishIssues({ title: "x" }, empty, { source: "pdf", hasPdf: false })[0]?.field).toBe("pdf");
   });
 });

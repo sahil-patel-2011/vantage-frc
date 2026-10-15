@@ -1,16 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionMenu, EmptyState, PageHeader, Button, Modal, TextBlockSkeleton, askConfirm } from "../../components/ui";
 import {
   PRESET_META,
   PRESET_WIDGETS,
+  type DisplayStagePayload,
   type DisplayWidget,
   type DisplayWidgetType,
 } from "../../lib/display";
-import { displaySetupStep } from "../../lib/display/display-related";
+import {
+  DISPLAY_EVENT_BOARD_ID,
+  DISPLAY_EVENT_BOARD_NAME,
+  DISPLAY_TOKEN_LIST_LIMIT,
+  displaySetupStep,
+} from "../../lib/display/display-related";
 import { hubHref } from "../../lib/nav/hubs";
 import { fetchProductSession } from "../../lib/nav/product-session";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { strategyCanSync } from "../../lib/strategy/strategy-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { DisplayWidgetEditor } from "./display-widget-editor";
@@ -52,7 +59,28 @@ type MintedToken = {
 };
 
 /** The board the event board is shown through. It ignores the board's panels. */
-const EVENT_BOARD_NAME = "Event board";
+const EVENT_BOARD_NAME = DISPLAY_EVENT_BOARD_NAME;
+
+type BoardsAnswer = {
+  boards?: Board[];
+  tokens?: TokenRow[];
+  activeEventKey?: string | null;
+  canManage?: boolean;
+  error?: string;
+};
+
+/** This device's last copy of the board list, kept with the Competition hub's snapshots. */
+const BOARDS_CACHE_VARIANT = "pit-tv";
+
+/** The event board's live preview, asked for as the page opens (in step with the board list). */
+function fetchEventPreview(orgId: string): Promise<DisplayStagePayload | null> {
+  return fetch(
+    `/api/display/stage?orgId=${encodeURIComponent(orgId)}&boardId=${DISPLAY_EVENT_BOARD_ID}`,
+    { cache: "no-store", signal: AbortSignal.timeout(8_000) },
+  )
+    .then((response) => (response.ok ? (response.json() as Promise<DisplayStagePayload>) : null))
+    .catch(() => null);
+}
 /** Pair TV choice: "stage:<id>" is the event board, "pit:<id>" a board the team built. */
 type PairChoice = string;
 
@@ -103,22 +131,48 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     };
   }, [orgId]);
 
+  // True once a live answer has painted: later reloads (after a save) skip the device copy.
+  const livePainted = useRef(false);
+  const cachePainted = useRef(false);
+
+  // The event board's live preview is asked for now, alongside the board list: it used to wait
+  // for the list to name the board first.
+  const [previewSeed, setPreviewSeed] = useState<{ orgId: string; data: Promise<DisplayStagePayload | null> } | null>(null);
+  useEffect(() => {
+    livePainted.current = false;
+    cachePainted.current = false;
+    setPreviewSeed({ orgId, data: fetchEventPreview(orgId) });
+  }, [orgId]);
+
+  const applyAnswer = useCallback((d: BoardsAnswer) => {
+    setBoards(d.boards ?? []);
+    setTokens(d.tokens ?? []);
+    setActiveEventKey(d.activeEventKey ?? null);
+    if (typeof d.canManage === "boolean") setCanSync(d.canManage);
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     setFetchFailed(false);
     setLoadError("");
     setErrorStatus(null);
+    let settled = false;
+    if (!livePainted.current) {
+      // This device's last copy paints while the live list is on its way.
+      void getFeatureSnapshot<BoardsAnswer>("competition", orgId, BOARDS_CACHE_VARIANT)
+        .then((row) => {
+          if (settled || livePainted.current || !row?.data || !Array.isArray(row.data.boards)) return;
+          cachePainted.current = true;
+          applyAnswer(row.data);
+        })
+        .catch(() => undefined);
+    }
     try {
       const r = await fetch(`/api/display/boards?orgId=${encodeURIComponent(orgId)}`, {
         cache: "no-store", signal: AbortSignal.timeout(8_000),
       });
-      const d = (await r.json()) as {
-        boards?: Board[];
-        tokens?: TokenRow[];
-        activeEventKey?: string | null;
-        canManage?: boolean;
-        error?: string;
-      };
+      const d = (await r.json()) as BoardsAnswer;
+      settled = true;
       if (!r.ok) {
         setMessage(d.error ?? "Couldn't load the Pit TV boards.");
         setMessageOk(false);
@@ -127,11 +181,17 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
         setLoadError(d.error ?? "");
         return;
       }
-      setBoards(d.boards ?? []);
-      setTokens(d.tokens ?? []);
-      setActiveEventKey(d.activeEventKey ?? null);
-      if (typeof d.canManage === "boolean") setCanSync(d.canManage);
+      livePainted.current = true;
+      applyAnswer(d);
+      void putFeatureSnapshot("competition", orgId, d, BOARDS_CACHE_VARIANT).catch(() => undefined);
     } catch {
+      settled = true;
+      if (cachePainted.current && !livePainted.current) {
+        // Keep the copy on screen rather than swap it for an error page.
+        setMessage("Couldn't refresh the Pit TV boards. Showing the last copy on this device.");
+        setMessageOk(false);
+        return;
+      }
       setFetchFailed(true);
       setMessage("Network error: couldn't load the Pit TV boards.");
       setLoadError("Network error: couldn't load the Pit TV boards.");
@@ -139,7 +199,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, applyAnswer]);
 
   useEffect(() => {
     void load();
@@ -422,6 +482,7 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
             <EventBoardCard
               orgId={orgId}
               boardId={eventCarrier?.id ?? null}
+              previewSeed={previewSeed?.orgId === orgId ? previewSeed.data : null}
               canSync={canSync}
               busy={busy}
               onCreate={() => void turnOnEventBoard()}
@@ -678,8 +739,11 @@ export default function DisplaySetup({ orgId }: { orgId: string }) {
                 })}
                 {activeTokens.length > 3 && !showOlderLinks ? (
                   <button type="button" className="text-button" onClick={() => setShowOlderLinks(true)}>
-                    Older links ({activeTokens.length - 3})
+                    Older links ({activeTokens.length - 3}{activeTokens.length >= DISPLAY_TOKEN_LIST_LIMIT ? "+" : ""})
                   </button>
+                ) : null}
+                {showOlderLinks && activeTokens.length >= DISPLAY_TOKEN_LIST_LIMIT ? (
+                  <small className="app-muted">Showing the newest {DISPLAY_TOKEN_LIST_LIMIT} links that are on.</small>
                 ) : null}
               </div>
             ) : (

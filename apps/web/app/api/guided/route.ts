@@ -3,6 +3,8 @@ import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { HttpError, failResponse, isLead, markProgress, resolveMembership } from "../../../lib/cad-learn/store";
 import { acquireOnshape } from "../../../lib/cad-learn/onshape-access";
+import { readHostedOnshapeEnvFlags } from "../../../lib/cad/hosted-auth";
+import { canAskLeadInsteadOfOnshape, stepNeedsOnshape } from "../../../lib/guided/onshape-availability";
 import { runGuidedCheck, type CheckInput } from "../../../lib/guided/run-check";
 import type { CheckResult } from "../../../lib/guided/types";
 import {
@@ -102,11 +104,18 @@ export async function POST(request: Request) {
       if (body.action === "reopen" || body.action === "withdraw") {
         await markProgress(client, { ...who, lessonId, completed: false });
         if (step.check.kind === "lead-signoff") await clearMySignoff(client, signoffKey);
+        // An Onshape step a lead signed off while Onshape was off (before 0719 there is no table).
+        else if (stepNeedsOnshape(step.check)) await withSavepoint(client, () => clearMySignoff(client, signoffKey), undefined);
         return body.action === "withdraw"
           ? { passed: false, message: "Request withdrawn." }
           : { passed: false, message: "Reopened. Check it again when you are ready." };
       }
-      if (step.check.kind === "lead-signoff") {
+      // While Onshape is off for this deployment, an Onshape-checked step goes to a lead instead of
+      // a check that can only answer "not switched on". When Onshape is on, the real check decides.
+      const asksLead =
+        step.check.kind === "lead-signoff" ||
+        (body.action === "signoff" && canAskLeadInsteadOfOnshape(step.check, readHostedOnshapeEnvFlags().oauthConfigured));
+      if (asksLead) {
         const request = await requestSignoff(client, signoffKey);
         if (request.status === "approved") return { passed: true, message: "A lead signed this off." };
         // Tell the leads (A5-16). A failed notice never undoes the request: the step still waits

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Dispatch, RefObject, SetStateAction } from "react";
-import { Button } from "../../components/ui";
+import { PageMain, Button } from "../../components/ui";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { CAD_HUB_RELATED_INCLUDE, cadHubRelatedLinks } from "../../lib/cad/cad-related";
@@ -111,7 +111,7 @@ export function CadReadyView({
 }: CadReadyViewProps) {
   const editHref = onshapeEditHref(state?.openUrl || url);
   return (
-    <main className="module-page cad-module cad-agent">
+    <PageMain className="module-page cad-module cad-agent">
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       <header className="cad-agent-bar">
@@ -426,6 +426,6 @@ export function CadReadyView({
       ) : null}
 
       <CadActivityPanel orgId={orgId} />
-    </main>
+    </PageMain>
   );
 }

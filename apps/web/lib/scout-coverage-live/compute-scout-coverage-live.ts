@@ -158,7 +158,9 @@ export async function computeScoutCoverageLiveView(
       ? Number(settingsResult.rows[0].thinThreshold)
       : DEFAULT_THIN_THRESHOLD;
 
-  const played = new Set(coverage.playedMatchKeys);
+  // The same "played" matches Assignments' figures cover (coverage.ts coverageScopePlayedKeys),
+  // so a scouted robot-match counts here exactly when it counts in the event totals.
+  const played = new Set(coverage.scopePlayedMatchKeys ?? coverage.playedMatchKeys);
   const cells: CoverageCell[] = coverage.slots.map((slot) => ({
     matchKey: slot.matchKey,
     matchLabel: matchLabel(slot.compLevel, slot.setNumber ?? 1, slot.matchNumber),

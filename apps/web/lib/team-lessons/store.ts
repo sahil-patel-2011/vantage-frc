@@ -176,6 +176,7 @@ export async function listLessons(
     stepCount: Number(row.stepCount),
     questionCount: Number(row.questionCount),
     canEdit: canEditLesson(input.role, input.userId, row),
+    canDelete: canDeleteLesson(input.role, input.userId, row),
     best:
       bestScore != null && bestTotal != null
         ? { score: Number(bestScore), total: Number(bestTotal), passed: bestPassed === true, at: bestAt ?? "" }
@@ -312,7 +313,9 @@ export async function createLesson(
   if (!canCreateLessons(input.role)) {
     throw new LessonHttpError(403, "View only members can take lessons but not write them.");
   }
-  const title = (input.title ?? "").trim() || DEFAULT_LESSON_TITLE;
+  // No nameless rows: "Untitled lesson" drafts piled up when a lesson was made before it had a name.
+  const title = (input.title ?? "").trim();
+  if (!title) throw new LessonHttpError(400, "Give the lesson a title.");
   const result = await client.query<{ id: string; version: number }>(
     `INSERT INTO team_lessons (org_id, title, created_by, updated_by)
      VALUES ($1::uuid, $2::text, $3::uuid, $3::uuid)
@@ -450,7 +453,8 @@ export async function publishLesson(
   const { row } = await lockForEdit(client, input);
   if (!canPublishLesson(input.role, input.userId, row)) throw new LessonHttpError(409, "This lesson is already published.");
   const problems = lessonPublishProblems(row, storedBody(row), { source: row.source, hasPdf: Boolean(row.pdfFileId) });
-  if (problems.length) throw new LessonHttpError(422, "Finish these before publishing.", { problems });
+  // The same sentences the editor lists beside Publish, so an API caller can't publish an empty lesson.
+  if (problems.length) throw new LessonHttpError(400, "Finish these before publishing.", { problems });
   const result = await client.query<Saved>(
     `UPDATE team_lessons
         SET status = 'published', published_at = now(), version = version + 1,

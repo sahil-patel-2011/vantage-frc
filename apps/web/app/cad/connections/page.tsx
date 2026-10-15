@@ -1,5 +1,5 @@
 import CadConnections, { CadConnectionsRelated } from "./connections-client";
-import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { PageMain, Button, EmptyState, PageHeader } from "../../../components/ui";
 import "../cad-setup.css";
 
 export const metadata = {
@@ -15,7 +15,7 @@ export default async function CadConnectionsPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="module-page cad-connections-page">
+      <PageMain className="module-page cad-connections-page">
         <PageHeader
           breadcrumbs="CAD / Connections"
           title="CAD connections"
@@ -34,7 +34,7 @@ export default async function CadConnectionsPage({
             Choose your team
           </Button>
         </EmptyState>
-      </main>
+      </PageMain>
     );
   }
   return <CadConnections orgId={orgId} />;

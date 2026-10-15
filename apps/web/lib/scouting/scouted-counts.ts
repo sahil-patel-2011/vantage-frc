@@ -51,3 +51,87 @@ export function matchesScoutedLabel(count: number | null | undefined): string | 
   if (!count || count <= 0) return null;
   return `${count} ${count === 1 ? "match" : "matches"} scouted`;
 }
+
+/**
+ * How much scouting an event has, as ONE set of numbers every screen shows.
+ *
+ * Teams said "9 robots · 12 matches scouted", the pick list "3 with our notes", Assignments
+ * "13 of 384" and Ask AI "6 teams" about the same weekend, because each counted its own way
+ * (rated teams only, reports with a known form only, schedule slots only, the six newest
+ * teams). This is the shared definition; a screen may show a narrower slice (a filter, a
+ * schedule) but never a different count of the same thing.
+ *
+ * A report counts when it is a `match_scout_entries` row for this org and event whose match is
+ * in `matches_ref` and can have been watched (`observableMatchSql`). Nothing else is required:
+ * not a form (scout_schemas) row, not a rating (team_event_metrics) row, not a schedule slot.
+ *
+ * - `robots`: distinct teams with at least one such report ("9 robots", "9 scouted").
+ * - `robotMatches`: distinct (team, match) pairs — one robot in one match, however many scouts
+ *   watched it ("12 matches scouted", "12 robot-matches"). Assignments' scouted slots add up to
+ *   this when every report names a robot that was in that match.
+ * - `reports`: the rows themselves, so two scouts on one robot count twice ("14 reports").
+ */
+export type ScoutingTotals = { robots: number; robotMatches: number; reports: number };
+
+export async function loadScoutingTotals(
+  client: PoolClient,
+  input: { orgId: string; eventKey: string },
+): Promise<ScoutingTotals> {
+  const result = await client.query<{ robots: number | string; robotMatches: number | string; reports: number | string }>(
+    `SELECT count(DISTINCT e.team_key)::int AS robots,
+            count(DISTINCT e.team_key || '|' || e.match_key)::int AS "robotMatches",
+            count(*)::int AS reports
+       FROM match_scout_entries e
+       JOIN matches_ref m ON m.match_key = e.match_key
+      WHERE e.org_id = $1::uuid AND e.event_key = $2::text
+        AND ${observableMatchSql("m")}`,
+    [input.orgId, input.eventKey],
+  );
+  const row = result.rows[0];
+  return {
+    robots: Number(row?.robots) || 0,
+    robotMatches: Number(row?.robotMatches) || 0,
+    reports: Number(row?.reports) || 0,
+  };
+}
+
+function plural(count: number, one: string, many: string): string {
+  return `${count.toLocaleString("en-US")} ${count === 1 ? one : many}`;
+}
+
+/** "9 robots · 12 matches scouted" — the Teams header and Ask AI's opening line. */
+export function robotsAndMatchesLabel(robots: number, robotMatches: number): string {
+  return `${plural(robots, "robot", "robots")} · ${plural(robotMatches, "match", "matches")} scouted`;
+}
+
+/** The same words from a totals object. */
+export function scoutingTotalsLabel(totals: ScoutingTotals): string {
+  return robotsAndMatchesLabel(totals.robots, totals.robotMatches);
+}
+
+/**
+ * The pick list subtitle's counts: "32 teams · 9 scouted (2 not rated yet)".
+ *
+ * `teams` is the candidate pool (teams with a rating row); `scouted` is `ScoutingTotals.robots`,
+ * so it can include robots the pool does not list yet — said in words rather than dropped.
+ */
+export function pickListCountsLabel(input: { teams: number; scouted: number; scoutedNotRated?: number }): string {
+  const parts = [plural(input.teams, "team", "teams")];
+  if (input.scouted > 0) {
+    const notRated = input.scoutedNotRated ?? 0;
+    parts.push(`${input.scouted.toLocaleString("en-US")} scouted${notRated > 0 ? ` (${notRated.toLocaleString("en-US")} not rated yet)` : ""}`);
+  }
+  return parts.join(" · ");
+}
+
+/**
+ * Data-quality note for reports whose team was not in that match's alliance. They still count
+ * in the event totals (a robot was watched and written down) but fill no schedule slot, so
+ * coverage reads lower than Teams. Null when there are none.
+ */
+export function wrongRobotNote(robotMatches: number | null | undefined): string | null {
+  if (!robotMatches || robotMatches <= 0) return null;
+  return robotMatches === 1
+    ? "1 robot-match was reported for a team that was not in that match, so it fills no slot here. Check the team number on that report."
+    : `${robotMatches.toLocaleString("en-US")} robot-matches were reported for teams that were not in those matches, so they fill no slot here. Check the team numbers on those reports.`;
+}

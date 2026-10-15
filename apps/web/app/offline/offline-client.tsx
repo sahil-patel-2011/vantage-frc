@@ -13,6 +13,14 @@ import {
 } from "../../lib/offline/offline-related";
 
 /**
+ * Where the browser was actually going. The service worker serves this page's cached HTML in
+ * place of a page whose navigation failed, so the address bar still names that page. Read once
+ * when this module loads, before the router can touch history.
+ */
+const ARRIVED_AT =
+  typeof window === "undefined" ? null : { path: window.location.pathname, href: window.location.href };
+
+/**
  * Cold offline boot UI. Served from the SW shell cache when navigation fails.
  * Soft-UI: readiness, clear next actions, Scouting first — never DEMO sync counts.
  */
@@ -21,8 +29,14 @@ export default function OfflineClient() {
   const [counts, setCounts] = useState({ entries: 0, media: 0 });
   const [loaded, setLoaded] = useState(false);
   const [online, setOnline] = useState(true);
+  // Stood in for another page (the worker's fallback), rather than opened as /offline itself.
+  const [failedHref, setFailedHref] = useState<string | null>(null);
 
   useEffect(() => {
+    if (ARRIVED_AT && ARRIVED_AT.path !== "/offline" && ARRIVED_AT.path !== "/offline/") {
+      setFailedHref(ARRIVED_AT.href);
+      if (navigator.onLine) document.title = "Couldn't load page · Vantage";
+    }
     setOnline(navigator.onLine);
     void (async () => {
       setOrgId(await getLastOrgId());
@@ -60,12 +74,33 @@ export default function OfflineClient() {
     <main className="offline-shell">
       <p className="offline-shell-brand">Vantage</p>
       {copy.badge ? <span className={`app-badge ${online ? "good" : "setup"}`}>{copy.badge}</span> : null}
-      <h1>{online ? "Ready when the Wi-Fi drops" : copy.title}</h1>
-      <p className="offline-shell-lead">
-        {online
-          ? "Pages you open while online stay on this phone. Open Scouting once before you lose signal — queued scout counts come from this device only."
-          : copy.description}
-      </p>
+      {failedHref && online ? (
+        <>
+          {/* Online, but the page did not arrive: say that, not "offline". */}
+          <h1>Couldn&apos;t load that page</h1>
+          <p className="offline-shell-lead">
+            The connection dropped before Vantage answered. Your device still reports a connection, so try
+            again — scout data saved on this phone is safe either way.
+          </p>
+          <button type="button" className="offline-shell-retry" onClick={() => window.location.replace(failedHref)}>
+            Try again
+          </button>
+        </>
+      ) : (
+        <>
+          <h1>{online ? "Ready when the Wi-Fi drops" : copy.title}</h1>
+          <p className="offline-shell-lead">
+            {online
+              ? "Pages you open while online stay on this phone. Open Scouting once before you lose signal — queued scout counts come from this device only."
+              : copy.description}
+          </p>
+          {failedHref ? (
+            <button type="button" className="offline-shell-retry" onClick={() => window.location.replace(failedHref)}>
+              Try again
+            </button>
+          ) : null}
+        </>
+      )}
       <p className="offline-shell-status" role="status">
         {status}
       </p>

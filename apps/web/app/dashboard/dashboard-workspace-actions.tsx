@@ -23,6 +23,15 @@ export function DashboardWorkspaceActions({ orgId, role, hasEvent, hasForms, pri
   const showTask = !hasTaskCard && (canCreate || !elsewhere("/todos"));
   const showScout = !elsewhere(scouting.href);
   if (!showTask && !showScout) return null;
+  // One shortcut on its own was a lone button in a row of its own under the Up next card. It
+  // reads as a quiet link tucked under that card instead of a second, orphaned action.
+  if (showScout && !showTask) {
+    return (
+      <nav className="dash-workspace-actions is-single" aria-label="Quick actions" data-testid="dash-workspace-actions">
+        <a className="dash-now-quiet" href={scouting.href}>{scouting.label} →</a>
+      </nav>
+    );
+  }
   return (
     <nav className="dash-workspace-actions" aria-label="Quick actions" data-testid="dash-workspace-actions">
       <div className="dash-workspace-action-grid">

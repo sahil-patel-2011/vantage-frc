@@ -38,7 +38,7 @@ describe("why there is no next match", () => {
 describe("match names from match keys", () => {
   it("reads the name people say, not the key", () => {
     expect(matchLabelFromKey("2026gacmp_qm28")).toBe("Qual 28");
-    expect(matchLabelFromKey("2026gacmp_sf2m1")).toBe("Semi 2-1");
+    expect(matchLabelFromKey("2026gacmp_sf2m1")).toBe("Playoff 2");
     expect(matchLabelFromKey("2026gacmp_f1m2")).toBe("Final 2");
     expect(matchLabelFromKey("not-a-match")).toBe("not-a-match");
   });

@@ -324,3 +324,12 @@ describe("equivalent destinations across permission scopes",()=>{
   expect(hits.find(hit=>hit.href==="/team?tab=fmea")?.context).toBe("Team › Tasks");
  });
 });
+
+describe("CAD checker search", () => {
+  it("finds the CAD checker by the words people type for checking a drawing", () => {
+    for (const query of ["checker", "CAD check", "DWG", "drawing check", "autocad"]) {
+      expect(searchCommands(query, commandCatalog())[0]?.label, query).toBe("CAD checker");
+    }
+    expect(searchCommands("DXF", commandCatalog(), { limit: 3 }).map((hit) => hit.label)).toContain("CAD checker");
+  });
+});

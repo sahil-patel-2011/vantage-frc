@@ -23,7 +23,7 @@ vi.mock("../matching-gift-finder/compute-matching-gift-finder", () => ({
 }));
 
 import { AI_SKILLS } from "./catalog";
-import { aiSkillExecutorIds, runAiSkill, type SkillRunContext } from "./executors";
+import { aiSkillExecutorIds, runAiSkill, scoutingInsightSummary, type SkillRunContext } from "./executors";
 
 function fakeClient() {
   const queries: string[] = [];
@@ -147,5 +147,40 @@ describe("Ask AI skill executors", () => {
   it("returns null for an unknown skill", async () => {
     const { client } = fakeClient();
     expect(await runAiSkill("not-a-skill", ctx(client))).toBeNull();
+  });
+});
+
+describe("scouting-insight counts", () => {
+  it("says the sample is a sample and quotes the event totals in Teams' words", () => {
+    const totals = { robots: 9, robotMatches: 12, reports: 14 };
+    expect(scoutingInsightSummary({ eventKey: "2025gagai", totals, sampleTeams: 6, requestedTeam: false })).toBe(
+      "Our scouting at 2025gagai: 9 robots · 12 matches scouted (14 reports). Details below for the 6 most recently scouted teams.",
+    );
+    expect(scoutingInsightSummary({ eventKey: "2025gagai", totals: { robots: 3, robotMatches: 4, reports: 1 }, sampleTeams: 3, requestedTeam: false })).toBe(
+      "Our scouting at 2025gagai: 3 robots · 4 matches scouted (1 report).",
+    );
+    expect(scoutingInsightSummary({ eventKey: "2025gagai", totals, sampleTeams: 1, requestedTeam: true })).toBe(
+      "Saved match and pit observations for the requested team at 2025gagai. Event totals: 9 robots · 12 matches scouted.",
+    );
+    expect(scoutingInsightSummary({ eventKey: "2025gagai", totals: null, sampleTeams: 6, requestedTeam: false })).toBe(
+      "Saved match and pit observations for the 6 most recently scouted teams at 2025gagai.",
+    );
+  });
+
+  it("reads the totals from the shared loader rather than counting its six-team sample", async () => {
+    const sample = Array.from({ length: 6 }, (_, index) => ({ teamKey: `frc${index + 1}`, matchCount: 1, pitCount: 0 }));
+    const client = {
+      query: vi.fn(async (sql: string) => {
+        if (sql.includes("pit_scout_entries")) return { rows: sample, rowCount: sample.length };
+        if (sql.includes("count(DISTINCT e.team_key)")) return { rows: [{ robots: 9, robotMatches: 12, reports: 14 }], rowCount: 1 };
+        return { rows: [], rowCount: 0 };
+      }),
+    };
+    const run = { ...ctx(client, "How many teams have we scouted?"), activeEventKey: "2025gagai", page: { from: "/scouting" } };
+    const result = await runAiSkill("scouting-insight", run);
+    expect(result?.summary).toBe(
+      "Our scouting at 2025gagai: 9 robots · 12 matches scouted (14 reports). Details below for the 6 most recently scouted teams.",
+    );
+    expect((result?.data as { eventTotals: unknown }).eventTotals).toEqual({ robots: 9, robotMatches: 12, reports: 14, label: "9 robots · 12 matches scouted" });
   });
 });

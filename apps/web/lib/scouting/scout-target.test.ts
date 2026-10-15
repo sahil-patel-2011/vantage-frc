@@ -37,8 +37,8 @@ const SCHEDULE: ScheduledMatch[] = [
 describe("buildScoutTargets", () => {
   it("distinguishes semifinal sets that each contain match one", () => {
     const matches = [2, 10].map(set => ({ matchKey: `2026gagai_sf${set}m1`, compLevel: "sf", matchNumber: 1, redAlliance: { teamKeys: ["frc254"] } }));
-    expect(buildScoutTargets({ matches }).map(row => row.matchLabel)).toEqual(["Semi 2-1", "Semi 10-1"]);
-    expect(describeMatchKey("2026gagai_sf2m1")).toBe("Semifinal 2-1");
+    expect(buildScoutTargets({ matches }).map(row => row.matchLabel)).toEqual(["Playoff 2", "Playoff 10"]);
+    expect(describeMatchKey("2026gagai_sf2m1")).toBe("Playoff 2");
   });
   it("does not hide the schedule from someone who has an assignment", () => {
     // This is the whole point. The old selector replaced the schedule with your
@@ -206,7 +206,7 @@ describe("manualMatchKey", () => {
 describe("describeMatchKey", () => {
   it("names the round instead of a team-made event key", () => {
     expect(describeMatchKey("2026custom-1a2b3c4d-grits_qm12")).toBe("Qualification 12");
-    expect(describeMatchKey("2026gagai_sf2")).toBe("Semifinal 2");
+    expect(describeMatchKey("2026gagai_sf2")).toBe("Playoff 2");
     expect(describeMatchKey("not-a-match")).toBe("not-a-match");
   });
 });

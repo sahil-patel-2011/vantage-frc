@@ -1,4 +1,4 @@
-import { getOrgPromptCachingEnabled, isSkillToolOutput, resolveOrgChatAdapter, skillIdFromToolName, skillToolName } from "@vantage/agent";
+import { getOrgPromptCachingEnabled, isSkillToolOutput, resolveOrgChatAdapterWithProvenance, skillIdFromToolName, skillToolName } from "@vantage/agent";
 import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
@@ -12,6 +12,13 @@ import {
 } from "../../../lib/github";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
 import { probeChatAvailability } from "../../../lib/ai/capabilities";
+import {
+  ChatSendBlockedError,
+  canConnectForTeam,
+  chatConnectionForBlock,
+  chatSendBlock,
+  type ChatConnectionState,
+} from "../../../lib/ai/chat-send-gate";
 import { buildHistoryContext } from "../../../lib/chat/history-context";
 import { aiSkillById, canSaveSkillDraft } from "../../../lib/ai-skills/catalog";
 import type { SkillPageContext } from "../../../lib/ai-skills/executors";
@@ -51,6 +58,36 @@ function skillSummary(routed: RoutedSkill | null, usedIds: string[]) {
   return { id: skill.id, name: skill.name, group: skill.group, source: routed?.source ?? ("model" as const) };
 }
 
+/**
+ * A turn refused for lack of a usable AI connection carries the composer's connection state, so
+ * the notice and its next step stay on screen after "Not sent" instead of Send re-enabling.
+ */
+async function withConnectionState(
+  response: Response,
+  error: unknown,
+  who: { userId: string; orgId: string; role: string | null },
+): Promise<Response> {
+  if (response.status !== 503) return response;
+  const payload = (await response.clone().json().catch(() => null)) as Record<string, unknown> | null;
+  if (!payload || payload.code !== "setup_required") return response;
+  const message = typeof payload.message === "string" ? payload.message : null;
+  let aiConnection: ChatConnectionState;
+  if (error instanceof ChatSendBlockedError) {
+    aiConnection = chatConnectionForBlock(error.block, who.role);
+  } else {
+    // Refused somewhere the gate didn't see: ask the check what to offer, but never say ready.
+    const probed = who.userId && who.orgId
+      ? await withRls({ userId: who.userId, orgId: who.orgId }, (client) =>
+          probeChatAvailability(client, { orgId: who.orgId, userId: who.userId, role: who.role }),
+        ).catch(() => null)
+      : null;
+    aiConnection = probed && !probed.configured
+      ? probed
+      : { configured: false, reason: "provider_unavailable", message, nextStep: canConnectForTeam(who.role) ? "settings" : "ask_owner" };
+  }
+  return Response.json({ ...payload, aiConnection }, { status: response.status });
+}
+
 export async function GET(request: Request) {
   try {
     const session = await current();
@@ -62,8 +99,8 @@ export async function GET(request: Request) {
     if (url.searchParams.get("part") === "connection") {
       const connection = await withRls({ userId: session.user.id, orgId }, async (client) => {
         const facts = orgId ? await loadSkillAccessFacts(client, orgId, session.user.id) : null;
-        const model = orgId && facts?.role ? await withSavepoint(client, () => probeChatAvailability(client, { orgId, userId: session.user.id }), null) : null;
-        return model ?? (orgId ? { configured: false, reason: "check_unavailable", message: "Couldn't check your AI connection. Retry before sending; your question stays here." } : null);
+        const model = orgId && facts?.role ? await withSavepoint(client, () => probeChatAvailability(client, { orgId, userId: session.user.id, role: facts.role }), null) : null;
+        return model ?? (orgId ? { configured: false, reason: "check_unavailable", message: "Couldn't check your AI connection. Retry before sending; your question stays here.", nextStep: "retry" } : null);
       });
       return Response.json({ aiConnection: connection });
     }
@@ -148,7 +185,7 @@ export async function POST(request: Request) {
       const turnSkill: RoutedSkill | null = routed;
 
       const promptCachingEnabled = await getOrgPromptCachingEnabled(client, orgId);
-      const adapter = await resolveOrgChatAdapter(client, {
+      const resolvedChat = await resolveOrgChatAdapterWithProvenance(client, {
         orgId,
         userId: session.user.id,
         promptCachingEnabled,
@@ -158,6 +195,11 @@ export async function POST(request: Request) {
         // team's own machine) when one is online; falls through to keys.
         bridgeTransport: createBridgeTransport(),
       });
+      // The same gate the connection check runs: refuse here, in the check's words, a model
+      // billing would refuse after the turn was written (unknown → let meteredAI decide).
+      const blocked = await withSavepoint(client, () => chatSendBlock(client, { orgId, source: resolvedChat.provenance.source }), null);
+      if (blocked) throw new ChatSendBlockedError(blocked);
+      const adapter = resolvedChat.adapter;
 
       const bridgeContext = [
         ...(body.editorContextId
@@ -209,7 +251,7 @@ export async function POST(request: Request) {
     });
     return Response.json(data, { status: 201 });
   } catch (error) {
-    const response = fail(error);
+    const response = await withConnectionState(fail(error), error, { userId, orgId: orgIdForPreview, role: role as string | null });
     const turnSkill = routed as RoutedSkill | null;
     // AI is off, over its limit, or paused: still show what the skill found in the records.
     if (!turnSkill || !userId || !orgIdForPreview || ![402, 403, 429, 503].includes(response.status)) return response;

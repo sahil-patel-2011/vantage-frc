@@ -13,7 +13,7 @@ import { observationsForStrategyTrust } from "@vantage/scouting/trust";
 import { withSavepoint } from "@vantage/db";
 import { canManageScouting } from "@vantage/scouting/permissions";
 import { loadTeamProfiles } from "../scouting/team-profiles";
-import { loadScoutedMatchCounts } from "../scouting/scouted-counts";
+import { loadScoutedMatchCounts, loadScoutingTotals, type ScoutingTotals } from "../scouting/scouted-counts";
 import type { SchemaDefinition } from "@vantage/scouting";
 import { loadScoutFieldRoles } from "./scout-field-roles";
 import { teamScoreDistribution } from "@vantage/prediction-strategy";
@@ -74,7 +74,12 @@ export type PickDeskView = {
   /** full when scouting coverage is usable; low_data_tba for TBA/Statbotics quick pick. */
   pickMode: PickDataMode;
   pickModeReason: string | null;
+  /** Robots scouted at this event: `ScoutingTotals.robots`, rated or not. */
   scoutedTeams: number;
+  /** Scouted robots with no rating row, so not in `candidates` ("2 not rated yet"). */
+  scoutedNotRated?: number;
+  /** The event's shared scouting counts (scouted-counts.ts). Absent when the read failed. */
+  scoutingTotals?: ScoutingTotals;
   teamCount: number;
   /** Divergent last-3 alliance-share vs season EPA callouts (real matches only). */
   epaDrifts: PickAssistDrift[];
@@ -90,6 +95,27 @@ export type PickDeskView = {
   /** TBA/Statbotics ingest health — pick desk keeps using Neon last-good when degraded. */
   dataSourceHealth?: import("../reference-health").DataSourceHealthView;
 };
+
+/**
+ * The pick list's "9 scouted (2 not rated yet)".
+ *
+ * Candidates come only from rated teams (team_event_metrics), so counting scouted candidates
+ * missed every robot scouted before its rating row existed — the pick list said "3 with our
+ * notes" while Teams said 9 robots. The count is the event totals' robots; the robots the pool
+ * cannot list are named separately. `scoutedTeamKeys` must use the same rule as the totals
+ * (loadScoutedMatchCounts does). Without totals (the read failed) the keys are counted instead.
+ */
+export function pickDeskScoutedCounts(input: {
+  totals: ScoutingTotals | null;
+  scoutedTeamKeys: Iterable<string>;
+  ratedTeamKeys: Iterable<string>;
+}): { scoutedTeams: number; scoutedNotRated: number } {
+  const rated = new Set(input.ratedTeamKeys);
+  const scouted = new Set(input.scoutedTeamKeys);
+  let scoutedNotRated = 0;
+  for (const teamKey of scouted) if (!rated.has(teamKey)) scoutedNotRated += 1;
+  return { scoutedTeams: input.totals?.robots ?? scouted.size, scoutedNotRated };
+}
 
 export type PickDeskStrategySeat = {
   userId: string;
@@ -351,7 +377,7 @@ export async function loadPickDesk(
   });
 
   // The Robots list's own numbers, so "Our scouting" is one number everywhere.
-  const [profileView, matchCounts] = await Promise.all([
+  const [profileView, matchCounts, totals] = await Promise.all([
     withSavepoint<Awaited<ReturnType<typeof loadTeamProfiles>> | null>(
       client,
       () => loadTeamProfiles(client, { orgId: row.orgId, eventKey: row.eventKey }),
@@ -362,7 +388,17 @@ export async function loadPickDesk(
       () => loadScoutedMatchCounts(client, { orgId: row.orgId, eventKey: row.eventKey as string }),
       new Map<string, number>(),
     ),
+    withSavepoint<ScoutingTotals | null>(
+      client,
+      () => loadScoutingTotals(client, { orgId: row.orgId, eventKey: row.eventKey as string }),
+      null,
+    ),
   ]);
+  const scoutedCounts = pickDeskScoutedCounts({
+    totals,
+    scoutedTeamKeys: matchCounts.keys(),
+    ratedTeamKeys: metrics.rows.map((metric) => metric.teamKey),
+  });
   const averageByTeam = new Map<string, number>();
   if (profileView?.status === "ready") {
     for (const profile of profileView.profiles) {
@@ -451,9 +487,12 @@ export async function loadPickDesk(
     sources: pickModeSources(modeInfo.mode, baseSources),
     pickMode: modeInfo.mode,
     pickModeReason: modeInfo.reason,
-    // Teams with at least one scouted match — what "with our notes" / "scouted" say. The
-    // 2+ entries threshold only decides the pick mode, and pickModeReason says so in words.
-    scoutedTeams: candidates.filter((candidate) => (candidate.scoutedMatches ?? 0) > 0).length,
+    // The event's scouted robots (scouted-counts.ts ScoutingTotals.robots) — the same number
+    // Teams shows, whether or not a robot has a rating row yet. The 2+ entries threshold only
+    // decides the pick mode, and pickModeReason says so in words.
+    scoutedTeams: scoutedCounts.scoutedTeams,
+    scoutedNotRated: scoutedCounts.scoutedNotRated,
+    ...(totals ? { scoutingTotals: totals } : {}),
     teamCount: modeInfo.teamCount,
     epaDrifts,
     strategySeats: seats.rows.map((seat) => ({

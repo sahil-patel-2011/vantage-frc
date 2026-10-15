@@ -22,7 +22,7 @@ body.has-app-shell .app-page-actions {
   align-items: center;
   gap: 8px;
 }
-body.has-app-shell :is(.app-button, .hub-picker-groups button) > svg {
+body.has-app-shell .app-button > svg {
   width: 18px;
   height: 18px;
   flex: none;
@@ -43,76 +43,9 @@ body.has-app-shell .workspace-hub-header {
   margin-bottom: 28px;
 }
 .workspace-hub-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-body.has-app-shell .hub-browse-button { gap: 8px; font-weight: 500; }
+
 /* With the sidebar showing (≥1100px) each workspace's sections are already listed there, and
    the tab bar and More tools cover the rest: a Browse button was a third way to the same pages. */
-@media (min-width: 1100px) {
-  body:has(.app-sidebar) .hub-browse-button { display: none; }
-}
-.hub-page-picker { width: min(640px, calc(100vw - 32px)); height: min(740px, calc(100dvh - 32px)); }
-.hub-page-picker > :last-child { flex: 1; overflow: hidden; gap: 12px; }
-.hub-picker-search, .hub-picker-filter { flex-shrink: 0; }
-.hub-picker-filter { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.hub-picker-filter label { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-.hub-picker-filter select { min-width: 0; max-width: 230px; min-height: 44px; }
-.hub-picker-filter small { color: var(--muted); font-size: 12px; }
-.hub-picker-clear { border: 0; background: transparent; color: var(--muted); min-height: 44px; min-width: 44px; display: grid; place-items: center; }
-.hub-picker-clear svg { width: 16px; height: 16px; }
-.hub-picker-search {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 12px;
-  border: 1px solid var(--field-line, var(--line));
-  border-radius: 12px;
-  background: var(--surface);
-}
-.hub-picker-search > svg { width: 18px; height: 18px; flex: none; color: var(--muted); }
-body.has-app-shell .hub-picker-search input {
-  width: 100%;
-  min-width: 0;
-  min-height: 46px;
-  padding: 0;
-  /* Older product field defaults use !important; the wrapper owns this field's boundary. */
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none;
-  color: var(--ink);
-  font: inherit;
-}
-.hub-picker-search:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
-body.has-app-shell .hub-picker-search input:focus { outline: none; box-shadow: none; }
-.hub-picker-search input::-webkit-search-cancel-button,
-.hub-picker-search input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
-.hub-picker-groups { display: grid; gap: 12px; margin-top: 0; overflow-y: auto; min-height: 0; padding: 2px; align-content: start; }
-.hub-picker-groups h3 { margin: 0 10px 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
-.hub-picker-groups section > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
-.hub-picker-groups :is(button, .hub-picker-current) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 48px;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--ink);
-  font: 500 14px/1.4 var(--font-sans);
-  text-align: left;
-  cursor: pointer;
-}
-.hub-picker-groups button:hover { background: var(--surface-2); }
-.hub-picker-groups button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
-.hub-picker-groups button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.hub-picker-groups button svg { color: var(--muted); }
-.hub-picker-groups button[aria-current="page"] svg { color: inherit; }
-.hub-picker-groups .hub-picker-current { color: var(--accent); background: var(--accent-soft); cursor: default; }
-.hub-picker-current small { margin-left: auto; color: var(--muted); font-size: 11px; white-space: nowrap; }
-.hub-picker-current svg { width: 16px; height: 16px; flex-shrink: 0; }
-.hub-picker-groups :is(button, .hub-picker-current) > span { min-width: 0; overflow-wrap: anywhere; }
-@media(max-width:480px) { .hub-picker-filter { align-items: flex-start; flex-direction: column; gap: 6px; } .hub-picker-filter label { width: 100%; } .hub-picker-filter select { flex: 1; max-width: none; } }
 
 /* Settings is a single reading column, with a small section switcher at every width. */
 body.has-app-shell .settings-frame {
@@ -256,7 +189,7 @@ body.has-app-shell .ask-composer textarea:focus { outline: none; box-shadow: non
 @media (max-width: 600px) {
   body.has-app-shell .module-page { padding: 22px 18px 32px; }
   body.has-app-shell .workspace-hub-header { gap: 12px; margin-bottom: 20px; }
-  .hub-picker-groups section > div { grid-template-columns: minmax(0, 1fr); }
+
   .ask-page .ch-layout[data-empty="true"] .ch-main { padding-top: 16px; }
   .ask-groups.is-compact { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .ask-groups.is-compact .ask-group h3 { margin-left: 4px; }
@@ -269,7 +202,7 @@ body.has-app-shell .ask-composer textarea:focus { outline: none; box-shadow: non
   .ask-page .ch-privacy summary { min-height: 44px; }
 }
 @media print {
-  .settings-navigation, .hub-browse-button { display: none; }
+  .settings-navigation{ display: none; }
 }
 
 /* Search feels like a small launcher, with four useful places before typing. */
@@ -310,12 +243,6 @@ body.has-app-shell .search-palette-keys { gap: 12px; font-size: 12px; }
 body.has-app-shell .search-palette-full { font-size: 12px; min-height: 36px; }
 body.has-app-shell .search-palette-keys kbd { padding: 1px 4px; min-width: 20px; font-size: 11px; }
 
-.hub-picker-more { margin: 4px 0 0; }
-.hub-picker-more summary { display: flex; gap: 8px; align-items: center; min-height: 44px; padding: 6px 12px; color: var(--muted); font-size: 13px; cursor: pointer; }
-.hub-picker-more summary small { margin-left: auto; }
-.hub-picker-more > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-body.has-app-shell .hub-picker-groups { gap: 12px; }
-body.has-app-shell .hub-picker-groups > section { border-bottom: 1px solid var(--line-soft); padding-bottom: 10px; }
 body.has-app-shell .settings-home { max-width: 1000px; }
 .settings-home > nav.settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 28px 24px; }
 body.has-app-shell .settings-home .settings-group { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); }
@@ -419,7 +346,7 @@ body.has-app-shell .tc-page .tc-timed-head { position: sticky; top: 0; z-index: 
 }
 @media (max-width: 600px) {
   .settings-home > nav.settings-list { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  .hub-picker-more > div { grid-template-columns: minmax(0, 1fr); }
+
   body.has-app-shell .search-palette-field { min-height: 60px; padding: 10px 18px; }
   body.has-app-shell .search-palette-field input { font-size: 18px; }
   .search-palette-keys { display: none; }

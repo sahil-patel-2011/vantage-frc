@@ -187,7 +187,7 @@ export const SECTION_HELP: SectionHelpEntry[] = [
     tips: [
       "No signal? Save anyway. The match stays on your phone and sends itself when you're back online.",
       "Visiting a pit? Choose Visit a pit in Scouting task, type the team number, and fill in what you see.",
-      "For leads: open Team entries and lead tools to assign scouts. Use Review disagreements in Scouting task, then build and save your Pick list.",
+      "For leads: open Team entries and lead tools to assign scouts. Use Disagreements in Scouting task, then build and save your Pick list.",
     ],
     related: [
       { label: "How to scout a match", href: "/help/saturday-scouting" },

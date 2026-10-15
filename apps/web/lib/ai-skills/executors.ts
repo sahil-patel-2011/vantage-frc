@@ -35,6 +35,7 @@ import { computePicklistJustifierView } from "../picklist-justifier/compute-pick
 import { computePitRepairTriageView } from "../pit-repair-triage/compute-pit-repair-triage";
 import { computeRetroView } from "../retro/compute-retro";
 import { computeRuleImpactView } from "../rule-impact/compute-rule-impact";
+import { loadScoutingTotals, scoutingTotalsLabel, type ScoutingTotals } from "../scouting/scouted-counts";
 import { computeSeasonReportView } from "../season-report/compute-season-report";
 import { computeSpareForecastView } from "../spare-forecast/compute-spare-forecast";
 import { computeSpareRobotKitView } from "../spare-robot-kit/compute-spare-robot-kit";
@@ -539,18 +540,57 @@ const EXECUTORS: Record<string, Executor> = {
     const video = /\b(video|timestamp|footage)\b/i.test(ctx.request)
       ? await withSavepoint(ctx.client, () => insightSkill("video_scout_summary", "No video review notes yet.")(ctx, skill), null) : null;
     const okOne = [intel, video].find((part) => part?.status === "ok");
+    // "How many teams did we scout?" gets the event totals every screen shows (scouted-counts.ts),
+    // never the length of the six-team sample below — that answered "6 teams" while Teams said 9.
+    const activeEventKey = ctx.activeEventKey;
+    const totals = activeEventKey
+      ? await withSavepoint<ScoutingTotals | null>(ctx.client, () => loadScoutingTotals(ctx.client, { orgId: ctx.orgId, eventKey: activeEventKey }), null)
+      : null;
     return {
       ...output(skill, ctx, {
         status: teams.length || okOne ? "ok" : "empty",
-        summary: teams.length ? `Saved match and pit observations for ${teams.length} ${requestedTeam ? "requested" : "recently scouted"} team${teams.length === 1 ? "" : "s"} at ${ctx.activeEventKey}.` : okOne?.summary ?? "No saved scouting observations at this event yet.",
+        summary: teams.length
+          ? scoutingInsightSummary({ eventKey: activeEventKey, totals, sampleTeams: teams.length, requestedTeam: Boolean(requestedTeam) })
+          : okOne?.summary ?? "No saved scouting observations at this event yet.",
       }),
       classification: "scout_observation",
       highlights: [...teams.map(team => `Team ${team.teamKey.replace(/^frc/, "")}: ${team.matchCount} match report(s), ${team.pitCount} pit report(s).`), ...(intel?.highlights ?? []), ...(video?.highlights ?? [])].slice(0, 8),
-      data: { scouting: boundForModel(snapshots, { maxItems: 16, maxText: 300, maxDepth: 7 }), sampleNote: "Up to six recently scouted teams and eight recent reports per team; these are observations, not official scores. Ask about a named team for its details.", overnightIntel: intel?.data ?? null, videoNotes: video?.data ?? null },
+      data: {
+        // The numbers to quote for "how many robots / matches did we scout": robots = teams with a
+        // report, robotMatches = one robot in one match however many scouts watched, reports = rows.
+        eventTotals: totals ? { ...totals, label: scoutingTotalsLabel(totals) } : null,
+        scouting: boundForModel(snapshots, { maxItems: 16, maxText: 300, maxDepth: 7 }),
+        sampleNote: "Up to six recently scouted teams and eight recent reports per team; these are observations, not official scores. For how many robots or matches were scouted, quote eventTotals, not the number of teams in this sample. Ask about a named team for its details.",
+        overnightIntel: intel?.data ?? null,
+        videoNotes: video?.data ?? null,
+      },
     };
   },
   writing,
 };
+
+/**
+ * Ask AI's scouting summary line, in the words Teams uses:
+ * "Our scouting at 2025gagai: 9 robots · 12 matches scouted (14 reports). Details below for the
+ * 6 most recently scouted teams." The sample size is named as a sample, never as the count.
+ */
+export function scoutingInsightSummary(input: {
+  eventKey: string | null;
+  totals: ScoutingTotals | null;
+  sampleTeams: number;
+  requestedTeam: boolean;
+}): string {
+  const at = input.eventKey ? ` at ${input.eventKey}` : "";
+  if (input.requestedTeam) {
+    const event = input.totals ? ` Event totals: ${scoutingTotalsLabel(input.totals)}.` : "";
+    return `Saved match and pit observations for the requested team${at}.${event}`;
+  }
+  const sample = `the ${input.sampleTeams} most recently scouted team${input.sampleTeams === 1 ? "" : "s"}`;
+  if (!input.totals) return `Saved match and pit observations for ${sample}${at}.`;
+  const reports = `${input.totals.reports} report${input.totals.reports === 1 ? "" : "s"}`;
+  const details = input.sampleTeams < input.totals.robots ? ` Details below for ${sample}.` : "";
+  return `Our scouting${at}: ${scoutingTotalsLabel(input.totals)} (${reports}).${details}`;
+}
 
 /** Run one skill. Never throws: a broken read becomes a setup state in plain words. */
 export async function runAiSkill(skillId: string, ctx: SkillRunContext): Promise<SkillToolOutput | null> {

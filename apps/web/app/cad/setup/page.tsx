@@ -1,5 +1,5 @@
 import CadSetupWizard, { CadSetupRelated } from "./setup-client";
-import { Button, EmptyState, PageHeader } from "../../../components/ui";
+import { PageMain, Button, EmptyState, PageHeader } from "../../../components/ui";
 import "../cad-setup.css";
 
 export const metadata = {
@@ -15,7 +15,7 @@ export default async function CadSetupPage({
   const { orgId } = await searchParams;
   if (!orgId) {
     return (
-      <main className="module-page cad-setup-page">
+      <PageMain className="module-page cad-setup-page">
         <PageHeader
           breadcrumbs="CAD / Setup"
           title="CAD setup"
@@ -34,7 +34,7 @@ export default async function CadSetupPage({
             Choose your team
           </Button>
         </EmptyState>
-      </main>
+      </PageMain>
     );
   }
   return <CadSetupWizard orgId={orgId} />;

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Skeleton, askConfirm } from "../../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../../lib/nav/resolve-org";
 import { isOnshapeApiCheck, onshapeInputLabel } from "../../../../lib/guided/checks-onshape";
+import { canAskLeadInsteadOfOnshape, onshapeOffNotice } from "../../../../lib/guided/onshape-availability";
 import type { CheckResult, GuidedStep, GuidedTrack } from "../../../../lib/guided/types";
 
 type Done = Record<string, string>;
@@ -131,7 +132,7 @@ function StepInput({
   return null;
 }
 
-export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
+export function GuidedTrackClient({ track, onshapeConfigured = true }: { track: GuidedTrack; onshapeConfigured?: boolean }) {
   const [done, setDone] = useState<Done>({});
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
@@ -199,7 +200,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
     resultRef.current?.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
   }, [lastResult]);
 
-  async function runCheck(step: GuidedStep, extra?: Record<string, unknown>) {
+  async function runCheck(step: GuidedStep, action?: "signoff") {
     const input = inputFor(step);
     if (takesOnshapeUrl(step) && input.url.trim()) {
       saveUrl(track.id, input.url.trim());
@@ -214,7 +215,8 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
         trackId: track.id,
         stepId: step.id,
         orgId: orgFromUrl(),
-        input: { url: input.url, text: input.text, values: { ...input.values, ...extra } },
+        ...(action ? { action } : {}),
+        input: { url: input.url, text: input.text, values: input.values },
       }),
       signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
     }).catch((error: unknown) => {
@@ -245,7 +247,7 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
   }
 
   async function reopen(step: GuidedStep, action: "reopen" | "withdraw" = "reopen") {
-    const signedOff = step.check.kind === "lead-signoff";
+    const signedOff = step.check.kind === "lead-signoff" || signoffs[step.id]?.status === "approved";
     if (action === "reopen") {
       // Doing a finished step again throws away its check, and for a lead's step the lead's
       // sign-off too: say so before it happens.
@@ -344,7 +346,10 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
           const isDone = Boolean(done[step.id]);
           const isOpen = open === step.id;
           const state = states[step.id];
-          const signoff = step.check.kind === "lead-signoff";
+          // Onshape is off for this deployment: an Onshape-checked step goes to a lead instead.
+          const viaLead = canAskLeadInsteadOfOnshape(step.check, onshapeConfigured);
+          const offNotice = viaLead ? onshapeOffNotice(track.id, step.check) : null;
+          const signoff = step.check.kind === "lead-signoff" || viaLead || signoffs[step.id]?.status === "approved";
           const practice = step.practice === true;
           return (
             <li
@@ -415,7 +420,8 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
                   ) : null}
                   <div className="guided-check">
                     <p className="guided-checked-by">
-                      <strong>How it&apos;s checked:</strong> {step.checkedBy}
+                      <strong>How it&apos;s checked:</strong>{" "}
+                      {viaLead ? "for now, a team lead checks it with you and signs it off in Vantage." : step.checkedBy}
                     </p>
                     {isDone ? (
                       <div className="guided-actions">
@@ -441,13 +447,27 @@ export function GuidedTrackClient({ track }: { track: GuidedTrack }) {
                             A lead asked you to try again{signoffs[step.id]?.note ? `: “${signoffs[step.id]?.note}”` : "."}
                           </p>
                         ) : null}
-                        <StepInput
-                          step={step}
-                          value={inputFor(step)}
-                          onChange={(next) => setInputs((prev) => ({ ...prev, [step.id]: next }))}
-                        />
+                        {offNotice ? (
+                          <div className="guided-onshape-off" role="note" data-testid="guided-onshape-off">
+                            <p>
+                              <strong>{offNotice.title}</strong>
+                              {offNotice.body}
+                            </p>
+                            {offNotice.dxf ? (
+                              <p>
+                                {offNotice.dxf.text} <a href={offNotice.dxf.href}>Open the CAD checker</a>
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <StepInput
+                            step={step}
+                            value={inputFor(step)}
+                            onChange={(next) => setInputs((prev) => ({ ...prev, [step.id]: next }))}
+                          />
+                        )}
                         <div className="guided-actions">
-                          <Button variant="primary" disabled={state?.busy} onClick={() => void runCheck(step)}>
+                          <Button variant="primary" disabled={state?.busy} onClick={() => void runCheck(step, viaLead ? "signoff" : undefined)}>
                             {state?.busy
                               ? step.check.kind === "onshape-drawing" && step.check.minDimensions
                                 ? "Checking… up to 15 seconds"

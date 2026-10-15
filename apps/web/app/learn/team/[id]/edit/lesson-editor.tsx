@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { askConfirm, Button, EmptyState, PageHeader, Skeleton, TextBlockSkeleton } from "../../../../../components/ui";
 import { withOrgHref } from "../../../../../lib/nav/product-nav";
+import { lessonPublishIssues } from "../../../../../lib/team-lessons/body";
 import {
   decodeStoredDraft,
   draftsEqual,
@@ -25,8 +26,8 @@ import {
 } from "../../lesson-shared";
 import { PdfPanel } from "./editor-pdf";
 import { PracticeEditor } from "./editor-practice";
-import { StepsEditor } from "./editor-steps";
-import { NumberField, TextField } from "./editor-fields";
+import { NO_ISSUES, StepsEditor } from "./editor-steps";
+import { focusLessonField, NumberField, TextField } from "./editor-fields";
 import { uploadLessonPdf, type PdfUploadProgress } from "./lesson-pdf-upload";
 import { clearLocalDraft, useLessonAutosave } from "./use-lesson-autosave";
 
@@ -62,12 +63,15 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
   const [source, setSource] = useState(lesson.source);
   const [pdf, setPdf] = useState({ id: lesson.pdfFileId, name: lesson.pdfFileName });
   const [revisions, setRevisions] = useState<LessonRevisionSummary[]>(view.revisions);
-  const [problems, setProblems] = useState<string[]>([]);
+  /** True once Publish was pressed with something missing: the list shows and fields are outlined. */
+  const [showIssues, setShowIssues] = useState(false);
+  /** Problems the server named that this page didn't (it saw a newer save); cleared on the next edit. */
+  const [serverProblems, setServerProblems] = useState<string[]>([]);
+  const issuesRef = useRef<HTMLDivElement | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [localOffer, setLocalOffer] = useState<StoredDraft | null>(null);
   const [upload, setUpload] = useState<PdfUploadProgress | null>(null);
-  const [pdfFirst, setPdfFirst] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const autosave = useLessonAutosave({ lessonId: lesson.id, orgId, version: lesson.version });
   const { change, flush, reset, currentVersion, setVersion } = autosave;
@@ -77,10 +81,21 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
       const next = edit(draftRef.current);
       draftRef.current = next;
       setDraft(next);
-      setProblems([]);
+      setServerProblems([]);
       change(next);
     },
     [change],
+  );
+
+  // The same check the publish action makes, live: the list beside Publish shrinks as each
+  // missing thing is filled in.
+  const issues = useMemo(
+    () => lessonPublishIssues(draft, draft.body, { source, hasPdf: Boolean(pdf.id) }),
+    [draft, source, pdf.id],
+  );
+  const invalidFields = useMemo(
+    () => (showIssues ? new Set(issues.map((issue) => issue.field)) : NO_ISSUES),
+    [showIssues, issues],
   );
 
   // "Saved 3 minutes ago" keeps moving.
@@ -99,14 +114,6 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
         setNotice("Restored changes from this browser that hadn't reached Vantage yet. Saving them now.");
       } else setLocalOffer(stored);
     } else if (stored) clearLocalDraft(lesson.id);
-    // "Upload a PDF" from the list lands here with ?start=pdf. Read it once, then drop it so a
-    // reload or a shared link doesn't keep putting the PDF panel first.
-    const url = new URL(window.location.href);
-    if (url.searchParams.get("start") === "pdf") {
-      if (lesson.source === "editor") setPdfFirst(true);
-      url.searchParams.delete("start");
-      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
-    }
     // Once, for the lesson as loaded (the editor remounts when the lesson is reloaded).
   }, []);
 
@@ -134,6 +141,14 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
   }
 
   async function publish() {
+    // Say what is missing, beside Publish, before asking "Publish this lesson?".
+    if (issues.length) {
+      setShowIssues(true);
+      setNotice(null);
+      window.requestAnimationFrame(() => issuesRef.current?.focus());
+      return;
+    }
+    setShowIssues(false);
     const ok = await askConfirm({
       title: "Publish this lesson?",
       body:
@@ -154,8 +169,12 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
       window.location.assign(lessonHref(lesson.id, orgId));
       return;
     }
-    if (result.status === 422 && result.data?.problems) setProblems(result.data.problems);
-    else setNotice(result.data?.error ?? "The lesson couldn't be published. Try again.");
+    if (result.status === 400 && result.data?.problems?.length) {
+      // The server's copy differed from this page (another tab saved): show its list as well.
+      setShowIssues(true);
+      setServerProblems(result.data.problems);
+      window.requestAnimationFrame(() => issuesRef.current?.focus());
+    } else setNotice(result.data?.error ?? "The lesson couldn't be published. Try again.");
   }
 
   async function changeStatus(next: "draft" | "archived") {
@@ -234,7 +253,6 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
       setVersion(result.data.version);
       setSource("pdf");
       setPdf({ id: uploaded.fileId, name: result.data.pdfFileName });
-      setPdfFirst(false);
       setNotice("PDF added. Students read it, then answer the practice questions.");
     } else setNotice(result.data?.error ?? "The PDF uploaded to Files but couldn't be added to the lesson. Try again.");
   }
@@ -289,19 +307,6 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
 
   const conflict = autosave.state.kind === "conflict";
   const disabled = busy !== null || conflict;
-  const pdfPanel = (
-    <PdfPanel
-      orgId={orgId}
-      source={source}
-      pdfFileId={pdf.id}
-      pdfFileName={pdf.name}
-      progress={upload}
-      highlighted={pdfFirst}
-      disabled={disabled}
-      onFile={(file) => void attachPdf(file)}
-      onDetach={() => void detachPdf()}
-    />
-  );
 
   return (
     <main className="module-page team-lessons-page team-lesson-editor">
@@ -375,7 +380,14 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
       <div className="team-lesson-edit-form" onBlurCapture={() => void flush()}>
         <section className="team-lesson-edit-section" aria-labelledby="team-lesson-about-title">
           <h2 id="team-lesson-about-title">About this lesson</h2>
-          <TextField label="Title" value={draft.title} maxLength={LESSON_LIMITS.title} onChange={(title) => update((d) => ({ ...d, title }))} />
+          <TextField
+            label="Title"
+            value={draft.title}
+            maxLength={LESSON_LIMITS.title}
+            fieldKey="title"
+            invalid={invalidFields.has("title")}
+            onChange={(title) => update((d) => ({ ...d, title }))}
+          />
           <TextField
             label="Summary"
             optional
@@ -406,23 +418,49 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
           </div>
         </section>
 
-        {source === "pdf" || pdfFirst ? pdfPanel : null}
-        {source === "editor" ? (
-          <StepsEditor steps={draft.body.steps} onChange={(steps) => update((d) => ({ ...d, body: { ...d.body, steps } }))} />
-        ) : null}
-        {source === "editor" && !pdfFirst ? pdfPanel : null}
-        <PracticeEditor questions={draft.body.practice} onChange={(practice) => update((d) => ({ ...d, body: { ...d.body, practice } }))} />
+        {/* A PDF lesson is started from the list's "Upload a PDF"; a written lesson has no upload card. */}
+        {source === "pdf" ? (
+          <PdfPanel
+            orgId={orgId}
+            pdfFileId={pdf.id}
+            pdfFileName={pdf.name}
+            progress={upload}
+            disabled={disabled}
+            onFile={(file) => void attachPdf(file)}
+            onDetach={() => void detachPdf()}
+          />
+        ) : (
+          <StepsEditor
+            steps={draft.body.steps}
+            invalid={invalidFields}
+            onChange={(steps) => update((d) => ({ ...d, body: { ...d.body, steps } }))}
+          />
+        )}
+        <PracticeEditor
+          questions={draft.body.practice}
+          invalid={invalidFields}
+          onChange={(practice) => update((d) => ({ ...d, body: { ...d.body, practice } }))}
+        />
       </div>
 
-      {problems.length ? (
-        <div className="team-lesson-problems" role="alert">
-          <p>
+      {showIssues && (issues.length || serverProblems.length) ? (
+        <div className="team-lesson-problems" role="alert" tabIndex={-1} ref={issuesRef} aria-labelledby="team-lesson-problems-title">
+          <p id="team-lesson-problems-title">
             <strong>Finish these before publishing:</strong>
           </p>
           <ul>
-            {problems.map((problem) => (
-              <li key={problem}>{problem}</li>
+            {issues.map((issue) => (
+              <li key={`${issue.field}:${issue.message}`}>
+                <button type="button" className="team-lesson-problem-link" onClick={() => focusLessonField(issue.field)}>
+                  {issue.message}
+                </button>
+              </li>
             ))}
+            {serverProblems
+              .filter((problem) => !issues.some((issue) => issue.message === problem))
+              .map((problem) => (
+                <li key={problem}>{problem}</li>
+              ))}
           </ul>
         </div>
       ) : null}

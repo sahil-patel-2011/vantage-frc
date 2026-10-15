@@ -36,13 +36,13 @@ describe("next match for a scout", () => {
       { matchKey: "2026test_sf2m1", compLevel: "sf", matchNumber: 1, matchTime: "2026-10-13T15:00:00Z" },
       { matchKey: "2026test_sf1m2", compLevel: "sf", matchNumber: 2, matchTime: "2026-10-13T14:00:00Z" },
     ];
-    expect(orderedSchedule(timed).map(matchLabel)).toEqual(["Semi 1-2", "Semi 2-1"]);
-    expect(matchLabel({ matchKey: "2026test_sf2m1", matchNumber: 1 })).toBe("Semi 2-1");
+    expect(orderedSchedule(timed).map(matchLabel)).toEqual(["Semi 1-2", "Playoff 2"]);
+    expect(matchLabel({ matchKey: "2026test_sf2m1", matchNumber: 1 })).toBe("Playoff 2");
   });
   it("orders quals before playoffs and labels both", () => {
     expect(schedule.map((m) => m.matchKey)).toEqual(["2027test_qm1", "2027test_qm2", "2027test_qm3", "2027test_sf1m1"]);
     expect(matchLabel(schedule[0]!)).toBe("Qual 1");
-    expect(matchLabel(schedule[3]!)).toBe("Semi 1-1");
+    expect(matchLabel(schedule[3]!)).toBe("Playoff 1");
   });
 
   it("opens after the latest match the team has scouting for, not at Qual 1", () => {
@@ -129,7 +129,7 @@ describe("the shared still-to-come rule on the scout card", () => {
 
   it("names a match from its key the way the tiles do", () => {
     expect(labelForMatchKey("2026gacmp_qm33")).toBe("Qual 33");
-    expect(labelForMatchKey("2026gacmp_sf2m1")).toBe("Semi 2-1");
+    expect(labelForMatchKey("2026gacmp_sf2m1")).toBe("Playoff 2");
     expect(labelForMatchKey("nonsense")).toBeNull();
   });
 });

@@ -28,7 +28,9 @@ export function ScoutingDashboardSummary({ profiles }: { profiles: ScoutedTeamPr
   const risky = profiles.filter((profile) => profile.disabledRate > 0.1).length;
 
   const stats: Array<{ label: string; value: string; note: string }> = [
-    { label: "Robots watched", value: String(profiles.length), note: `${matches} robot-matches scouted` },
+    // Robots with a points total (the ranking below), not every robot watched: the header above
+    // already says "9 robots · 12 matches scouted" from the shared totals, so this says what it counts.
+    { label: "Robots with points", value: String(profiles.length), note: `from ${matches} scored robot-matches` },
     { label: "Field average", value: fieldAverage.toFixed(1), note: "points per match" },
     { label: "Top robot", value: teamNumber(top.teamKey), note: `${top.meanTotal.toFixed(1)} a match` },
     { label: "Improving", value: String(rising), note: "trending up late" },

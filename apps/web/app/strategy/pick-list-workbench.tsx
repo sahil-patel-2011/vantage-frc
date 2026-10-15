@@ -15,7 +15,8 @@ import { useTierDrag } from "../../components/ui/use-tier-drag";
 import "../../components/ui/tier-drag.css";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
-import { classifyPickDeskShell, formatPickDeskMetric } from "../../lib/strategy/pick-desk-related";
+import { classifyPickDeskShell } from "../../lib/strategy/pick-desk-related";
+import { pickListCountsLabel } from "../../lib/scouting/scouted-counts";
 import { PickDeskRelatedStrip, PickDeskShell } from "./pick-desk-chrome";
 import type { PickDeskCandidate, PickDeskEntry, PickDeskList, PickDeskView } from "../../lib/strategy/pick-desk";
 import { getFeatureSnapshot, putFeatureSnapshot, clearFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -640,10 +641,11 @@ function EventPickListWorkbench({
           <p className="app-muted">
             {desk.eventName ?? desk.eventKey}
             {" · "}
-            {formatPickDeskMetric(desk.candidates.length, true)} teams
-            {desk.scoutedTeams > 0
-              ? ` · ${formatPickDeskMetric(desk.scoutedTeams, true)} with our notes`
-              : ""}
+            {pickListCountsLabel({
+              teams: desk.candidates.length,
+              scouted: desk.scoutedTeams,
+              scoutedNotRated: desk.scoutedNotRated,
+            })}
           </p>
         </div>
         <div className="strategy-pick-actions">

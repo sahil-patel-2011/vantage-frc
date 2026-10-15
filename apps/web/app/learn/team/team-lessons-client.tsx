@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Button, CardGridSkeleton, EmptyState, PageHeader, Modal } from "../../../components/ui";
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { askConfirm, Button, CardGridSkeleton, EmptyState, PageHeader, Modal } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { discardDraftBody, splitDrafts } from "../../../lib/team-lessons/list";
 import type { LessonSummary, LessonsListView } from "../../../lib/team-lessons/types";
+import { looksLikePdf, uploadLessonPdf, type PdfUploadProgress } from "./[id]/edit/lesson-pdf-upload";
 import {
   lessonEditHref,
   lessonFetch,
@@ -18,6 +20,8 @@ import {
 
 const DESCRIPTION =
   "Lessons your team wrote: one step at a time, ending in practice questions Vantage checks for you.";
+
+type NewKind = "editor" | "pdf";
 
 function Breadcrumbs({ orgId }: { orgId: string | null }) {
   return (
@@ -65,25 +69,44 @@ function LessonCard({ lesson, orgId }: { lesson: LessonSummary; orgId: string })
   );
 }
 
-function DraftRow({ lesson, orgId }: { lesson: LessonSummary; orgId: string }) {
+function DraftRow({
+  lesson,
+  orgId,
+  discarding,
+  onDiscard,
+}: {
+  lesson: LessonSummary;
+  orgId: string;
+  discarding: boolean;
+  onDiscard: (lesson: LessonSummary) => void;
+}) {
+  const empty = lesson.source === "editor" && !lesson.stepCount && !lesson.questionCount;
   return (
     <li className="team-lesson-draft">
       <div>
         <strong className="team-lesson-draft-title">{lesson.title}</strong>
         <span className="app-muted">
-          {lesson.status === "archived" ? "Archived" : "Draft"}
+          {lesson.status === "archived" ? "Archived" : empty ? "Draft · nothing written yet" : "Draft"}
           {lesson.createdByName ? ` · by ${lesson.createdByName}` : ""} · changed {whenText(lesson.updatedAt)}
         </span>
       </div>
-      {lesson.canEdit ? (
-        <Button as="a" variant="ghost" size="sm" href={lessonEditHref(lesson.id, orgId)}>
-          Edit
-        </Button>
-      ) : (
-        <Button as="a" variant="ghost" size="sm" href={lessonHref(lesson.id, orgId)}>
-          Open
-        </Button>
-      )}
+      <div className="team-lesson-draft-actions">
+        {/* Only the author of a draft, or an owner or admin, may delete it (the API checks too). */}
+        {lesson.status === "draft" && lesson.canDelete ? (
+          <Button variant="ghost" size="sm" className="team-lesson-discard" disabled={discarding} onClick={() => onDiscard(lesson)}>
+            {discarding ? "Discarding…" : "Discard draft"}
+          </Button>
+        ) : null}
+        {lesson.canEdit ? (
+          <Button as="a" variant="ghost" size="sm" href={lessonEditHref(lesson.id, orgId)}>
+            Edit
+          </Button>
+        ) : (
+          <Button as="a" variant="ghost" size="sm" href={lessonHref(lesson.id, orgId)}>
+            Open
+          </Button>
+        )}
+      </div>
     </li>
   );
 }
@@ -93,10 +116,16 @@ export function TeamLessonsClient() {
   const orgId = org.status === "ready" ? org.orgId : null;
   const [view, setView] = useState<LessonsListView | null>(null);
   const [error, setError] = useState<LessonLoadFailure | null>(null);
-  const [creating, setCreating] = useState<"editor" | "pdf" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [newLesson, setNewLesson] = useState<"editor" | "pdf" | null>(null);
+  // The "New lesson" / "Upload a PDF lesson" dialog. Nothing is created until it is submitted
+  // with a title (and, for a PDF lesson, the file uploaded), so no empty "Untitled" drafts.
+  const [newLesson, setNewLesson] = useState<NewKind | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [newFile, setNewFile] = useState<File | null>(null);
+  const [formProblem, setFormProblem] = useState<{ field: "title" | "file" | null; message: string } | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [upload, setUpload] = useState<PdfUploadProgress | null>(null);
+  const [discarding, setDiscarding] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!orgId) return;
@@ -115,21 +144,71 @@ export function TeamLessonsClient() {
     void load();
   }, [load]);
 
-  async function create(start: "editor" | "pdf") {
-    if (!orgId || creating || !newTitle.trim()) return;
-    setCreating(start);
+  function openNew(kind: NewKind) {
+    setNewTitle("");
+    setNewFile(null);
+    setFormProblem(null);
     setNotice(null);
+    setNewLesson(kind);
+  }
+
+  async function create(event: FormEvent) {
+    event.preventDefault();
+    if (!orgId || !newLesson || creating) return;
+    const title = newTitle.trim();
+    if (!title) return setFormProblem({ field: "title", message: "Give the lesson a title." });
+    if (newLesson === "pdf" && !newFile) return setFormProblem({ field: "file", message: "Choose the PDF file." });
+    if (newLesson === "pdf" && newFile && !looksLikePdf(newFile)) return setFormProblem({ field: "file", message: "Choose a PDF file (.pdf)." });
+    setFormProblem(null);
+    setCreating(true);
+
+    let pdfFileId: string | undefined;
+    if (newLesson === "pdf" && newFile) {
+      const uploaded = await uploadLessonPdf({ file: newFile, orgId, onProgress: setUpload });
+      if ("error" in uploaded) {
+        setUpload(null);
+        setCreating(false);
+        return setFormProblem({ field: "file", message: uploaded.error });
+      }
+      pdfFileId = uploaded.fileId;
+      setUpload({ label: "Making the lesson…", fraction: 1 });
+    }
+
     const result = await lessonFetch<{ id: string }>("/api/team-lessons", {
       method: "POST",
-      body: JSON.stringify({ orgId, title: newTitle.trim() }),
+      body: JSON.stringify(pdfFileId ? { orgId, title, pdfFileId } : { orgId, title }),
     });
     if (result.ok && result.data?.id) {
-      const href = lessonEditHref(result.data.id, orgId);
-      window.location.assign(start === "pdf" ? `${href}${href.includes("?") ? "&" : "?"}start=pdf` : href);
+      window.location.assign(lessonEditHref(result.data.id, orgId));
       return;
     }
-    setCreating(null);
-    setNotice(result.error ?? "The lesson could not be created. Try again.");
+    setUpload(null);
+    setCreating(false);
+    setFormProblem({
+      field: null,
+      message:
+        (result.error ?? "The lesson could not be created. Try again.") +
+        (pdfFileId ? " The PDF is already in your team's Files, in the Team lessons folder." : ""),
+    });
+  }
+
+  async function discard(lesson: LessonSummary) {
+    if (!orgId || discarding) return;
+    const ok = await askConfirm({
+      title: `Discard “${lesson.title}”?`,
+      body: discardDraftBody(lesson),
+      confirmLabel: "Discard draft",
+    });
+    if (!ok) return;
+    setDiscarding(lesson.id);
+    setNotice(null);
+    const result = await lessonFetch<{ deleted: boolean }>(`/api/team-lessons/${lesson.id}?orgId=${encodeURIComponent(orgId)}`, {
+      method: "DELETE",
+    });
+    setDiscarding(null);
+    if (result.ok) {
+      setView((current) => (current?.status === "ready" ? { ...current, drafts: current.drafts.filter((entry) => entry.id !== lesson.id) } : current));
+    } else setNotice(result.error ?? "The draft couldn't be discarded. Try again.");
   }
 
   const header = (actions?: ReactNode) => (
@@ -148,6 +227,8 @@ export function TeamLessonsClient() {
     );
   }
 
+  // Finding the team and loading the list are one loading moment: skeleton cards, with the
+  // words for screen readers only.
   if (!view) {
     return (
       <main className="module-page team-lessons-page">
@@ -178,35 +259,100 @@ export function TeamLessonsClient() {
   }
 
   const hasAny = view.published.length + view.drafts.length > 0;
-  // One primary (write a lesson) and one secondary (upload a PDF); the empty state carries the
-  // same two choices when there is nothing yet, so the header stays empty then.
-  const newButton =
+  const drafts = splitDrafts(view.drafts);
+  // One primary (write a lesson) and one secondary (upload a PDF): the only two ways to start a
+  // lesson. The empty state carries the same two choices when there is nothing yet.
+  const newButtons =
     view.canCreate && hasAny ? (
       <>
-        <Button variant="secondary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("pdf"); }}>
-          {creating === "pdf" ? "Creating…" : "Upload a PDF"}
+        <Button variant="secondary" onClick={() => openNew("pdf")}>
+          Upload a PDF
         </Button>
-        <Button variant="primary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("editor"); }}>
-          {creating === "editor" ? "Creating…" : "New lesson"}
+        <Button variant="primary" onClick={() => openNew("editor")}>
+          New lesson
         </Button>
       </>
     ) : undefined;
 
+  const draftRow = (lesson: LessonSummary) => (
+    <DraftRow key={lesson.id} lesson={lesson} orgId={view.orgId} discarding={discarding === lesson.id} onDiscard={(entry) => void discard(entry)} />
+  );
+
   return (
     <main className="module-page team-lessons-page">
-      {header(newButton)}
-      <Modal open={newLesson !== null} onClose={() => { if (!creating) setNewLesson(null); }} title="New lesson">
-        <form onSubmit={event => { event.preventDefault(); if (newLesson) void create(newLesson); }}>
-          <p className="app-muted">Name your lesson to start writing. Nothing is created until you continue.</p>
-          <label>Lesson title<input data-autofocus value={newTitle} maxLength={160} onChange={event => setNewTitle(event.target.value)} placeholder="e.g. Wiring a motor controller" /></label>
+      {header(newButtons)}
+      <Modal
+        open={newLesson !== null}
+        onClose={() => {
+          if (!creating) setNewLesson(null);
+        }}
+        title={newLesson === "pdf" ? "Upload a PDF lesson" : "New lesson"}
+      >
+        <form className="team-lesson-new-form" noValidate onSubmit={(event) => void create(event)}>
+          <p className="app-muted">
+            {newLesson === "pdf"
+              ? "Name the lesson and choose the PDF. It is saved in your team's Files (Team lessons folder); next you add practice questions."
+              : "Name your lesson to start writing. Nothing is created until you continue."}
+          </p>
+          <label className="team-lesson-field">
+            <span>Lesson title</span>
+            <input
+              data-autofocus
+              className="team-lesson-input"
+              value={newTitle}
+              maxLength={160}
+              disabled={creating}
+              aria-invalid={formProblem?.field === "title" ? true : undefined}
+              aria-describedby={formProblem?.field === "title" ? "team-lesson-new-problem" : undefined}
+              onChange={(event) => {
+                setNewTitle(event.target.value);
+                if (formProblem?.field === "title") setFormProblem(null);
+              }}
+              placeholder="e.g. Wiring a motor controller"
+            />
+          </label>
+          {newLesson === "pdf" ? (
+            <label className="team-lesson-field">
+              <span>PDF file</span>
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                disabled={creating}
+                aria-invalid={formProblem?.field === "file" ? true : undefined}
+                aria-describedby={formProblem?.field === "file" ? "team-lesson-new-problem" : undefined}
+                onChange={(event) => {
+                  setNewFile(event.target.files?.[0] ?? null);
+                  if (formProblem?.field === "file") setFormProblem(null);
+                }}
+              />
+            </label>
+          ) : null}
+          {formProblem ? (
+            <p id="team-lesson-new-problem" className="team-lesson-field-problem" role="alert">
+              {formProblem.message}
+            </p>
+          ) : null}
+          {upload ? (
+            <div className="guided-progress" role="status" aria-live="polite">
+              <span>{upload.label}</span>
+              {upload.fraction !== null ? (
+                <span className="guided-bar" aria-hidden="true">
+                  <i style={{ width: `${Math.round(upload.fraction * 100)}%` }} />
+                </span>
+              ) : null}
+            </div>
+          ) : null}
           <div className="team-lesson-card-actions">
-            <Button variant="secondary" type="button" disabled={creating !== null} onClick={() => setNewLesson(null)}>Cancel</Button>
-            <Button variant="primary" type="submit" disabled={creating !== null || !newTitle.trim()}>{creating ? "Creating…" : newLesson === "pdf" ? "Continue to PDF upload" : "Start writing"}</Button>
+            <Button variant="secondary" type="button" disabled={creating} onClick={() => setNewLesson(null)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={creating}>
+              {creating ? (newLesson === "pdf" ? "Uploading…" : "Creating…") : newLesson === "pdf" ? "Upload and continue" : "Start writing"}
+            </Button>
           </div>
-          {notice ? <p role="alert">{notice}</p> : null}
         </form>
       </Modal>
-      {notice && !newLesson ? (
+      {notice ? (
         <p className="team-lesson-notice" role="alert">
           {notice}
         </p>
@@ -219,11 +365,11 @@ export function TeamLessonsClient() {
             description="Make one in two ways. Write it here: one step at a time, each with an optional example and when to use it — Vantage saves as you type. Or upload a PDF your team already has. Either way, finish with practice questions that Vantage checks."
           >
             <div className="team-lesson-empty-actions">
-              <Button variant="primary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("editor"); }}>
-                {creating === "editor" ? "Creating…" : "Write a lesson"}
+              <Button variant="primary" onClick={() => openNew("editor")}>
+                Write a lesson
               </Button>
-              <Button variant="secondary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("pdf"); }}>
-                {creating === "pdf" ? "Creating…" : "Upload a PDF"}
+              <Button variant="secondary" onClick={() => openNew("pdf")}>
+                Upload a PDF
               </Button>
             </div>
           </EmptyState>
@@ -256,11 +402,14 @@ export function TeamLessonsClient() {
               ? "Only owners, admins and each lesson's author see these."
               : "Only you and your team's owners and admins see these until you publish."}
           </p>
-          <ul className="team-lesson-drafts">
-            {view.drafts.map((lesson) => (
-              <DraftRow key={lesson.id} lesson={lesson} orgId={view.orgId} />
-            ))}
-          </ul>
+          {drafts.current.length ? <ul className="team-lesson-drafts">{drafts.current.map(draftRow)}</ul> : null}
+          {drafts.old.length ? (
+            <details className="team-lesson-old-drafts">
+              <summary data-disclosure>Old drafts ({drafts.old.length})</summary>
+              <p className="app-muted">Empty drafts nobody has changed for a month. Discard the ones you don&apos;t need.</p>
+              <ul className="team-lesson-drafts">{drafts.old.map(draftRow)}</ul>
+            </details>
+          ) : null}
         </section>
       ) : null}
     </main>

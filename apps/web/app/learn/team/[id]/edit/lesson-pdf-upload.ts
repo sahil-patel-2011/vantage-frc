@@ -29,11 +29,15 @@ type PlanResponse = {
   reason?: string;
 };
 
-/** Returns the Drive file id of the uploaded PDF, or an error sentence. */
+/**
+ * Returns the Drive file id of the uploaded PDF, or an error sentence. Without `lessonId`
+ * ("Upload a PDF lesson" on the list, before the lesson exists) the folder comes from the
+ * collection route and the caller creates the lesson with the returned file id.
+ */
 export async function uploadLessonPdf(input: {
   file: File;
   orgId: string;
-  lessonId: string;
+  lessonId?: string;
   onProgress: (progress: PdfUploadProgress) => void;
 }): Promise<{ fileId: string } | { error: string }> {
   const { orgId, lessonId, onProgress } = input;
@@ -55,14 +59,14 @@ export async function uploadLessonPdf(input: {
     return { error: `${decision.reason}${cap}` };
   }
 
-  const folder = await lessonFetch<{ folderId: string | null }>(`/api/team-lessons/${lessonId}`, {
+  const folder = await lessonFetch<{ folderId: string | null }>(lessonId ? `/api/team-lessons/${lessonId}` : "/api/team-lessons", {
     method: "POST",
     body: JSON.stringify({ orgId, action: "pdf-folder" }),
   });
   const folderId = folder.ok ? (folder.data?.folderId ?? null) : null;
 
   let item: UploadItem = {
-    id: `lesson-${lessonId}`,
+    id: `lesson-${lessonId ?? "new"}`,
     name: file.name,
     byteSize: file.size,
     phase: "hashing",

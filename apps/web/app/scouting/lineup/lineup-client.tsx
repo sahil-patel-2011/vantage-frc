@@ -27,6 +27,7 @@ import { scoutEventLabel } from "../../../lib/scouting/scouting-related";
 import { AssignmentRangeForm } from "./assignment-range-form";
 import { useCoverageData } from "./use-coverage-data";
 import { assignmentWorkspaceHref } from "../../../lib/scouting/assignment-navigation";
+import { wrongRobotNote } from "../../../lib/scouting/scouted-counts";
 import "./lineup.css";
 
 function teamLabel(slot: CoverageGapSlot): string {
@@ -384,11 +385,12 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
               </article>
               <article>
                 <span>Played: scouted</span>
+                {/* A robot in one match is one robot-match: the unit Teams' "matches scouted"
+                    counts too (scouted-counts.ts ScoutingTotals.robotMatches). */}
                 <strong>
                   {formatLineupMetric(view.scope.playedScouted, loaded)} of{" "}
                   {formatLineupMetric(view.scope.playedRobots, loaded)}
                 </strong>
-                {/* A robot in one match is one robot-match: the unit Teams counts too. */}
                 <small>robot-matches across {formatLineupMetric(view.scope.playedMatches, loaded)} played matches</small>
               </article>
               <article>
@@ -410,6 +412,9 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
             <small>robots with two or more reports</small>
           </article>
         </section>
+      ) : null}
+      {showTiles && wrongRobotNote(view.scope?.wrongRobotMatches) ? (
+        <p className="app-muted" role="note">{wrongRobotNote(view.scope?.wrongRobotMatches)}</p>
       ) : null}
 
       <section className="lineup-board-wrap">

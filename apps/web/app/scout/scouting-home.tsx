@@ -4,7 +4,8 @@ import { ScoutingSharing } from "../scouting/scouting-sharing";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Skeleton } from "../../components/ui";
-import { putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import type { LeadSummaryView } from "../../lib/scouting/lead-summary-load";
 import { useOnline } from "../../lib/offline/use-online";
 import { warmOfflineRoutes } from "../../lib/offline/warm-routes";
 import { loadRoster, saveRoster, prefetchEventTeams, type OfflineRosterTeam } from "../../lib/intel/offline-teams";
@@ -31,6 +32,18 @@ import {
 type Roster = {
   activeEvent?: { eventKey?: string | null; eventName?: string | null } | null;
   roster?: OfflineRosterTeam[];
+};
+
+/** The parts of the scouting bootstrap Home reads. */
+type DutyBootstrap = {
+  assignments?: DutyAssignment[];
+  matches?: DutyMatch[];
+  recentEntries?: DutyEntry[];
+  scouted?: Array<{ matchKey: string; teamKey: string }>;
+  teamNumber?: number | null;
+  scoutIdentity?: { userId?: string } | null;
+  eventKey?: string | null;
+  eventName?: string | null;
 };
 
 function formatDutyTime(iso: string): string {
@@ -65,6 +78,10 @@ export function ScoutingHome() {
   const [savedEventKey, setSavedEventKey] = useState<string | null>(null);
   const [scoutUserId, setScoutUserId] = useState<string | null>(null);
   const [scheduleMatches, setScheduleMatches] = useState<ScheduleMatch[]>([]);
+  const [bootstrapState, setBootstrapState] = useState<"loading" | "ready" | "failed">("loading");
+  const [cachedSummary, setCachedSummary] = useState<LeadSummaryView | null>(null);
+  // The sharing panel loads when it is opened, not with the page: it sits folded at the bottom.
+  const [networkOpen, setNetworkOpen] = useState(false);
   const summary = useScoutingSummary(orgId);
   // View only (0715): the coverage counts, without the Visit / Scout buttons.
   const viewOnly = useViewOnly(orgId);
@@ -73,54 +90,86 @@ export function ScoutingHome() {
 
   // The person's own next robot, from the same bootstrap the entry form loads. "Already filed"
   // is every robot the team has scouted at the event (not only the latest 30 entries), so Home
-  // no longer sends a scout to a robot they have already scouted.
+  // no longer sends a scout to a robot they have already scouted. It also names the event, so
+  // the hero no longer waits on the team roster for it. This phone's last copy paints first;
+  // the live one replaces it.
   useEffect(() => {
     if (!orgId) return;
     let cancelled = false;
+    let live = false;
     setDuty(null);
     setSavedEventName(null);
     setSavedEventKey(null);
-    void fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .catch(async () => { try { return await getCachedEvent<Bootstrap>(orgId); } catch { return null; } })
-      .then(
-        (
-          data: {
-            assignments?: DutyAssignment[];
-            matches?: DutyMatch[];
-            recentEntries?: DutyEntry[];
-            scouted?: Array<{ matchKey: string; teamKey: string }>;
-            teamNumber?: number | null;
-            scoutIdentity?: { userId?: string } | null;
-            eventKey?: string | null;
-            eventName?: string | null;
-          } | null,
-        ) => {
-          if (cancelled || !data) return;
-          setSavedEventName(data.eventName ?? data.eventKey ?? null);
-          setSavedEventKey(data.eventKey ?? null);
-          setScoutUserId(data.scoutIdentity?.userId ?? null);
-          setScheduleMatches((data.matches ?? []).filter((match): match is ScheduleMatch => typeof match.matchNumber === "number"));
-          if (online) void cacheEvent(orgId, data).catch(() => undefined);
-          setDuty(
-            nextScoutingDuty({
-              assignments: data.assignments ?? [],
-              matches: data.matches ?? [],
-              entries: data.scouted
-                ? data.scouted.map((row) => ({ type: "match", matchKey: row.matchKey, teamKey: row.teamKey }))
-                : (data.recentEntries ?? []),
-            }),
-          );
-        },
-      )
+    setBootstrapState("loading");
+    const apply = (data: DutyBootstrap) => {
+      setSavedEventName(data.eventName ?? data.eventKey ?? null);
+      setSavedEventKey(data.eventKey ?? null);
+      setScoutUserId(data.scoutIdentity?.userId ?? null);
+      setScheduleMatches((data.matches ?? []).filter((match): match is ScheduleMatch => typeof match.matchNumber === "number"));
+      setDuty(
+        nextScoutingDuty({
+          assignments: data.assignments ?? [],
+          matches: data.matches ?? [],
+          entries: data.scouted
+            ? data.scouted.map((row) => ({ type: "match", matchKey: row.matchKey, teamKey: row.teamKey }))
+            : (data.recentEntries ?? []),
+        }),
+      );
+    };
+    void getCachedEvent<DutyBootstrap>(orgId)
+      .then((cached) => {
+        if (!cancelled && !live && cached) apply(cached);
+      })
       .catch(() => undefined);
+    void fetch(`/api/scouting/bootstrap?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" })
+      .then(async (response) => ({ data: response.ok ? ((await response.json()) as DutyBootstrap) : null, fromNetwork: true }))
+      .catch(async () => {
+        try {
+          return { data: await getCachedEvent<DutyBootstrap>(orgId), fromNetwork: false };
+        } catch {
+          return { data: null, fromNetwork: false };
+        }
+      })
+      .then(({ data, fromNetwork }) => {
+        if (cancelled) return;
+        if (!data) {
+          setBootstrapState("failed");
+          return;
+        }
+        live = true;
+        apply(data);
+        setBootstrapState("ready");
+        if (online && fromNetwork) void cacheEvent(orgId, data).catch(() => undefined);
+      })
+      .catch(() => {
+        if (!cancelled) setBootstrapState("failed");
+      });
     return () => {
       cancelled = true;
     };
   }, [orgId, online]);
 
+  // The summary as this phone last saw it, drawn while the live numbers load.
   useEffect(() => {
+    setCachedSummary(null);
     if (!orgId) return;
+    let cancelled = false;
+    void getFeatureSnapshot<LeadSummaryView>("scouting-summary", orgId)
+      .then((row) => {
+        if (!cancelled && row?.data) setCachedSummary(row.data);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [orgId]);
+
+  // The event's teams, kept on this phone for the Teams tab with no signal. Nothing on Home
+  // waits on it any more, so it is asked for once the bootstrap has answered rather than
+  // alongside the requests the page paints from.
+  const bootstrapSettled = bootstrapState !== "loading";
+  useEffect(() => {
+    if (!orgId || !bootstrapSettled) return;
     let cancelled = false;
     setRoster(null);
     setRosterState("loading");
@@ -146,7 +195,7 @@ export function ScoutingHome() {
     return () => {
       cancelled = true;
     };
-  }, [orgId, online]);
+  }, [orgId, online, bootstrapSettled]);
 
   const refreshDevice = useCallback(async () => {
     try {
@@ -251,11 +300,17 @@ export function ScoutingHome() {
   }
 
   const withOrg = (href: string) => (orgId ? `${href}?orgId=${encodeURIComponent(orgId)}` : href);
-  const rosterLoading = Boolean(orgId) && rosterState === "loading";
   const eventKey = roster?.activeEvent?.eventKey ?? savedEventKey;
   const eventName = roster?.activeEvent?.eventName ?? roster?.activeEvent?.eventKey ?? savedEventName;
+  // The event is named by the bootstrap (or this phone's copy of it); the roster is only asked
+  // when the bootstrap could not answer.
+  const eventLoading =
+    Boolean(orgId) && (bootstrapState === "loading" || (bootstrapState === "failed" && rosterState === "loading"));
+  const eventFailed = bootstrapState === "failed" && rosterState === "failed";
 
-  const view = summary.view?.status === "ready" ? summary.view : null;
+  // Until the live numbers arrive, this phone's last copy of them (never shown as offline).
+  const shownSummary = summary.view ?? (summary.status === "loading" ? cachedSummary : null);
+  const view = shownSummary?.status === "ready" ? shownSummary : null;
   const pitPageHref = (teamKey?: string) =>
     `${withOrg("/scout/pit")}${teamKey ? `${orgId ? "&" : "?"}teamKey=${encodeURIComponent(teamKey)}` : ""}`;
   const matchHref = duty
@@ -273,32 +328,32 @@ export function ScoutingHome() {
           };
         })()
     : null;
-  const summaryLoading = Boolean(orgId) && summary.status === "loading" && !summary.view;
+  const summaryLoading = Boolean(orgId) && summary.status === "loading" && !shownSummary;
   // Pits first, except in the minutes before your own robot plays: then that match leads.
   const dutyAt = duty?.startsAt ? Date.parse(duty.startsAt) : NaN;
   const matchSoon = Number.isFinite(dutyAt) && dutyAt - Date.now() < 15 * 60_000;
 
   return (
     <main className="scout-home">
-      <section className="scout-home-hero" aria-labelledby="scout-home-title" aria-busy={rosterLoading || summaryLoading || undefined}>
-        {rosterLoading && !eventName ? (
+      <section className="scout-home-hero" aria-labelledby="scout-home-title" aria-busy={(eventLoading && !eventName) || summaryLoading || undefined}>
+        {eventLoading && !eventName ? (
           <p className="scout-home-eyebrow" aria-hidden="true">
             <Skeleton width={180} height={12} />
           </p>
         ) : (
-          <p className="scout-home-eyebrow">{eventName ?? (orgId ? rosterState === "failed" ? "Event unavailable" : "No event set" : "No team chosen")}</p>
+          <p className="scout-home-eyebrow">{eventName ?? (orgId ? eventFailed ? "Event unavailable" : "No event set" : "No team chosen")}</p>
         )}
         <h1 id="scout-home-title">Scouting</h1>
         {!orgId ? (
           <p className="scout-home-lede">Choose your team in Vantage, then come back here to scout.</p>
-        ) : summary.view?.status === "no_event" ? (
+        ) : shownSummary?.status === "no_event" ? (
           <p className="scout-home-lede">
-            {summary.view.canLead ? "Set the event you are at, and its pits and matches show up here." : "A scouting lead sets the event. Once they do, its pits and matches show up here."}
+            {shownSummary.canLead ? "Set the event you are at, and its pits and matches show up here." : "A scouting lead sets the event. Once they do, its pits and matches show up here."}
           </p>
         ) : summary.cachedAt ? (
           <p className="scout-home-lede">Offline · these numbers are this phone’s last copy.</p>
         ) : null}
-        {summary.view?.status === "no_event" && summary.view.canLead && orgId ? (
+        {shownSummary?.status === "no_event" && shownSummary.canLead && orgId ? (
           <div className="scout-home-actions">
             <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
               Set the event
@@ -430,7 +485,17 @@ export function ScoutingHome() {
           <span>Weigh what your alliance needs and rank every team at the event as you drag.</span>
         </a>
       </section>
-      {orgId ? <details className="scout-home-network"><summary>Scouting network and sharing</summary><ScoutingSharing key={orgId} orgId={orgId} headingLevel={2} /></details> : null}
+      {orgId ? (
+        <details
+          className="scout-home-network"
+          onToggle={(event) => {
+            if (event.currentTarget.open) setNetworkOpen(true);
+          }}
+        >
+          <summary>Scouting network and sharing</summary>
+          {networkOpen ? <ScoutingSharing key={orgId} orgId={orgId} headingLevel={2} /> : null}
+        </details>
+      ) : null}
     </main>
   );
 }

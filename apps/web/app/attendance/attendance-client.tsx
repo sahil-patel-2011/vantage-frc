@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { availableSeasonYears } from "@vantage/game-year";
 import { EmptyState, PageHeader, Button, useConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -747,7 +748,9 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
             void load(year);
           }}
         >
-          {seasons.map((year) => (
+          {/* The shared season list, so a copy saved on this device and a fresh answer offer the
+              same years instead of the list growing once the page refreshes. */}
+          {availableSeasonYears([...seasons, seasonYear]).map((year) => (
             <option key={year} value={year}>
               {year}
             </option>

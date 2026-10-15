@@ -231,3 +231,8 @@ button.intel-sb-head:focus-visible{outline:2px solid var(--accent);outline-offse
 .intel-action-note.error { color: var(--danger, #b42318); }
 .intel-action-note.success { color: var(--success, #067647); }
 .intel-action-note a { font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
+
+/* Team search in flight: card-shaped placeholders where the results land. */
+.intel-result-skeleton { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
+.intel-not-found { margin: 0 0 12px; line-height: 1.5; }
+.intel-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

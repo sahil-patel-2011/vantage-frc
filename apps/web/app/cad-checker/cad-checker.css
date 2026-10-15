@@ -1,0 +1,45 @@
+/* CAD checker: a DXF drawing check (pass / warn / fail list) and the Onshape part checks state. */
+.cad-checker-page { display: grid; gap: 24px; max-width: 880px; }
+.cad-checker-section { display: grid; gap: 12px; }
+.cad-checker-section-head { display: grid; gap: 4px; }
+.cad-checker-section-head h2 { margin: 0; font-size: 18px; }
+.cad-checker-section-head p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+
+.cad-checker-loading,
+.cad-checker-onshape {
+  display: grid; gap: 10px; justify-items: start; padding: 16px 18px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm, 12px); background: var(--surface);
+}
+.cad-checker-onshape p { margin: 0; line-height: 1.5; }
+.cad-checker-loading { justify-items: stretch; }
+.cad-checker-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.cad-checker-links { font-size: 14px; color: var(--muted); }
+.cad-checker-link-list { display: grid; gap: 6px; margin: 0; padding-left: 20px; line-height: 1.5; }
+.cad-checker-link-list a, .cad-checker-links a { font-weight: 600; }
+.cad-checker-error { color: var(--critical); font-size: 14px; }
+
+.cad-checker-report { display: grid; gap: 12px; }
+.cad-checker-summary {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+}
+.cad-checker-summary h3 { margin: 0; font-size: 17px; }
+.cad-checker-summary h3:focus { outline: none; }
+.cad-checker-summary p { margin: 2px 0 0; color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+
+.cad-checker-results { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.cad-checker-result {
+  border: 1px solid var(--line); border-left-width: 4px; border-radius: var(--radius-sm, 12px); background: var(--surface);
+}
+.cad-checker-result.is-pass { border-left-color: var(--positive); }
+.cad-checker-result.is-warn { border-left-color: var(--warning); }
+.cad-checker-result.is-fail { border-left-color: var(--critical); }
+.cad-checker-result summary { min-height: 48px; padding: 6px 14px; flex-wrap: wrap; font-size: 15px; font-weight: 600; }
+.cad-checker-result summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: inherit; }
+.cad-checker-result-body { display: grid; gap: 10px; padding: 0 16px 14px; }
+.cad-checker-result-body p { display: grid; gap: 2px; margin: 0; font-size: 14px; line-height: 1.5; }
+.cad-checker-result-body strong { font-size: 13px; font-weight: 650; color: var(--muted); }
+.cad-checker-note { margin: 0; color: var(--muted); font-size: 13px; }
+
+@media (max-width: 520px) {
+  .cad-checker-summary > .app-button, .cad-checker-summary > a, .cad-checker-summary > button { width: 100%; }
+}

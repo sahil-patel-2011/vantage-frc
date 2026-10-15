@@ -436,7 +436,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Conflicts",
         body: [
-          "Choose Review disagreements under Scouting task. Lead-only tools appear when your role allows them.",
+          "Choose Disagreements under Scouting task. Lead-only tools appear when your role allows them.",
           "Conflicts are entry-backed: pick the winning field when two scouts disagree.",
           "Stay on this hub. /scout-disagreements is a satellite, not the Saturday door.",
         ],

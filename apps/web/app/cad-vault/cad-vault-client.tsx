@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { FormGrid, FormRow, Panel, ProgressMeter, Button } from "../../components/ui";
+import { PageMain, FormGrid, FormRow, Panel, ProgressMeter, Button } from "../../components/ui";
 import { titleFromFilename } from "../../lib/cad-vault/filenames";
 import { detectCadFormat, type CadFormat } from "../../lib/cad-vault/format-detect";
 import {
@@ -338,20 +338,20 @@ export default function CadVaultClient() {
   if (!view) {
     const shell = classifyCadVaultShell({ authBlocked, fetchFailed });
     return (
-      <main className="module-page cad-vault-page">
+      <PageMain className="module-page cad-vault-page">
         <CadVaultHeader orgId={null} />
         <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
         <CadVaultEmptyCard
           shell={shell}
           onRetry={shell === "error" ? () => void load(seasonYear) : undefined}
         />
-      </main>
+      </PageMain>
     );
   }
 
   if (view.status === "setup_required") {
     return (
-      <main className="module-page cad-vault-page soft-gate">
+      <PageMain className="module-page cad-vault-page soft-gate">
         <CadVaultHeader orgId={view.orgId} />
         <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
@@ -360,7 +360,7 @@ export default function CadVaultClient() {
           </p>
         ) : null}
         <CadVaultEmptyCard shell="setup" description={view.message} />
-      </main>
+      </PageMain>
     );
   }
 
@@ -505,7 +505,7 @@ export default function CadVaultClient() {
   );
 
   return (
-    <main className="module-page cad-vault-page">
+    <PageMain className="module-page cad-vault-page">
       <CadVaultHeader orgId={orgId}>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {seasons.length > 1 ? (
@@ -609,6 +609,6 @@ export default function CadVaultClient() {
           </Panel>
         ) : null}
       </div>
-    </main>
+    </PageMain>
   );
 }

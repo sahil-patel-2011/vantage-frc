@@ -42,6 +42,14 @@ import { canAccessHubTab, listMemberHubAccess, type MemberHubAccessRow, type Org
 import { withSavepoint } from "@vantage/db";
 import { readHostedOnshapeEnvFlags } from "../cad/hosted-auth";
 import { loadConnectorProofs, type ConnectorProofs } from "../connectors/load-connector-status";
+import {
+  CHAT_READY,
+  canConnectForTeam,
+  chatConnectionForBlock,
+  chatSendBlock,
+  type ChatConnectionState,
+  type ChatSendBlock,
+} from "./chat-send-gate";
 
 export type AiAgentId =
   | "ask_ai"
@@ -245,6 +253,8 @@ export type AiCapabilityFacts = {
   proofs: ConnectorProofs;
   /** A paired Claude Code bridge that prefers to answer and has checked in recently. */
   bridgeOnline: boolean;
+  /** Billing would refuse the model the resolver found (`chatSendBlock`); null when it would run. */
+  sendBlock?: ChatSendBlock | null;
   onshapeOAuthConfigured: boolean;
   billing: {
     configured: boolean;
@@ -388,27 +398,54 @@ async function loadBillingFacts(
   };
 }
 
-/** Read-only chat preflight, without unrelated connector/research probes or provider calls. */
-export async function probeChatAvailability(client: PoolClient, input: { orgId: string; userId: string }) {
-  const model = await probeChatModel(client, input);
+/**
+ * Read-only chat preflight: answers "would Send work?" the way the send path does, without
+ * unrelated connector/research probes or provider calls. `configured` is false whenever the
+ * resolver finds nothing OR billing would refuse what it found (`chatSendBlock`, the same gate
+ * POST /api/agent runs before calling the model).
+ */
+export async function probeChatAvailability(
+  client: PoolClient,
+  input: { orgId: string; userId: string; role?: string | null },
+  deps: { probeModel?: ResolveAiCapabilitiesDeps["probeModel"] } = {},
+): Promise<ChatConnectionState> {
+  const model = await (deps.probeModel ?? probeChatModel)(client, input);
   const billing = await loadBillingFacts(client, input.orgId, model);
-  if (!billing.configured) return { configured: false, reason: "missing_context:billing_account", message: "AI hasn't been enabled for this team yet." };
-  if (billing.killSwitch || billing.platformKillSwitch || billing.hostedAllowanceExhausted) {
-    return { configured: false, reason: "usage_cap", message: "Your team's AI is paused or its hosted allowance has been used. Check AI limits or connect your own key." };
+  if (!billing.configured) {
+    return { configured: false, reason: "missing_context:billing_account", message: "AI hasn't been turned on for this team yet. Ask your Vantage admin.", nextStep: "none" };
   }
-  // The resolver may serve the member's paired desktop without a provider key.
+  if (billing.killSwitch) {
+    return { configured: false, reason: "usage_cap", message: "An owner paused AI for this team.", nextStep: canConnectForTeam(input.role) ? "settings" : "ask_owner" };
+  }
+  // The member's online paired computer answers first on the send path (the resolver's bridge
+  // step), and billing never refuses a bridged turn — with or without a provider key.
+  const bridge = await withSavepoint(client, () => client.query(
+    `SELECT 1 FROM ai_bridge_devices WHERE org_id=$1::uuid AND paired_by=$2::uuid
+     AND revoked_at IS NULL AND prefer_when_online
+     AND (engines #>> '{codex,available}' = 'true' OR engines #>> '{claude,available}' = 'true')
+     AND last_heartbeat_at > now() - ($3::int * interval '1 millisecond') LIMIT 1`,
+    [input.orgId, input.userId, BRIDGE_ONLINE_WINDOW_MS],
+  ), null);
+  if (bridge?.rowCount) return CHAT_READY;
   if (!model.ok) {
-    const bridge = await withSavepoint(client, () => client.query(
-      `SELECT 1 FROM ai_bridge_devices WHERE org_id=$1::uuid AND paired_by=$2::uuid
-       AND revoked_at IS NULL AND prefer_when_online
-       AND (engines #>> '{codex,available}' = 'true' OR engines #>> '{claude,available}' = 'true')
-       AND last_heartbeat_at > now() - ($3::int * interval '1 millisecond') LIMIT 1`,
-      [input.orgId, input.userId, BRIDGE_ONLINE_WINDOW_MS],
-    ), null);
-    if (bridge?.rowCount) return { configured: true, reason: null, message: null };
+    if (model.reason === "provider_unavailable") {
+      return { configured: false, reason: "provider_unavailable", message: "Your AI connection isn't available. Check its settings.", nextStep: "settings" };
+    }
+    // Would a personal key from the Connect AI dialog be allowed to answer here? On a free team
+    // with no team connection it would not, so offer the team connection instead.
+    const personalKeyBlock = await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, source: "member-key" }), null);
+    return {
+      configured: false,
+      reason: "no_model_provider",
+      message: "AI isn't connected for this team yet.",
+      nextStep: !personalKeyBlock ? "connect" : canConnectForTeam(input.role) ? "team" : "ask_owner",
+    };
   }
-  return model.ok ? { configured: true, reason: null, message: null }
-    : { configured: false, reason: model.reason, message: model.reason === "no_model_provider" ? "AI isn't connected yet." : "Your AI connection isn't available. Check its settings." };
+  if (billing.platformKillSwitch || billing.hostedAllowanceExhausted) {
+    return { configured: false, reason: "usage_cap", message: "This team has used its hosted AI for now. Check AI limits or connect your own key.", nextStep: "settings" };
+  }
+  const block = await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, source: model.source }), null);
+  return block ? chatConnectionForBlock(block, input.role) : CHAT_READY;
 }
 
 /** Gather every fact once. Throws when the user is not a member of `orgId`. */
@@ -443,6 +480,10 @@ export async function loadAiCapabilityFacts(
     0,
   );
 
+  const sendBlock = model.ok
+    ? await withSavepoint(client, () => chatSendBlock(client, { orgId: input.orgId, source: model.source }), null)
+    : null;
+
   return {
     role,
     hubAccess,
@@ -455,6 +496,7 @@ export async function loadAiCapabilityFacts(
     researchSearch: Boolean(env.RESEARCH_SEARCH_ENDPOINT?.trim() && env.RESEARCH_SEARCH_API_KEY?.trim()),
     proofs,
     bridgeOnline: bridge > 0,
+    sendBlock,
     onshapeOAuthConfigured: readHostedOnshapeEnvFlags(env as NodeJS.ProcessEnv).oauthConfigured,
     billing,
     now: deps.now ?? Date.now(),
@@ -499,6 +541,16 @@ function checkModel(agent: AiAgentDefinition, facts: AiCapabilityFacts): Verdict
       reason: "usage_cap",
       sentence: `${agent.name} is off — this team has used its hosted AI allowance for this period. Add your own key or raise the limit in AI → Limits.`,
       setup: SETUP.budgets,
+    };
+  }
+  // A model billing won't let answer (a personal key or the free pool on a free team with no
+  // team connection) is not ready — the same answer the composer gives before Send.
+  if (facts.sendBlock) {
+    if ((agent.feature === "chat" || agent.feature === "agent") && facts.bridgeOnline) return null;
+    return {
+      reason: "no_model_provider",
+      sentence: `${agent.name} is off — this team needs its own AI connection first.`,
+      setup: SETUP.keys,
     };
   }
   return null;

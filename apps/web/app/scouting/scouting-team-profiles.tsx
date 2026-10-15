@@ -23,6 +23,7 @@ import { readRobotViewState, robotViewStorageKey, writeRobotViewState } from "..
 import "./scouting-team-profiles.css";
 import type { ObservedRobot } from "../../lib/scouting/team-profiles";
 import { watchedSummary } from "../../lib/scouting/observed-counts";
+import type { ScoutingTotals } from "../../lib/scouting/scouted-counts";
 import { ScoutObservationExplorer } from "../intel/scout-observation-explorer";
 import { ObservedRobotComparison } from "./observed-robot-comparison";
 import { ScoutingEventTrends } from "./scouting-event-trends";
@@ -55,8 +56,10 @@ type View =
       thin: number;
       eventKey: string;
       observations?: ObservedRobot[];
+      /** The event's shared scouting counts (scouted-counts.ts). Absent on older saved copies. */
+      totals?: ScoutingTotals;
     }
-  | { status: "empty" | "needs_formula" | "setup_required"; message: string; eventKey?: string | null; observations?: ObservedRobot[] };
+  | { status: "empty" | "needs_formula" | "setup_required"; message: string; eventKey?: string | null; observations?: ObservedRobot[]; totals?: ScoutingTotals };
 
 type Sort = "fit" | "pick" | "average" | "number";
 
@@ -256,7 +259,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
   if (view.status !== "ready") {
     if (view.observations?.length) return <>
       {view.status === "needs_formula" ? <section className="stp-event-overview"><p className="app-muted">{view.message}</p><Button as="a" variant="secondary" href={`/competition?tab=forms&formulas=1&orgId=${encodeURIComponent(orgId)}`}>Review scoring formulas</Button></section> : null}
-      <ObservedRobots robots={view.observations} eventKey={effectiveEventKey} />
+      <ObservedRobots robots={view.observations} eventKey={effectiveEventKey} totals={view.totals} />
     </>;
     const needsEvent = view.status === "empty" && view.eventKey === null;
     return (
@@ -283,7 +286,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
       {cachedAt ? <p className="scout-cached-analysis" role="status">Saved analysis for {view.eventKey} · {new Date(cachedAt).toLocaleString()}. Reconnect for new reports.</p> : null}
       <header className="stp-head">
         <div>
-          <h2>{view.observations ? watchedSummary(view.observations) : `${view.profiles.length} robots watched`}</h2>
+          <h2>{view.observations || view.totals ? watchedSummary(view.observations ?? [], view.totals) : `${view.profiles.length} robots watched`}</h2>
           <p>
             {view.basis === "phase"
               ? "Points by phase, from your own formulas."
@@ -421,12 +424,14 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
  * read as ninety-fifth percentile. Only the actual top of the field gets a
  * "Top" label; everyone else is described against the field directly.
  */
-function ObservedRobots({ robots, eventKey, showTrends = true }: { robots: ObservedRobot[]; eventKey: string | null; showTrends?: boolean }) {
+// `totals` only when `robots` is every robot at the event; a subset (robots without a
+// scored total) is headed by its own count.
+function ObservedRobots({ robots, eventKey, showTrends = true, totals }: { robots: ObservedRobot[]; eventKey: string | null; showTrends?: boolean; totals?: ScoutingTotals }) {
   const [teamKey, setTeamKey] = useState(robots[0]?.teamKey ?? "");
   const reportRef = useRef<HTMLDivElement>(null);
   const robot = robots.find(item => item.teamKey === teamKey) ?? robots[0];
   return <section className="stp-observations" aria-label="Recorded robot capabilities">
-    <header><h2>{watchedSummary(robots)}</h2><p className="app-muted">Explore the answers your scouts recorded. A scoring formula is only needed to convert actions into points and rank picks.</p></header>
+    <header><h2>{watchedSummary(robots, totals)}</h2><p className="app-muted">Explore the answers your scouts recorded. A scoring formula is only needed to convert actions into points and rank picks.</p></header>
     {showTrends ? <ScoutingEventTrends key={eventKey ?? "all"} robots={robots} eventKey={eventKey} teamDetailKeys={robots.map(robot => robot.teamKey)} onOpenTeam={teamKey => {
       setTeamKey(teamKey);
       requestAnimationFrame(() => { reportRef.current?.focus({ preventScroll: true }); reportRef.current?.scrollIntoView({ block: "start", behavior: "instant" }); });

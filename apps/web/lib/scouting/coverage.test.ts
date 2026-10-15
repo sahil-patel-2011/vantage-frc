@@ -4,6 +4,8 @@ import {
   assignCoverageSlot,
   canWriteAssignments,
   computeScoutingCoverageView,
+  countWrongRobotMatches,
+  coverageScopePlayedKeys,
   planAutoAssignments,
   summarizeCoverageScope,
   swapCoverageSlot,
@@ -389,5 +391,63 @@ describe("canWriteAssignments", () => {
     expect(canWriteAssignments("admin")).toBe(true);
     expect(canWriteAssignments("scout")).toBe(false);
     expect(canWriteAssignments(null)).toBe(false);
+  });
+});
+
+describe("played coverage uses the event totals' (team, match) rule", () => {
+  const slot = (matchKey: string, teamKey: string, entryCount: number) => ({ matchKey, teamKey, entryCount });
+
+  it("counts a watchable match with a report as played even before its result posts", () => {
+    const slots = [slot("qm1", "frc1", 1), slot("qm1", "frc2", 0), slot("qm2", "frc3", 0), slot("qm3", "frc4", 2)];
+    // qm3 has a report but its time is still ahead (not watchable): a report before play.
+    const played = coverageScopePlayedKeys(slots, new Set(), new Set(["qm1", "qm2"]));
+    expect([...played]).toEqual(["qm1"]);
+    expect([...coverageScopePlayedKeys(slots, new Set(["qm2"]))]).toEqual(["qm2"]);
+  });
+
+  it("names reports for a robot not in that match instead of counting them differently", () => {
+    const slots = [slot("qm1", "frc1", 1), slot("qm1", "frc2", 0)];
+    const entries = [
+      { matchKey: "qm1", teamKey: "frc1" },
+      { matchKey: "qm1", teamKey: "frc9" },
+      { matchKey: "qm1", teamKey: "frc9" },
+      { matchKey: "qm5", teamKey: "frc9" },
+    ];
+    // Two scouts on the same wrong robot are one robot-match; a match with no slots is not judged.
+    expect(countWrongRobotMatches(entries, slots, new Set(["qm1"]))).toBe(1);
+    expect(countWrongRobotMatches(entries, slots, new Set())).toBe(0);
+  });
+
+  it("makes Played: scouted add up to the event's robot-matches", async () => {
+    const matches = [{ ...MATCH_ROWS[0], winningAlliance: null, postResultTime: null, actualTime: null, observable: true }];
+    const entries = [
+      { matchKey: `${EVENT}_qm1`, teamKey: "frc254", scoutUserId: SCOUT, scoutName: "Ada" },
+      { matchKey: `${EVENT}_qm1`, teamKey: "frc254", scoutUserId: USER, scoutName: "Bo" },
+      { matchKey: `${EVENT}_qm1`, teamKey: "frc118", scoutUserId: SCOUT, scoutName: "Ada" },
+      { matchKey: `${EVENT}_qm1`, teamKey: "frc9999", scoutUserId: SCOUT, scoutName: "Ada" },
+    ];
+    const handler = liveHandler({ matches, entries });
+    const sqls: string[] = [];
+    const view = await computeScoutingCoverageView(
+      makeClient((sql, params) => {
+        sqls.push(sql);
+        return handler(sql, params);
+      }),
+      { userId: USER, requestedOrg: ORG },
+    );
+    if (view.status !== "live") throw new Error("expected a live view");
+    // Event totals would read 3 robot-matches (frc254, frc118, frc9999 in qm1): 2 fill slots,
+    // 1 is the wrong robot and is named.
+    expect(view.scope).toMatchObject({ playedMatches: 1, playedRobots: 4, playedScouted: 2, playedMissed: 2, reportsBeforePlay: 0, wrongRobotMatches: 1 });
+    expect(view.playedMatchKeys).toEqual([]);
+    expect(view.scopePlayedMatchKeys).toEqual([`${EVENT}_qm1`]);
+    expect(sqls.find((sql) => sql.includes("FROM matches_ref"))).toContain("matches_ref.winning_alliance IS NOT NULL");
+  });
+
+  it("leaves an older row without the watchable flag on play-state's rule", async () => {
+    const entries = [{ matchKey: `${EVENT}_qm1`, teamKey: "frc254", scoutUserId: SCOUT, scoutName: "Ada" }];
+    const view = await computeScoutingCoverageView(makeClient(liveHandler({ entries })), { userId: USER, requestedOrg: ORG });
+    if (view.status !== "live") throw new Error("expected a live view");
+    expect(view.scope).toMatchObject({ playedMatches: 0, reportsBeforePlay: 1, wrongRobotMatches: 0 });
   });
 });
