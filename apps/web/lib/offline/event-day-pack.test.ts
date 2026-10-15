@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { EVENT_DAY_PACK, saveEventDayPack } from "./event-day-pack";
+import { BACKGROUND_WARM_MS, EVENT_DAY_PACK, saveEventDayPack, warmEventDayInBackground } from "./event-day-pack";
 import { OFFLINE_SHELL_ROUTES } from "./shell-routes";
 
 const APP = join(__dirname, "..", "..", "app");
@@ -16,6 +16,8 @@ describe("event-day pack", () => {
       pit: "pit/pit-command-client.tsx",
       "match-checklist": "match-checklist/match-checklist-client.tsx",
       packing: "packing/packing-client.tsx",
+      strategy: "strategy/strategy-client.tsx",
+      briefing: "briefing/briefing-client.tsx",
     };
     for (const item of EVENT_DAY_PACK) {
       const source = readFileSync(join(APP, clients[item.feature]!), "utf8");
@@ -42,8 +44,37 @@ describe("event-day pack", () => {
       fetchImpl: fetchImpl as unknown as typeof fetch,
       save: async (feature) => void saved.push(feature),
     });
-    expect(saved).toEqual(["competition", "schedule", "match-checklist"]);
+    expect(saved).toEqual(["competition", "schedule", "match-checklist", "strategy", "briefing"]);
     expect(result.failed).toEqual(["My Day", "Pit", "the packing list"]);
     expect(fetchImpl.mock.calls[0]![0]).toBe("/api/command?orgId=org-1");
+  });
+});
+
+describe("background warm", () => {
+  const memory = () => {
+    const values = new Map<string, string>();
+    return { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => void values.set(key, value) };
+  };
+  const ok = vi.fn(async () => new Response(JSON.stringify({ status: "live" })));
+
+  it("refreshes only the light pages, at most every 30 minutes per team", async () => {
+    const storage = memory();
+    const saved: string[] = [];
+    const save = async (feature: string) => void saved.push(feature);
+    let now = 1_000_000;
+    const first = await warmEventDayInBackground("org-1", { now: () => now, storage, online: true, saveData: false, fetchImpl: ok as unknown as typeof fetch, save });
+    expect(first.ran).toBe(true);
+    expect(saved).toEqual(["competition", "my-day", "schedule"]);
+    now += BACKGROUND_WARM_MS - 1;
+    expect((await warmEventDayInBackground("org-1", { now: () => now, storage, online: true, saveData: false, fetchImpl: ok as unknown as typeof fetch, save })).ran).toBe(false);
+    now += 2;
+    expect((await warmEventDayInBackground("org-1", { now: () => now, storage, online: true, saveData: false, fetchImpl: ok as unknown as typeof fetch, save })).ran).toBe(true);
+  });
+
+  it("never runs offline or on a data saver connection", async () => {
+    const fetchImpl = vi.fn();
+    expect((await warmEventDayInBackground("org-1", { storage: memory(), online: false, fetchImpl: fetchImpl as unknown as typeof fetch })).ran).toBe(false);
+    expect((await warmEventDayInBackground("org-1", { storage: memory(), online: true, saveData: true, fetchImpl: fetchImpl as unknown as typeof fetch })).ran).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
