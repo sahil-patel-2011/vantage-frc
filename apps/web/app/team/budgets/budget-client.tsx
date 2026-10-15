@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader, PageMain, Button, EmptyState } from "../../../components/ui";
+import { PageHeader, PageMain, Button, EmptyState, StatRowSkeleton, TextBlockSkeleton } from "../../../components/ui";
 import {
   aiBudgetsNextActions,
   aiBudgetsShellCopy,
@@ -119,8 +119,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   async function load() {
     setLoading(true);
     setLoadError(null);
-    const response = await fetch(`/api/billing/budgets?orgId=${encodeURIComponent(orgId)}`);
-    const data = (await response.json()) as {
+    type BudgetRead = {
       error?: string;
       canManage?: boolean;
       aiKeyConfigured?: boolean | null;
@@ -128,6 +127,19 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       usage?: Record<string, string>;
       members?: BudgetMember[];
     };
+    let response: Response;
+    let data: BudgetRead;
+    try {
+      response = await fetch(`/api/billing/budgets?orgId=${encodeURIComponent(orgId)}`);
+      data = (await response.json()) as BudgetRead;
+    } catch {
+      // Offline or a non-JSON answer: the error state with Retry, not a page stuck loading.
+      setHttpStatus(null);
+      setLoadError("Couldn't load AI limits");
+      setCanManage(false);
+      setLoading(false);
+      return;
+    }
     setHttpStatus(response.status);
     if (!response.ok) {
       setLoadError(data.error ?? "Couldn't load AI limits");
@@ -226,9 +238,10 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {loading ? (
-        <section className="app-card soft-panel product-hub-setup" aria-busy>
-          <h2>{shellCopy.title}</h2>
-          <p className="app-muted">{shellCopy.description}</p>
+        <section className="ai-budgets-loading" role="status" aria-busy="true">
+          <span className="visually-hidden">{shellCopy.title}</span>
+          <StatRowSkeleton count={3} />
+          <TextBlockSkeleton lines={3} />
         </section>
       ) : null}
 

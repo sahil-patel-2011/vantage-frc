@@ -299,31 +299,52 @@ export async function GET(request: Request) {
   try {
     const session = await requireSession();
     const url = new URL(request.url);
-    const orgId = url.searchParams.get("orgId");
+    // Optional: Kickoff starts this read at the same time as /api/kickoff, before it knows the
+    // team. Without one we pick the same team /api/kickoff picks (owner/admin first), and the
+    // response says which team it answered for so the client can check.
+    const requestedOrg = url.searchParams.get("orgId")?.trim() || null;
     const seasonYearParam = url.searchParams.get("seasonYear");
     const seasonYear = seasonYearParam ? Number(seasonYearParam) : null;
-    if (!orgId) throw new HttpError(400, "Organization is required");
     if (seasonYearParam && (!Number.isInteger(seasonYear) || (seasonYear ?? 0) < 1992)) {
       throw new HttpError(400, "Season year is invalid");
     }
 
-    const payload = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      await requireMembership(client, orgId, session.user.id);
-      const membership = await client.query<{ role: string }>(
-        `SELECT role::text AS role FROM memberships WHERE org_id = $1 AND user_id = $2`,
-        [orgId, session.user.id],
+    const userId = session.user.id;
+    const resolveMembership = async (client: PoolClient) => {
+      // One read answers both "is this person on the team" and "what role" (was two).
+      const membership = await client.query<{ orgId: string; role: string }>(
+        `SELECT m.org_id AS "orgId", m.role::text AS role
+         FROM memberships m
+         JOIN organizations o ON o.id = m.org_id
+         WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
+         ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
+         LIMIT 1`,
+        [userId, requestedOrg],
       );
-      const records = await loadRecords(client, orgId, seasonYear);
+      const row = membership.rows[0];
+      if (!row) throw new HttpError(403, "Organization membership required");
+      return row;
+    };
+    const loadPayload = async (client: PoolClient, row: { orgId: string; role: string }) => {
+      const records = await loadRecords(client, row.orgId, seasonYear);
       return {
         status: records.length ? ("ready" as const) : ("empty" as const),
         message: records.length
           ? null
           : "Upload a game manual excerpt or kickoff transcript to generate the season intelligence summary.",
+        orgId: row.orgId,
         records,
-        role: membership.rows[0]?.role ?? "",
-        userId: session.user.id,
+        role: row.role,
+        userId,
       };
-    });
+    };
+
+    // RLS on kickoff_game_intelligence is is_org_member(org_id), so the record read is still
+    // scoped to the resolved team when the context carries no org (same as /api/kickoff).
+    const payload = await withRls(
+      requestedOrg ? { userId, orgId: requestedOrg } : { userId },
+      async (client) => loadPayload(client, await resolveMembership(client)),
+    );
 
     return Response.json(payload);
   } catch (error) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { Badge, EmptyState, StatTile, Button, askConfirm } from "../../components/ui";
+import { Badge, EmptyState, StatTile, Button, askConfirm, StatRowSkeleton, TextBlockSkeleton } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { OfflineBanner } from "../../components/offline-banner";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -21,9 +21,10 @@ import {
 } from "../../lib/business/compute-season-finance";
 import { hubHref } from "../../lib/nav/hubs";
 import { withOrgHref } from "../../lib/nav/product-nav";
-import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
-import { formatSponsorUsd, sponsorPageTotals } from "../../lib/sponsors/totals";
+import { describeBudgetLine, type BudgetLine } from "../../lib/finance/budget-vs-actual";
+import { formatSponsorUsd } from "../../lib/sponsors/totals";
 import { FINANCE_MANAGER_REQUIRED } from "../../lib/finance/finance-managers";
+import { loadMoneyExtras, readBalance, type BalanceRead, type SponsorLine } from "./season-finance-reads";
 import "./season-finance.css";
 
 type LiveView = Extract<SeasonFinanceView, { status: "live" }>;
@@ -76,15 +77,28 @@ export default function SeasonFinanceClient({
   // Kept apart from mutation errors so an expired session offers sign-in, not a Retry that cannot work.
   const [loadFailure, setLoadFailure] = useState<{ status: number | null; message: string } | null>(null);
   const [notice, setNotice] = useState("");
-  const [sponsorLines, setSponsorLines] = useState<Array<{ id: string; name: string; amountUsd: number }>>([]);
+  const [sponsorLines, setSponsorLines] = useState<SponsorLine[]>([]);
   const [budgetLines, setBudgetLines] = useState<BudgetLine[]>([]);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewHold = useRef<SeasonFinanceView | null>(null);
   viewHold.current = view;
+  // The balance card's first read starts with the season view, not after it renders.
+  const [balancePrefetch, setBalancePrefetch] = useState<Promise<BalanceRead> | null>(null);
+  const balancePrefetchStarted = useRef(false);
 
   const load = useCallback(async () => {
     let hadCache = Boolean(viewHold.current);
+    // Started now, read once the season view is in: one round trip instead of two in a row.
+    const extras = orgId ? loadMoneyExtras(orgId, seasonYear) : null;
+    if (orgId && !balancePrefetchStarted.current) {
+      balancePrefetchStarted.current = true;
+      setBalancePrefetch(
+        readBalance(orgId)
+          .then((data) => ({ orgId, data }))
+          .catch(() => ({ orgId, data: null })),
+      );
+    }
     try {
       const cached = await getFeatureSnapshot<SeasonFinanceView>(
         "season-finance",
@@ -137,42 +151,9 @@ export default function SeasonFinanceClient({
       setFromCache(false);
       setCachedAt(null);
       await persistSeasonFinanceSnapshot(orgId, seasonYear, data);
-      try {
-        const [sponsorsRes, contribRes, budgetRes] = await Promise.all([
-          fetch(`/api/sponsors?orgId=${encodeURIComponent(orgId)}`, {
-            cache: "no-store",
-            signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-          }),
-          fetch(
-            `/api/sponsors/contributions?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`,
-            { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
-          ),
-          fetch(
-            `/api/finance/budget-vs-actual?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`,
-            { cache: "no-store", signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) },
-          ),
-        ]);
-        const sponsorsData = sponsorsRes.ok ? await sponsorsRes.json() : { sponsors: [] };
-        const contribData = contribRes.ok ? await contribRes.json() : { contributions: [] };
-        const sponsors = Array.isArray(sponsorsData.sponsors) ? sponsorsData.sponsors : [];
-        const contributions = Array.isArray(contribData.contributions) ? contribData.contributions : [];
-        const totals = sponsorPageTotals(sponsors, contributions, true);
-        setSponsorLines(
-          sponsors
-            .map((row: { id?: string; name?: string }) => ({
-              id: String(row.id ?? ""),
-              name: String(row.name ?? "").trim() || String(row.id ?? ""),
-              amountUsd: totals.amountBySponsorId[String(row.id ?? "")] ?? 0,
-            }))
-            .filter((row: { id: string }) => row.id)
-            .sort((a: { amountUsd: number }, b: { amountUsd: number }) => b.amountUsd - a.amountUsd),
-        );
-        const budgetData = (budgetRes.ok ? await budgetRes.json() : null) as BudgetVsActualView | null;
-        setBudgetLines(budgetData?.status === "ready" ? budgetData.lines : []);
-      } catch {
-        setSponsorLines([]);
-        setBudgetLines([]);
-      }
+      const extra = extras ? await extras : { sponsorLines: [], budgetLines: [] };
+      setSponsorLines(extra.sponsorLines);
+      setBudgetLines(extra.budgetLines);
     } catch (cause) {
       if (hadCache || viewHold.current) {
         setFromCache(true);
@@ -297,7 +278,13 @@ export default function SeasonFinanceClient({
         </div>
       ) : null}
 
-      {!view && !loadFailure ? <p className="app-muted">Loading season finance…</p> : null}
+      {!view && !loadFailure ? (
+        <div className="season-finance-loading" role="status" aria-busy="true">
+          <span className="visually-hidden">Loading season finance</span>
+          <StatRowSkeleton count={3} />
+          <TextBlockSkeleton lines={4} />
+        </div>
+      ) : null}
 
       {!view && loadFailure && (loadFailure.status === 401 || loadFailure.status === 403) ? (
         <EmptyState
@@ -364,6 +351,7 @@ export default function SeasonFinanceClient({
           onPurchase={submitPurchase}
           sponsorLines={sponsorLines}
           budgetLines={budgetLines}
+          balancePrefetch={balancePrefetch}
         />
       ) : null}
     </div>
@@ -378,7 +366,9 @@ function LiveDesk({
   onPurchase,
   sponsorLines,
   budgetLines,
+  balancePrefetch,
 }: {
+  balancePrefetch: Promise<BalanceRead> | null;
   view: LiveView;
   busy: boolean;
   mutate: (payload: Record<string, unknown>) => Promise<boolean>;
@@ -391,7 +381,7 @@ function LiveDesk({
   const hasPlan = rollup.plannedIncomeCents > 0 || rollup.plannedSpendCents > 0 || view.funding.length > 0;
   return (
     <>
-      <BalancePanel orgId={view.orgId} refreshKey={view} />
+      <BalancePanel orgId={view.orgId} refreshKey={view} prefetch={balancePrefetch} />
 
       {/* No "What to log next" row: each of its buttons repeated the button on its own section
           ("Add money in", "Log a receipt"), and "Open purchase orders" repeated the Orders chip. */}
@@ -778,9 +768,18 @@ const LEDGER_CSV_COLUMNS: readonly CsvColumn<UnifiedLedgerEntry>[] = [
  * fundraisers, funding desk, and grants). No stored balance column exists
  * anywhere, and rows already mirrored onto the ledger are never counted twice.
  */
-function BalancePanel({ orgId, refreshKey }: { orgId: string; refreshKey: LiveView }) {
+function BalancePanel({
+  orgId,
+  refreshKey,
+  prefetch,
+}: {
+  orgId: string;
+  refreshKey: LiveView;
+  prefetch: Promise<BalanceRead> | null;
+}) {
   const [balance, setBalance] = useState<FinanceBalanceView | null>(null);
   const [failed, setFailed] = useState(false);
+  const usedPrefetch = useRef<Promise<BalanceRead> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -789,13 +788,16 @@ function BalancePanel({ orgId, refreshKey }: { orgId: string; refreshKey: LiveVi
     // load only. A request with no time limit could leave that line under finished tiles forever.
     (async () => {
       try {
-        const response = await fetch(`/api/finance/balance?${new URLSearchParams({ orgId }).toString()}`, {
-          cache: "no-store",
-          signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
-        });
-        const data = (await response.json()) as FinanceBalanceView | { error?: string };
+        let data: FinanceBalanceView | null = null;
+        // First render: use the read started with the season view (once, same team only).
+        if (prefetch && usedPrefetch.current !== prefetch) {
+          usedPrefetch.current = prefetch;
+          const early = await prefetch;
+          if (early.orgId === orgId) data = early.data;
+        }
+        data ??= await readBalance(orgId);
         if (cancelled) return;
-        if (!response.ok || !("status" in data)) {
+        if (!data) {
           setFailed(true);
           return;
         }
@@ -807,7 +809,7 @@ function BalancePanel({ orgId, refreshKey }: { orgId: string; refreshKey: LiveVi
     return () => {
       cancelled = true;
     };
-  }, [orgId, refreshKey]);
+  }, [orgId, refreshKey, prefetch]);
 
   // usdToBalance: API returns USD numbers; reuse the file's cents formatter.
   const usd = (amount: number) => money(Math.round(amount * 100));
@@ -832,7 +834,12 @@ function BalancePanel({ orgId, refreshKey }: { orgId: string; refreshKey: LiveVi
       {failed && !balance ? (
         <p className="app-muted">Balance could not load right now. The season figures below are unaffected.</p>
       ) : null}
-      {!failed && !balance ? <p className="app-muted">Computing balance…</p> : null}
+      {!failed && !balance ? (
+        <div role="status" aria-busy="true">
+          <span className="visually-hidden">Computing balance</span>
+          <StatRowSkeleton count={3} />
+        </div>
+      ) : null}
       {balance?.status === "setup_required" ? <p className="app-muted">{balance.message}</p> : null}
 
       {balance?.status === "live" && !balance.hasData ? (

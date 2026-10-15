@@ -1,5 +1,5 @@
 import { readOrgAllowance } from "@vantage/billing";
-import { assertOrgCapability, auth } from "@vantage/core";
+import { assertHubTabAccess, assertOrgCapability, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { withSavepoint } from "@vantage/db/savepoint";
 import { headers } from "next/headers";
@@ -17,85 +17,125 @@ const limits = (body: Record<string, unknown>) => [
   body.dailyTokenLimit ?? null, body.monthlyTokenLimit ?? null,
 ];
 
+/** 401 for no session, 403 for someone this team's AI limits are hidden from, else 400. */
+function readFail(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  const status = /authentication required/i.test(message)
+    ? 401
+    : /membership required|do not have access/i.test(message)
+      ? 403
+      : 400;
+  return Response.json({ error: publicErrorMessage(error, "Budget request failed") }, { status });
+}
+
+type BudgetSnapshot = {
+  policy: Record<string, unknown> | null;
+  usage: Record<string, string> | null;
+  entitlement: { planCode: string | null; status: string | null; includedAllowance: string | null } | null;
+  walletBalance: string | null;
+  usagePolicy: { paygEnabled: boolean | null; spendCap: string | null; killSwitch: boolean | null } | null;
+  canManage: boolean | null;
+};
+
 export async function GET(request: Request) {
   try {
     const current = await session();
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) throw new Error("orgId is required");
     const data = await withRls({ userId: current.user.id, orgId }, async (client) => {
-      // A transaction has one pg connection; await its reads without overlapping queries.
-  const [policy, members, features, models, usage, entitlement, wallet, usagePolicy, manage] = [
-        await client.query(`SELECT daily_spend_limit_usd AS "dailySpendLimitUsd",
+      // The page now starts this read before /api/me answers, so the AI-limits tab gate the
+      // page used to apply first is enforced here: a hidden tab answers 403.
+      await assertHubTabAccess(client, orgId, current.user.id, "ai", "budgets");
+      // A transaction has one pg connection, so reads cannot overlap: the six one-row reads
+      // (policy, month usage, plan, wallet, usage policy, can-manage) are one statement (was
+      // six). Numeric columns are cast to text so the JSON matches what pg returned before.
+      const snapshot = await client.query<BudgetSnapshot>(
+        `SELECT
+           (SELECT to_jsonb(p) FROM (
+              SELECT daily_spend_limit_usd::text AS "dailySpendLimitUsd",
+                     monthly_spend_limit_usd::text AS "monthlySpendLimitUsd",
+                     daily_token_limit AS "dailyTokenLimit", monthly_token_limit AS "monthlyTokenLimit",
+                     warning_thresholds AS "warningThresholds",
+                     enforce_byo_token_limits AS "enforceByoTokenLimits",
+                     model_allowlist_enabled AS "modelAllowlistEnabled",
+                     provider_allowlist_enabled AS "providerAllowlistEnabled",
+                     kill_switch AS "killSwitch", prompt_caching_enabled AS "promptCachingEnabled"
+              FROM org_api_budget_policies WHERE org_id = $1::uuid LIMIT 1) p) AS policy,
+           (SELECT to_jsonb(u) FROM (
+              SELECT COALESCE(sum(cost_usd) FILTER (WHERE created_at >= date_trunc('day', now())), 0)::text AS "dailySpend",
+                     COALESCE(sum(cost_usd), 0)::text AS "monthlySpend",
+                     COALESCE(sum(total_tokens) FILTER (WHERE created_at >= date_trunc('day', now())), 0)::text AS "dailyTokens",
+                     COALESCE(sum(total_tokens), 0)::text AS "monthlyTokens"
+              FROM ai_usage_events WHERE org_id = $1::uuid AND created_at >= date_trunc('month', now())) u) AS usage,
+           (SELECT to_jsonb(e) FROM (
+              SELECT oe.plan_code AS "planCode", oe.status::text AS status,
+                     pp.included_allowance_usd::text AS "includedAllowance"
+              FROM org_entitlements oe JOIN pricing_plans pp ON pp.code = oe.plan_code
+              WHERE oe.org_id = $1::uuid LIMIT 1) e) AS entitlement,
+           (SELECT COALESCE(sum(amount_usd), 0)::text FROM wallet_ledger WHERE org_id = $1::uuid) AS "walletBalance",
+           (SELECT to_jsonb(x) FROM (
+              SELECT payg_enabled AS "paygEnabled", overage_spend_cap_usd::text AS "spendCap",
+                     kill_switch AS "killSwitch"
+              FROM org_usage_policies WHERE org_id = $1::uuid LIMIT 1) x) AS "usagePolicy",
+           has_org_capability($1::uuid, 'manage_api_keys'::org_capability) AS "canManage"`,
+        [orgId],
+      );
+      const snap = snapshot.rows[0];
+      const canManage = snap?.canManage === true;
+      const features = await client.query(`SELECT feature,daily_spend_limit_usd AS "dailySpendLimitUsd",
           monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
-          monthly_token_limit AS "monthlyTokenLimit",warning_thresholds AS "warningThresholds",
-          enforce_byo_token_limits AS "enforceByoTokenLimits",model_allowlist_enabled AS "modelAllowlistEnabled",
-          provider_allowlist_enabled AS "providerAllowlistEnabled",kill_switch AS "killSwitch",prompt_caching_enabled AS "promptCachingEnabled"
-          FROM org_api_budget_policies WHERE org_id=$1`, [orgId]),
-        await client.query(`SELECT l.user_id AS "userId",u.name,u.email,l.daily_spend_limit_usd AS "dailySpendLimitUsd",
+          monthly_token_limit AS "monthlyTokenLimit" FROM org_api_feature_limits WHERE org_id=$1`, [orgId]);
+      const models = await client.query(`SELECT provider,model,allowed,daily_spend_limit_usd AS "dailySpendLimitUsd",
+          monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
+          monthly_token_limit AS "monthlyTokenLimit" FROM org_api_model_limits WHERE org_id=$1`, [orgId]);
+      // Only people who can change limits see the member list, so only they pay for the read.
+      const members = canManage
+        ? (await client.query(`SELECT l.user_id AS "userId",u.name,u.email,l.daily_spend_limit_usd AS "dailySpendLimitUsd",
           l.monthly_spend_limit_usd AS "monthlySpendLimitUsd",l.daily_token_limit AS "dailyTokenLimit",
           l.monthly_token_limit AS "monthlyTokenLimit",
           COALESCE((to_jsonb(l) ->> 'ai_blocked')::boolean,false) AS "aiBlocked"
           FROM memberships m JOIN users u ON u.id=m.user_id
-          LEFT JOIN org_api_member_limits l ON l.org_id=m.org_id AND l.user_id=m.user_id WHERE m.org_id=$1`, [orgId]),
-        await client.query(`SELECT feature,daily_spend_limit_usd AS "dailySpendLimitUsd",
-          monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
-          monthly_token_limit AS "monthlyTokenLimit" FROM org_api_feature_limits WHERE org_id=$1`, [orgId]),
-        await client.query(`SELECT provider,model,allowed,daily_spend_limit_usd AS "dailySpendLimitUsd",
-          monthly_spend_limit_usd AS "monthlySpendLimitUsd",daily_token_limit AS "dailyTokenLimit",
-          monthly_token_limit AS "monthlyTokenLimit" FROM org_api_model_limits WHERE org_id=$1`, [orgId]),
-        await client.query(`SELECT COALESCE(sum(cost_usd) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS "dailySpend",
-          COALESCE(sum(cost_usd),0)::text AS "monthlySpend",
-          COALESCE(sum(total_tokens) FILTER(WHERE created_at>=date_trunc('day',now())),0)::text AS "dailyTokens",
-          COALESCE(sum(total_tokens),0)::text AS "monthlyTokens"
-          FROM ai_usage_events WHERE org_id=$1 AND created_at>=date_trunc('month',now())`, [orgId]),
-        await client.query(`SELECT e.plan_code AS "planCode",e.status,
-          p.included_allowance_usd AS "includedAllowance"
-          FROM org_entitlements e JOIN pricing_plans p ON p.code=e.plan_code WHERE e.org_id=$1`, [orgId]),
-        await client.query(`SELECT COALESCE(sum(amount_usd),0)::text AS balance FROM wallet_ledger WHERE org_id=$1`, [orgId]),
-        await client.query(`SELECT payg_enabled AS "paygEnabled",overage_spend_cap_usd AS "spendCap",
-          kill_switch AS "killSwitch" FROM org_usage_policies WHERE org_id=$1`, [orgId]),
-        await client.query<{ allowed: boolean }>(
-          `SELECT has_org_capability($1::uuid, 'manage_api_keys'::org_capability) AS allowed`,
-          [orgId],
-        ),
-      ];
-      const row = usage.rows[0] as Record<string, string>;
+          LEFT JOIN org_api_member_limits l ON l.org_id=m.org_id AND l.user_id=m.user_id WHERE m.org_id=$1`, [orgId])).rows
+        : [];
+      const policy = snap?.policy ?? null;
+      const row = (snap?.usage ?? {}) as Record<string, string>;
+      const entitlement = snap?.entitlement ?? null;
+      const usagePolicy = snap?.usagePolicy ?? null;
       const elapsedDays = Math.max(1, new Date().getUTCDate());
-      const monthlyLimit = Number(policy.rows[0]?.monthlySpendLimitUsd ?? 0);
+      const monthlyLimit = Number(policy?.monthlySpendLimitUsd ?? 0);
       const dailyRate = Number(row.monthlySpend ?? 0) / elapsedDays;
-      const included = Number(entitlement.rows[0]?.includedAllowance ?? 0);
+      const included = Number(entitlement?.includedAllowance ?? 0);
       const used = Number(row.monthlySpend ?? 0);
-      const policyKill = Boolean(policy.rows[0]?.killSwitch);
-      const usageKill = Boolean(usagePolicy.rows[0]?.killSwitch);
-      const canManage = manage.rows[0]?.allowed === true;
+      const policyKill = Boolean(policy?.killSwitch);
+      const usageKill = Boolean(usagePolicy?.killSwitch);
       // Whether the team has an AI key at all: without one the spend tiles are a row of $0.00.
       const allowance = await withSavepoint(client, () => readOrgAllowance(client, orgId), null);
       return {
         aiKeyConfigured: allowance ? allowance.configured : null,
-        policy: policy.rows[0] ?? null,
-        members: canManage ? members.rows : [],
+        policy,
+        members,
         canManage,
         features: features.rows, models: models.rows,
         usage: row,
         projectedExhaustionDays: monthlyLimit > 0 && dailyRate > 0
           ? Math.max(0, (monthlyLimit - Number(row.monthlySpend)) / dailyRate) : null,
         cutoff: {
-          planCode: entitlement.rows[0]?.planCode ?? null,
+          planCode: entitlement?.planCode ?? null,
           includedAllowanceUsd: included,
           usedUsd: used,
           allowancePercent: included > 0 ? Math.min(999, (used / included) * 100) : null,
-          walletBalanceUsd: Number(wallet.rows[0]?.balance ?? 0),
-          paygEnabled: Boolean(usagePolicy.rows[0]?.paygEnabled),
-          spendCapUsd: usagePolicy.rows[0]?.spendCap == null ? null : Number(usagePolicy.rows[0].spendCap),
+          walletBalanceUsd: Number(snap?.walletBalance ?? 0),
+          paygEnabled: Boolean(usagePolicy?.paygEnabled),
+          spendCapUsd: usagePolicy?.spendCap == null ? null : Number(usagePolicy.spendCap),
           killSwitch: policyKill || usageKill,
           monthlySpendUsd: used,
           monthlySpendLimitUsd: monthlyLimit > 0 ? monthlyLimit : null,
-          warningThresholds: (policy.rows[0]?.warningThresholds as number[] | undefined) ?? [50, 75, 90],
+          warningThresholds: (policy?.warningThresholds as number[] | undefined) ?? [50, 75, 90],
         },
       };
     });
     return Response.json(data);
-  } catch (error) { return fail(error); }
+  } catch (error) { return readFail(error); }
 }
 
 export async function POST(request: Request) {

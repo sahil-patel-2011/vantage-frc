@@ -1,5 +1,5 @@
 import { IntelResearchRepository } from "@vantage/intel-research/repository";
-import { intelErrorResponse, intelSession, withIntelRequest } from "../../../../lib/intel-auth";
+import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth";
 import type { EventRatingRow } from "../../../../lib/intel/lovat-lookup";
 import { canEditLookupNotes, parseLookupNote } from "../../../../lib/intel/lookup-notes";
 import { loadEventOpr } from "../../../../lib/opr/alliance-results";
@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const query = url.searchParams.get("q")?.trim();
     const teamNumber = Number(url.searchParams.get("team"));
     return Response.json(
-      await withIntelRequest(orgId, async (client) => {
+      await withIntelRequest(orgId, async (client, viewer) => {
         const repository = new IntelResearchRepository(client);
         const activeEvent = await repository.getActiveEvent(orgId!);
         if (Number.isInteger(teamNumber) && teamNumber > 0) {
@@ -38,12 +38,8 @@ export async function GET(request: Request) {
                 )
               : Promise.resolve({ rows: [] as EventRatingRow[] }),
           ]);
-          const session = await intelSession();
-          const role = await client.query<{ role: string }>(
-            `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
-            [orgId, session.user.id],
-          );
-          const canEdit = canEditLookupNotes(role.rows[0]?.role ?? null);
+          // withIntelRequest already read the session and this member's role.
+          const canEdit = canEditLookupNotes(viewer.role);
           let lookupNote;
           try {
             const note = await client.query<{ body: string; updatedAt: string; updatedBy: string }>(

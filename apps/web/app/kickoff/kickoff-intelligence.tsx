@@ -2,7 +2,7 @@
 
 import { aiConnectionHref } from "../../lib/ai/connection";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { EmptyState, Button, askConfirm } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
@@ -10,6 +10,44 @@ import { canDeleteKickoffRow } from "../../lib/kickoff";
 import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
 import { hubHref } from "../../lib/nav/hubs";
 import type { ProviderSetupStep } from "./kickoff-model";
+
+type IntelResponse = {
+  status?: string;
+  message?: string | null;
+  orgId?: string;
+  records?: KickoffIntelligenceRecord[];
+  role?: string;
+  userId?: string;
+  error?: string;
+  code?: string;
+  reason?: string;
+  hardCutoff?: boolean;
+};
+
+type IntelRead = { ok: boolean; status: number; data: IntelResponse };
+
+async function readIntel(url: string): Promise<IntelRead> {
+  const response = await fetch(url);
+  return { ok: response.ok, status: response.status, data: (await response.json()) as IntelResponse };
+}
+
+/** A read of /api/kickoff/intelligence started before /api/kickoff answers. */
+export type KickoffIntelPrefetch = { seasonYear: number; result: Promise<IntelRead | null> };
+
+/**
+ * Starts the intelligence read at the same time as the Kickoff view instead of after it (the
+ * section used to mount, and only then fetch, once /api/kickoff returned). Without an org hint
+ * the server picks the same team /api/kickoff picks and says which one it answered for; the
+ * section only uses this answer when that team and season match what it renders.
+ */
+export function prefetchKickoffIntelligence(orgHint: string, seasonYear: number): KickoffIntelPrefetch {
+  const params = new URLSearchParams({ seasonYear: String(seasonYear) });
+  if (orgHint) params.set("orgId", orgHint);
+  return {
+    seasonYear,
+    result: readIntel(`/api/kickoff/intelligence?${params.toString()}`).catch(() => null),
+  };
+}
 
 export function IntelligenceSection({
   orgId,
@@ -21,7 +59,9 @@ export function IntelligenceSection({
   cutoffCode,
   setCutoffCode,
   onIntelMeta,
+  prefetch = null,
 }: {
+  prefetch?: KickoffIntelPrefetch | null;
   orgId: string;
   seasonYear: number;
   busyKey: string | null;
@@ -49,22 +89,22 @@ export function IntelligenceSection({
   const busy = busyKey != null;
   const selected = records.find((record) => record.id === selectedId) ?? records[0] ?? null;
 
+  const prefetchUsed = useRef(false);
+
   const loadIntel = useCallback(async () => {
     try {
-      const response = await fetch(
+      let read: IntelRead | null = null;
+      if (prefetch && !prefetchUsed.current && prefetch.seasonYear === seasonYear) {
+        prefetchUsed.current = true;
+        const early = await prefetch.result;
+        // Only trust the early answer when it is for this team; otherwise read again.
+        if (early?.ok && early.data.orgId === orgId) read = early;
+      }
+      read ??= await readIntel(
         `/api/kickoff/intelligence?orgId=${encodeURIComponent(orgId)}&seasonYear=${seasonYear}`,
       );
-      const data = (await response.json()) as {
-        status?: string;
-        message?: string | null;
-        records?: KickoffIntelligenceRecord[];
-        role?: string;
-        userId?: string;
-        error?: string;
-        code?: string;
-        reason?: string;
-        hardCutoff?: boolean;
-      };
+      const response = read;
+      const data = read.data;
       if (!response.ok) {
         const cutoff = resolveCutoffErrorCode(response.status, data);
         if (cutoff) setCutoffCode(cutoff);
@@ -97,7 +137,7 @@ export function IntelligenceSection({
       setIntelStatus("empty");
       onIntelMeta({ hasIntelligence: false, cadJobId: null });
     }
-  }, [orgId, seasonYear, onIntelMeta, setCutoffCode, setError]);
+  }, [orgId, seasonYear, onIntelMeta, setCutoffCode, setError, prefetch]);
 
   useEffect(() => {
     void loadIntel();

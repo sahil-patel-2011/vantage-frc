@@ -127,11 +127,15 @@ function OpenAssistant({ orgId }: { orgId: string }) {
   return <HubPanelSkeleton />;
 }
 
-/** AI limits moved into Settings; retain the hub tab's existing visibility gate. */
+/**
+ * AI limits moved into Settings; retain the hub tab's existing visibility gate. The limits
+ * read starts at once instead of after /api/me: /api/billing/budgets enforces the same tab
+ * gate and answers 403, which the page shows as "An owner or mentor sets the AI limits".
+ */
 function AiLimitsPage({ ask }: { ask: AskAiParams }) {
   const access = useClientAccessProfile();
   return <SettingsLayout>
-    {!access.ready ? <HubPanelSkeleton /> : !clientCanAccessHubTab(access.hubAccess, "ai", "budgets")
+    {access.ready && !clientCanAccessHubTab(access.hubAccess, "ai", "budgets")
       ? <HubTabForbidden hubLabel="AI" tabLabel="AI limits" />
       : <AssistantPage ask={ask} surface="budgets" />}
   </SettingsLayout>;

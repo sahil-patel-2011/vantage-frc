@@ -25,7 +25,15 @@ export type DecisionsView =
       decisions: ResolvedDecision[];
       summary: DecisionsSummary;
       computedAt: string;
+      /**
+       * Set only when the season has more than DECISIONS_LIMIT records: the list (and the
+       * summary counts) cover the newest `shown` of `total`, so the page can say so.
+       */
+      truncated?: { shown: number; total: number };
     };
+
+/** Newest records read per season. A season's log is normally a few dozen. */
+export const DECISIONS_LIMIT = 300;
 
 export function currentSeasonYear(now: Date = new Date()): number {
   return sharedCurrentSeasonYear(now);
@@ -46,6 +54,8 @@ type DecisionRow = {
   notes: string | null;
   seasonYear: number;
   createdAt: string;
+  /** count(*) over the season, before LIMIT. */
+  totalCount?: string | number;
 };
 
 function coerceOptions(value: unknown): string[] {
@@ -113,11 +123,13 @@ export async function computeDecisionsView(
     client.query<DecisionRow>(
       `SELECT id, title, category, status, context, decision, rationale, options,
               decided_on::text AS "decidedOn", deciders, supersedes_id AS "supersedesId",
-              notes, season_year AS "seasonYear", created_at::text AS "createdAt"
+              notes, season_year AS "seasonYear", created_at::text AS "createdAt",
+              count(*) OVER () AS "totalCount"
        FROM decision_records
-       WHERE org_id = $1 AND season_year = $2
-       ORDER BY created_at DESC`,
-      [org.orgId, seasonYear],
+       WHERE org_id = $1::uuid AND season_year = $2::int
+       ORDER BY created_at DESC
+       LIMIT $3::int`,
+      [org.orgId, seasonYear, DECISIONS_LIMIT],
     ),
     client.query<{ seasonYear: number }>(
       `SELECT DISTINCT season_year AS "seasonYear" FROM decision_records WHERE org_id = $1 ORDER BY season_year DESC`,
@@ -126,6 +138,7 @@ export async function computeDecisionsView(
   ]);
 
   const records = decisionResult.rows.map(mapDecision);
+  const total = Number(decisionResult.rows[0]?.totalCount ?? records.length);
   const decisions = resolveSupersession(records);
   const summary = summarizeDecisions(records);
   const seasons = seasonResult.rows.map((r) => r.seasonYear);
@@ -140,6 +153,7 @@ export async function computeDecisionsView(
     decisions,
     summary,
     computedAt: new Date().toISOString(),
+    ...(total > records.length ? { truncated: { shown: records.length, total } } : {}),
   };
 }
 

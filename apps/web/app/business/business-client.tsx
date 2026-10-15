@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { availableSeasonYears } from "@vantage/game-year";
+import { availableSeasonYears, currentSeasonYear } from "@vantage/game-year";
 import { useRouter } from "next/navigation";
 import { pushAppNavigation } from "../../lib/nav/soft-navigation";
 import { HubPanelSkeleton } from "../../components/product-hub";
@@ -53,6 +53,17 @@ const SponsorshipClient = dynamic(() => import("../sponsorship/sponsorship-clien
 
 const BUSINESS_HUB = hubById("business");
 const WORKBENCHES = hubPrimaryTabs(BUSINESS_HUB);
+
+/**
+ * Tabs that load their own data and only need the hub frame (team, role, seasons) from
+ * /api/business. On these the view is fetched as a shell (`sections=shell`), skipping the
+ * sponsor, grant, prospect, outreach and award reads they never show.
+ */
+const SELF_LOADING_TABS: ReadonlySet<Tab> = new Set<Tab>(["finance", "orders", "sponsorship", "placements"]);
+
+function isPartialView(view: BusinessPortalView | null): boolean {
+  return Boolean(view && (view as { partial?: boolean }).partial);
+}
 function businessCacheOrg(data: BusinessPortalView, orgHint: string): string {
   if (data.status === "live" && data.orgId.trim()) return data.orgId;
   return orgHint;
@@ -90,6 +101,11 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<BusinessPortalView | null>(null);
   viewRef.current = view;
+  const tabRef = useRef<Tab>(tab);
+  tabRef.current = tab;
+  // Team and season from the address, known before /api/business answers, so Money can start
+  // its own reads at once instead of waiting for the hub view.
+  const [earlyFinance, setEarlyFinance] = useState<{ orgId: string; seasonYear: number } | null>(null);
 
   const selectTab = useCallback((next: Tab) => {
     setTab(next);
@@ -125,6 +141,8 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
     const query = new URLSearchParams();
     if (orgHint) query.set("orgId", orgHint);
     if (seasonOverride) query.set("season", String(seasonOverride));
+    const shell = SELF_LOADING_TABS.has(tabRef.current);
+    if (shell) query.set("sections", "shell");
     try {
       const response = await fetch(`/api/business?${query.toString()}`, {
         cache: "no-store",
@@ -159,7 +177,8 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
       setFromCache(false);
       setCachedAt(null);
       if (data.status === "live" && data.orgId) persistOrgIdInUrl(data.orgId);
-      await persistBusinessSnapshot(orgHint, seasonHint, data);
+      // A shell view has no sponsor/grant rows; keep the device copy a full one.
+      if (!isPartialView(data)) await persistBusinessSnapshot(orgHint, seasonHint, data);
     } catch (cause) {
       if (hadCache || viewRef.current) {
         setFromCache(true);
@@ -176,7 +195,19 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
 
   useEffect(() => {
     if (redirectMoreToolTab()) return;
-    setTab(readTabFromUrl());
+    const initial = readTabFromUrl();
+    setTab(initial);
+    tabRef.current = initial;
+    const params = new URLSearchParams(window.location.search);
+    const orgHint = params.get("orgId")?.trim() ?? "";
+    const seasonParam = Number(params.get("season"));
+    if (initial === "finance" && orgHint) {
+      setEarlyFinance({
+        orgId: orgHint,
+        // The same default /api/business uses when the address names no season.
+        seasonYear: Number.isInteger(seasonParam) && seasonParam >= 2000 ? seasonParam : currentSeasonYear(),
+      });
+    }
     void load();
   }, [load]);
 
@@ -188,6 +219,24 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
   });
 
   const live = view?.status === "live" ? view : null;
+  // Opened on a self-loading tab, then moved to one that reads the hub view's rows: load the
+  // full view first and show the skeleton meanwhile, never the shell's empty lists.
+  const needsFullView = Boolean(live && isPartialView(live) && !SELF_LOADING_TABS.has(tab));
+  const fullViewRequested = useRef<string | null>(null);
+  useEffect(() => {
+    // A full view landed: a later shell view of the same season may be upgraded again.
+    if (live && !isPartialView(live)) fullViewRequested.current = null;
+    if (!needsFullView || !live) return;
+    const key = `${live.orgId}:${live.seasonYear}`;
+    if (fullViewRequested.current === key) return;
+    fullViewRequested.current = key;
+    void load(live.seasonYear);
+  }, [needsFullView, live, load]);
+  const financeTarget = live
+    ? { orgId: live.orgId, seasonYear: live.seasonYear }
+    : !view && !loadFailure && earlyFinance && tab === "finance"
+      ? earlyFinance
+      : null;
   const sponsorsAllowed = live?.sponsorsAllowed ?? access.sponsorsAllowed;
   // /business always opens on Overview unless the link names a tab. Jumping to
   // Money or Sponsors based on how the team is funded made the page open
@@ -382,7 +431,7 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
               </EmptyState>
             );
           })()
-        ) : (
+        ) : financeTarget ? null : (
           // One loading pattern across the hubs: the card-shaped skeleton (A6-20).
           <HubPanelSkeleton />
         )
@@ -415,14 +464,19 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
               {availableSeasonYears(live.seasons).map(season => <option key={season} value={season}>{season}</option>)}
             </select>
           </label>
-          {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
-          {tab === "finance" ? (
-            <div className="product-hub-panel">
-              {/* Who can change money here (0714): the owner and the people they chose. */}
-              <MoneyManagersLine orgId={live.orgId} ownerHint="To change it, open a person’s Access on Team admin." />
-              <SeasonFinanceClient embedded orgId={live.orgId} seasonYear={live.seasonYear} />
-            </div>
+          {needsFullView ? (
+            error ? (
+              <EmptyState soft title="This tab could not load" description="Check your connection and try again.">
+                <Button variant="secondary" type="button" onClick={() => void load(live.seasonYear)}>
+                  Retry
+                </Button>
+              </EmptyState>
+            ) : (
+              <HubPanelSkeleton />
+            )
           ) : null}
+          {needsFullView ? null : <>
+          {tab === "overview" ? <Overview view={live} setTab={selectTab} /> : null}
           {tab === "budget" ? <Budget view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "orders" ? (
             <div className="product-hub-panel">
@@ -449,7 +503,18 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
           {tab === "grants" ? <Grants view={live} busy={busy} submit={submit} mutate={mutate} /> : null}
           {tab === "evidence" ? <Evidence view={live} /> : null}
           {tab === "achievements" ? <AwardHistory view={live} busy={busy} submit={submit} /> : null}
+          </>}
         </>
+      ) : null}
+
+      {/* Outside the live block so Money keeps the same element (and its in-flight reads)
+          when the hub view lands after it started from the address's team and season. */}
+      {tab === "finance" && financeTarget ? (
+        <div className="product-hub-panel">
+          {/* Who can change money here (0714): the owner and the people they chose. */}
+          <MoneyManagersLine orgId={financeTarget.orgId} ownerHint="To change it, open a person’s Access on Team admin." />
+          <SeasonFinanceClient embedded orgId={financeTarget.orgId} seasonYear={financeTarget.seasonYear} />
+        </div>
       ) : null}
     </PageMain>
   );

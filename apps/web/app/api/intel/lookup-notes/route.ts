@@ -1,4 +1,4 @@
-import { IntelHttpError, intelErrorResponse, intelSession, withIntelRequest } from "../../../../lib/intel-auth";
+import { IntelHttpError, intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth";
 import { canEditLookupNotes, parseLookupNote, sanitizeLookupNote } from "../../../../lib/intel/lookup-notes";
 
 export async function GET(request: Request) {
@@ -8,13 +8,9 @@ export async function GET(request: Request) {
     const teamKey = url.searchParams.get("teamKey")?.trim() ?? "";
     if (!teamKey) return Response.json({ error: "teamKey is required" }, { status: 400 });
     return Response.json(
-      await withIntelRequest(orgId, async (client) => {
-        const session = await intelSession();
-        const role = await client.query<{ role: string }>(
-          `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
-          [orgId, session.user.id],
-        );
-        const canEdit = canEditLookupNotes(role.rows[0]?.role ?? null);
+      await withIntelRequest(orgId, async (client, viewer) => {
+        // withIntelRequest already read the session and this member's role.
+        const canEdit = canEditLookupNotes(viewer.role);
         const row = await client.query<{ body: string; updatedAt: string; updatedBy: string }>(
           `SELECT body, updated_at AS "updatedAt", updated_by::text AS "updatedBy"
              FROM team_lookup_notes
@@ -37,13 +33,8 @@ export async function POST(request: Request) {
     const text = sanitizeLookupNote(body.body);
     if (!teamKey) return Response.json({ error: "teamKey is required" }, { status: 400 });
     return Response.json(
-      await withIntelRequest(orgId, async (client) => {
-        const session = await intelSession();
-        const role = await client.query<{ role: string }>(
-          `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid LIMIT 1`,
-          [orgId, session.user.id],
-        );
-        if (!canEditLookupNotes(role.rows[0]?.role ?? null)) {
+      await withIntelRequest(orgId, async (client, viewer) => {
+        if (!canEditLookupNotes(viewer.role)) {
           throw new IntelHttpError(403, "Coach role required to edit this note.");
         }
         const row = await client.query<{ body: string; updatedAt: string; updatedBy: string }>(
@@ -52,7 +43,7 @@ export async function POST(request: Request) {
            ON CONFLICT (org_id, team_key)
            DO UPDATE SET body = excluded.body, updated_by = excluded.updated_by, updated_at = now()
            RETURNING body, updated_at AS "updatedAt", updated_by::text AS "updatedBy"`,
-          [orgId, teamKey, text, session.user.id],
+          [orgId, teamKey, text, viewer.userId],
         );
         return { note: parseLookupNote(row.rows[0] ?? { body: text }, teamKey, true) };
       }),
