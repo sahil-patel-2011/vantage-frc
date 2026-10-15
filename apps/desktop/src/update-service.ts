@@ -19,7 +19,7 @@
  * different build. It is the strongest thing available without certificates, and
  * `electron-updater` would be no stronger here for the same reason.
  */
-import { app, BrowserWindow, net, shell, type Session } from "electron";
+import { app, BrowserWindow, dialog, net, shell, type Session } from "electron";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createWriteStream, promises as fs } from "node:fs";
@@ -30,16 +30,22 @@ import {
   CHECK_INTERVAL_MS,
   FIRST_CHECK_DELAY_MS,
   decideUpdate,
+  decideWebReleasePrompt,
   installWindow,
   isLiveOpsUrl,
   isStaleAssetRequest,
   manifestUrlForRepo,
   parseManifest,
+  parseWebRelease,
   shouldInstallOnQuit,
   shouldReloadWeb,
   type ReleaseManifest,
   type UpdatePlan,
   type UpdateState,
+  type WebRelease,
+  WEB_RELEASE_CHECK_MS,
+  WEB_RELEASE_LATER_MS,
+  webReleaseDetail,
 } from "./update";
 
 const REPO = "sahil-patel-2011/vantage-frc";
@@ -85,6 +91,10 @@ export class UpdateService {
   private installing = false;
   private lastHealAt = 0;
   private onChange: (status: UpdateStatus) => void = () => undefined;
+  /** The web release the open page was loaded from; null until the first answer. */
+  private webReleaseLoaded: string | null = null;
+  private webReleaseDismissed: { id: string; until: number } | null = null;
+  private webReleasePromptOpen = false;
 
   constructor(origin: string) {
     this.origin = origin;
@@ -103,6 +113,79 @@ export class UpdateService {
     // hoping a blur or an idle timer lines up with the deadline.
     this.timers.push(setInterval(() => void this.maybeInstall(), 60_000));
     this.timers.push(setInterval(() => this.maybeReloadWeb(), 60_000));
+    this.timers.push(setTimeout(() => void this.checkWebRelease(), 15_000));
+    this.timers.push(setInterval(() => void this.checkWebRelease(), WEB_RELEASE_CHECK_MS));
+  }
+
+  // -------------------------------------------------------------------------
+  // Web release: ask, with what changed, before switching to a new deploy
+  // -------------------------------------------------------------------------
+
+  private async fetchWebRelease(): Promise<WebRelease | null> {
+    try {
+      const response = await net.fetch(new URL("/api/web-release", this.origin).toString(), {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!response.ok) return null;
+      return parseWebRelease(await response.json());
+    } catch {
+      return null;
+    }
+  }
+
+  /** Remember the release a freshly loaded page belongs to, so it is never offered again. */
+  noteWebPageLoaded() {
+    this.webReleaseLoaded = null;
+    void this.fetchWebRelease().then((release) => {
+      if (release && this.webReleaseLoaded === null) this.webReleaseLoaded = release.id;
+    });
+  }
+
+  async checkWebRelease(): Promise<boolean> {
+    if (this.webReleasePromptOpen) return false;
+    const window = BrowserWindow.getAllWindows()[0];
+    if (!window || window.isDestroyed()) return false;
+    const latest = await this.fetchWebRelease();
+    if (!latest) return false;
+    if (this.webReleaseLoaded === null) {
+      this.webReleaseLoaded = latest.id;
+      return false;
+    }
+    const decision = decideWebReleasePrompt({
+      loadedId: this.webReleaseLoaded,
+      latest,
+      dismissedId: this.webReleaseDismissed?.id ?? null,
+      dismissedUntil: this.webReleaseDismissed?.until ?? null,
+      now: Date.now(),
+      currentUrl: window.webContents.getURL(),
+      windowFocused: window.isFocused(),
+    });
+    if (decision !== "prompt") return false;
+    this.webReleasePromptOpen = true;
+    try {
+      const { response } = await dialog.showMessageBox(window, {
+        type: "info",
+        title: "Vantage has been updated",
+        message: latest.headline,
+        detail: webReleaseDetail(latest),
+        buttons: ["Update now", "Later"],
+        defaultId: 0,
+        cancelId: 1,
+        noLink: true,
+      });
+      if (response === 0) {
+        this.webReleaseLoaded = latest.id;
+        this.webReleaseDismissed = null;
+        this.staleAssetSeen = false;
+        window.webContents.reloadIgnoringCache();
+        return true;
+      }
+      this.webReleaseDismissed = { id: latest.id, until: Date.now() + WEB_RELEASE_LATER_MS };
+      return false;
+    } finally {
+      this.webReleasePromptOpen = false;
+    }
   }
 
   stop() {
@@ -440,6 +523,16 @@ export class UpdateService {
       pageBroken,
     });
     if (!reload) return;
+    // A page that no longer renders is reloaded straight away. Otherwise a new deploy is
+    // offered with its release notes ("Vantage has been updated"), not swapped in silently.
+    if (!pageBroken) {
+      void this.checkWebRelease().then((asked) => {
+        if (asked || this.webReleaseDismissed) return;
+        this.staleAssetSeen = false;
+        window.webContents.reloadIgnoringCache();
+      });
+      return;
+    }
     this.staleAssetSeen = false;
     window.webContents.reloadIgnoringCache();
   }

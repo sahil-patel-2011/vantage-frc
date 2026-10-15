@@ -420,6 +420,10 @@ async function createWindow() {
   });
 
   updates.trackWindow(window);
+  // Each full load of the web app is a known release; only a newer one is offered.
+  window.webContents.on("did-finish-load", () => {
+    if (window.webContents.getURL().startsWith(startOrigin)) updates.noteWebPageLoaded();
+  });
   signedIn = await hasSessionCookie();
   applyGate(window);
   return window;

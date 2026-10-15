@@ -1,0 +1,55 @@
+{
+  "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
+  "releases": [
+    {
+      "pr": 2393,
+      "date": "2026-10-15",
+      "headline": "The desktop app now tells you when Vantage updates, and what changed",
+      "changes": [
+        "When a new version of Vantage is live, the desktop app asks before switching to it and lists what changed",
+        "It never interrupts a scouting or match screen you're looking at; Later asks again in two hours"
+      ]
+    },
+    {
+      "pr": 2392,
+      "date": "2026-10-15",
+      "headline": "Calmer pages: one main button each, tabs instead of long scrolls",
+      "changes": [
+        "Code review has three tabs (Review, Repo scan, Pull requests) and one main button on each",
+        "Kickoff is split into Overview, Scoring, Priorities, Rules and Next season",
+        "Pick list, People and CAD lost their repeated links, tiles and duplicate buttons",
+        "Home has one main action, Up next, and you can bring back empty cards with one tap"
+      ]
+    },
+    {
+      "pr": 2391,
+      "date": "2026-10-15",
+      "headline": "One menu, one search, one name for each place",
+      "changes": [
+        "The sidebar and the phone menu list the same four workspaces",
+        "Search is in one place on every screen size",
+        "The phone tab bar ends in More; Pit TV and Assignments open straight away",
+        "Admin's sections are tabs across the top instead of a second column"
+      ]
+    },
+    {
+      "pr": 2390,
+      "date": "2026-10-15",
+      "headline": "Email sign-in codes work again",
+      "changes": [
+        "Signing in with a code sent to your email had stopped working; it works again",
+        "Feedback, problem reports and support tickets now reach the Vantage team's inbox"
+      ]
+    },
+    {
+      "pr": 2389,
+      "date": "2026-10-15",
+      "headline": "Clearer buttons, and delete buttons that stay out of the way",
+      "changes": [
+        "Delete, remove and disconnect buttons are red, sit apart from the others and ask first",
+        "The scouting Save button no longer turns grey with instructions on it; a failed save takes you to the question to fix",
+        "Buttons have one size and shape across the app"
+      ]
+    }
+  ]
+}
