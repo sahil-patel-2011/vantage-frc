@@ -37,12 +37,18 @@ export function MatchBriefCard({ orgId, matchKey, onShown }: { orgId: string; ma
   const [state, setState] = useState<"loading" | "idle" | "writing">("loading");
   const [problem, setProblem] = useState<string | null>(null);
   const request = useRef<AbortController | null>(null);
+  /** The request in flight; a background re-read never cancels a plan being written. */
+  const inFlight = useRef<"ensure" | "read" | "regenerate" | null>(null);
 
   const fetchBrief = useCallback(
     async (mode: "ensure" | "read" | "regenerate") => {
+      // A plan can take over a minute on a local model. The minute's background re-read waits for
+      // it instead of aborting it (which hid the "Writing…" state and invited a second, paid write).
+      if (mode === "read" && inFlight.current && inFlight.current !== "read") return;
       request.current?.abort();
       const controller = new AbortController();
       request.current = controller;
+      inFlight.current = mode;
       if (mode !== "read") setState(mode === "regenerate" ? "writing" : "loading");
       try {
         const response =
@@ -74,6 +80,7 @@ export function MatchBriefCard({ orgId, matchKey, onShown }: { orgId: string; ma
       } catch (error) {
         if (!controller.signal.aborted && mode !== "read") setProblem(friendlyErrorMessage(error, "The plan couldn't be written right now."));
       } finally {
+        if (request.current === controller) inFlight.current = null;
         if (!controller.signal.aborted) setState("idle");
       }
     },
