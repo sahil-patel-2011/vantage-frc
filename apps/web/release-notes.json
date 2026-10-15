@@ -12,6 +12,18 @@
       ]
     },
     {
+      "pr": 2403,
+      "date": "2026-10-15",
+      "headline": "A match plan that writes itself before each match",
+      "changes": [
+        "The pre-match briefing opens with a match plan: our odds, how to raise them, what each opponent will most likely do and how, each partner's job, and auto, teleop and endgame",
+        "It is written automatically when you open the match and the plan is out of date, using every match and scouting report since the last one",
+        "Write a new plan rewrites it on demand, and everyone on the team sees the newest plan within a minute",
+        "With AI connected it is written by your team's model (Claude Haiku 5.5 by default); without AI, Vantage writes it from the same numbers",
+        "Turn automatic plans off in Settings › Appearance › Match day"
+      ]
+    },
+    {
       "pr": 2402,
       "date": "2026-10-15",
       "headline": "Predictions use ten seasons of history, fairly compared",

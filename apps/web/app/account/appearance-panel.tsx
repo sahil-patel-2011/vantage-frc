@@ -261,7 +261,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           which is about this device, stays here. Saves on change like the theme does. */}
       {cockpitLoaded && !cockpitProblem ? (
         <section className="appearance-group" aria-labelledby="appearance-live-title">
-          <h3 id="appearance-live-title">Live boards</h3>
+          <h3 id="appearance-live-title">Match day</h3>
           <label className="appearance-check">
             <input
               type="checkbox"
@@ -270,6 +270,15 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
               onChange={(event) => void saveCockpit({ ...cockpit, pauseLiveWhenHidden: event.target.checked })}
             />
             Pause My Day, schedule and rankings while this tab is hidden
+          </label>
+          <label className="appearance-check">
+            <input
+              type="checkbox"
+              checked={cockpit.autoMatchBriefs}
+              disabled={cockpitBusy}
+              onChange={(event) => void saveCockpit({ ...cockpit, autoMatchBriefs: event.target.checked })}
+            />
+            Write the match plan automatically when I open a match and it&apos;s out of date
           </label>
           {cockpitNote?.tone === "error" ? <p className="brand-notice error" role="alert">{cockpitNote.text}</p> : null}
         </section>

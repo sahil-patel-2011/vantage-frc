@@ -1,6 +1,7 @@
 "use client";
 
 import { AllianceAutoRoutes } from "./alliance-auto-routes";
+import { MatchBriefCard } from "./match-brief-card";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { plainStrategyText, readablePlanChip } from "../../lib/briefing/plain-text";
 import { ourSideRange } from "../../lib/strategy/our-side-range";
@@ -87,6 +88,8 @@ export default function BriefingClient() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
+  // The match plan (lib/match-brief) covers "do this next" in full; the short list steps aside.
+  const [planShown, setPlanShown] = useState(false);
   const selectedRef = useRef<string | null>(null);
   const viewRef = useRef<FullBriefingView | null>(null);
   viewRef.current = view;
@@ -456,8 +459,14 @@ export default function BriefingClient() {
         )}
       </section>
 
+      {/* The plan for a match still ahead: written automatically when out of date, shared by the
+          whole team, rewritten on demand. */}
+      {!view.match.played && orgId ? (
+        <MatchBriefCard key={`${orgId}:${view.match.matchKey}`} orgId={orgId} matchKey={view.match.matchKey} onShown={setPlanShown} />
+      ) : null}
+
       {/* "Do this next" is advice for a match still ahead, not for one being reviewed. */}
-      {doNext.length > 0 && !view.match.played ? (
+      {doNext.length > 0 && !view.match.played && !planShown ? (
         <section className="app-card brief-callouts">
           <h2>Do this next</h2>
           <ol>

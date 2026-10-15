@@ -174,3 +174,24 @@
 .brief-autos-clock { font-variant-numeric: tabular-nums; color: var(--ink); }
 .brief-autos-cell.is-near { border-color: #d97706; background: color-mix(in srgb, #d97706 9%, var(--surface)); }
 .brief-autos-near { margin: 8px 0 0; padding-left: 18px; color: #b45309; font-weight: 600; font-size: 14px; }
+
+/* Match plan: one readable card, sections in the order a drive team uses them. */
+.brief-plan { display: grid; gap: 10px; }
+.brief-plan h2 { margin: 0; }
+.brief-plan h3 { margin: 8px 0 0; font-size: 15px; }
+.brief-plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.brief-plan-odds { font-weight: 700; font-variant-numeric: tabular-nums; }
+.brief-plan-headline { margin: 0; font-size: 17px; line-height: 1.45; font-weight: 600; }
+.brief-plan-moves, .brief-plan-opponents, .brief-plan-partners, .brief-plan-watch { margin: 0; padding-left: 1.2rem; display: grid; gap: 8px; }
+.brief-plan-opponents, .brief-plan-partners { padding-left: 0; list-style: none; }
+.brief-plan-moves p, .brief-plan-opponents p { margin: 2px 0 0; line-height: 1.5; }
+.brief-plan-gain { margin-left: 8px; font-size: 12px; font-weight: 700; color: var(--positive); }
+.brief-plan-counter { font-weight: 600; }
+.brief-plan-phases { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 6px 0 0; }
+.brief-plan-phases dt { font-weight: 700; }
+.brief-plan-phases dd { margin: 0; line-height: 1.5; }
+.brief-plan-foot { display: grid; gap: 6px; justify-items: start; padding-top: 8px; border-top: 1px solid var(--line); }
+.brief-plan-foot p { margin: 0; font-size: 12px; }
+.brief-plan-stale { color: var(--ink); font-weight: 600; }
+.brief-plan-problem { margin: 0; color: var(--critical); font-size: 13px; }
+.brief-plan-actions { display: flex; justify-content: flex-start; }

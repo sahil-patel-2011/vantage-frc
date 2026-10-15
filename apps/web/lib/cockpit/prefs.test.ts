@@ -16,10 +16,11 @@ const KNOBS = [
   "includeScanTests",
   "bugbotInstructions",
   "defaultBugbotMode",
+  "autoMatchBriefs",
 ] as const;
 
 describe("DEFAULT_COCKPIT_PREFS", () => {
-  it("is exactly the five Tesla knobs — never a settings maze", () => {
+  it("is exactly the six knobs — never a settings maze", () => {
     expect(Object.keys(DEFAULT_COCKPIT_PREFS)).toEqual([...KNOBS]);
     expect(DEFAULT_COCKPIT_PREFS).toEqual({
       confirmWrites: true,
@@ -27,6 +28,7 @@ describe("DEFAULT_COCKPIT_PREFS", () => {
       includeScanTests: false,
       bugbotInstructions: "",
       defaultBugbotMode: "subscription",
+      autoMatchBriefs: true,
     });
   });
 });
@@ -46,7 +48,7 @@ describe("parseCockpitPrefs", () => {
     });
   });
 
-  it("keeps only the five known knobs", () => {
+  it("keeps only the six known knobs", () => {
     const parsed = parseCockpitPrefs({
       confirmWrites: false,
       pauseLiveWhenHidden: false,
@@ -61,6 +63,7 @@ describe("parseCockpitPrefs", () => {
       includeScanTests: true,
       bugbotInstructions: "Never touch CAN id 3.",
       defaultBugbotMode: "ultra",
+      autoMatchBriefs: true,
     });
     expect(Object.keys(parsed)).toEqual([...KNOBS]);
   });
@@ -81,6 +84,7 @@ describe("parseCockpitPrefs", () => {
       includeScanTests: true,
       bugbotInstructions: "Phoenix 6 current limit is 40 A.",
       defaultBugbotMode: "ultra" as const,
+      autoMatchBriefs: false,
     };
     expect(parseCockpitPrefs(JSON.parse(JSON.stringify(prefs)))).toEqual(prefs);
   });
@@ -148,7 +152,7 @@ describe("loadCockpitPrefs", () => {
 });
 
 describe("saveCockpitPrefs", () => {
-  it("writes only the five knobs as jsonb", async () => {
+  it("writes only the six knobs as jsonb", async () => {
     let sql = "";
     let params: unknown[] = [];
     const saved = await saveCockpitPrefs(
@@ -175,6 +179,7 @@ describe("saveCockpitPrefs", () => {
       includeScanTests: true,
       bugbotInstructions: "Keep CAN id 3.",
       defaultBugbotMode: "ultra",
+      autoMatchBriefs: true,
     });
     expect(sql).toContain("cockpit_prefs");
     expect(sql).toContain("ON CONFLICT (user_id)");
