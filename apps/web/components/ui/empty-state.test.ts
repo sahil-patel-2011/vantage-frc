@@ -30,6 +30,14 @@ describe("EmptyState", () => {
     expect(render({ title: "Nothing yet" })).not.toContain('role="status"');
   });
 
+  it("draws a loading card as placeholder shapes, keeping the words for screen readers", () => {
+    const markup = render({ title: "Opening your team", badge: "Needs setup", "aria-busy": true });
+    expect(markup).toContain('<span class="sr-only">Opening your team</span>');
+    expect(markup).toContain('class="empty-state-skeleton"');
+    expect(markup).not.toContain("<h2>");
+    expect(markup).not.toContain("app-badge");
+  });
+
   it("always renders a visible title and only renders the badge/description when given", () => {
     const bare = render({ title: "Nothing yet" });
     expect(bare).toContain("Nothing yet");

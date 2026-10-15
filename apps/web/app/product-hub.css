@@ -796,7 +796,22 @@ main:has(.app-page-header .product-hub-related) .team-ops-nav { display: none; }
 .hub-skel-head { display: grid; gap: 8px; max-width: 380px; }
 .hub-skel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .hub-skel-card { display: grid; gap: 12px; padding: 18px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
-.hub-panel-skeleton i { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--surface-2); }
+/* The same shimmer as components/ui Skeleton: a flat grey block read as a blank page (My Day
+   looked empty for seconds before its message). */
+.hub-panel-skeleton i {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 60%, var(--line)), var(--surface-2));
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hub-panel-skeleton i { animation: hub-skeleton-shimmer 1.4s ease-in-out infinite; }
+}
+@keyframes hub-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 .hub-panel-skeleton .is-label { width: 28%; }
 .hub-panel-skeleton .is-title { width: 70%; height: 24px; }
 .hub-panel-skeleton .is-row { width: 90%; }

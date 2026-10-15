@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Skeleton, TextBlockSkeleton } from "./skeleton";
 
 type BadgeTone = "setup" | "good" | "demo" | "error" | "";
 
@@ -58,6 +59,20 @@ export function EmptyState({
   "aria-busy": ariaBusy,
 }: EmptyStateProps) {
   const shell = compact ? "soft-empty-compact" : soft ? "soft-empty scan-empty" : "app-card soft-panel scan-empty";
+  if (ariaBusy) {
+    // Loading looks like the page arriving — placeholder shapes — not a "Loading…" sentence.
+    // The words stay for screen readers, announced as a status.
+    return (
+      <section className={[shell, "is-loading", className].filter(Boolean).join(" ")} aria-busy role="status">
+        <span className="sr-only">{title}</span>
+        <div className="empty-state-skeleton" aria-hidden="true">
+          <Skeleton width="38%" height={18} />
+          <TextBlockSkeleton lines={description ? 3 : 2} />
+        </div>
+        {children}
+      </section>
+    );
+  }
   return (
     // A loading card ("Opening your team…") is a status: without the role, the change from
     // loading to loaded was silent to a screen reader on Business, Tasks, Team and Pit.
