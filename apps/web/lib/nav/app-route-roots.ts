@@ -11,6 +11,7 @@ export const APP_ROUTE_ROOTS: ReadonlySet<string> = new Set([
   ...GENERATED_APP_ROUTE_ROOTS,
   "access-unavailable",
   "account",
+  "account-recovery",
   "admin",
   "ai",
   "alliance-partner-brief",

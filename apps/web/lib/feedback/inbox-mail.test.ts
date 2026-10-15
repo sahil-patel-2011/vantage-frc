@@ -6,7 +6,7 @@ vi.mock("@vantage/core", () => ({
   resolveAuthBaseURL: () => "https://vantagefrc.vercel.app",
 }));
 
-const { FEEDBACK_INBOX, feedbackInbox, feedbackMailText, feedbackRecipients, mailFeedbackInbox } = await import("./inbox-mail");
+const { FEEDBACK_INBOX, FEEDBACK_INBOXES, feedbackInbox, feedbackInboxes, feedbackMailText, feedbackRecipients, mailFeedbackInbox } = await import("./inbox-mail");
 
 describe("feedback inbox", () => {
   it("sends help and feedback to vantagefrc@mail.grokbot.com unless a deployment overrides it", () => {
@@ -16,9 +16,15 @@ describe("feedback inbox", () => {
     expect(feedbackInbox({ FEEDBACK_INBOX_EMAIL: "not an address" } as NodeJS.ProcessEnv)).toBe(FEEDBACK_INBOX);
   });
 
+  it("goes to all three Vantage inboxes, or the deployment's own list", () => {
+    expect(FEEDBACK_INBOXES).toEqual(["vantagefrc@mail.grokbot.com", "vantagefrc@gmail.com", "sahiljpatel2011@gmail.com"]);
+    expect(feedbackInboxes({} as NodeJS.ProcessEnv)).toEqual([...FEEDBACK_INBOXES]);
+    expect(feedbackInboxes({ FEEDBACK_INBOX_EMAIL: "a@x.test, b@x.test, nope" } as NodeJS.ProcessEnv)).toEqual(["a@x.test", "b@x.test"]);
+  });
+
   it("copies the platform owner on support tickets only", () => {
-    expect(feedbackRecipients({ includeOwner: false }, {} as NodeJS.ProcessEnv)).toEqual([FEEDBACK_INBOX]);
-    expect(feedbackRecipients({ includeOwner: true }, {} as NodeJS.ProcessEnv)).toEqual([FEEDBACK_INBOX, "owner@example.test"]);
+    expect(feedbackRecipients({ includeOwner: false }, {} as NodeJS.ProcessEnv)).toEqual([...FEEDBACK_INBOXES]);
+    expect(feedbackRecipients({ includeOwner: true }, {} as NodeJS.ProcessEnv)).toEqual([...FEEDBACK_INBOXES, "owner@example.test"]);
   });
 
   it("drops empty lines but keeps blank spacer lines", () => {
