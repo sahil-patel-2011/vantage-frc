@@ -2,6 +2,17 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2401,
+      "date": "2026-10-15",
+      "headline": "Local AI in the desktop app (experimental)",
+      "changes": [
+        "The desktop app can answer your AI requests with a model running on your own computer in LM Studio",
+        "It checks for 16 GB of memory and 15 GB of free disk first, and pairs to your account so it only receives your own requests",
+        "Team → Personal AI connection shows the computer's local model, and its Everything setting extends it to every AI feature",
+        "When the local model is off, your team's normal AI answers as before"
+      ]
+    },
+    {
       "pr": 2400,
       "date": "2026-10-15",
       "headline": "Fewer buttons, and errors only when something failed",

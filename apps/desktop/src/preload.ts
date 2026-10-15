@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import type { LinkState } from "./link";
 import type { UpdateStatus } from "./update-service";
+import type { LocalAiStatus } from "./local-ai-service";
 
 /**
  * Bridge for the local shell pages (gate.html). The browser-link IPC handlers
@@ -50,6 +51,27 @@ contextBridge.exposeInMainWorld("vantageDesktop", {
       const listener = (_event: IpcRendererEvent, status: UpdateStatus) => callback(status);
       ipcRenderer.on("desktop-update:state", listener);
       return () => ipcRenderer.removeListener("desktop-update:state", listener);
+    },
+  },
+  /**
+   * Local AI (experimental). `open` is the one call the hosted app may make (it only shows the
+   * local settings window); everything else is refused by main unless it comes from that
+   * bundled file:// page.
+   */
+  localAi: {
+    open: (): Promise<void> => ipcRenderer.invoke("desktop-local-ai:open"),
+    status: (): Promise<LocalAiStatus | null> => ipcRenderer.invoke("desktop-local-ai:status"),
+    refresh: (): Promise<LocalAiStatus | null> => ipcRenderer.invoke("desktop-local-ai:refresh"),
+    setModel: (model: string): Promise<LocalAiStatus | null> => ipcRenderer.invoke("desktop-local-ai:set-model", model),
+    setBaseUrl: (url: string): Promise<LocalAiStatus | null> => ipcRenderer.invoke("desktop-local-ai:set-base-url", url),
+    pair: (): Promise<LocalAiStatus | null> => ipcRenderer.invoke("desktop-local-ai:pair"),
+    cancelPairing: (): Promise<LocalAiStatus | null> => ipcRenderer.invoke("desktop-local-ai:cancel-pairing"),
+    unpair: (): Promise<LocalAiStatus | null> => ipcRenderer.invoke("desktop-local-ai:unpair"),
+    setEnabled: (enabled: boolean): Promise<LocalAiStatus | null> => ipcRenderer.invoke("desktop-local-ai:set-enabled", enabled),
+    onState: (callback: (status: LocalAiStatus) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, status: LocalAiStatus) => callback(status);
+      ipcRenderer.on("desktop-local-ai:state", listener);
+      return () => ipcRenderer.removeListener("desktop-local-ai:state", listener);
     },
   },
 });
