@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "../../../../components/ui";
+import { Button, Skeleton } from "../../../../components/ui";
 
 /**
  * A lesson PDF from the team's Files, shown inline. The bytes come from Files' own download
@@ -13,6 +13,7 @@ export function LessonPdf({ orgId, fileId, fileName }: { orgId: string; fileId: 
   const src = `/api/drive/files/${fileId}/content?orgId=${encodeURIComponent(orgId)}`;
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,7 +37,7 @@ export function LessonPdf({ orgId, fileId, fileName }: { orgId: string; fileId: 
       cancelled = true;
       if (created) URL.revokeObjectURL(created);
     };
-  }, [src]);
+  }, [src, attempt]);
 
   const title = fileName ?? "Lesson PDF";
   return (
@@ -54,12 +55,23 @@ export function LessonPdf({ orgId, fileId, fileName }: { orgId: string; fileId: 
       </header>
       {state === "ready" && blobUrl ? (
         <iframe className="team-lesson-pdf-frame" src={blobUrl} title={title} />
+      ) : state === "loading" ? (
+        <div className="team-lesson-pdf-loading" aria-busy="true">
+          <span className="sr-only" role="status">
+            Loading the PDF
+          </span>
+          <Skeleton variant="block" height="min(70vh, 640px)" />
+        </div>
       ) : (
-        <p className="team-lesson-pdf-status" role="status">
-          {state === "loading"
-            ? "Loading the PDF…"
-            : "This PDF can't be shown on this page. Open it in a new tab or download it, then come back for the practice questions."}
-        </p>
+        <div className="team-lesson-pdf-failed" role="alert">
+          <p className="team-lesson-pdf-status">
+            This PDF couldn&apos;t be shown on this page. Try again, or open it in a new tab or download it, then come back for
+            the practice questions.
+          </p>
+          <Button variant="secondary" size="sm" onClick={() => setAttempt((value) => value + 1)}>
+            Try again
+          </Button>
+        </div>
       )}
     </section>
   );

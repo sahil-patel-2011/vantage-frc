@@ -9,7 +9,6 @@ import {
 import { canCreateLessons, canManageLessons } from "../../../lib/team-lessons/permissions";
 import {
   createLesson,
-  isDatabaseUnavailable,
   isLessonsSchemaMissing,
   LESSONS_SETUP_MESSAGE,
   listLessons,
@@ -39,7 +38,9 @@ export async function GET(request: Request) {
     });
     return privateJson(view);
   } catch (error) {
-    if (isLessonsSchemaMissing(error) || isDatabaseUnavailable(error)) {
+    // Only a missing migration is setup. An outage falls through to a 503 the page shows as an
+    // error with Try again (lessonErrorResponse), never as "Needs setup".
+    if (isLessonsSchemaMissing(error)) {
       return privateJson({ status: "setup_required", message: LESSONS_SETUP_MESSAGE } satisfies LessonsListView);
     }
     return lessonErrorResponse(error, "Team resources could not be loaded. Try again.");

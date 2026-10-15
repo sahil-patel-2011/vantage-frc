@@ -5,17 +5,36 @@
  * page is for, one JSON fetch helper, links, and how one step reads.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Button, EmptyState, ErrorState } from "../../../components/ui";
 import { MarkdownDocument } from "../../team/knowledge/markdown-document";
-import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl, readOrgIdFromSearch } from "../../../lib/nav/resolve-org";
+import { forgetMe, requestMe } from "../../../lib/nav/me-request";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl, readOrgIdFromSearch } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import type { LessonStep } from "../../../lib/team-lessons/types";
 
-export type OrgState = { status: "loading" } | { status: "ready"; orgId: string } | { status: "none" };
+export type OrgState =
+  | { status: "loading" }
+  | { status: "ready"; orgId: string }
+  /** Signed in, but no team is active: the team chooser. */
+  | { status: "none" }
+  /** `/api/me` answered 401. */
+  | { status: "signed-out" }
+  /** No answer, or a 5xx: Vantage couldn't be reached. Not the same as having no team. */
+  | { status: "error"; message: string; retry: () => void };
+
+const ORG_UNREACHABLE = "Couldn't reach Vantage to find your team. Check your connection and try again.";
 
 /** The team from the address, else the signed-in person's active team. */
 export function useLessonOrg(): OrgState {
   const [state, setState] = useState<OrgState>({ status: "loading" });
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => {
+    // An explicit Retry skips the shared answer's backoff; the person asked to try now.
+    forgetMe();
+    setState({ status: "loading" });
+    setAttempt((value) => value + 1);
+  }, []);
   useEffect(() => {
     let cancelled = false;
     const fromUrl = readOrgIdFromSearch(window.location.search);
@@ -23,22 +42,83 @@ export function useLessonOrg(): OrgState {
       setState({ status: "ready", orgId: fromUrl });
       return;
     }
-    void fetchActiveOrgId()
-      .then((orgId) => {
-        if (cancelled) return;
-        if (orgId) {
-          persistOrgIdInUrl(orgId);
-          setState({ status: "ready", orgId });
-        } else setState({ status: "none" });
-      })
-      .catch(() => {
-        if (!cancelled) setState({ status: "none" });
-      });
+    void requestMe().then(({ ok, status, data }) => {
+      if (cancelled) return;
+      if (status === 401) return setState({ status: "signed-out" });
+      if (status === 0 || status >= 500) return setState({ status: "error", message: ORG_UNREACHABLE, retry });
+      const raw = ok ? (data as { orgId?: unknown } | null)?.orgId : null;
+      const orgId = typeof raw === "string" ? raw.trim() : "";
+      if (orgId) {
+        persistOrgIdInUrl(orgId);
+        setState({ status: "ready", orgId });
+      } else setState({ status: "none" });
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt, retry]);
   return state;
+}
+
+/**
+ * What a Team resources screen shows when it has no team to load for: no team chosen, signed
+ * out, or Vantage unreachable. Null while loading or ready.
+ */
+export function LessonOrgProblem({ org, chooseText }: { org: OrgState; chooseText: string }): ReactNode {
+  if (org.status === "none") {
+    return (
+      <EmptyState soft title="Choose your team" description={chooseText}>
+        <Button as="a" variant="primary" href="/workspace">
+          Choose your team
+        </Button>
+      </EmptyState>
+    );
+  }
+  if (org.status === "signed-out") return <ErrorState status={401} />;
+  if (org.status === "error") return <ErrorState title="Couldn't find your team" message={org.message} onRetry={org.retry} retryLabel="Try again" />;
+  return null;
+}
+
+export type LessonLoadFailure = { status: number; message: string };
+
+/**
+ * A failed load. A missing lesson (404) or one this person may not open (403) offers the way
+ * back, since trying again can't change the answer; everything else is an error with Try again
+ * (an expired session gets Sign in again from ErrorState).
+ */
+export function LessonLoadError({
+  error,
+  title,
+  onRetry,
+  back,
+}: {
+  error: LessonLoadFailure;
+  title: string;
+  onRetry: () => void;
+  back: { href: string; label: string };
+}) {
+  if (error.status === 404 || error.status === 403) {
+    return (
+      <EmptyState title={error.status === 404 ? "Lesson not found" : "You can't open this"} description={error.message}>
+        <Button as="a" variant="secondary" href={back.href}>
+          {back.label}
+        </Button>
+      </EmptyState>
+    );
+  }
+  return <ErrorState title={title} message={error.message} status={error.status} onRetry={onRetry} retryLabel="Try again" />;
+}
+
+/** Skeleton placeholders in the page frame while a Team resources screen loads. */
+export function LessonLoading({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <section className="team-lesson-loading" aria-busy="true" aria-label={label}>
+      <span className="sr-only" role="status">
+        {label}
+      </span>
+      {children}
+    </section>
+  );
 }
 
 export type JsonResult<T> = { ok: boolean; status: number; data: T | null; error: string | null };

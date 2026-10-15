@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { askConfirm, Button, EmptyState, PageHeader } from "../../../../../components/ui";
+import { askConfirm, Button, EmptyState, PageHeader, Skeleton, TextBlockSkeleton } from "../../../../../components/ui";
 import { withOrgHref } from "../../../../../lib/nav/product-nav";
 import {
   decodeStoredDraft,
@@ -12,7 +12,17 @@ import {
   type StoredDraft,
 } from "../../../../../lib/team-lessons/autosave";
 import { LESSON_LIMITS, type LessonBody, type LessonDetail, type LessonDetailView, type LessonRevisionSummary, type LessonRole } from "../../../../../lib/team-lessons/types";
-import { lessonFetch, lessonHref, lessonsHref, useLessonOrg, whenText } from "../../lesson-shared";
+import {
+  lessonFetch,
+  lessonHref,
+  LessonLoadError,
+  LessonLoading,
+  LessonOrgProblem,
+  lessonsHref,
+  useLessonOrg,
+  whenText,
+  type LessonLoadFailure,
+} from "../../lesson-shared";
 import { PdfPanel } from "./editor-pdf";
 import { PracticeEditor } from "./editor-practice";
 import { StepsEditor } from "./editor-steps";
@@ -89,13 +99,22 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
         setNotice("Restored changes from this browser that hadn't reached Vantage yet. Saving them now.");
       } else setLocalOffer(stored);
     } else if (stored) clearLocalDraft(lesson.id);
-    if (new URLSearchParams(window.location.search).get("start") === "pdf" && lesson.source === "editor") setPdfFirst(true);
+    // "Upload a PDF" from the list lands here with ?start=pdf. Read it once, then drop it so a
+    // reload or a shared link doesn't keep putting the PDF panel first.
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("start") === "pdf") {
+      if (lesson.source === "editor") setPdfFirst(true);
+      url.searchParams.delete("start");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
     // Once, for the lesson as loaded (the editor remounts when the lesson is reloaded).
   }, []);
 
   async function refreshRevisions() {
-    const result = await lessonFetch<LessonDetailView>(`/api/team-lessons/${lesson.id}?orgId=${encodeURIComponent(orgId)}`);
-    if (result.ok && result.data?.status === "ready") setRevisions(result.data.revisions);
+    const result = await lessonFetch<{ revisions: LessonRevisionSummary[] }>(
+      `/api/team-lessons/${lesson.id}?orgId=${encodeURIComponent(orgId)}&part=revisions`,
+    );
+    if (result.ok && Array.isArray(result.data?.revisions)) setRevisions(result.data.revisions);
   }
 
   /** Saves pending text first; false (with a notice) when that can't happen. */
@@ -408,10 +427,8 @@ function EditorBody({ orgId, view, onReload }: { orgId: string; view: Ready; onR
         </div>
       ) : null}
 
-      <div className="team-lesson-actions is-split team-lesson-footer">
-        <Button as="a" variant="secondary" href={lessonsHref(orgId)}>
-          Back to lessons
-        </Button>
+      {/* The breadcrumb is the way back to the list; no second "Back to lessons" here. */}
+      <div className="team-lesson-actions team-lesson-footer">
         {lesson.canChangeStatus && status !== "draft" ? (
           <Button variant="secondary" disabled={disabled} onClick={() => void changeStatus("draft")}>
             {busy === "draft" ? "Moving…" : "Move back to draft"}
@@ -470,17 +487,23 @@ export function LessonEditor({ lessonId }: { lessonId: string }) {
   const org = useLessonOrg();
   const orgId = org.status === "ready" ? org.orgId : null;
   const [view, setView] = useState<LessonDetailView | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LessonLoadFailure | null>(null);
   const [generation, setGeneration] = useState(0);
 
   const load = useCallback(async () => {
     if (!orgId) return;
     setError(null);
-    const result = await lessonFetch<LessonDetailView>(`/api/team-lessons/${lessonId}?orgId=${encodeURIComponent(orgId)}`);
+    // part=editor: the History list comes along, the player's practice attempts don't.
+    const result = await lessonFetch<LessonDetailView>(`/api/team-lessons/${lessonId}?orgId=${encodeURIComponent(orgId)}&part=editor`);
     if (result.ok && result.data) {
       setView(result.data);
       setGeneration((value) => value + 1);
-    } else setError(result.error ?? (result.status === 0 ? "Couldn't reach Vantage. Check your connection." : "This lesson could not be opened."));
+    } else {
+      setError({
+        status: result.status,
+        message: result.error ?? (result.status === 0 ? "Couldn't reach Vantage. Check your connection." : "This lesson could not be opened."),
+      });
+    }
   }, [lessonId, orgId]);
 
   useEffect(() => {
@@ -498,15 +521,11 @@ export function LessonEditor({ lessonId }: { lessonId: string }) {
     />
   );
 
-  if (org.status === "none") {
+  if (org.status === "none" || org.status === "signed-out" || org.status === "error") {
     return (
       <main className="module-page team-lessons-page">
         {header}
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Choose your team" description="This lesson belongs to a team. Choose yours to edit it.">
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
-        </EmptyState>
+        <LessonOrgProblem org={org} chooseText="This lesson belongs to a team. Choose yours to edit it." />
       </main>
     );
   }
@@ -523,13 +542,19 @@ export function LessonEditor({ lessonId }: { lessonId: string }) {
       <main className="module-page team-lessons-page">
         {header}
         {error ? (
-          <EmptyState title="Couldn't open this lesson" description={error}>
-            <Button variant="secondary" onClick={() => void load()}>
-              Try again
-            </Button>
-          </EmptyState>
+          <LessonLoadError
+            error={error}
+            title="Couldn't open this lesson"
+            onRetry={() => void load()}
+            back={{ href: lessonsHref(orgId), label: "Back to Team resources" }}
+          />
         ) : (
-          <EmptyState soft aria-busy title="Opening the editor…" />
+          <LessonLoading label="Opening the editor">
+            <Skeleton width="30%" height={14} />
+            <Skeleton variant="block" height={44} />
+            <Skeleton variant="block" height={88} />
+            <TextBlockSkeleton lines={4} />
+          </LessonLoading>
         )}
       </main>
     );

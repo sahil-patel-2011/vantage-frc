@@ -1,11 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button, EmptyState, PageHeader } from "../../../../components/ui";
+import { Button, EmptyState, PageHeader, Skeleton, TextBlockSkeleton } from "../../../../components/ui";
 import { withOrgHref } from "../../../../lib/nav/product-nav";
 import { publicLessonBody } from "../../../../lib/team-lessons/body";
 import type { LessonAttempt, LessonBody, LessonDetailView, PublicLessonBody } from "../../../../lib/team-lessons/types";
-import { lessonEditHref, lessonFetch, lessonsHref, StepView, useLessonOrg, whenText } from "../lesson-shared";
+import {
+  lessonEditHref,
+  lessonFetch,
+  LessonLoadError,
+  LessonLoading,
+  LessonOrgProblem,
+  lessonsHref,
+  StepView,
+  useLessonOrg,
+  whenText,
+  type LessonLoadFailure,
+} from "../lesson-shared";
 import { LessonPdf } from "./lesson-pdf";
 import { LessonPractice } from "./lesson-practice";
 
@@ -20,7 +31,7 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
   const org = useLessonOrg();
   const orgId = org.status === "ready" ? org.orgId : null;
   const [view, setView] = useState<LessonDetailView | null>(null);
-  const [error, setError] = useState<{ status: number; message: string } | null>(null);
+  const [error, setError] = useState<LessonLoadFailure | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [phase, setPhase] = useState<"steps" | "practice">("steps");
   const [attempts, setAttempts] = useState<LessonAttempt[]>([]);
@@ -52,15 +63,11 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
     </>
   );
 
-  if (org.status === "none") {
+  if (org.status === "none" || org.status === "signed-out" || org.status === "error") {
     return (
       <main className="module-page team-lessons-page">
         <PageHeader breadcrumbs={crumbs()} title="Team lesson" />
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Choose your team" description="This lesson belongs to a team. Choose yours to open it.">
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
-        </EmptyState>
+        <LessonOrgProblem org={org} chooseText="This lesson belongs to a team. Choose yours to open it." />
       </main>
     );
   }
@@ -72,19 +79,18 @@ export function LessonPlayer({ lessonId }: { lessonId: string }) {
         {view?.status === "setup_required" ? (
           <EmptyState soft badge="Needs setup" badgeTone="setup" title="Team resources aren't ready yet" description={view.message} />
         ) : error ? (
-          <EmptyState title={error.status === 404 ? "Lesson not found" : "Couldn't open this lesson"} description={error.message}>
-            {error.status === 404 || error.status === 403 ? (
-              <Button as="a" variant="secondary" href={lessonsHref(orgId)}>
-                Back to Team resources
-              </Button>
-            ) : (
-              <Button variant="secondary" onClick={() => void load()}>
-                Try again
-              </Button>
-            )}
-          </EmptyState>
+          <LessonLoadError
+            error={error}
+            title="Couldn't open this lesson"
+            onRetry={() => void load()}
+            back={{ href: lessonsHref(orgId), label: "Back to Team resources" }}
+          />
         ) : (
-          <EmptyState soft aria-busy title="Opening the lesson…" />
+          <LessonLoading label="Opening the lesson">
+            <Skeleton width="40%" height={14} />
+            <Skeleton width="70%" height={26} />
+            <TextBlockSkeleton lines={5} />
+          </LessonLoading>
         )}
       </main>
     );
