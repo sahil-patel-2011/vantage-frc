@@ -36,8 +36,12 @@ function tabForHash(hash: string): CodeTab | null {
   What a scan costs is said once, next to the scan, and in the line at the foot of the page.
 */
 export function CodeReadyView(props: CodeReadyViewProps) {
-  const { orgId, embedded, budgetsHref, keysHref, showMeteredBanner, cutoffCode, message } = props;
-  const [tab, setTab] = useState<CodeTab>("review");
+  const { orgId, embedded, budgetsHref, keysHref, showMeteredBanner, cutoffCode, message, initialTab } = props;
+  const [tab, setTab] = useState<CodeTab>(initialTab ?? "review");
+  // The hub's AI Bugbot tab (?tab=bugbot) opens on Repo scan, including after a soft navigation.
+  useEffect(() => {
+    if (initialTab) setTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     const follow = () => {

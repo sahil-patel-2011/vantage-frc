@@ -22,6 +22,8 @@ import type {
 export type CodeReadyViewProps = {
   orgId: string;
   embedded: boolean;
+  /** Which tab opens first: the AI Bugbot hub tab (?tab=bugbot) opens Repo scan. */
+  initialTab?: "review" | "scan";
   budgetsHref: string;
   keysHref: string;
   githubHref: string;
