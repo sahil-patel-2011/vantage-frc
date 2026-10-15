@@ -36,6 +36,7 @@ import {
 import { NET_ERR, offlineReasonFromLoadError, shellWaitlistUrl } from "./shell-copy";
 import { UpdateService, type UpdateStatus } from "./update-service";
 import { LocalAiService, type LocalAiConfig, type LocalAiStatus } from "./local-ai-service";
+import { sealLocalAiConfig, unsealLocalAiConfig } from "./local-ai";
 
 const PARTITION = "persist:vantage";
 const DEEP_LINK_SCHEME = "vantage-frc";
@@ -55,25 +56,26 @@ function localAiConfigFile(): string {
 }
 
 /** The device token is kept with the OS keychain when one is available, never in plain text if it can be helped. */
+const keychain = () =>
+  safeStorage.isEncryptionAvailable()
+    ? {
+        seal: (value: string) => safeStorage.encryptString(value).toString("base64"),
+        unseal: (sealed: string) => safeStorage.decryptString(Buffer.from(sealed, "base64")),
+      }
+    : null;
+
 async function readLocalAiConfig(): Promise<Partial<LocalAiConfig> | null> {
   try {
-    const raw = JSON.parse(await fs.readFile(localAiConfigFile(), "utf8")) as Partial<LocalAiConfig> & { deviceTokenSealed?: string };
-    let deviceToken = raw.deviceToken ?? null;
-    if (raw.deviceTokenSealed && safeStorage.isEncryptionAvailable()) {
-      deviceToken = safeStorage.decryptString(Buffer.from(raw.deviceTokenSealed, "base64"));
-    }
-    return { ...raw, deviceToken };
+    const raw = JSON.parse(await fs.readFile(localAiConfigFile(), "utf8")) as unknown;
+    return unsealLocalAiConfig(raw, keychain()?.unseal ?? null);
   } catch {
     return null;
   }
 }
 
 async function writeLocalAiConfig(config: LocalAiConfig): Promise<void> {
-  const { deviceToken, ...rest } = config;
-  const sealed = deviceToken && safeStorage.isEncryptionAvailable()
-    ? { deviceTokenSealed: safeStorage.encryptString(deviceToken).toString("base64"), deviceToken: null }
-    : { deviceToken };
-  await fs.writeFile(localAiConfigFile(), JSON.stringify({ ...rest, ...sealed }, null, 2), { encoding: "utf8", mode: 0o600 });
+  const stored = sealLocalAiConfig(config, keychain()?.seal ?? null);
+  await fs.writeFile(localAiConfigFile(), JSON.stringify(stored, null, 2), { encoding: "utf8", mode: 0o600 });
 }
 
 async function systemCapacity(): Promise<{ totalMemBytes: number; freeDiskBytes: number | null }> {

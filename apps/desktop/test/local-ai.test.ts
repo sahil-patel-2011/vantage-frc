@@ -7,7 +7,9 @@ import {
   parseModelList,
   pickLocalModel,
   sanitizeLocalModelUrl,
+  sealLocalAiConfig,
   stripReasoning,
+  unsealLocalAiConfig,
 } from "../src/local-ai";
 
 const GiB = 1024 ** 3;
@@ -32,6 +34,7 @@ describe("LM Studio address", () => {
   it("only ever talks to this computer", () => {
     expect(sanitizeLocalModelUrl("http://localhost:1234")).toBe("http://localhost:1234/v1");
     expect(sanitizeLocalModelUrl("http://127.0.0.1:11434/v1/")).toBe("http://127.0.0.1:11434/v1");
+    expect(sanitizeLocalModelUrl("http://[::1]:1234")).toBe("http://[::1]:1234/v1");
     expect(sanitizeLocalModelUrl("http://192.168.1.20:1234/v1")).toBe(DEFAULT_LM_STUDIO_URL);
     expect(sanitizeLocalModelUrl("https://evil.example/v1")).toBe(DEFAULT_LM_STUDIO_URL);
     expect(sanitizeLocalModelUrl("file:///etc/passwd")).toBe(DEFAULT_LM_STUDIO_URL);
@@ -81,5 +84,31 @@ describe("heartbeat report", () => {
     expect(localEngineReport({ reachable: true, model: "qwen3-8b", enabled: false }).lmstudio.available).toBe(false);
     expect(localEngineReport({ reachable: false, model: "qwen3-8b", enabled: true }).lmstudio.available).toBe(false);
     expect(localEngineReport({ reachable: true, model: null, enabled: true }).lmstudio.available).toBe(false);
+  });
+});
+
+describe("saved settings", () => {
+  const base = { enabled: true, baseUrl: DEFAULT_LM_STUDIO_URL, model: "qwen3-8b", deviceId: "d1", orgId: "o1", userId: "u1" };
+  const seal = (value: string) => `sealed:${value}`;
+  const unseal = (value: string) => value.replace(/^sealed:/, "");
+
+  it("keeps the token only sealed when a keychain exists", () => {
+    const stored = sealLocalAiConfig({ ...base, deviceToken: "tok" }, seal);
+    expect(stored.deviceTokenSealed).toBe("sealed:tok");
+    expect("deviceToken" in stored).toBe(false);
+    expect(unsealLocalAiConfig(stored, unseal).deviceToken).toBe("tok");
+  });
+
+  it("forgets the token on unpair, even after reading an old sealed one back", () => {
+    const read = unsealLocalAiConfig(sealLocalAiConfig({ ...base, deviceToken: "tok" }, seal), unseal);
+    const afterUnpair = sealLocalAiConfig({ ...base, ...read, enabled: false, deviceToken: null, deviceId: null }, seal);
+    expect(afterUnpair).not.toHaveProperty("deviceTokenSealed");
+    expect(afterUnpair).not.toHaveProperty("deviceToken");
+    expect(unsealLocalAiConfig(afterUnpair, unseal).deviceToken).toBeNull();
+  });
+
+  it("drops a token that no longer unseals instead of throwing", () => {
+    const stored = sealLocalAiConfig({ ...base, deviceToken: "tok" }, seal);
+    expect(unsealLocalAiConfig(stored, () => { throw new Error("other user"); }).deviceToken).toBeNull();
   });
 });

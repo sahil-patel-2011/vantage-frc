@@ -237,12 +237,17 @@ export class LocalAiService {
   }
 
   private ensureLoop() {
-    if (this.loop || !this.config.deviceToken) return;
+    if (!this.config.deviceToken) return;
+    // Cleared even when a loop exists: switching off and straight back on while the old loop is
+    // sleeping keeps that loop going instead of letting it exit with nothing to replace it.
     this.stopRequested = false;
+    if (this.loop) return;
     this.loop = this.runLoop().finally(() => {
       this.loop = null;
       this.running = false;
       this.emit();
+      // Switched back on in the moment the old loop was exiting: start a fresh one.
+      if (!this.stopRequested && this.config.enabled && this.config.deviceToken) this.ensureLoop();
     });
   }
 

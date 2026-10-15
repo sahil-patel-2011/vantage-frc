@@ -47,7 +47,7 @@ export function sanitizeLocalModelUrl(raw: string | null | undefined): string {
   try {
     const url = new URL(raw.trim());
     if (url.protocol !== "http:" && url.protocol !== "https:") return fallback;
-    if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) return fallback;
+    if (!["127.0.0.1", "localhost", "[::1]", "::1"].includes(url.hostname)) return fallback;
     const path = url.pathname.replace(/\/+$/, "");
     return `${url.protocol}//${url.host}${path.endsWith("/v1") ? path : `${path}/v1`}`;
   } catch {
@@ -148,6 +148,73 @@ function anyOf(signals: AbortSignal[]): AbortSignal {
     signal.addEventListener("abort", () => controller.abort(signal.reason), { once: true });
   }
   return controller.signal;
+}
+
+/** The saved settings, as written to disk. */
+export type StoredLocalAiConfig = {
+  enabled: boolean;
+  baseUrl: string;
+  model: string | null;
+  deviceId: string | null;
+  orgId: string | null;
+  userId: string | null;
+  /** The device token sealed by the OS keychain, when one is available. */
+  deviceTokenSealed?: string;
+  /** Only when no keychain exists on this computer. */
+  deviceToken?: string | null;
+};
+
+type LocalAiFields = {
+  enabled: boolean;
+  baseUrl: string;
+  model: string | null;
+  deviceToken: string | null;
+  deviceId: string | null;
+  orgId: string | null;
+  userId: string | null;
+};
+
+/**
+ * Settings → disk. Every field is listed: spreading what was read back in once carried an old
+ * sealed token past an unpair, and the next launch restored the dropped pairing.
+ */
+export function sealLocalAiConfig(config: LocalAiFields, seal: ((value: string) => string) | null): StoredLocalAiConfig {
+  const stored: StoredLocalAiConfig = {
+    enabled: config.enabled,
+    baseUrl: config.baseUrl,
+    model: config.model,
+    deviceId: config.deviceId,
+    orgId: config.orgId,
+    userId: config.userId,
+  };
+  if (config.deviceToken) {
+    if (seal) stored.deviceTokenSealed = seal(config.deviceToken);
+    else stored.deviceToken = config.deviceToken;
+  }
+  return stored;
+}
+
+/** Disk → settings; a token that no longer unseals (another user, a new keychain) is dropped. */
+export function unsealLocalAiConfig(raw: unknown, unseal: ((sealed: string) => string) | null): Partial<LocalAiFields> {
+  if (!raw || typeof raw !== "object") return {};
+  const stored = raw as Partial<StoredLocalAiConfig>;
+  let deviceToken: string | null = typeof stored.deviceToken === "string" ? stored.deviceToken : null;
+  if (typeof stored.deviceTokenSealed === "string") {
+    try {
+      deviceToken = unseal ? unseal(stored.deviceTokenSealed) : null;
+    } catch {
+      deviceToken = null;
+    }
+  }
+  return {
+    enabled: stored.enabled === true,
+    baseUrl: typeof stored.baseUrl === "string" ? stored.baseUrl : undefined,
+    model: typeof stored.model === "string" ? stored.model : null,
+    deviceId: typeof stored.deviceId === "string" ? stored.deviceId : null,
+    orgId: typeof stored.orgId === "string" ? stored.orgId : null,
+    userId: typeof stored.userId === "string" ? stored.userId : null,
+    deviceToken,
+  };
 }
 
 /** What the bridge heartbeat reports for this engine (the server reads `available`). */

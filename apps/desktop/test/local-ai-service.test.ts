@@ -31,7 +31,8 @@ function harness(routes: Record<string, Route>, options: { saved?: Partial<Local
     system: async () => ({ totalMemBytes: (options.memGb ?? 32) * GiB, freeDiskBytes: 100e9 }),
     openApproval: (url) => opened.push(url),
     onStatus: () => undefined,
-    sleep: async () => undefined,
+    // Yield to the event loop like a real wait would, so a running loop can be observed and stopped.
+    sleep: () => new Promise((resolve) => setTimeout(resolve, 0)),
   });
   return { service, calls, opened, saved: () => saved };
 }
@@ -116,5 +117,27 @@ describe("LocalAiService", () => {
     const heartbeat = calls.find((call) => call.url.endsWith("/heartbeat"));
     expect(JSON.parse(String(heartbeat?.init.body)).engines.lmstudio).toMatchObject({ available: true, model: "qwen3-8b" });
     expect((heartbeat?.init.headers as Record<string, string>).authorization).toBe("Bearer dev-token");
+  });
+
+  it("keeps answering after being switched off and straight back on", async () => {
+    let claims = 0;
+    const { service } = harness(
+      {
+        "GET /v1/models": models,
+        "POST /api/ai-bridge/device/heartbeat": () => Response.json({ ok: true }),
+        "POST /api/ai-bridge/device/jobs": () => {
+          claims += 1;
+          return new Response(null, { status: 204 });
+        },
+      },
+      { saved: { enabled: true, deviceToken: "dev-token", userId: "u1", orgId: "o1" } },
+    );
+    await service.start();
+    await service.setEnabled(false);
+    await service.setEnabled(true);
+    const before = claims;
+    await vi.waitFor(() => expect(claims).toBeGreaterThan(before + 2));
+    expect(service.status().running).toBe(true);
+    await service.setEnabled(false);
   });
 });
