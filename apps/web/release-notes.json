@@ -2,6 +2,19 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2395,
+      "date": "2026-10-15",
+      "headline": "An easier scouting form builder",
+      "changes": [
+        "Answer types are grouped (Count, Choose, Rate, Text, Field and time) with plain descriptions",
+        "Required is right next to each question instead of under More",
+        "The preview shows the quick tiles scouts actually use, with the full form one tap away",
+        "An option can contain a comma without splitting in two",
+        "Assigning or swapping a scout can be undone straight away",
+        "A No on a yes/no tile now looks like an answer"
+      ]
+    },
+    {
       "pr": 2394,
       "date": "2026-10-15",
       "headline": "Plain words everywhere",

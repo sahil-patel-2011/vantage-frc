@@ -83,10 +83,11 @@ function ToggleTile({ field, value, invalid, onChange }: TileProps) {
       onClick={() => onChange(!on)}
     >
       <span className="qs-toggle-check" aria-hidden="true">
-        {on ? "✓" : ""}
+        {on ? "✓" : value === false ? "✕" : ""}
       </span>
       <span className="qs-tile-label">{field.label}</span>
-      <small>{on ? "Yes · tap to undo" : "Tap for yes"}</small>
+      {/* "No" is a real answer and looks like one, not like a question nobody answered. */}
+      <small>{on ? "Yes · tap for no" : value === false ? "No · tap for yes" : "Tap for yes"}</small>
     </button>
   );
 }

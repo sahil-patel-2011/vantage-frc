@@ -43,59 +43,36 @@ import { cyclicVisibilityKeys, isVisibleWhen, readVisibleWhen, type VisibleWhen 
 export { SCOUT_IDENTITY_LOCK_COPY };
 export type AnswerKind = FieldWidget;
 
+/**
+ * Every answer type, in the group a person looks for it in, with a hint that says what the
+ * scout sees. The picker shows these groups (Count, Choose, Rate, Text, Field and time,
+ * Layout) instead of one 16-item list of overlapping names.
+ */
+export const ANSWER_KIND_GROUPS = ["Count", "Choose", "Rate", "Text", "Field and time", "Layout"] as const;
+export type AnswerKindGroup = (typeof ANSWER_KIND_GROUPS)[number];
+
 export const ANSWER_KIND_OPTIONS: Array<{
   kind: AnswerKind;
   label: string;
   hint: string;
+  group: AnswerKindGroup;
 }> = [
-  { kind: "mc", label: "Multiple choice", hint: "Tap one option (radio)" },
-  { kind: "short", label: "Short answer", hint: "Single-line text" },
-  { kind: "free", label: "Free text", hint: "Longer notes" },
-  { kind: "dropdown", label: "Dropdown", hint: "Select from a list" },
-  { kind: "number", label: "Number", hint: "Counts and scores" },
-  { kind: "yesno", label: "Yes / No", hint: "Checkbox" },
-  {
-    kind: "drivetrain",
-    label: "Drivetrain type",
-    hint: "Swerve, west coast, tank, mecanum, or other",
-  },
-  {
-    kind: "counter",
-    label: "Counter",
-    hint: "Huge +1 and bulk (+5 / +10) taps with one-level undo",
-  },
-  {
-    kind: "multi_counter",
-    label: "Multi-counter",
-    hint: "Several named tallies in one block (e.g. high / mid / low)",
-  },
-  {
-    kind: "timer",
-    label: "Stopwatch / timer",
-    hint: "One giant start-stop; total seconds or a list of laps",
-  },
-  { kind: "rating", label: "Rating", hint: "Tap 1..N stars; tap again to clear" },
-  {
-    kind: "multi_select",
-    label: "Multi-select",
-    hint: "Pick any number of options — stored as a real list",
-  },
-  { kind: "slider", label: "Slider", hint: "Drag between a min and max with a fixed step" },
-  {
-    kind: "section",
-    label: "Section header",
-    hint: "Layout only — groups the questions under it (Auto / Teleop / Endgame)",
-  },
-  {
-    kind: "field_position",
-    label: "Field position",
-    hint: "Tap a labeled grid cell; stores cell numbers only, never game art",
-  },
-  {
-    kind: "auto_path",
-    label: "Auto route",
-    hint: "Tap the grid in the order the robot drove in autonomous; the briefing plays the alliance's routes together",
-  },
+  { kind: "counter", label: "Counter", hint: "One big +1 button, with −1 and +5 for quick fixes", group: "Count" },
+  { kind: "multi_counter", label: "Several counters", hint: "A few named counts in one block, like high, mid and low", group: "Count" },
+  { kind: "number", label: "Number", hint: "Scouts type a number, like a score or a weight", group: "Count" },
+  { kind: "mc", label: "Multiple choice", hint: "Scouts tap one of a few big buttons", group: "Choose" },
+  { kind: "multi_select", label: "Choose several", hint: "Scouts tap every option that applies", group: "Choose" },
+  { kind: "dropdown", label: "Long list", hint: "One option from a long list, picked from a menu", group: "Choose" },
+  { kind: "yesno", label: "Yes / No", hint: "Two buttons: Yes and No", group: "Choose" },
+  { kind: "drivetrain", label: "Drivetrain", hint: "Swerve, west coast, tank, mecanum or other", group: "Choose" },
+  { kind: "rating", label: "Rating", hint: "Tap 1 to 5 stars; tap again to clear", group: "Rate" },
+  { kind: "slider", label: "Slider", hint: "Drag between a low and a high value", group: "Rate" },
+  { kind: "short", label: "Short answer", hint: "One line of text", group: "Text" },
+  { kind: "free", label: "Notes", hint: "Room for a few sentences", group: "Text" },
+  { kind: "timer", label: "Stopwatch", hint: "One big start and stop button; saves seconds or laps", group: "Field and time" },
+  { kind: "field_position", label: "Field position", hint: "Scouts tap where on the field it happened", group: "Field and time" },
+  { kind: "auto_path", label: "Auto route", hint: "Scouts tap the field in the order the robot drove in auto", group: "Field and time" },
+  { kind: "section", label: "Section heading", hint: "A heading that groups the questions under it, like Auto or Teleop", group: "Layout" },
 ];
 
 /** Studio kinds whose entry UI is tap-first (big targets, eyes on the match). */
@@ -303,16 +280,33 @@ export function slugifyKey(label: string, used: Set<string>): string {
   return key;
 }
 
+/**
+ * Options are stored one per line, so an option may contain a comma ("Coral, low"). A single
+ * line with no line break is an older list typed as "none, park, climb" and is still read by
+ * its commas.
+ */
 export function parseOptions(optionsText: string): string[] {
   return optionsText
-    .split(/[\n,]/)
+    .split(optionsText.includes("\n") ? /\n/ : /,/)
     .map((part) => part.trim())
     .filter(Boolean);
 }
 
-/** Persist option editor rows back into draft `optionsText`. */
+/**
+ * Persist option editor rows back into draft `optionsText`: one per line, each row ending in a
+ * line break. Rows are kept exactly as typed, blank ones too, so Add option shows a new empty
+ * row and a space can be typed between words; parseOptions tidies them when the form is saved.
+ */
 export function serializeOptions(options: string[]): string {
-  return options.map((part) => part.trim()).filter(Boolean).join(", ");
+  return options.map((part) => part.replace(/\n/g, " ")).join("\n") + "\n";
+}
+
+/** The editor's rows, blanks included (an older one-line comma list reads as before). */
+export function parseOptionRows(optionsText: string): string[] {
+  if (!optionsText.includes("\n")) return parseOptions(optionsText);
+  const rows = optionsText.split("\n");
+  if (rows[rows.length - 1] === "") rows.pop();
+  return rows;
 }
 
 export function moveOption(options: string[], from: number, to: number): string[] {

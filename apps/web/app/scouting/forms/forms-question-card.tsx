@@ -5,6 +5,7 @@ import type { VisibleWhen } from "@vantage/scouting/visibility";
 import { ActionMenu, FormRow } from "../../../components/ui";
 import type { useTierDrag } from "../../../components/ui/use-tier-drag";
 import {
+  ANSWER_KIND_GROUPS,
   ANSWER_KIND_OPTIONS,
   RESET_BEHAVIOR_OPTIONS,
   STRATEGY_ROLE_OPTIONS,
@@ -143,20 +144,43 @@ export function FormQuestionCard({
             placeholder="What should scouts answer?"
           />
         </FormRow>
-        <FormRow label="Answer type">
+        <FormRow label="Answer type" hint={ANSWER_KIND_OPTIONS.find((o) => o.kind === question.kind)?.hint}>
           <select
             value={question.kind}
             disabled={locked}
             onChange={(event) => onRetype(event.target.value as AnswerKind)}
           >
-            {ANSWER_KIND_OPTIONS.map((option) => (
-              <option key={option.kind} value={option.kind}>
-                {option.label}
-              </option>
+            {/* Grouped the way people look for a type; on a phone this is the native picker. */}
+            {ANSWER_KIND_GROUPS.map((group) => (
+              <optgroup key={group} label={group}>
+                {ANSWER_KIND_OPTIONS.filter((option) => option.group === group).map((option) => (
+                  <option key={option.kind} value={option.kind}>
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </FormRow>
       </div>
+      {/* Required sits with the question itself, not under the folded advanced options. */}
+      {question.kind !== "section" ? (
+        <label className={`sfb-check sfb-required-toggle${question.required ? " is-on" : ""}`}>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={question.required}
+            disabled={locked}
+            onChange={(event) => onUpdate({ required: event.target.checked })}
+          />
+          <span>
+            <strong>Required</strong>
+            <small className="app-muted">
+              {question.required ? "Scouts must answer before they save" : "Scouts can skip it"}
+            </small>
+          </span>
+        </label>
+      ) : null}
       {needsOptionEditor(question.kind) ? (
         <OptionEditor
           optionsText={question.optionsText}
@@ -164,11 +188,7 @@ export function FormQuestionCard({
           kind={question.kind}
           onChange={(optionsText) => onUpdate({ optionsText })}
         />
-      ) : (
-        <p className="app-muted" style={{ margin: 0, fontSize: 13 }}>
-          {ANSWER_KIND_OPTIONS.find((o) => o.kind === question.kind)?.hint}
-        </p>
-      )}
+      ) : null}
       {needsSettingsEditor(question.kind) ? (
         <StudioSettingsEditor
           question={question}
@@ -185,13 +205,13 @@ export function FormQuestionCard({
         <>
           {/* The settings most forms never change, folded: every question showed all of them. */}
           <details className="sfb-more">
-            <summary data-disclosure>Description, chart and advanced options</summary>
+            <summary data-disclosure>Description, chart and more</summary>
             <CollectionSettings question={question} index={index} match={isMatch} disabled={locked} onChange={collectionConfig => onUpdate({ collectionConfig })} />
             <FormsVisibilityEditor rule={question.visibleWhen} fieldKey={field.key} fields={fields} disabled={locked} onChange={onVisibleWhen} />
             <FormRow label="Description"><input value={question.helpText ?? ""} disabled={locked} onChange={event => onUpdate({ helpText: event.target.value })} placeholder="Optional guidance for scouts" /></FormRow>
-            <FormRow label="Response chart"><select aria-label={`Chart for question ${index+1}`} value={question.chart ?? "auto"} disabled={locked} onChange={event => onUpdate({ chart: event.target.value as DraftQuestion["chart"] })}><option value="auto">Automatic</option><option value="bar">Answer counts</option><option value="trend">Number trend</option><option value="none">Table only</option></select></FormRow>
+            <FormRow label="Chart on Responses"><select aria-label={`Chart for question ${index+1}`} value={question.chart ?? "auto"} disabled={locked} onChange={event => onUpdate({ chart: event.target.value as DraftQuestion["chart"] })}><option value="auto">Automatic</option><option value="bar">Answer counts</option><option value="trend">Number trend</option><option value="none">Table only</option></select></FormRow>
             <FormRow
-              label="Feeds strategy as"
+              label="Used in strategy as"
               hint={
                 question.role === "none"
                   ? detectedRoleForQuestion(question) !== "none"
@@ -226,7 +246,7 @@ export function FormQuestionCard({
               disabled={locked}
               onChange={officialComparison => onUpdate({ officialComparison })} /> : null}
           <FormRow
-            label="After a save"
+            label="For the next match"
             hint={
               RESET_BEHAVIOR_OPTIONS.find(
                 (option) => option.behavior === question.reset,
@@ -251,26 +271,6 @@ export function FormQuestionCard({
             </select>
           </FormRow>
           </details>
-          <label
-            className={`sfb-check sfb-required-toggle${question.required ? " is-on" : ""}`}
-          >
-            <input
-              type="checkbox"
-              checked={question.required}
-              disabled={locked}
-              onChange={(event) =>
-                onUpdate({ required: event.target.checked })
-              }
-            />
-            <span>
-              <strong>Required</strong>
-              <small className="app-muted">
-                {question.required
-                  ? "Scouts must answer before save"
-                  : "Optional — scouts can skip"}
-              </small>
-            </span>
-          </label>
         </>
       )}
       </> : null}
