@@ -9,6 +9,7 @@ import type {
   GrantEligibilityRules,
   OrgGrantProfile,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type GrantCalendarSetupStep = {
   id: string;
@@ -60,9 +61,7 @@ const PROFILE_GAP_COPY: Record<string, string> = {
 };
 
 function currentSeasonYear(now = new Date()): number {
-  // FRC seasons are named for the calendar year of championship; the next season's kickoff is
-  // in January, so anything from September on already belongs to next year's season.
-  return now.getUTCMonth() >= 8 ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function toNumber(value: unknown): number | null {

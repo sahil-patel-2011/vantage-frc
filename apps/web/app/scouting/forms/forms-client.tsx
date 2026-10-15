@@ -3,7 +3,7 @@
 import { FormsResponses } from "./forms-responses";
 import { ScoringFormulas } from "./scoring-formulas";
 import { useSearchParams } from "next/navigation";
-import { scoutingGameLabel, latestScoutingYear } from "../../../lib/scouting/free-scout";
+import { scoutingGameLabel, scoutingGameYears, latestScoutingYear } from "../../../lib/scouting/free-scout";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { type EntryType, type SchemaDefinition, type ScoutSchema } from "@vantage/scouting";
 import "../scouting.css";
@@ -723,7 +723,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
         <FormRow label="Game"><select aria-label="Form game" disabled={busy} value={year ?? latestScoutingYear()} onChange={event => {
           if (!saveCurrentDraft()) return;
           setPublished(null); void load(Number(event.target.value));
-        }}>{Array.from(new Set([year ?? latestScoutingYear(), latestScoutingYear(), 2025, 2024])).sort((a,b) => b-a).map(value => <option key={value} value={value}>{scoutingGameLabel(value)}</option>)}</select></FormRow>
+        }}>{scoutingGameYears(year ?? latestScoutingYear()).map(value => <option key={value} value={value}>{scoutingGameLabel(value)}</option>)}</select></FormRow>
       </div>
       <div className="sfb-workspace-bar">
         <ToolStrip presentation="segments" aria-label="Form workspace" value={mode} onChange={id => setMode(id as FormBuilderMode)} items={[{ id: "edit", label: "Questions" }, { id: "preview", label: "Preview" }, { id: "responses", label: "Responses" }]} />

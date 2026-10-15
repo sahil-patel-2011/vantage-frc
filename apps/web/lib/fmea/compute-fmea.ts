@@ -10,6 +10,7 @@ import type {
   FmeaSummary,
 } from "./types";
 import { detectRepeatFailures, type RepeatFailureAlert } from "./repeat-failures";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const FMEA_CONTEXTS: FmeaContext[] = ["match", "pit", "practice", "inspection", "other"];
 export const FMEA_STATUSES: FmeaStatus[] = ["open", "fixing", "verified", "closed"];
@@ -49,7 +50,7 @@ export type FmeaView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type FailureRow = {

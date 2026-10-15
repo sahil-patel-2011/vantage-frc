@@ -8,6 +8,7 @@ import type {
   DecisionSearchQueryRecord,
   DecisionSearchSourceKind,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { DECISION_SEARCH_SOURCE_KINDS };
 
@@ -39,7 +40,7 @@ export type DecisionSearchView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isSourceKind(value: unknown): value is DecisionSearchSourceKind {

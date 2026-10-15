@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { summarizeOutreachCalendar, upcomingOutreachEvents } from ".";
 import type { OutreachAudience, OutreachCalendarSummary, OutreachCategory, OutreachEvent, OutreachStatus } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type OutreachCalendarSetupStep = {
   id: string;
@@ -30,7 +31,7 @@ export type OutreachCalendarView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function todayIso(now: Date = new Date()): string {

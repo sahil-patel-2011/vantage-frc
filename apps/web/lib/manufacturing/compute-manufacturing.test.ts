@@ -2,14 +2,11 @@ import { describe, expect, it } from "vitest";
 import { bulkAddFromBom, defaultSeasonYear, todayIso } from "./compute-manufacturing";
 
 describe("defaultSeasonYear", () => {
-  it("uses the calendar year through August", () => {
+  it("uses the app-wide season: the calendar year", () => {
     expect(defaultSeasonYear(new Date(Date.UTC(2026, 0, 15)))).toBe(2026);
-    expect(defaultSeasonYear(new Date(Date.UTC(2026, 7, 31)))).toBe(2026);
-  });
-
-  it("rolls to the next game year from September onward", () => {
-    expect(defaultSeasonYear(new Date(Date.UTC(2026, 8, 1)))).toBe(2027);
-    expect(defaultSeasonYear(new Date(Date.UTC(2026, 11, 31)))).toBe(2027);
+    expect(defaultSeasonYear(new Date(Date.UTC(2026, 8, 1)))).toBe(2026);
+    expect(defaultSeasonYear(new Date(Date.UTC(2026, 11, 31)))).toBe(2026);
+    expect(defaultSeasonYear(new Date(Date.UTC(2027, 0, 2)))).toBe(2027);
   });
 });
 

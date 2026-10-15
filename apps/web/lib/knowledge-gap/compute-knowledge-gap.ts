@@ -23,6 +23,7 @@ import type {
   KnowledgeGapWorkItem,
   KnowledgeGapWorkKind,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type KnowledgeGapSetupStep = {
   id: string;
@@ -51,7 +52,7 @@ export type KnowledgeGapView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isWorkKind(value: unknown): value is KnowledgeGapWorkKind {

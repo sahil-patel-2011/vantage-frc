@@ -13,13 +13,14 @@ import type {
   SketchToBriefSetupStep,
   SketchToBriefView,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type { SketchToBriefView } from "./types";
 
 export const SKETCH_TO_BRIEF_FEATURE = "sketch_to_brief.draft";
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function setupSteps(orgId: string | null): SketchToBriefSetupStep[] {

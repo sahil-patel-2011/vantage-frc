@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { summarizeIncidentHeatmap } from ".";
 import type { Incident, IncidentContext, IncidentHeatmapSummary } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const INCIDENT_CONTEXTS: IncidentContext[] = ["match", "pit", "practice", "inspection", "other"];
 
@@ -33,7 +34,7 @@ export type IncidentHeatmapView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type IncidentRow = {

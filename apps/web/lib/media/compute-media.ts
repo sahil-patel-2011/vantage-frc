@@ -16,6 +16,7 @@ import type {
   MediaOutreachSummary,
   MediaSponsorWallSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type MediaSetupStep = {
   id: string;
@@ -47,7 +48,7 @@ export type MediaView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

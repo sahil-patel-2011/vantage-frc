@@ -14,6 +14,7 @@ import type {
   SeasonReportSnapshot,
   SeasonReportSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type SeasonReportSetupStep = {
   id: string;
@@ -43,7 +44,7 @@ export type SeasonReportView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

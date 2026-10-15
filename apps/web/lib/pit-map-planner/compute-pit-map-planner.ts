@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { PIT_MAP_CATEGORIES, summarizePitMap } from ".";
 import type { PitMapItem, PitMapItemCategory, PitMapLayout, PitMapSummary } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { PIT_MAP_CATEGORIES };
 
@@ -32,7 +33,7 @@ export type PitMapPlannerView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isCategory(value: unknown): value is PitMapItemCategory {

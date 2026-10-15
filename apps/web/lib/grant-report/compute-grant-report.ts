@@ -13,6 +13,7 @@ import {
   type GrantTaggedTxn,
 } from "./spend-linkage";
 import type { GrantReport, GrantReportEligibleGrant } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type GrantReportSetupStep = {
   id: string;
@@ -42,7 +43,7 @@ export type GrantReportView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

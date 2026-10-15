@@ -14,6 +14,7 @@ import type {
   SubscriptionCadence,
   SubscriptionsSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const COST_CATEGORIES: CostCategory[] = [
   "registration",
@@ -71,7 +72,7 @@ export type CostsView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type BudgetRow = { totalBudgetUsd: string | number | null; aiAssistEnabled: boolean; notes: string | null };

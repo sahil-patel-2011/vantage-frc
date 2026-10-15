@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { playoffReweighCue, summarizeRobotWeighIn } from ".";
 import type { RobotWeighInEntry, RobotWeighInStation, RobotWeighInSummary } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const ROBOT_WEIGH_IN_STATIONS: RobotWeighInStation[] = [
   "shop",
@@ -44,7 +45,7 @@ export type RobotWeighInView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 /**

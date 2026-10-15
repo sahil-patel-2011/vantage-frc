@@ -24,6 +24,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { recordMoney, removeMoney } from "./ledger";
 import { FINANCE_MANAGER_REQUIRED } from "./finance-managers";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const REIMBURSEMENT_STATUSES = [
   "draft",
@@ -350,7 +351,7 @@ export function normalizeClaimDraft(input: {
 }
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 // ---------------------------------------------------------------- view model

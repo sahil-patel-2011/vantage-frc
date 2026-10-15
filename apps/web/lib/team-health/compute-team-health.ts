@@ -2,6 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { computeTeamHealthReadiness, summarizeTeamHealth, type TeamHealthAttendanceEvent, type TeamHealthReadiness, type TeamHealthSummary } from ".";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type TeamHealthSetupStep = {
   id: string;
@@ -55,7 +56,7 @@ export type TeamHealthDashboardView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

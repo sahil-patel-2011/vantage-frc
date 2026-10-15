@@ -5,6 +5,7 @@ import { TRIAGE_DECISIONS, TRIAGE_STATUSES, triageRepair } from ".";
 import { canDeletePitRepairReport } from "./types";
 import { consumeForSource } from "../parts/store";
 import type { FmeaHistoryEntry, SpareCandidate, TriageDecision, TriageReport, TriageStatus } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 /** A part consumed by a repair, chosen from the unified stock at resolve time. */
 export type UsedPart = { itemId: string; quantity: number };
@@ -41,7 +42,7 @@ export type PitRepairTriageView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isDecision(value: unknown): value is TriageDecision {

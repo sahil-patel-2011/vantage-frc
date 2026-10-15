@@ -1,5 +1,5 @@
 import {
-  currentSeasonYear,
+  upcomingGameYear,
   lastPublishedPack,
   packForYear,
   type GameYearBrief,
@@ -50,7 +50,7 @@ function emptyBrief(pack: GameYearPack): GameYearBrief {
   };
 }
 
-export function computeGameBrief(year: number = currentSeasonYear()): GameBriefView {
+export function computeGameBrief(year: number = upcomingGameYear()): GameBriefView {
   const pack = packForYear(year);
   const brief = pack.status === "published" && pack.brief ? pack.brief : emptyBrief(pack);
   const prior = lastPublishedPack(year);

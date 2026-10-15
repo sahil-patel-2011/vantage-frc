@@ -3,6 +3,7 @@ import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery-reliabili
 import { loadBatteryFleet } from "../load-battery-fleet";
 import { evaluateRisk, riskMatrix, summarizeRisks } from ".";
 import type { MatrixCell, RiskCategory, RiskEvaluation, RiskStatus, RiskSummary, TeamRisk } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const RISK_CATEGORIES: RiskCategory[] = [
   "technical",
@@ -40,7 +41,7 @@ export type RisksView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type RiskRow = {

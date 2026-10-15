@@ -28,6 +28,7 @@ import type {
   MeetingAgenda,
   MeetingAgendaStatus,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { AGENDA_ITEM_KINDS };
 
@@ -70,7 +71,7 @@ export type MeetingAutopilotView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isAgendaStatus(value: unknown): value is MeetingAgendaStatus {

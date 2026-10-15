@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { computeGoalProgress, summarizeGoals } from ".";
 import type { Goal, GoalCategory, GoalCheckin, GoalProgress, GoalStatus, GoalsSummary } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type GoalSetupStep = {
   id: string;
@@ -29,7 +30,7 @@ export type GoalsTrackerView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type GoalRow = {

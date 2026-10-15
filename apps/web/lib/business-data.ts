@@ -21,9 +21,10 @@ import {
   summarizeFundraisingProgress,
   type SponsorPipelineStage,
 } from "./sponsor-pipeline";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export function currentBusinessSeason(now = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 export function validSeason(value: unknown): number {

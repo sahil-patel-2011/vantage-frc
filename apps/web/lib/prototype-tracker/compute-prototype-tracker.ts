@@ -10,6 +10,7 @@ import {
   type PrototypeTest,
   type TestOutcome,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { DECISION_RECOMMENDATIONS, DECISION_STATUSES, TEST_OUTCOMES };
 
@@ -42,7 +43,7 @@ export type PrototypeTrackerView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isOutcome(value: unknown): value is TestOutcome {

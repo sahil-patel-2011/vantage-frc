@@ -13,6 +13,7 @@ import type {
   PriorDecisionMatch,
   WeightHeadroom,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { DECISION_CRITIC_CATEGORIES, DECISION_CRITIC_OUTCOMES, DECISION_CRITIC_VERDICTS };
 
@@ -45,7 +46,7 @@ export type DecisionCriticView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isVerdict(value: unknown): value is DecisionCriticVerdict {

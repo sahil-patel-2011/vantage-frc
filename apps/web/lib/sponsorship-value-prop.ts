@@ -1,3 +1,4 @@
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 // Sponsorship value proposition engine — pure domain logic for org-isolated
 // one-pagers. No server/React imports. Never invent cross-team metrics.
 
@@ -66,7 +67,7 @@ export type Completeness = {
 };
 
 export function currentSeasonYear(now = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 export function moneyLabel(amountUsd: number | null): string | null {

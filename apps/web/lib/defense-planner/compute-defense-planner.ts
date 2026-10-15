@@ -5,6 +5,7 @@ import { DRIVETRAIN_TYPES, recommendDefensePlan } from ".";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import type { DrivetrainType, Matchup, RobotProfile } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { DRIVETRAIN_TYPES };
 
@@ -61,7 +62,7 @@ export type DefensePlannerView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isDrivetrain(value: unknown): value is DrivetrainType {

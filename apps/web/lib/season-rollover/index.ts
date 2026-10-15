@@ -5,6 +5,7 @@ import type {
   SeasonRolloverItem,
   SeasonRolloverSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const SEASON_ROLLOVER_CATEGORIES: SeasonRolloverCategory[] = [
   "roster",
@@ -14,7 +15,7 @@ export const SEASON_ROLLOVER_CATEGORIES: SeasonRolloverCategory[] = [
 ];
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 export function nextSeasonYear(seasonYear: number): number {

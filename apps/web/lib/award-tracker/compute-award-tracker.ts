@@ -5,6 +5,7 @@ import {
 } from "../media/evidence-references";
 import { summarizeAwardTracker, upcomingDeadlines } from ".";
 import type { AwardSubmission, AwardSubmissionStatus, AwardTrackerSummary, AwardType } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type AwardTrackerSetupStep = {
   id: string;
@@ -35,7 +36,7 @@ export type AwardTrackerView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type SubmissionRow = {

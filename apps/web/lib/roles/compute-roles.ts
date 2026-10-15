@@ -4,6 +4,7 @@ import { canonicalHolderName, resolveRoleHolder, unlinkedHolders } from "./holde
 import { loadRoster } from "../work-items/service";
 import type { RosterMember } from "../presence/match-names";
 import type { RolesSummary, Subteam, TeamRole } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const SUBTEAMS: Subteam[] = [
   "mechanical",
@@ -45,7 +46,7 @@ export type RolesView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type RoleRow = {

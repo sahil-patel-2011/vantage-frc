@@ -3,6 +3,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { computeRiskBurndownSeries, severityBandOf, severityOf, summarizeRisks } from ".";
 import type { RiskBurndownPoint, RiskCategory, RiskItem, RiskStatus, RiskSummary } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { RISK_CATEGORIES, RISK_STATUSES, riskCategoryLabel, riskStatusLabel } from ".";
 
@@ -58,7 +59,7 @@ export type RiskBurndownView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type RiskRow = {

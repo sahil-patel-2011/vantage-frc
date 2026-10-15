@@ -8,6 +8,7 @@ import type {
   DriverTryoutsStatus,
   DriverTryoutsSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type DriverTryoutsSetupStep = {
   id: string;
@@ -38,7 +39,7 @@ export type DriverTryoutsView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type CandidateRow = {

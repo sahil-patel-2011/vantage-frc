@@ -13,6 +13,7 @@ import type {
   MentorHoursRole,
   MentorHoursSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const MENTOR_HOURS_CATEGORIES: MentorHoursCategory[] = [
   "build",
@@ -69,7 +70,7 @@ export type MentorHoursView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

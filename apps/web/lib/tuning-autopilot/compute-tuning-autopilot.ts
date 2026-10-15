@@ -12,6 +12,7 @@ import {
   type TuningSessionStatus,
   type TuningSuggestion,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type TuningAutopilotSetupStep = {
   id: string;
@@ -52,7 +53,7 @@ export type TuningAutopilotView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 async function resolveOrg(

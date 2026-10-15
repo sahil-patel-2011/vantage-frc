@@ -5,6 +5,7 @@ import { resolveOwnerNames, workItemHref } from "../work-items/canonical";
 import { loadRoster } from "../work-items/service";
 import type { BuildTask, MemberWorkload, MeetingOutput, TaskBoard, TaskPriority, TaskStatus } from "./types";
 import { resolveAsOf } from "../todos/evaluate";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 // Client components take these from ./task-constants directly: this module
 // imports @vantage/core, which reaches the Node pg driver and cannot be bundled
@@ -41,7 +42,7 @@ export type TasksView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type TaskRow = {

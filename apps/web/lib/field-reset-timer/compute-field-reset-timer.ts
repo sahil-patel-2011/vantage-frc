@@ -6,6 +6,7 @@ import type {
   FieldResetTimerSession,
   FieldResetTimerSessionSummary,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export type FieldResetTimerSetupStep = {
   id: string;
@@ -36,7 +37,7 @@ export type FieldResetTimerView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type SessionRow = {

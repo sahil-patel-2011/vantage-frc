@@ -9,6 +9,7 @@ import type {
   MatchNotesTimelineSummary,
   MatchTimeline,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { MATCH_NOTE_CATEGORIES, MATCH_NOTE_PHASES };
 
@@ -39,7 +40,7 @@ export type MatchNotesTimelineView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type EntryRow = {

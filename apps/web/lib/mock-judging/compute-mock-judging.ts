@@ -9,6 +9,7 @@ import type {
   MockJudgingReadiness,
   MockJudgingSession,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { MOCK_JUDGING_AWARD_CATEGORIES };
 
@@ -40,7 +41,7 @@ export type MockJudgingView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isAwardCategory(value: unknown): value is MockJudgingAwardCategory {

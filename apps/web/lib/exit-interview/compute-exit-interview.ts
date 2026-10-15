@@ -15,6 +15,7 @@ import {
   exitInterviewWikiTitle,
 } from "./wiki";
 import type { ExitInterviewRecord, ExitInterviewRole, ExitInterviewStatus, ExitInterviewSummary } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const EXIT_INTERVIEW_ROLES: ExitInterviewRole[] = [
   "mechanical",
@@ -59,7 +60,7 @@ export type ExitInterviewView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type RecordRow = {

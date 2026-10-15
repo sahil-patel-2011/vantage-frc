@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { resolveSupersession, summarizeDecisions } from ".";
 import type { DecisionCategory, DecisionRecord, DecisionStatus, DecisionsSummary, ResolvedDecision } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export const DECISION_CATEGORIES: DecisionCategory[] = ["design", "strategy", "build", "business", "process", "other"];
 export const DECISION_STATUSES: DecisionStatus[] = ["proposed", "accepted", "rejected", "superseded"];
@@ -27,7 +28,7 @@ export type DecisionsView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 type DecisionRow = {

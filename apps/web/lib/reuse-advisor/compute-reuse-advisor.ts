@@ -10,6 +10,7 @@ import {
   type ReuseRecommendation,
   type SubsystemCategory,
 } from "./types";
+import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export { REUSE_ASSESSMENT_STATUSES, REUSE_RECOMMENDATIONS, SUBSYSTEM_CATEGORIES };
 
@@ -42,7 +43,7 @@ export type ReuseAdvisorView =
     };
 
 export function currentSeasonYear(now: Date = new Date()): number {
-  return now.getUTCFullYear();
+  return sharedCurrentSeasonYear(now);
 }
 
 function isCategory(value: unknown): value is SubsystemCategory {

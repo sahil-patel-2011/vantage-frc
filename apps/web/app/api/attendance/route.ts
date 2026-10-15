@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
+import { availableSeasonYears, openingSeasonYear } from "@vantage/game-year";
 import { headers } from "next/headers";
 import {
   defaultSeasonYear,
@@ -146,12 +147,8 @@ export async function GET(request: Request) {
          ORDER BY season_year DESC`,
         [row.orgId],
       );
-      // No season asked for: open on the latest one with attendance when the calendar's season
-      // (which rolls over in September) has none yet.
-      const latest = seasonRows.rows[0]?.seasonYear;
-      if (!seasonParam && latest != null && latest < seasonYear && !seasonRows.rows.some((r) => r.seasonYear === seasonYear)) {
-        seasonYear = latest;
-      }
+      // No season asked for: this season, or the latest earlier one with attendance.
+      if (!seasonParam) seasonYear = openingSeasonYear(seasonRows.rows.map((r) => r.seasonYear));
       const [events, members] = await Promise.all([
         loadEvents(client, row.orgId, seasonYear),
         client.query<{ userId: string; name: string | null; teamRole: string | null }>(
@@ -165,9 +162,8 @@ export async function GET(request: Request) {
         ),
       ]);
 
-      const seasons = [...new Set([seasonYear, ...seasonRows.rows.map((r) => r.seasonYear)])].sort(
-        (a, b) => b - a,
-      );
+      // The same season list every picker shows, plus any season this team has attendance in.
+      const seasons = availableSeasonYears([seasonYear, ...seasonRows.rows.map((r) => r.seasonYear)]);
 
       return {
         status: "ready",
