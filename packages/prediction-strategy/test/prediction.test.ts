@@ -157,11 +157,14 @@ const prediction = predictMatch({
 });
 
 describe("weighted prediction", () => {
-  it("weights current data above the prior two seasons", () => {
+  it("weights this season first and counts up to ten seasons, each lighter than the last", () => {
     expect([seasonWeight(2026, 2026), seasonWeight(2026, 2025), seasonWeight(2026, 2024)]).toEqual([
       1, 0.55, 0.3,
     ]);
-    expect(seasonWeight(2026, 2023)).toBe(0);
+    expect(seasonWeight(2026, 2023)).toBe(0.17);
+    expect(seasonWeight(2026, 2017)).toBe(0.005);
+    expect(seasonWeight(2026, 2016)).toBe(0);
+    expect(seasonWeight(2026, 2027)).toBe(0);
   });
 
   it("returns calibrated bounds, factors, and deterministic probabilities", () => {

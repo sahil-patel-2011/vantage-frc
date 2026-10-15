@@ -36,6 +36,9 @@ export type GlobalReferenceWorkerOptions = {
 
 export type GlobalReferenceJobInput = { year: number };
 
+/** Statbotics pages list endpoints; 1000 is its largest page. */
+const STATBOTICS_PAGE = 1000;
+
 export function createGlobalReferenceJobs(
   options: GlobalReferenceWorkerOptions,
 ): {
@@ -105,16 +108,54 @@ export async function syncGlobalReferenceSeason(
     });
   }
 
+  // Every team's season rating, paged: one unpaged request only ever returned Statbotics'
+  // first page (1,000 of ~3,500 teams), so most teams had no season rating at all.
   const yearResource = `team_years?year=${year}`;
-  const yearPayload = await trackedStatbotics<JsonObject[]>(options, yearResource, now);
-  if (yearPayload === null) {
+  const yearCursor = await options.store.getCursor("statbotics", yearResource);
+  if (yearCursor && !yearCursor.lastError && isSyncedWithin(yearCursor.syncedAt, statboticsTtlMs(yearResource), now())) {
     summary.notModified += 1;
   } else {
-    const yearRows = requireArray(yearPayload, `Statbotics team years for ${year}`).map((value) =>
-      mapStatboticsYearMetric(value, year, now()),
-    );
-    await options.store.upsertTeamYearMetrics(yearRows);
-    summary.teamYearMetrics = yearRows.length;
+    try {
+      const pages: TeamYearMetricRecord[] = [];
+      for (let page = 0, offset = 0; page < 10; page += 1) {
+        const rows = requireArray(
+          await options.statbotics.get<JsonObject[]>(`${yearResource}&limit=${STATBOTICS_PAGE}&offset=${offset}`),
+          `Statbotics team years for ${year}`,
+        );
+        pages.push(...rows.map((value) => mapStatboticsYearMetric(value, year, now())));
+        offset += rows.length;
+        if (rows.length < STATBOTICS_PAGE) break;
+      }
+      await options.store.ensureTeams(pages.map((record) => ({
+        teamKey: record.teamKey,
+        teamNumber: Number(record.teamKey.replace(/^frc/, "")),
+        nickname: null,
+        name: `Team ${record.teamKey.replace(/^frc/, "")}`,
+        city: null,
+        stateProv: null,
+        country: null,
+        postalCode: null,
+        rookieYear: null,
+        website: null,
+        syncedAt: now(),
+      })));
+      await options.store.upsertTeamYearMetrics(pages);
+      summary.teamYearMetrics = pages.length;
+      await options.store.saveCursor({
+        source: "statbotics",
+        resource: yearResource,
+        etag: null,
+        lastModified: null,
+        cursor: yearCursor?.cursor ?? null,
+        lastStatus: 200,
+        lastError: null,
+        syncedAt: now(),
+        updatedAt: now(),
+      });
+    } catch (error) {
+      await options.store.saveCursor(failedCursor("statbotics", yearResource, yearCursor, error, now()));
+      throw error;
+    }
   }
   summary.eventKeys = eventKeys;
 
@@ -127,6 +168,91 @@ export async function syncGlobalReferenceSeason(
   });
 
   return summary;
+}
+
+/**
+ * Past seasons, ratings only: every team's Statbotics season rating for one year, paged, with a
+ * compact stored record. This is what the prediction engine reads for up to ten seasons of
+ * history (and the per-year field statistics it rescales with). Unlike a season sync it never
+ * touches TBA, so loading ten years is ten small Statbotics reads, not tens of thousands of event
+ * requests against the shared TBA limit.
+ */
+export async function syncTeamYearHistory(
+  options: GlobalReferenceWorkerOptions,
+  year: number,
+): Promise<{ year: number; teams: number }> {
+  if (!Number.isInteger(year) || year < 2002 || year > 2100) throw new Error("Choose a season from 2002 on.");
+  const now = options.now ?? (() => new Date());
+  let offset = 0;
+  let teams = 0;
+  // Ten pages is 10,000 teams, more than FRC has ever had in a season.
+  for (let page = 0; page < 10; page += 1) {
+    const resource = `team_years?year=${year}&limit=${STATBOTICS_PAGE}&offset=${offset}`;
+    const rows = requireArray(await options.statbotics.get<JsonObject[]>(resource), `Statbotics team years for ${year}`);
+    if (!rows.length) break;
+    const records = rows
+      .map((value) => compactYearMetric(value, year, now()))
+      .filter((record) => record.teamKey && record.epaTotal != null);
+    if (records.length) {
+      // A season rating needs its team's directory row (foreign key): add the teams an event sync
+      // never loaded (old seasons, teams that have since folded), without touching existing ones.
+      await options.store.ensureTeams(records.map((record) => teamFromYearRow(rows, record.teamKey, now())));
+      await options.store.upsertTeamYearMetrics(records);
+    }
+    teams += records.length;
+    offset += rows.length;
+    if (rows.length < STATBOTICS_PAGE) break;
+  }
+  await options.store.saveCursor({
+    source: "statbotics",
+    resource: `team_years_history?year=${year}`,
+    etag: null,
+    lastModified: null,
+    cursor: null,
+    lastStatus: 200,
+    lastError: null,
+    syncedAt: now(),
+    updatedAt: now(),
+  });
+  return { year, teams };
+}
+
+/** The directory row a season rating needs, from what Statbotics' season list carries. */
+function teamFromYearRow(rows: JsonObject[], teamKey: string, syncedAt: Date): TeamRecord {
+  const teamNumber = Number(teamKey.replace(/^frc/, ""));
+  const row = rows.find((value) => normalizeTeamKey(value.team) === teamKey) ?? {};
+  const nickname = typeof row.name === "string" && row.name.trim() ? row.name.trim() : null;
+  return {
+    teamKey,
+    teamNumber,
+    nickname,
+    name: nickname ?? `Team ${teamNumber}`,
+    city: null,
+    stateProv: typeof row.state === "string" ? row.state : null,
+    country: typeof row.country === "string" ? row.country : null,
+    postalCode: null,
+    rookieYear: numberOrNull(row.rookie_year),
+    website: null,
+    syncedAt,
+  };
+}
+
+/** A season rating without the full Statbotics document: what history needs, a fraction of the size. */
+function compactYearMetric(input: JsonObject, fallbackYear: number, syncedAt: Date): TeamYearMetricRecord {
+  const full = mapStatboticsYearMetric(input, fallbackYear, syncedAt);
+  const record = (input.record && typeof input.record === "object" ? input.record : {}) as JsonObject;
+  const played = numberOrNull(record.count) ??
+    ((numberOrNull(record.wins) ?? 0) + (numberOrNull(record.losses) ?? 0) + (numberOrNull(record.ties) ?? 0));
+  return {
+    ...full,
+    sourcePayload: {
+      team: input.team ?? null,
+      year: full.year,
+      matches: played || null,
+      norm: numberAt(input, ["epa", "norm"]),
+      history: true,
+    },
+  };
 }
 
 /** One published event-directory request; never download every event's matches. */

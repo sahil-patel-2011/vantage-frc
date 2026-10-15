@@ -24,6 +24,8 @@ import {
   type ScoutProvenanceRef,
   type TeamOperationalSignal,
   type YearMetricRow,
+  MAX_SEASONS_COUNTED,
+  teamTrend,
 } from "@vantage/prediction-strategy";
 import type { PrivateEdgeView } from "@vantage/prediction-strategy";
 import { platformTbaEnvConfigured } from "@vantage/reference";
@@ -37,6 +39,7 @@ import type {
 } from "./types";
 import { computePrivateEdgeView } from "./compute-private-edge";
 import { matchSpecificPlan } from "./match-plan";
+import { loadSeasonScales } from "./season-scales";
 import { projectScoutEntriesForEngine } from "./scout-engine-payload";
 import {
   EMPTY_PREDICTION_COPY,
@@ -654,7 +657,8 @@ export async function computeStrategyView(
     syncedAt: metric.syncedAt,
   }));
 
-  // Season-long year EPA (current + prior two) — prefer Statbotics when both sources exist.
+  // Season-long year ratings for up to ten seasons — prefer Statbotics when both sources exist.
+  // Older seasons count for little (season-weight.ts) and are read on this season's scale.
   const yearMetricsResult = await client.query<{
     teamKey: string;
     year: number;
@@ -680,8 +684,9 @@ export async function computeStrategyView(
      ORDER BY team_key, year,
        CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
        synced_at DESC NULLS LAST`,
-    [allTeams, year - 2, year],
+    [allTeams, year - (MAX_SEASONS_COUNTED - 1), year],
   );
+  const seasonScales = await loadSeasonScales(client, year);
 
   const yearMetricRows: YearMetricRow[] = yearMetricsResult.rows.map((metric) => ({
     teamKey: metric.teamKey,
@@ -827,6 +832,7 @@ export async function computeStrategyView(
     matchResults,
     engineId: enginePolicy.engineId,
     shrink,
+    seasonScales,
   };
 
   const prediction = predictMatch(predictionInput);
@@ -856,6 +862,7 @@ export async function computeStrategyView(
       rating: contribution.rating,
     })),
     engineId: enginePolicy.engineId,
+    seasonScales,
   });
 
   // This match's plan from its own levers and scouting; the engine's fixed lines become tips.
@@ -1112,6 +1119,19 @@ export async function computeStrategyView(
     matchup,
     tendencies,
     pickListHints,
+    teamTrends: Object.fromEntries(
+      allTeams.map((teamKey) => {
+        const trend = teamTrend(
+          yearMetricRows
+            .filter((metric) => metric.teamKey === teamKey && metric.epaTotal != null)
+            .map((metric) => ({ year: metric.year, epa: Number(metric.epaTotal), matches: metric.matches })),
+          seasonScales,
+          year,
+          `Team ${teamKey.replace(/^frc/, "")}`,
+        );
+        return [teamKey, { direction: trend.direction, lines: trend.lines }];
+      }),
+    ),
     scoutProvenance: scoutProvenance.slice(0, 80),
     operations,
     engineeringContext,

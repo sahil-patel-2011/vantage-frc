@@ -7,8 +7,12 @@ import { headers } from "next/headers";
 import {
   runTbaEventDaySync,
   runTbaSeasonSync,
+  runTeamYearHistorySync,
 } from "../../../../lib/reference/run-ingest";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+
+/** Loading ten past seasons is ~30 paced Statbotics reads plus their upserts. */
+export const maxDuration = 300;
 
 async function current() {
   const value = await auth.api.getSession({ headers: await headers() });
@@ -80,14 +84,14 @@ export async function POST(request: Request) {
       action: "save" | "test" | "disable" | "sync";
       credentialId?: string;
       apiKey?: string;
-      syncMode?: "event-day" | "season";
+      syncMode?: "event-day" | "season" | "history";
       year?: number;
       eventKey?: string;
     };
     const orgId = body.orgId ?? null;
 
     if (body.action === "sync") {
-      if (orgId && body.syncMode === "season") {
+      if (orgId && (body.syncMode === "season" || body.syncMode === "history")) {
         return Response.json(
           { error: "Team administrators can sync the active event only. Platform admins run full season sync." },
           { status: 403 },
@@ -130,6 +134,11 @@ export async function POST(request: Request) {
           sessionId: session.session.id,
         });
       });
+      // Past seasons: team ratings for the last ten seasons (Statbotics only, no TBA calls).
+      if (body.syncMode === "history") {
+        const history = await runTeamYearHistorySync(body.year);
+        return Response.json({ success: true, history });
+      }
       const summary =
         body.syncMode === "season"
           ? await runTbaSeasonSync(body.year)

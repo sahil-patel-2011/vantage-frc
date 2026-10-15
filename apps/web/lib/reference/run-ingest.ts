@@ -18,6 +18,27 @@ export async function runTbaSeasonSync(
   return jobs.syncSeason.run({ year: year ?? currentFrcSeasonYear() });
 }
 
+/** How many seasons the prediction engine counts (packages/prediction-strategy SEASON_WEIGHTS). */
+export const HISTORY_SEASONS = 10;
+
+/**
+ * Load past seasons' team ratings (Statbotics only), oldest first, for the ten seasons ending at
+ * `throughYear`. One year failing is reported and the rest carry on.
+ */
+export async function runTeamYearHistorySync(throughYear = currentFrcSeasonYear()) {
+  const { createProductionReferenceJobs } = await import("@vantage/reference/production-worker");
+  const jobs = createProductionReferenceJobs();
+  const results: Array<{ year: number; teams: number } | { year: number; error: string }> = [];
+  for (let year = throughYear - (HISTORY_SEASONS - 1); year <= throughYear; year += 1) {
+    try {
+      results.push(await jobs.teamYearHistory.run(year));
+    } catch (error) {
+      results.push({ year, error: error instanceof Error ? error.message : "Failed" });
+    }
+  }
+  return results;
+}
+
 export async function runTbaEventDaySync(
   input: EventDaySyncInput = {},
   options: ReferenceIngestOptions = {},

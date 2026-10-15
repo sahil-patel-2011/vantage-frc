@@ -306,6 +306,27 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             </div>
           ))}
         </div>
+        {/* How each robot's team has done over past seasons, read against each year's whole
+            field. Only teams with real season history get a line. */}
+        {(() => {
+          const history = [...view.red, ...view.blue]
+            .map((teamKey) => ({ teamKey, lines: view.teamTrends?.[teamKey]?.lines ?? [] }))
+            .filter((row) => row.lines.length > 0);
+          return history.length ? (
+            <details className="strategy-more strategy-history">
+              <summary data-disclosure>Team history</summary>
+              <ul className="strategy-history-list">
+                {history.map((row) => (
+                  <li key={row.teamKey}>
+                    {row.lines.map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null;
+        })()}
         {/* The game plan below is what to do; this is how much each thing is worth. It was a
             third telling of the same match ahead of the plan itself. */}
         <details className="strategy-more strategy-levers">

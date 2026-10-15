@@ -12,7 +12,7 @@ import type {
   TeamRecord,
   TeamYearMetricRecord,
 } from "../src/types";
-import { syncGlobalEventDirectory, syncGlobalReferenceSeason } from "../src/worker";
+import { syncGlobalEventDirectory, syncGlobalReferenceSeason, syncTeamYearHistory } from "../src/worker";
 import statboticsFixture from "./fixtures/statbotics.json";
 import tbaFixture from "./fixtures/tba.json";
 
@@ -25,6 +25,9 @@ class MemoryStore implements GlobalReferenceStore {
   yearMetrics = new Map<string, TeamYearMetricRecord>();
   windows = new Map<number, SeasonWindowRecord>();
 
+  async ensureTeams(records: TeamRecord[]) {
+    for (const record of records) if (!this.teams.has(record.teamKey)) this.teams.set(record.teamKey, record);
+  }
   async getCursor(source: SyncSource, resource: string) {
     return this.cursors.get(`${source}:${resource}`) ?? null;
   }
@@ -333,5 +336,36 @@ describe("bounded event directory", () => {
     const result = await syncGlobalEventDirectory({ store, now: () => now, tba: new TbaClient({ authKey: "fixture", fetch: async () => new Response(null, { status: 304 }) }), statbotics: new StatboticsClient({}) }, 2026);
     expect(result).toBeNull();
     expect(store.cursors.get("tba:events/2026")?.syncedAt).toEqual(now);
+  });
+});
+
+describe("past seasons history", () => {
+  it("pages through every team's season rating from Statbotics only, storing a compact record", async () => {
+    const store = new MemoryStore();
+    const urls: string[] = [];
+    const team = (n: number) => ({ team: n, year: 2019, epa: { total_points: { mean: 20 + (n % 30) }, norm: 1500 + n }, record: { wins: 6, losses: 4, ties: 0 }, huge: "x".repeat(200) });
+    const statbotics = new StatboticsClient({
+      minimumIntervalMs: 0,
+      fetch: async (input) => {
+        const url = String(input);
+        urls.push(url);
+        const offset = Number(new URL(url).searchParams.get("offset"));
+        const rows = offset === 0 ? Array.from({ length: 1000 }, (_, i) => team(i + 1)) : Array.from({ length: 412 }, (_, i) => team(i + 1001));
+        return new Response(JSON.stringify(rows), { status: 200, headers: { "content-type": "application/json" } });
+      },
+    });
+    const result = await syncTeamYearHistory(
+      { store, statbotics, tba: new TbaClient({ authKey: "unused", fetch: async () => { throw new Error("History must not call TBA"); } }) },
+      2019,
+    );
+    expect(result).toEqual({ year: 2019, teams: 1412 });
+    expect(urls).toHaveLength(2);
+    expect(urls[1]).toContain("offset=1000");
+    const stored = store.yearMetrics.get("frc254:2019:statbotics") ?? [...store.yearMetrics.values()].find((row) => row.teamKey === "frc254");
+    expect(stored?.epaTotal).toBe(20 + (254 % 30));
+    expect(stored?.sourcePayload).toEqual({ team: 254, year: 2019, matches: 10, norm: 1754, history: true });
+    // Every rated team has its directory row first (team_year_metrics has a foreign key to it).
+    expect(store.teams.get("frc254")?.name).toBe("Team 254");
+    expect(store.teams.size).toBe(1412);
   });
 });

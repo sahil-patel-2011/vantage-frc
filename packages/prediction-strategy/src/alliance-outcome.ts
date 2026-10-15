@@ -14,7 +14,8 @@ import {
   strategyEnginePolicyForId,
   type StrategyEnginePolicy,
 } from "./engine-tier";
-import { seasonWeight } from "./season-weight";
+import { seasonSampleWeight, seasonWeight } from "./season-weight";
+import { referenceScale, rescaleComponent, rescaleRating, seasonScaleMap, type SeasonScale } from "./season-scale";
 import { DEFAULT_LOGISTIC_SCALE } from "./calibration";
 import { algorithmForSeason, algorithmProvenance } from "./season-algorithm";
 
@@ -63,40 +64,66 @@ export function rateTeam(
   seasons: TeamSeasonSignal[],
   operational?: TeamOperationalSignal,
   policy: StrategyEnginePolicy = strategyEnginePolicyForId("weighted-current-v1"),
+  seasonScales?: readonly SeasonScale[],
 ): TeamRatingDetail {
   const mode = policy.thisSeasonOnly ? "this-season" : "recency";
   const eligible = preferStatboticsRows(
     seasons.filter((signal) => signal.teamKey === teamKey),
     policy.preferStatbotics,
   );
-  let weightedEpa = 0;
-  let weightedMatches = 0;
+  // Past seasons restated on this season's scale (season-scale.ts): a different game scores
+  // differently, so raw numbers from different years were never the same unit.
+  const scales = seasonScaleMap(seasonScales);
+  const reference = referenceScale(scales, currentYear);
+  // Each season first becomes one number (its signals weighted by matches), then seasons are
+  // blended by age and by how much of a season there was. Weighting every signal by matches made
+  // a full past season (60 matches × 0.55) outvote this season's first event (12 × 1.0).
+  const byYear = new Map<number, { epa: number; auto: number; endgame: number; matches: number }>();
   let auto = 0;
   let endgame = 0;
   let eventEpaSum = 0;
   let eventEpaWeight = 0;
   let yearEpaSum = 0;
   let yearEpaWeight = 0;
+  let weightedMatches = 0;
   const sources = new Set<string>();
   const eventKeys = new Set<string>();
   for (const signal of eligible) {
-    const weight = seasonWeight(currentYear, signal.year, mode);
-    if (weight <= 0) continue;
-    weightedEpa += signal.epa * signal.matches * weight;
-    weightedMatches += signal.matches * weight;
-    auto += (signal.autoEpa ?? 0) * signal.matches * weight;
-    endgame += (signal.endgameEpa ?? 0) * signal.matches * weight;
+    const ageWeight = seasonWeight(currentYear, signal.year, mode);
+    if (ageWeight <= 0) continue;
+    const epa = rescaleRating(signal.epa, signal.year, scales, reference);
+    const autoEpa = rescaleComponent(signal.autoEpa ?? 0, signal.year, scales, reference);
+    const endgameEpa = rescaleComponent(signal.endgameEpa ?? 0, signal.year, scales, reference);
+    const matches = Math.max(0, signal.matches);
+    const year = byYear.get(signal.year) ?? { epa: 0, auto: 0, endgame: 0, matches: 0 };
+    year.epa += epa * matches;
+    year.auto += autoEpa * matches;
+    year.endgame += endgameEpa * matches;
+    year.matches += matches;
+    byYear.set(signal.year, year);
+    weightedMatches += matches * ageWeight;
     if (signal.source) sources.add(signal.source);
     if (signal.eventKey) {
       eventKeys.add(signal.eventKey);
-      eventEpaSum += signal.epa * signal.matches * weight;
-      eventEpaWeight += signal.matches * weight;
+      eventEpaSum += epa * matches * ageWeight;
+      eventEpaWeight += matches * ageWeight;
     } else {
-      yearEpaSum += signal.epa * signal.matches * weight;
-      yearEpaWeight += signal.matches * weight;
+      yearEpaSum += epa * matches * ageWeight;
+      yearEpaWeight += matches * ageWeight;
     }
   }
-  const base = weightedMatches ? weightedEpa / weightedMatches : 0;
+  let seasonWeightTotal = 0;
+  let weightedEpa = 0;
+  for (const [year, totals] of byYear) {
+    if (totals.matches <= 0) continue;
+    const weight = seasonWeight(currentYear, year, mode) * seasonSampleWeight(totals.matches);
+    if (weight <= 0) continue;
+    seasonWeightTotal += weight;
+    weightedEpa += weight * (totals.epa / totals.matches);
+    auto += weight * (totals.auto / totals.matches);
+    endgame += weight * (totals.endgame / totals.matches);
+  }
+  const base = seasonWeightTotal ? weightedEpa / seasonWeightTotal : 0;
   const reliability = operational?.reliability == null ? 0.85 : clamp(operational.reliability / 100);
   const quality = operational?.qualityWeight == null ? 1 : clamp(operational.qualityWeight);
   const qualityScale = policy.scoutQualityEmphasis ? 0.55 + 0.45 * quality : quality;
@@ -129,8 +156,8 @@ export function rateTeam(
     rating:
       base * (1 - scoutWeight + scoutWeight * reliability) + research - foulPenalty + teleopBoost,
     sample: weightedMatches + (operational?.scoutSample ?? 0) * 0.5 * qualityScale,
-    auto: (weightedMatches ? auto / weightedMatches : 0) + scoutAutoBoost,
-    endgame: (weightedMatches ? endgame / weightedMatches : 0) + scoutEndgameBoost,
+    auto: (seasonWeightTotal ? auto / seasonWeightTotal : 0) + scoutAutoBoost,
+    endgame: (seasonWeightTotal ? endgame / seasonWeightTotal : 0) + scoutEndgameBoost,
     reliability,
     foulPenalty,
     sources: [...sources],
@@ -266,7 +293,7 @@ export function buildAllianceWinBreakdown(
 
   const rate = (teamKey: string) =>
     applyShrink(
-      rateTeam(teamKey, input.currentYear, input.seasons, operations.get(teamKey), policy),
+      rateTeam(teamKey, input.currentYear, input.seasons, operations.get(teamKey), policy, input.seasonScales),
     );
 
   const redDetails = input.red.map(rate);

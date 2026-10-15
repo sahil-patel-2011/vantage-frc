@@ -82,6 +82,11 @@ export type MatchPredictionInput = {
    * are not a field.
    */
   shrink?: { centre: number; k: number };
+  /**
+   * Every team's season ratings summarised per year (mean, spread, count), so past seasons are
+   * read on this season's scale. Absent means ratings are used as stored.
+   */
+  seasonScales?: import("./season-scale").SeasonScale[];
 };
 
 /** Deterministic explainability step (Max tier). Never invents DEMO metrics. */

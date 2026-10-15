@@ -10,6 +10,7 @@ import { StatboticsClient } from "./statbotics-client";
 import {
   createGlobalReferenceJobs,
   syncGlobalEventDirectory,
+  syncTeamYearHistory,
   type GlobalReferenceWorkerOptions,
   type TbaGetter,
 } from "./worker";
@@ -91,6 +92,15 @@ export function createProductionReferenceJobs(config: { preferOrgIds?: string[] 
       async run(teamNumber: number): Promise<TeamDossierPayload> {
         await assertTbaConfigured(credentials, preferOrgIds);
         return buildTeamDossier({ teamNumber, tba, statbotics: workerOptions.statbotics });
+      },
+    },
+    /** Past seasons' team ratings only (Statbotics), one year at a time; no TBA calls. */
+    teamYearHistory: {
+      async run(year: number): Promise<{ year: number; teams: number }> {
+        if (!await globalReferenceAdminStore.claimRefresh(`team-year-history:${year}`, 60_000)) {
+          throw new Error(`Season ${year} is already loading. Try again in a minute.`);
+        }
+        return syncTeamYearHistory(workerOptions, year);
       },
     },
     syncSeason: {

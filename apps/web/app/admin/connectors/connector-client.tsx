@@ -38,7 +38,7 @@ export default function DataConnectorClient({ orgId }: { orgId?: string }) {
   async function act(
     action: "save" | "test" | "disable" | "sync",
     credentialId?: string,
-    mode: "event-day" | "season" = "event-day",
+    mode: "event-day" | "season" | "history" = "event-day",
   ) {
     setSyncing(action === "sync");
     const r = await fetch("/api/admin/data-connectors", {
@@ -54,7 +54,15 @@ export default function DataConnectorClient({ orgId }: { orgId?: string }) {
     });
     const d = await r.json();
     setSyncing(false);
-    if (r.ok && action === "sync") {
+    if (r.ok && action === "sync" && mode === "history") {
+      const history = (d.history ?? []) as Array<{ year: number; teams?: number; error?: string }>;
+      const loaded = history.filter((row) => typeof row.teams === "number");
+      const failed = history.filter((row) => row.error);
+      setMessage(
+        `Past seasons loaded: ${loaded.map((row) => `${row.year} (${row.teams} teams)`).join(", ") || "none"}.` +
+          (failed.length ? ` Not loaded: ${failed.map((row) => `${row.year} — ${row.error}`).join("; ")}.` : ""),
+      );
+    } else if (r.ok && action === "sync") {
       const summary = d.summary as Record<string, unknown> | undefined;
       setMessage(
         `Sync ${mode} finished — matches ${summary?.matches ?? 0}, teams ${summary?.teams ?? 0}, not-modified ${summary?.notModified ?? 0}.`,
@@ -130,7 +138,18 @@ export default function DataConnectorClient({ orgId }: { orgId?: string }) {
             >
               Full season sync
             </button>
+            <button
+              type="button"
+              disabled={syncing}
+              onClick={() => void act("sync", undefined, "history")}
+            >
+              Load past seasons
+            </button>
           </div>
+          <p className="app-muted">
+            Load past seasons adds every team&apos;s season rating for the last ten seasons from Statbotics
+            (no TBA calls), which predictions use for history and trends. About ten small requests.
+          </p>
         </section>
       )}
       {orgId ? (
