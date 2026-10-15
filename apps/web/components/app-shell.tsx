@@ -40,6 +40,7 @@ import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/noti
 import { listenInboxUpdates } from "../lib/notifications/inbox-events";
 import { onTeamDataChanged } from "../lib/team-data-changed";
 import { watchSessionBoundary } from "../lib/offline/identity";
+import { warmEventDayInBackground } from "../lib/offline/event-day-pack";
 import { pathnameIsBareShell } from "../lib/nav/shell-body-class";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import { NextActionsDedupe } from "./next-actions-dedupe";
@@ -147,6 +148,19 @@ export default function AppShell() {
   const activeNav = findNavMatch(pathname);
   // Another person signing in on this device (another tab) ends this tab's session view.
   useEffect(() => { watchSessionBoundary(); }, []);
+  // Keep Event Day, My Day and the schedule saved on this device (lib/offline/event-day-pack):
+  // at most every 30 minutes per team, when the browser is idle, so the first open in a crowded
+  // venue reads the local copy instead of waiting on the network.
+  useEffect(() => {
+    if (!orgId || !me.userId) return;
+    const run = () => void warmEventDayInBackground(orgId, { userId: me.userId }).catch(() => undefined);
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(run, { timeout: 15_000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(run, 8_000);
+    return () => window.clearTimeout(id);
+  }, [orgId, me.userId]);
   const activeGroupLabel = activeNav?.group.label;
 
   const openNav = useCallback(() => {
