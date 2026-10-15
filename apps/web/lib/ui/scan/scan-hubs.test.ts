@@ -9,7 +9,8 @@ const SCAN = join(APP, "vantage-scan");
 // The account-check recovery page (access-unavailable) reuses that same shell
 // (join-team.css) outside any product workspace. The outage console (status/outage) is
 // opened while the database is down and brings its own small stylesheet, no product shell.
-const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known", "join-team", "access-unavailable", "status"]);
+// Account recovery (account-recovery) is a signed-out page in the sign-in card, like sign-in.
+const SKIP = new Set(["win-kit", "lovat-kit", "agent-kit", "api", "vantage-scan", ".well-known", "join-team", "access-unavailable", "status", "account-recovery"]);
 
 describe("vantage scan hub overlays", () => {
   const hubs = readdirSync(APP).filter((name) => {

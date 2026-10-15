@@ -3,7 +3,8 @@
 import { useId, useState } from "react";
 import { askConfirm } from "../../../components/ui";
 import type { ByokKeyStatus, ByokProvider } from "../../../lib/ai-keys/byok-providers";
-import type { ProviderMeta } from "./ai-keys-model";
+import type { ModelOption, ProviderMeta } from "./ai-keys-model";
+import { ModelSelect } from "./ai-keys-model-select";
 import { KeySpendMeter } from "./ai-key-spend";
 
 /*
@@ -49,6 +50,7 @@ export function TeamKeyList({
   setupBlocked,
   onChanged,
   onMessage,
+  modelOptions = [],
 }: {
   orgId: string;
   /** Every team key once migration 0727 is applied; undefined before it. */
@@ -60,6 +62,8 @@ export function TeamKeyList({
   setupBlocked: boolean;
   onChanged: () => Promise<void> | void;
   onMessage: (message: string, isError?: boolean) => void;
+  /** The models each provider's key can run, for the Model menus. */
+  modelOptions?: ModelOption[];
 }) {
   const formId = useId();
   const [provider, setProvider] = useState<ByokProvider>(providers[0]?.id ?? "anthropic");
@@ -288,22 +292,20 @@ export function TeamKeyList({
                       <span>Name</span>
                       <input type="text" maxLength={60} value={editLabel} disabled={busy === row.id} onChange={(event) => setEditLabel(event.target.value)} required />
                     </label>
-                    <label>
-                      <span>Models</span>
-                      <input
-                        type="text"
-                        value={editModels}
-                        disabled={busy === row.id}
-                        placeholder="claude-haiku-5-5, gpt-4.1-mini"
-                        spellCheck={false}
-                        onChange={(event) => setEditModels(event.target.value)}
-                      />
-                    </label>
+                    <ModelSelect
+                      provider={row.provider}
+                      value={editModels}
+                      options={modelOptions}
+                      disabled={busy === row.id}
+                      onChange={setEditModels}
+                    />
                     <label>
                       <span>New API key</span>
                       <input
                         type="password"
-                        autoComplete="off"
+                        autoComplete="new-password"
+                        data-1p-ignore
+                        data-lpignore="true"
                         spellCheck={false}
                         value={editSecret}
                         disabled={busy === row.id}
@@ -312,7 +314,7 @@ export function TeamKeyList({
                       />
                     </label>
                     <p className="app-muted ai-keys-add-hint">
-                      Separate models with a comma. Leave models blank to follow Model routing. A new key is checked with the provider when you save.
+                      Automatic follows the team's model choices. A new key is checked with the provider when you save.
                     </p>
                     {fieldError ? <p className="ai-keys-field-error" role="alert">{fieldError}</p> : null}
                     <div className="ai-keys-add-actions">
@@ -372,7 +374,9 @@ export function TeamKeyList({
             <span>API key</span>
             <input
               type="password"
-              autoComplete="off"
+              autoComplete="new-password"
+              data-1p-ignore
+              data-lpignore="true"
               spellCheck={false}
               value={apiKey}
               placeholder={meta(provider)?.placeholder ?? ""}
@@ -381,19 +385,15 @@ export function TeamKeyList({
               onChange={(event) => setApiKey(event.target.value)}
             />
           </label>
-          <label className="ai-keys-add-secret">
-            <span>Models (optional)</span>
-            <input
-              type="text"
-              value={models}
-              spellCheck={false}
-              placeholder="claude-haiku-5-5, gpt-4.1-mini"
-              disabled={busy === "add"}
-              onChange={(event) => setModels(event.target.value)}
-            />
-          </label>
+          <ModelSelect
+            provider={provider}
+            value={models}
+            options={modelOptions}
+            disabled={busy === "add"}
+            onChange={setModels}
+          />
           <p className="app-muted ai-keys-add-hint">
-            {meta(provider)?.docsHint}. We check the key with the provider when you save, then encrypt it. Separate models with a comma, or leave them blank to follow Model routing.
+            {meta(provider)?.docsHint}. We check the key with the provider when you save, then encrypt it. It works on every device you sign in on.
           </p>
           {fieldError && editing === null ? (
             <p className="ai-keys-field-error" role="alert">
