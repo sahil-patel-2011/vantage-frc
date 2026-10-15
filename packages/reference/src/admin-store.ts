@@ -160,6 +160,12 @@ export class AdminGlobalReferenceStore implements GlobalReferenceStore {
     );
   }
 
+  async ensureTeams(records: TeamRecord[]): Promise<void> {
+    await writeChunks(records, (chunk) =>
+      dbAdmin.insert(teamsRef).values(chunk).onConflictDoNothing(),
+    );
+  }
+
   async upsertEvents(records: EventRecord[]): Promise<void> {
     await writeChunks(records, (chunk) =>
       dbAdmin
