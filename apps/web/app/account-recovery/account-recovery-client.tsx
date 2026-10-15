@@ -3,6 +3,8 @@
 import { type FormEvent, useState } from "react";
 import { SignInCard } from "../sign-in/sign-in-chrome";
 import { SignInRecovery } from "../sign-in/sign-in-recovery";
+// The same styles the sign-in page loads: it is outside the app frame, so nothing else does.
+import "../product-styles";
 import "../sign-in/sign-in-flow.css";
 import "../vantage-scan-auth.css";
 import "./account-recovery.css";
