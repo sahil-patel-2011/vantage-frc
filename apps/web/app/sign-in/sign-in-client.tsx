@@ -49,7 +49,6 @@ import { safeAppPath } from "../../lib/security/safe-navigation";
 import { signOutAndRedirect } from "../../lib/sign-out";
 import { requestPasswordResetCode } from "../../lib/sign-in/password-reset";
 import {
-  AccessFooter,
   InviteBanner,
   SetupShell,
   SignInCard,
@@ -67,7 +66,6 @@ import {
   type SessionProbe,
   type SignInBusy,
 } from "./sign-in-model";
-import { SignInRecovery } from "./sign-in-recovery";
 import { SignInSessionView } from "./sign-in-session";
 import "../product-styles";
 import "./sign-in-flow.css";
@@ -90,6 +88,7 @@ export default function SignInClient({
   const [status, setStatus] = useState(initialStatus);
   const [flow, dispatch] = useReducer(signInFlowReducer, undefined, () => initialSignInState());
   const [busy, setBusy] = useState<SignInBusy>("idle");
+  const [emailTried, setEmailTried] = useState(false);
   const [oauthMessage, setOauthMessage] = useState("");
   const [clock, setClock] = useState(() => Date.now());
   const [probe, setProbe] = useState<SessionProbe>({ state: "checking" });
@@ -98,11 +97,8 @@ export default function SignInClient({
   const [invitePreview, setInvitePreview] = useState<InvitePreview | null>(null);
   /** The invite preview answered (or gave up), so the card can stop showing its placeholder. */
   const [invitePreviewSettled, setInvitePreviewSettled] = useState(false);
-  /** Asked for a new code at least once on this step: the "no code yet?" help may show. */
-  const [resentOnce, setResentOnce] = useState(false);
   const invitedPrefilled = useRef(false);
   const [resolvedNext, setResolvedNext] = useState(() => safeAppPath(nextPath, "/dashboard"));
-  const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [passwordPanel, setPasswordPanel] = useState<PasswordPanel>(() =>
     shouldStartOnPassword(initialStatus) ? "password" : "closed",
   );
@@ -221,7 +217,6 @@ export default function SignInClient({
         // for: a mistyped address, or one typed on a shared laptop and never used, stayed behind.
         lastSubmittedCode.current = "";
         setTriedCode("");
-        if (options?.resent) setResentOnce(true);
         const sentAt = Date.now();
         // The countdown's clock only ticks on the code step; without this its first frame
         // counted from when the page opened ("Expires in 5:15").
@@ -512,7 +507,12 @@ export default function SignInClient({
   async function submitIdentity(event: FormEvent) {
     event.preventDefault();
     const email = normalizeSignInEmail(flow.email);
-    if (!isLikelyEmail(email) || !emailAvailable || busy !== "idle" || (flow.failure?.kind === "rate_limited" && resendSeconds > 0)) return;
+    if (!isLikelyEmail(email)) {
+      setEmailTried(true);
+      emailRef.current?.focus();
+      return;
+    }
+    if (!emailAvailable || busy !== "idle" || (flow.failure?.kind === "rate_limited" && resendSeconds > 0)) return;
     await sendFirstFactorCode(email);
   }
 
@@ -691,7 +691,6 @@ export default function SignInClient({
   }, [failureKind, flow.failedAttempts]);
 
   useEffect(() => {
-    if (flow.step === "identity") setResentOnce(false);
   }, [flow.step]);
 
   const working = busy !== "idle";
@@ -726,7 +725,7 @@ export default function SignInClient({
       titleId="signin-title"
       title={inviteLoading ? "Opening your invitation…" : notInvited ? "You’re not on a team yet" : stepCopy.title}
       subtitle={
-        recoveryOpen || inviteLoading
+        inviteLoading
           ? undefined
           : passwordPanel === "password"
           ? "Use the email and password for your team account."
@@ -745,7 +744,7 @@ export default function SignInClient({
       ) : null}
       {unavailable ? <SetupShell copy={unavailable} /> : null}
 
-      {recoveryOpen ? null : (
+      {(
       <>
       <div className="signin-step">
         {inviteLoading ? (
@@ -783,6 +782,7 @@ export default function SignInClient({
             onPasswordChange={setPassword}
             onCodeChange={(code) => dispatch({ type: "code_changed", code })}
             invited={invited}
+            emailTried={emailTried}
           />
         ) : notInvited ? (
           <SignInNotInvited
@@ -839,8 +839,8 @@ export default function SignInClient({
       )}
 
       <div className="signin-footer">
-        {/* Kept for an invitation only when email codes are off, so there is still a way in. */}
-        {recoveryOpen || (invited && emailAvailable) ? null : (
+        {/* A password stays as the way in only when email codes are switched off. */}
+        {emailAvailable ? null : (
         <SignInPasswordFooter
           working={working}
           passwordSignInAvailable={status.passwordSignInAvailable}
@@ -867,13 +867,12 @@ export default function SignInClient({
           }}
         />
         )}
-        {emailAvailable && flow.step === "identity" && passwordPanel === "closed" && !invited ? (
-          <SignInRecovery nextPath={resolvedNext} open={recoveryOpen} onOpenChange={setRecoveryOpen} />
-        ) : null}
-        {/* The not-on-a-team step leads with Join the waitlist, and the code step has its own
-            "No code?" help with the same link; a second one under it was noise. Someone with an
-            invitation is not sent toward the waitlist at all. */}
-        {notInvited || flow.step === "code" || invited ? null : <AccessFooter publicSignup={status.publicSignup} />}
+        {/* Recovery is its own page, reviewed by a person: one link, never a second form here. */}
+        {notInvited ? null : (
+          <p className="signin-recovery-link">
+            <a href={`/account-recovery?next=${encodeURIComponent(resolvedNext)}`}>Can&apos;t sign in? Recover your account</a>
+          </p>
+        )}
       </div>
     </SignInCard>
   );

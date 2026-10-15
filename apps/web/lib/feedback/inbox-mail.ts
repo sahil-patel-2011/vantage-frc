@@ -1,24 +1,35 @@
 import { configuredPlatformOwnerEmail, createEmailProvider, resolveAuthBaseURL } from "@vantage/core";
 
 /**
- * Where help and feedback go: the Send feedback dialog, Report a problem, and support tickets
- * all land in one inbox. FEEDBACK_INBOX_EMAIL overrides it for another deployment. The platform
- * owner's address (PLATFORM_OWNER_EMAIL) still gets support tickets, as it always has.
+ * Where help, feedback and account-recovery requests go: the Send feedback dialog, Report a
+ * problem, support tickets and the Account recovery form all land in these inboxes, sent with
+ * the email account the app already has (Gmail SMTP or Resend). FEEDBACK_INBOX_EMAIL (one
+ * address, or several separated by commas) overrides them for another deployment. Support
+ * tickets also copy the platform owner (PLATFORM_OWNER_EMAIL), as they always have.
  */
-export const FEEDBACK_INBOX = "vantagefrc@mail.grokbot.com";
+export const FEEDBACK_INBOXES = ["vantagefrc@mail.grokbot.com", "vantagefrc@gmail.com", "sahiljpatel2011@gmail.com"] as const;
+export const FEEDBACK_INBOX = FEEDBACK_INBOXES[0];
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function feedbackInbox(env: NodeJS.ProcessEnv = process.env): string {
-  const override = env.FEEDBACK_INBOX_EMAIL?.trim().toLowerCase() ?? "";
-  return EMAIL.test(override) ? override : FEEDBACK_INBOX;
+export function feedbackInboxes(env: NodeJS.ProcessEnv = process.env): string[] {
+  const override = (env.FEEDBACK_INBOX_EMAIL ?? "")
+    .split(",")
+    .map((address) => address.trim().toLowerCase())
+    .filter((address) => EMAIL.test(address));
+  return override.length ? [...new Set(override)] : [...FEEDBACK_INBOXES];
 }
 
-/** The inbox first, then the platform owner when asked for and different. */
+/** The first inbox (for log lines). */
+export function feedbackInbox(env: NodeJS.ProcessEnv = process.env): string {
+  return feedbackInboxes(env)[0]!;
+}
+
+/** Every inbox, then the platform owner when asked for and not already on the list. */
 export function feedbackRecipients(options: { includeOwner: boolean }, env: NodeJS.ProcessEnv = process.env): string[] {
-  const inbox = feedbackInbox(env);
+  const inboxes = feedbackInboxes(env);
   const owner = options.includeOwner ? configuredPlatformOwnerEmail()?.trim().toLowerCase() : null;
-  return owner && owner !== inbox && EMAIL.test(owner) ? [inbox, owner] : [inbox];
+  return owner && EMAIL.test(owner) && !inboxes.includes(owner) ? [...inboxes, owner] : inboxes;
 }
 
 export type FeedbackMail = { subject: string; lines: (string | null | undefined | false)[] };
@@ -40,12 +51,22 @@ export async function mailFeedbackInbox(mail: FeedbackMail, options: { includeOw
       return "skipped";
     }
     const provider = createEmailProvider();
-    if (provider.name === "unconfigured") return "skipped";
-    const text = feedbackMailText(mail);
-    for (const to of feedbackRecipients({ includeOwner: options.includeOwner === true })) {
-      await provider.sendFreeform({ to, subject: mail.subject, text });
+    if (provider.name === "unconfigured") {
+      console.error("[feedback] email is not set up; not sent:", mail.subject);
+      return "skipped";
     }
-    return "sent";
+    const text = feedbackMailText(mail);
+    // One inbox that refuses must not stop the others.
+    let delivered = 0;
+    for (const to of feedbackRecipients({ includeOwner: options.includeOwner === true })) {
+      try {
+        await provider.sendFreeform({ to, subject: mail.subject, text });
+        delivered += 1;
+      } catch (error) {
+        console.error("[feedback] not delivered to one inbox", provider.name, error instanceof Error ? error.message.slice(0, 160) : "");
+      }
+    }
+    return delivered > 0 ? "sent" : "failed";
   } catch {
     return "failed";
   }

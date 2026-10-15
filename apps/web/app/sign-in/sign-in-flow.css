@@ -496,3 +496,8 @@ main.signin-page .signin-card h1 { color: var(--ink); letter-spacing: -0.022em; 
 @media (max-width: 520px) {
   .signin-footer-modes { flex-direction: column; align-items: flex-start; gap: 0; }
 }
+
+/* The one way to account recovery, under the sign-in form. */
+.signin-recovery-link { margin: 16px 0 0; text-align: center; font-size: 15px; }
+.signin-recovery-link a { color: var(--accent); font-weight: 600; text-decoration: none; }
+.signin-recovery-link a:hover { text-decoration: underline; }
