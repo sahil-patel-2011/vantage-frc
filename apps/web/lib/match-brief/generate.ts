@@ -21,6 +21,16 @@ export type MatchBriefResult =
 /** Two people opening the match page in the same minute must not both pay for a brief. */
 const RECENT_WRITE_MS = 60_000;
 
+function writtenJustNow(brief: MatchBrief | null): boolean {
+  return Boolean(brief && Date.now() - new Date(brief.source.generatedAt).getTime() < RECENT_WRITE_MS);
+}
+
+/** "2026casj_qm50" → "2026casj"; null for anything that isn't a match key. */
+export function eventKeyOfMatch(matchKey: string): string | null {
+  const match = matchKey.match(/^(\d{4}[a-z0-9]+)_[a-z]+\d+(?:m\d+)?$/i);
+  return match ? match[1]! : null;
+}
+
 async function writeWithModel(
   client: PoolClient,
   view: LiveView,
@@ -91,6 +101,25 @@ export async function getOrWriteMatchBrief(
   client: PoolClient,
   input: { userId: string; userName: string | null; orgId: string | null; matchKey?: string | null; mode: "read" | "ensure" | "regenerate" },
 ): Promise<MatchBriefResult> {
+  // Reading, and deciding whether a write is due, only need the stored plan and two counts. The
+  // strategy computation (which also saves the prediction) runs only when a plan is written; the
+  // page re-reads every minute for everyone viewing it, so that read has to stay cheap.
+  if (input.orgId && input.matchKey && input.mode !== "regenerate") {
+    const eventKey = eventKeyOfMatch(input.matchKey);
+    if (eventKey) {
+      const [existing, now] = await Promise.all([
+        loadLatestMatchBrief(client, input.orgId, input.matchKey),
+        loadBriefInputs(client, input.orgId, eventKey),
+      ]);
+      const stale = briefIsStale(existing, now);
+      const due = input.mode === "ensure" && stale && !writtenJustNow(existing);
+      if (!due) {
+        return existing
+          ? { status: "ready", brief: existing, stale, generated: false }
+          : { status: "empty", matchKey: input.matchKey, message: "No brief for this match yet." };
+      }
+    }
+  }
   const view = await computeStrategyView(client, {
     userId: input.userId,
     requestedOrg: input.orgId,
@@ -103,11 +132,7 @@ export async function getOrWriteMatchBrief(
   const now = await loadBriefInputs(client, view.orgId, view.eventKey);
   const existing = await loadLatestMatchBrief(client, view.orgId, view.matchKey);
   const stale = briefIsStale(existing, now);
-  const writeNow =
-    input.mode === "regenerate" ||
-    (input.mode === "ensure" &&
-      stale &&
-      !(existing && Date.now() - new Date(existing.source.generatedAt).getTime() < RECENT_WRITE_MS));
+  const writeNow = input.mode === "regenerate" || (input.mode === "ensure" && stale && !writtenJustNow(existing));
   if (!writeNow) {
     return existing
       ? { status: "ready", brief: existing, stale, generated: false }
