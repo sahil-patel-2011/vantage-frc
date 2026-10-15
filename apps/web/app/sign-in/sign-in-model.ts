@@ -67,7 +67,7 @@ export function googleButtonLabel(busy: SignInBusy): string {
 }
 
 export function emailSubmitLabel(busy: SignInBusy): string {
-  return busy === "sending" ? "Sending code…" : "Email me a sign-in code";
+  return busy === "sending" ? "Sending code…" : "Send code";
 }
 
 export function verifySubmitLabel(busy: SignInBusy): string {

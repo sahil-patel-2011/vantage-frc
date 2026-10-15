@@ -243,8 +243,10 @@ body.has-app-shell .search-palette-keys { gap: 12px; font-size: 12px; }
 body.has-app-shell .search-palette-full { font-size: 12px; min-height: 36px; }
 body.has-app-shell .search-palette-keys kbd { padding: 1px 4px; min-width: 20px; font-size: 11px; }
 
-body.has-app-shell .settings-home { max-width: 1000px; }
-.settings-home > nav.settings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 28px 24px; }
+/* One column, the way Settings reads on a phone and a Mac: two columns of uneven groups left
+   a tall empty gap beside the short ones. */
+body.has-app-shell .settings-home { max-width: 720px; }
+.settings-home > nav.settings-list { grid-template-columns: minmax(0, 1fr); align-items: start; gap: 28px; }
 body.has-app-shell .settings-home .settings-group { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--surface); }
 body.has-app-shell .settings-home .settings-group-label { margin: 0 4px 8px; font-size: 13px; color: var(--ink); font-weight: 600; }
 body.has-app-shell .settings-home .settings-row { min-height: 64px; padding: 12px 14px; border-radius: 0; gap: 12px; }
@@ -345,7 +347,6 @@ body.has-app-shell .tc-page .tc-timed-head { position: sticky; top: 0; z-index: 
   body.has-app-shell .ask-page .ask-composer textarea { font-size: 16px; }
 }
 @media (max-width: 600px) {
-  .settings-home > nav.settings-list { grid-template-columns: minmax(0, 1fr); gap: 24px; }
 
   body.has-app-shell .search-palette-field { min-height: 60px; padding: 10px 18px; }
   body.has-app-shell .search-palette-field input { font-size: 18px; }
