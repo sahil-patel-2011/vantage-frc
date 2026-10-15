@@ -761,6 +761,8 @@ async function listMessages(
   mentionsSupported: boolean;
   supervisors: SupervisorRef[];
   supervisionNotice: string;
+  /** The whole inbox, archived channels included, read after this thread was marked read. */
+  inbox: ConversationRow[];
 }> {
   const access = await client.query<{ kind: "team" | "dm"; title: string | null }>(
     `SELECT kind, title FROM org_conversations WHERE id = $1 AND org_id = $2`,
@@ -979,6 +981,7 @@ async function listMessages(
     mentionsSupported,
     supervisors,
     supervisionNotice: supervisionBadge(supervisors.map((item) => item.name)),
+    inbox,
   };
 }
 
@@ -1422,13 +1425,16 @@ export async function GET(request: Request) {
 
       if (conversationId) {
         // Any long-poll wait already ran above, outside this transaction.
-        const thread = await listMessages(client, orgId, session.user.id, conversationId, since, {
+        const { inbox, ...thread } = await listMessages(client, orgId, session.user.id, conversationId, since, {
           before,
           // Paging back through history should not rewrite read state; the
           // initial load and incremental polls still mark the thread read.
           markRead: !before,
         });
-        const conversations = await listInbox(client, orgId, session.user.id);
+        // The working inbox is the full one minus archived team channels — the same filter
+        // listInbox applies — so the thread's read already holds it: one inbox query per poll,
+        // not two (each one a DISTINCT ON over every visible message).
+        const conversations = inbox.filter((item) => !(item.kind === "team" && item.archivedAt));
         const activeArchived = thread.conversation?.archivedAt ? [thread.conversation] : [];
         return {
           currentUserId: session.user.id,

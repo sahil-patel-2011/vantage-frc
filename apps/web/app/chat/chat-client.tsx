@@ -38,6 +38,7 @@ import {
   type SkillPreview,
 } from "./ask-ai-skills";
 import { BackgroundRunCard, backgroundRunLabel, useBackgroundWork } from "./background-work";
+import { useAiConnection } from "./use-ai-connection";
 
 type Thread = { id: string; title: string; scope: "private" | "team" };
 type SourceRef = {
@@ -203,7 +204,7 @@ export default function ChatClient({
   // A send that fails because AI is off keeps the thread and the typed question on screen with a
   // "Not sent" note; it used to swap the whole thread for a setup card and the question was gone.
   const [notSent, setNotSent] = useState<string | null>(null);
-  const [aiConnection, setAiConnection] = useState<{ configured: boolean; reason: string | null; message?: string | null } | null>(null);
+  const { connection: aiConnection, setConnection: setAiConnection, recheck: recheckAiConnection } = useAiConnection(orgId);
   const [sending, setSending] = useState(false);
   const sendPending = useRef(false);
   const loadRequest = useRef<AbortController | null>(null);
@@ -250,13 +251,14 @@ export default function ChatClient({
       if (!response.ok) {
         if (silent) throw new Error("The change was saved, but chat settings couldn’t refresh. Reopen this chat to load them.");
         if (threadId) { setStatus(data.error || "Couldn’t load that conversation. Select it again to retry."); return; }
-        setHttpStatus(response.status); setLoadError(data.error || "Couldn’t load your chats.");
-        setAiConnection({ configured: false, reason: "check_unavailable", message: "Couldn't check your AI connection. Retry before sending; your question stays here." }); return;
+        setHttpStatus(response.status); setLoadError(data.error || "Couldn’t load your chats."); return;
       }
       if (!silent) { setHttpStatus(response.status); setLoadError(null); }
       setThreads(data.threads ?? []); setMemories(data.memories ?? []);
       setPromptCachingEnabled(Boolean(data.promptCachingEnabled));
-      setAiConnection(data.aiConnection ?? null);
+      // The connection check is its own request (see loadConnection); an older server still
+      // answers it here.
+      if ("aiConnection" in data) setAiConnection(data.aiConnection ?? null);
       if (Array.isArray(data.skills)) setAvailability(data.skills);
       if (typeof data.role === "string") setRole(data.role);
       if (data.memorySettings) {
@@ -269,7 +271,7 @@ export default function ChatClient({
       if (controller.signal.aborted) return;
       if (silent) throw error;
       if (threadId) setStatus("Couldn’t load that conversation. Select it again to retry.");
-      else { setHttpStatus(null); setLoadError("Couldn’t reach the server. Your chats haven’t been deleted."); setAiConnection({ configured: false, reason: "check_unavailable", message: "Couldn't reach Vantage to check AI. Retry before sending; your question stays here." }); }
+      else { setHttpStatus(null); setLoadError("Couldn’t reach the server. Your chats haven’t been deleted."); }
     } finally {
       if (loadRequest.current === controller) {
         loadRequest.current = null;
@@ -280,7 +282,7 @@ export default function ChatClient({
 
   useEffect(() => {
     setThread(null); setMessages([]); setThreads([]); setConnectOpen(false);
-    setAiConnection(null); setNotSent(null);
+    setNotSent(null);
     void load();
     return () => { loadRequest.current?.abort(); };
   }, [orgId]);
@@ -845,7 +847,7 @@ export default function ChatClient({
             {orgId && !aiConnection && !notSent ? <p className="ch-composer-note" role="status">Checking your AI connection… You can write your question while it loads.</p> : null}
             {aiConnection?.configured === false && !notSent ? <p className="ch-composer-note" role="status">
               {aiConnection.message ?? (aiConnection.reason === "no_model_provider" ? "AI isn't connected yet. Your question will stay here until it can be sent." : "Your AI connection isn't available. Check it before sending.")}{" "}
-              {aiConnection.reason === "check_unavailable" ? <button type="button" className="chat-connect-inline" onClick={() => void load()}>Retry connection check</button> : aiConnection.reason === "usage_cap" ? <a className="chat-connect-inline" href={withOrgHref("/ai/connect", orgId)}>Check AI settings</a> : <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI</button>}
+              {aiConnection.reason === "check_unavailable" ? <button type="button" className="chat-connect-inline" onClick={() => void recheckAiConnection()}>Retry connection check</button> : aiConnection.reason === "usage_cap" ? <a className="chat-connect-inline" href={withOrgHref("/ai/connect", orgId)}>Check AI settings</a> : <button type="button" className="chat-connect-inline" onClick={() => setConnectOpen(true)}>Connect AI</button>}
             </p> : null}
             {pinned && conversationEmpty ? <SkillStarters skillId={pinned} onPick={(starter) => pickStarter(null, starter)} /> : null}
             {thread?.scope === "team" ? (

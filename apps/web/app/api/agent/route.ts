@@ -57,13 +57,22 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const orgId = url.searchParams.get("orgId") ?? undefined;
     const threadId = url.searchParams.get("threadId");
+    // The AI-connection check walks the whole provider ladder (~30 queries). It has its own
+    // request now, fetched beside this one, so the chat list and composer no longer wait for it.
+    if (url.searchParams.get("part") === "connection") {
+      const connection = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        const facts = orgId ? await loadSkillAccessFacts(client, orgId, session.user.id) : null;
+        const model = orgId && facts?.role ? await withSavepoint(client, () => probeChatAvailability(client, { orgId, userId: session.user.id }), null) : null;
+        return model ?? (orgId ? { configured: false, reason: "check_unavailable", message: "Couldn't check your AI connection. Retry before sending; your question stays here." } : null);
+      });
+      return Response.json({ aiConnection: connection });
+    }
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
       const repository = new AgentRepository(client);
       const promptCachingEnabled = orgId
           ? await getOrgPromptCachingEnabled(client, orgId)
           : true; // platform default since 0448 — personal chats cache too
       const facts = orgId ? await loadSkillAccessFacts(client, orgId, session.user.id) : null;
-      const model = orgId && facts?.role ? await withSavepoint(client, () => probeChatAvailability(client, { orgId, userId: session.user.id }), null) : null;
       return {
         threads: await repository.listThreads(),
         memories: await repository.listUserMemories(session.user.id),
@@ -72,7 +81,6 @@ export async function GET(request: Request) {
         promptCachingEnabled,
         // Which Ask AI skills this member may use here, and in plain words why not.
         role: facts?.role ?? null,
-        aiConnection: model ?? (orgId ? { configured: false, reason: "check_unavailable", message: "Couldn't check your AI connection. Retry before sending; your question stays here." } : null),
         skills: facts ? skillAvailabilityList(facts) : [],
       };
     });
