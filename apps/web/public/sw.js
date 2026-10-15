@@ -6,6 +6,8 @@
  * - Allowlisted shell routes: network-first document cache, then `/offline`.
  * - Other navigations: network-only; on failure fall back to `/offline`
  *   (never cache non-shell auth HTML).
+ * - "Failure" means the fetch rejected (no network, connection refused) — never
+ *   "slow". Navigations have no timeout; a cancelled navigation is not offline.
  * - Never intercept /api/* or Next RSC/Flight requests.
  * - Static assets only in the asset cache. Scout outbox stays in IndexedDB.
  *
@@ -288,10 +290,29 @@ function isStaticAssetPath(pathname) {
   );
 }
 
+/**
+ * Last resort when not even the cached /offline page exists. Self-contained (inline styles, no
+ * app CSS) so it never renders as bare black-on-white text, and honest: it says whether the
+ * device reports no network or the page simply could not be reached.
+ */
 function hardOfflineHtml() {
+  const offline = !swOnline();
+  const title = offline ? "You're offline" : "Couldn't load this page";
+  const lead = offline
+    ? "This device has no connection. Scout data saved on this phone is safe and syncs when you're back online."
+    : "Vantage didn't answer — the connection may have dropped. Scout data saved on this phone is safe.";
   return new Response(
-    "<!doctype html><title>Offline</title><p>Vantage is offline. Open the app once online to cache the scout shell.</p>",
-    { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
+    "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+      "<title>" + title + " · Vantage</title><style>" +
+      ":root{color-scheme:light dark}body{margin:0;min-height:100dvh;padding:48px 20px;box-sizing:border-box;" +
+      "font:16px/1.5 ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;background:#f5f6f4;color:#17201c}" +
+      "main{max-width:34rem;margin:0 auto}b{display:block;font:700 28px Georgia,serif;margin:0 0 12px}" +
+      "h1{font-size:22px;margin:0 0 8px}p{color:#4b5852;margin:0 0 20px}" +
+      "button{min-height:48px;padding:0 20px;border:0;border-radius:12px;background:#1f6f52;color:#fff;font-family:inherit;font-size:16px;font-weight:600;cursor:pointer}" +
+      "@media (prefers-color-scheme:dark){body{background:#101412;color:#e8ece9}p{color:#a5b0aa}}" +
+      "</style></head><body><main><b>Vantage</b><h1>" + title + "</h1><p>" + lead + "</p>" +
+      "<button type=\"button\" onclick=\"location.reload()\">Try again</button></main></body></html>",
+    { status: 503, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
   );
 }
 
@@ -300,32 +321,93 @@ async function matchShellFallback() {
   return (await cache.match(SHELL_URL, { ignoreSearch: true })) || hardOfflineHtml();
 }
 
+/** The device's own view of the network. Unknown counts as online. */
+function swOnline() {
+  return !self.navigator || self.navigator.onLine !== false;
+}
+
+/** The browser cancelled this navigation (a newer one replaced it): not an offline signal. */
+function wasCancelled(request, error) {
+  return Boolean((request.signal && request.signal.aborted) || (error && error.name === "AbortError"));
+}
+
+/*
+ * Fetch a page navigation and wait for it however long it takes — there is deliberately no
+ * timeout here: a slow page (a cold serverless start, a heavy page) must finish loading, never
+ * turn into the offline page. Only a rejected fetch reaches the callers' fallbacks. When the
+ * device still reports a connection, one failure gets one retry first (a connection reset on a
+ * cold start usually succeeds the second time) before it is treated as a network failure.
+ */
+async function fetchNavigation(request) {
+  try {
+    return await fetch(request);
+  } catch (error) {
+    if (wasCancelled(request, error) || !swOnline()) throw error;
+    return fetch(request);
+  }
+}
+
+/** Store the /_next/static scripts and styles a cached page's HTML names, so it can run offline. */
+async function cacheNamedAssets(html, assets) {
+  const names = new Set();
+  for (const match of html.matchAll(/(?:src|href)="(\/_next\/static\/[^"?#]+)"/g)) names.add(match[1]);
+  let files = 0;
+  for (const name of names) {
+    if (await assets.match(name)) continue;
+    try {
+      const asset = await fetch(name);
+      if (asset.ok) {
+        await assets.put(name, asset);
+        files += 1;
+      }
+    } catch {
+      // One missing chunk should not stop the rest.
+    }
+  }
+  return files;
+}
+
 async function precacheShell() {
   const cache = await caches.open(SHELL_CACHE);
   await Promise.all(PRECACHE.map((url) => cache.add(url).catch(() => undefined)));
+  // The offline page's own CSS and JS: without them a real no-signal load rendered it unstyled.
+  // (The page also carries its critical styles inline, so it reads correctly even before this.)
+  try {
+    const shell = await cache.match(SHELL_URL, { ignoreSearch: true });
+    if (shell) await cacheNamedAssets(await shell.clone().text(), await caches.open(ASSET_CACHE));
+  } catch {
+    // Best effort; the inline styles still apply.
+  }
 }
 
-async function networkFirstShell(request) {
+async function networkFirstShell(event) {
+  const request = event.request;
   const cache = await caches.open(SHELL_CACHE);
+  let fresh;
   try {
-    const fresh = await fetch(request);
-    if (fresh && fresh.ok) {
-      await cache.put(request, fresh.clone());
-    }
-    return fresh;
-  } catch {
+    fresh = await fetchNavigation(request);
+  } catch (error) {
+    if (wasCancelled(request, error)) return Response.error();
     const cached =
       (await cache.match(request, { ignoreSearch: true })) ||
       (await cache.match(new URL(request.url).pathname));
     if (cached) return cached;
     return matchShellFallback();
   }
+  if (fresh && fresh.ok && !fresh.redirected) {
+    // Save the copy in the background. Awaiting cache.put here held the page back until its last
+    // streamed byte had arrived (a slow page looked hung), and a stream that broke midway threw
+    // into the offline fallback even though the device was online.
+    event.waitUntil(cache.put(request, fresh.clone()).catch(() => undefined));
+  }
+  return fresh;
 }
 
 async function navigateWithShellFallback(request) {
   try {
-    return await fetch(request);
-  } catch {
+    return await fetchNavigation(request);
+  } catch (error) {
+    if (wasCancelled(request, error)) return Response.error();
     return matchShellFallback();
   }
 }
@@ -356,20 +438,7 @@ async function warmRoutes(paths) {
       const html = await response.clone().text();
       await shell.put(new Request(new URL(url.pathname, self.location.origin).href), response);
       pages += 1;
-      const names = new Set();
-      for (const match of html.matchAll(/(?:src|href)="(\/_next\/static\/[^"?#]+)"/g)) names.add(match[1]);
-      for (const name of names) {
-        if (await assets.match(name)) continue;
-        try {
-          const asset = await fetch(name);
-          if (asset.ok) {
-            await assets.put(name, asset);
-            files += 1;
-          }
-        } catch {
-          // One missing chunk should not stop the rest.
-        }
-      }
+      files += await cacheNamedAssets(html, assets);
     } catch {
       // Offline mid-warm: report what was saved.
     }
@@ -543,7 +612,7 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(
       isShellPath(url.pathname)
-        ? networkFirstShell(request)
+        ? networkFirstShell(event)
         : navigateWithShellFallback(request),
     );
     return;
