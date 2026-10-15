@@ -444,7 +444,7 @@ export function QuickAddForm({
   const entrySwitch = <div className="tc-entry-switch" role="group" aria-label="What to add">
     {(["event", "task", "competition"] as const).map(value => <button key={value} type="button" className={entry === value ? "active" : undefined} aria-pressed={entry === value} disabled={busy || savingTask} onClick={() => setEntry(value)}>{value === "event" ? "Event" : value === "task" ? "Task" : "Competition"}</button>)}
   </div>;
-  if (entry === "competition") return <div className="tc-quick-add"><div className="tc-quick-head"><h2>Competition</h2>{entrySwitch}</div>
+  if (entry === "competition") return <div className="tc-quick-add"><div className="tc-quick-head">{entrySwitch}</div>
     <CompetitionEventPlanner key={`${orgId}:${initialCompetitionKey ?? "new"}`} orgId={orgId} initialEventKey={initialCompetitionKey} onBusy={value => { setSavingTask(value); onCompetitionBusy?.(value); }} onChanged={onCompetitionSaved} />
   </div>;
 
@@ -505,10 +505,8 @@ export function QuickAddForm({
         });
       }}
     >
-      <div className="tc-quick-head">
-        <h2>{entry === "task" ? "Add task" : "Add event"}</h2>
-        {entrySwitch}
-      </div>
+      {/* The dialog's title names the form; a second heading here read as two titles. */}
+      <div className="tc-quick-head">{entrySwitch}</div>
       <div className="tc-quick-grid">
         <input
           value={title}

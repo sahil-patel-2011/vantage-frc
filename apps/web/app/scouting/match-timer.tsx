@@ -7,7 +7,7 @@ import { TabBar } from "../../components/ui";
 
 import { type ScoutFormStage } from "../../lib/scouting/match-form-flow";
 
-const STAGE_LABEL: Record<ScoutFormStage, string> = { all: "All", pre: "Before", auto: "Auto", teleop: "Teleop", endgame: "Endgame", review: "Review" };
+const STAGE_LABEL: Record<ScoutFormStage, string> = { all: "All", pre: "Before", auto: "Auto", teleop: "Teleop", endgame: "Endgame", review: "Summary" };
 
 const PHASE_LABEL: Record<MatchPhase, string> = {
   pre: "Match timer",

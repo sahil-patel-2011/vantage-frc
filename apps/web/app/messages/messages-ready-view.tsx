@@ -11,7 +11,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from "react";
-import { EmptyState, PageHeader, Button } from "../../components/ui";
+import { EmptyState, PageHeader, PageMain, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ViewOnlyNote } from "../../components/view-only-note";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -303,7 +303,7 @@ export function MessagesReadyView({
   );
 
   return (
-    <main className={`chat-page messages-page${embedded ? " is-embedded" : ""}`}>
+    <PageMain className={`chat-page messages-page${embedded ? " is-embedded" : ""}`}>
       {!embedded ? (
         <PageHeader breadcrumbs="Team / Chat" title="Chat">
           <span className={`messages-live ${live ? "on" : "off"}`}>
@@ -947,6 +947,6 @@ export function MessagesReadyView({
           )}
         </aside>, document.body
       ) : null}
-    </main>
+    </PageMain>
   );
 }
