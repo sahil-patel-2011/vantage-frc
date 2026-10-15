@@ -16,7 +16,6 @@ import {
   MEMBER_KEY_BASE_URL_HINT,
   MEMBER_KEY_BODY,
   MEMBER_KEY_HEADLINE,
-  MEMBER_KEY_MODEL_HINT,
   memberKeyFields,
   OTHER_KEYS_TITLE,
 } from "./ai-keys-copy";
@@ -35,6 +34,7 @@ import {
 import { MyFreeGeminiKey } from "./ai-keys-my-free-key";
 import { AiKeySharing } from "./ai-key-sharing";
 import { TeamKeyList } from "./ai-keys-team-list";
+import { ModelSelect } from "./ai-keys-model-select";
 import { KeySpendMeter } from "./ai-key-spend";
 import { AiCreditLine } from "../../../components/ai-credit-line";
 import { WebResearchCard } from "./ai-keys-web-research";
@@ -150,6 +150,16 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           modelOptions,
         );
   const [modelText, setModelText] = useState(savedModelText);
+  // The same choice as checkboxes (Pick for each job) or a menu (One model): nobody types names.
+  const savedIds = routingDraft.mode === "fixed"
+    ? (routingDraft.fixedModelId ? [routingDraft.fixedModelId] : [])
+    : routingDraft.enabledModelIds.filter((id) => !modelOptions.find((option) => option.id === id)?.fixedOnly);
+  const [pickedIds, setPickedIds] = useState<string[]>(savedIds);
+  const pick = (ids: string[]) => {
+    setPickedIds(ids);
+    setModelText(formatModelList(ids, modelOptions));
+    setModelError(null);
+  };
   const [modelError, setModelError] = useState<string | null>(null);
   const [editingMine, setEditingMine] = useState<string | null>(null);
   const [mineEdit, setMineEdit] = useState({ label: "", model: "", apiKey: "" });
@@ -157,7 +167,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
   const [mineEditBusy, setMineEditBusy] = useState(false);
   useEffect(() => {
     setModelText(savedModelText);
+    setPickedIds(savedIds);
     setModelError(null);
+    // savedIds is derived from the same draft as savedModelText.
   }, [savedModelText]);
   useEffect(() => {
     const focus = new URLSearchParams(window.location.search).get("focus");
@@ -297,6 +309,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               setupBlocked={Boolean(payload.setupRequired)}
               onChanged={props.reload}
               onMessage={props.notify}
+              modelOptions={modelOptions}
             />
           ) : null}
           </details>
@@ -305,7 +318,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             <section className="app-card soft-panel ai-keys-routing" aria-label="Model routing">
               <h2>Which models to use</h2>
               <p className="app-muted">
-                Type model names separated by a comma. For example: Claude Haiku 5.5, GPT-4.1 mini, Gemini 3.8 Flash.
+                Choose from the models your team's keys can run.
               </p>
               <form
                 className="ai-keys-form"
@@ -317,7 +330,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                     return;
                   }
                   if (!modelTokens(modelText).length) {
-                    setModelError(routingDraft.mode === "fixed" ? "Type the model to use." : "Type at least one model, separated by commas.");
+                    setModelError(routingDraft.mode === "fixed" ? "Choose the model to use." : "Choose at least one model.");
                     return;
                   }
                   setModelError(null);
@@ -345,27 +358,41 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                     Pick for each job
                   </label>
                 </fieldset>
-                <label>
-                  Models
-                  <input
-                    type="text"
-                    value={modelText}
-                    spellCheck={false}
-                    autoComplete="off"
-                    placeholder="claude-haiku-5-5, gpt-4.1-mini, gemini-3.8-flash"
-                    disabled={busyRouting}
-                    aria-invalid={modelError ? true : undefined}
-                    onChange={(event) => {
-                      setModelText(event.target.value);
-                      setModelError(null);
-                    }}
-                  />
-                  <small className="app-muted">
-                    {routingDraft.mode === "fixed"
-                      ? "Every AI feature uses the first name."
-                      : "A stronger model for CAD and code, a faster one for chat. Only from companies whose key you have added."}
-                  </small>
-                </label>
+                {routingDraft.mode === "fixed" ? (
+                  <label>
+                    Model
+                    <select
+                      value={pickedIds[0] ?? ""}
+                      disabled={busyRouting}
+                      aria-invalid={modelError ? true : undefined}
+                      onChange={(event) => pick(event.target.value ? [event.target.value] : [])}
+                    >
+                      <option value="" disabled>Choose a model</option>
+                      {modelOptions.map((option) => (
+                        <option key={option.id} value={option.id}>{option.label}</option>
+                      ))}
+                    </select>
+                    <small className="app-muted">Every AI feature uses this model.</small>
+                  </label>
+                ) : (
+                  <fieldset className="ai-keys-model-checks">
+                    <legend>Models it may pick from</legend>
+                    {modelOptions.filter((option) => !option.fixedOnly).map((option) => (
+                      <label key={option.id} className="check-field">
+                        <input
+                          type="checkbox"
+                          checked={pickedIds.includes(option.id)}
+                          disabled={busyRouting}
+                          onChange={(event) =>
+                            pick(event.target.checked ? [...pickedIds, option.id] : pickedIds.filter((id) => id !== option.id))
+                          }
+                        />{" "}
+                        {option.label}
+                      </label>
+                    ))}
+                    <small className="app-muted">A stronger model for CAD and code, a faster one for chat. Only from companies whose key you have added.</small>
+                  </fieldset>
+                )}
                 {modelError ? <p className="ai-keys-field-error" role="alert">{modelError}</p> : null}
                 <div className="ai-keys-actions">
                   <button className="primary-action" type="submit" disabled={busyRouting}>
@@ -457,14 +484,16 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                           Name
                           <input type="text" maxLength={60} value={mineEdit.label} onChange={(event) => setMineEdit((prev) => ({ ...prev, label: event.target.value }))} required />
                         </label>
-                        <label>
-                          Models
-                          <input type="text" value={mineEdit.model} spellCheck={false} placeholder="claude-haiku-5-5, gpt-4.1-mini" onChange={(event) => setMineEdit((prev) => ({ ...prev, model: event.target.value }))} />
-                          <small className="app-muted">{MEMBER_KEY_MODEL_HINT}</small>
-                        </label>
+                        <ModelSelect
+                          provider={row.provider}
+                          value={mineEdit.model}
+                          options={modelOptions}
+                          customEndpoint={Boolean(row.baseUrl)}
+                          onChange={(model) => setMineEdit((prev) => ({ ...prev, model }))}
+                        />
                         <label>
                           New API key
-                          <input type="password" autoComplete="off" spellCheck={false} value={mineEdit.apiKey} placeholder="Leave blank to keep the current key" onChange={(event) => setMineEdit((prev) => ({ ...prev, apiKey: event.target.value }))} />
+                          <input type="password" autoComplete="new-password" data-1p-ignore data-lpignore="true" spellCheck={false} value={mineEdit.apiKey} placeholder="Leave blank to keep the current key" onChange={(event) => setMineEdit((prev) => ({ ...prev, apiKey: event.target.value }))} />
                         </label>
                         {mineEditError ? <p className="ai-keys-field-error" role="alert">{mineEditError}</p> : null}
                         <div className="ai-keys-add-actions">
@@ -514,7 +543,9 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 <input
                   type="password"
                   value={mineDraft.apiKey}
-                  autoComplete="off"
+                  autoComplete="new-password"
+                  data-1p-ignore
+                  data-lpignore="true"
                   onChange={(event) => setMineDraft((d) => ({ ...d, apiKey: event.target.value }))}
                   placeholder="Paste your key"
                 />
@@ -536,16 +567,13 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
                 </label>
               ) : null}
               {memberKeyFields(mineDraft.provider).model ? (
-                <label>
-                  Model
-                  <input
-                    type="text"
-                    value={mineDraft.model}
-                    onChange={(event) => setMineDraft((d) => ({ ...d, model: event.target.value }))}
-                    placeholder="llama-3.3-70b-versatile"
-                  />
-                  <small className="app-muted">{MEMBER_KEY_MODEL_HINT}</small>
-                </label>
+                <ModelSelect
+                  provider={mineDraft.provider}
+                  value={mineDraft.model}
+                  options={modelOptions}
+                  customEndpoint={Boolean(mineDraft.baseUrl.trim())}
+                  onChange={(model) => setMineDraft((d) => ({ ...d, model }))}
+                />
               ) : null}
               <Button variant="primary" type="submit" disabled={mineBusy || !mineDraft.apiKey.trim()}>
                 {mineBusy ? "Checking…" : "Check and save"}

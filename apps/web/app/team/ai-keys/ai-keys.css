@@ -717,3 +717,12 @@
   .ai-key-spend-edit input { min-height: 44px; font-size: 16px; }
   .ai-keys-mine-list .ai-key-spend button { width: auto; }
 }
+
+/* Model menu (ai-keys-model-select.tsx): a label over a native select, and a name box only for
+   "Other model…" on a custom endpoint. */
+.ai-keys-model-select { display: grid; gap: 6px; }
+.ai-keys-model-select > label { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.ai-keys-model-select :is(select, input) { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; font-size: 15px; }
+.ai-keys-model-checks { display: grid; gap: 8px; border: 0; padding: 0; margin: 0; }
+.ai-keys-model-checks legend { font-size: 13.5px; font-weight: 600; margin-bottom: 4px; }
+.ai-keys-model-checks .check-field { min-height: 40px; display: flex; align-items: center; gap: 8px; }

@@ -1,0 +1,7 @@
+/* Account recovery: the sign-in card's fields, two names side by side when there is room. */
+.recovery-form { gap: 14px; }
+.recovery-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 420px) { .recovery-row { grid-template-columns: minmax(0, 1fr); } }
+.recovery-optional { font-weight: 400; color: var(--muted); }
+.recovery-form input[aria-invalid="true"] { border-color: var(--critical); }
+.recovery-hp { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
