@@ -124,7 +124,7 @@
 .qs-stages{display:flex;gap:6px;padding:4px;border-radius:14px;background:var(--surface-2);overflow-x:auto;scrollbar-width:none}
 .qs-stages::-webkit-scrollbar{display:none}
 .qs-stages button{
-  flex:1 1 0;min-width:max-content;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:40px;padding:0 10px;
+  flex:1 1 0;min-width:max-content;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:44px;padding:0 10px;
   border:0;border-radius:10px;background:transparent;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;
 }
 .qs-stages button.is-on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .1),0 0 0 1px var(--line)}
@@ -335,3 +335,4 @@
 .qs-section .qs-row .qs-chevron{font-size:20px;line-height:1}
 @media(prefers-reduced-motion:reduce){.qs-section .qs-row{transition:none}}
 .qs-primary{font-weight:650}
+.qs-stage-issues{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--critical);color:#fff;font-size:12px;font-weight:700;line-height:1}

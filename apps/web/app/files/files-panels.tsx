@@ -289,9 +289,10 @@ export function Body(props: BodyProps) {
                     >
                       Share
                     </button>
+                    {/* Only an empty folder can be deleted (the server refuses otherwise). Red, last. */}
                     <button
                       type="button"
-                      className="link-button"
+                      className="link-button danger"
                       onClick={() => void props.onDeleteFolder(folder)}
                     >
                       Delete

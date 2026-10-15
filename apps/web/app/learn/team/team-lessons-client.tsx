@@ -91,21 +91,23 @@ function DraftRow({
         </span>
       </div>
       <div className="team-lesson-draft-actions">
-        {/* Only the author of a draft, or an owner or admin, may delete it (the API checks too). */}
-        {lesson.status === "draft" && lesson.canDelete ? (
-          <Button variant="ghost" size="sm" className="team-lesson-discard" disabled={discarding} onClick={() => onDiscard(lesson)}>
-            {discarding ? "Discarding…" : "Discard draft"}
-          </Button>
-        ) : null}
+        {/* The way in first; discarding comes last, red, and asks first. It used to come
+            before Edit in the same grey style. */}
         {lesson.canEdit ? (
-          <Button as="a" variant="ghost" size="sm" href={lessonEditHref(lesson.id, orgId)}>
+          <Button as="a" variant="secondary" size="sm" href={lessonEditHref(lesson.id, orgId)}>
             Edit
           </Button>
         ) : (
-          <Button as="a" variant="ghost" size="sm" href={lessonHref(lesson.id, orgId)}>
+          <Button as="a" variant="secondary" size="sm" href={lessonHref(lesson.id, orgId)}>
             Open
           </Button>
         )}
+        {/* Only the author of a draft, or an owner or admin, may delete it (the API checks too). */}
+        {lesson.status === "draft" && lesson.canDelete ? (
+          <Button variant="ghost" tone="danger" size="sm" className="team-lesson-discard" disabled={discarding} onClick={() => onDiscard(lesson)}>
+            {discarding ? "Discarding…" : "Discard draft"}
+          </Button>
+        ) : null}
       </div>
     </li>
   );

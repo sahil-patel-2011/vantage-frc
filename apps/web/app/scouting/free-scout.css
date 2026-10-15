@@ -32,3 +32,4 @@
   .free-scout .scout-report-actions > * { flex: 1; min-width: 0; white-space: normal; }
 }
 body.has-app-shell:has(.free-scout) .soft-island { display: none !important; }
+.free-scout-start-hint { margin: 6px 0 0; font-size: 13px; }

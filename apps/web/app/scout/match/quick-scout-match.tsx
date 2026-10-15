@@ -13,6 +13,7 @@ import {
 import { isScoutIdentityField } from "@vantage/scouting/identity";
 import { visibleFields, withInferredPhaseRules } from "../../../lib/scouting/context-visible";
 import { answersToSave, hasObservation } from "../../../lib/scouting/entry-answers";
+import { firstInvalidField, invalidFieldKeys } from "../../../lib/scouting/invalid-fields";
 import {
   clearScoutDraft,
   formatDraftSavedAgo,
@@ -141,12 +142,26 @@ export function QuickScoutMatch({
   const clockStage = stageForClock(elapsed, timing);
   const [stage, setStage] = useState<QuickStage>(() => (startedAt === null ? (initial.editing ? "review" : "pre") : clockStage));
   const [issues, setIssues] = useState<string[]>([]);
+  /** The question a failed save took the scout to; scrolled into view once its stage renders. */
+  const [focusKey, setFocusKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(() => openingNotes(form));
   const savingRef = useRef(false);
 
   const visible = useMemo(() => visibleFields(fields, payload), [fields, payload]);
   const stages = useMemo(() => stagesWithFields(visible), [visible]);
+
+  // After a failed save switches stage, bring the first question to fix into view.
+  useEffect(() => {
+    if (!focusKey) return;
+    const frame = requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(`[data-quick-field="${CSS.escape(focusKey)}"]`);
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
+      target?.querySelector<HTMLElement>("button:not([disabled]),input:not([disabled]),select:not([disabled])")?.focus({ preventScroll: true });
+      setFocusKey(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focusKey, stage]);
   const running = activeCaptureBout(matchCapture(payload));
   const matchEnd = matchLengthMs(timing);
   const clockRunning = elapsed !== null && elapsed < matchEnd;
@@ -291,6 +306,14 @@ export function QuickScoutMatch({
     setIssues(problems);
     if (problems.length) {
       setMessage(`Not saved yet. ${problems.slice(0, 2).join(". ")}.`);
+      // Take the scout to the first question that needs them, on whatever stage it lives,
+      // instead of leaving a list of problems at the top of the review.
+      const first = firstInvalidField(fields, problems);
+      const home = first ? stages.find((candidate) => candidate !== "review" && fieldsForQuickStage(visible, candidate).some((field) => field.key === first.key)) : undefined;
+      if (first && home) {
+        setStage(home);
+        setFocusKey(first.key);
+      }
       return;
     }
     const entry: SyncEntry = {
@@ -328,9 +351,16 @@ export function QuickScoutMatch({
   const stageFields = stage === "review" ? [] : fieldsForQuickStage(visible, stage).filter(
     (field) => !(field.key === STATION_FIELD_KEY && station && payload[field.key] === stationAnswer(field, station)),
   );
-  const invalidKeys = new Set(
-    fields.filter((field) => issues.some((issue) => issue.startsWith(field.label))).map((field) => field.key),
-  );
+  const invalidKeys = invalidFieldKeys(fields, issues);
+  // A red count on each stage that still has a question to fix.
+  const invalidByStage = new Map<QuickStage, number>();
+  if (invalidKeys.size) {
+    for (const candidate of stages) {
+      if (candidate === "review") continue;
+      const count = fieldsForQuickStage(visible, candidate).filter((field) => invalidKeys.has(field.key)).length;
+      if (count) invalidByStage.set(candidate, count);
+    }
+  }
   const readout = elapsed === null ? null : liveClockReadout(elapsed, timing, clockRunning ? shift : null);
 
   return (
@@ -380,6 +410,11 @@ export function QuickScoutMatch({
           >
             {QUICK_STAGE_LABELS[candidate]}
             {candidate === clockStage && clockRunning ? <span className="qs-live-dot" aria-label="(now)" /> : null}
+            {invalidByStage.get(candidate) ? (
+              <span className="qs-stage-issues" aria-label={`(${invalidByStage.get(candidate)} to fix)`}>
+                {invalidByStage.get(candidate)}
+              </span>
+            ) : null}
           </button>
         ))}
       </nav>

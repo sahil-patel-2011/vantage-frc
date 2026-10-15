@@ -35,7 +35,7 @@ function FormulaNode({ node, fields, disabled, onChange, depth = 0 }: {
         {(node.op === "field" ? numeric : choices).map(field => <option key={field.key} value={field.key}>{field.label}</option>)}
       </select></label>
       {node.op === "lookup" && field ? <div className="sfm-mapping"><p>Leave an answer unmapped if it cannot establish a score. Recorded zero is valid.</p>
-        {formulaOptions(field).map(option => <label key={option}>{scoutOptionLabel(option)}{isUnseenFormulaAnswer(option) ? <span>Remains unknown{Object.hasOwn(node.values, option) ? <Button type="button" variant="ghost" onClick={() => { const values = { ...node.values }; delete values[option]; onChange({ ...node, values }); }}>Remove old mapping</Button> : null}</span> : <input type="number" step="any" placeholder="Unknown" value={Number.isFinite(node.values[option]) ? node.values[option] : ""} onChange={event => {
+        {formulaOptions(field).map(option => <label key={option}>{scoutOptionLabel(option)}{isUnseenFormulaAnswer(option) ? <span>Remains unknown{Object.hasOwn(node.values, option) ? <Button type="button" variant="ghost" tone="danger" onClick={() => { const values = { ...node.values }; delete values[option]; onChange({ ...node, values }); }}>Remove old mapping</Button> : null}</span> : <input type="number" step="any" placeholder="Unknown" value={Number.isFinite(node.values[option]) ? node.values[option] : ""} onChange={event => {
           const next = { ...node.values };
           if (event.target.value === "") delete next[option]; else next[option] = event.target.valueAsNumber;
           onChange({ ...node, values: next });
@@ -51,7 +51,7 @@ function FormulaNode({ node, fields, disabled, onChange, depth = 0 }: {
     </> : "args" in node ? <div className="sfm-children">
       {node.args.map((child, index) => <div key={index} className="sfm-child">
         <FormulaNode node={child} fields={fields} disabled={disabled} depth={depth + 1} onChange={value => onChange({ ...node, args: node.args.map((child, at) => at === index ? value : child) })} />
-        <Button type="button" variant="ghost" aria-label={`Remove scoring term ${index + 1} at level ${depth + 1}`} onClick={() => onChange({ ...node, args: node.args.filter((_, at) => at !== index) })}>Remove term</Button>
+        <Button type="button" variant="ghost" tone="danger" aria-label={`Remove scoring term ${index + 1} at level ${depth + 1}`} onClick={() => onChange({ ...node, args: node.args.filter((_, at) => at !== index) })}>Remove term</Button>
       </div>)}
       {node.args.length < 32 && depth < 10 ? <Button type="button" variant="secondary" onClick={() => { const term = defaultFormulaTerm(fields); onChange({ ...node, args: [...node.args, term.op === "field" ? { op: "multiply", args: [term, { op: "constant", value: NaN }] } : term] }); }}>Add scoring term</Button> : <p>The calculation has reached the nesting or term limit.</p>}
     </div> : null}
@@ -201,11 +201,14 @@ export function ScoringFormulas({ open, onClose, orgId, userId, schema, canManag
       </details>
       {draftError ? <p role="alert">{draftError}</p> : dirty ? <p className="app-muted">Draft saved on this device · not applied to the team.</p> : null}
       {message ? <p role="status">{message}</p> : null}
-      {confirmDiscard ? <section className="sfm-conflict" aria-label="Discard scoring draft"><p>Discard your unsaved scoring changes? The team’s saved formula stays unchanged.</p><Button type="button" variant="secondary" disabled={saving} onClick={() => setConfirmDiscard(false)}>Keep editing</Button><Button type="button" variant="ghost" disabled={saving} onClick={discard}>Confirm discard</Button></section> : null}
+      {confirmDiscard ? <section className="sfm-conflict" aria-label="Discard scoring draft"><p>Discard your unsaved scoring changes? The team’s saved formula stays unchanged.</p><Button type="button" variant="secondary" disabled={saving} onClick={() => setConfirmDiscard(false)}>Keep editing</Button><Button type="button" variant="danger" disabled={saving} onClick={discard}>Discard changes</Button></section> : null}
     </div>
     <footer className="sfm-actions">
-      {dirty && canManage && !confirmDiscard ? <Button type="button" variant="ghost" disabled={saving} onClick={() => setConfirmDiscard(true)}>Discard scoring draft</Button> : null}
-      {editable ? <Button type="button" variant="primary" disabled={saving || loading || !loaded || Boolean(loadError) || !schema || Boolean(inputError) || hasConflict || !dirty} onClick={() => void save()}>{saving ? "Saving…" : dirty ? "Save scoring formula" : baseline ? "Saved" : "Add terms to configure scoring"}</Button> : null}
+      {dirty && canManage && !confirmDiscard ? <Button type="button" variant="ghost" tone="danger" disabled={saving} onClick={() => setConfirmDiscard(true)}>Discard scoring draft</Button> : null}
+      {/* The button names the action; with nothing to save yet, the reason is said beside it
+          rather than written into a greyed-out button. */}
+      {editable && !dirty && !baseline && !saving ? <p className="app-muted sfm-save-hint">Add a term above to build the scoring formula.</p> : null}
+      {editable ? <Button type="button" variant="primary" disabled={saving || loading || !loaded || Boolean(loadError) || !schema || Boolean(inputError) || hasConflict || !dirty} onClick={() => void save()}>{saving ? "Saving…" : dirty || !baseline ? "Save scoring formula" : "Saved"}</Button> : null}
     </footer>
   </Modal>;
 }

@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Button, askConfirm } from "../../../components/ui";
 import { formatBridgePostCount } from "../../../lib/discord-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
@@ -397,7 +397,21 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
             <Button variant="secondary" type="button" disabled={busy || !view.canPost} onClick={() => void run("test")}>
               Send test
             </Button>
-            <Button variant="ghost" type="button" disabled={busy} onClick={() => void run("disconnect")}>
+            <Button
+              variant="ghost"
+              tone="danger"
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                const ok = await askConfirm({
+                  title: "Disconnect Discord?",
+                  body: `Vantage stops posting to ${channelName} and forgets the channel's webhook link. To post again, paste the link again.`,
+                  confirmLabel: "Disconnect",
+                  tone: "destructive",
+                });
+                if (ok) void run("disconnect");
+              }}
+            >
               Disconnect
             </Button>
           </div>

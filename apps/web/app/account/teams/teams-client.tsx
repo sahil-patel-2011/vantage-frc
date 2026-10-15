@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { askConfirm, Button } from "../../../components/ui";
+import { ActionMenu, askConfirm, type ActionSpec } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { accessRoleLabel, teamDisplayName } from "../../../lib/team-lifecycle/model";
 import type { TeamLifecycleView } from "../../../lib/team-lifecycle/store";
@@ -48,6 +48,41 @@ export function TeamsList({ teams, currentOrgId }: { teams: TeamLifecycleView[];
     }
   }
 
+  function teamActions(team: TeamLifecycleView, current: boolean): ActionSpec[] {
+    const actions: ActionSpec[] = [
+      {
+        id: "open",
+        label: current ? "Open" : "Switch to this team",
+        href: current ? "/dashboard" : `/dashboard?orgId=${encodeURIComponent(team.orgId)}`,
+        intent: "primary",
+      },
+    ];
+    // Leave asks in its own dialog, which says what leaving costs; Delete opens the typed
+    // confirmation. Neither needs the menu's extra "press again" step on top.
+    if (team.canLeave) {
+      actions.push({
+        id: "leave",
+        label: busyOrg === team.orgId ? "Leaving…" : "Leave team",
+        disabled: busyOrg === team.orgId,
+        onClick: () => void leave(team),
+        intent: "destructive",
+        confirmsItself: true,
+        group: "out",
+      });
+    }
+    if (team.canDelete) {
+      actions.push({
+        id: "delete",
+        label: "Delete team…",
+        onClick: () => setDeleting(team),
+        intent: "destructive",
+        confirmsItself: true,
+        group: "out",
+      });
+    }
+    return actions;
+  }
+
   return (
     <>
       <ul className="lifecycle-team-list">
@@ -56,25 +91,24 @@ export function TeamsList({ teams, currentOrgId }: { teams: TeamLifecycleView[];
           return (
             <li key={team.orgId}>
               <div className="lifecycle-team-open">
-                <strong>{teamDisplayName(team)}</strong>
+                <strong>
+                  {teamDisplayName(team)}
+                  {team.orgId === currentOrgId ? <span className="lifecycle-current">Current</span> : null}
+                </strong>
                 <small>
                   {accessRoleLabel(team.role)} · {peopleLabel(team.memberCount)}
-                  {team.orgId === currentOrgId ? " · Open now" : ""}
                 </small>
               </div>
-              <div className="lifecycle-team-actions">
-                {team.orgId !== currentOrgId ? <Button as="a" variant="secondary" size="sm" href={`/dashboard?orgId=${encodeURIComponent(team.orgId)}`}>Switch to this team</Button> : null}
-                {team.canLeave ? (
-                  <Button type="button" variant="secondary" size="sm" disabled={busyOrg === team.orgId} onClick={() => void leave(team)}>
-                    {busyOrg === team.orgId ? "Leaving…" : "Leave"}
-                  </Button>
-                ) : null}
-                {team.canDelete ? (
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setDeleting(team)}>
-                    Delete team
-                  </Button>
-                ) : null}
-              </div>
+              {/* The way in stays one tap away; the ways out (leave, delete) are behind More,
+                  apart from it, each with its own confirmation. Delete team used to sit right
+                  beside Switch, styled almost the same. */}
+              <ActionMenu
+                className="lifecycle-team-actions"
+                label={`${teamDisplayName(team)} actions`}
+                tone="row"
+                triggerTestId={`team-actions-${team.orgId}`}
+                actions={teamActions(team, team.orgId === currentOrgId)}
+              />
               {lastOwner ? (
                 <p className="lifecycle-team-note">
                   You&rsquo;re this team&rsquo;s only owner. To leave, first{" "}

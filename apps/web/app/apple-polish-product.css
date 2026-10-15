@@ -74,7 +74,7 @@ body.has-app-shell :where(.app-card, .soft-panel, .soft-card, .dash-widget) :whe
 body.has-app-shell .app-card :where(.app-card, .soft-panel, .vt-card) { box-shadow: none; }
 
 body.has-app-shell :is(.app-button, .soft-btn, .primary-action) {
-  min-height: 44px; padding: 10px 16px; border-radius: 12px;
+  min-height: var(--control-h); padding: 10px 16px; border-radius: var(--radius-control);
   font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.4;
   box-shadow: none; transition: background-color 140ms, border-color 140ms, box-shadow 140ms;
 }
@@ -108,7 +108,6 @@ body.has-app-shell .soft-empty.scan-empty > p { max-width: 44ch; font-size: 15px
 @media (max-width: 720px) {
   body.has-app-shell .soft-topbar { height: 56px; padding-inline: 14px; }
   html:not([data-clarity="clear"]) body.has-app-shell .soft-topbar { background: var(--bg); }
-  body.has-app-shell :is(.app-button, .soft-btn, .primary-action) { min-height: 48px; }
   body.has-app-shell :where(.app-card:not([data-pad]), .app-card[data-pad="md"], .soft-card, .vt-card, .vt-stat-card) { padding: 18px; }
 }
 html[data-motion="reduced"] body.has-app-shell :is(.app-button, .soft-btn) { transition: none; }

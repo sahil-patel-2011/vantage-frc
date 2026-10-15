@@ -3,7 +3,7 @@
 import { type FormEvent, type RefObject, useState } from "react";
 import { INVITE_LIFETIME_CHOICES } from "@vantage/core/invite-policy";
 import { ROLE_HINTS, ROLE_LABELS } from "@vantage/core/role-words";
-import { Panel, Button } from "../../components/ui";
+import { Panel, Button, askConfirm } from "../../components/ui";
 import {
   formatInviteRowMeta,
   inviteDeliveryBanner,
@@ -258,11 +258,22 @@ export function TeamAdminInvitesPanel({
                       {acting ? "Working…" : "Resend"}
                     </button>
                   )}
+                  {/* Revoking can't be undone (a new invite means a new link), so it is red, last,
+                      and asks first. */}
                   <button
                     type="button"
+                    className="danger"
                     aria-label={`Revoke the invite to ${inviteRow.email}`}
                     disabled={acting}
-                    onClick={() => onAct(inviteRow.id, "revoke")}
+                    onClick={async () => {
+                      const ok = await askConfirm({
+                        title: `Revoke the invite to ${inviteRow.email}?`,
+                        body: "Their link stops working straight away. To invite them again you'll send a new invite.",
+                        confirmLabel: "Revoke invite",
+                        tone: "destructive",
+                      });
+                      if (ok) onAct(inviteRow.id, "revoke");
+                    }}
                   >
                     Revoke
                   </button>
