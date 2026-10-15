@@ -7,6 +7,7 @@ import {
   isDisplayPreset,
   isDisplayWidgetType,
 } from "../../../../lib/display";
+import { DISPLAY_TOKEN_LIST_LIMIT } from "../../../../lib/display/display-related";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function current() {
@@ -27,38 +28,47 @@ export async function GET(request: Request) {
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) throw new Error("orgId is required");
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const boards = (
-        await client.query(
-          `SELECT id, name, preset, widgets, updated_at AS "updatedAt"
-           FROM display_boards WHERE org_id = $1 ORDER BY name`,
-          [orgId],
-        )
-      ).rows;
-      const tokens = (
-        await client.query(
-          `SELECT id, board_id AS "boardId", label, expires_at AS "expiresAt",
-                  revoked_at AS "revokedAt", last_used_at AS "lastUsedAt", created_at AS "createdAt"
-           FROM display_tokens WHERE org_id = $1 ORDER BY created_at DESC`,
-          [orgId],
-        )
-      ).rows;
-      const ctx = await client.query<{ activeEventKey: string | null }>(
-        `SELECT active_event_key AS "activeEventKey"
-         FROM org_active_context WHERE org_id = $1::uuid LIMIT 1`,
-        [orgId],
+      // One statement (it was four round trips): the boards, the TV links still on, the event
+      // and whether this person manages boards — the same rule POST enforces, answered here so
+      // the owner sees "Turn on the event board" with the boards (not "an owner or admin…").
+      // Turned-off links are left out: the page only ever lists links that are on.
+      const result = await client.query<{
+        boards: unknown[];
+        tokens: unknown[];
+        activeEventKey: string | null;
+        canManage: boolean;
+      }>(
+        `SELECT
+           COALESCE((
+             SELECT jsonb_agg(jsonb_build_object(
+                      'id', b.id, 'name', b.name, 'preset', b.preset, 'widgets', b.widgets,
+                      'updatedAt', b.updated_at) ORDER BY b.name, b.id)
+             FROM display_boards b WHERE b.org_id = $1::uuid
+           ), '[]'::jsonb) AS boards,
+           COALESCE((
+             SELECT jsonb_agg(to_jsonb(t) ORDER BY t."createdAt" DESC)
+             FROM (
+               SELECT id, board_id AS "boardId", label, expires_at AS "expiresAt",
+                      revoked_at AS "revokedAt", last_used_at AS "lastUsedAt", created_at AS "createdAt"
+               FROM display_tokens
+               WHERE org_id = $1::uuid AND revoked_at IS NULL
+               ORDER BY created_at DESC
+               LIMIT $3::int
+             ) t
+           ), '[]'::jsonb) AS tokens,
+           (SELECT c.active_event_key FROM org_active_context c WHERE c.org_id = $1::uuid LIMIT 1) AS "activeEventKey",
+           EXISTS (
+             SELECT 1 FROM memberships
+             WHERE org_id = $1::uuid AND user_id = $2 AND role IN ('owner', 'admin')
+           ) AS "canManage"`,
+        [orgId, session.user.id, DISPLAY_TOKEN_LIST_LIMIT],
       );
-      // The same rule POST enforces, answered here so the owner sees "Turn on the event board"
-      // with the boards instead of waiting on a second request (and seeing "an owner or admin…").
-      const admin = await client.query(
-        `SELECT 1 FROM memberships
-         WHERE org_id = $1 AND user_id = $2 AND role IN ('owner', 'admin')`,
-        [orgId, session.user.id],
-      );
+      const row = result.rows[0];
       return {
-        boards,
-        tokens,
-        activeEventKey: ctx.rows[0]?.activeEventKey ?? null,
-        canManage: Boolean(admin.rowCount),
+        boards: row?.boards ?? [],
+        tokens: row?.tokens ?? [],
+        activeEventKey: row?.activeEventKey ?? null,
+        canManage: Boolean(row?.canManage),
       };
     });
     return Response.json(data);

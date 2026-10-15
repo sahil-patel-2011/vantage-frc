@@ -6,9 +6,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { crossProductHref, isScoutingPath, isSharedPath, productForHost, scoutingTwin } from "../../lib/products/products";
 import { ShellOutboxStatus } from "../../components/shell-outbox-status";
+import { Skeleton } from "../../components/ui";
 import { requestMe } from "../../lib/nav/me-request";
 import { VIEW_ONLY_CHIP_TITLE, viewOnlyFromMe } from "../../lib/nav/view-only";
 import "../../components/view-only.css";
+
+/** Scouting pages that read ?orgId only in the browser (their server part ignores it). */
+const CLIENT_ONLY_TEAM_PATHS = new Set(["/scout"]);
 
 type Me = { orgId?: string | null; orgName?: string | null; teamNumber?: number | null; authenticated?: boolean; role?: string | null };
 
@@ -56,7 +60,11 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
         if (!orgId && data.orgId) {
           const next = new URLSearchParams(params.toString());
           next.set("orgId", data.orgId);
-          router.replace(`${pathname}?${next.toString()}`);
+          const href = `${pathname}?${next.toString()}`;
+          // Home reads the team from the address in the browser, so the address only changes
+          // (no server round trip); pages whose server part reads ?orgId still navigate.
+          if (CLIENT_ONLY_TEAM_PATHS.has(pathname)) window.history.replaceState(window.history.state, "", href);
+          else router.replace(href);
         }
       })
       .catch(() => {
@@ -145,7 +153,18 @@ export function ScoutingShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <div id="scouting-main" className="scouting-main" aria-busy={resolvingTeam || undefined}>
-        {resolvingTeam ? <p className="scouting-resolving">Opening your team…</p> : children}
+        {resolvingTeam ? (
+          <div className="scouting-resolving" role="status">
+            <span className="sr-only">Opening your team</span>
+            <div aria-hidden="true" style={{ display: "grid", gap: 12 }}>
+              <Skeleton width={180} height={12} />
+              <Skeleton width="45%" height={28} />
+              <Skeleton height={160} />
+            </div>
+          </div>
+        ) : (
+          children
+        )}
       </div>
     </div>
   );

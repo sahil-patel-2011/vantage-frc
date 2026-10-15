@@ -19,6 +19,7 @@ import {
   type DisplayStageSnapshot,
 } from "../../../../lib/display";
 import { TV_LINK_DEAD, displayFeedError } from "../../../../lib/display/display-errors";
+import { DISPLAY_EVENT_BOARD_ID, DISPLAY_EVENT_BOARD_NAME } from "../../../../lib/display/display-related";
 
 function asPits(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -82,10 +83,19 @@ export async function GET(request: Request) {
     }
 
     const stage = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const result = await client.query<{ stage: DisplayStageSnapshot | null }>(
-        `${DISPLAY_STAGE_SELECT} WHERE b.id = $1 AND b.org_id = $2`,
-        [boardId, orgId],
-      );
+      // boardId=event: whichever board carries the event board (the Pit TV page's rule), so the
+      // page can ask for its live preview at once instead of after the board list arrives.
+      const result =
+        boardId === DISPLAY_EVENT_BOARD_ID
+          ? await client.query<{ stage: DisplayStageSnapshot | null }>(
+              `${DISPLAY_STAGE_SELECT} WHERE b.org_id = $1::uuid
+               ORDER BY (b.name = $2::text) DESC, b.name, b.id LIMIT 1`,
+              [orgId, DISPLAY_EVENT_BOARD_NAME],
+            )
+          : await client.query<{ stage: DisplayStageSnapshot | null }>(
+              `${DISPLAY_STAGE_SELECT} WHERE b.id = $1 AND b.org_id = $2`,
+              [boardId, orgId],
+            );
       return result.rows[0]?.stage ?? null;
     });
 

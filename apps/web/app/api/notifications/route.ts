@@ -3,7 +3,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { publicErrorMessage } from "../../../lib/security/public-error";
-import { INBOX_SCOPE_SQL, parseInboxAction, unreadNotificationCount, updateInboxReadState } from "../../../lib/notifications/inbox-store";
+import { INBOX_PAGE_SIZE, loadInboxPage, parseInboxAction, parseInboxCursor, unreadNotificationCount, updateInboxReadState } from "../../../lib/notifications/inbox-store";
 import { joinerNames, nameTheJoiner } from "../../../lib/notifications/joiner-names";
 
 type NotificationRow = {
@@ -29,36 +29,34 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
     const orgId = url.searchParams.get("orgId");
+    // `scope=active` without a team: the server picks the person's default team itself (as
+    // /api/me does), so the inbox does not wait for /api/me before asking for its list.
+    const active = !orgId && url.searchParams.get("scope") === "active";
     const filter = url.searchParams.get("filter") === "unread" ? "unread" : "all";
-    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? 40) || 40));
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? INBOX_PAGE_SIZE) || INBOX_PAGE_SIZE));
+    const cursor = parseInboxCursor(url.searchParams.get("before"), url.searchParams.get("beforeId"));
 
     const data = await withRls({ userId: session.user.id, orgId: orgId ?? undefined }, async (client) => {
       if (url.searchParams.get("mode") === "count") return {
         userId: session.user.id, orgId, unreadCount: await unreadNotificationCount(client, session.user.id, orgId),
       };
-      const rows = await client.query<NotificationRow>(
-        `SELECT id, org_id AS "orgId", type, payload,
-                read_at::text AS "readAt", created_at::text AS "createdAt"
-         FROM notifications
-         WHERE ${INBOX_SCOPE_SQL}
-           AND ($3::text = 'all' OR read_at IS NULL)
-         ORDER BY created_at DESC
-         LIMIT $4`,
-        [session.user.id, orgId, filter, limit],
-      );
+      // One statement: the page, the unread count and (for scope=active) the team.
+      const page = await loadInboxPage(client, { userId: session.user.id, orgId, active, filter, limit, cursor });
+      const rows: NotificationRow[] = page.rows;
+      const scopeOrgId = active ? page.orgId : orgId;
 
-      const unreadCount = await unreadNotificationCount(client, session.user.id, orgId);
-
-      const joinerIds = rows.rows
+      const joinerIds = rows
         .filter((row) => row.type === "invite_accepted" && typeof row.payload?.userId === "string")
         .map((row) => String(row.payload.userId));
       const joiners = await joinerNames(client, [...new Set(joinerIds)]);
 
       return {
         userId: session.user.id,
-        orgId,
-        unreadCount,
-        items: rows.rows.map((row) => {
+        orgId: scopeOrgId,
+        unreadCount: page.unreadCount,
+        nextCursor: page.nextCursor,
+        // Only what the inbox draws: the payload stays on the server.
+        items: rows.map((row) => {
           const payload = row.payload ?? {};
           const title = notificationTitle(row.type, payload);
           return {
@@ -70,8 +68,7 @@ export async function GET(request: Request) {
                 ? nameTheJoiner(title, joiners.get(String(payload.userId)))
                 : title,
             body: notificationBody(payload, row.type),
-            href: notificationHref(row.type, payload, row.orgId ?? orgId),
-            payload,
+            href: notificationHref(row.type, payload, row.orgId ?? scopeOrgId),
             readAt: row.readAt,
             createdAt: row.createdAt,
           };

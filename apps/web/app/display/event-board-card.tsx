@@ -41,26 +41,42 @@ function untilLabel(value: string | null, now: number): string | null {
  * reads. The real board cannot be framed into this page (the app refuses to be framed), so this
  * draws the part that matters from across the pit: the phase, the next match and our colour.
  */
-function EventBoardPreview({ orgId, boardId }: { orgId: string; boardId: string }) {
+function EventBoardPreview({
+  orgId,
+  boardId,
+  seed,
+}: {
+  orgId: string;
+  boardId: string;
+  /** The preview the page asked for as it opened: used when it is for this board. */
+  seed: Promise<DisplayStagePayload | null> | null;
+}) {
   const [data, setData] = useState<DisplayStagePayload | null>(null);
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     let active = true;
+    const show = (body: DisplayStagePayload) => {
+      if (!active) return;
+      setData(body);
+      setFailed(false);
+      setNow(Date.now());
+    };
     const load = () =>
       fetch(`/api/display/stage?orgId=${encodeURIComponent(orgId)}&boardId=${encodeURIComponent(boardId)}`, { cache: "no-store" })
         .then((response) => (response.ok ? response.json() : Promise.reject(new Error("stage"))))
-        .then((body: DisplayStagePayload) => {
-          if (!active) return;
-          setData(body);
-          setFailed(false);
-          setNow(Date.now());
-        })
+        .then(show)
         .catch(() => {
           if (active) setFailed(true);
         });
-    void load();
+    // The page's early request answers the first paint when it was for this board; otherwise
+    // (another board carries the event board now, or it failed) ask for this one.
+    void (seed ?? Promise.resolve(null)).then((early) => {
+      if (!active) return;
+      if (early && early.board?.id === boardId) show(early);
+      else void load();
+    });
     const timer = window.setInterval(() => {
       if (document.visibilityState !== "hidden") void load();
     }, 30_000);
@@ -68,7 +84,7 @@ function EventBoardPreview({ orgId, boardId }: { orgId: string; boardId: string 
       active = false;
       window.clearInterval(timer);
     };
-  }, [orgId, boardId]);
+  }, [orgId, boardId, seed]);
 
   if (!data) {
     return (
@@ -146,6 +162,7 @@ function EventBoardPreview({ orgId, boardId }: { orgId: string; boardId: string 
 export function EventBoardCard({
   orgId,
   boardId,
+  previewSeed = null,
   canSync,
   busy,
   onCreate,
@@ -153,6 +170,8 @@ export function EventBoardCard({
 }: {
   orgId: string;
   boardId: string | null;
+  /** The event board's preview, already asked for as the page opened. */
+  previewSeed?: Promise<DisplayStagePayload | null> | null;
   /** null while we do not know yet: say nothing rather than "an owner or admin…" to the owner. */
   canSync: boolean | null;
   busy: boolean;
@@ -193,7 +212,7 @@ export function EventBoardCard({
         </div>
       </div>
       {boardId ? (
-        <EventBoardPreview orgId={orgId} boardId={boardId} />
+        <EventBoardPreview orgId={orgId} boardId={boardId} seed={previewSeed} />
       ) : (
         <div className="ebp is-loading">
           <p>The live preview appears here once the event board is on.</p>

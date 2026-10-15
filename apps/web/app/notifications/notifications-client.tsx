@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, ToolStrip, Button } from "../../components/ui";
-import { FEATURE_API_TIMEOUT_MS, fetchActiveOrgId, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
+import { EmptyState, PageHeader, Skeleton, ToolStrip, Button } from "../../components/ui";
+import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { listenInboxUpdates, ownInboxUpdate, publishInboxUpdate } from "../../lib/notifications/inbox-events";
 import {
   clearFeatureSnapshot,
@@ -34,11 +34,15 @@ type NotifItem = {
 
 type InboxFilter = "all" | "unread";
 
+type InboxCursor = { before: string; beforeId: string };
+
 type NotificationsView = {
   status: "ready";
   userId?: string;
   items: NotifItem[];
   unreadCount: number;
+  /** Where "Show older" continues; null once the newest page is everything there is. */
+  nextCursor?: InboxCursor | null;
 };
 
 function isNotificationsView(value: unknown): value is NotificationsView {
@@ -47,17 +51,48 @@ function isNotificationsView(value: unknown): value is NotificationsView {
   return rec.status === "ready" && Array.isArray(rec.items) && typeof rec.unreadCount === "number";
 }
 
+function asCursor(value: unknown): InboxCursor | null {
+  if (!value || typeof value !== "object") return null;
+  const rec = value as { before?: unknown; beforeId?: unknown };
+  return typeof rec.before === "string" && typeof rec.beforeId === "string" ? { before: rec.before, beforeId: rec.beforeId } : null;
+}
+
+/**
+ * Kept under the address's team (or "_" when the inbox was opened without one). Opened without
+ * one, it is also kept under the team the server resolved, so that team's inbox paints at once.
+ */
 async function persistNotificationsSnapshot(
-  orgHint: string,
+  cacheOrg: string,
+  resolvedOrg: string | null,
   filter: InboxFilter,
   data: NotificationsView,
 ): Promise<void> {
   try {
-    await putFeatureSnapshot("notifications", orgHint || "_", data, filter);
-    if (!orgHint) await putFeatureSnapshot("notifications", "_", data, filter);
+    await putFeatureSnapshot("notifications", cacheOrg || "_", data, filter);
+    if (!cacheOrg && resolvedOrg) await putFeatureSnapshot("notifications", resolvedOrg, data, filter);
   } catch {
     // Live inbox already painted; IndexedDB is best-effort.
   }
+}
+
+/** Rows shaped like the inbox, so nothing jumps when it arrives. */
+function InboxSkeleton() {
+  return (
+    <div role="status" aria-busy="true">
+      <span className="sr-only">Loading your inbox</span>
+      <ul className="notif-list" aria-hidden="true">
+        {[0, 1, 2, 3, 4].map((row) => (
+          <li key={row}>
+            <div className="notif-row-main">
+              <Skeleton width={row % 2 ? "48%" : "62%"} height={15} />
+              <Skeleton width="86%" height={12} style={{ marginTop: 8 }} />
+              <Skeleton width="28%" height={10} style={{ marginTop: 8 }} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function InboxRelated() {
@@ -72,8 +107,12 @@ function InboxRelated() {
 }
 
 export default function NotificationsClient({ orgId }: { orgId: string | null }) {
-  const [scopeOrgId, setScopeOrgId] = useState(orgId);
-  const [scopeReady, setScopeReady] = useState(Boolean(orgId));
+  // The team in the address, if any. Without one the server picks the default team in the same
+  // request (scope=active) and says which, instead of the page waiting on /api/me first.
+  const cacheOrg = orgId?.trim() ?? "";
+  // The team the inbox is scoped to: the address's, else the one the server resolved.
+  const [scopeOrgId, setScopeOrgId] = useState<string | null>(orgId);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [view, setView] = useState<NotificationsView | null>(null);
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [message, setMessage] = useState("");
@@ -87,67 +126,60 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
   const listRef = useRef<HTMLUListElement>(null);
   const seenIds = useRef(new Set<string>());
   const loadGeneration = useRef(0);
-  const scopeKey = `${scopeOrgId ?? "_"}:${filter}`;
+  const scopeKey = `${cacheOrg || "_"}:${filter}`;
   const currentScope = useRef(scopeKey);
   const paintedScope = useRef(scopeKey);
   currentScope.current = scopeKey;
   viewRef.current = view;
 
   useEffect(() => {
-    let cancelled = false;
     seenIds.current.clear();
-    if (orgId) { setScopeOrgId(orgId); setScopeReady(true); return; }
-    void fetchActiveOrgId().then(id => {
-      if (cancelled) return;
-      setScopeOrgId(id);
-      if (id) persistOrgIdInUrl(id);
-    }).catch(() => {
-      if (!cancelled) setMessage("Could not select your team. Retry or select a team from your account menu.");
-    }).finally(() => { if (!cancelled) setScopeReady(true); });
-    return () => { cancelled = true; };
+    setScopeOrgId(orgId);
   }, [orgId]);
 
   const load = useCallback(async () => {
-    if (!scopeReady) return;
-    const orgHint = scopeOrgId?.trim() ?? "";
-    const key = `${scopeOrgId ?? "_"}:${filter}`;
+    const key = `${cacheOrg || "_"}:${filter}`;
     if (currentScope.current !== key) return;
     const generation = ++loadGeneration.current;
     const stale = () => loadGeneration.current !== generation || currentScope.current !== key;
     let hadCache = Boolean(viewRef.current) && paintedScope.current === key;
     if (paintedScope.current !== key) { setView(null); viewRef.current = null; }
-    try {
-      const cached = await getFeatureSnapshot<NotificationsView>(
-        "notifications",
-        orgHint || "_",
-        filter,
-      );
-      if (stale()) return;
-      if (cached?.data && isNotificationsView(cached.data)) {
-        setView(cached.data);
-        setFromCache(true);
-        setCachedAt(cached.cachedAt);
-        paintedScope.current = key;
-        hadCache = true;
-      } else if (paintedScope.current !== key) {
-        setView(null);
-        hadCache = false;
-      }
-    } catch {
-      // IndexedDB missing or blocked; live fetch still runs.
-    }
-    if (stale()) return;
     setFetchFailed(false);
     setErrorStatus(null);
+    // The live list and this device's last copy start together: the copy paints the moment it
+    // is read, unless the live answer is already in. (The request used to wait for the
+    // IndexedDB read, which itself waited for /api/me.)
+    let liveSettled = false;
+    const cachedPaint = getFeatureSnapshot<NotificationsView>("notifications", cacheOrg || "_", filter)
+      .then((cached) => {
+        // Only into an empty inbox: a reload must not swap the live list for an older copy.
+        if (liveSettled || stale() || (viewRef.current && paintedScope.current === key)) return;
+        if (cached?.data && isNotificationsView(cached.data)) {
+          setView(cached.data);
+          viewRef.current = cached.data;
+          setFromCache(true);
+          setCachedAt(cached.cachedAt);
+          paintedScope.current = key;
+          hadCache = true;
+        }
+      })
+      .catch(() => {
+        // IndexedDB missing or blocked; the live list still loads.
+      });
     try {
       const params = new URLSearchParams({ filter });
-      if (orgHint) params.set("orgId", orgHint);
+      if (cacheOrg) params.set("orgId", cacheOrg);
+      else params.set("scope", "active");
       const response = await fetch(`/api/notifications?${params}`, {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
       const data: unknown = await response.json().catch(() => null);
       if (stale()) return;
+      // A failed refresh falls back to the copy on this device, so let its read finish first.
+      if (!response.ok && response.status !== 401 && response.status !== 403) await cachedPaint;
+      if (stale()) return;
+      liveSettled = true;
       if (response.status === 401 || response.status === 403) {
         setView(null);
         setFromCache(false);
@@ -160,7 +192,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
             : "Could not load notifications.",
         );
         try {
-          await clearFeatureSnapshot("notifications", orgHint || "_", filter);
+          await clearFeatureSnapshot("notifications", cacheOrg || "_", filter);
         } catch {
           // Best-effort: painted board already dropped.
         }
@@ -191,16 +223,27 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       const items = data.items as NotifItem[];
       const unreadCount = data.unreadCount;
       const userId = data.userId;
-      const next: NotificationsView = { status: "ready", userId, items, unreadCount };
+      const nextCursor = asCursor("nextCursor" in data ? data.nextCursor : null);
+      const answeredOrg = "orgId" in data && typeof data.orgId === "string" && data.orgId ? data.orgId : null;
+      const resolvedOrg = cacheOrg || answeredOrg;
+      const next: NotificationsView = { status: "ready", userId, items, unreadCount, nextCursor };
       setView(next);
+      viewRef.current = next;
       paintedScope.current = key;
       setFromCache(false);
       setCachedAt(null);
       setMessage("");
-      if (userId) publishInboxUpdate({ userId, orgId: scopeOrgId, unreadCount });
-      await persistNotificationsSnapshot(orgHint, filter, next);
+      if (!cacheOrg) {
+        setScopeOrgId(answeredOrg);
+        if (answeredOrg) persistOrgIdInUrl(answeredOrg);
+      }
+      if (userId) publishInboxUpdate({ userId, orgId: resolvedOrg, unreadCount });
+      await persistNotificationsSnapshot(cacheOrg, answeredOrg, filter, next);
     } catch {
       if (stale()) return;
+      await cachedPaint;
+      if (stale()) return;
+      liveSettled = true;
       if (hadCache || (viewRef.current && paintedScope.current === key)) {
         setFromCache(true);
         setMessage("Could not refresh Notifications. Showing the last copy on this device.");
@@ -210,8 +253,44 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
       setMessage("Network error loading notifications.");
       setFetchFailed(true);
     }
-  }, [filter, scopeOrgId, scopeReady]);
+  }, [cacheOrg, filter]);
   const refreshInbox = useRef(load);
+
+  /** The next older page, by keyset (created_at, id), added under what is shown. */
+  async function loadOlder() {
+    const start = viewRef.current;
+    const cursor = start?.nextCursor;
+    if (!start || !cursor || loadingOlder) return;
+    const key = currentScope.current;
+    setLoadingOlder(true);
+    try {
+      const params = new URLSearchParams({ filter, before: cursor.before, beforeId: cursor.beforeId });
+      if (scopeOrgId) params.set("orgId", scopeOrgId);
+      else params.set("scope", "active");
+      const response = await fetch(`/api/notifications?${params}`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
+      });
+      const data = (await response.json().catch(() => null)) as { items?: unknown; unreadCount?: unknown; nextCursor?: unknown; error?: string } | null;
+      if (currentScope.current !== key) return;
+      if (!response.ok || !data || !Array.isArray(data.items)) throw new Error(data?.error ?? "older");
+      const current = viewRef.current;
+      if (!current || current.userId !== start.userId) return;
+      const shown = new Set(current.items.map((item) => item.id));
+      const next: NotificationsView = {
+        ...current,
+        items: [...current.items, ...(data.items as NotifItem[]).filter((item) => !shown.has(item.id))],
+        unreadCount: typeof data.unreadCount === "number" ? data.unreadCount : current.unreadCount,
+        nextCursor: asCursor(data.nextCursor),
+      };
+      setView(next);
+      viewRef.current = next;
+    } catch {
+      setMessage("Could not load older notifications. Try again.");
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
   refreshInbox.current = load;
 
   useEffect(() => {
@@ -256,7 +335,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           items: current.items.map(item => read.has(item.id) ? { ...item, readAt: read.get(item.id)! } : item)
             .filter(item => filter !== "unread" || !item.readAt) };
         setView(next);
-        await persistNotificationsSnapshot(scopeOrgId || "_", filter, next);
+        await persistNotificationsSnapshot(cacheOrg, scopeOrgId, filter, next);
       } catch {
         ids.forEach(id => seenIds.current.delete(id));
         if (!stopped) setMessage("Could not mark these notifications as read. Your unread count is preserved; use Mark all as read to retry.");
@@ -278,7 +357,7 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
     const onVisibility = () => { void flush(); };
     document.addEventListener("visibilitychange", onVisibility);
     return () => { stopped = true; observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
-  }, [view, fromCache, scopeOrgId, filter]);
+  }, [view, fromCache, scopeOrgId, cacheOrg, filter]);
 
   async function patch(action: "read" | "unread" | "read_all", id?: string, ids?: string[]) {
     setBusy(true);
@@ -342,24 +421,21 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
         </PageHeader>
         <InboxRelated />
         <OfflineBanner feature="Notifications" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState
-          soft
-          badge={copy ? "Unavailable" : undefined}
-          badgeTone={copy ? "setup" : undefined}
-          title={copy ? copy.title : "Loading inbox…"}
-          description={copy ? copy.description : "Loading your inbox."}
-          aria-busy={!fetchFailed}
-        >
-          {copy?.primary ? (
-            <Button as="a" variant="primary" href={copy.primary.href}>
-              {copy.primary.label}
-            </Button>
-          ) : copy?.showRetry ? (
-            <Button variant="primary" type="button" onClick={() => void load()}>
-              Retry
-            </Button>
-          ) : null}
-        </EmptyState>
+        {copy ? (
+          <EmptyState soft badge="Unavailable" badgeTone="setup" title={copy.title} description={copy.description}>
+            {copy.primary ? (
+              <Button as="a" variant="primary" href={copy.primary.href}>
+                {copy.primary.label}
+              </Button>
+            ) : copy.showRetry ? (
+              <Button variant="primary" type="button" onClick={() => void load()}>
+                Retry
+              </Button>
+            ) : null}
+          </EmptyState>
+        ) : (
+          <InboxSkeleton />
+        )}
       </main>
     );
   }
@@ -456,6 +532,14 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           })}
         </ul>
       )}
+      {/* The newest page loads first; older history follows on request, by keyset. */}
+      {items.length > 0 && view.nextCursor && !fromCache ? (
+        <div className="notif-toolbar-actions">
+          <Button variant="secondary" type="button" disabled={loadingOlder} onClick={() => void loadOlder()}>
+            {loadingOlder ? "Loading older…" : "Show older"}
+          </Button>
+        </div>
+      ) : null}
     </main>
   );
 }

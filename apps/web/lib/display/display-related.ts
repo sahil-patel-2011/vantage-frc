@@ -159,6 +159,18 @@ export function displaySetupNextActions(input: {
 }
 
 /** Setup wizard step from real board/token counts — never invents DEMO progress. */
+/**
+ * The saved board the event board is shown through: the one with this name, else the first
+ * board by name (then id). The event board ignores the board's panels.
+ */
+export const DISPLAY_EVENT_BOARD_NAME = "Event board";
+
+/** `boardId` value asking /api/display/stage for whichever board carries the event board. */
+export const DISPLAY_EVENT_BOARD_ID = "event";
+
+/** The Pit TV page lists at most this many TV links that are on, newest first. */
+export const DISPLAY_TOKEN_LIST_LIMIT = 100;
+
 export function displaySetupStep(boardCount: number, activeTokenCount: number): 1 | 2 | 3 {
   if (boardCount <= 0) return 1;
   if (activeTokenCount <= 0) return 2;
