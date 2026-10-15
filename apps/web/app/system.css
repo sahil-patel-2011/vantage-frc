@@ -326,7 +326,7 @@ html[data-motion="reduced"] {
 /* iPhone Safari zooms the page when a field under 16px takes focus, and the page stays zoomed
    after. About 150 rules set fields to 13–15px for a mouse, so on a touch screen every text
    field is 16px. The fields in :not() are larger on purpose (tap counters, the kiosk scanner,
-   code entry) and keep their own size; lib/ui/field-zoom.test.ts keeps that list complete. */
+   code entry, the search box) and keep their own size; lib/ui/field-zoom.test.ts keeps that list complete. */
 @media (pointer: coarse) {
   :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"], [type="button"], [type="submit"], [type="reset"], [type="image"]), select, textarea):not(
     .desktop-link-entry input,
@@ -337,7 +337,8 @@ html[data-motion="reduced"] {
     .sfb-question-document .sfb-question-grid .soft-form-row:first-child input,
     .tap-counter input,
     .scout-qr-manual input,
-    .ai-bridge-card input
+    .ai-bridge-card input,
+    .search-palette-field input
   ) {
     font-size: 16px !important;
   }

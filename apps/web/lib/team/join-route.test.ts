@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ORG = "22222222-2222-4222-8222-222222222222";
 const state = vi.hoisted(() => ({
-  session: null as null | { user: { id: string } },
+  session: null as null | { user: { id: string; email: string; emailVerified: boolean } },
   member: null as null | { orgId: string; orgName: string; teamNumber: number },
   inviteId: "invite-1" as string | null,
   retryAt: null as string | null,
   calls: [] as string[],
+  params: [] as unknown[][],
 }));
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
@@ -23,14 +24,16 @@ vi.mock("@vantage/core", () => ({
 vi.mock("@vantage/db", () => ({
   withRls: async (_context: unknown, work: (client: unknown) => Promise<unknown>) =>
     work({
-      query: async (sql: string) => {
+      query: async (sql: string, params: unknown[] = []) => {
         state.calls.push(sql);
+        state.params.push(params);
         return { rows: state.member ? [state.member] : [], rowCount: state.member ? 1 : 0 };
       },
     }),
   requestPool: {
-    query: async (sql: string) => {
+    query: async (sql: string, params: unknown[] = []) => {
       state.calls.push(sql);
+      state.params.push(params);
       if (sql.includes("team_code_join_retry_at")) return { rows: [{ retryAt: state.retryAt }], rowCount: 1 };
       return { rows: [{ id: state.inviteId }], rowCount: 1 };
     },
@@ -48,13 +51,35 @@ const join = () =>
     }),
   );
 
+// Email-first joining (ff270e73a): a code is only checked for a signed-in, verified email, and the
+// invitation is issued to that session's email, never to an address typed into the request.
+const SIGNED_IN = { user: { id: "user-1", email: "Sam@Example.TEST", emailVerified: true } };
+
 describe("POST /api/teams/join", () => {
   beforeEach(() => {
-    state.session = null;
+    state.session = SIGNED_IN;
     state.member = null;
     state.inviteId = "invite-1";
     state.retryAt = null;
     state.calls = [];
+    state.params = [];
+  });
+
+  it("asks a signed-out or unverified person to verify their email before checking any code", async () => {
+    state.session = null;
+    const signedOut = await join();
+    expect(signedOut.status).toBe(401);
+    expect(await signedOut.json()).toMatchObject({ code: "auth_required" });
+    state.session = { user: { ...SIGNED_IN.user, emailVerified: false } };
+    expect((await join()).status).toBe(401);
+    expect(state.calls.some((sql) => sql.includes("request_team_code_invite"))).toBe(false);
+  });
+
+  it("issues the invitation to the session's verified email, not the one in the request", async () => {
+    state.session = { user: { ...SIGNED_IN.user, email: "Riley@Example.TEST" } };
+    await join();
+    const call = state.calls.findIndex((sql) => sql.includes("request_team_code_invite"));
+    expect(state.params[call]?.[2]).toBe("riley@example.test");
   });
 
   it("tells a wrong code apart from a lockout, and never says to wait on a first mistake (QA A3-14)", async () => {
@@ -80,7 +105,6 @@ describe("POST /api/teams/join", () => {
   });
 
   it("tells a signed-in member they are already on the team, without a new invitation", async () => {
-    state.session = { user: { id: "user-1" } };
     state.member = { orgId: ORG, orgName: "Robo Rangers", teamNumber: 6925 };
     const response = await join();
     expect(await response.json()).toEqual({
@@ -94,7 +118,6 @@ describe("POST /api/teams/join", () => {
   });
 
   it("still checks the code for a signed-in person on another team", async () => {
-    state.session = { user: { id: "user-1" } };
     state.inviteId = null;
     const response = await join();
     expect(response.status).toBe(400);

@@ -64,14 +64,18 @@ describe("student-week hub chrome", () => {
     const chat = readFileSync(join(WEB, "app/chat/chat-client.tsx"), "utf8");
     expect(chat).toMatch(/shell === "setup" \|\| shell === "loading" \|\| shell === "auth_required" \|\| shell === "error"/);
     expect(chat).not.toMatch(/NextActions/);
-    // Ask AI empty: grouped starters, no buttons of its own; Send is the one primary.
+    // Ask AI empty: a welcome with no buttons of its own; Send is the one primary.
     const emptyBlock = chat.slice(chat.indexOf('className="ch-empty ask-empty"'), chat.indexOf("{thread ? ("));
-    expect(emptyBlock).toMatch(/StarterGroups/);
     expect(emptyBlock.match(/<Button\b/g) ?? []).toHaveLength(0);
     expect(emptyBlock).not.toMatch(/Budgets/);
     expect(emptyBlock).not.toMatch(/Next actions/);
     const formStart = chat.indexOf('<form className="ch-composer ask-composer"');
-    const composer = chat.slice(formStart, chat.indexOf("</form>", formStart));
+    const formEnd = chat.indexOf("</form>", formStart);
+    const composer = chat.slice(formStart, formEnd);
     expect(composer.match(/variant="primary"/g) ?? []).toHaveLength(1);
+    // The grouped starters sit under the composer (22ae8cce3) as plain suggestions, not buttons.
+    const suggestions = chat.slice(formEnd, chat.indexOf("</section>", formEnd));
+    expect(suggestions).toMatch(/className="ask-suggestions"[\s\S]*<StarterGroups\b/);
+    expect(suggestions).not.toMatch(/variant="primary"/);
   });
 });

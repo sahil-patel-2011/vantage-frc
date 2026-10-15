@@ -36,7 +36,8 @@ describe("TOUR_STEPS", () => {
     const last = TOUR_STEPS[TOUR_STEPS.length - 1]!;
     expect(last.id).toBe("feedback");
     expect(last.target).toBe("feedback");
-    expect(last.body).toBe("Found a bug or have an idea? Tap here any time.");
+    // The step points at Help (33f265f79): feedback is sent from there.
+    expect(last.body).toBe("Found a bug or have an idea? Open Help, then Send feedback.");
   });
 
   it("shows the meaningful parts of the app, in order", () => {

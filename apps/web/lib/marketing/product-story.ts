@@ -91,8 +91,8 @@ export const MARKETING_HUBS = [
     title: "Business",
     href: "/features#business",
     route: "/business",
-    promise: "Budgets, sponsors, grants and outreach, with clear rules for who changes money.",
-    modules: ["Overview", "Money", "Sponsors", "Grants", "Outreach"],
+    promise: "Budgets, sponsors, grants, outreach and awards, with clear rules for who changes money.",
+    modules: ["Overview", "Money", "Sponsors", "Grants", "Outreach", "Awards"],
     tools: [
       { name: "Finance managers", copy: "The owner chooses who manages money. Everyone else can read the budget and ask." },
       { name: "Two people for every claim", copy: "Reimbursements need a receipt, and nobody approves, denies or pays their own claim." },

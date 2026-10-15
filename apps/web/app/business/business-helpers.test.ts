@@ -27,6 +27,8 @@ describe("business funding-model hub chrome", () => {
       "orders",
       "grants",
       "evidence",
+      // Awards is its own workbench (#2373) and does not depend on sponsors.
+      "achievements",
     ]);
     expect(SPONSOR_TAB_IDS.has("sponsors")).toBe(true);
     expect(SPONSOR_TAB_IDS.has("sponsorship")).toBe(true);

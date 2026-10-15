@@ -8,6 +8,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   session: null as null | { user: { id: string; email: string }; session: { id: string; createdAt: Date } },
   isPlatformAdmin: false,
+  // Whether migration 0733 (platform_admins.is_owner) is applied; admin changes refuse without it.
+  ownerSchema: true,
   queries: [] as Array<{ sql: string; params: unknown[] }>,
   respond: null as null | ((sql: string, params: unknown[]) => { rows: unknown[]; rowCount: number } | undefined),
 }));
@@ -29,6 +31,7 @@ const client = {
     state.queries.push({ sql, params });
     if (sql.includes("is_platform_admin() AS allowed")) return { rows: [{ allowed: state.isPlatformAdmin }], rowCount: 1 };
     if (sql.includes("current_app_user_id() AS id")) return { rows: [{ id: state.session?.user.id }], rowCount: 1 };
+    if (sql.includes("attname='is_owner'")) return { rows: [{ ready: state.ownerSchema }], rowCount: 1 };
     const answer = state.respond?.(sql, params);
     return answer ?? { rows: [], rowCount: 0 };
   },
@@ -74,6 +77,7 @@ const overview = await import("../../app/api/admin/overview/route");
 beforeEach(() => {
   state.session = null;
   state.isPlatformAdmin = false;
+  state.ownerSchema = true;
   state.queries = [];
   state.respond = null;
 });
@@ -138,6 +142,15 @@ describe("platform admins", () => {
     expect(response.status).toBe(200);
     const call = state.queries.find((q) => q.sql.includes("platform_admin_add"))!;
     expect(call.params).toEqual(["new@example.test"]);
+  });
+
+  it("says the owner schema is missing instead of calling the database function", async () => {
+    signIn({ admin: true });
+    state.ownerSchema = false;
+    const response = await platformAdmins.POST(req("POST", "/api/admin/platform-admins", { action: "add", email: "new@example.test" }));
+    expect(response.status).toBe(503);
+    expect((await response.json()).code).toBe("setup_required");
+    expect(state.queries.some((q) => q.sql.includes("platform_admin_add"))).toBe(false);
   });
 
   it("says the last-admin rule in words, from the database's refusal", async () => {
