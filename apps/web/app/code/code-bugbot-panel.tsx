@@ -5,6 +5,7 @@ import { EmptyState, Button } from "../../components/ui";
 import { WhyPanel } from "../../components/why-panel";
 import { bugbotScanMetaLine } from "../../lib/bugbot";
 import { BUGBOT_INSTRUCTION_MAX } from "../../lib/cockpit/prefs";
+import { announceCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
 import type { CodeReadyViewProps } from "./code-view-props";
 
 export type CodeBugbotPanelProps = Pick<
@@ -107,12 +108,13 @@ export function CodeBugbotPanel({
 }: CodeBugbotPanelProps) {
   /** Saves one scan setting with the rest of this person's saved Code preferences. */
   const saveCockpit = (patch: Partial<CodeBugbotPanelProps["cockpit"]>) => {
+    const next = { ...cockpit, includeScanTests, bugbotInstructions: instructions, defaultBugbotMode: bugbotMode, ...patch };
+    // In memory first, so the control shows the new value and the next PR request uses it.
+    announceCockpitPrefs(next);
     void fetch("/api/account/cockpit", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        cockpit: { ...cockpit, includeScanTests, bugbotInstructions: instructions, defaultBugbotMode: bugbotMode, ...patch },
-      }),
+      body: JSON.stringify({ cockpit: next }),
     }).catch(() => undefined);
   };
   return (

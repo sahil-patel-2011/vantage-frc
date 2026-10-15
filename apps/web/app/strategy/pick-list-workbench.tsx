@@ -313,10 +313,13 @@ function EventPickListWorkbench({
         }
         if (data.status === "setup_required") {
           // The server answered: there is no active event (it changed or was cleared). Show that,
-          // not the old event's desk under "Could not refresh".
+          // not the old event's desk under "Could not refresh" — and keep the device copy, still
+          // being read in the background, from painting that old desk back over it.
+          liveAccepted = true;
           setFromCache(false);
           setStatus("");
           void clearFeatureSnapshot("pick-desk", cacheOrg).catch(() => undefined);
+          if (orgId) void clearFeatureSnapshot("pick-desk", orgId).catch(() => undefined);
           setDesk(null);
           setSetupMessage(typeof data.message === "string" ? data.message : "Needs setup");
           setSetupOrgId(typeof data.orgId === "string" ? data.orgId : orgId);
