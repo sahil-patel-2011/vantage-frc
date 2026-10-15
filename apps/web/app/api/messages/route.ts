@@ -1127,7 +1127,7 @@ async function sendMessage(
        WHERE table_schema = 'public' AND table_name = 'org_message_object_links' LIMIT 1`,
     );
     if (!linksTable.rowCount) {
-      throw new Error("Object-linked messages require migration 0164_team_discord_object_links");
+      throw new Error("Linking a message to a task or event isn't available for your team yet. The Vantage team has been told.");
     }
     objectLink = await enrichObjectLink(client, orgId, objectLink);
   }
@@ -1276,7 +1276,7 @@ async function setPinned(
   pinned: boolean,
 ) {
   if (!(await supportsMessagePins(client))) {
-    throw new Error("Pinned notes require migration 0045_org_message_pins");
+    throw new Error("Pinned notes aren't available for your team yet. The Vantage team has been told.");
   }
 
   const row = await client.query<{ id: string; kind: "team" | "dm" }>(

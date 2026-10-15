@@ -106,7 +106,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load agent configuration. Confirm database access and run migration 0487.",
+        message: "AI settings couldn't load. Try again in a moment.",
         orgId: null,
       } satisfies AgentConfigView,
       { status: 200 },

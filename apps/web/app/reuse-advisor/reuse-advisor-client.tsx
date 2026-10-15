@@ -73,7 +73,7 @@ function ReuseAdvisorRelated({ orgId }: { orgId?: string | null }) {
   return (
     <nav className="product-hub-related" aria-label="Related build tools">
       <a href={hubHref("/build", "subsystems", orgId)}>Subsystems</a>
-      <a href={hubHref("/build", "fmea", orgId)}>FMEA</a>
+      <a href={hubHref("/build", "fmea", orgId)}>Failure log</a>
       <a href={hubHref("/build", "readiness-score", orgId)}>Readiness</a>
     </nav>
   );
@@ -219,7 +219,7 @@ export default function ReuseAdvisorClient() {
         </>
       }
       title="Reuse Advisor"
-      description="Cross-season subsystem reuse recommendations — mined from prior FMEA failure history and design-review track record for each subsystem you designed before."
+      description="Cross-season subsystem reuse recommendations — mined from past failure logs and design-review track record for each subsystem you designed before."
     >
       <ReuseAdvisorRelated orgId={orgId} />
       {view?.status === "live" && view.seasons.length > 0 ? (
@@ -331,7 +331,7 @@ export default function ReuseAdvisorClient() {
             badge="No prior-season subsystems"
             badgeTone="setup"
             title="Log subsystems from prior seasons to get reuse recommendations"
-            description="Add subsystems on the Build spec sheet in past seasons (season year below the current design season). Reuse recommendations use their FMEA and design-review history here."
+            description="Add subsystems on the Build spec sheet in past seasons (season year below the current design season). Reuse recommendations use their failure log and design-review history here."
           >
             <Button as="a" variant="primary" href={hubHref("/build", "subsystems", view.orgId)}>
               Open Subsystems
@@ -359,7 +359,7 @@ function CandidatesPanel({
     <Panel>
       <h2 style={{ marginTop: 0 }}>Reuse candidates</h2>
       <p className="app-muted" style={{ marginTop: 0 }}>
-        Prior-season subsystems, cross-referenced against FMEA failure history and design-review outcomes.
+        Prior-season subsystems, cross-referenced against logged failure history and design-review outcomes.
       </p>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
         {view.candidates.map((candidate) => (
@@ -402,7 +402,7 @@ function CandidateRow({
       </header>
       <small className="app-muted">{candidate.rationale}</small>
       <small className="app-muted">
-        {candidate.fmeaFailureCount} prior FMEA failure(s) · {candidate.fmeaHighSeverityCount} high-severity ·{" "}
+        {candidate.fmeaFailureCount} prior logged failure(s) · {candidate.fmeaHighSeverityCount} high-severity ·{" "}
         {candidate.designReviewPassCount}/{candidate.designReviewCount} design review(s) passed
       </small>
     </li>

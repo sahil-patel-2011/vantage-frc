@@ -21,6 +21,7 @@ import type {
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { statusLabel } from "../../lib/ui/status-label";
 
 type LiveView = Extract<PartsRelayView, { status: "live" }>;
 
@@ -451,7 +452,7 @@ function Listings({
         {view.listings.map((item) => (
           <li key={item.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
             <div>
-              <span className={`app-badge ${statusTone(item.status)}`}>{item.status}</span>{" "}
+              <span className={`app-badge ${statusTone(item.status)}`}>{statusLabel(item.status)}</span>{" "}
               <strong>
                 {item.listingType === "need" ? "Need" : "Offer"}: {item.partName}
               </strong>

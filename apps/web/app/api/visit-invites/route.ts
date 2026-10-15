@@ -42,7 +42,7 @@ function fail(error: unknown) {
   if (/visit_invite|relation .* does not exist/i.test(message)) {
     return Response.json(
       {
-        error: "Apply the visit invites migration first (0177_visit_invites).",
+        error: "Visit invites isn't available for your team yet. The Vantage team has been told.",
         status: "setup_required",
       },
       { status: 503 },

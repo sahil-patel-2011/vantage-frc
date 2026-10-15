@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     return Response.json(
       {
         status: "setup_required",
-        message: "Could not load dossier context. Choose your team and confirm database access.",
+        message: "Could not load dossier context. Check that you've chosen your team, then try again.",
         steps: dossierSetupSteps(null),
         orgId: null,
         teamNumber: null,

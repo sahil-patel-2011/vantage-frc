@@ -159,7 +159,7 @@ function PatternsShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</Button>
+            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open failure log</Button>
           ) : null}
         </EmptyState>
       )}
@@ -343,7 +343,7 @@ export default function FailurePatternsClient() {
           </>
         }
         title="Repeat Failure Patterns"
-        description="Clusters FMEA and equipment incidents by subsystem."
+        description="Clusters logged failures and equipment incidents by subsystem."
       >
         <div className="fp-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -399,11 +399,11 @@ export default function FailurePatternsClient() {
           soft
           badge="No failures logged"
           badgeTone="setup"
-          title="No FMEA or incident records yet this season"
-          description="Log failures in FMEA or equipment incidents."
+          title="No logged failures or incidents yet this season"
+          description="Log failures in failure log or equipment incidents."
         >
           <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
+            Open failure log
           </Button>
         </EmptyState>
       ) : (
@@ -437,7 +437,7 @@ function ClusterCard({
           <Badge tone={tierBadgeTone[cluster.tier]}>{failurePatternTierLabel(cluster.tier)}</Badge>
           <h2>{cluster.subsystemName}</h2>
           <small className="app-muted">
-            {cluster.totalCount} failure(s) · {cluster.fmeaCount} FMEA · {cluster.incidentCount} incident(s) ·{" "}
+            {cluster.totalCount} failure(s) · {cluster.fmeaCount} failure log · {cluster.incidentCount} incident(s) ·{" "}
             {cluster.firstOccurredOn} → {cluster.lastOccurredOn}
           </small>
         </div>
@@ -453,7 +453,7 @@ function ClusterCard({
         {cluster.events.map((event) => (
           <li key={event.id} className="fp-event-row">
             <span>
-              {event.title} <small className="app-muted">({event.source === "fmea" ? "FMEA" : "Incident"})</small>
+              {event.title} <small className="app-muted">({event.source === "fmea" ? "Failure log" : "Incident"})</small>
             </span>
             <small className="app-muted">
               {event.occurredOn}

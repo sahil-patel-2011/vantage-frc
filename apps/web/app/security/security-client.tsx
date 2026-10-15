@@ -259,7 +259,7 @@ export default function SecurityClient({
           ) : null}
           {stepUp && orgId ? (
             <Panel className="step-up-card">
-              <h2>Verify for this organization</h2>
+              <h2>Verify for this team</h2>
               <p>
                 This team has a stricter 2FA policy. Enter a current authenticator code or an unused recovery code. Other
                 organizations keep their own policies.

@@ -3,7 +3,7 @@ import "./exports.css";
 
 export const metadata = {
   title: "Exports",
-  description: "Audited CSV, PDF inventory, and ZIP archives of team data with clear provenance.",
+  description: "Audited CSV, PDF inventory, and ZIP archives of team data showing where each item came from.",
 };
 
 export default async function ExportsPage({

@@ -9,6 +9,7 @@ import { cadKindLabel, type CadDocumentSummary, type SubsystemOption } from "../
 import { FusionEditButton } from "../cad/fusion-edit-board";
 import { OnshapeDocumentEmbed, OnshapeEditButton } from "../cad/onshape-edit-board";
 import { formatBytes, GeometrySummary, StoredVersionPreview } from "./cad-vault-preview";
+import { statusLabel } from "../../lib/ui/status-label";
 
 function OnshapeCardPreview({
   kind,
@@ -82,7 +83,7 @@ export function DocumentCard({
           ) : null}
           <p className="app-muted" style={{ margin: "4px 0 0" }}>
             <span className="app-badge">{cadKindLabel(doc.kind)}</span>{" "}
-            {doc.status !== "active" ? <span className="app-badge setup">{doc.status}</span> : null}{" "}
+            {doc.status !== "active" ? <span className="app-badge setup">{statusLabel(doc.status)}</span> : null}{" "}
             <small>
               {doc.subsystemName ?? "No subsystem"} · v{doc.currentVersion} · {formatBytes(doc.totalBytes)} across {doc.versions.length} version
               {doc.versions.length === 1 ? "" : "s"}

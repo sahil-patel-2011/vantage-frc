@@ -137,7 +137,7 @@ export async function PUT(request: Request) {
         // 42P01 = relation does not exist (pre-0443 deploy) — honest setup state.
         if ((error as { code?: string }).code === "42P01") {
           throw new Error(
-            "Model policy storage is not available yet. Run database migration 0443_org_model_policy, then retry.",
+            "Model rules aren't available for your team yet. The Vantage team has been told.",
             { cause: error },
           );
         }

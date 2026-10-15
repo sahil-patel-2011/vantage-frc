@@ -241,7 +241,7 @@ export async function GET(request: Request) {
       return Response.json(
         {
           error:
-            "Scan-in kiosk tables are not migrated yet — run migration 0457_hours_kiosk_scan.sql, then reload.",
+            "The scan-in kiosk isn't available for your team yet. The Vantage team has been told.",
         },
         { status: 503 },
       );
@@ -339,7 +339,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error:
-            "Scan-in kiosk tables are not migrated yet — run migration 0457_hours_kiosk_scan.sql, then reload.",
+            "The scan-in kiosk isn't available for your team yet. The Vantage team has been told.",
         },
         { status: 503 },
       );

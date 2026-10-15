@@ -34,8 +34,8 @@ describe("SCOUT_ENTRY_CSV_COLUMNS", () => {
       "Scout",
       "Source",
       "Confidence",
-      "Answers (JSON)",
-      "Observation history (versioned JSON)",
+      "Answers (raw data)",
+      "Observation history (raw data)",
       "Updated at",
     ]);
   });

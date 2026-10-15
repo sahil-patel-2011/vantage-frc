@@ -3,7 +3,7 @@ import DecisionSearchClient from "./decision-search-client";
 export const metadata = {
   title: "Decision Search",
   description:
-    "Semantic search over indexed decisions, design reviews, and notebook entries. Metered search; links to Season Report, Knowledge, and Strategy.",
+    "Semantic search over indexed decisions, design reviews, and notebook entries. Uses AI credits; links to Season Report, Knowledge, and Strategy.",
 };
 
 export default function DecisionSearchPage() {

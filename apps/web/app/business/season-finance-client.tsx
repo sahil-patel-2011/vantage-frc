@@ -737,7 +737,7 @@ function LiveDesk({
   );
 }
 
-/** CSV columns for the unified ledger export — raw values, never formatted. */
+/** CSV columns for the money record export — raw values, never formatted. */
 const LEDGER_CSV_COLUMNS: readonly CsvColumn<UnifiedLedgerEntry>[] = [
   { key: "date", header: "date", value: (row) => row.date.slice(0, 10), hint: "When the money moved" },
   { key: "label", header: "entry", hint: "What the row records" },
@@ -758,13 +758,13 @@ const LEDGER_CSV_COLUMNS: readonly CsvColumn<UnifiedLedgerEntry>[] = [
   {
     key: "mirrored",
     header: "on_unified_ledger",
-    hint: "false = legacy row not yet mirrored onto the unified ledger",
+    hint: "No = an older entry, still counted once in the money record",
   },
 ];
 
 /**
  * Real money balance — totals derived on every load from recorded rows only
- * (the unified ledger from 0461_money_unify.sql, plus sponsor cash,
+ * (the money record from 0461_money_unify.sql, plus sponsor cash,
  * fundraisers, funding desk, and grants). No stored balance column exists
  * anywhere, and rows already mirrored onto the ledger are never counted twice.
  */
@@ -891,7 +891,7 @@ function BalancePanel({
                   feature="Money in and out"
                   orgId={orgId}
                   size="sm"
-                  provenance="Every recorded money movement on the unified ledger, newest first — mirrored orders, receipts, season costs, and manual entries, deduplicated by source."
+                  provenance="Every recorded money movement on the money record, newest first — mirrored orders, receipts, season costs, and manual entries, counted once by source."
                 />
               </div>
               <div className="biz-table-wrap">
@@ -916,7 +916,7 @@ function BalancePanel({
                             {MONEY_SOURCE_LABELS[row.source] ?? row.source}
                           </Badge>
                           {!row.mirrored ? (
-                            <Badge tone="info" icon={null} title="This legacy row is not yet mirrored onto the unified ledger; it is still counted exactly once.">
+                            <Badge tone="info" icon={null} title="This legacy row is not yet mirrored onto the money record; it is still counted exactly once.">
                               legacy
                             </Badge>
                           ) : null}

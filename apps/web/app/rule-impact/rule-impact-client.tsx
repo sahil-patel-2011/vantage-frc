@@ -304,7 +304,7 @@ export default function RuleImpactClient() {
       setError("");
       try {
         const response = await fetch("/api/rule-impact", {
-          method: "POST",
+          method: "Post",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
@@ -477,7 +477,7 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
               view.ruleChanges.length === 0 ? "setup" : view.candidates.length === 0 ? "setup" : "good"
             }`}
           >
-            {view.ruleChanges.length === 0 ? "EMPTY" : view.candidates.length === 0 ? "NO HISTORY" : "LIVE"}
+            {view.ruleChanges.length === 0 ? "Empty" : view.candidates.length === 0 ? "No history" : "Live"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season impact</h2>
           <small className="app-muted">Logged rules × prior subsystems only.</small>

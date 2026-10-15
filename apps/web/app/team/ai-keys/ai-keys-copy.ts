@@ -40,7 +40,7 @@ export const ENDPOINT_EXAMPLES: EndpointExample[] = [
   { id: "lmstudio", name: "LM Studio", howToUse: "Local connector — base URL, usually no key" },
   {
     id: "other",
-    name: "Anything else OpenAI-compatible",
+    name: "Anything else that works like OpenAI",
     howToUse: "Local connector — paste its base URL",
   },
 ];
@@ -57,7 +57,7 @@ export const PAGE_DESCRIPTION =
 
 /** The one place for every other key: paid providers and a server in your own shop. */
 export const OTHER_KEYS_TITLE =
-  "Use a different key: OpenAI, Anthropic, OpenRouter, or any OpenAI-compatible server (Ollama, LM Studio)";
+  "Use a different key: OpenAI, Anthropic, OpenRouter, or any server that works like OpenAI (Ollama, LM Studio)";
 
 /** The headline promise. One sentence, no hedging. */
 export const ANY_ENDPOINT_HEADLINE =
@@ -120,7 +120,7 @@ export const MEMBER_KEY_BODY =
  * plain OpenAI-compatible protocol; a model id is honoured on every provider.
  */
 export const MEMBER_KEY_BASE_URL_HINT =
-  "Optional. Point the OpenAI slot at anything OpenAI-compatible — Groq, Mistral, Cerebras, Together, or your own Ollama / LM Studio server. Leave blank for api.openai.com.";
+  "Optional. Point the OpenAI slot at any service that works like OpenAI — Groq, Mistral, Cerebras, Together, or your own Ollama / LM Studio server. Leave blank for api.openai.com.";
 
 export type MemberKeyFields = {
   /** Always true — a personal entry without a key is not an entry. */

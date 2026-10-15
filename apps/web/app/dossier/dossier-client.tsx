@@ -55,7 +55,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   season_epa: "Season EPA",
   event: "Event metrics",
   record: "Event record",
-  scout: "Org scout",
+  scout: "Your scouts",
 };
 
 function DossierRelatedStrip({ orgId }: { orgId?: string | null }) {
@@ -142,7 +142,7 @@ function DossierShell({
       <PageHeader
         breadcrumbs="Competition / Dossier"
         title="Season team dossier"
-        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes."
+        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and your scouts' notes."
       >
         <DossierRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -369,7 +369,7 @@ export default function DossierClient() {
       <PageHeader
         breadcrumbs="Competition / Dossier"
         title="Season team dossier"
-        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and org scout notes. Every card carries a citation."
+        description="Fact cards only — TBA identity, Statbotics/TBA EPA and records, and your scouts' notes. Every card carries a citation."
       >
         {/* The strip already is Strategy · Scouting · Pick desk. The row that
             used to sit beside it here was the same three hrefs with the same

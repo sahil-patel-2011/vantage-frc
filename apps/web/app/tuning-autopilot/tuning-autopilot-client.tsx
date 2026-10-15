@@ -290,7 +290,7 @@ export default function TuningAutopilotClient() {
       setError("");
       try {
         const response = await fetch("/api/tuning-autopilot", {
-          method: "POST",
+          method: "Post",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, seasonYear: season ?? undefined, ...payload }),
           signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
@@ -438,7 +438,7 @@ export default function TuningAutopilotClient() {
               <span className="eyebrow">Before you converge</span>
               <p className="app-muted" style={{ marginTop: 8 }}>
                 Re-test suggested gains on the robot. Keep <a href={cadHref}>CAD</a>,{" "}
-                <a href={fmeaHref}>FMEA</a>, and <a href={practiceHref}>Practice</a> aligned with the
+                <a href={fmeaHref}>failure log</a>, and <a href={practiceHref}>Practice</a> aligned with the
                 subsystem you’re tuning.
               </p>
             </Panel>
@@ -490,7 +490,7 @@ function SummaryTiles({
               sessionCount === 0 ? "setup" : hasIterations ? "good" : "setup"
             }`}
           >
-            {sessionCount === 0 ? "EMPTY" : hasIterations ? "LOGGING" : "NO ITERATIONS"}
+            {sessionCount === 0 ? "Empty" : hasIterations ? "Logging" : "No iterations"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season tuning</h2>
           <small className="app-muted">Logged gain sets only.</small>

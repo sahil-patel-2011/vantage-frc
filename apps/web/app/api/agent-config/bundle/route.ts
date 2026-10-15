@@ -86,7 +86,7 @@ export async function GET(request: Request) {
     // Missing migration/table degrades to a clear setup state, never a crash.
     if (/agent_config_items/.test(message)) {
       return Response.json(
-        { error: "Agent config is not set up yet (migration 0487)", status: "setup_required" },
+        { error: "AI settings aren't available for your team yet. The Vantage team has been told.", status: "setup_required" },
         { status: 503 },
       );
     }

@@ -302,7 +302,7 @@ export async function POST(request: Request) {
             return { id: inserted.rows[0]!.id };
           } catch (error) {
             if (isMissingRelation(error)) {
-              throw new HttpError(503, "Packing requests need database migration 0437.");
+              throw new HttpError(503, "Packing requests aren't available for your team yet. The Vantage team has been told.");
             }
             throw error;
           }
@@ -340,7 +340,7 @@ export async function POST(request: Request) {
             requestRow = found.rows[0]!;
           } catch (error) {
             if (isMissingRelation(error)) {
-              throw new HttpError(503, "Packing requests need database migration 0437.");
+              throw new HttpError(503, "Packing requests aren't available for your team yet. The Vantage team has been told.");
             }
             throw error;
           }
@@ -446,7 +446,7 @@ export async function POST(request: Request) {
           } catch (error) {
             if (error instanceof HttpError) throw error;
             if (isMissingAssigneeColumn(error)) {
-              throw new HttpError(503, "Packing assignees need database migration 0506.");
+              throw new HttpError(503, "Assigning packing isn't available for your team yet. The Vantage team has been told.");
             }
             throw error;
           }

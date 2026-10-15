@@ -274,7 +274,7 @@ export async function GET(request: Request) {
       {
         status: "setup_required",
         message:
-          "Could not load learning activity. Choose your team and confirm database access.",
+          "Could not load learning activity. Check that you've chosen your team, then try again.",
       } satisfies LearningOverview,
       { status: 200 },
     );

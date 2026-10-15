@@ -42,7 +42,7 @@ function numberOrNull(value: unknown): number | null {
 
 const SETUP_FALLBACK: BatteryHealthForecastView = {
   status: "setup_required",
-  message: "Could not load Battery Health Forecast. Choose your team and confirm database access.",
+  message: "Could not load Battery Health Forecast. Check that you've chosen your team, then try again.",
   steps: [
     { id: "workspace", label: "Choose your team", detail: "Pick which FRC team you are working as.", href: "/workspace" },
   ],

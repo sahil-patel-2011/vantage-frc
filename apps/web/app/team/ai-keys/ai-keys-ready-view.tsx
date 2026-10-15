@@ -622,7 +622,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
               tunnels), so it opens only when asked for. */}
           <details className="ai-keys-fold ai-keys-selfhost">
             <summary>Use a model you host yourself (Ollama, LM Studio, any OpenAI-style server)</summary>
-          <section className="app-card soft-panel ai-keys-any" aria-label="Bring any OpenAI-compatible endpoint">
+          <section className="app-card soft-panel ai-keys-any" aria-label="Bring any AI service that works like OpenAI">
             <span className="eyebrow">BRING ANY ENDPOINT</span>
             <h2>{ANY_ENDPOINT_HEADLINE}</h2>
             <p className="app-muted">{ANY_ENDPOINT_BODY}</p>
@@ -633,7 +633,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
             </ul>
           </section>
 
-          <section className="app-card soft-panel ai-keys-local" aria-label="Local OpenAI-compatible connector">
+          <section className="app-card soft-panel ai-keys-local" aria-label="Local AI connector">
             <span className="eyebrow">LOCAL / OPENAI-COMPATIBLE</span>
             <h2>Ollama / LM Studio</h2>
             <p className="app-muted">

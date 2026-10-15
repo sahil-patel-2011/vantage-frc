@@ -43,7 +43,7 @@ async function persistMatchCopilotSnapshot(orgHint: string, data: MatchCopilotVi
 const CATEGORY_LABEL: Record<MatchCopilotCalloutCategory, string> = {
   opponent: "Opponent",
   strategy: "Strategy",
-  risk: "FMEA risk",
+  risk: "Failure risk",
   battery: "Battery",
 };
 
@@ -338,7 +338,7 @@ export default function MatchCopilotClient() {
           </>
         }
         title="Match Copilot"
-        description="A glanceable 60-second brief for your next match — fusing opponent ratings, your stored strategy plan, open FMEA risks, and live battery health into prioritized do-this callouts."
+        description="A glanceable 60-second brief for your next match — fusing opponent ratings, your stored strategy plan, open failure risks, and live battery health into prioritized do-this callouts."
       >
         <div className="match-copilot-header-actions">
           {relatedLinks.map((link) => (
@@ -412,7 +412,7 @@ function SummaryTiles({
   const tiles = [
     { label: "Callouts", value: formatMatchCopilotMetric(calloutCount, loaded) },
     { label: "Opponents", value: formatMatchCopilotMetric(opponentCount, loaded) },
-    { label: "Open FMEA risks", value: formatMatchCopilotMetric(openRiskCount, loaded) },
+    { label: "Open failure risks", value: formatMatchCopilotMetric(openRiskCount, loaded) },
     { label: "Batteries tracked", value: formatMatchCopilotMetric(batteryCount, loaded) },
   ];
   return (
@@ -467,7 +467,7 @@ function CalloutsPanel({ view }: { view: LiveView }) {
         badge="No callouts yet"
         badgeTone="setup"
         title="Generate this match's brief"
-        description="Fuses opponent ratings, your strategy plan, open FMEA risks, and battery health into up to 3 prioritized callouts."
+        description="Fuses opponent ratings, your strategy plan, open failure risks, and battery health into up to 3 prioritized callouts."
       />
     );
   }
@@ -516,7 +516,7 @@ function OpponentsPanel({ view }: { view: LiveView }) {
 function RisksPanel({ view }: { view: LiveView }) {
   return (
     <Panel>
-      <h2 style={{ marginTop: 0 }}>Open FMEA risks</h2>
+      <h2 style={{ marginTop: 0 }}>Open failure risks</h2>
       {view.openRisks.length === 0 ? (
         <p className="app-muted">No open risks logged.</p>
       ) : (

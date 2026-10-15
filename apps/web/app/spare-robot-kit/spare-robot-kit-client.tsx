@@ -161,7 +161,7 @@ function KitShell({
             </Button>
           ) : null}
           {shell === "empty" ? (
-            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open FMEA</Button>
+            <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>Open failure log</Button>
           ) : null}
         </EmptyState>
       )}
@@ -345,7 +345,7 @@ export default function SpareRobotKitClient() {
           </>
         }
         title="Spare Robot Kit Checklist"
-        description="Generates a competition spare-parts kit by cross-referencing inventory spare bins against FMEA repeat-failure history."
+        description="Generates a competition spare-parts kit by cross-referencing inventory spare bins against failure log repeat-failure history."
       >
         <div className="srk-header-actions">
           <RelatedStrip orgId={orgId} />
@@ -412,8 +412,8 @@ function CandidatesPanel({
         soft
         badge="No kit candidates yet"
         badgeTone="setup"
-        title="No spares are currently matched to FMEA history"
-        description="Once spare-category inventory items are tagged with a subsystem that has logged FMEA failures, Vantage will surface what to pack."
+        title="No spares are currently matched to Failure log"
+        description="Once spare-category inventory items are tagged with a subsystem that has logged logged failures, Vantage will surface what to pack."
       />
     );
   }
@@ -442,7 +442,7 @@ function CandidatesPanel({
                 <strong className="srk-item-name">{item.itemName}</strong>
                 <small className="app-muted">
                   {item.subsystem ?? "Unmatched subsystem"} · {item.quantityOnHand} on hand · {item.failureCount}{" "}
-                  FMEA failure(s) this season
+                  logged failure(s) this season
                 </small>
               </div>
             </header>

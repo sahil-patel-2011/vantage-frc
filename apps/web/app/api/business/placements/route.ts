@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   const orgId = new URL(request.url).searchParams.get("orgId");
   if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
   try { return Response.json(await withRls({ userId: session.user.id, orgId }, (client) => load(client, orgId))); }
-  catch (error) { return Response.json({ error: error instanceof Error && /partner_/.test(error.message) ? "Apply the Partner Placements migration first." : "Could not load partner placements." }, { status: 400 }); }
+  catch (error) { return Response.json({ error: error instanceof Error && /partner_/.test(error.message) ? "Partner placements aren't available for your team yet. The Vantage team has been told." : "Could not load partner placements." }, { status: 400 }); }
 }
 
 export async function POST(request: Request) {

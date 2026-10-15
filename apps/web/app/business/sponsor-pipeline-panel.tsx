@@ -506,7 +506,7 @@ export function SponsorPipelinePanel({
             </form>
           </article>
           <article className="app-card">
-            <span className="biz-overline">Contribution ledger</span>
+            <span className="biz-overline">Sponsor contributions</span>
             <h2>Add cash and in-kind support to the season.</h2>
             {/* Recording what a sponsor gave is a money write: finance managers only (0714). */}
             {view.canManageFinances ? (

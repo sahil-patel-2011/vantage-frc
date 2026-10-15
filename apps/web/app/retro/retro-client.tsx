@@ -370,7 +370,7 @@ export default function RetroClient() {
           </>
         }
         title="Team Retrospective"
-        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and FMEA log."
+        description="Structured start/stop/continue retros with voting and tracked action items — plus an auto-compiled season postmortem from your decisions, risks, incidents, and failure log log."
       >
         <div className="retro-header-actions">
           {view.sessions.length > 0 ? (
@@ -802,7 +802,7 @@ function Postmortems({
         </div>
       ) : (
         <p className="app-muted" style={{ marginTop: 12 }}>
-          No postmortem compiled yet for this season. It draws from your decisions, risks, incidents, and FMEA log.
+          No postmortem compiled yet for this season. It draws from your decisions, risks, incidents, and failure log log.
         </p>
       )}
     </Panel>

@@ -51,7 +51,7 @@ export async function GET(request: Request) {
       return Response.json(
         {
           error:
-            "Platform analytics needs database migration 0479_platform_analytics. Run npm run db:migrate, then reload.",
+            "Platform analytics needs a database update: run npm run db:migrate on the server, then reload.",
         },
         { status: 503 },
       );

@@ -122,7 +122,7 @@ function BestPathPlanner({
   if (!whatIf.remaining.length) {
     return (
       <Panel>
-        <span className="eyebrow">BEST PATH</span>
+        <span className="eyebrow">Best path</span>
         <h2>Every qualification match is played</h2>
         <p className="app-muted">
           {eventName} has no unplayed quals in the cache, so there is nothing left to plan. The seed
@@ -134,7 +134,7 @@ function BestPathPlanner({
 
   return (
     <Panel>
-      <span className="eyebrow">BEST PATH</span>
+      <span className="eyebrow">Best path</span>
       <h2>What-if the rest of quals</h2>
       <div className="bp-planner">
         <section className="bp-kpis">

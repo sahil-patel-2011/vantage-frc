@@ -267,7 +267,7 @@ export async function POST(request: Request) {
             );
           } catch (error) {
             if (!isMissingSchema(error)) throw error;
-            throw new HttpError(503, "Video re-scout migration pending — assigned teams are not available yet.");
+            throw new HttpError(503, "Video re-scouting isn't available for your team yet. The Vantage team has been told.");
           }
           return { assignedTeamKeys: action.teamKeys };
         }
@@ -297,7 +297,7 @@ export async function POST(request: Request) {
             return { id: inserted.rows[0]!.id };
           } catch (error) {
             if (!isMissingSchema(error)) throw error;
-            throw new HttpError(503, "Video re-scout migration pending — timeline scores are not available yet.");
+            throw new HttpError(503, "Video re-scouting isn't available for your team yet. The Vantage team has been told.");
           }
         }
 
@@ -317,7 +317,7 @@ export async function POST(request: Request) {
             return { ok: true };
           } catch (error) {
             if (!isMissingSchema(error)) throw error;
-            throw new HttpError(503, "Video re-scout migration pending — timeline scores are not available yet.");
+            throw new HttpError(503, "Video re-scouting isn't available for your team yet. The Vantage team has been told.");
           }
         }
 

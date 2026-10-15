@@ -404,7 +404,7 @@ function GoalsList({
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
               <div>
                 <span className={`app-badge ${statusTone(row.goal.status)}`}>{goalStatusLabel(row.goal.status)}</span>
-                {row.overdue ? <span className="app-badge demo">OVERDUE</span> : null}
+                {row.overdue ? <span className="app-badge demo">Overdue</span> : null}
                 <h3 style={{ margin: "6px 0 0" }}>{row.goal.title}</h3>
                 <small className="app-muted" style={{ display: "block" }}>
                   {goalCategoryLabel(row.goal.category)}

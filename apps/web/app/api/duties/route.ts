@@ -32,7 +32,7 @@ function fail(error: unknown) {
   const message = publicErrorMessage(error, "Duty roster request failed");
   if (/duty_assignments|relation .* does not exist|0500_duty_on_duty_chaperone|0145_duty_roster/i.test(message)) {
     return Response.json(
-      { error: message.includes("0500") ? message : "Apply the duty roster migration first (0145_duty_roster)." },
+      { error: "The duty roster isn't available for your team yet. The Vantage team has been told." },
       { status: 503 },
     );
   }

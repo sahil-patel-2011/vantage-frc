@@ -758,7 +758,7 @@ export default function MigrateClient() {
                   <FormRow label="The config.json these codes were made with">
                     <textarea value={configPaste} onChange={(event) => setConfigPaste(event.target.value)} rows={6} />
                   </FormRow>
-                  <FormRow label="Scanned QR payload lines (one per scan)">
+                  <FormRow label="Scanned QR codes (one per scan)">
                     <textarea value={filePaste} onChange={(event) => setFilePaste(event.target.value)} rows={8} />
                   </FormRow>
                   <div className="migrate-actions">

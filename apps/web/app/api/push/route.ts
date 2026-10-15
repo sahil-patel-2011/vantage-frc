@@ -65,7 +65,7 @@ export async function GET() {
       state: "setup_required",
       detail:
         status.state === "ready"
-          ? "Could not read your registered devices. Run the 0463 migration and try again."
+          ? "Notifications on this device aren't available for your team yet. The Vantage team has been told."
           : status.detail,
       subscribed: false,
       devices: [],

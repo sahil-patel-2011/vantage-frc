@@ -338,7 +338,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
     setMessage("");
     try {
       const response = await fetch("/api/control-map", {
-        method: "POST",
+        method: "Post",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ orgId: view.context.orgId, ...body }),
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
@@ -419,7 +419,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
           </>
         }
         title={`Control Map — ${seasonYear}`}
-        description="Driver-station cheat sheet: every controller input → robot action. Keep it in sync with Subsystems and FMEA."
+        description="Driver-station cheat sheet: every controller input → robot action. Keep it in sync with Subsystems and failure log."
       >
         <div className="control-map-header-actions">
           {relatedLinks.map((link) => (
@@ -468,7 +468,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
             Print this for the driver station so the drive team always knows which input does what.
             Cross-check{" "}
             <a href={subsystemsHref}>Subsystems</a> for mechanism names and{" "}
-            <a href={fmeaHref}>FMEA</a> for high-risk actuators.
+            <a href={fmeaHref}>failure log</a> for high-risk actuators.
           </p>
         </Panel>
       </div>
@@ -491,7 +491,7 @@ function SummaryTiles({ view, loaded }: { view: ReadyView; loaded: boolean }) {
       <div className="control-map-stats">
         <div>
           <span className={`app-badge ${s.total === 0 ? "setup" : "good"}`}>
-            {s.total === 0 ? "EMPTY" : "MAPPED"}
+            {s.total === 0 ? "Empty" : "Mapped"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season map</h2>
           <small className="app-muted">Real bindings only.</small>

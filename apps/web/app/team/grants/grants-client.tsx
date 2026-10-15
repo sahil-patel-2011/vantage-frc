@@ -525,7 +525,7 @@ function GrantWritingWorkspace({
           <header>
             <span className="eyebrow">Next actions</span>
             <h2>Keep writing grounded in this team&apos;s evidence</h2>
-            <p className="app-muted">Only impact, awards, and asks you recorded — metered AI hard-stops at plan cutoffs.</p>
+            <p className="app-muted">Only impact, awards, and asks you recorded — AI stops when your plan's credits run out.</p>
           </header>
           <ol className="gwe-next-actions">
             {nextActions.map((action) => (

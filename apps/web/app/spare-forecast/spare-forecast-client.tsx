@@ -117,8 +117,8 @@ function SpareForecastShell({
   children?: ReactNode;
 }) {
   const actions = spareForecastNextActions({ orgId, shell });
-  // The crumb is the Build hub, not the FMEA tab inside it: a breadcrumb that
-  // says "Build" and lands on a sibling tool is a third door to FMEA wearing
+  // The crumb is the Build hub, not the failure log tab inside it: a breadcrumb that
+  // says "Build" and lands on a sibling tool is a third door to failure log wearing
   // the name of the parent.
   const buildHref = withOrgHref("/build", orgId);
   const copy = spareForecastShellCopy(shell);
@@ -170,7 +170,7 @@ function SpareForecastShell({
         ) : null}
         {shell === "no_risk" ? (
           <Button as="a" variant="primary" href={hubHref("/build", "fmea", orgId)}>
-            Open FMEA
+            Open failure log
           </Button>
         ) : null}
       </EmptyState>
@@ -384,8 +384,8 @@ export default function SpareForecastClient() {
         title="Spare-Parts Failure Forecast"
         description={
           view.seasonHorizon === "offseason"
-            ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged FMEA failures — never \"no risk\" from a closed 200-day window."
-            : "Projects which real spare bins will run out before the season ends — FMEA cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems."
+            ? "Offseason: remaining-season risk is unknown. Cadence still uses real spare-category bins × logged logged failures — never \"no risk\" from a closed 200-day window."
+            : "Projects which real spare bins will run out before the season ends — failure-log cadence × quantity on hand. Cross-check Batteries, Orders, and Subsystems."
         }
       >
         <div className="spare-forecast-header-actions">
@@ -452,11 +452,11 @@ export default function SpareForecastClient() {
         >
           {/* Same rule the "no spare bins" state above already follows: only
               what Next actions is not already offering. Both pointed at the
-              FMEA tab, one under the other, so the page asked twice for the
+              failure log tab, one under the other, so the page asked twice for the
               same thing in two different voices. */}
           {nextActionHrefs.has(fmeaHref) ? null : (
             <Button as="a" variant="primary" href={fmeaHref}>
-              Open FMEA
+              Open failure log
             </Button>
           )}
         </EmptyState>
@@ -537,13 +537,13 @@ function SummaryTiles({ view, loaded }: { view: LiveView; loaded: boolean }) {
               : offseason
                 ? "OFFSEASON"
                 : view.forecastLines.length === 0
-                  ? "NO FMEA"
+                  ? "No failures logged"
                   : "LIVE"}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>Season forecast</h2>
           <small className="app-muted">
             {offseason
-              ? "Remaining-season risk is unknown — cadence from inventory × FMEA only"
+              ? "Remaining-season risk is unknown — cadence from inventory × failure log only"
               : "Real inventory only."}
           </small>
         </div>
@@ -582,12 +582,12 @@ function ForecastPanel({
         <div>
           <h2 style={{ margin: 0 }}>Exhaustion forecast</h2>
           <p className="app-muted" style={{ margin: "4px 0 0" }}>
-            Real spare-category bins with matched FMEA history only.
+            Real spare-category bins with matched Failure log only.
           </p>
         </div>
         {view.seasonHorizon === "offseason" ? (
           <p className="app-muted spare-forecast-offseason-note">
-            Season window closed — remaining-season risk is unknown. Logged FMEA cadence is still
+            Season window closed — remaining-season risk is unknown. Logged failure-log cadence is still
             shown. Draft restock when a live horizon exists.
           </p>
         ) : (
@@ -623,13 +623,13 @@ function ForecastPanel({
                 <strong style={{ display: "block", marginTop: 4 }}>{line.itemName}</strong>
                 <small className="app-muted">
                   {line.subsystem ?? "Unmatched subsystem"} · {line.quantityOnHand} on hand ·{" "}
-                  {line.failureCount} FMEA failure(s) this season
+                  {line.failureCount} logged failure(s) this season
                 </small>
               </div>
             </header>
             <small className="app-muted">
               {line.forecast.horizon === "offseason" || line.forecast.daysRemaining == null
-                ? `${line.forecast.consumptionPerDay.toFixed(3)} units/day from ${line.failureCount} logged FMEA failure(s) over ${line.forecast.daysElapsed} season day(s). Remaining-season risk is unknown — the season window is closed.`
+                ? `${line.forecast.consumptionPerDay.toFixed(3)} units/day from ${line.failureCount} logged logged failure(s) over ${line.forecast.daysElapsed} season day(s). Remaining-season risk is unknown — the season window is closed.`
                 : `${line.forecast.consumptionPerDay.toFixed(3)} units/day cadence · ${line.forecast.projectedConsumptionRemaining} projected over ${line.forecast.daysRemaining} remaining day(s)${
                     line.forecast.willExhaust
                       ? ` · shortfall of ${line.forecast.projectedShortfall} · recommend ordering ${line.forecast.recommendedOrderQty}`

@@ -7,7 +7,7 @@ import {
   type KnowledgeRelatedId,
 } from "../lib/knowledge/knowledge-related";
 
-/** Soft-UI cross-links between Knowledge and Messages / FMEA / CAD. */
+/** Soft-UI cross-links between Knowledge and Messages / failure log / CAD. */
 export function KnowledgeHubRelated({
   orgId,
   active,

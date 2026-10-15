@@ -171,7 +171,7 @@ function fail(error: unknown) {
   const message = publicErrorMessage(error, "Calendar request failed");
   if (/team_subteams|subteam_calendar_events|relation .* does not exist/i.test(message)) {
     return Response.json(
-      { error: "Apply the subteam calendars migration first (0111_subteam_calendars)." },
+      { error: "Subteam calendars isn't available for your team yet. The Vantage team has been told." },
       { status: 503 },
     );
   }
@@ -1220,7 +1220,7 @@ export async function POST(request: Request) {
           if (recurrenceUnavailable(error)) {
             throw new HttpError(
               503,
-              "Apply the recurring events migration first (0456_calendar_recurrence).",
+              "Repeating events aren't available for your team yet. The Vantage team has been told.",
             );
           }
           if (error instanceof RecurrenceError) throw new HttpError(400, error.message);
@@ -1250,7 +1250,7 @@ export async function POST(request: Request) {
             if (recurrenceUnavailable(error)) {
               throw new HttpError(
                 503,
-                "Apply the recurring events migration first (0456_calendar_recurrence).",
+                "Repeating events aren't available for your team yet. The Vantage team has been told.",
               );
             }
             throw error;
@@ -1455,7 +1455,7 @@ export async function POST(request: Request) {
               if (repeat.rrule) {
                 throw new HttpError(
                   503,
-                  "Apply the recurring events migration first (0456_calendar_recurrence).",
+                  "Repeating events aren't available for your team yet. The Vantage team has been told.",
                 );
               }
               // No repeat requested — fall back to the pre-0456 column set.
@@ -1598,7 +1598,7 @@ export async function POST(request: Request) {
           } catch (error) {
             const message = publicErrorMessage(error, "");
             if (/subteam_calendar_rsvps|does not exist/i.test(message)) {
-              throw new HttpError(503, "Apply the RSVP migration first (0147_subteam_calendar_rsvps).");
+              throw new HttpError(503, "RSVPs aren't available for your team yet. The Vantage team has been told.");
             }
             throw error;
           }
@@ -1641,7 +1641,7 @@ export async function POST(request: Request) {
           } catch (error) {
             const message = publicErrorMessage(error, "");
             if (/calendar_feed_tokens|does not exist/i.test(message)) {
-              throw new HttpError(503, "Apply the calendar feed migration first (0144_calendar_feed).");
+              throw new HttpError(503, "The calendar feed isn't available for your team yet. The Vantage team has been told.");
             }
             throw error;
           }
@@ -1658,7 +1658,7 @@ export async function POST(request: Request) {
           } catch (error) {
             const message = publicErrorMessage(error, "");
             if (/calendar_feed_tokens|does not exist/i.test(message)) {
-              throw new HttpError(503, "Apply the calendar feed migration first (0144_calendar_feed).");
+              throw new HttpError(503, "The calendar feed isn't available for your team yet. The Vantage team has been told.");
             }
             throw error;
           }
