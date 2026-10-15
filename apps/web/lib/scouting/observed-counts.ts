@@ -1,9 +1,11 @@
 import type { ObservedRobot } from "./team-profiles";
+import { robotsAndMatchesLabel, scoutingTotalsLabel, type ScoutingTotals } from "./scouted-counts";
 
 /**
  * Robot-matches with at least one report: one per (team, match), however many scouts watched
- * it. The same unit Assignments counts ("12 of 384 robot-matches"), so the two pages agree;
- * reports without a match key (pit or untagged notes) are not matches and are not counted.
+ * it. The same unit as `ScoutingTotals.robotMatches` (scouted-counts.ts) and Assignments'
+ * "12 of 384 robot-matches"; reports without a match key (pit or untagged notes) are not
+ * matches and are not counted.
  */
 export function robotMatchesScouted(robots: readonly ObservedRobot[]): number {
   const seen = new Set<string>();
@@ -15,10 +17,13 @@ export function robotMatchesScouted(robots: readonly ObservedRobot[]): number {
   return seen.size;
 }
 
-/** "9 robots · 12 matches scouted" — both numbers, so neither reads as the other. */
-export function watchedSummary(robots: readonly ObservedRobot[]): string {
-  const matches = robotMatchesScouted(robots);
-  const robotWord = robots.length === 1 ? "robot" : "robots";
-  const matchWord = matches === 1 ? "match" : "matches";
-  return `${robots.length} ${robotWord} · ${matches} ${matchWord} scouted`;
+/**
+ * "9 robots · 12 matches scouted" — both numbers, so neither reads as the other.
+ *
+ * The server's event totals win when it sent them (the one definition every screen shares);
+ * counting the observations here is the fallback for a copy saved before totals existed.
+ */
+export function watchedSummary(robots: readonly ObservedRobot[], totals?: ScoutingTotals | null): string {
+  if (totals) return scoutingTotalsLabel(totals);
+  return robotsAndMatchesLabel(robots.length, robotMatchesScouted(robots));
 }

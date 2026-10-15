@@ -12,7 +12,7 @@ const view = z.discriminatedUnion("status", [
   z.object({ status: z.literal("live"), orgId: z.string().uuid(), eventKey: z.string(), eventName: z.string().nullable(), teamNumber: z.number().nullable(), canManage: z.boolean(), thinThreshold: z.number().int().positive(),
     computedAt: z.string(), cells: z.array(cell), gaps: z.array(cell), nudges: z.array(nudge),
     summary: z.object({ totalCells: count, zeroCount: count, thinCount: count, coveredCount: count, coveragePct: z.number().min(0).max(1) }),
-    scope: z.object({ playedMatches: count, playedRobots: count, playedScouted: count, playedMissed: count, upcomingMatches: count, upcomingRobots: count, upcomingNoScout: count, reportsBeforePlay: count }).optional(),
+    scope: z.object({ playedMatches: count, playedRobots: count, playedScouted: count, playedMissed: count, upcomingMatches: count, upcomingRobots: count, upcomingNoScout: count, reportsBeforePlay: count, wrongRobotMatches: count.optional() }).optional(),
     missed: z.array(z.object({ matchKey: z.string(), matchLabel: z.string(), teamKey: z.string(), userId: z.string().uuid(), name: z.string(), role: z.enum(["primary", "backup"]), robotScouted: z.boolean() })).optional(),
   }),
 ]);

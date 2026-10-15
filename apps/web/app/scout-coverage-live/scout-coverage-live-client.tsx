@@ -36,6 +36,7 @@ import { summarizeMissed } from "../../lib/scouting/assignment-accountability";
 import "./scout-coverage-live.css";
 import "../scouting/lineup/lineup.css";
 import { assignmentWorkspaceHref } from "../../lib/scouting/assignment-navigation";
+import { wrongRobotNote } from "../../lib/scouting/scouted-counts";
 
 function CoverageWorkspaceViews({ orgId, assignmentHref, eventKey }: { orgId?: string | null; assignmentHref?: string; eventKey?: string }) {
   const base = assignmentHref ?? assignmentWorkspaceHref({ orgId: orgId ?? undefined });
@@ -296,6 +297,9 @@ export default function ScoutCoverageLiveClient({ orgId, eventKey, assignmentHre
       </section>
 
       {showTiles ? <SummaryTiles view={view} loaded={loaded} /> : null}
+      {showTiles && wrongRobotNote(view.scope?.wrongRobotMatches) ? (
+        <p className="app-muted" role="note">{wrongRobotNote(view.scope?.wrongRobotMatches)}</p>
+      ) : null}
       <CoverageGaps key={`gaps:${view.orgId}:${view.eventKey}`} view={view} busy={controlsDisabled} mutate={mutate} loaded={loaded} />
       <MissedAssignments key={`missed:${view.orgId}:${view.eventKey}`} view={view} orgId={orgId} />
       <NudgeLog key={`flags:${view.orgId}:${view.eventKey}`} view={view} busy={controlsDisabled} mutate={mutate} />

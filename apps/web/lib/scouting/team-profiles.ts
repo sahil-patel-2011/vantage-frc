@@ -64,7 +64,8 @@ type EntryRow = {
   matchKey: string;
   payload: Record<string, unknown>;
   confidence: "high" | "normal" | "low";
-  fields: IntelScoutNote["fields"];
+  /** Null when the report's form row no longer exists (LEFT JOIN). */
+  fields: IntelScoutNote["fields"] | null;
 };
 
 type FormulaRow = { name: string; expression: unknown };
@@ -105,11 +106,14 @@ export async function loadTeamProfiles(
   const [entries, formulas] = await Promise.all([
     client.query<EntryRow>(
       // Only reports for matches that can have been watched (see
-      // scouted-counts.ts), in match order so trends read early to late.
+      // scouted-counts.ts), in match order so trends read early to late. The
+      // form is a LEFT JOIN: a report whose form row is gone is still a robot
+      // watched, and loadScoutingTotals counts it, so the robots listed here
+      // are the robots Teams' header counts.
       `SELECT e.team_key AS "teamKey", e.match_key AS "matchKey", e.payload, e.confidence, s.schema->'fields' AS fields
          FROM match_scout_entries e
          JOIN matches_ref m ON m.match_key = e.match_key
-         JOIN scout_schemas s ON s.id=e.schema_id AND s.org_id=e.org_id
+         LEFT JOIN scout_schemas s ON s.id=e.schema_id AND s.org_id=e.org_id
         WHERE e.org_id = $1::uuid AND e.event_key = $2
           AND ${observableMatchSql("m")}
         ORDER BY CASE m.comp_level WHEN 'qm' THEN 0 WHEN 'ef' THEN 1 WHEN 'qf' THEN 2 WHEN 'sf' THEN 3 WHEN 'f' THEN 4 ELSE 5 END,
@@ -133,7 +137,7 @@ export async function loadTeamProfiles(
   const robots = new Map<string, IntelScoutNote[]>();
   for (const row of entries.rows) {
     const reports = robots.get(row.teamKey) ?? [];
-    reports.push({ matchKey: row.matchKey, eventKey: eventKey, payload: row.payload, confidence: row.confidence ?? "normal", fields: row.fields });
+    reports.push({ matchKey: row.matchKey, eventKey: eventKey, payload: row.payload, confidence: row.confidence ?? "normal", fields: row.fields ?? undefined });
     robots.set(row.teamKey, reports);
   }
   const observations = [...robots].map(([teamKey,reports]) => ({ teamKey,reports }));
