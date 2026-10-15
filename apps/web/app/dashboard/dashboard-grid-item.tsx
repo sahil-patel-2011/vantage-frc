@@ -135,6 +135,9 @@ export const DashboardGridItem = memo(function DashboardGridItem({
           // Let CSS place each card in reading order instead of leaving its
           // old x-coordinate as an empty column after a shorter row.
           gridColumn: editing ? undefined : `span ${item.w}`,
+          // Span the saved height in rows too, so a short card (Scouting) stacks under its
+          // short neighbour (Calendar) beside a tall one (To-dos) instead of leaving a hole.
+          gridRow: editing ? undefined : `span ${Math.max(1, item.h)}`,
           "--dash-order": item.y * 12 + item.x,
           "--dash-min-h": `${box.height}px`,
         } as CSSProperties

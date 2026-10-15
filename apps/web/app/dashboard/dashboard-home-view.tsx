@@ -125,6 +125,8 @@ export function DashboardHomeView(props: {
   setupHero: SetupHero | null;
   firstWeek: {
     view: RoleOnboardingView | null;
+    /** False until the member's setup steps have answered (the setup card may replace the strip). */
+    loaded?: boolean;
     busy: string | null;
     error?: string;
     retry?: () => void;
@@ -537,8 +539,10 @@ export function DashboardHomeView(props: {
   const showsOverview = false;
   // Only when something in it has a value: a strip of "Nothing waiting / No empty room slots /
   // No member checks open" on a new team looked like a report of work already done.
+  // Wait for the setup steps: the strip drew while they loaded, then vanished when the setup
+  // card arrived to take its place.
   const showRoleStrip = Boolean(
-    orgId && homeStripItems.some((item) => item.tone !== "neutral") && !teamSetupCard,
+    orgId && firstWeek.loaded !== false && homeStripItems.some((item) => item.tone !== "neutral") && !teamSetupCard,
   );
   // Errors outside edit mode stay at the top, where the thing that failed is.
   // Everything else is a toast by the toolbar.
