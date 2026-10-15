@@ -30,6 +30,9 @@ import "./command.css";
 export default function CommandClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [me, setMe] = useState<Me>({});
   const [orgId, setOrgId] = useState("");
+  // False until the team lookup answers. An empty orgId before then means "not known yet",
+  // never "no team" — painting setup in that gap is what showed "No event linked".
+  const [orgResolved, setOrgResolved] = useState(false);
   const [recomputing, setRecomputing] = useState(false);
   const [snap, setSnap] = useState<CommandSnapshot | null>(null);
   const [error, setError] = useState("");
@@ -57,7 +60,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       })
       .catch(() => {
         setOrgId((current) => current || fromUrl);
-      });
+      })
+      .finally(() => setOrgResolved(true));
     void requestMe()
       .then(({ ok, data }) => {
         if (ok && data) setMe(data as Me);
@@ -131,10 +135,11 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   }, [orgId, load]);
 
   useEffect(() => {
-    if (!orgId) {
-      setLoading(false);
-      return;
-    }
+    if (orgResolved && !orgId) setLoading(false);
+  }, [orgResolved, orgId]);
+
+  useEffect(() => {
+    if (!orgId) return;
     void load(orgId);
     let timer: number | null = null;
     let cancelled = false;
@@ -175,7 +180,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
       }} />
   );
 
-  if (loading && !snap && orgId) {
+  if (loading && !snap) {
     return <EventDayShell embedded={embedded} orgId={orgId || null} shell={classifyEventDayShell({ loading: true })} />;
   }
 
@@ -259,7 +264,8 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
   }
 
   if (!snap) {
-    return <EventDayShell embedded={embedded} orgId={orgId || null} shell="setup" hasActiveEvent={false} />;
+    // No answer yet and no failure: still loading, not "No event linked".
+    return <EventDayShell embedded={embedded} orgId={orgId || null} shell={classifyEventDayShell({ loading: true })} />;
   }
 
   return (
