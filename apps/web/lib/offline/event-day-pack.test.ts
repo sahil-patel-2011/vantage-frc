@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { BACKGROUND_WARM_MS, EVENT_DAY_PACK, saveEventDayPack, warmEventDayInBackground } from "./event-day-pack";
+import { BACKGROUND_WARM_CLAIM_MS, BACKGROUND_WARM_MS, EVENT_DAY_PACK, saveEventDayPack, warmEventDayInBackground } from "./event-day-pack";
 import { OFFLINE_SHELL_ROUTES } from "./shell-routes";
 
 const APP = join(__dirname, "..", "..", "app");
@@ -69,6 +69,28 @@ describe("background warm", () => {
     expect((await warmEventDayInBackground("org-1", { now: () => now, storage, online: true, saveData: false, fetchImpl: ok as unknown as typeof fetch, save })).ran).toBe(false);
     now += 2;
     expect((await warmEventDayInBackground("org-1", { now: () => now, storage, online: true, saveData: false, fetchImpl: ok as unknown as typeof fetch, save })).ran).toBe(true);
+  });
+
+  it("warms each person's copies separately on a shared device", async () => {
+    const storage = memory();
+    const now = 5_000_000;
+    const run = (userId: string) =>
+      warmEventDayInBackground("org-1", { userId, now: () => now, storage, online: true, saveData: false, fetchImpl: ok as unknown as typeof fetch, save: async () => undefined });
+    expect((await run("u1")).ran).toBe(true);
+    expect((await run("u1")).ran).toBe(false);
+    expect((await run("u2")).ran).toBe(true);
+  });
+
+  it("lets a failed warm try again after a short claim, not 30 minutes", async () => {
+    const storage = memory();
+    let now = 5_000_000;
+    const down = vi.fn(async () => new Response("down", { status: 503 }));
+    const first = await warmEventDayInBackground("org-1", { userId: "u1", now: () => now, storage, online: true, saveData: false, fetchImpl: down as unknown as typeof fetch, save: async () => undefined });
+    expect(first).toEqual({ ran: true, saved: [] });
+    now += BACKGROUND_WARM_CLAIM_MS - 1;
+    expect((await warmEventDayInBackground("org-1", { userId: "u1", now: () => now, storage, online: true, saveData: false, fetchImpl: down as unknown as typeof fetch })).ran).toBe(false);
+    now += 2;
+    expect((await warmEventDayInBackground("org-1", { userId: "u1", now: () => now, storage, online: true, saveData: false, fetchImpl: ok as unknown as typeof fetch, save: async () => undefined })).ran).toBe(true);
   });
 
   it("never runs offline or on a data saver connection", async () => {

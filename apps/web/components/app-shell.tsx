@@ -153,7 +153,7 @@ export default function AppShell() {
   // venue reads the local copy instead of waiting on the network.
   useEffect(() => {
     if (!orgId || !me.userId) return;
-    const run = () => void warmEventDayInBackground(orgId).catch(() => undefined);
+    const run = () => void warmEventDayInBackground(orgId, { userId: me.userId }).catch(() => undefined);
     if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(run, { timeout: 15_000 });
       return () => window.cancelIdleCallback(id);

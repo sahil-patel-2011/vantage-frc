@@ -80,9 +80,14 @@ export const BACKGROUND_WARM_MS = 30 * 60 * 1000;
  * light pages. Each page already opens from its saved copy and refreshes after, so this makes the
  * first open of the day instant instead of waiting on the network in a crowded venue.
  */
+/** A warm in progress (another tab, or one that failed) holds the slot this long, not 30 minutes. */
+export const BACKGROUND_WARM_CLAIM_MS = 2 * 60 * 1000;
+
 export async function warmEventDayInBackground(
   orgId: string,
   env: {
+    /** Saved copies are per person (feature-cache keys by user), so the throttle is too. */
+    userId?: string | null;
     now?: () => number;
     storage?: Pick<Storage, "getItem" | "setItem"> | null;
     online?: boolean;
@@ -97,21 +102,36 @@ export async function warmEventDayInBackground(
     env.saveData ??
     (typeof navigator !== "undefined" && Boolean((navigator as { connection?: { saveData?: boolean } }).connection?.saveData));
   if (!online || saveData) return { ran: false, saved: [] };
-  const now = (env.now ?? Date.now)();
-  const key = `vantage-event-day-warm:${orgId}`;
+  const clock = env.now ?? Date.now;
+  const now = clock();
+  // Per person and team: a teammate signing in on the same laptop gets their own copies warmed.
+  const key = `vantage-event-day-warm:${env.userId ?? "_"}:${orgId}`;
+  let storage: Pick<Storage, "getItem" | "setItem"> | null;
   try {
-    const storage: Pick<Storage, "getItem" | "setItem"> | null = env.storage !== undefined ? env.storage : typeof window === "undefined" ? null : window.localStorage;
+    storage = env.storage !== undefined ? env.storage : typeof window === "undefined" ? null : window.localStorage;
+    // The stored time is when the next warm may start.
     const stored = storage?.getItem(key) ?? null;
-    const last = stored == null ? null : Number(stored);
-    if (last != null && Number.isFinite(last) && now - last < BACKGROUND_WARM_MS) return { ran: false, saved: [] };
-    storage?.setItem(key, String(now));
+    const nextAllowed = stored == null ? null : Number(stored);
+    if (nextAllowed != null && Number.isFinite(nextAllowed) && now < nextAllowed) return { ran: false, saved: [] };
+    // Claim the slot briefly so a second tab doesn't run the same warm at the same moment.
+    storage?.setItem(key, String(now + BACKGROUND_WARM_CLAIM_MS));
   } catch {
     // No storage: still warm, just without the throttle memory.
+    storage = null;
   }
   const result = await saveEventDayPack(orgId, {
     fetchImpl: env.fetchImpl,
     save: env.save,
     items: EVENT_DAY_PACK.filter((item) => item.background),
   });
+  // Only a warm that saved something earns the full 30 minutes; a failed one (a blip in the
+  // venue's Wi-Fi) can try again once the short claim runs out.
+  if (result.saved.length) {
+    try {
+      storage?.setItem(key, String(clock() + BACKGROUND_WARM_MS));
+    } catch {
+      // Ignore: the next attempt just runs a little sooner.
+    }
+  }
   return { ran: true, saved: result.saved };
 }
