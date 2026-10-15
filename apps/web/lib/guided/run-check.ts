@@ -1,6 +1,5 @@
-import type { PoolClient } from "@neondatabase/serverless";
 import { listOnshapeFeatures, readOnshapeMassProperties, resolveOnshapeBind } from "@vantage/cad";
-import { acquireOnshape } from "../cad-learn/onshape-access";
+import type { acquireOnshape } from "../cad-learn/onshape-access";
 import { checkFeatures, checkNumbers, checkPaste, parseGitHubUrl } from "./checks";
 import { checkPullRequestChanges, runPasteVerifier } from "./checks-6925";
 import { isOnshapeApiCheck, onshapeAccessMessage, onshapeLinkProblem, runOnshapeApiCheck } from "./checks-onshape";
@@ -41,16 +40,21 @@ function githubTrouble(response: Response | null): CheckResult | null {
  * GitHub reads are public API calls; paste and number checks run here and never leave the server.
  * A lead sign-off is not something the student can run.
  */
+export type OnshapeAccessSource = () => ReturnType<typeof acquireOnshape>;
+
+/**
+ * `onshape` opens the student's Onshape connection only when a check needs it — in its own short
+ * transaction (see /api/guided) — so no database connection is held while Onshape or GitHub answer.
+ */
 export async function runGuidedCheck(
-  client: PoolClient,
-  who: { orgId: string; userId: string },
+  onshape: OnshapeAccessSource,
   check: StepCheck,
   input: CheckInput,
 ): Promise<CheckResult> {
   if (isOnshapeApiCheck(check)) {
     const problem = onshapeLinkProblem(String(input.url ?? ""));
     if (problem) return { passed: false, message: problem };
-    const access = await acquireOnshape(client, who.orgId, who.userId);
+    const access = await onshape();
     if (!access.ok) return { passed: false, message: onshapeAccessMessage(access.message) };
     return runOnshapeApiCheck(access.http, check, String(input.url));
   }
@@ -96,7 +100,7 @@ export async function runGuidedCheck(
       return { passed: true, message: `Checked: the tag ${ref.tag} is on GitHub.`, evidence: [`${ref.owner}/${ref.repo} tag ${ref.tag}`] };
     }
     case "onshape-connected": {
-      const access = await acquireOnshape(client, who.orgId, who.userId);
+      const access = await onshape();
       return access.ok
         ? { passed: true, message: "Checked: your Onshape account is connected." }
         : { passed: false, message: onshapeAccessMessage(access.message) };
@@ -105,7 +109,7 @@ export async function runGuidedCheck(
     case "onshape-mass": {
       const url = String(input.url ?? "").trim();
       if (!url) return { passed: false, message: "Paste the address of your Part Studio from the browser." };
-      const access = await acquireOnshape(client, who.orgId, who.userId);
+      const access = await onshape();
       if (!access.ok) return { passed: false, message: onshapeAccessMessage(access.message) };
       let bound;
       try {

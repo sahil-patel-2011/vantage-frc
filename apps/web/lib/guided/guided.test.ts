@@ -107,7 +107,7 @@ describe("lead sign-offs", () => {
   it("never passes a sign-off step from the student's own button", async () => {
     const { runGuidedCheck } = await import("./run-check");
     const step = GUIDED_TRACKS.flatMap((t) => t.steps).find((s) => s.check.kind === "lead-signoff")!;
-    const result = await runGuidedCheck({} as never, { orgId: "o", userId: "u" }, step.check, { values: { confirmed: true } });
+    const result = await runGuidedCheck(async () => { throw new Error("no Onshape needed"); }, step.check, { values: { confirmed: true } });
     expect(result.passed).toBe(false);
     expect(result.message).toMatch(/sign it off in Vantage/);
   });
