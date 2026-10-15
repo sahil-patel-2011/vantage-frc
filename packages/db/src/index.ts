@@ -1,6 +1,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { createDrizzle } from "./drizzle-client";
 import { resolveAppDatabaseUrl } from "./postgres-url";
+import { serializeClientQueries } from "./serial-queries";
 import { explainWriteRefusal } from "./view-only";
 
 const connectionString = resolveAppDatabaseUrl();
@@ -23,10 +24,6 @@ export class CommitAndThrowError extends Error {
 }
 
 /**
- * The only request-path transaction entry point. SET LOCAL ensures pooled
- * connections cannot leak identity between requests — including across teams.
- */
-/**
  * When each (user, team) last ran the scheduled-competition activation, per server instance.
  * Activation turns a planned competition on when it starts; checking it inside every single
  * transaction (a page makes several) cost a round trip each time for an answer that changes a
@@ -46,11 +43,17 @@ function activationDue(context: RequestContext, now = Date.now()): boolean {
   return true;
 }
 
+/**
+ * The only request-path transaction entry point. SET LOCAL ensures pooled
+ * connections cannot leak identity between requests — including across teams.
+ * Queries on the client run one at a time, in the order they are made (serial-queries.ts).
+ */
 export async function withRls<T>(
   context: RequestContext,
   work: (client: PoolClient) => Promise<T>
 ): Promise<T> {
   const client = await requestPool.connect();
+  const unserialize = serializeClientQueries(client as unknown as Parameters<typeof serializeClientQueries>[0]);
   const beginRequest = async () => {
     // One round trip for the two fixed statements (no parameters, so the simple protocol
     // runs both); the identity settings stay parameterized.
@@ -83,6 +86,7 @@ export async function withRls<T>(
     // sentence and a 403, not a database error the route hides behind "failed".
     throw await explainWriteRefusal(client, context, error);
   } finally {
+    unserialize();
     client.release();
   }
 }
