@@ -22,10 +22,12 @@ dispatch them without fresh authorization and a
 verified free allowance. The former authorization for isolated GitHub Actions
 tests does not authorize more runs after the user's October 6 cost restriction.
 
-Vercel is for website hosting and intentional deployments. Automatic Git builds
-and repository cron schedules are disabled. Do not redeploy repeatedly, start
-paid background workers, or purchase/upgrade services. Verify actual account
-allowance before a deployment; do not infer zero cost from a free-tier document.
+Vercel is for website hosting. Automatic Git builds and repository cron schedules
+are disabled, so a release is still one deliberate production deployment of a
+merged commit (set `VANTAGE_RELEASE_SHA` to it, then deploy that SHA). On October 14
+the owner lifted the earlier deploy cost rule: merging and deploying each batch of
+work is authorized without a separate allowance check. Do not start paid
+background workers or purchase/upgrade services.
 
 The user requests Google Sheets as primary storage until their NAS is connected.
 The existing implementation still uses PostgreSQL as its primary store and
