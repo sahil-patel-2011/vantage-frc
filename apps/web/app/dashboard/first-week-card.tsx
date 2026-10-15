@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "../../components/ui";
 import type { RoleOnboardingView, StartCheckView, StartTrackView } from "../../lib/role-onboarding/types";
@@ -58,7 +59,7 @@ export function useFirstWeek(orgId: string, userId: string) {
     const controller = new AbortController();
     let cancelled = false;
     void fetch(`/api/role-onboarding?orgId=${encodeURIComponent(orgId)}`, {
-      cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
+      cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]),
     })
       .then(async response => {
         if (cancelled || generation.current !== requestGeneration) return undefined;
@@ -97,7 +98,7 @@ export function useFirstWeek(orgId: string, userId: string) {
       try {
         const response = await fetch("/api/role-onboarding", {
           method: "POST",
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
+          signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]),
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ orgId, ...payload }),
         });

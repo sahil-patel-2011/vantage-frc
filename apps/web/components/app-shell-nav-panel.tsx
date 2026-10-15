@@ -1,5 +1,6 @@
 "use client";
 
+import { VantageMark } from "./vantage-mark";
 import { type KeyboardEvent, type RefObject } from "react";
 import { Icon } from "./icon";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
@@ -81,7 +82,7 @@ export function AppShellNavPanel({
         <div className="soft-drawer-head">
           <div className="soft-drawer-brand">
             {/* The real mark, not a lowercase "v" in a yellow circle. */}
-            <img className="soft-drawer-logo" src="/vantage-mark.svg" alt="" width={28} height={28} />
+            <VantageMark className="soft-drawer-logo" size={28} />
             <div>
               <strong>Vantage</strong>
             </div>

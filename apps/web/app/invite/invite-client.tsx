@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { VantageLogo } from "../../components/brand";
@@ -183,7 +184,7 @@ export default function InviteClient() {
     setEmailMismatch(false);
     setSessionEmail(null);
     setReplacedTeam(null);
-    void fetch(`/api/invites/preview?token=${encodeURIComponent(token)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) })
+    void fetch(`/api/invites/preview?token=${encodeURIComponent(token)}`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]) })
       .then(async (response) => {
         const data = (await response.json()) as PreviewResponse;
         if (!active) return;

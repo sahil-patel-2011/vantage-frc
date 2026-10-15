@@ -33,13 +33,18 @@ describe("the CAD page shows the model and hosts the agent", () => {
     expect(client).toContain("<CadViewport");
     expect(client).toContain("pngBase64={state?.shadedPngBase64}");
     expect(client).toContain("openUrl={state?.openUrl || url}");
-    expect(client).toContain("setupRequired={!onshapeOk}");
     expect(client).not.toMatch(/<CadViewport[\s\S]{0,400}iframeUrl/);
   });
 
   it("keeps the way out to Onshape itself", () => {
     // Removing in-app editing only works if opening the real thing is easy.
     expect(client).toContain("openUrl");
+  });
+
+  it("asks for one thing before a document is linked, and shows the assistant only when it can work", () => {
+    expect(client).toContain("Link an Onshape document");
+    expect(client).toContain("const assistant = linked && onshapeOk;");
+    expect(client).not.toContain("Onshape off");
   });
 
   it("still runs the agent — removing the studio did not touch it", () => {

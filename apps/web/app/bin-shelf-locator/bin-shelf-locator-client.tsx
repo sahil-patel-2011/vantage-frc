@@ -715,8 +715,10 @@ function ScanToFind({ orgId }: { orgId: string }) {
         return;
       }
       setResult(data);
-    } catch {
+    } catch (error) {
       stopScan();
+      // Pressing Stop aborts the scan; that is not a camera failure.
+      if (error instanceof DOMException && error.name === "AbortError") return;
       setScanError("Camera access failed. Check permissions and try again.");
     }
   }, [orgId, stopScan]);

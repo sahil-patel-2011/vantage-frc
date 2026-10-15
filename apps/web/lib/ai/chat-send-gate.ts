@@ -70,11 +70,8 @@ export type ChatConnectionState = {
 
 export const CHAT_READY: ChatConnectionState = { configured: true, reason: null, message: null, nextStep: null };
 
-/** Owners and admins manage the team's shared AI connection (Team → AI keys). */
-export function canConnectForTeam(role: string | null | undefined): boolean {
-  const normalized = (role ?? "").toLowerCase();
-  return normalized === "owner" || normalized === "admin";
-}
+import { canConnectForTeam } from "./team-roles";
+export { canConnectForTeam };
 
 /**
  * Null when `meteredAI` would accept a call answered from `source`; otherwise why not, in words a

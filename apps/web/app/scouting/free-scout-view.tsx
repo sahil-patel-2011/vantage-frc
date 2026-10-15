@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, ConfirmProvider, useConfirm } from "../../components/ui";
@@ -67,7 +68,7 @@ function PracticeScout({ orgId, userId }: { orgId: string; userId: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
-    void fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}&year=${draft.year}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) })
+    void fetch(`/api/scouting/schemas?orgId=${encodeURIComponent(orgId)}&year=${draft.year}`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]) })
       .then(async response => { if (!response.ok) return; const data = await response.json(); if (!controller.signal.aborted) setSchemas(data.schemas ?? []); })
       .catch(() => undefined);
     return () => controller.abort();

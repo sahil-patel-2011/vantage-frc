@@ -4,7 +4,6 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 import { PageMain, Button } from "../../components/ui";
 import { UsageCutoffBanner } from "../../components/usage-cutoff-banner";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { withOrgHref } from "../../lib/nav/product-nav";
 import type { ListedDocumentElements } from "../../lib/cad/list-document-elements";
 import { CadPurchaseRequestPanel } from "./cad-purchase-request";
 import { CadViewport } from "./cad-viewport";
@@ -108,72 +107,80 @@ export function CadReadyView({
   composerHint,
 }: CadReadyViewProps) {
   const editHref = onshapeEditHref(state?.openUrl || url);
+  // Something to look at: a linked Part Studio, or a pasted document open in the viewer.
+  const linked = boundOk || Boolean(editHref && state?.openUrl);
+  // The assistant edits through Onshape's API, so it shows only when that is connected and there
+  // is a document to work in. Before that there is one thing to do: link a document.
+  const assistant = linked && onshapeOk;
+  const docField = (
+    <div className="cad-agent-docrow">
+      <label className="cad-agent-doc">
+        <span>Onshape document link</span>
+        <input
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          placeholder="https://cad.onshape.com/documents/…"
+          onKeyDown={(event) => {
+            if (event.key === "Enter") void bind();
+          }}
+        />
+      </label>
+      <Button
+        variant={linked ? "secondary" : "primary"}
+        type="button"
+        disabled={!url.trim() || busy !== null}
+        onClick={() => void bind()}
+      >
+        {busy === "bind" ? "Linking…" : linked ? "Change" : "Link document"}
+      </Button>
+    </div>
+  );
   return (
     <PageMain className="module-page cad-module cad-agent">
       {cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
-      <header className="cad-agent-bar">
-        <div className="cad-agent-brand">CAD</div>
-        <label className="cad-agent-doc">
-          <span>Onshape document URL</span>
-          <input
-            value={url}
-            onChange={(event) => setUrl(event.target.value)}
-            placeholder="https://cad.onshape.com/documents/…"
-            onKeyDown={(event) => {
-              if (event.key === "Enter") void bind();
-            }}
-          />
-        </label>
-        <Button
-          variant={editHref ? "secondary" : "primary"}
-          type="button"
-          disabled={!url.trim() || busy !== null}
-          onClick={() => void bind()}
-        >
-          {busy === "bind" ? "Linking…" : "Link"}
-        </Button>
-        {listedElements.elements.length ? (
-          <label className="cad-agent-doc">
-            <span>Onshape tab</span>
-            <select
-              value={
-                listedElements.elements.some((element) => element.id === workingTabId)
-                  ? workingTabId
-                  : listedElements.elements.some((element) => element.id === boundElementId)
-                    ? (boundElementId ?? "")
-                    : ""
-              }
-              disabled={busy !== null}
-              onChange={(event) => {
-                const next = realReturnedId(event.target.value);
-                if (next) void switchBoundElement(next);
-              }}
-            >
-              {!listedElements.elements.some(
-                (element) => element.id === workingTabId || element.id === boundElementId,
-              ) ? (
-                <option value="">Choose a listed tab</option>
-              ) : null}
-              {listedElements.elements.map((element) => (
-                <option key={element.id} value={element.id}>
-                  {element.name || element.id} ({element.elementType || element.type})
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-        <div className="cad-agent-leds">
-          <span className={state?.onshapeConnected ? "on" : ""}>
-            {state?.onshapeConnected ? "Onshape connected" : "Onshape off"}
-          </span>
-          {/* Name the bound document, not just "bound" — the first thing to check
-              before an agent edits geometry is that it is the right Part Studio. */}
-          <span className={boundOk ? "on" : ""} title={state?.bound?.documentId ?? undefined}>
-            {boundOk ? state?.bound?.documentName || "Part Studio linked" : "Not linked yet"}
-          </span>
-        </div>
-      </header>
+      {linked ? (
+        <header className="cad-agent-bar">
+          {docField}
+          {listedElements.elements.length ? (
+            <label className="cad-agent-doc">
+              <span>Onshape tab</span>
+              <select
+                value={
+                  listedElements.elements.some((element) => element.id === workingTabId)
+                    ? workingTabId
+                    : listedElements.elements.some((element) => element.id === boundElementId)
+                      ? (boundElementId ?? "")
+                      : ""
+                }
+                disabled={busy !== null}
+                onChange={(event) => {
+                  const next = realReturnedId(event.target.value);
+                  if (next) void switchBoundElement(next);
+                }}
+              >
+                {!listedElements.elements.some(
+                  (element) => element.id === workingTabId || element.id === boundElementId,
+                ) ? (
+                  <option value="">Choose a listed tab</option>
+                ) : null}
+                {listedElements.elements.map((element) => (
+                  <option key={element.id} value={element.id}>
+                    {element.name || element.id} ({element.elementType || element.type})
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {/* Name the linked document: the first thing to check before the assistant edits geometry
+              is that it is the right Part Studio. */}
+          {boundOk ? (
+            <p className="cad-agent-linked" title={state?.bound?.documentId ?? undefined}>
+              Linked: {state?.bound?.documentName || "Part Studio"}
+            </p>
+          ) : null}
+        </header>
+      ) : null}
       {/* One Edit in Onshape (on the viewport) and no row of related links: the Build tabs already go there. */}
 
       {!state && loadFailure ? (
@@ -220,10 +227,21 @@ export function CadReadyView({
         <p className="cad-agent-error">{error}</p>
       ) : null}
 
-      <div className="cad-agent-workspace">
+      {!linked ? (
+        <section className="cad-agent-start" aria-labelledby="cad-start-title">
+          <h1 id="cad-start-title">Link an Onshape document</h1>
+          <p className="app-muted">
+            Paste the link to a Part Studio or assembly. It opens here, and the CAD assistant can build parts in it
+            once Onshape is connected for your team.
+          </p>
+          {docField}
+        </section>
+      ) : (
+      <div className={`cad-agent-workspace${assistant ? "" : " cad-agent-workspace--solo"}`}>
+        {assistant ? (
         <aside className="cad-agent-chat">
           <div className="cad-agent-col-head">
-            Agent
+            CAD assistant
             <div className="cad-mode-switch" role="group" aria-label="Agent mode">
               {(["simple", "plan", "multitask"] as const).map((option) => (
                 <button
@@ -239,41 +257,21 @@ export function CadReadyView({
               ))}
             </div>
           </div>
-          {state && !state.onshapeConnected ? (
-            <div className="cad-agent-setup">
-              <p>Paste an Onshape document link above to edit it here, or keep it in the vault.</p>
-              {/* With no document open and Onshape not connected, the viewport beside this
-                  already shows the one button that goes to the same place. */}
-              {editHref || onshapeOk || state.shadedPngBase64 ? (
-                <Button
-                  as="a"
-                  variant={editHref ? "secondary" : "primary"}
-                  href={`${withOrgHref("/cad-vault", orgId)}#link-cad`}
-                >
-                  Link a CAD document
-                </Button>
-              ) : null}
-              <p className="cad-agent-hint">
-                Need the CAD agent? Ask a mentor to{" "}
-                <a href={connectionsHref}>connect Onshape</a> in the browser.
-              </p>
-            </div>
-          ) : null}
           <div className="cad-agent-log" ref={logRef}>
             {!state?.messages.length ? (
               <div className="cad-agent-hero">
-                Specify the part or assembly in millimetres. Link an Onshape Part Studio, then send a brief. The agent
-                creates native sketches, extrudes, instances, and mates that remain editable in Onshape.
+                Describe the part or assembly in millimetres. The assistant builds real sketches, extrudes and mates
+                that stay editable in Onshape.
                 {mode === "plan"
-                  ? " Plan mode: the agent writes a numbered build plan and asks its questions before touching Onshape."
+                  ? " Plan first: it writes the steps and asks its questions before changing anything."
                   : mode === "multitask"
-                    ? " Multitask mode: the brief is split into a checklist of sub-tasks worked one at a time."
+                    ? " Step by step: it splits the brief into a checklist and works through it in order."
                     : ""}
               </div>
             ) : (
               state.messages.map((item, index) => (
                 <article key={`${item.role}-${index}`} className={`cad-agent-msg cad-agent-msg--${item.role}`}>
-                  <b>{item.role === "user" ? "You" : item.role === "tool" ? "Tool" : "Agent"}</b>
+                  <b>{item.role === "user" ? "You" : item.role === "tool" ? "Onshape" : "Assistant"}</b>
                   <p>{item.text}</p>
                 </article>
               ))
@@ -397,13 +395,17 @@ export function CadReadyView({
             </div>
           </div>
         </aside>
+        ) : null}
 
-        <CadViewport
-          pngBase64={state?.shadedPngBase64}
-          openUrl={state?.openUrl || url}
-          setupRequired={!onshapeOk}
-        />
+        <CadViewport pngBase64={state?.shadedPngBase64} openUrl={state?.openUrl || url} />
       </div>
+      )}
+      {linked && !onshapeOk ? (
+        <p className="cad-agent-hint">
+          The CAD assistant appears here once an owner or admin connects Onshape for your team in{" "}
+          <a href={connectionsHref}>Onshape connections</a>.
+        </p>
+      ) : null}
 
 
 

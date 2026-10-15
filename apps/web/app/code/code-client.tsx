@@ -739,7 +739,7 @@ export function CodeClient({
     if (!content.trim()) {
       setReview(null);
       setProposal(null);
-      setMessage("Paste robot source (or load the sample) before running a review.");
+      setMessage("Paste robot code, or use the teaching sample, before running a review.");
       return;
     }
     setBusy(true);

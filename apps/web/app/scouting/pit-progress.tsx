@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { loadRoster, saveRoster, type OfflineRosterTeam } from "../../lib/intel/offline-teams";
 import { listPendingEntries } from "../../lib/scout-offline";
@@ -84,7 +85,7 @@ export function PitProgress({
     // The saved event roster paints first; the live read replaces it quietly.
     void loadRoster(orgId, eventKey).then(saved => { if (active && !liveAccepted && saved) setTeams(saved.roster); });
     const controller = new AbortController();
-    void fetch(`/api/intel/teams?orgId=${encodeURIComponent(orgId)}&q=`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]) })
+    void fetch(`/api/intel/teams?orgId=${encodeURIComponent(orgId)}&q=`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(8_000)]) })
       .then((response) => (response.ok ? response.json() : null))
       .then((body: { roster?: RosterTeam[]; activeEvent?: { eventKey?: string } | null } | null) => {
         if (active && body?.activeEvent?.eventKey === eventKey && Array.isArray(body.roster)) {

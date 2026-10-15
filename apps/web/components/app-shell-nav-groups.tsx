@@ -40,7 +40,7 @@ export function AppShellNavGroups({ groups, pins, pathname, pathSearch, orgId, n
           <i className="main-menu-symbol"><Icon name={item.icon} /></i><span><strong>{item.label}</strong></span>
         </a>)}
     </div>
-    {navHrefAllowed("/dashboard") ? <a className="main-menu-home" href={withOrgHref("/dashboard", orgId)} onClick={closeNav} aria-current={pathname === "/dashboard" ? "page" : undefined}><Icon name="home" /><span>Home</span></a> : null}
+    {navHrefAllowed("/dashboard") && !pins.some(pin => pin.href === "/dashboard") ? <a className="main-menu-home" href={withOrgHref("/dashboard", orgId)} onClick={closeNav} aria-current={pathname === "/dashboard" ? "page" : undefined}><Icon name="home" /><span>Home</span></a> : null}
     {sections.length > 0 ? <p className="main-menu-heading">Workspaces</p> : null}
     {sections.map(section => {
       const destinations = section.items;

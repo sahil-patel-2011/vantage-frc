@@ -1,8 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { pushAppNavigation } from "../lib/nav/soft-navigation";
+import { usePathname } from "next/navigation";
 import { ROLE_LABELS, type AccessRole } from "@vantage/core/role-words";
 import { Icon, type IconName } from "./icon";
 import { withOrgHref } from "../lib/nav/product-nav";
@@ -10,7 +9,6 @@ import { fetchProductSession, type ProductSession } from "../lib/nav/product-ses
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 import {
   settingsNavGroups,
-  activeSettingsId,
   settingsRoleTier,
   visibleSettingsNav,
   type SettingsNavItem,
@@ -237,36 +235,21 @@ export function SettingsList({
 }
 
 /**
- * One reading column for settings pages, with a section selector and an All settings link.
+ * One reading column for settings pages with one way back: "Settings", like a back button in
+ * iOS Settings. A section dropdown beside it was a second navigator for the same list.
  * The full directory remains on /settings; pages drop their own duplicate navigation rows.
  */
 export function SettingsLayout({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const pickerId = useId();
   const pathname = usePathname() ?? "";
   const search = useLocationSearch();
   const orgId = new URLSearchParams(search).get("orgId") ?? "";
   const viewer = useSettingsViewer(orgId);
-  const items = visibleSettingsNav(viewer.role);
-  const activeId = activeSettingsId(items, pathname, search);
   useScrollToHash(pathname, search);
   return (
     <InSettingsLayout.Provider value>
       <div className="settings-frame">
         <nav className="settings-navigation" aria-label="Settings navigation">
-          <a href={withOrgHref("/settings", orgId || viewer.teamId || null)}><Icon name="back" /> All settings</a>
-          <label htmlFor={pickerId}>
-            <span className="sr-only">Settings section</span>
-            <select id={pickerId} value={activeId ?? ""} onChange={event => {
-              const item = items.find(item => item.id === event.target.value);
-              if (item) pushAppNavigation(path => router.push(path), withOrgHref(item.href, orgId || viewer.teamId || null));
-            }}>
-              {!activeId ? <option value="" disabled>Choose a section</option> : null}
-              {settingsNavGroups(items).map(group => <optgroup key={group.label} label={group.label}>
-                {group.items.filter(item => !item.href.includes("#")).map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
-              </optgroup>)}
-            </select>
-          </label>
+          <a href={withOrgHref("/settings", orgId || viewer.teamId || null)}><Icon name="back" /> Settings</a>
           {viewer.failed ? <button className="settings-retry" type="button" onClick={viewer.retry}>Reload team settings</button> : null}
         </nav>
         <div className="settings-pane">{children}</div>

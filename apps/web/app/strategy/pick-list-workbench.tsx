@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   CONSISTENCY_LABEL,
@@ -294,7 +295,7 @@ function EventPickListWorkbench({
       try {
         const response = await fetch(`/api/strategy/pick-desk${qs}`, {
           cache: "no-store",
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+          signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
         });
         const data = await response.json();
         if (!current()) return;
@@ -311,12 +312,11 @@ function EventPickListWorkbench({
           return;
         }
         if (data.status === "setup_required") {
-          if (hadCache || deskRef.current) {
-            setStatusKind("error");
-            setFromCache(true);
-            setStatus("Could not refresh Pick desk. Showing the last copy on this device.");
-            return;
-          }
+          // The server answered: there is no active event (it changed or was cleared). Show that,
+          // not the old event's desk under "Could not refresh".
+          setFromCache(false);
+          setStatus("");
+          void clearFeatureSnapshot("pick-desk", cacheOrg).catch(() => undefined);
           setDesk(null);
           setSetupMessage(typeof data.message === "string" ? data.message : "Needs setup");
           setSetupOrgId(typeof data.orgId === "string" ? data.orgId : orgId);
@@ -505,7 +505,7 @@ function EventPickListWorkbench({
             notes: entry.notes,
           })),
         }),
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+        signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
       const data = (await response.json()) as {
         id?: string;
@@ -525,7 +525,7 @@ function EventPickListWorkbench({
       setStatusKind("success"); setStatus("Pick list saved. Your team can open it in this workspace.");
       void putFeatureSnapshot("pick-desk", desk.orgId, nextDesk).catch(() => undefined);
     } catch {
-      if (current()) { setStatusKind("error"); setStatus("Could not confirm the save. Your ranking is still here. Refresh saved lists to check before retrying."); }
+      if (current()) { setStatusKind("error"); setStatus("Could not confirm the save. Your ranking is still here. Use Check for newer saves before retrying."); }
     } finally {
       if (operation.current === controller) operation.current = null;
       if (generation.current === sequence && !controller.signal.aborted) setSaving(false);
@@ -555,7 +555,7 @@ function EventPickListWorkbench({
           action: "seat-top-accurate",
           seatCount: 3,
         }),
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+        signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;
@@ -571,7 +571,7 @@ function EventPickListWorkbench({
       );
       refresh = response.ok;
     } catch {
-      if (current()) { setStatusKind("error"); setStatus("Could not confirm the scout seats. Refresh saved lists to check before retrying."); }
+      if (current()) { setStatusKind("error"); setStatus("Could not confirm the scout seats. Use Check for newer saves before retrying."); }
     } finally {
       if (operation.current === controller) operation.current = null;
       if (generation.current === sequence && !controller.signal.aborted) { setSeating(false); if (refresh) load(); }
@@ -632,12 +632,8 @@ function EventPickListWorkbench({
       <DataSourceDegradedBanner health={desk.dataSourceHealth} compact canOpenTeamData={desk.canEdit} />
       <header className="pick-desk-heading">
         <div>
-          {desk.pickMode === "low_data_tba" ? (
-            <span className="app-badge setup">Need more scouting</span>
-          ) : (
-            <span className="app-badge good">From our scouting</span>
-          )}
-          <h2 style={{ marginTop: 8 }}>Pick list</h2>
+          {/* Inside Competition the page already says "Pick list"; a second heading repeated it. */}
+          {embedded ? null : <h2 style={{ marginTop: 0 }}>Pick list</h2>}
           <p className="app-muted">
             {desk.eventName ?? desk.eventKey}
             {" · "}
@@ -650,20 +646,13 @@ function EventPickListWorkbench({
         </div>
         <div className="strategy-pick-actions">
           <PickDeskRelatedStrip orgId={desk.orgId} />
-          <Button variant="secondary" type="button" onClick={load} disabled={refreshing || saving || seating}>{refreshing ? "Refreshing…" : "Refresh saved lists"}</Button>
-          {desk.canEdit ? (
-            <Button variant="primary" type="button" onClick={() => void saveList()} disabled={saving || seating || !canRank || !dirty || !draftName.trim() || (Boolean(activeListId) && baseline === null)}>
-              {saving ? "Saving…" : "Save pick list"}
-            </Button>
-          ) : null}
         </div>
       </header>
 
       {desk.pickMode === "low_data_tba" ? (
         <p className="strategy-pick-coverage-hint app-muted" role="status">
-          Thin scout depth —{" "}
-          <a href={coverageHref}>open scout coverage</a> or add notes in Scouting before trusting pick
-          explainability.
+          Few of these teams have been scouted yet, so the order leans on public data.{" "}
+          <a href={coverageHref}>See scouting coverage</a>
         </p>
       ) : null}
 
@@ -694,12 +683,12 @@ function EventPickListWorkbench({
         </label>
         {!desk.canEdit ? (
           <p className="telemetry-status" role="status">
-            Scouting leads set the saved ranking. You can read it here and contribute in Team discussion.
+            Scouting leads set the saved ranking. You can read it here and add your view in Discussion.
           </p>
         ) : null}
         {desk.canEdit ? <p className="telemetry-status" role="status">
-          {selectedList?.status && selectedList.status !== "open" ? `This list is ${selectedList.status}. Reopen it in Team discussion before editing.`
-            : activeListId && baseline === null ? "Refresh saved lists and reopen this list to load its version before saving."
+          {selectedList?.status && selectedList.status !== "open" ? `This list is ${selectedList.status}. Reopen it in Discussion before editing.`
+            : activeListId && baseline === null ? "Use Check for newer saves and reopen this list before saving."
             : dirty ? "Unsaved ranking changes" : activeListId ? "All ranking changes saved" : "Add teams to build your pick list."}
         </p> : null}
         {dirty && selectedList?.revision && selectedList.revision !== baseline ? <p className="telemetry-status" role="alert">
@@ -710,6 +699,16 @@ function EventPickListWorkbench({
             {status}
           </p>
         ) : null}
+        <div className="strategy-pick-toolbar-actions">
+          <Button variant="ghost" size="sm" type="button" onClick={load} disabled={refreshing || saving || seating}>
+            {refreshing ? "Checking…" : "Check for newer saves"}
+          </Button>
+          {desk.canEdit ? (
+            <Button variant="primary" type="button" onClick={() => void saveList()} disabled={saving || seating || !canRank || !dirty || !draftName.trim() || (Boolean(activeListId) && baseline === null)}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="strategy-pick-columns" ref={tierDrag.rootRef}>
@@ -834,21 +833,28 @@ function EventPickListWorkbench({
                   <ConsistencyChip candidate={candidate} />
                   {candidate.suggestedTier ? (
                     <em className="strategy-suggest">Suggested {TIERS.find(item => item.id === rankingTier({ tier: candidate.suggestedTier }))?.label.toLowerCase()}</em>
-                  ) : (
-                    <em className="strategy-suggest muted">No suggestion yet</em>
-                  )}
+                  ) : null}
                 </div>
                 <div className="strategy-pick-row-actions">
                   {canRank ? (
-                    <button
-                      type="button"
-                      disabled={saving || seating}
+                    <select
                       className="strategy-pool-add"
-                      title={`Adds to ${TIERS.find(item => item.id === rankingTier({ tier: candidate.suggestedTier ?? "watch" }))?.label ?? "Watch"}; move it to another group later`}
-                      onClick={() => addToTier(candidate, rankingTier({ tier: candidate.suggestedTier ?? "watch" }))}
+                      aria-label={`Add team ${candidate.teamNumber ?? candidate.teamKey} to a group`}
+                      value=""
+                      disabled={saving || seating}
+                      onChange={(event) => {
+                        const tier = TIERS.find((item) => item.id === event.target.value);
+                        if (tier) addToTier(candidate, tier.id);
+                      }}
                     >
-                      Add to {(TIERS.find(item => item.id === rankingTier({ tier: candidate.suggestedTier ?? "watch" }))?.label ?? "Watch").replace(" picks", "")}
-                    </button>
+                      <option value="" disabled>Add to…</option>
+                      {TIERS.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                          {candidate.suggestedTier && rankingTier({ tier: candidate.suggestedTier }) === item.id ? " (suggested)" : ""}
+                        </option>
+                      ))}
+                    </select>
                   ) : null}
                 </div>
               </li>

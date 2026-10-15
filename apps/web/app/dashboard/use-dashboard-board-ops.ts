@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import {
   useEffect,
   useRef,
@@ -162,7 +163,7 @@ export function useDashboardBoardOps(input: {
     if (currentScope.current === request.scope) setSaving(false);
   }
   function mutationSignal(request: NonNullable<typeof mutationRequest.current>) {
-    return AbortSignal.any([request.controller.signal, AbortSignal.timeout(15_000)]);
+    return anySignal([request.controller.signal, AbortSignal.timeout(15_000)]);
   }
 
   function addWidget(type: DashboardWidgetType, drop?: GridCell, displayCols?: number) {

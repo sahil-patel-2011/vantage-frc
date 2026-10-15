@@ -1,4 +1,5 @@
 "use client";
+import { anySignal } from "../../../lib/abort/any-signal";
 import { useEffect, useState } from "react";
 import { isLayoutOnlyField } from "@vantage/scouting";
 import { Button, relativeTime, StatTile, ToolStrip } from "../../../components/ui";
@@ -37,7 +38,7 @@ function ScopedFormResponses({ orgId, schemaId }: { orgId: string; schemaId?: st
       loading = true;
       setRefreshing(true);
       try {
-        const body = await loadFormResponses(orgId, formId, AbortSignal.any([lifecycle.signal, AbortSignal.timeout(10_000)]));
+        const body = await loadFormResponses(orgId, formId, anySignal([lifecycle.signal, AbortSignal.timeout(10_000)]));
         if (!lifecycle.signal.aborted) { setSnapshot({ scope, data: body, loadedAt: new Date().toISOString() }); setIssue(null); }
       } catch (cause) {
         if (!lifecycle.signal.aborted) {

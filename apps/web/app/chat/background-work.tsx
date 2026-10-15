@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ModelProvenance } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
@@ -98,7 +99,7 @@ export function useBackgroundWork(orgId: string) {
       const request = ++generation.current;
       const response = await fetch(
         `/api/agent/autonomous?orgId=${encodeURIComponent(orgId)}&runId=${encodeURIComponent(runId)}`,
-        { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) },
+        { signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]) },
       ).catch(() => null);
       if (!response?.ok) return;
       const data = (await response.json().catch(() => null)) as { run?: BackgroundRun | null; steps?: Step[] } | null;

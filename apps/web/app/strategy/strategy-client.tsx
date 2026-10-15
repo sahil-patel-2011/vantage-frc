@@ -13,7 +13,6 @@ import {
   classifyStrategyShell,
   strategyCanSync,
   strategyNextActions,
-  strategyShellSetupSteps,
 } from "../../lib/strategy/strategy-related";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import type { StrategyView } from "../../lib/strategy/types";
@@ -37,6 +36,8 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
   const [fetchFailed, setFetchFailed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<StrategyTab>("matchup");
+  // Inside Competition the pick list has its own menu entry, so this page is only the matchup.
+  const shownTab: StrategyTab = embedded ? "matchup" : tab;
   const [urlOrgId, setUrlOrgId] = useState<string | null>(null);
   const [recomputing, setRecomputing] = useState(false);
   const [fromCache, setFromCache] = useState(false);
@@ -120,7 +121,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         if (!response.ok || !("status" in data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Strategy. Showing the last copy on this device.");
+            setError(navigator.onLine ? "Couldn't refresh just now. Showing the last copy on this device." : "");
             setFetchFailed(false);
             return;
           }
@@ -129,22 +130,10 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
             setFetchFailed(true);
             return;
           }
+          // The server failed; the team is still chosen. This used to swap in a made-up
+          // "Choose your team" setup screen for any 500 or 429.
           setError(message);
-          setView({
-            status: "setup_required",
-            message: "Choose your team before running win/loss strategy.",
-            steps: strategyShellSetupSteps(null).map((step) => ({
-              id: step.id,
-              label: step.label,
-              detail: step.detail,
-              href: step.href,
-            })),
-            orgId: null,
-            eventKey: null,
-            eventName: null,
-            teamNumber: null,
-            tbaConfigured: false,
-          });
+          setFetchFailed(true);
           return;
         }
         setView(data);
@@ -160,7 +149,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Strategy. Showing the last copy on this device.");
+          setError(navigator.onLine ? "Couldn't refresh just now. Showing the last copy on this device." : "");
           setFetchFailed(false);
           return;
         }
@@ -218,7 +207,9 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
     orgId,
   });
 
-  const sectionTabs = (
+  // Inside Competition, Pick list is its own menu entry; the segments only remain on the
+  // standalone /strategy page.
+  const sectionTabs = embedded ? null : (
     <ToolStrip
       aria-label="Strategy sections"
       presentation="segments"
@@ -231,7 +222,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
     />
   );
 
-  if (tab !== "picks" && shell !== "ready") {
+  if (shownTab !== "picks" && shell !== "ready") {
     return (
       <StrategyShell
         orgId={orgId}
@@ -310,10 +301,9 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
               ) : null}
             </>
           ) : null}
-          {view?.status === "live" ? (
-            <span className={`app-badge ${view.dataSourceHealth?.degraded ? "setup" : "good"}`}>
-              {view.dataSourceHealth?.usingLastGoodCache ? "Last saved data" : "Up to date"}
-            </span>
+          {/* Only news gets a badge: "Up to date" on every visit was noise next to the answer. */}
+          {view?.status === "live" && view.dataSourceHealth?.usingLastGoodCache ? (
+            <span className="app-badge setup">Last saved data</span>
           ) : null}
         </div>
       </PageHeader>
@@ -324,16 +314,16 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
       {sectionTabs}
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p className="telemetry-status" role={fromCache ? "status" : "alert"}>
           {error}
         </p>
       ) : null}
 
       <DataSourceDegradedBanner health={view?.dataSourceHealth} canOpenTeamData={canSync} />
 
-      {view && tab !== "picks" ? <TbaKeyHint view={view} /> : null}
+      {view && shownTab !== "picks" ? <TbaKeyHint view={view} /> : null}
 
-      {tab === "picks" ? (
+      {shownTab === "picks" ? (
         <PickListWorkbench orgId={orgId} embedded />
       ) : view?.status === "live" ? (
         <>

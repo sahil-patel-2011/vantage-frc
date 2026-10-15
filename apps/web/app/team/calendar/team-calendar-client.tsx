@@ -925,6 +925,14 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   onCompetitionBusy={setCompetitionBusy}
                   run={run}
                   addTask={addTask}
+                  onCancel={() => {
+                    if (busy || competitionBusy) return;
+                    setCreateOpen(false);
+                    setCompetitionKey(null);
+                    setPrefill(null);
+                    setQuickDay(null);
+                    setQuickHour(null);
+                  }}
                   onDone={() => {
                     setQuickDay(null);
                     setQuickHour(null);

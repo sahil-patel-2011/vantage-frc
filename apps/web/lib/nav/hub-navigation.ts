@@ -2,8 +2,10 @@ import { hubPrimaryTabs, hubWorkbenchId, type HubTabDef, type ProductHubDef } fr
 const COMPETITION_SECTIONS = [
   { id: "scouting", label: "Scout" }, { id: "forms", label: "Forms" },
   { id: "scout-coverage-live", label: "Assignments" }, { id: "teams", label: "Teams" },
-  // Pick list is Match plan's own "Pick lists" control. A second button opened the same view.
-  { id: "strategy", label: "Match plan" },
+  // Pick list is its own place at an event (alliance selection), with its own menu entry; the
+  // menu used to light up Match plan while the page said Pick list. Match plan no longer
+  // carries a second way to the same list when it sits inside Competition.
+  { id: "strategy", label: "Match plan" }, { id: "picks", label: "Pick list" },
   { id: "command", label: "Event day" }, { id: "match-checklist", label: "Our robot" },
 ];
 /**

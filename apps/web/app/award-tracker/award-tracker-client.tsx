@@ -24,7 +24,7 @@ import {
   type AwardTrackerShellKind,
 } from "../../lib/award-tracker/award-tracker-related";
 import type { AwardSubmission, AwardSubmissionStatus, AwardType } from "../../lib/award-tracker/types";
-import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
+import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";

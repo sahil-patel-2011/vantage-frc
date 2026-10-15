@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Button, Modal } from "../../components/ui";
+import { TabBar } from "../../components/ui/tab-bar";
 import { HubPanelSkeleton } from "../../components/product-hub";
 import { useFollowUrl } from "../../lib/nav/use-follow-url";
 import { URL_CHANGE_EVENT } from "../../lib/nav/url-change";
@@ -59,11 +60,23 @@ function TeamPickListWorkspace({ orgId, discussionDefault }: { orgId: string; di
 
   return (
     <section className="pick-list-workspace" aria-label="Pick list workspace" data-testid="pick-list-workspace">
-      <div className="pick-list-view-action">
-        <Button variant="secondary" type="button" disabled={busy} onClick={() => dirty ? setPendingView(!discussion) : switchView(!discussion)}>
-          {discussion ? "Rank teams" : "Team discussion"}
-        </Button>
-      </div>
+      {/* Two views of one list, as two tabs: a lone "Team discussion" button floated above the
+          ranking and read like an action, not a place. */}
+      <TabBar
+        aria-label="Pick list view"
+        className="pick-list-view-tabs"
+        value={discussion ? "discussion" : "ranking"}
+        tabs={[
+          { id: "ranking", label: "Ranking", disabled: busy },
+          { id: "discussion", label: "Discussion", disabled: busy },
+        ]}
+        onChange={(id) => {
+          const next = id === "discussion";
+          if (next === discussion) return;
+          if (dirty) setPendingView(next);
+          else switchView(next);
+        }}
+      />
       {discussion ? <Discussion key={orgId} orgId={orgId} embedded onBusyChange={setBusy} onDirtyChange={setDirty} /> : <Ranking key={orgId} orgId={orgId} embedded onDirtyChange={setDirty} onBusyChange={setBusy} />}
       <Modal open={pendingView !== null} onClose={() => setPendingView(null)} title="Keep your unsaved changes?">
         <p>Save your ranking or discussion inputs before switching views, or discard the changes you haven’t saved.</p>

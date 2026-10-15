@@ -9,16 +9,10 @@
   align-items: end;
   gap: 10px 12px;
 }
-.cad-agent-brand {
-  font: 700 15px/1 var(--font-source-sans), ui-sans-serif;
-  letter-spacing: -0.02em;
-  padding-bottom: 8px;
-}
+
 /* Inside the Build hub the page is already titled CAD; a second "CAD" beside the field only
    took width from it. */
-.product-hub-panel .cad-agent-brand {
-  display: none;
-}
+
 .cad-agent-doc {
   display: grid;
   gap: 4px;
@@ -38,28 +32,9 @@
   color: var(--ink);
   font: 400 13px/1.35 var(--font-source-sans), ui-sans-serif;
 }
-.cad-agent-leds {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-bottom: 6px;
-}
-.cad-agent-leds span {
-  font: 600 11px/1.2 var(--font-source-sans), ui-sans-serif;
-  color: var(--muted);
-}
-.cad-agent-leds span.on {
-  color: var(--positive);
-}
+
 /* Deep link to the bound Part Studio, next to the binding it names. */
-.cad-agent-leds .cad-agent-open {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--accent);
-  font: 600 11px/1.2 var(--font-source-sans), ui-sans-serif;
-  text-decoration: underline;
-}
+
 .cad-agent-error {
   margin: 0;
   color: var(--critical);
@@ -93,9 +68,7 @@
   gap: 10px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--line);
-  font: 700 12px/1 var(--font-source-sans), ui-sans-serif;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font: 600 13px/1 var(--font-source-sans), ui-sans-serif;
   color: var(--muted);
 }
 .cad-agent-col-head a {
@@ -103,13 +76,7 @@
   letter-spacing: 0;
   font-weight: 600;
 }
-.cad-agent-setup {
-  display: grid;
-  gap: 10px;
-  padding: 14px 14px 0;
-  justify-items: start;
-}
-.cad-agent-setup p,
+
 .cad-agent-hint,
 .cad-agent-hero {
   margin: 0;
@@ -383,22 +350,13 @@
 
 /* The link status reads as a line of its own under the address, at body size: it sat squeezed
    beside the button in 11px grey (UX audit). */
-.cad-agent-bar > .cad-agent-leds {
-  flex-basis: 100%;
-  gap: 6px 16px;
-  padding-bottom: 0;
-}
-.cad-agent-bar > .cad-agent-leds span {
-  font-size: 13px;
-}
-.cad-agent-bar > .cad-agent-leds span::before {
-  content: "";
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--muted) 55%, transparent);
-  vertical-align: 1px;
-}
-.cad-agent-bar > .cad-agent-leds span.on::before { background: var(--positive); }
+
+/* Before a document is linked: one centred step, nothing else. */
+.cad-agent-start { display: grid; gap: 12px; max-width: 560px; margin: 8vh auto 0; text-align: left; }
+.cad-agent-start h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+.cad-agent-start p { margin: 0; }
+.cad-agent-docrow { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; flex: 1 1 360px; }
+.cad-agent-docrow .cad-agent-doc { flex: 1 1 260px; min-width: 0; }
+.cad-agent-linked { margin: 0; padding-bottom: 10px; color: var(--muted); font-size: 13px; }
+.cad-agent-workspace--solo { grid-template-columns: minmax(0, 1fr); }
+.cad-agent-workspace--solo .cad-agent-viewport { border-left: 0; }

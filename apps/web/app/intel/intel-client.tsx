@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -48,6 +49,7 @@ import {
 } from "../../lib/intel/offline-teams";
 import type { EventRatingRow } from "../../lib/intel/lovat-lookup";
 import { classifyLookupFailure, teamSearchEmptyCopy } from "../../lib/intel/team-search";
+import type { PublicTeam } from "../../lib/intel/public-team";
 import { useAppleMotion } from "../../lib/motion/use-apple-motion";
 import "./intel.css";
 
@@ -179,6 +181,8 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
   // answer to "254".
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState<string | null>(null);
+  // The team's public profile (lib/intel/public-team) when Vantage hasn't synced it yet.
+  const [publicTeam, setPublicTeam] = useState<PublicTeam | null>(null);
   // One lookup at a time: a newer search or team tap cancels the older request.
   const lookupAbortRef = useRef<AbortController | null>(null);
   const viewRef = useRef<IntelBoardView | null>(null);
@@ -188,7 +192,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
     lookupAbortRef.current?.abort();
     const controller = new AbortController();
     lookupAbortRef.current = controller;
-    return { controller, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) };
+    return { controller, signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) };
   }
 
   useEffect(() => () => lookupAbortRef.current?.abort(), []);
@@ -259,6 +263,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
     // The previous answer is stale the moment a new search starts.
     setResults([]);
     setNotFound(null);
+    setPublicTeam(null);
     setSearching(true);
     setStatus("");
     setFetchFailed(false);
@@ -332,6 +337,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
     lookupAbortRef.current?.abort();
     setResults([]);
     setNotFound(null);
+    setPublicTeam(null);
     setSearching(false);
     setStatus("");
   }
@@ -344,6 +350,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
     setView(board);
     setResults([]);
     setNotFound(null);
+    setPublicTeam(null);
     setSummary("");
     setComparison(null);
     setFromCache(true);
@@ -367,12 +374,15 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
     const sameTeam = () => viewRef.current?.intel.team.teamNumber === teamNumber;
     try {
       const response = await fetch(`/api/intel/teams?orgId=${orgId}&team=${teamNumber}`, { signal });
-      const data = (await response.json()) as TeamResponse & { notFound?: boolean };
+      const data = (await response.json()) as TeamResponse & { notFound?: boolean; publicTeam?: PublicTeam | null };
       if (controller.signal.aborted) return;
       if (response.ok && !data.team && data.notFound) {
         // Not in Vantage's shared team list: a plain answer, not "could not refresh".
         setResults([]);
-        setNotFound(teamSearchEmptyCopy(String(teamNumber)));
+        setPublicTeam(data.publicTeam ?? null);
+        setNotFound(data.publicTeam
+          ? `Vantage hasn't synced an event with Team ${teamNumber} yet, so there are no match numbers here. They fill in once one of its events is loaded.`
+          : teamSearchEmptyCopy(String(teamNumber)));
         setStatus("");
         if (!sameTeam()) rememberTeamInUrl(viewRef.current?.intel.team.teamNumber ?? null);
         return;
@@ -424,6 +434,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
       setView(next);
       setResults([]);
       setNotFound(null);
+      setPublicTeam(null);
       setSummary("");
       setComparison(null);
       setStatus("");
@@ -666,9 +677,26 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
       {searching ? <IntelSearchSkeleton query={query.trim()} /> : null}
 
       {notFound ? (
-        <p className="intel-empty intel-not-found" role="status">
-          {notFound}
-        </p>
+        <div className="intel-empty intel-not-found" role="status">
+          {publicTeam ? (
+            <p className="intel-public-team">
+              <strong>
+                Team {publicTeam.teamNumber}
+                {publicTeam.nickname ? ` · ${publicTeam.nickname}` : ""}
+              </strong>
+              <span className="app-muted">
+                {[publicTeam.city, publicTeam.stateProv, publicTeam.country].filter(Boolean).join(", ")}
+                {publicTeam.rookieYear ? ` · rookie year ${publicTeam.rookieYear}` : ""}
+              </span>
+            </p>
+          ) : null}
+          <p>{notFound}</p>
+          {publicTeam ? (
+            <a href={publicTeam.tbaHref} target="_blank" rel="noreferrer">
+              Team {publicTeam.teamNumber}&apos;s public results page ↗
+            </a>
+          ) : null}
+        </div>
       ) : null}
 
       <IntelSearchResults results={results} onSelect={(teamNumber) => void select(teamNumber)} />
@@ -703,6 +731,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
                 setView(null);
                 setResults([]);
                 setNotFound(null);
+      setPublicTeam(null);
                 setSummary("");
                 setComparison(null);
                 rememberTeamInUrl(null);

@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, EmptyState, FormRow } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -42,7 +43,7 @@ function ReportList({ orgId, eventKey, schemaId, fieldKey, status, active }: Qua
     try {
       const scope = { orgId, eventKey, schemaId, fieldKey, status };
       const response = await fetch(qualityReportUrl(scope, cursor), { cache: "no-store",
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+        signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
       if (!current()) return;
       if (!response.ok) {
         failureStatus = response.status;

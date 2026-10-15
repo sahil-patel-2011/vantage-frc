@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { isAccessRole, roleHint, roleLabel } from "@vantage/core/role-words";
@@ -264,7 +265,7 @@ export default function OnboardingClient() {
     loadRef.current = controller;
     setLoadStatus("loading");
     setLoadError(null);
-    void fetch("/api/onboarding", { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) })
+    void fetch("/api/onboarding", { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]) })
       .then(async (response) => {
         if (controller.signal.aborted) return null;
         if (response.status === 401) {

@@ -341,7 +341,7 @@ export function Field({
               step={1}
               aria-label={field.label}
               value={typeof value === "number" && Number.isFinite(value) ? String(value) : ""}
-              placeholder="0"
+              placeholder="–"
               required={field.required}
               onChange={(event) => onChange(boundedNumber(field, event.target.valueAsNumber, true))}
             />
@@ -355,13 +355,15 @@ export function Field({
               +
             </button>
           </div>
+          {/* An empty box (shown as "–") means unanswered; "None seen" records a real zero, so a
+              robot that scored nothing is not mistaken for one nobody watched. It used to read
+              "Not recorded · +5 · Record 0". */}
           <div className="scout-counter-state">
-            <small>{typeof value === "number" ? "Recorded" : "Not recorded"}</small>
             {max == null || max - min > 5 ? <button type="button" aria-label={`${field.label}: add five`} disabled={max != null && count >= max}
               onClick={() => onChange(max == null ? count + 5 : Math.min(max, count + 5))}>+5</button> : null}
-            <button type="button" aria-label={`${field.label}: ${typeof value === "number" ? "clear answer" : `record ${min === 0 ? "zero" : min}`}`}
+            <button type="button" aria-label={`${field.label}: ${typeof value === "number" ? "clear answer" : min === 0 ? "none seen" : `record ${min}`}`}
               onClick={() => onChange(typeof value === "number" ? undefined : min)}>
-              {typeof value === "number" ? "Clear" : min === 0 ? "Record 0" : `Record ${min}`}
+              {typeof value === "number" ? "Clear" : min === 0 ? "None seen" : `Record ${min}`}
             </button>
           </div></div>
           )}

@@ -1,12 +1,10 @@
-import { EmptyState, Button } from "../../components/ui";
+import { EmptyState } from "../../components/ui";
 import { OnshapeDocumentEmbed, OnshapeEditButton } from "./onshape-edit-board";
 import { onshapeEditHref } from "../../lib/cad/onshape-edit-link";
-import { withLocalPlaywrightHint } from "../../lib/cad/onshape-setup-strings";
 
 export type CadViewportProps = {
   pngBase64?: string | null;
   openUrl?: string | null;
-  setupRequired?: boolean;
 };
 
 /**
@@ -28,7 +26,7 @@ function pngImgSrc(pngBase64: string | null | undefined): string | null {
  * In-app CAD viewport: official Onshape embed + Edit in Onshape, a real
  * picture when Onshape sent one, or an honest empty state.
  */
-export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadViewportProps) {
+export function CadViewport({ pngBase64, openUrl }: CadViewportProps) {
   const src = pngImgSrc(pngBase64);
   const editHref = onshapeEditHref(openUrl);
   const editButton = editHref ? <OnshapeEditButton href={editHref} /> : null;
@@ -36,8 +34,8 @@ export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadVi
   return (
     <section className="cad-agent-viewport" aria-label="CAD viewport" data-testid="cad-viewport">
       <div className="cad-agent-col-head">
-        Viewport
-        {editButton ?? <span>Onshape</span>}
+        Model
+        {editButton}
       </div>
       {editHref ? (
         <OnshapeDocumentEmbed url={editHref} />
@@ -48,27 +46,10 @@ export function CadViewport({ pngBase64, openUrl, setupRequired = false }: CadVi
       ) : (
         <EmptyState
           className="cad-agent-empty-view"
-          title={setupRequired ? "Connect Onshape" : "No picture yet"}
-          description={
-            setupRequired
-              // The desktop app allowlists onshape.com and can sign in inside
-              // its own window, no API keys needed — but nothing on screen said
-              // so, so this route existed and nobody could find it.
-              ? withLocalPlaywrightHint(
-                  "Onshape sign-in isn't switched on for Vantage yet. Paste a document link to open it in Onshape.",
-                )
-              : "Paste an Onshape document link to edit it here. The viewport stays empty until a document is open."
-          }
-          badge={setupRequired ? "Needs setup" : undefined}
-          badgeTone={setupRequired ? "setup" : undefined}
+          title="No picture yet"
+          description="The model shows here once Onshape sends a view of the linked document."
           soft
-        >
-          {setupRequired ? (
-            <Button as="a" variant="primary" href="/cad-vault#link-cad">
-              Paste an Onshape link
-            </Button>
-          ) : null}
-        </EmptyState>
+        />
       )}
     </section>
   );

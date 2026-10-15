@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { onTeamDataChanged } from "../../lib/team-data-changed";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -170,7 +171,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     if (requested.length) qs.set("widgets", [...new Set(requested)].join(","));
     if (opts?.fullContext) qs.set("context", "full");
     const timeout = AbortSignal.timeout(FEATURE_API_TIMEOUT_MS);
-    const signal = opts?.signal ? AbortSignal.any([opts.signal, timeout]) : timeout;
+    const signal = opts?.signal ? anySignal([opts.signal, timeout]) : timeout;
     const response = await fetch(`/api/dashboards?${qs.toString()}`, { signal, cache: "no-store" });
     if (signal.aborted || activeScope.current !== requestScope || homeSequence.current !== boardSequence) return;
     if (response.status === 401 || response.status === 403) {
@@ -236,7 +237,7 @@ export function useDashboardHomeState(initialOrgId = "") {
     if (stored) qs.set("boardId", stored);
     try {
       const response = await fetch(`/api/dashboards?${qs.toString()}`, {
-        cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+        cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
       if (!current()) return;
       if (response.status === 401 || response.status === 403) {

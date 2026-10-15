@@ -1,4 +1,5 @@
 "use client";
+import { friendlyErrorMessage } from "../../lib/ui/friendly-error";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ROLE_HINTS, ROLE_LABELS } from "@vantage/core/role-words";
 import { Button, ConfirmDialog, FormRow, Modal } from "../../components/ui";
@@ -44,9 +45,7 @@ export function TeamJoinCode({ orgId }: { orgId: string }) {
       setCode(data); setLoadedOrg(orgId);
     } catch (error) {
       if (epoch !== generation.current) return;
-      setError(
-        error instanceof Error ? error.message : "Could not load the join code.",
-      );
+      setError(friendlyErrorMessage(error, "Could not load the join code."));
     } finally { if (epoch === generation.current) setLoading(false); }
   }, [orgId]);
   useEffect(() => {

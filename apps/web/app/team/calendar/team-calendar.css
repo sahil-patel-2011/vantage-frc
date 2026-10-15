@@ -552,10 +552,16 @@
 .tc-quick-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
+  align-items: end;
 }
-.tc-quick-grid input:first-child {
+.tc-quick-grid .tc-quick-title {
   grid-column: 1 / -1;
+}
+.tc-quick-grid :is(input, select) {
+  width: 100%;
+  min-height: var(--control-h, 44px);
+  box-sizing: border-box;
 }
 
 .tc-details {
@@ -1390,3 +1396,5 @@
 
 /* "Added Tuesday build practice · Tue, Sep 29, 6:00 PM": the confirmation the form lacked. */
 .tc-added { margin: 10px 0 0; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, #16a34a 10%, var(--surface)); color: #166534; font-weight: 600; font-size: 14px; }
+
+.tc-quick-actions { display: flex; justify-content: flex-end; gap: 8px; }

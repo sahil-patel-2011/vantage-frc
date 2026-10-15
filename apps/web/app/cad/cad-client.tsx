@@ -76,9 +76,17 @@ export default function CadWorkspace({
   const lastVariableStudioElementId = useRef<string | undefined>(undefined);
   const [workingTabId, setWorkingTabId] = useState("");
 
+  // The team the page is on now. A slow answer for the team you just left is dropped instead of
+  // painting its "Could not load CAD agent" (or its document) over the new team.
+  const currentOrg = useRef(orgId);
+  useEffect(() => {
+    currentOrg.current = orgId;
+  }, [orgId]);
+
   const load = useCallback(async () => {
     const response = await fetch(`/api/cad/agent?orgId=${encodeURIComponent(orgId)}`);
     const data = (await response.json()) as AgentState & { error?: string };
+    if (currentOrg.current !== orgId) return null;
     if (!response.ok) {
       const failure = { status: response.status, message: data.error ?? "Could not load CAD agent" };
       setLoadFailure(failure);
@@ -485,13 +493,12 @@ export default function CadWorkspace({
   const connectionsHref = withOrgHref("/cad/connections", orgId);
   const tasks = mode === "multitask" ? modeState?.tasks ?? null : null;
 
-  const composerHint = !onshapeOk
-    ? "Connect Onshape first"
-    : mode === "plan"
-      ? "Plan mode: the agent plans and asks before building"
-      : mode === "multitask"
-        ? "Multitask mode: sub-tasks run one at a time"
-        : "Ctrl+Enter to send";
+  // The composer only shows once Onshape is connected and a document is linked (cad-ready-view).
+  const composerHint = mode === "plan"
+    ? "Plans and asks before building"
+    : mode === "multitask"
+      ? "Works through a checklist in order"
+      : "Ctrl+Enter to send";
 
 
 

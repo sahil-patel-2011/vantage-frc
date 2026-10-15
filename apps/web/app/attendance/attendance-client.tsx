@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { availableSeasonYears } from "@vantage/game-year";
-import { EmptyState, PageHeader, Button, useConfirm } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Button, useConfirm } from "../../components/ui";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -282,6 +282,32 @@ function SessionDetail({
           </p>
         </div>
         <span className="att-kind">{ATTENDANCE_KIND_LABELS[event.kind] ?? event.kind}</span>
+        {/* Deleting the event sits behind More in the card's corner, red and asking first: it used
+            to be a red button inside the session card, under the people marked at it. */}
+        {canManage ? (
+          <ActionMenu
+            overflowOnly
+            tone="row"
+            label={`${event.title} event`}
+            triggerTestId={`att-event-more:${event.id}`}
+            actions={[{
+              id: "delete-event",
+              label: "Delete event",
+              intent: "destructive",
+              confirmsItself: true,
+              disabled: busy,
+              onClick: async () => {
+                const ok = await confirm({
+                  title: "Delete this event?",
+                  body: `“${event.title}” and everyone marked at it are removed from attendance.`,
+                  confirmLabel: "Delete event",
+                  tone: "destructive",
+                });
+                if (ok) void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
+              },
+            }]}
+          />
+        ) : null}
       </div>
 
       <div className="att-meta">
@@ -425,29 +451,6 @@ function SessionDetail({
         </ul>
       )}
 
-      {/* Deleting the event is the last thing on the card, on its own, red and asking first.
-          It used to sit between the add form and the people marked at the event. */}
-      {canManage ? (
-        <div className="danger-zone att-danger-zone">
-          <Button
-            variant="ghost"
-            tone="danger"
-            size="sm"
-            disabled={busy}
-            onClick={async () => {
-              const ok = await confirm({
-                title: "Delete this event?",
-                body: `“${event.title}” and everyone marked at it are removed from attendance.`,
-                confirmLabel: "Delete event",
-                tone: "destructive",
-              });
-              if (ok) void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
-            }}
-          >
-            Delete event
-          </Button>
-        </div>
-      ) : null}
     </article>
   );
 }
@@ -868,14 +871,10 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
               <h2>Season presence</h2>
               {board.length === 0 ? (
                 <EmptyState
-                  soft
-                  title="Board is empty"
-                  description="No marks yet — the board stays empty until someone is added to an event."
-                >
-                  <Button as="a" variant="secondary" href="#att-session-list">
-                    Pick a session
-                  </Button>
-                </EmptyState>
+                  compact
+                  title="No attendance yet"
+                  description="The season's totals fill in as people are marked at sessions."
+                />
               ) : (
                 <ul className="att-board">
                   {board.map((row, index) => (

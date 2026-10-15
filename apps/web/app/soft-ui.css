@@ -2953,7 +2953,6 @@ body.has-app-shell .soft-drawer-flat .soft-drawer-platform{
   color:var(--ink);font-weight:600;
 }
 body.has-app-shell .soft-drawer-logo{width:28px;height:28px;flex:none;display:block}
-html[data-theme="dark"] body.has-app-shell .soft-drawer-logo{content:url("/vantage-mark-dark.svg")}
 /* The current page: a soft fill, no outline box and edge bar on top of it. */
 body.has-app-shell .soft-drawer-flat .soft-drawer-hub[aria-current="page"]{
   border-color:transparent!important;box-shadow:none!important;

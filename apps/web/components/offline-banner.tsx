@@ -78,7 +78,7 @@ export function OfflineBanner({
     title = feature ? `${feature} · syncing` : "Syncing outbox";
     body =
       detail ??
-      "Connection is back. Uploading queued scout entries with retry/backoff — keep this page open.";
+      "Sending saved entries. Keep this page open until it finishes.";
   } else if (tone === "degraded") {
     title = feature ? `${feature} · flaky link` : "Connection flaky";
     body =

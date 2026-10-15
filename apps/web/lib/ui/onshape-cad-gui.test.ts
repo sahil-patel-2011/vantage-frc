@@ -39,7 +39,8 @@ describe("Onshape CAD GUI human-edit slice", () => {
     const viewport = readFileSync(join(WEB, "app/cad/cad-viewport.tsx"), "utf8");
     expect(viewport).toMatch(/OnshapeEditButton/);
     expect(viewport).toMatch(/OnshapeDocumentEmbed/);
-    expect(viewport).toMatch(/Needs setup/);
+    // No setup alarm in the viewport: the page asks for a document link once, before it shows.
+    expect(viewport).not.toMatch(/Needs setup/);
     expect(viewport).not.toMatch(/setup required/i);
     expect(viewport).not.toMatch(/OAuth|ONSHAPE_|vantage-cad/);
 
@@ -64,7 +65,8 @@ describe("Onshape CAD GUI human-edit slice", () => {
     // One Edit in Onshape: the viewport's. The top bar used to carry a second, equally loud one.
     const ready = readFileSync(join(WEB, "app/cad/cad-ready-view.tsx"), "utf8");
     expect(ready).not.toMatch(/OnshapeEditButton/);
-    expect(ready).toMatch(/variant=\{editHref \? "secondary" : "primary"\}/);
+    // Linking is the one filled button until a document is linked, then it steps back.
+    expect(ready).toMatch(/variant=\{linked \? "secondary" : "primary"\}/);
     expect(ready).not.toMatch(/cad-agent-open/);
   });
 

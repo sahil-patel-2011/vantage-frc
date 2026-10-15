@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { askConfirm, Button, CardGridSkeleton, EmptyState, PageHeader, Modal } from "../../../components/ui";
+import { ActionMenu, askConfirm, Button, CardGridSkeleton, EmptyState, PageHeader, Modal } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { discardDraftBody, splitDrafts } from "../../../lib/team-lessons/list";
 import type { LessonSummary, LessonsListView } from "../../../lib/team-lessons/types";
@@ -90,25 +90,30 @@ function DraftRow({
           {lesson.createdByName ? ` · by ${lesson.createdByName}` : ""} · changed {whenText(lesson.updatedAt)}
         </span>
       </div>
-      <div className="team-lesson-draft-actions">
-        {/* The way in first; discarding comes last, red, and asks first. It used to come
-            before Edit in the same grey style. */}
-        {lesson.canEdit ? (
-          <Button as="a" variant="secondary" size="sm" href={lessonEditHref(lesson.id, orgId)}>
-            Edit
-          </Button>
-        ) : (
-          <Button as="a" variant="secondary" size="sm" href={lessonHref(lesson.id, orgId)}>
-            Open
-          </Button>
-        )}
-        {/* Only the author of a draft, or an owner or admin, may delete it (the API checks too). */}
-        {lesson.status === "draft" && lesson.canDelete ? (
-          <Button variant="ghost" tone="danger" size="sm" className="team-lesson-discard" disabled={discarding} onClick={() => onDiscard(lesson)}>
-            {discarding ? "Discarding…" : "Discard draft"}
-          </Button>
-        ) : null}
-      </div>
+      {/* The way in is the row's one button; discarding lives behind More, red, and asks first
+          (onDiscard opens the confirmation), instead of a red button under Edit on every row. */}
+      <ActionMenu
+        className="team-lesson-draft-actions"
+        tone="row"
+        label={`${lesson.title} lesson`}
+        triggerTestId={`lesson-more:${lesson.id}`}
+        actions={[
+          lesson.canEdit
+            ? { id: "edit", label: "Edit", href: lessonEditHref(lesson.id, orgId), intent: "primary" as const }
+            : { id: "open", label: "Open", href: lessonHref(lesson.id, orgId), intent: "primary" as const },
+          // Only the author of a draft, or an owner or admin, may delete it (the API checks too).
+          ...(lesson.status === "draft" && lesson.canDelete
+            ? [{
+                id: "discard",
+                label: discarding ? "Discarding…" : "Discard draft",
+                intent: "destructive" as const,
+                confirmsItself: true,
+                disabled: discarding,
+                onClick: () => onDiscard(lesson),
+              }]
+            : []),
+        ]}
+      />
     </li>
   );
 }

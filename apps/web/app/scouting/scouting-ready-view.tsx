@@ -7,7 +7,7 @@ import { MatchActivityRecorder } from "./match-activity-recorder";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
-import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { ScoutingSharing } from "./scouting-sharing";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -744,6 +744,22 @@ return (
                   <button type="button" className="scout-context-change" onClick={backToPicker}>
                     Change
                   </button>
+                  {/* Discarding is in the robot's own menu, red, and asks first (cancelReport): a
+                      thumb aiming for Save at the end of the form can't land on it. */}
+                  <ActionMenu
+                    overflowOnly
+                    tone="row"
+                    label={`Report for team ${context.teamNumber}`}
+                    triggerTestId="scout-report-more"
+                    actions={[{
+                      id: "discard",
+                      label: "Discard this report",
+                      intent: "destructive",
+                      confirmsItself: true,
+                      disabled: saving,
+                      onClick: cancelReport,
+                    }]}
+                  />
                 </div>
                 {formFields.length ? (
                   <MatchTimer fields={formFields} stage={stage} onStageChange={setStage} showControls={false}
@@ -899,7 +915,7 @@ return (
               </Button>
             </div>
           ) : null}
-          {canSave ? (
+          {canSave && type !== "match" ? (
             <p className="scout-discard-row">
               <Button variant="ghost" tone="danger" size="sm" type="button" disabled={saving} onClick={cancelReport}>
                 Discard this report

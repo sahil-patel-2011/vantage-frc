@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PicklistCollabView } from "../../lib/picklist-collab/compute-picklist-collab";
 import { confirmsCollabMutation, isCollabView, type CollabMutate } from "../../lib/picklist-collab/view-contract";
@@ -62,7 +63,7 @@ export function useCollabData(requestedOrg: string | null) {
       if (requestedOrg) query.set("orgId", requestedOrg);
       if (targetList) query.set("listId", targetList);
       try {
-        const response = await fetch(`/api/picklist-collab?${query}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+        const response = await fetch(`/api/picklist-collab?${query}`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
         const data = await response.json();
         if (!current()) return;
         if (response.status === 401 || response.status === 403) { liveAccepted = true; deny(targetList); setError(data?.error ?? "Your access changed. Sign in again or choose another team."); return; }
@@ -97,7 +98,7 @@ export function useCollabData(requestedOrg: string | null) {
       const response = await fetch("/api/picklist-collab", {
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ ...payload, orgId: before.orgId, listId: list?.id, expectedRevision: list?.revision }),
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+        signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
       const data = await response.json();
       if (!current()) return false;

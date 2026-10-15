@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatConnectionNextStep, ChatConnectionState } from "../../lib/ai/chat-send-gate";
 
@@ -50,6 +51,32 @@ export function connectionMessage(connection: AiConnection): string {
     : "Your AI connection isn't available. Check its settings.";
 }
 
+const cacheKey = (orgId: string) => `vantage-ai-connection:${orgId}`;
+
+/**
+ * The last check that said AI works for this team, kept on this device. Only a working answer is
+ * kept: Send is enabled from it at once (the server still refuses a send that can't run, and that
+ * refusal replaces it), while a "not connected" answer always comes fresh from the check.
+ */
+function readWorkingConnection(orgId: string): AiConnection | null {
+  try {
+    const raw = window.localStorage.getItem(cacheKey(orgId));
+    const parsed = raw ? (JSON.parse(raw) as AiConnection) : null;
+    return parsed && parsed.configured === true ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberConnection(orgId: string, connection: AiConnection | null) {
+  try {
+    if (connection?.configured === true) window.localStorage.setItem(cacheKey(orgId), JSON.stringify(connection));
+    else window.localStorage.removeItem(cacheKey(orgId));
+  } catch {
+    /* Private mode: the check still runs every time. */
+  }
+}
+
 /**
  * Whether AI can answer for this team, checked beside the chat list rather than inside it.
  * The check walks the whole provider ladder (~30 queries); when it rode on the chat list's
@@ -64,18 +91,27 @@ export function useAiConnection(orgId: string) {
     request.current?.abort();
     const controller = new AbortController();
     request.current = controller;
-    setConnection(null);
+    // A recheck starts from what this device last knew worked for this team instead of blanking
+    // to "Checking your AI connection…" on every visit, team switch and Retry.
+    setConnection(orgId ? readWorkingConnection(orgId) : null);
     if (!orgId) return;
     try {
       const response = await fetch(`/api/agent?${new URLSearchParams({ orgId, part: "connection" })}`, {
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]),
+        signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]),
         cache: "no-store",
       });
       const data = (await response.json().catch(() => ({}))) as { aiConnection?: AiConnection | null };
       if (controller.signal.aborted) return;
-      setConnection(response.ok && "aiConnection" in data ? (data.aiConnection ?? null) : CHECK_FAILED);
+      if (response.ok && "aiConnection" in data) {
+        const next = data.aiConnection ?? null;
+        rememberConnection(orgId, next);
+        setConnection(next);
+        return;
+      }
+      // A failed check doesn't undo a known-working connection; the send itself will say.
+      setConnection((current) => (current?.configured === true ? current : CHECK_FAILED));
     } catch {
-      if (!controller.signal.aborted) setConnection(UNREACHABLE);
+      if (!controller.signal.aborted) setConnection((current) => (current?.configured === true ? current : UNREACHABLE));
     }
   }, [orgId]);
 

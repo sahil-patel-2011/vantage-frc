@@ -79,33 +79,7 @@
 .cdc-billing-ultra {
   border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
 }
-.cdc-bugbot-modes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.cdc-bugbot-modes button {
-  display: grid;
-  gap: 4px;
-  text-align: left;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--bg);
-  cursor: pointer;
-  color: inherit;
-}
-.cdc-bugbot-modes button.is-active {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-}
-.cdc-bugbot-modes strong {
-  font-size: 13px;
-}
-.cdc-bugbot-modes span {
-  font-size: 12px;
-  color: var(--muted);
-}
+
 .cdc-github-scan {
   display: grid;
   gap: 10px;
@@ -634,9 +608,7 @@
   .cdc-billing {
     grid-template-columns: 1fr;
   }
-  .cdc-bugbot-modes {
-    grid-template-columns: 1fr;
-  }
+  
 }
 @media (max-width: 900px) {
   .cdc-coverage-detail {
@@ -672,3 +644,9 @@
   width: auto;
   margin-top: 3px;
 }
+
+/* Repo scan settings: one disclosure, fields stacked like Settings. */
+.cdc-scan-settings { display: grid; gap: 10px; margin: 4px 0 12px; }
+.cdc-scan-settings[open] { padding-bottom: 4px; }
+.cdc-scan-settings > label { display: grid; gap: 4px; }
+.cdc-scan-settings > label.appearance-check { display: flex; align-items: center; gap: 8px; }

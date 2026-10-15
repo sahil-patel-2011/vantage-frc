@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
@@ -58,7 +59,7 @@ export function useCoverageData(orgId: string, eventKey: string | undefined, qua
     if (eventKey) params.set("eventKey", eventKey);
     if (focusMatch) params.set("matchKey", focusMatch);
     try {
-      const response = await fetch(`/api/scouting/coverage?${params}`, { cache: "no-store", signal: AbortSignal.any([abort.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+      const response = await fetch(`/api/scouting/coverage?${params}`, { cache: "no-store", signal: anySignal([abort.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
       const data: unknown = await response.json().catch(() => null);
       if (!valid()) return;
       if (!response.ok) {

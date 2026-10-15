@@ -29,9 +29,7 @@ import {
 } from "../../lib/nav/hub-access-filter";
 import { useClientAccessProfile } from "../../lib/nav/use-client-access";
 import {
-  BUGBOT_INSTRUCTION_MAX,
   DEFAULT_COCKPIT_PREFS,
-  cockpitEquals,
   parseCockpitPrefs,
   type CockpitPrefs,
 } from "../../lib/cockpit/prefs";
@@ -60,12 +58,10 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
   const [islandLoaded, setIslandLoaded] = useState(false);
   const [islandProblem, setIslandProblem] = useState(false);
   const [islandAttempt, setIslandAttempt] = useState(0);
-  const [cockpitSaved, setCockpitSaved] = useState<CockpitPrefs>({ ...DEFAULT_COCKPIT_PREFS });
   const [cockpit, setCockpit] = useState<CockpitPrefs>({ ...DEFAULT_COCKPIT_PREFS });
   const [cockpitBusy, setCockpitBusy] = useState(false);
   const [cockpitLoaded, setCockpitLoaded] = useState(false);
   const [cockpitProblem, setCockpitProblem] = useState(false);
-  const [cockpitAttempt, setCockpitAttempt] = useState(0);
   const [cockpitNote, setCockpitNote] = useState<Status>(null);
 
   const access = useClientAccessProfile();
@@ -101,7 +97,6 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       .then((data: { cockpit?: unknown } | null) => {
         if (cancelled) return;
         const next = parseCockpitPrefs(data?.cockpit);
-        setCockpitSaved(next);
         setCockpit(next);
       })
       .catch(() => {
@@ -109,7 +104,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       })
       .finally(() => { if (!cancelled) setCockpitLoaded(true); });
     return () => { cancelled = true; };
-  }, [cockpitAttempt]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,18 +197,14 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       });
       const data = (await response.json()) as { cockpit?: unknown; error?: string };
       if (!response.ok) {
-        setCockpitNote({ tone: "error", text: data.error ?? "Could not save cockpit settings." });
+        setCockpitNote({ tone: "error", text: data.error ?? "Couldn't save that. Try again." });
         return;
       }
       const stored = parseCockpitPrefs(data.cockpit);
-      setCockpitSaved(stored);
       setCockpit(stored);
-      setCockpitNote({
-        tone: "ok",
-        text: "Saved. Bugbot and live boards will use these next time they load.",
-      });
+      setCockpitNote(null);
     } catch {
-      setCockpitNote({ tone: "error", text: "Could not save cockpit settings." });
+      setCockpitNote({ tone: "error", text: "Couldn't save that. Try again." });
     } finally {
       setCockpitBusy(false);
     }
@@ -221,6 +212,12 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
 
   return (
     <div className="appearance-stack">
+      {loadProblem ? (
+        <p className="app-muted" role="status">
+          Your saved display settings didn&apos;t load, so these show the defaults.{" "}
+          <Button size="sm" variant="ghost" onClick={() => setLoadAttempt(value => value + 1)}>Try again</Button>
+        </p>
+      ) : null}
       <section className="appearance-group">
         <ThemeToggle expanded />
       </section>
@@ -230,7 +227,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
         <p>
           Compact fits more on screen. Tap targets stay the same size.
         </p>
-        <ChoiceField<DensityPreference> label="Interface density" value={prefs.density} disabled={busy || !loaded || loadProblem}
+        <ChoiceField<DensityPreference> label="Interface density" value={prefs.density} disabled={busy || !loaded}
           choices={[{ value: "comfortable", label: "Comfortable", hint: "Default spacing" }, { value: "compact", label: "Compact", hint: "Less space between items" }]}
           onChange={value => preview({ ...prefs, density: value })} />
       </section>
@@ -244,7 +241,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
         <p>
           Set the transparency of navigation bars.
         </p>
-        <ChoiceField<ClarityPreference> label="Glass" value={prefs.clarity} disabled={busy || !loaded || loadProblem}
+        <ChoiceField<ClarityPreference> label="Glass" value={prefs.clarity} disabled={busy || !loaded}
           choices={[{ value: "clear", label: "Clear", hint: "More of the page shows through" }, { value: "regular", label: "Regular", hint: "Default" }, { value: "solid", label: "Solid", hint: "Best in sunlight" }]}
           onChange={value => preview({ ...prefs, clarity: value })} />
       </section>
@@ -254,97 +251,29 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
         <p>
           Reduce animations for calmer transitions.
         </p>
-        <ChoiceField<MotionPreference> label="Motion" value={prefs.motion} disabled={busy || !loaded || loadProblem}
+        <ChoiceField<MotionPreference> label="Motion" value={prefs.motion} disabled={busy || !loaded}
           choices={[{ value: "full", label: "Full motion", hint: "Animated transitions" }, { value: "reduced", label: "Reduced motion", hint: "Calmer transitions" }]}
           onChange={value => preview({ ...prefs, motion: value })} />
 
       </section>
 
-      <section className="appearance-group" aria-labelledby="appearance-cockpit-title">
-        <h3 id="appearance-cockpit-title">Code preferences</h3>
-        <p>
-          Code review and live-update preferences.
-        </p>
-        {!cockpitLoaded ? <p role="status">Loading code preferences…</p> : cockpitProblem ? <div><p role="alert">Your code preferences could not load.</p><Button type="button" variant="secondary" onClick={() => setCockpitAttempt(current => current + 1)}>Retry code preferences</Button></div> : null}
-        <label className="appearance-check">
-          <input
-            type="checkbox"
-            checked={cockpit.confirmWrites}
-            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
-            onChange={(event) => setCockpit({ ...cockpit, confirmWrites: event.target.checked })}
-          />
-          Confirm before Bugbot opens a pull request
-        </label>
-        <label className="appearance-check">
-          <input
-            type="checkbox"
-            checked={cockpit.pauseLiveWhenHidden}
-            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
-            onChange={(event) => setCockpit({ ...cockpit, pauseLiveWhenHidden: event.target.checked })}
-          />
-          Pause live boards (My Day, schedule, rankings) when this tab is hidden
-        </label>
-        <label className="appearance-check">
-          <input
-            type="checkbox"
-            checked={cockpit.includeScanTests}
-            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
-            onChange={(event) => setCockpit({ ...cockpit, includeScanTests: event.target.checked })}
-          />
-          Include our own tests when Bugbot scans a repo
-        </label>
-        <label>
-          Default Bugbot mode
-          <select
-            value={cockpit.defaultBugbotMode}
-            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
-            onChange={(event) =>
-              setCockpit({
-                ...cockpit,
-                defaultBugbotMode: event.target.value === "ultra" ? "ultra" : "subscription",
-              })
-            }
-          >
-            <option value="subscription">Your key / subscription</option>
-            <option value="ultra">Bugbot Ultra (hosted)</option>
-          </select>
-        </label>
-        <label>
-          Bugbot instructions
-          <textarea
-            value={cockpit.bugbotInstructions}
-            maxLength={BUGBOT_INSTRUCTION_MAX}
-            rows={3}
-            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem}
-            placeholder="e.g. Never retune CAN id 3. Phoenix 6 current limit is 40 A."
-            onChange={(event) => setCockpit({ ...cockpit, bugbotInstructions: event.target.value })}
-          />
-          <small className="app-muted">
-            {cockpit.bugbotInstructions.length}/{BUGBOT_INSTRUCTION_MAX} · empty means no extra rules
-          </small>
-        </label>
-        <div className="appearance-actions">
-          <button
-            type="button"
-            className="primary"
-            disabled={cockpitBusy || !cockpitLoaded || cockpitProblem || cockpitEquals(cockpit, cockpitSaved)}
-            onClick={() => void saveCockpit(parseCockpitPrefs(cockpit))}
-          >
-            {cockpitBusy ? "Saving…" : "Save code preferences"}
-          </button>
-          <Button as="a" variant="secondary" href="/ai/connect">
-            Connect AI
-          </Button>
-          <Button as="a" variant="secondary" href="/cad/setup">
-            Onshape CAD
-          </Button>
-        </div>
-        {cockpitNote ? (
-          <p className={`brand-notice ${cockpitNote.tone === "ok" ? "ok" : "error"}`} role="status">
-            {cockpitNote.text}
-          </p>
-        ) : null}
-      </section>
+      {/* Code scan settings live on the Code page now (Scan settings); only the live-board switch,
+          which is about this device, stays here. Saves on change like the theme does. */}
+      {cockpitLoaded && !cockpitProblem ? (
+        <section className="appearance-group" aria-labelledby="appearance-live-title">
+          <h3 id="appearance-live-title">Live boards</h3>
+          <label className="appearance-check">
+            <input
+              type="checkbox"
+              checked={cockpit.pauseLiveWhenHidden}
+              disabled={cockpitBusy}
+              onChange={(event) => void saveCockpit({ ...cockpit, pauseLiveWhenHidden: event.target.checked })}
+            />
+            Pause My Day, schedule and rankings while this tab is hidden
+          </label>
+          {cockpitNote?.tone === "error" ? <p className="brand-notice error" role="alert">{cockpitNote.text}</p> : null}
+        </section>
+      ) : null}
 
       <section className="appearance-group" aria-labelledby="appearance-island-title">
         <h3 id="appearance-island-title">Your apps</h3>
@@ -377,19 +306,18 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       </section>
       </details>
       <div className="appearance-save">
-        {loadProblem ? <p role="status">Could not load your saved appearance. <Button onClick={() => setLoadAttempt(value => value + 1)}>Retry appearance</Button></p> : null}
         <div className="appearance-actions">
           <Button
             type="button"
             variant="primary"
-            disabled={busy || !loaded || loadProblem || !dirty}
+            disabled={busy || !loaded || !dirty}
             onClick={() => void savePrefs(prefs)}
           >
-            {busy ? "Saving…" : !loaded ? "Loading…" : loadProblem || dirty ? "Save appearance" : "Saved"}
+            {busy ? "Saving…" : !loaded ? "Loading…" : dirty ? "Save appearance" : "Saved"}
           </Button>
           <Button
             type="button"
-            disabled={busy || !loaded || loadProblem || appearanceEquals(prefs, DEFAULT_APPEARANCE_PREFS)}
+            disabled={busy || !loaded || appearanceEquals(prefs, DEFAULT_APPEARANCE_PREFS)}
             onClick={() => void savePrefs({ ...DEFAULT_APPEARANCE_PREFS })}
           >
             Reset to defaults

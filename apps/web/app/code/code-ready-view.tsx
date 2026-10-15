@@ -75,9 +75,7 @@ export function CodeReadyView(props: CodeReadyViewProps) {
 
       {!orgId ? (
         <EmptyState
-          soft
-          badge="Needs setup"
-          badgeTone="setup"
+          compact
           title="Choose your team for repo scans"
           description="Reviewing a pasted file works without a team. Scanning GitHub and pull requests need one."
           className="product-hub-setup"
@@ -94,7 +92,12 @@ export function CodeReadyView(props: CodeReadyViewProps) {
       <TabBar
         tabs={tabs}
         value={tab}
-        onChange={(id) => setTab(id as CodeTab)}
+        onChange={(id) => {
+          // A result line belongs to the tab that produced it: Review's "Flagged 2 matched
+          // patterns" used to follow you onto Repo scan.
+          setTab(id as CodeTab);
+          props.setMessage(null);
+        }}
         aria-label="Code review"
         panelId="cdc-tab-panel"
         className="cdc-tabs"

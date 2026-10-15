@@ -1,6 +1,7 @@
 "use client";
 
 import { Icon } from "./icon";
+import { VantageMark } from "./vantage-mark";
 import { AskAiTopbarLink } from "./ask-ai-button";
 import { islandTabIsActive } from "./app-shell-model";
 import { withOrgHref, type ProductNavGroup } from "../lib/nav/product-nav";
@@ -27,7 +28,7 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
   const sections = mainMenuSections(groups, allowed);
   return <aside className="app-sidebar" aria-label="Workspace sidebar" data-collapsed={collapsed}>
     <div className="app-sidebar-brand">
-      <div className="app-sidebar-wordmark"><img src="/vantage-mark.svg" width="30" height="30" alt="" /><span>Vantage</span></div>
+      <div className="app-sidebar-wordmark"><VantageMark size={30} /><span>Vantage</span></div>
       <button type="button" onClick={onCollapse} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"}><Icon name="sidebar" /></button>
     </div>
     <div className="app-sidebar-team-context">
@@ -50,7 +51,9 @@ export function AppShellSidebar({ groups, pins, pathname, pathSearch, orgId, org
     </nav> : null}
     <nav className="app-sidebar-main" aria-label="Workspaces">
       <p className="app-sidebar-label">Workspaces</p>
-      {allowed("/dashboard") ? <a href={withOrgHref("/dashboard", orgId)} title="Home" aria-current={pathname === "/dashboard" ? "page" : undefined}><Icon name="home" /><span>Home</span></a> : null}
+      {/* Home is a single link, not a workspace to browse: when it is pinned, the pin is it (the
+          sidebar showed two Homes, one above the other). */}
+      {allowed("/dashboard") && !pins.some(pin => pin.href === "/dashboard") ? <a href={withOrgHref("/dashboard", orgId)} title="Home" aria-current={pathname === "/dashboard" ? "page" : undefined}><Icon name="home" /><span>Home</span></a> : null}
       {sections.map(section => {
         const current = pathname === `/${section.id}` || section.items.some(item => islandTabIsActive(pathname, activeSearch, item.href));
         return collapsed ? <button type="button" key={section.id} className="app-sidebar-workspace-button" title={`Browse ${section.label}`} aria-label={`Browse ${section.label}: expand sidebar`} onClick={onCollapse}><Icon name={section.icon} /></button>

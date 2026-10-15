@@ -52,7 +52,9 @@ const DotGlyph = () => (
 
 const defaultGlyph: Record<BadgeTone, ReactNode> = {
   good: <CheckGlyph />,
-  setup: <TriangleGlyph />,
+  // "Needs setup" is a calm next step ("Choose your team"), not a hazard: the warning triangle
+  // made every setup prompt read like an error.
+  setup: <InfoGlyph />,
   demo: <InfoGlyph />,
   danger: <TriangleGlyph />,
   error: <TriangleGlyph />,

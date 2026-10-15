@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../lib/abort/any-signal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { searchCommands, type CommandEntry, type CommandHit } from "../lib/nav/command-search";
 import { listRecentCommands, rememberRecentCommand } from "../lib/nav/recent-commands";
@@ -86,7 +87,7 @@ export function useShellSearch({
     const timer = window.setTimeout(() => {
       const params = new URLSearchParams({ q });
       if (orgId) params.set("orgId", orgId);
-      void fetch(`/api/search?${params.toString()}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(5_000)]) })
+      void fetch(`/api/search?${params.toString()}`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(5_000)]) })
         .then(async (response) =>
           response.ok ? ((await response.json()) as { status?: string; results?: SearchHit[]; message?: string }) : Promise.reject(new Error("Search unavailable")),
         )

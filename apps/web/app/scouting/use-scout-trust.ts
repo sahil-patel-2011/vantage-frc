@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { qualityEvidenceSchema } from "../../lib/scouting/quality-evidence";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -26,7 +27,7 @@ export function useScoutTrust(orgId: string, activeEventKey: string | null | und
     const controller = new AbortController(); trustAbort.current = controller;
     try {
       const params = new URLSearchParams({ orgId, eventKey });
-      const response = await fetch(`/api/scouting/trust?${params}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+      const response = await fetch(`/api/scouting/trust?${params}`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
       const raw: unknown = await response.json().catch(() => null);
       if (generation !== trustGeneration.current) return;
       if (!response.ok) return;

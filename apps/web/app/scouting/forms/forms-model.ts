@@ -54,7 +54,10 @@ export function formStatusLine(input: {
     : "";
   const join = (...parts: string[]) => parts.filter(Boolean).join(" ");
   if (status.kind === "unpublished" && !input.publishBlocked) {
-    return { label: "Ready to publish", detail: join("Start with these questions or tailor them below.", draftNote), tone: "ready" };
+    // "Start with these questions" is for a fresh form; beside a restored or saved draft it
+    // contradicted the "draft was restored" line above it.
+    const intro = input.draft === "saved" || input.draft === "unsaved" ? "" : "Start with these questions or tailor them below.";
+    return { label: "Ready to publish", detail: join(intro, draftNote), tone: "ready" };
   }
   return { label: status.label, detail: join(status.detail, draftNote), tone: "draft" };
 }

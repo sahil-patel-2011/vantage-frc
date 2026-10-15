@@ -171,7 +171,7 @@ describe("CadViewport", () => {
   const png = TINY_PNG_BYTES.toString("base64");
   const onshapeUrl = "https://cad.onshape.com/documents/aaa111/w/bbb222/e/ccc333";
 
-  function html(props: { pngBase64?: string | null; openUrl?: string | null; setupRequired?: boolean }) {
+  function html(props: { pngBase64?: string | null; openUrl?: string | null }) {
     return renderToStaticMarkup(createElement(CadViewport, props));
   }
 
@@ -198,17 +198,17 @@ describe("CadViewport", () => {
   });
 
   it("refuses to treat an Onshape document URL as an img src", () => {
-    const markup = html({ pngBase64: onshapeUrl, openUrl: onshapeUrl, setupRequired: true });
+    const markup = html({ pngBase64: onshapeUrl, openUrl: onshapeUrl });
     expect(markup).not.toMatch(/<img[^>]+src="https:\/\/cad\.onshape/);
     expect(markup).toContain("<iframe");
     expect(markup).toContain("Edit in Onshape");
   });
 
-  it("Needs setup when Onshape is missing and no document is open", () => {
-    const markup = html({ setupRequired: true });
-    expect(markup).toContain("Connect Onshape");
-    expect(markup).toContain("Needs setup");
-    expect(markup).toContain("Paste an Onshape link");
+  it("is a calm empty picture, not a setup alarm, when there is nothing to show", () => {
+    // The page asks for a document link once, before the viewport appears (cad-ready-view).
+    const markup = html({});
+    expect(markup).toContain("No picture yet");
+    expect(markup).not.toContain("Needs setup");
     expect(markup).not.toContain("<iframe");
   });
 });

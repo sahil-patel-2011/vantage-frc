@@ -28,8 +28,8 @@ describe("honest Home widget states", () => {
   it("shows observed counts against the actual schedule and keeps the team on actions", () => {
     const html = render(payload("live", { scheduledTeams: 40, pitReports: 0, matchSlots: 120, matchReports: 18, reports: 20 }));
     expect(html).toContain('value="0" max="40"');
-    expect(html).toContain("0 / 40");
-    expect(html).toContain("18 / 120");
+    expect(html).toContain("0 of 40");
+    expect(html).toContain("18 of 120");
     expect(html).toContain("20 match reports");
     expect(html).toContain("orgId=team-one");
     expect(html).not.toContain("mode=free");

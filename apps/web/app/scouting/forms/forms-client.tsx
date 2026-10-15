@@ -622,7 +622,8 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
     publishBlocked: Boolean(publishBlocked),
     justPublished: publicationConfirmed,
     draft: !payload.canManageSchemas || publishStatus.kind === "published" ? null
-      : draftError ? "unsaved" : draftSavedAt ? "saved" : "saving",
+      // Nothing edited yet means nothing to save: it said "Saving draft…" forever.
+      : draftError ? "unsaved" : draftSavedAt ? "saved" : null,
   });
 
   if (shell === "setup") {
