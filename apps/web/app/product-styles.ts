@@ -31,6 +31,8 @@ import "./header-strips.css";
 import "./nav-pins-search.css";
 // Shared navigation consolidation and the focused Ask AI workspace.
 import "./interface-polish.css";
+// Last of all: the button system (tiers, control tokens, the destructive tone).
+import "./button-system.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

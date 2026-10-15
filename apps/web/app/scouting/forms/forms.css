@@ -876,3 +876,5 @@ body.has-app-shell .sfb-page .sfb-question-document {
 .sfb-page > .sfb-layout:has(.sfb-question-document) > .sfb-question-document { width: 100%; max-width: none; }
 /* The form's title reads as a title, not a 30px banner inside a box. */
 .sfb-meta .soft-form-row:first-child input { font-size: 20px; font-weight: 600; letter-spacing: -.01em; min-height: 44px; }
+.sfm-save-hint { margin: 0 auto 0 0; font-size: 13px; }
+.sfm-actions > .tone-danger { margin-inline-end: auto; }

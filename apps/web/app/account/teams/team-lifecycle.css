@@ -71,3 +71,8 @@
   .lifecycle-team-list > li { grid-template-columns: minmax(0, 1fr); }
   .lifecycle-team-actions { justify-content: flex-start; }
 }
+.lifecycle-current {
+  margin-left: 8px; padding: 2px 8px; border-radius: var(--radius-pill);
+  background: var(--accent-soft, color-mix(in srgb, var(--accent) 12%, transparent));
+  color: var(--accent); font-size: 12px; font-weight: 600; vertical-align: 2px;
+}

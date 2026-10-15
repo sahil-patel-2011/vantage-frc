@@ -33,16 +33,24 @@ export type ActionSpec = {
   testId?: string;
   /** Non-visual grouping label used to draw separators in the overflow menu. */
   group?: string;
+  /**
+   * A destructive action that opens its own confirmation (a dialog that says what is lost, or
+   * a typed confirmation). It is still red and still in the overflow, but skips the menu's
+   * "press again" step so the person is not asked twice.
+   */
+  confirmsItself?: boolean;
 };
 
 /** An action plus the placement the model decided for it. */
 export type ResolvedAction = ActionSpec & {
   placement: "primary" | "secondary" | "overflow";
   /**
-   * True when the action mutates destructively. Always `true` for `intent: "destructive"`.
-   * Callers must route these through `useConfirm()` — never fire them straight from a click.
+   * True when the menu must ask before running it: `intent: "destructive"` without
+   * `confirmsItself`.
    */
   needsConfirm: boolean;
+  /** True for every `intent: "destructive"` action: drawn red, always in the overflow. */
+  destructive: boolean;
 };
 
 export type ActionModel = {
@@ -89,7 +97,8 @@ function stableByWeight(actions: ActionSpec[]): ActionSpec[] {
 }
 
 function resolve(action: ActionSpec, placement: ResolvedAction["placement"]): ResolvedAction {
-  return { ...action, placement, needsConfirm: isDestructive(action) };
+  const destructive = isDestructive(action);
+  return { ...action, placement, destructive, needsConfirm: destructive && !action.confirmsItself };
 }
 
 /**

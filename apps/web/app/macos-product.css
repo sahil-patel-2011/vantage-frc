@@ -154,7 +154,7 @@ body.has-app-shell .hub-tool-chip.is-active { color: var(--accent); background: 
 body.has-app-shell .hub-context-actions { border-top: 1px solid var(--line-soft); margin-top: 24px; padding-top: 16px; }
 
 /* Forms read like native controls, with explicit labels and useful focus. */
-body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { font-weight: 550; font-size: 13px; min-height: 44px; min-width: 44px; border-radius: 11px; padding: 9px 16px; letter-spacing: -.01em; box-shadow: var(--product-reflection), 0 1px 3px #00000005; transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { font-weight: 550; font-size: 13px; min-height: var(--control-h); min-width: 44px; border-radius: var(--radius-control); padding: 9px 16px; letter-spacing: -.01em; box-shadow: var(--product-reflection), 0 1px 3px #00000005; transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
 body.has-app-shell :is(.app-button,.soft-btn,.primary-action):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { transition: none; } }
 @media (max-width: 720px) {
@@ -236,7 +236,7 @@ html[data-motion="reduced"] .app-sidebar nav a { transition: none; }
   body.has-app-shell :is(main.module-page,main.workspace-page,main.intel-app,main.settings-page):not(.product-hub-panel *) { padding: 24px 16px 32px; }
   body.has-app-shell :is(.app-page-header,.workspace-hub-header) { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
   body.has-app-shell .app-page-actions { justify-content: flex-start; margin-left: 0; }
-  body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { min-height: 44px; }
+  body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { min-height: var(--control-h); }
   body.has-app-shell .workspace-hub-tabs { width: 100%; margin-bottom: 20px; }
   body.has-app-shell :is(.soft-tab-bar,.form-view-segments,.workspace-hub-tabs) > :is(a,button) { min-height: 44px; padding-inline: 13px; }
 }

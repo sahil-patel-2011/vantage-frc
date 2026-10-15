@@ -550,6 +550,29 @@ export default function WhiteboardClient() {
                   ))}
                 </div>
                 <div className="wb-actions">
+                  {/* Clear wipes every line and puts the robots back, and Undo can't bring that
+                      back: red, apart from Save at the far start of the bar (the macOS place for
+                      a destructive button), and it asks first. It used to sit between Undo and
+                      Save. */}
+                  <button
+                    type="button"
+                    className="danger wb-clear"
+                    disabled={busy || (strokes.length === 0 && !dirty)}
+                    onClick={async () => {
+                      const ok = await askConfirm({
+                        title: "Clear the whole board?",
+                        body: "Every line you drew is removed and the robots go back to their starting spots. Undo can't bring them back.",
+                        confirmLabel: "Clear board",
+                        tone: "destructive",
+                      });
+                      if (!ok) return;
+                      setStrokes([]);
+                      setRobots(defaultRobots());
+                      setDirty(true);
+                    }}
+                  >
+                    Clear
+                  </button>
                   <button
                     type="button"
                     disabled={busy || strokes.length === 0}
@@ -559,17 +582,6 @@ export default function WhiteboardClient() {
                     }}
                   >
                     Undo
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy || (strokes.length === 0 && !dirty)}
-                    onClick={() => {
-                      setStrokes([]);
-                      setRobots(defaultRobots());
-                      setDirty(true);
-                    }}
-                  >
-                    Clear
                   </button>
                   <Button variant="primary" size="sm" type="button" disabled={busy || !dirty} onClick={() => void savePlay()}>
                     {dirty ? "Save play" : "Saved"}

@@ -21,6 +21,7 @@ import { useOnline } from "../../lib/offline/use-online";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./free-scout.css";
+import { issueForField } from "../../lib/scouting/invalid-fields";
 
 const NO_FLAGS: OfficialFlag[] = [];
 
@@ -216,7 +217,19 @@ function PracticeScout({ orgId, userId }: { orgId: string; userId: string }) {
             <label>Game<select value={draft.year} onChange={event => void changeForm({ year: Number(event.target.value), schemaId: undefined, definition: undefined })}>{scoutingGameYears(draft.year).map(year => <option key={year} value={year}>{scoutingGameLabel(year)}</option>)}</select></label>
             {draft.schemaId || schemas.some(schema => schema.type === draft.type) ? <label>Questions<select value={draft.schemaId ?? ""} onChange={event => { const schema = schemas.find(row => row.id === event.target.value); void changeForm({ schemaId: schema?.id, definition: schema ? portableScoutDefinition(schema.definition) : undefined }); }}><option value="">Game starter form</option>{draft.schemaId && !schemas.some(schema => schema.id === draft.schemaId) ? <option value={draft.schemaId}>{draft.definition?.title ?? "Saved form version"}</option> : null}{schemas.filter(schema => schema.type === draft.type && schema.year === draft.year).map(schema => <option value={schema.id} key={schema.id}>{schema.definition.title}</option>)}</select></label> : null}
           </div>
-          <Button type="button" variant="primary" disabled={busy || !hydrated || !Number(draft.team) || (draft.type === "match" && !draft.label.trim()) || draft.year < 1992 || draft.year > 2100} onClick={start}>{Object.keys(draft.payload).length ? "Resume scouting" : "Start scouting"}</Button>
+          {(() => {
+            // The button says what it does; what is still missing is said under it, not
+            // left for the scout to guess from a greyed-out button.
+            const missing = !hydrated ? "Loading your saved draft…"
+              : !Number(draft.team) ? "Enter the team number to start."
+              : draft.type === "match" && !draft.label.trim() ? "Name the match to start, for example Practice 3."
+              : draft.year < 1992 || draft.year > 2100 ? "Choose a game year to start."
+              : null;
+            return <>
+              <Button type="button" variant="primary" disabled={busy || Boolean(missing)} aria-describedby={missing ? "free-scout-start-hint" : undefined} onClick={start}>{Object.keys(draft.payload).length ? "Resume scouting" : "Start scouting"}</Button>
+              {missing ? <p id="free-scout-start-hint" className="app-muted free-scout-start-hint">{missing}</p> : null}
+            </>;
+          })()}
         </> : <>
           <div className="free-scout-heading"><h3>Team {draft.team} · {draft.type === "pit" ? "Pit scouting" : draft.label}</h3><Button type="button" variant="secondary" disabled={busy} onClick={() => setStarted(false)}>Change details</Button></div>
           <p className="app-muted">{scoutingGameLabel(draft.year)} · {definition.title}</p>
@@ -227,15 +240,18 @@ function PracticeScout({ orgId, userId }: { orgId: string; userId: string }) {
             setStage(current => current === "review" ? current : phase === "done" ? "review" : phase === "transition" ? "auto" : phase);
           }} /> : null}
           {draft.type === "match" && draft.year === 2026 ? <MatchActivityRecorder payload={draft.payload} setPayload={updateAnswers} storageKey={draftKey} /> : null}
-          <div className="scout-form-grid">{fields.map((field) => <ScoutingAnswerField key={field.key} anchorId={`scout-field-${encodeURIComponent(field.key)}`} field={field} value={draft.payload[field.key]} error={problems.find(problem => problem.startsWith(`${field.label} `))} flags={NO_FLAGS} historyHint={null} disagreementRate={null} orgId={orgId} setPayload={updateAnswers} />)}</div>
+          <div className="scout-form-grid">{fields.map((field) => <ScoutingAnswerField key={field.key} anchorId={`scout-field-${encodeURIComponent(field.key)}`} field={field} value={draft.payload[field.key]} error={issueForField(definition.fields, field, problems)} flags={NO_FLAGS} historyHint={null} disagreementRate={null} orgId={orgId} setPayload={updateAnswers} />)}</div>
           </fieldset>
           {fields.length === 0 ? <p className="app-muted">No questions in this phase. Continue with the phase controls above.</p> : null}
-          <div className="scout-report-actions"><Button type="button" variant="secondary" disabled={busy} onClick={async () => {
+          {/* Save is the only button in the sticky bar. Discarding the draft is a quiet red link
+              under it, out of the thumb's path; it used to share the bar with Save. */}
+          <div className="scout-report-actions"><Button className={draft.type === "pit" || stage === "review" ? "scout-save-button" : undefined} type="button" variant="primary" disabled={busy} onClick={() => { if (draft.type === "match" && stage !== "review") setStage("review"); else void save(); }}>{busy ? "Saving…" : draft.type === "match" && stage !== "review" ? "Review answers" : "Save report"}</Button></div>
+          <p className="scout-discard-row"><Button type="button" variant="ghost" tone="danger" size="sm" disabled={busy} onClick={async () => {
             if (Object.keys(draft.payload).length && !(await confirm({ title: "Discard this practice draft?", body: `This clears the open answers for team ${draft.team}. Saved reports stay available.`, confirmLabel: "Discard draft", tone: "destructive" }))) return;
             try { localStorage.removeItem(draftKey); }
             catch { setStorageError("Could not discard the saved draft. Your answers are still here."); return; }
             setStarted(false); change({ payload: {}, reportId: undefined, observedAt: undefined }); setProblems([]); setMessage("");
-          }}>Discard draft</Button><Button className={draft.type === "pit" || stage === "review" ? "scout-save-button" : undefined} type="button" variant="primary" disabled={busy} onClick={() => { if (draft.type === "match" && stage !== "review") setStage("review"); else void save(); }}>{busy ? "Saving…" : draft.type === "match" && stage !== "review" ? "Review answers" : "Save report"}</Button></div>
+          }}>Discard draft</Button></p>
         </>}
         {message ? <p role="status">{message}</p> : null}
       </div>

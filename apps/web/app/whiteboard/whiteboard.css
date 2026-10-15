@@ -46,3 +46,4 @@
   .wb-setup-actions{display:grid;width:100%}
   .wb-setup-actions .app-button{width:100%;justify-content:center}
 }
+.wb-actions .wb-clear{margin-inline-end:10px;border-color:color-mix(in srgb,var(--critical) 38%,var(--line))}

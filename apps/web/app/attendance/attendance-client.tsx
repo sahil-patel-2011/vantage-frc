@@ -437,22 +437,6 @@ function SessionDetail({
               Add attendee
             </Button>
           </form>
-          <button
-            type="button"
-            className="att-link danger"
-            disabled={busy}
-            onClick={async () => {
-              const ok = await confirm({
-                title: "Delete this event?",
-                body: `“${event.title}” and everyone marked at it are removed from attendance.`,
-                confirmLabel: "Delete event",
-                tone: "destructive",
-              });
-              if (ok) void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
-            }}
-          >
-            Delete event
-          </button>
         </>
       ) : null}
 
@@ -502,6 +486,30 @@ function SessionDetail({
           ))}
         </ul>
       )}
+
+      {/* Deleting the event is the last thing on the card, on its own, red and asking first.
+          It used to sit between the add form and the people marked at the event. */}
+      {canManage ? (
+        <div className="danger-zone att-danger-zone">
+          <Button
+            variant="ghost"
+            tone="danger"
+            size="sm"
+            disabled={busy}
+            onClick={async () => {
+              const ok = await confirm({
+                title: "Delete this event?",
+                body: `“${event.title}” and everyone marked at it are removed from attendance.`,
+                confirmLabel: "Delete event",
+                tone: "destructive",
+              });
+              if (ok) void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
+            }}
+          >
+            Delete event
+          </Button>
+        </div>
+      ) : null}
     </article>
   );
 }

@@ -8,6 +8,12 @@ type ButtonOwnProps<T extends ElementType> = {
   as?: T;
   variant?: ButtonVariant;
   size?: ButtonSize;
+  /**
+   * "danger" colours a secondary or ghost button red: a row action that deletes, removes,
+   * discards or disconnects. variant="danger" is the filled red reserved for the confirm step
+   * and a page's danger section.
+   */
+  tone?: "danger";
   children?: ReactNode;
   className?: string;
 };
@@ -45,6 +51,7 @@ export function Button<T extends ElementType = "button">({
   as,
   variant = "secondary",
   size = "md",
+  tone,
   children,
   className,
   ...rest
@@ -53,6 +60,7 @@ export function Button<T extends ElementType = "button">({
   const cls = [
     chromeFor(variant),
     size === "sm" ? "sm" : undefined,
+    tone === "danger" && variant !== "danger" ? "tone-danger" : undefined,
     variant === "icon" ? styles.btnIcon : size === "lg" ? styles.btnLg : undefined,
     className,
   ]

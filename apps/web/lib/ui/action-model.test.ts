@@ -23,6 +23,14 @@ const CORPUS: ActionSpec[][] = [
   [a("dup"), a("dup"), a("dup")],
 ];
 
+describe("buildActionModel — destructive actions with their own dialog", () => {
+  it("keeps them red and in the overflow, without the menu asking a second time", () => {
+    const model = buildActionModel([a("open", { intent: "primary" }), a("delete", { intent: "destructive", confirmsItself: true }), a("wipe", { intent: "destructive" })]);
+    expect(model.primary?.id).toBe("open");
+    expect(model.overflow.map((x) => [x.id, x.destructive, x.needsConfirm])).toEqual([["delete", true, false], ["wipe", true, true]]);
+  });
+});
+
 describe("buildActionModel — one-primary invariant", () => {
   it("puts occasional row actions in one menu without losing order or destructive confirmation", () => {
     const model = buildActionModel([a("duplicate"), a("remove", { intent: "destructive" })], { overflowOnly: true });

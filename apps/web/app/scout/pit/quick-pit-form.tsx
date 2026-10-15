@@ -19,6 +19,7 @@ import { MEDIA_ENABLED } from "../../../lib/media-availability";
 import { queueEntry, stableClientId } from "../../../lib/scout-offline";
 import type { Bootstrap } from "../../scouting/scouting-model";
 import { QuickTile } from "../match/quick-scout-tiles";
+import { firstInvalidField, invalidFieldKeys } from "../../../lib/scouting/invalid-fields";
 
 export const PIT_EDITING_NOTE = "You visited this pit already. Saving replaces your earlier report.";
 export const PIT_NOTHING_ANSWERED_NOTE =
@@ -169,6 +170,15 @@ export function QuickPitForm({
     setIssues(problems);
     if (problems.length) {
       setMessage(`Not saved yet. ${problems.slice(0, 2).join(". ")}.`);
+      // Every pit question is on one page: scroll to the first one that needs an answer.
+      const first = firstInvalidField(fields, problems);
+      if (first) {
+        requestAnimationFrame(() => {
+          const target = document.querySelector<HTMLElement>(`[data-quick-field="${CSS.escape(first.key)}"]`);
+          target?.scrollIntoView({ block: "center", behavior: "smooth" });
+          target?.querySelector<HTMLElement>("button:not([disabled]),input:not([disabled]),select:not([disabled])")?.focus({ preventScroll: true });
+        });
+      }
       return;
     }
     const entry: SyncEntry = {
@@ -199,7 +209,7 @@ export function QuickPitForm({
     onSaved({ teamKey, clientId: initial.clientId });
   }
 
-  const invalid = new Set(fields.filter((field) => issues.some((issue) => issue.startsWith(field.label))).map((field) => field.key));
+  const invalid = invalidFieldKeys(fields, issues);
 
   return (
     <div className="qs-match qs-pit">

@@ -12,6 +12,7 @@ import {
   type QuickStage,
 } from "../../../lib/scouting/quick-scout";
 import { QuickTile } from "./quick-scout-tiles";
+import { invalidFieldKeys } from "../../../lib/scouting/invalid-fields";
 
 const CONFIDENCE: Array<{ value: "high" | "normal" | "low"; label: string }> = [
   { value: "high", label: "Sure" },
@@ -65,7 +66,7 @@ export function QuickScoutReview({
   const stages = quickFieldStages(fields);
   const recorded = fields.filter((field) => stages.get(field.key) !== "review");
   const actions = capture ? captureSummary(capture) : null;
-  const invalid = new Set(fields.filter((field) => issues.some((issue) => issue.startsWith(field.label))).map((field) => field.key));
+  const invalid = invalidFieldKeys(fields, issues);
 
   return (
     <div className="qs-review">

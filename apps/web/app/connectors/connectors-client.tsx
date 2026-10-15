@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Badge, Button, EmptyState, PageHeader } from "../../components/ui";
+import { askConfirm, Badge, Button, EmptyState, PageHeader } from "../../components/ui";
 import {
   connectorBadge,
   connectorConnectEndpoint,
@@ -190,6 +190,13 @@ export default function ConnectorsClient() {
   async function disconnect(connector: ConnectorStatusView, orgId: string | null) {
     const endpoint = connectorDisconnectEndpoint(connector.id);
     if (!endpoint || !orgId) return;
+    const ok = await askConfirm({
+      title: `Disconnect ${connector.label}?`,
+      body: `Vantage stops using ${connector.label} for this team and forgets the saved sign-in. To use it again, someone connects it again.`,
+      confirmLabel: "Disconnect",
+      tone: "destructive",
+    });
+    if (!ok) return;
     setBusyId(connector.id);
     setMessage("");
     try {
@@ -350,15 +357,16 @@ export default function ConnectorsClient() {
                   </Button>
                 ) : null}
 
-                {connector.canDisconnect && connectorDisconnectEndpoint(connector.id) ? (
-                  <Button variant="secondary" type="button" disabled={busy || !orgId || managedByOthers} title={managedByOthers ? "Only an owner or admin can change this team's link." : undefined} onClick={() => void disconnect(connector, orgId)}>
-                    Disconnect
-                  </Button>
-                ) : null}
-
                 {settingsPath ? (
                   <Button as="a" href={orgId ? withOrg(settingsPath, orgId) : settingsPath} variant="secondary">
                     {connector.state === "connected" ? `Manage ${connector.label}` : `Set up ${connector.label}`}
+                  </Button>
+                ) : null}
+
+                {/* Last, red, and asks first: it used to sit between Connect and Manage. */}
+                {connector.canDisconnect && connectorDisconnectEndpoint(connector.id) ? (
+                  <Button variant="ghost" tone="danger" type="button" className="connector-disconnect" disabled={busy || !orgId || managedByOthers} title={managedByOthers ? "Only an owner or admin can change this team's link." : undefined} onClick={() => void disconnect(connector, orgId)}>
+                    Disconnect
                   </Button>
                 ) : null}
               </div>

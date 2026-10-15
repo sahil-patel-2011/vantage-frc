@@ -6,7 +6,7 @@ import { MatchActivityRecorder } from "./match-activity-recorder";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { ScoutingTeamProfiles } from "./scouting-team-profiles";
 import { ScoutingSharing } from "./scouting-sharing";
 import { CopyShareLink } from "../../components/copy-share-link";
@@ -60,6 +60,7 @@ import "./scout-flow.css";
 import "./scouting-workspace.css";
 import { PitProgress } from "./pit-progress";
 import { ScoutActionHistoryView } from "./scout-action-history";
+import { issueForField } from "../../lib/scouting/invalid-fields";
 
 const CONFIDENCE_OPTIONS = [
   { value: "high", label: "Sure" },
@@ -245,14 +246,13 @@ export function ScoutingReadyView({
     return [...keys];
   }, [mine, savedHere]);
   const formStartRef = useRef<HTMLSpanElement | null>(null);
-  const [confirmRunning, setConfirmRunning] = useState(false);
   const stages = useMemo(() => availableMatchStages(formFields), [formFields]);
   const firstStage = stages[0] ?? "review";
   const [selectedStage, setStage] = useState<ScoutFormStage>(firstStage);
   const stage = reachableMatchStage(selectedStage, stages);
   const initialStage = useRef(firstStage);
   initialStage.current = firstStage;
-  useEffect(() => { setStage(initialStage.current); setConfirmRunning(false); }, [type, matchKey, teamKey, schema?.id]);
+  useEffect(() => { setStage(initialStage.current); }, [type, matchKey, teamKey, schema?.id]);
   const focusFields = useRef(formFields);
   focusFields.current = formFields;
   useEffect(() => {
@@ -772,7 +772,7 @@ return (
               anchorId={`scout-field-${encodeURIComponent(field.key)}`}
               field={field}
               value={payload[field.key]}
-              error={validationIssues.find(issue => issue.startsWith(`${field.label} `))}
+              error={issueForField(formFields, field, validationIssues)}
               flags={flagsByField.get(field.key) ?? NO_FLAGS}
               historyHint={fieldConfidenceHint(trustByField.get(field.key))}
               disagreementRate={trustByField.get(field.key)?.disagreementRate ?? null}
@@ -839,47 +839,46 @@ return (
             </label>
           ) : null}
 
-          {/* Disabled, and saying why, until there is a robot to save it
-              against. It used to accept the tap and answer with an error line
-              below the button, after the scout had filled in the whole form. */}
-          <div className="scout-report-actions"><Button variant="secondary" type="button" disabled={saving || !canSave} onClick={cancelReport}>Cancel report</Button>
-          <Button
-            variant="primary"
-            type="button"
-            className="scout-save-button"
-            disabled={!canSave || saving}
-            onClick={() => {
-              // Saving at "AUTO 0:02" was allowed without a word; a nudge, not a block. The nudge
-              // was a browser confirm, whose Cancel looked like Save doing nothing on a phone: now
-              // the button asks, and a second tap saves.
-              if (document.documentElement.dataset.scoutTimer === "running" && !confirmRunning) {
-                setConfirmRunning(true);
-                return;
-              }
-              setConfirmRunning(false);
-              void submit();
-            }}
-          >
-            {saving ? "Saving on this device…" : confirmRunning && canSave
-              ? "Tap again to save"
-              : !canSave
-              ? type === "match"
-                ? "Pick a robot above to save"
-                : "Type a team number above to save"
-              : online
-                ? `Save this ${type}`
-                : "Save on this phone"}
-          </Button>
-          </div>
-          <ScoutActionHistoryView payload={payload} labels={Object.fromEntries(formFields.map((field) => [field.key, field.label]))} />
-          {confirmRunning ? (
-            <p className="form-message scout-running-note" role="status">
-              Match clock still running. Tap again to save now, or{" "}
-              <button type="button" className="text-button" onClick={() => setConfirmRunning(false)}>
-                keep counting
-              </button>
+          {/* No save bar until there is a robot to save against: with no robot there are no
+              questions on screen, and "Choose a robot to begin" above already says what to do.
+              It used to be a disabled grey bar whose label was the instruction. Save is the only
+              button in the bar; discarding the report is a quiet link below it, out of the thumb's
+              path. */}
+          {canSave ? (
+            <div className="scout-report-actions">
+              <Button
+                variant="primary"
+                type="button"
+                className="scout-save-button"
+                disabled={saving}
+                onClick={async () => {
+                  // Saving at "AUTO 0:02" is allowed, after a question: a sheet with both answers
+                  // spelled out, not a Save button whose label changes to ask for a second tap.
+                  if (document.documentElement.dataset.scoutTimer === "running") {
+                    const saveNow = await askConfirm({
+                      title: "The match clock is still running",
+                      body: "Save now if the match is over. Keep counting if the robot is still playing.",
+                      confirmLabel: "Save now",
+                      cancelLabel: "Keep counting",
+                      tone: "neutral",
+                    });
+                    if (!saveNow) return;
+                  }
+                  void submit();
+                }}
+              >
+                {saving ? "Saving on this device…" : online ? `Save this ${type}` : "Save on this phone"}
+              </Button>
+            </div>
+          ) : null}
+          {canSave ? (
+            <p className="scout-discard-row">
+              <Button variant="ghost" tone="danger" size="sm" type="button" disabled={saving} onClick={cancelReport}>
+                Discard this report
+              </Button>
             </p>
           ) : null}
+          <ScoutActionHistoryView payload={payload} labels={Object.fromEntries(formFields.map((field) => [field.key, field.label]))} />
           {message ? (
             <p className="form-message" role="status">
               {message}

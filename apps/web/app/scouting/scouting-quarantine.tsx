@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Panel } from "../../components/ui";
+import { askConfirm, Button, Panel } from "../../components/ui";
 import { mediaKindLabel } from "../../lib/scouting/media-downscale";
 import type { QuarantinedItem } from "../../lib/scout-offline";
 import { matchLabelFromKey } from "../../lib/matches/no-next-match";
@@ -61,9 +61,23 @@ export function ScoutQuarantinePanel({
               <Button variant="secondary" type="button" onClick={() => onRetry(item.clientId)}>
                 Retry
               </Button>
-              <button type="button" className="text-button" onClick={() => onDiscard(item.clientId)}>
+              {/* Discarding drops the only copy of a scout's work, so it is red and it asks. */}
+              <Button
+                variant="ghost"
+                tone="danger"
+                type="button"
+                onClick={async () => {
+                  const ok = await askConfirm({
+                    title: "Discard this entry?",
+                    body: `${quarantineItemLabel(item)} is deleted from this device and never syncs. This can't be undone.`,
+                    confirmLabel: "Discard entry",
+                    tone: "destructive",
+                  });
+                  if (ok) onDiscard(item.clientId);
+                }}
+              >
                 Discard
-              </button>
+              </Button>
             </div>
           </li>
         ))}

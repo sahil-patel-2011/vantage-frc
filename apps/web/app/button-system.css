@@ -1,0 +1,59 @@
+/*
+  The button system, in one place, loaded after every other product sheet.
+
+  Four tiers: primary (filled accent, one per screen), secondary (outlined), quiet (ghost or
+  text) and destructive. Destructive is red text on a secondary or ghost button for a row
+  action (Button tone="danger"), and filled red only for the confirm step and a page's danger
+  section (variant="danger"). Height and corner come from the control tokens in system.css;
+  the older sheets that hard-coded 44px / 11px / 12px now read the same tokens.
+
+  Small buttons are compact for a mouse and keep a 44px target for a thumb, the same rule the
+  chips follow.
+*/
+
+body.has-app-shell :is(.app-button, .soft-btn, .primary-action) {
+  min-height: var(--control-h);
+  border-radius: var(--radius-control);
+}
+
+@media (pointer: fine) {
+  body.has-app-shell .app-button.sm {
+    min-height: var(--control-h-sm);
+    padding: var(--control-pad-sm);
+  }
+}
+
+/* Destructive row action: red text, never the accent, never filled. Beats the !important
+   secondary and ghost fills in soft-ui.css by coming later at the same specificity. */
+body.has-app-shell .app-button.tone-danger:not(:disabled):not([aria-disabled="true"]),
+.app-button.tone-danger {
+  color: var(--critical) !important;
+}
+body.has-app-shell .app-button.tone-danger.secondary:not(:disabled):not([aria-disabled="true"]) {
+  border-color: color-mix(in srgb, var(--critical) 38%, var(--line)) !important;
+}
+body.has-app-shell .app-button.tone-danger:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--critical-soft) !important;
+}
+
+/* Legacy text links that delete (`kick-link danger`, `att-link danger`, `cal-link danger` …)
+   are red too, never amber or teal. */
+body.has-app-shell :is(a, button).danger:not(.app-button) {
+  color: var(--critical);
+}
+
+/* A danger section at the foot of a page or dialog: the irreversible actions, apart. */
+.danger-zone {
+  display: grid;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-soft, var(--line));
+}
+
+/* A quiet discard link under a sticky save bar (scouting). */
+.scout-discard-row {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 0;
+}

@@ -252,7 +252,7 @@ export function ActionMenu({
                   className: [
                     "vam-item",
                     separated ? "vam-item-sep" : undefined,
-                    action.needsConfirm ? "vam-item-danger" : undefined,
+                    action.destructive ? "vam-item-danger" : undefined,
                     confirming ? "vam-item-confirming" : undefined,
                   ]
                     .filter(Boolean)
