@@ -828,8 +828,13 @@
 .section-select select:disabled { opacity: .6; cursor: wait; }
 
 @media (max-width: 480px) { .workspace-hub-header .section-select { max-width: 58%; } .workspace-hub-header .section-select select { min-width: 0; width: 100%; } }
-.pick-list-view-action { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+
 .pick-list-workspace .picklist-collab-page { padding: 0; width: 100%; min-width: 0; }
 .pick-list-workspace .picklist-inline-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
 .picklist-inline-header h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
 .picklist-inline-header p { color: var(--muted); font-size: 14px; line-height: 1.6; max-width: 58ch; }
+
+/* Pick list: Save and Check for newer saves at the end of the list's toolbar. */
+.strategy-pick-toolbar-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin-left: auto; }
+.pick-list-view-tabs { margin-bottom: 12px; }
+select.strategy-pool-add { min-height: var(--control-h-sm, 32px); width: auto; }

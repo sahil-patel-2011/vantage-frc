@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { connectionMessage, connectionNextStep, type AiConnection } from "./use-ai-connection";
@@ -20,9 +21,20 @@ export function ConnectionNote({ orgId, connection, connectionHref, onConnect, o
   onConnect: () => void;
   onRetry: () => void;
 }) {
+  // A quick check shows nothing; only one that takes over a second says it is checking.
+  const [slow, setSlow] = useState(false);
+  const checking = Boolean(orgId) && !connection;
+  useEffect(() => {
+    if (!checking) {
+      setSlow(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setSlow(true), 1000);
+    return () => window.clearTimeout(timer);
+  }, [checking]);
   if (!orgId) return null;
   if (!connection) {
-    return <p id={CONNECTION_NOTE_ID} className="ch-composer-note" role="status">Checking your AI connection…</p>;
+    return slow ? <p id={CONNECTION_NOTE_ID} className="ch-composer-note" role="status">Checking your AI connection…</p> : null;
   }
   if (connection.configured !== false) return null;
   const step = connectionNextStep(connection);

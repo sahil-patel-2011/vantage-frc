@@ -96,7 +96,8 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
     expect(workbench).toMatch(/putFeatureSnapshot\("pick-desk"/);
     expect(workbench).toMatch(/AbortSignal\.timeout\(FEATURE_API_TIMEOUT_MS\)/);
     expect(workbench).toMatch(/response\.status === 401 \|\| response\.status === 403/);
-    expect(workbench).toMatch(/Save pick list/);
+    // Save sits with the list it saves, in plain words.
+    expect(workbench).toMatch(/\{saving \? "Saving…" : "Save"\}/);
     expect(workbench).not.toMatch(/\bEPA\b/);
     expect(workbench).not.toMatch(/The Blue Alliance/);
     expect(workbench).not.toMatch(/Sync event metrics/);

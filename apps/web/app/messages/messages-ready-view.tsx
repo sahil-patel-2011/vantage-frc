@@ -67,7 +67,7 @@ function MessagesLoadError({
     },
   );
   return (
-    <EmptyState title={copy.title} description={copy.description} badge="Needs setup" badgeTone="setup">
+    <EmptyState title={copy.title} description={copy.description} badge={copy.badge}>
       {copy.primary ? (
         <Button as="a" variant="primary" href={copy.primary.href}>
           {copy.primary.label}
@@ -405,7 +405,8 @@ export function MessagesReadyView({
                 onClick={() => openConversation(item.id)}
               >
                 <span>
-                  {isArchived(item) ? "Archived" : "Channel"}
+                  {/* Every row here is a channel; only Archived is worth saying. */}
+                  {isArchived(item) ? "Archived" : null}
                   {item.unreadCount > 0 ? (
                     <b className="messages-unread" aria-label={`${item.unreadCount} unread`}>
                       {item.unreadCount > 99 ? "99+" : item.unreadCount}
@@ -466,7 +467,7 @@ export function MessagesReadyView({
 
             {teamChatEnabled && conversations.length === 0 ? (
               <EmptyState
-                soft
+                compact
                 title="No conversations yet"
                 description="Your team channel opens with this team."
               />
@@ -503,7 +504,7 @@ export function MessagesReadyView({
               </EmptyState>
             ) : !active ? (
               <EmptyState
-                soft
+                compact
                 title="Team messages"
                 description="The team channel, or a private message."
               >
@@ -639,7 +640,7 @@ export function MessagesReadyView({
                   ) : null}
                   {messages.length === 0 ? (
                     <EmptyState
-                      soft
+                      compact
                       title="No messages yet"
                       description={
                         active.kind === "team"
@@ -916,7 +917,7 @@ export function MessagesReadyView({
           ) : null}
           {members.length === 0 ? (
             <EmptyState
-              soft
+              compact
               title="No teammates yet"
               description={
                 canManageChannels

@@ -5,7 +5,7 @@ import { hubById, PRODUCT_HUBS } from "./hubs";
 describe("task navigation",()=>{
  it("opens competition to collection and gives forms and assignments canonical destinations",()=>{
    const hub=hubById("competition");expect(hub.defaultTab).toBe("scouting");
-   expect(hubNavigationSections(hub,hub.tabs).map(entry=>entry.id)).toEqual(["scouting","forms","scout-coverage-live","teams","strategy","command","match-checklist"]);
+   expect(hubNavigationSections(hub,hub.tabs).map(entry=>entry.id)).toEqual(["scouting","forms","scout-coverage-live","teams","strategy","picks","command","match-checklist"]);
  });
  it("doesn't expose strategy or picks when their permission root is unavailable",()=>{
    const hub=hubById("competition");const allowed=hub.tabs.filter(tab=>tab.id!=="strategy"&&tab.group!=="strategy");

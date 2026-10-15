@@ -38,9 +38,11 @@ describe("one status line, beside the one publish button", () => {
   it("says Ready to publish, with the device draft, while nothing blocks publishing", () => {
     expect(formStatusLine(base)).toEqual({
       label: "Ready to publish",
-      detail: "Start with these questions or tailor them below. Draft saved on this device.",
+      detail: "Draft saved on this device.",
       tone: "ready",
     });
+    // A fresh form, with nothing edited yet, gets the starting hint instead.
+    expect(formStatusLine({ ...base, draft: null }).detail).toBe("Start with these questions or tailor them below.");
     expect(formStatusLine({ ...base, draft: "unsaved" }).detail).toMatch(/Draft not saved — keep this editor open\.$/);
   });
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { friendlyErrorMessage } from "../../lib/ui/friendly-error";
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { EmptyState, Panel, Button, FormRow, TabBar, SoftBlockSkeleton } from "../../components/ui";
@@ -66,7 +68,7 @@ export default function ScoutingTrustPanel({ orgId, eventKey, initialSection = "
     const params = new URLSearchParams({ orgId });
     if (eventKey) params.set("eventKey", eventKey);
     try {
-      const response = await fetch(`/api/scouting/trust?${params}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+      const response = await fetch(`/api/scouting/trust?${params}`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
       const data: unknown = await response.json().catch(() => null);
       if (!mounted.current || id !== generation.current) return;
       if (!response.ok) {
@@ -78,7 +80,7 @@ export default function ScoutingTrustPanel({ orgId, eventKey, initialSection = "
       if (!next) throw new Error("The quality result did not match this team and event. Refresh to try again.");
       current.current = next; setView(next); setStale(false); setStatus(null); writable.current = true;
     } catch (error) {
-      if (mounted.current && id === generation.current) { setStale(true); setMessage(error instanceof Error ? error.message : "Quality checks could not load. Refresh to try again."); }
+      if (mounted.current && id === generation.current) { setStale(true); setMessage(friendlyErrorMessage(error, "Quality checks could not load. Refresh to try again.")); }
     } finally { if (mounted.current && id === generation.current) { reading.current = false; setRefreshing(false); } }
   }, [eventKey, orgId, scoped]);
   useEffect(() => { mounted.current = true; void load(); return () => { mounted.current = false; ++generation.current; abort.current?.abort(); }; }, [load]);
@@ -125,7 +127,9 @@ export default function ScoutingTrustPanel({ orgId, eventKey, initialSection = "
   if (!view.eventKey) return <EmptyState title="Choose an event" description="Official checks, scout consistency and alliance review use one event's reports."><Button as="a" variant="primary" href={withOrgHref("/competition?tab=command", orgId)}>Choose event</Button></EmptyState>;
   const active = section === "rules" && !view.canManage ? "checks" : section;
   const tabs = [{ id: "checks", label: "Official checks" }, { id: "scouts", label: "Scouts" }, { id: "alliance", label: "Alliance review" }, { id: "impact", label: "Your impact" }, ...(view.canManage ? [{ id: "rules", label: "Form checks" }] : [])];
-  const degraded = view.sourceHealth.filter(source => source.status !== "healthy");
+  // Same rule as everywhere else (lib/reference-health): only degraded, unavailable or failed is a
+  // problem. "ok" or "unknown" used to put "Reference data needs attention" on every visit.
+  const degraded = view.sourceHealth.filter(source => ["degraded", "unavailable", "failed"].includes(source.status.trim().toLowerCase()));
   const checks = view.fieldTrust.reduce((sum, row) => sum + row.checks, 0);
   const conflicts = view.fieldTrust.reduce((sum, row) => sum + row.conflicts, 0);
   const questionChecks = view.fieldTrustBySchema ?? view.fieldTrust.map(row => ({ ...row, schemaId: null,

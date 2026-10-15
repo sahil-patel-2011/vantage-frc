@@ -13,7 +13,7 @@ export function ScoutingCoverageCard({ payload, orgId }: { payload?: WidgetPaylo
   const data = payload?.data ?? {};
   const progress = (label: string, completed: unknown, total: unknown) => {
     if (typeof completed !== "number" || typeof total !== "number" || total <= 0) return null;
-    return <div className="dash-coverage-progress"><div><strong>{label}</strong><span>{completed} / {total}</span></div><progress aria-label={label} value={Math.min(completed,total)} max={total} /></div>;
+    return <div className="dash-coverage-progress"><div><strong>{label}</strong><span>{completed} of {total}</span></div><progress aria-label={label} value={Math.min(completed,total)} max={total} /></div>;
   };
   const href = (tab: string, kind: string) => withOrgHref(`/competition?tab=${tab}&scoutTab=${kind}${hasEvent ? "" : "&mode=free"}`, orgId);
   return <article className="dash-widget app-card dash-scout-card" aria-busy={loading}><header><h2>Scouting</h2></header>
@@ -23,7 +23,7 @@ export function ScoutingCoverageCard({ payload, orgId }: { payload?: WidgetPaylo
     </> : <>
     {hasEvent ? <>
       {progress("Pits visited", data.pitReports, data.scheduledTeams)}
-      {progress("Robots scouted in played matches", data.matchReports, data.matchSlots)}
+      {progress("Robots scouted so far", data.matchReports, data.matchSlots)}
       {data.scheduledTeams === 0 ? <p>No event schedule is available yet. Saved reports will appear as the schedule arrives.</p> : null}
       <p className="app-muted">{typeof data.reports === "number" ? `${data.reports} match reports` : ""}{typeof data.openDisagreements === "number" && data.openDisagreements > 0 ? ` · ${data.openDisagreements} to review` : ""}</p>
     </> : <p>Start with a pit visit, or practice scouting a match.</p>}

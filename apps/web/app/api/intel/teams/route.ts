@@ -3,6 +3,7 @@ import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth
 import type { EventRatingRow } from "../../../../lib/intel/lovat-lookup";
 import { canEditLookupNotes, parseLookupNote } from "../../../../lib/intel/lookup-notes";
 import { searchTeamsRef } from "../../../../lib/intel/team-search";
+import { fetchPublicTeam } from "../../../../lib/intel/public-team";
 import { loadEventOpr } from "../../../../lib/opr/alliance-results";
 
 export async function GET(request: Request) {
@@ -11,14 +12,14 @@ export async function GET(request: Request) {
     const orgId = url.searchParams.get("orgId");
     const query = url.searchParams.get("q")?.trim();
     const teamNumber = Number(url.searchParams.get("team"));
-    return Response.json(
-      await withIntelRequest(orgId, async (client, viewer) => {
+    const result = await withIntelRequest(orgId, async (client, viewer) => {
         const repository = new IntelResearchRepository(client);
         const activeEvent = await repository.getActiveEvent(orgId!);
         if (Number.isInteger(teamNumber) && teamNumber > 0) {
           const intel = await repository.getTeamIntel(orgId!, teamNumber);
-          // Not in the shared team cache: say so (the page explains it), never wait on TBA here.
-          if (!intel) return { team: null, notFound: true, activeEvent };
+          // Not in the shared team cache. The public profile is fetched after the transaction
+          // (below), so no database connection waits on The Blue Alliance.
+          if (!intel) return { team: null, notFound: true as const, activeEvent };
           const [observations, similarTeams, field] = await Promise.all([
             repository.getScoutObservations(orgId!, intel.team.teamKey, true),
             repository.getSimilarTeams(intel.team.teamKey),
@@ -82,8 +83,11 @@ export async function GET(request: Request) {
         }
         // Every team Vantage knows (teams_ref), number first, then names — not only the event's.
         return { teams: await searchTeamsRef(client, orgId!, query), activeEvent };
-      }),
-    );
+    });
+    if ("notFound" in result && result.notFound) {
+      return Response.json({ ...result, publicTeam: await fetchPublicTeam(teamNumber) });
+    }
+    return Response.json(result);
   } catch (error) {
     return intelErrorResponse(error);
   }

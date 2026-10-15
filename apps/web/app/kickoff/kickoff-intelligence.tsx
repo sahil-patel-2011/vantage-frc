@@ -1,5 +1,6 @@
 "use client";
 
+import { canConnectForTeam } from "../../lib/ai/team-roles";
 import { aiConnectionHref } from "../../lib/ai/connection";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -114,6 +115,7 @@ export function IntelligenceSection({
         onIntelMeta?.({ hasIntelligence: false, cadJobId: null });
         return;
       }
+      setError("");
       const nextRecords = data.records ?? [];
       setRecords(nextRecords);
       setRole(data.role ?? "");
@@ -134,7 +136,7 @@ export function IntelligenceSection({
         onIntelMeta?.({ hasIntelligence: false, cadJobId: null });
       }
     } catch {
-      setError("Network error — could not load game intelligence.");
+      setError("Couldn't load the season summary. Check your connection and try again.");
       setIntelStatus("empty");
       onIntelMeta?.({ hasIntelligence: false, cadJobId: null });
     }
@@ -234,13 +236,17 @@ export function IntelligenceSection({
 
       {providerSetup ? (
         <EmptyState
-          soft
-          badge="Needs setup"
-          badgeTone="setup"
+          compact
           title="Team AI isn't connected yet"
-          description="Connect an assistant to generate a season summary from your sources."
+          description={
+            canConnectForTeam(role)
+              ? "Connect an assistant to generate a season summary from your sources."
+              : providerSetup.message || "Ask a mentor to connect team AI to generate a season summary."
+          }
         >
-          <Button as="a" variant="primary" href={aiConnectionHref(orgId)}>Connect AI</Button>
+          {canConnectForTeam(role) ? (
+            <Button as="a" variant="primary" href={aiConnectionHref(orgId)}>Connect AI</Button>
+          ) : null}
         </EmptyState>
       ) : null}
 
@@ -315,10 +321,10 @@ export function IntelligenceSection({
         </label>
         <div className="kick-intel-submit">
           <Button variant="primary" type="submit" disabled={busy || !canGenerate}>
-            {busyKey === "intel-analyze" ? "Generating…" : "Generate summary → Strategy seeds → CAD"}
+            {busyKey === "intel-analyze" ? "Generating…" : "Generate summary"}
           </Button>
           <span className="app-muted">
-            Seeds priorities and opens a CAD brief when generation succeeds. Chat pauses if the team is at its limit.
+            Also suggests strategy priorities and starts a CAD brief.
           </span>
         </div>
       </form>

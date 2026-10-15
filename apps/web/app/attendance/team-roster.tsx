@@ -17,6 +17,8 @@ export function TeamRoster({ orgId }: { orgId: string }) {
   useEffect(() => {
     if (!orgId) return;
     let active = true;
+    setMembers(null);
+    setError(null);
     void fetch(`/api/team/roster?orgId=${encodeURIComponent(orgId)}`, { cache: "no-store" })
       .then(async (response) => {
         const data = (await response.json().catch(() => ({}))) as { members?: Member[]; canManage?: boolean; error?: string };

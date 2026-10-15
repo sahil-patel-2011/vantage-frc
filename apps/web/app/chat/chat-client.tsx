@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { aiConnectionHref } from "../../lib/ai/connection";
 import { ChatConnectDialog } from "./chat-connect-dialog";
 import { ChatSettingsDialog, type ChatMemory, type ChatMemorySettings } from "./chat-settings-dialog";
@@ -237,7 +238,7 @@ export default function ChatClient({
     try {
       const params = new URLSearchParams({ orgId });
       if (threadId) params.set("threadId", threadId);
-      const response = await fetch(`/api/agent?${params}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]), cache: "no-store" });
+      const response = await fetch(`/api/agent?${params}`, { signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]), cache: "no-store" });
       const data = await response.json();
       if (controller.signal.aborted) return;
       if (!response.ok) {
@@ -298,7 +299,8 @@ export default function ChatClient({
   }, [availability, pinned]);
 
   async function newThread(nextScope: "private" | "team", title?: string): Promise<Thread | null> {
-    const label = title?.trim() ? title.trim().slice(0, 60) : nextScope === "team" ? "Team strategy channel" : "Private chat";
+    // Cut at a word, with an ellipsis: "best aut" read like a typo in the history list.
+    const label = title?.trim() ? shortTitle(title.trim(), 60) : nextScope === "team" ? "Team strategy channel" : "Private chat";
     const response = await fetch("/api/agent", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -512,7 +514,8 @@ export default function ChatClient({
                           void load(item.id);
                         }}
                       >
-                        <span>{item.scope === "team" ? "Shared" : "Private"}</span>
+                        {/* Private is the default; only the exception gets a tag. */}
+                        {item.scope === "team" ? <span>Shared</span> : null}
                         {item.title}
                       </button>
                     </li>
@@ -868,4 +871,12 @@ export default function ChatClient({
       ) : null}
     </PageMain>
   );
+}
+
+/** At most `max` characters, ending on a whole word with "…" when it had to cut. */
+export function shortTitle(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;
 }

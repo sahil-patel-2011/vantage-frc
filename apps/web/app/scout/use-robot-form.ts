@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useEffect, useMemo, useState } from "react";
 import type { ScoutSchema } from "@vantage/scouting";
 import { readScoutDraft } from "../../lib/scouting/draft-autosave";
@@ -41,7 +42,7 @@ export function useRobotForm(input: {
     const controller = new AbortController();
     void fetch(`/api/scouting/schemas?${new URLSearchParams({ orgId, schemaId: fetchId })}`, {
       cache: "no-store",
-      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FORM_FETCH_TIMEOUT_MS)]),
+      signal: anySignal([controller.signal, AbortSignal.timeout(FORM_FETCH_TIMEOUT_MS)]),
     })
       .then(async (response) => {
         if (!response.ok) throw new Error(String(response.status));

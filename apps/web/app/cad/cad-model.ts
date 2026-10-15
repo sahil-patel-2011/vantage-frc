@@ -70,9 +70,9 @@ export type ChatResponse = {
 };
 
 export const MODE_LABELS: Record<AgentMode, string> = {
-  simple: "Simple",
-  plan: "Plan",
-  multitask: "Multitask",
+  simple: "Just build",
+  plan: "Plan first",
+  multitask: "Step by step",
 };
 
 export const TASK_STATUS_LABELS: Record<AgentTask["status"], string> = {

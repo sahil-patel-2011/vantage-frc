@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useEffect, useState } from "react";
 import type { IntelScoutNote } from "../../lib/intel/intel-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -35,7 +36,7 @@ export function SharedScoutObservations({
         new URLSearchParams({ orgId, teamKey, eventKey }),
       {
         cache: "no-store",
-        signal: AbortSignal.any([
+        signal: anySignal([
           controller.signal,
           AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
         ]),

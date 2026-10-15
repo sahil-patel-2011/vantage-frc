@@ -648,7 +648,6 @@
   }
 }
 
-
 /* The Required switch sits beside its words (a generic panel label rule stacked it on top). */
 .soft-panel .sfb-check, .sfb-question .sfb-check { display: flex; align-items: flex-start; gap: 10px; }
 /* A question's less-used settings, one line until opened. */
@@ -766,8 +765,7 @@ body.has-app-shell:has(.sfb-page) .soft-island { display: none !important; }
 .sfb-question-select small { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
 .sfb-question-number { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 10px; background: var(--surface-2); color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .sfb-question-select[aria-expanded="true"] .sfb-question-number { color: var(--accent); background: var(--accent-soft); }
-.sfb-question-chevron { color: var(--muted); transition: transform 160ms; }
-.sfb-question-select[aria-expanded="true"] .sfb-question-chevron { transform: rotate(180deg); }
+
 .sfb-question-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .sfb-question-editor { display: grid; gap: 16px; margin-top: 16px; padding-top: 20px; border-top: 1px solid var(--line); }
 .sfb-question-editor[hidden] { display: none; }
@@ -780,7 +778,6 @@ body.has-app-shell:has(.sfb-page) .soft-island { display: none !important; }
   .sfb-question { padding: 12px; }
   .sfb-side .sfb-publish-bar { position: static; }
 }
-@media (prefers-reduced-motion: reduce) { .sfb-question-chevron { transition: none; } }
 
 /* One document column: metadata, workspace controls, then individual questions.
    Responses retain their full table width. No nested card around the question list. */

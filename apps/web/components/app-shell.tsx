@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../lib/abort/any-signal";
 import "../app/product-styles";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -377,7 +378,7 @@ export default function AppShell() {
     let controller: AbortController | null = null;
     const stop = onTeamDataChanged(orgId, () => {
       controller?.abort(); controller = new AbortController();
-      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(5_000)]);
+      const signal = anySignal([controller.signal, AbortSignal.timeout(5_000)]);
       const revision = ++notificationRevision.current;
       void fetch(`/api/notifications?mode=count&orgId=${encodeURIComponent(orgId)}`, { cache: "no-store", signal })
         .then(async response => response.ok ? response.json() : null)
@@ -394,7 +395,7 @@ export default function AppShell() {
     const revision = pinsRevision.current;
     void fetch("/api/navigation/preferences", {
       cache: "no-store",
-      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]),
+      signal: anySignal([controller.signal, AbortSignal.timeout(8_000)]),
     })
       .then(async (response) => (response.ok ? response.json() as Promise<{ tabs?: unknown }> : null))
       .then((data) => {

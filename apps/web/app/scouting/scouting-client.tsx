@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { onTeamDataChanged } from "../../lib/team-data-changed";
 
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
@@ -207,7 +208,7 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     const current = () => bootstrapMounted.current && generation === bootstrapGeneration.current;
     try {
       const response = await fetch(bootstrapUrl, { cache: "no-store",
-        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+        signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
       if (!current()) return;
       if (!response.ok) {
         if ([400, 401, 403, 404].includes(response.status)) { setData(null); setFromCache(false); }
@@ -312,7 +313,7 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
       if (cached) { setData(cached); setFromCache(true); }
       try {
         const response = await fetch(bootstrapUrl, { cache: "no-store",
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+          signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
         if (!current()) return;
         if ([400, 401, 403, 404].includes(response.status)) {
           setData(null); setFromCache(false); setFetchFailed(true); setBootstrapStatus(response.status);
@@ -443,7 +444,7 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     const controller = new AbortController();
     const { key, id } = pinnedForm;
     void fetch(`/api/scouting/schemas?${new URLSearchParams({ orgId, schemaId: id })}`, {
-      cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+      cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
     }).then(async response => {
       if (!response.ok) throw Object.assign(new Error((await apiErrorMessage(response)) ?? "The original form could not be loaded."), { status: response.status });
       const body = await response.json() as { schemas?: ScoutSchema[] };

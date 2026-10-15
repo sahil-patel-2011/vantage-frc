@@ -1,5 +1,7 @@
 "use client";
 
+import { friendlyErrorMessage } from "../../lib/ui/friendly-error";
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
@@ -77,7 +79,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
     if (!id) { setLoading(false); setSnap(null); setFetchFailed(false); setFromCache(false); return; }
     try {
       const response = await fetch(`/api/command?orgId=${encodeURIComponent(id)}`, {
-        cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
+        cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]),
       });
       if (!current()) return;
       if (response.status === 401 || response.status === 403) {
@@ -106,7 +108,7 @@ export default function CommandClient({ embedded = false }: { embedded?: boolean
         setError(""); setFetchFailed(false);
       } else {
         setSnap(null); setFromCache(false); setFetchFailed(true);
-        setError(error instanceof Error ? error.message : "Couldn't refresh Event day. Try again.");
+        setError(friendlyErrorMessage(error, "Couldn't refresh Event day. Try again."));
       }
       setLoading(false);
     }

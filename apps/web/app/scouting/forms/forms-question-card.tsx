@@ -80,20 +80,9 @@ export function FormQuestionCard({
           onClick={onSelect}>
           <span className="sfb-question-number" aria-hidden="true">{index + 1}</span>
           <span><strong>{question.label || "Untitled question"}</strong><small>{ANSWER_KIND_OPTIONS.find(option => option.kind === question.kind)?.label}{question.required ? " · Required" : " · Optional"}</small></span>
-          <span className="sfb-question-chevron" aria-hidden="true">⌄</span>
         </button>
-        {/*
-          Four buttons on every question became two and a menu.
-
-          A seven-question form put twenty-eight controls down the
-          side of the page — Move up, Move down, Duplicate, Remove,
-          seven times over — and the words that told them apart were
-          the same four words each time. Reordering is the one that
-          wants to be immediate, so it stays as a pair of arrows with
-          the sentence in its accessible name; duplicating and
-          removing are occasional and go behind the overflow, where
-          Remove also picks up the menu's confirmation step.
-        */}
+        {/* The whole row opens the question (no separate chevron); the handle reorders by drag or
+            arrow keys, and Duplicate and Remove sit behind More, where Remove asks first. */}
         <div className="sfb-question-actions">
           {canManage ? (
             <button

@@ -589,3 +589,16 @@
 .scout-choice button { transition: transform var(--dur-tap) var(--ease-out), border-color var(--dur-tint) var(--ease-out); }
 .team-view-heading .soft-tab-bar { flex-wrap: nowrap; }
 .team-view-heading p { font-size: 14px; }
+
+/* Quick mode (a link) and Change (a button) on one baseline at one height. */
+.scout-context-line .scout-context-change {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h-sm, 32px);
+  padding: 0 10px;
+  line-height: 1;
+  font: inherit;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.scout-context-line { align-items: center; }

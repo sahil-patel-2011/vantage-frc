@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, Panel, Button } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -129,7 +130,7 @@ export default function ScoutingReconciliationPanel({
     if (eventKey) params.set("eventKey", eventKey);
     try {
       const response = await fetch(`/api/scouting/reconcile?${params}`, { cache: "no-store",
-        signal: AbortSignal.any([abort.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+        signal: anySignal([abort.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
       const data: unknown = await response.json().catch(() => null);
       if (id !== generation.current) return;
       if (!response.ok) {

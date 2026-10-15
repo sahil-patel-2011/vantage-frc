@@ -379,6 +379,7 @@ export function QuickAddForm({
   run,
   addTask,
   onDone,
+  onCancel,
   onCompetitionSaved,
   onCompetitionBusy,
   initialCompetitionKey,
@@ -397,6 +398,8 @@ export function QuickAddForm({
   /** Creates a team task through /api/todos. Resolves false if it failed. */
   addTask: (input: { title: string; dueOn: string; subteamId: string | null }) => Promise<boolean>;
   onDone?: () => void;
+  /** Closes the dialog without adding anything. */
+  onCancel?: () => void;
   onCompetitionSaved?: () => void;
   onCompetitionBusy?: (busy: boolean) => void;
   initialCompetitionKey?: string | null;
@@ -508,22 +511,28 @@ export function QuickAddForm({
       {/* The dialog's title names the form; a second heading here read as two titles. */}
       <div className="tc-quick-head">{entrySwitch}</div>
       <div className="tc-quick-grid">
-        <input
-          value={title}
-          disabled={busy || savingTask}
-          required
-          placeholder={entry === "task" ? "e.g. Order the swerve modules" : "e.g. Tuesday drive practice"}
-          aria-label={entry === "task" ? "Task title" : "Event title"}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+        {/* Every field has its label above it, at one control height (only Starts had one). */}
+        <label className="inline-field-label tc-quick-title">
+          {entry === "task" ? "Task" : "Title"}
+          <input
+            value={title}
+            disabled={busy || savingTask}
+            required
+            placeholder={entry === "task" ? "e.g. Order the swerve modules" : "e.g. Tuesday drive practice"}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </label>
         {entry === "event" ? (
-          <select value={kind} disabled={busy} aria-label="Kind" onChange={(e) => setKind(e.target.value as SubteamEventKind)}>
-            {SUBTEAM_EVENT_KINDS.map((value) => (
-              <option key={value} value={value}>
-                {SUBTEAM_EVENT_KIND_LABELS[value]}
-              </option>
-            ))}
-          </select>
+          <label className="inline-field-label">
+            Type
+            <select value={kind} disabled={busy} onChange={(e) => setKind(e.target.value as SubteamEventKind)}>
+              {SUBTEAM_EVENT_KINDS.map((value) => (
+                <option key={value} value={value}>
+                  {SUBTEAM_EVENT_KIND_LABELS[value]}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
         {entry === "event" ? (
           <label className="inline-field-label">
@@ -550,19 +559,21 @@ export function QuickAddForm({
             />
           </label>
         )}
-        <select
-          value={subteamId}
-          disabled={busy || savingTask}
-          aria-label="Subteam"
-          onChange={(e) => setSubteamId(e.target.value)}
-        >
-          <option value="">Whole team</option>
-          {subteams.map((st) => (
-            <option key={st.id} value={st.id}>
-              {st.name}
-            </option>
-          ))}
-        </select>
+        <label className="inline-field-label">
+          For
+          <select
+            value={subteamId}
+            disabled={busy || savingTask}
+            onChange={(e) => setSubteamId(e.target.value)}
+          >
+            <option value="">Whole team</option>
+            {subteams.map((st) => (
+              <option key={st.id} value={st.id}>
+                {st.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {/* A task is due on a day, not at an hour, so it cannot clash with one. */}
       <ConflictNote events={events} startsAt={entry === "event" ? startsAt : ""} endsAt={endsAt} subteamId={subteamId} />
@@ -594,9 +605,17 @@ export function QuickAddForm({
           <a href="/todos">Tasks</a>.
         </p>
       ) : null}
-      <div className="tc-quick-actions"><Button variant="primary" type="submit" disabled={ busy || savingTask || !title.trim() || (entry === "task" ? !dueOn : !startsAt) }>
-        {savingTask ? "Adding…" : entry === "task" ? "Add task" : "Add event"}
-      </Button></div>
+      {/* Cancel and Add, with the main button at the trailing edge. */}
+      <div className="tc-quick-actions">
+        {onCancel ? (
+          <Button variant="secondary" type="button" disabled={busy || savingTask} onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : null}
+        <Button variant="primary" type="submit" disabled={ busy || savingTask || !title.trim() || (entry === "task" ? !dueOn : !startsAt) }>
+          {savingTask ? "Adding…" : entry === "task" ? "Add task" : "Add event"}
+        </Button>
+      </div>
       {added ? (
         <p className="tc-added" role="status">
           {added}

@@ -1,4 +1,5 @@
 "use client";
+import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -54,7 +55,7 @@ export function useReviewData(orgId: string, eventKey?: string) {
     const query = new URLSearchParams({ orgId });
     if (eventKey) query.set("eventKey", eventKey);
     try {
-      const response = await fetch(`/api/scout-coverage-live?${query}`, { cache: "no-store", signal: AbortSignal.any([abort.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
+      const response = await fetch(`/api/scout-coverage-live?${query}`, { cache: "no-store", signal: anySignal([abort.signal, AbortSignal.timeout(FEATURE_API_TIMEOUT_MS)]) });
       const data: unknown = await response.json().catch(() => null);
       if (!valid()) return;
       if (!response.ok) {

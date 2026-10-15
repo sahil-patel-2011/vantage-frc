@@ -5,6 +5,7 @@ import { EmptyState, Button } from "../../components/ui";
 import { WhyPanel } from "../../components/why-panel";
 import { bugbotScanMetaLine } from "../../lib/bugbot";
 import { BUGBOT_INSTRUCTION_MAX } from "../../lib/cockpit/prefs";
+import { announceCockpitPrefs } from "../../lib/cockpit/use-cockpit-prefs";
 import type { CodeReadyViewProps } from "./code-view-props";
 
 export type CodeBugbotPanelProps = Pick<
@@ -105,48 +106,55 @@ export function CodeBugbotPanel({
   restoreDismissal,
   history,
 }: CodeBugbotPanelProps) {
+  /** Saves one scan setting with the rest of this person's saved Code preferences. */
+  const saveCockpit = (patch: Partial<CodeBugbotPanelProps["cockpit"]>) => {
+    const next = { ...cockpit, includeScanTests, bugbotInstructions: instructions, defaultBugbotMode: bugbotMode, ...patch };
+    // In memory first, so the control shows the new value and the next PR request uses it.
+    announceCockpitPrefs(next);
+    void fetch("/api/account/cockpit", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ cockpit: next }),
+    }).catch(() => undefined);
+  };
   return (
       <section className="cdc-workbench" id="bugbot" aria-label="AI Bugbot">
         <article className="cdc-panel">
           <header>
             <div>
-              <span className="app-badge">{bugbotMode === "ultra" ? "Bugbot Ultra" : "Subscription"}</span>
-              <h2>AI Bugbot</h2>
+              <h2>Repo scan</h2>
               <p className="app-muted" style={{ margin: "4px 0 0" }}>
-                Connect a GitHub repo, scan robot-code, then optionally propose a human-approved diff and recheck.
-                Findings must quote the source. Never deploys, never pushes.
+                Scan a GitHub repo for robot-code bugs. Every finding quotes the line it is about; nothing is pushed
+                without you.
                 {bugbotScanMetaLine(bugbotMeta ?? {})}
               </p>
             </div>
           </header>
 
-          <div className="cdc-bugbot-modes" role="group" aria-label="Bugbot billing mode">
-            <button
-              type="button"
-              className={bugbotMode === "subscription" ? "is-active" : undefined}
-              disabled={busy}
-              onClick={() => setBugbotMode("subscription")}
-            >
-              <strong>On your subscription</strong>
-              <span>Plan allowance or your own keys</span>
-            </button>
-            <button
-              type="button"
-              className={bugbotMode === "ultra" ? "is-active" : undefined}
-              disabled={busy}
-              onClick={() => setBugbotMode("ultra")}
-            >
-              <strong>Bugbot Ultra</strong>
-              <span>
-                ${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} scan · ${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} fix · $
-                {BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} recheck
-              </span>
-              {/* Say who pays (A5-26): a student saw prices with no word on whose money it is. */}
-              <span>Charged to your team&apos;s Vantage credits, within the limits your team set.</span>
-            </button>
-          </div>
-
-          <div className="cdc-cockpit">
+          {/* One quiet group instead of a badge, two priced plan cards and loose settings: most scans
+              never change these. Price shows only on the option that costs money. */}
+          <details className="cdc-scan-settings">
+            <summary data-disclosure>Scan settings</summary>
+            <label>
+              Runs on
+              <select
+                value={bugbotMode}
+                disabled={busy}
+                onChange={(event) => {
+                  const next = event.target.value === "ultra" ? "ultra" : "subscription";
+                  setBugbotMode(next);
+                  saveCockpit({ defaultBugbotMode: next });
+                }}
+              >
+                <option value="subscription">Your team&apos;s AI keys</option>
+                <option value="ultra">Vantage (paid per scan from team credits)</option>
+              </select>
+              <small className="app-muted">
+                {bugbotMode === "ultra"
+                  ? `$${BUGBOT_ULTRA_PRICES_USD.scan.toFixed(2)} a scan, $${BUGBOT_ULTRA_PRICES_USD.fix.toFixed(2)} a fix, $${BUGBOT_ULTRA_PRICES_USD.recheck.toFixed(2)} a recheck, within the limits your team set.`
+                  : "Uses your plan or the keys in AI keys."}
+              </small>
+            </label>
             <label className="appearance-check">
               <input
                 type="checkbox"
@@ -155,16 +163,19 @@ export function CodeBugbotPanel({
                 onChange={(event) => {
                   const next = event.target.checked;
                   setIncludeScanTests(next);
-                  void fetch("/api/account/cockpit", {
-                    method: "PUT",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify({
-                      cockpit: { ...cockpit, includeScanTests: next, bugbotInstructions: instructions },
-                    }),
-                  });
+                  saveCockpit({ includeScanTests: next });
                 }}
               />
-              Include our tests in the repo scan
+              Include our tests in the scan
+            </label>
+            <label className="appearance-check">
+              <input
+                type="checkbox"
+                checked={cockpit.confirmWrites}
+                disabled={busy}
+                onChange={(event) => saveCockpit({ confirmWrites: event.target.checked })}
+              />
+              Ask before opening a pull request
             </label>
             <label>
               Custom instructions
@@ -173,25 +184,15 @@ export function CodeBugbotPanel({
                 maxLength={BUGBOT_INSTRUCTION_MAX}
                 rows={2}
                 disabled={busy}
-                placeholder="Short notes Bugbot must follow. Empty is fine."
+                placeholder="Short notes the scan must follow. Empty is fine."
                 onChange={(event) => setInstructions(event.target.value)}
                 onBlur={() => {
                   if (instructions === cockpit.bugbotInstructions) return;
-                  void fetch("/api/account/cockpit", {
-                    method: "PUT",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify({
-                      cockpit: { ...cockpit, bugbotInstructions: instructions, includeScanTests },
-                    }),
-                  });
+                  saveCockpit({ bugbotInstructions: instructions });
                 }}
               />
             </label>
-            <p className="app-muted" style={{ margin: 0, fontSize: 12 }}>
-              On your plan, scans use your team&apos;s or your own key from{" "}
-              <a href="/team/ai-keys">AI keys</a>. Ultra runs on Vantage and is paid per scan from your team&apos;s credits.
-            </p>
-          </div>
+          </details>
 
           {!orgId ? (
             <EmptyState

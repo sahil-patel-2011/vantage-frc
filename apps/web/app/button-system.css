@@ -57,3 +57,17 @@ body.has-app-shell :is(a, button).danger:not(.app-button) {
   justify-content: center;
   margin: 4px 0 0;
 }
+
+/* Badges read as words, not shouted codes: sentence case like the rest of the app ("Needs setup",
+   not NEEDS SETUP). Setup is a calm accent-tinted note, not the amber of a warning; the amber
+   stays for demo data, which is a real caution. Loaded last, so this outranks styles.css and
+   soft-ui.css at the same specificity. */
+.app-badge {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.app-badge.setup,
+body.has-app-shell .app-badge.setup {
+  color: color-mix(in srgb, var(--accent) 78%, var(--ink));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}

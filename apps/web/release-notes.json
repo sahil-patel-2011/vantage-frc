@@ -2,6 +2,23 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2400,
+      "date": "2026-10-15",
+      "headline": "Fewer buttons, and errors only when something failed",
+      "changes": [
+        "CAD starts with one step, Link an Onshape document; the assistant appears once a document is linked",
+        "Pick list is its own menu item, with Ranking and Discussion tabs, one Add to… menu per team and Save beside the list",
+        "Code's repo scan keeps its settings in one Scan settings group instead of price cards and badges",
+        "Deleting a lesson draft, an attendance event or a scouting report is in a More menu and asks first",
+        "Settings pages have one way back, the Calendar dialog has labels and a Cancel button, and Home appears once in the sidebar",
+        "Looking up a team Vantage hasn't synced shows its public profile instead of a dead end",
+        "Older iPads no longer see Couldn't reach Vantage when the connection is fine",
+        "Setup prompts are calm notes, not warnings, and Strategy no longer shows a fake Choose your team screen when the server hiccups",
+        "Ask AI opens ready to type when AI already works for your team",
+        "The Appearance page says what your device is set to, and the logo stays visible in dark mode"
+      ]
+    },
+    {
       "pr": 2399,
       "date": "2026-10-15",
       "headline": "Faster first load",

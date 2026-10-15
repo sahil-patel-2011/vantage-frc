@@ -222,12 +222,22 @@ export default function MessagesClient({
     setConversations(list);
   }, []);
 
+  // The team the page is on now: an inbox (or its error) for the team just left is dropped
+  // instead of landing on the new team's list.
+  const currentOrg = useRef(orgId);
+  useEffect(() => {
+    currentOrg.current = orgId;
+  }, [orgId]);
+  const stale = () => currentOrg.current !== orgId;
+
   const loadInbox = useCallback(async () => {
     try {
       const response = await fetch(`/api/messages?orgId=${encodeURIComponent(orgId)}`);
       const data = await response.json();
+      if (stale()) return null;
       if (!response.ok) {
         const cached = await getFeatureSnapshot<{ conversations: Conversation[] }>("chat", orgId);
+        if (stale()) return null;
         if (cached?.data) {
           applyInbox(cached.data.conversations);
           setFromCache(true);
@@ -258,7 +268,9 @@ export default function MessagesClient({
       await putFeatureSnapshot("chat", orgId, { conversations: data.conversations ?? [] });
       return data.conversations as Conversation[];
     } catch {
+      if (stale()) return null;
       const cached = await getFeatureSnapshot<{ conversations: Conversation[] }>("chat", orgId);
+      if (stale()) return null;
       if (cached?.data) {
         applyInbox(cached.data.conversations);
         setFromCache(true);

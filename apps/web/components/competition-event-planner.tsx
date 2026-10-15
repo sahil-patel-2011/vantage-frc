@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "./ui";
 import { competitionDay, dateSchedule, plannedLastDay, validateCompetitionDraft, type PlannedCompetition } from "../lib/events/event-planning";
@@ -57,7 +58,7 @@ export function CompetitionEventPlanner({ orgId, initialEventKey, onChanged, onA
       try {
         const params = new URLSearchParams({ orgId, year: String(year), q: query, scope });
         if (query.trim()) params.set("allSeasons", "1");
-        const response = await fetch(`/api/context/event?${params}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]), cache: "no-store" });
+        const response = await fetch(`/api/context/event?${params}`, { signal: anySignal([controller.signal, AbortSignal.timeout(10000)]), cache: "no-store" });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error ?? "Couldn't load events. Try again.");
         if (epoch === generation.current) {
@@ -107,7 +108,7 @@ export function CompetitionEventPlanner({ orgId, initialEventKey, onChanged, onA
     setRefreshingDirectory(true); setDirectoryMessage("");
     const epoch = directoryEpoch.current;
     try {
-      const response = await fetch("/api/context/event/directory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orgId, year }), signal: AbortSignal.any([controller.signal, AbortSignal.timeout(45000)]) });
+      const response = await fetch("/api/context/event/directory", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ orgId, year }), signal: anySignal([controller.signal, AbortSignal.timeout(45000)]) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Published events couldn't be refreshed.");
       if (epoch !== directoryEpoch.current) return;

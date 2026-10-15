@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../../lib/abort/any-signal";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, PageHeader, Panel } from "../../../components/ui";
 import {
@@ -31,7 +32,7 @@ export default function AdminSupportClient() {
     if (status) params.set("status", status);
     if (q.trim()) params.set("q", q.trim());
     try {
-    const response = await fetch(`/api/admin/support${params.toString() ? `?${params}` : ""}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8_000)]) });
+    const response = await fetch(`/api/admin/support${params.toString() ? `?${params}` : ""}`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(8_000)]) });
     const data = await response.json();
     if (controller.signal.aborted || loadRequest.current !== controller) return;
     if (!response.ok) {

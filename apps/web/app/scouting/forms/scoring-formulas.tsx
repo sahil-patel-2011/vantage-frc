@@ -1,5 +1,6 @@
 "use client";
 
+import { anySignal } from "../../../lib/abort/any-signal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { evaluateObservedFormula, isFormulaExpression, isFormulaDraftExpression, isUnseenFormulaAnswer, formulaFields, type FormulaExpression, type FieldDefinition, type ScoutSchema } from "@vantage/scouting";
 import { Button, FormRow, Modal } from "../../../components/ui";
@@ -110,7 +111,7 @@ export function ScoringFormulas({ open, onClose, orgId, userId, schema, canManag
     if (!open) return;
     const controller = new AbortController();
     setLoading(true); setLoadError("");
-    void fetch(`/api/scouting/formulas?${new URLSearchParams({ orgId })}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]) })
+    void fetch(`/api/scouting/formulas?${new URLSearchParams({ orgId })}`, { cache: "no-store", signal: anySignal([controller.signal, AbortSignal.timeout(15_000)]) })
       .then(async response => {
         if (!response.ok) throw new Error((await apiErrorMessage(response)) ?? "Could not load scoring formulas.");
         const body = await response.json() as { formulas?: SavedFormula[] };

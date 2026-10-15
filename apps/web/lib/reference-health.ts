@@ -155,12 +155,17 @@ export function evaluateDataSourceHealth(input: {
     };
   });
 
+  // A source that succeeded after its last failure has recovered: its leftover lastError is history.
+  // One resource with a bad ETag among hundreds is not the source being down either. Both used to
+  // put "Last saved data" and the degraded banner over live data.
+  const recovered = (source: ReferenceSourceHealth) =>
+    Boolean(source.lastSuccessAt) &&
+    (!source.lastFailureAt || Date.parse(source.lastSuccessAt!) > Date.parse(source.lastFailureAt));
   const unhealthy = sources.some(
     (source) =>
       isUnhealthyStatus(source.status) ||
       source.consecutiveFailures > 0 ||
-      Boolean(source.lastError) ||
-      source.erroredResources > 0,
+      (Boolean(source.lastError) && !recovered(source)),
   );
   const unavailable = sources.some((source) => source.status.trim().toLowerCase() === "unavailable");
   const newestSuccess = sources
@@ -227,7 +232,7 @@ export async function loadDataSourceHealth(
 }
 
 async function readHealthInputs(client: PoolClient): Promise<HealthInputs> {
-  let cacheHasRows = false;
+  let cacheHasRows: boolean;
   try {
     const cache = await client.query<{ ok: boolean }>(
       `SELECT EXISTS(SELECT 1 FROM matches_ref LIMIT 1)
@@ -236,7 +241,9 @@ async function readHealthInputs(client: PoolClient): Promise<HealthInputs> {
     );
     cacheHasRows = Boolean(cache.rows[0]?.ok);
   } catch {
-    // stays false
+    // Unknown is not "empty": a failed check used to claim no saved rankings exist and raise the
+    // "Rankings and schedule unavailable" banner over a full cache.
+    cacheHasRows = true;
   }
 
   let healthRows: HealthRow[] = [];

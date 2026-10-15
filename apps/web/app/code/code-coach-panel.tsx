@@ -52,20 +52,17 @@ export function CodeCoachPanel({
           <article className="cdc-panel">
             <header>
               <div>
-                <span className="app-badge good">Local review</span>
-                <h2>Paste / edit source</h2>
+                <h2>Your code</h2>
               </div>
             </header>
             {!hasSource ? (
               <EmptyState
-                soft
-                badge="Empty"
-                badgeTone="setup"
-                title="No source yet"
-                description="Paste subsystem code, or load the teaching sample. Findings stay empty until a review matches real rules."
+                compact
+                title="Paste a robot-code file"
+                description="Or try the teaching sample to see what a review finds."
               >
                 <Button variant="primary" type="button" onClick={() => { setContent(CODE_COACH_SAMPLE); setReview(null); setProposal(null); setMessage(null); }}>
-                  Load teaching sample
+                  Use the teaching sample
                 </Button>
               </EmptyState>
             ) : null}
@@ -103,12 +100,13 @@ export function CodeCoachPanel({
           <article className="cdc-panel">
             <header>
               <div>
-                <span className={`app-badge ${review?.riskLevel === "high" ? "danger" : review ? "" : "setup"}`}>
-                  {review?.riskLevel ?? "idle"} risk
-                </span>
-                <h2>Coach findings</h2>
+                <h2>Findings</h2>
               </div>
-              <strong>{review?.risks.length ?? 0}</strong>
+              {review ? (
+                <span className={`app-badge ${review.riskLevel === "high" ? "danger" : ""}`}>
+                  {review.riskLevel === "high" ? "High risk" : review.riskLevel === "medium" ? "Medium risk" : review.riskLevel === "low" ? "Low risk" : `${review.risks.length} found`}
+                </span>
+              ) : null}
             </header>
 
             {review ? (
@@ -157,11 +155,9 @@ export function CodeCoachPanel({
               )
             ) : (
               <EmptyState
-                soft
-                badge="Idle"
-                badgeTone="setup"
+                compact
                 title="No review yet"
-                description="Paste robot code or load the sample, then run a review. Nothing is ever pushed to a robot."
+                description="Run a review to see findings here. Nothing is ever pushed to a robot."
               />
             )}
 
@@ -178,8 +174,7 @@ export function CodeCoachPanel({
           <article className="cdc-panel">
             <header>
               <div>
-                <span className="app-badge good">Policy</span>
-                <h2>Required checks</h2>
+                <h2>Before it goes on the robot</h2>
               </div>
             </header>
             <ol className="cdc-checks">
@@ -195,7 +190,7 @@ export function CodeCoachPanel({
               ))}
             </ol>
             <div className="cdc-proposal">
-              <span>Output state</span>
+              <span>Suggested change</span>
               <strong>
                 {proposal
                   ? `${proposal.executionState} · human approval required`

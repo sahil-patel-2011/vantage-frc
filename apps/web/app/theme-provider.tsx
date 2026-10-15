@@ -103,6 +103,9 @@ function applyPreference(pref: ThemePreference) {
   localStorage.setItem(PREF_STORAGE_KEY, pref);
   document.cookie = `vantage-theme-pref=${pref}; Path=/; Max-Age=31536000; SameSite=Lax`;
   applyResolvedTheme(resolveTheme(pref));
+  // An open picker follows every settled choice, including the account's copy arriving after it
+  // mounted; it used to keep showing System while the page had gone dark from the saved choice.
+  window.dispatchEvent(new CustomEvent("vantage-theme-pref", { detail: pref }));
 }
 
 /** This device's theme choice (or the default when it never chose), for pickers outside Account. */
@@ -116,7 +119,6 @@ export function deviceThemePreference(): ThemePreference {
  */
 export function applyThemeChoice(pref: ThemePreference) {
   applyPreference(pref);
-  window.dispatchEvent(new CustomEvent("vantage-theme-pref", { detail: pref }));
 }
 
 /** Paint the document in `theme` without saving anything as a choice. */
@@ -129,6 +131,8 @@ function showDocumentTheme(theme: Theme) {
 export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
   const [preference, setPreference] = useState<ThemePreference>("system");
   const [theme, setTheme] = useState<Theme>("light");
+  // What System would show: the device's own setting, not whatever the page is painted in.
+  const [deviceTheme, setDeviceTheme] = useState<Theme>("light");
 
   useEffect(() => {
     const pref = readStoredPreference();
@@ -136,6 +140,10 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
     const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
     setTheme(current);
     syncBrowserColor();
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const syncDevice = () => setDeviceTheme(mq.matches ? "dark" : "light");
+    syncDevice();
+    mq.addEventListener("change", syncDevice);
 
     const syncTheme = (event: Event) => setTheme((event as CustomEvent<Theme>).detail);
     const syncPref = (event: Event) => {
@@ -150,13 +158,13 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
     return () => {
       window.removeEventListener("vantage-theme", syncTheme);
       window.removeEventListener("vantage-theme-pref", syncPref);
+      mq.removeEventListener("change", syncDevice);
     };
   }, []);
 
   async function choose(next: ThemePreference) {
     setPreference(next);
     applyPreference(next);
-    window.dispatchEvent(new CustomEvent("vantage-theme-pref", { detail: next }));
     if (next === "system") return;
     try {
       await fetch("/api/theme", {
@@ -178,7 +186,7 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
           choices={[
             { value: "light", label: "Light", icon: "☀" },
             { value: "dark", label: "Dark", icon: "☾" },
-            { value: "system", label: "System", icon: "◐", hint: `Now ${theme}` },
+            { value: "system", label: "System", icon: "◐", hint: `Your device is ${deviceTheme}` },
           ]}
           onChange={next => void choose(next)} />
       </fieldset>
