@@ -35,7 +35,7 @@ export function SignInIdentityStep({
   onPasswordSubmit,
   onPasswordChange,
   onCodeChange,
-  invited = false,
+  emailTried = false,
 }: {
   googleAvailable: boolean;
   emailAvailable: boolean;
@@ -62,8 +62,12 @@ export function SignInIdentityStep({
   onCodeChange: (code: string) => void;
   /** Signing in to accept an invitation: no "join with a team code" detour. */
   invited?: boolean;
+  /** Send code was pressed: say what is wrong with the address, even a short one. */
+  emailTried?: boolean;
 }) {
-  const entryHint = email.trim().length > 3 ? emailEntryHint(email) : null;
+  const entryHint = emailTried || email.trim().length > 3
+    ? (email.trim() ? emailEntryHint(email) : "Enter your email address.")
+    : null;
   return (
     <>
       {googleAvailable ? (
@@ -71,10 +75,9 @@ export function SignInIdentityStep({
           <button className="signin-google" type="button" onClick={onGoogle} disabled={working}>
             <GoogleMark />
             {googleButtonLabel(busy)}
-            {preferred === "google" ? <em className="signin-last-used">Last used</em> : null}
           </button>
           <div className="signin-or" role="separator">
-            <span>{passwordPanel === "password" ? "or use your password" : passwordPanel === "reset" ? "or reset your password" : "or use an email code"}</span>
+            <span>or</span>
           </div>
         </>
       ) : null}
@@ -117,7 +120,9 @@ export function SignInIdentityStep({
               </small>
             ) : null}
           </label>
-          <button className="signin-submit" disabled={!emailAvailable || working || !isLikelyEmail(email) || emailCooldown > 0}>
+          {/* Always tappable: a missing or unfinished address is said under the field, not by
+              greying the button out. */}
+          <button className="signin-submit" disabled={!emailAvailable || working || emailCooldown > 0}>
             {emailCooldown > 0 ? `Try again in ${formatCooldown(emailCooldown)}` : emailSubmitLabel(busy)}
           </button>
           {/* Sending can take several seconds; a small grey "Sending…" looked stuck. */}
@@ -184,10 +189,6 @@ export function SignInIdentityStep({
             </p>
           ) : null}
         </form>
-      )}
-      {/* The other way in comes after the main one, as on Apple and Google sign-in pages. */}
-      {invited ? null : (
-        <p className="signin-email-hint">Verify your email first. You can enter your team’s six-digit join code next.</p>
       )}
     </>
   );

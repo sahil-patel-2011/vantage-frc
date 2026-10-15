@@ -41,6 +41,8 @@ const PUBLIC_PAGES = new Set([
   "/terms",
   "/signin",
   "/sign-in",
+  // Locked out: a request a person on the Vantage team reviews by hand (no session to have).
+  "/account-recovery",
   // Precached navigation shell for cold offline loads (CD #10).
   "/offline",
   // Token-gated email unsubscribe (no session).
@@ -59,6 +61,8 @@ const PUBLIC_PREFIXES = [
   "/api/handoff/accept",
   // Sign-in with a recovery email: sends and checks its own codes, then sets the session.
   "/api/recovery",
+  // Account recovery requests: emailed to the Vantage inboxes for manual review; rate limited.
+  "/api/account-recovery",
   "/api/invites/preview",
   "/api/teams/join",
   "/api/waitlist",

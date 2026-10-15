@@ -20,6 +20,7 @@ describe("pathnameUsesAppShell", () => {
     expect(pathnameUsesAppShell("/pricing")).toBe(false);
     expect(pathnameUsesAppShell("/features/cad")).toBe(false);
     expect(pathnameUsesAppShell("/signin")).toBe(false);
+    expect(pathnameUsesAppShell("/account-recovery")).toBe(false);
     expect(pathnameUsesAppShell("/sign-in")).toBe(false);
     expect(pathnameUsesAppShell("/offline")).toBe(false);
   });
