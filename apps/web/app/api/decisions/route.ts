@@ -60,7 +60,8 @@ export async function GET(request: Request) {
   const seasonYear = seasonParam ? seasonFrom(seasonParam) : null;
 
   try {
-    const view = await withRls({ userId: session.user.id }, (client) =>
+    // The team is in the RLS context when the page names it (it resolves the same one otherwise).
+    const view = await withRls({ userId: session.user.id, orgId: requestedOrg ?? undefined }, (client) =>
       computeDecisionsView(client, { userId: session.user.id, requestedOrg, seasonYear }),
     );
     return Response.json(view);

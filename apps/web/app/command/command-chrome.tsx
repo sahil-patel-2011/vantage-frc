@@ -87,7 +87,7 @@ export function EventDayShell({
     return (
       <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
         {embedded ? null : (
-          <PageHeader breadcrumbs="Competition / Event Day" title="Command" description="Next match and pit cues.">
+          <PageHeader breadcrumbs="Competition / Event Day" title="Event day" description="Next match and pit cues.">
             {related}
           </PageHeader>
         )}
@@ -104,7 +104,7 @@ export function EventDayShell({
     return (
       <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
         {embedded ? null : (
-          <PageHeader breadcrumbs="Competition / Event Day" title="Command" description="Next match and pit cues.">
+          <PageHeader breadcrumbs="Competition / Event Day" title="Event day" description="Next match and pit cues.">
             {related}
           </PageHeader>
         )}
@@ -131,7 +131,7 @@ export function EventDayShell({
       {embedded ? null : (
         <PageHeader
           breadcrumbs="Competition / Event Day"
-          title="Command"
+          title="Event day"
           description="Set the event you’re at so match times can show."
         >
           {related}

@@ -92,13 +92,18 @@ export async function GET(request: Request) {
                FROM org_conversation_participants
                WHERE user_id = $2
              )
-             SELECT count(*)::text AS count
-             FROM org_messages m
-             INNER JOIN visible v ON v.id = m.conversation_id
-             LEFT JOIN reads r ON r.conversation_id = m.conversation_id
-             WHERE m.deleted_at IS NULL
-               AND m.author_user_id <> $2
-               AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)`,
+             -- The badge reads "99+" past 99, so stop counting at 100: a member who never opened
+             -- the team channel made this count every message the team ever sent, on every page.
+             SELECT count(*)::text AS count FROM (
+               SELECT 1
+               FROM org_messages m
+               INNER JOIN visible v ON v.id = m.conversation_id
+               LEFT JOIN reads r ON r.conversation_id = m.conversation_id
+               WHERE m.deleted_at IS NULL
+                 AND m.author_user_id <> $2
+                 AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)
+               LIMIT 100
+             ) capped`,
             [orgId, session.user.id],
           );
           return Number(unreadMessages.rows[0]?.count ?? 0);

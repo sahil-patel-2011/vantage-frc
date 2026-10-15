@@ -47,6 +47,7 @@ import {
   scoutingOfflineBannerDetail,
 } from "../../lib/scouting/scouting-related";
 import { attachScoutingMedia } from "./scouting-media-actions";
+import { ensureStarterForms } from "./scouting-starter-forms";
 import {
   lastMatchNote,
   myReports,
@@ -850,15 +851,8 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     const generation = bootstrapGeneration.current;
     const current = () => bootstrapMounted.current && generation === bootstrapGeneration.current;
     try {
-      const response = await fetch("/api/scouting/schemas", { method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ orgId, action: "ensure_defaults", ...(requestedEventKey ? { eventKey: requestedEventKey } : {}) }),
-        signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS) });
-      const body = (await response.json().catch(() => null)) as (Bootstrap & { error?: string }) | null;
+      const body = await ensureStarterForms(orgId, requestedEventKey);
       if (!current()) return;
-      if (!response.ok) throw new Error(body?.error ?? "Starter forms could not be created.");
-      if (!body || !bootstrapForEvent(body, requestedEventKey) || !Array.isArray(body.schemas) || !["match", "pit"].every(type => body.schemas.some(schema => schema && schema.type === type && typeof schema.orgId === "string" && schema.orgId.toLowerCase() === orgId.toLowerCase()))) {
-        throw new Error("Starter form creation could not be confirmed. Refresh to check the saved forms before retrying.");
-      }
       setData(body); setFromCache(false);
       setMessage("Starter match and pit forms are ready.");
       void cacheLiveScouting(orgId, body).then(cacheNotice => { if (current() && cacheNotice) setMessage(previous => previous === "Starter match and pit forms are ready." ? `Starter forms are ready. ${cacheNotice}` : previous); });

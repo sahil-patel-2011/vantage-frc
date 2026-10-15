@@ -1,6 +1,6 @@
 "use client";
 
-import { availableSeasonYears, lastPublishedPack, packForYear } from "@vantage/game-year";
+import { availableSeasonYears, currentSeasonYear, lastPublishedPack, packForYear } from "@vantage/game-year";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -11,7 +11,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { NextActionsPanel, useHubEmbed } from "./kickoff-chrome";
-import { IntelligenceSection } from "./kickoff-intelligence";
+import { IntelligenceSection, prefetchKickoffIntelligence, type KickoffIntelPrefetch } from "./kickoff-intelligence";
 import type { ActionBody } from "./kickoff-model";
 import { PrioritySection } from "./kickoff-priority";
 import { NextSeasonSection } from "./kickoff-next-season";
@@ -54,6 +54,8 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
   const [hasIntelligence, setHasIntelligence] = useState(false);
   const [cadJobId, setCadJobId] = useState<string | null>(null);
+  const [intelPrefetch, setIntelPrefetch] = useState<KickoffIntelPrefetch | null>(null);
+  const intelPrefetchStarted = useRef(false);
 
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
@@ -66,6 +68,12 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
     const params = new URLSearchParams(window.location.search);
     const orgHint = params.get("orgId")?.trim() ?? "";
     let hadCache = Boolean(viewRef.current);
+    if (!intelPrefetchStarted.current) {
+      // The intelligence section used to wait for this view before it asked for its own data.
+      // Start its read now, for the season the view opens on (the route defaults to it too).
+      intelPrefetchStarted.current = true;
+      setIntelPrefetch(prefetchKickoffIntelligence(orgHint, currentSeasonYear()));
+    }
     try {
       const cached = await getFeatureSnapshot<KickoffView>("kickoff", orgHint || "_");
       if (!viewRef.current && cached?.data && isKickoffView(cached.data)) {
@@ -326,6 +334,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
         setCutoffCode={setCutoffCode}
         onIntelMeta={onIntelMeta}
         onApplied={load}
+        prefetch={intelPrefetch}
       />
       <ScoringSection
         actions={actions}

@@ -52,15 +52,19 @@ describe("leftover student chrome says Choose your team", () => {
     expect(src).not.toMatch(/\bencrypted PAT\b/);
   });
 
-  it("team context is a label, every switch-team control opens the one picker, and managing teams lives in Settings", () => {
+  it("team context is a label, not a switcher, and switching teams lives in Settings", () => {
     const nav = readFileSync(join(WEB_ROOT, "components/app-shell-nav-panel.tsx"), "utf8");
-    // A6-15: the menu panel's team chip went to Account → Your teams while the top bar and the
-    // sidebar opened the picker. One destination for one control.
-    expect(nav).toMatch(/href=\{workspacePickerHref\(pathname, pathSearch\)\}/);
+    // A6-15 had three team controls with different destinations. db5f7d5ec settled it: the shell
+    // shows the current team as a label, and switching lives in Settings → Your teams.
+    expect(nav).toMatch(/<div className="soft-org-chip" aria-label=\{`Current team — \$\{orgLabel\}`\}>/);
     expect(nav).toMatch(/"Choose your team"/);
     expect(nav).not.toMatch(/aria-expanded=\{workspaceOpen\}/);
-    expect(readFileSync(join(WEB_ROOT, "components/app-shell.tsx"), "utf8")).toMatch(/onOpenTeams=\{\(\) => navigate\(workspacePickerHref\(pathname, pathSearch\)\)\}/);
-    expect(readFileSync(join(WEB_ROOT, "components/app-shell-sidebar.tsx"), "utf8")).toMatch(/href=\{workspacePickerHref\(pathname, pathSearch\)\}/);
+    for (const rel of ["components/app-shell-nav-panel.tsx", "components/app-shell.tsx", "components/app-shell-topbar.tsx"]) {
+      const src = readFileSync(join(WEB_ROOT, rel), "utf8");
+      expect(src, rel).not.toMatch(/workspacePickerHref|onOpenTeams|Switch team/);
+    }
+    // The sidebar's team card opens the team, or Your teams when none is chosen.
+    expect(readFileSync(join(WEB_ROOT, "components/app-shell-sidebar.tsx"), "utf8")).toMatch(/href=\{withOrgHref\(orgId \? "\/team" : "\/account\/teams", orgId\)\}/);
     expect(readFileSync(join(WEB_ROOT, "app/workspace/page.tsx"), "utf8")).toMatch(/href: "\/account\/teams"/);
     expect(readFileSync(join(WEB_ROOT, "lib/nav/settings-nav.ts"), "utf8")).toContain('/account/teams');
     const chat = readFileSync(join(WEB_ROOT, "app/messages/page.tsx"), "utf8");

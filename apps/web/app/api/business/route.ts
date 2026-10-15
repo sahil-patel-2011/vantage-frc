@@ -9,7 +9,7 @@ import {
   syncGrantAwardMoney,
   syncSponsorContributionMoney,
 } from "../../../lib/finance/source-mirrors";
-import { loadBusinessView, validSeason } from "../../../lib/business-data";
+import { loadBusinessView, parseBusinessViewSections, validSeason } from "../../../lib/business-data";
 import {
   DRAFT_TYPES,
   GRANT_STATUSES,
@@ -154,9 +154,11 @@ export async function GET(request: Request) {
   const requestedOrg = url.searchParams.get("orgId");
   const seasonYear = validSeason(url.searchParams.get("season"));
   const tab = url.searchParams.get("tab")?.trim() || undefined;
+  // `sections=shell`: the tab on screen loads its own data (Money, Orders, …); skip the rest.
+  const sections = parseBusinessViewSections(url.searchParams.get("sections"));
   try {
     const view = await withRls({ userId: session.user.id, orgId: requestedOrg ?? undefined }, async (client) => {
-      const loaded = await loadBusinessView(client, { userId: session.user.id, requestedOrg, seasonYear });
+      const loaded = await loadBusinessView(client, { userId: session.user.id, requestedOrg, seasonYear, sections });
       if (loaded.status === "live") {
         await assertHubTabAccess(client, loaded.orgId, session.user.id, "business", tab);
       }

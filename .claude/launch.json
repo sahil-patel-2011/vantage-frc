@@ -7,6 +7,13 @@
       "runtimeArgs": ["next", "dev", "--port", "3401"],
       "cwd": "apps/web",
       "port": 3401
+    },
+    {
+      "name": "web-fixture-3402",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["E2E_AUTH_FIXTURE=1", "node", "../../node_modules/next/dist/bin/next", "dev", "--port", "3402"],
+      "cwd": "apps/web",
+      "port": 3402
     }
   ]
 }

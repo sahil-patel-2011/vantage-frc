@@ -101,6 +101,7 @@ describe("product-nav", () => {
       "Sponsors",
       "Grants",
       "Outreach",
+      "Awards",
     ]);
     expect(byLabel.Build?.map((entry) => entry.label)).toEqual(["CAD", "Code", "Robot"]);
     expect(byLabel.Logistics).toBeUndefined();

@@ -1111,8 +1111,21 @@ export function parseSubteamCalendarAction(input: unknown): SubteamCalendarActio
   }
 }
 
-/** Date part of an event start for attendance.occurred_on. */
-export function attendanceDateFromStart(startsAtIso: string): string {
+/**
+ * The day an event happens where the team is, for attendance.occurred_on. The UTC date put an
+ * 8 PM Eastern practice on the next day's roll call; with the browser's time zone (sent with
+ * every create) it lands on the day people were in the shop. No zone, or an unknown one: UTC.
+ */
+export function attendanceDateFromStart(startsAtIso: string, timeZone?: string | null): string {
+  if (timeZone) {
+    try {
+      const local = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" })
+        .format(new Date(startsAtIso));
+      return isoDate(local, "Attendance date");
+    } catch {
+      // Unknown zone name: fall through to the UTC date.
+    }
+  }
   return isoDate(startsAtIso.slice(0, 10), "Attendance date");
 }
 

@@ -93,7 +93,9 @@ describe("buildScoutTargets", () => {
         { matchKey: "x_1", matchNumber: 1, compLevel: null, redAlliance: { teamKeys: ["frc1"] } },
       ],
     });
-    expect(options[0].label).toBe("MATCH 1 · 1");
+    // Shared label from next-match.ts (c63ec3b3f): a key with no level reads as a qualification.
+    expect(options[0].label).toBe("Qual 1 · 1");
+    expect(options[0].label).not.toMatch(/undefined|null/);
   });
 });
 

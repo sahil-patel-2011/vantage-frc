@@ -2,7 +2,9 @@ import { auth, emitNotification } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { HttpError, failResponse, isLead, markProgress, resolveMembership } from "../../../lib/cad-learn/store";
+import { acquireOnshape } from "../../../lib/cad-learn/onshape-access";
 import { runGuidedCheck, type CheckInput } from "../../../lib/guided/run-check";
+import type { CheckResult } from "../../../lib/guided/types";
 import {
   clearMySignoff,
   needsLeadSignoff,
@@ -13,6 +15,9 @@ import {
 } from "../../../lib/guided/signoffs";
 import { guidedStep, guidedTrack } from "../../../lib/guided/tracks";
 import { GUIDED_PREFIX, guidedLessonId } from "../../../lib/guided/types";
+
+/** A finished answer, or the team and person a check should run for once the transaction closes. */
+type GuidedResult = (CheckResult & { pending?: boolean }) | { run: { orgId: string; userId: string } };
 
 /** The signed-in student's finished steps on one guided track. */
 export async function GET(request: Request) {
@@ -88,7 +93,9 @@ export async function POST(request: Request) {
     const lessonId = guidedLessonId(String(body.trackId), step.id);
 
     const requestedOrg = typeof body.orgId === "string" && /^[0-9a-f-]{36}$/i.test(body.orgId) ? body.orgId : null;
-    const result = await withRls({ userId: session.user.id }, async (client) => {
+    // 1. A short transaction: whose team, plus the steps that are only database work (reopen,
+    //    withdraw, sign-off requests). Checks that ask Onshape or GitHub run after it closes.
+    const result = await withRls({ userId: session.user.id }, async (client): Promise<GuidedResult> => {
       const membership = await resolveMembership(client, session.user.id, requestedOrg);
       const who = { orgId: membership.orgId, userId: session.user.id };
       const signoffKey = { ...who, trackId: String(body.trackId), stepId: step.id };
@@ -127,11 +134,21 @@ export async function POST(request: Request) {
               : "Sent to your team's owners and admins. They get a notice and check it with you; the step counts once one of them signs it off.",
         };
       }
-      const outcome = await runGuidedCheck(client, who, step.check, body.input ?? {});
-      if (outcome.passed) await markProgress(client, { ...who, lessonId, completed: true });
-      return outcome;
+      return { run: who };
     });
-    return Response.json(result);
+    if (!("run" in result)) return Response.json(result);
+
+    // 2. The check itself, with no transaction open. The Onshape connection is read in its own
+    //    short transaction only when the step needs it.
+    const who = result.run;
+    const onshape = () => withRls({ userId: who.userId }, (client) => acquireOnshape(client, who.orgId, who.userId));
+    const outcome = await runGuidedCheck(onshape, step.check, body.input ?? {});
+
+    // 3. A second short transaction records a pass.
+    if (outcome.passed) {
+      await withRls({ userId: who.userId }, (client) => markProgress(client, { ...who, lessonId, completed: true }));
+    }
+    return Response.json(outcome);
   } catch (error) {
     // Lead sign-offs need migration 0719: say so instead of passing a database message on.
     if ((error as { code?: string } | null)?.code === "42P01") {

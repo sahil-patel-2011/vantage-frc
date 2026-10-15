@@ -37,10 +37,22 @@ function toCents(value: string | number | null | undefined): number {
   return Number.isFinite(amount) ? Math.round(amount * 100) : 0;
 }
 
+/**
+ * "all" (default) loads every Business tab. "shell" loads only what the hub frame needs
+ * (team, role, seasons, who manages money) for tabs that fetch their own data — Money,
+ * Orders, Sponsorship, Placements — and skips the eleven per-tab reads. A shell view says so
+ * with `partial: true`; the client asks for the full view before showing a tab that needs it.
+ */
+export type BusinessViewSections = "all" | "shell";
+
+export function parseBusinessViewSections(value: string | null | undefined): BusinessViewSections {
+  return value === "shell" ? "shell" : "all";
+}
+
 export async function loadBusinessView(
   client: PoolClient,
-  input: { userId: string; requestedOrg: string | null; seasonYear: number },
-): Promise<BusinessPortalView> {
+  input: { userId: string; requestedOrg: string | null; seasonYear: number; sections?: BusinessViewSections },
+): Promise<BusinessPortalView & { partial?: true }> {
   const membership = await client.query<{
     orgId: string;
     orgName: string;
@@ -76,6 +88,10 @@ export async function loadBusinessView(
 
   const orgId = org.orgId;
   const seasonYear = input.seasonYear;
+  const full = input.sections !== "shell";
+  // Stand-in for a read a shell view skips: no rows, so every total below is honestly zero
+  // and the client never shows them (it loads the full view before a tab that needs them).
+  const none = Promise.resolve({ rows: [] as never[] });
   const [
     seasonResult,
     categoriesResult,
@@ -94,7 +110,7 @@ export async function loadBusinessView(
     // wins; the older Business-only operating budget is only a fallback. RLS
     // hides season_budgets from people without budget access, so they fall
     // back exactly as before.
-    client.query<{ totalBudgetUsd: string | null; fundraisingGoalUsd: string | null }>(
+    full ? client.query<{ totalBudgetUsd: string | null; fundraisingGoalUsd: string | null }>(
       `SELECT COALESCE(
                 (SELECT sb.total_budget_usd FROM season_budgets sb
                   WHERE sb.org_id = $1::uuid AND sb.season_year = $2::int),
@@ -104,15 +120,15 @@ export async function loadBusinessView(
               (SELECT fs.fundraising_goal_usd FROM finance_season_settings fs
                 WHERE fs.org_id = $1::uuid AND fs.season_year = $2::int)::text AS "fundraisingGoalUsd"`,
       [orgId, seasonYear],
-    ),
-    client.query<{ id: string; name: string; allocatedUsd: string }>(
+    ) : none,
+    full ? client.query<{ id: string; name: string; allocatedUsd: string }>(
       `SELECT c.id, c.name, COALESCE(p.total_limit_usd, 0)::text AS "allocatedUsd"
        FROM finance_categories c
        LEFT JOIN finance_budget_plans p ON p.category_id = c.id AND p.org_id = c.org_id
        WHERE c.org_id = $1 AND c.season_year = $2 ORDER BY c.name`,
       [orgId, seasonYear],
-    ),
-    client.query<{
+    ) : none,
+    full ? client.query<{
       id: string; itemName: string; vendor: string; itemUrl: string | null; categoryId: string | null;
       categoryName: string | null; quantity: number; unitPriceUsd: string; shippingUsd: string; totalUsd: string;
       purpose: string; status: PurchaseRequest["status"]; requestedByName: string; requestedAt: string;
@@ -131,8 +147,8 @@ export async function loadBusinessView(
        ORDER BY CASE p.status::text WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 WHEN 'ordered' THEN 2 ELSE 3 END, p.created_at DESC
        LIMIT 200`,
       [orgId, seasonYear],
-    ),
-    client.query<{
+    ) : none,
+    full ? client.query<{
       id: string; name: string; status: Sponsor["status"]; pipelineStage: string | null; tier: string | null;
       website: string | null; industry: string | null; contactName: string | null; contactEmail: string | null;
       relationshipOwner: string | null; lastContactOn: string | null; nextFollowUpOn: string | null; notes: string | null;
@@ -182,8 +198,8 @@ export async function loadBusinessView(
          WHEN 'visit' THEN 3 WHEN 'ask' THEN 4 ELSE 5 END, s.name
        LIMIT 200`,
       [orgId, seasonYear],
-    ),
-    client.query<{
+    ) : none,
+    full ? client.query<{
       id: string; sponsorId: string; sponsorName: string; interactionType: string; occurredOn: string;
       summary: string; nextStep: string | null; nextFollowUpOn: string | null; loggedByName: string;
     }>(
@@ -195,8 +211,8 @@ export async function loadBusinessView(
        JOIN sponsors s ON s.id = i.sponsor_id AND s.org_id = i.org_id
        WHERE i.org_id = $1 ORDER BY i.occurred_at DESC, i.created_at DESC LIMIT 100`,
       [orgId],
-    ),
-    client.query<{
+    ) : none,
+    full ? client.query<{
       id: string; name: string; website: string; summary: string; sourceTitle: string; sourceQuery: string;
       fitScore: number; fitReason: string; status: SponsorProspect["status"];
     }>(
@@ -208,8 +224,8 @@ export async function loadBusinessView(
        WHERE org_id = $1 AND status <> 'dismissed' AND website IS NOT NULL
        ORDER BY fit_score DESC, created_at DESC LIMIT 100`,
       [orgId],
-    ),
-    client.query<{
+    ) : none,
+    full ? client.query<{
       id: string; funder: string; title: string; sourceUrl: string | null; deadline: string | null;
       status: GrantApplication["status"]; requestedUsd: string; awardedUsd: string; purpose: string;
       eligibility: string | null; requirements: string | null; ownerName: string | null; updatedAt: string;
@@ -231,16 +247,16 @@ export async function loadBusinessView(
        ORDER BY CASE a.status::text WHEN 'drafting' THEN 0 WHEN 'in_review' THEN 1 WHEN 'identified' THEN 2 ELSE 3 END,
                 o.deadline NULLS LAST, a.updated_at DESC LIMIT 150`,
       [orgId, seasonYear],
-    ),
-    client.query<AwardRecord>(
+    ) : none,
+    full ? client.query<AwardRecord>(
       `SELECT id, season_year AS "seasonYear", award_type AS "awardName",
               COALESCE(event_name, event_key) AS "eventName", award_level AS "awardLevel",
               summary AS story, source_url AS "sourceUrl"
        FROM award_submissions WHERE org_id = $1 AND status = 'won'
        ORDER BY season_year DESC, award_type LIMIT 200`,
       [orgId],
-    ),
-    client.query<WritingDraft>(
+    ) : none,
+    full ? client.query<WritingDraft>(
       `SELECT id, document_type AS "documentType", subject AS title,
               COALESCE(audience, 'Community partner') AS audience,
               COALESCE(goal, '') AS goal, body, evidence, status::text, created_at::text AS "createdAt"
@@ -248,20 +264,20 @@ export async function loadBusinessView(
        WHERE org_id = $1 AND document_type IS NOT NULL AND created_at >= make_date($2, 1, 1)
        ORDER BY created_at DESC LIMIT 50`,
       [orgId, seasonYear],
-    ),
-    client.query<{ activities: string; minutes: string; peopleReached: string }>(
+    ) : none,
+    full ? client.query<{ activities: string; minutes: string; peopleReached: string }>(
       `SELECT COUNT(*)::text AS activities, COALESCE(SUM(duration_minutes), 0)::text AS minutes,
               COALESCE(SUM(people_reached), 0)::text AS "peopleReached"
        FROM impact_activities WHERE org_id = $1 AND season_year = $2`,
       [orgId, seasonYear],
-    ),
-    client.query<{ month: string; amountUsd: string }>(
+    ) : none,
+    full ? client.query<{ month: string; amountUsd: string }>(
       `SELECT TO_CHAR(occurred_at, 'YYYY-MM') AS month, SUM(amount_usd)::text AS "amountUsd"
        FROM finance_transactions
        WHERE org_id = $1 AND season_year = $2 AND type = 'expense'
        GROUP BY TO_CHAR(occurred_at, 'YYYY-MM') ORDER BY month`,
       [orgId, seasonYear],
-    ),
+    ) : none,
     client.query<{ seasonYear: number }>(
       `SELECT DISTINCT season_year AS "seasonYear" FROM (
          SELECT season_year FROM finance_season_settings WHERE org_id = $1
@@ -361,15 +377,17 @@ export async function loadBusinessView(
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
   let financeAiEnabled = false;
-  try {
-    const aiFlag = await client.query<{ aiAssistEnabled: boolean }>(
-      `SELECT ai_assist_enabled AS "aiAssistEnabled"
-       FROM season_budgets WHERE org_id = $1 AND season_year = $2`,
-      [orgId, seasonYear],
-    );
-    financeAiEnabled = Boolean(aiFlag.rows[0]?.aiAssistEnabled);
-  } catch {
-    // stays false
+  if (full) {
+    try {
+      const aiFlag = await client.query<{ aiAssistEnabled: boolean }>(
+        `SELECT ai_assist_enabled AS "aiAssistEnabled"
+         FROM season_budgets WHERE org_id = $1 AND season_year = $2`,
+        [orgId, seasonYear],
+      );
+      financeAiEnabled = Boolean(aiFlag.rows[0]?.aiAssistEnabled);
+    } catch {
+      // stays false
+    }
   }
   const ordersPulse = buildOrdersPulse(purchases, seasonYear, financeAiEnabled);
 
@@ -412,5 +430,6 @@ export async function loadBusinessView(
     grants,
     awards: awardsResult.rows,
     drafts: draftsResult.rows,
-  } satisfies BusinessView;
+    ...(full ? {} : { partial: true as const }),
+  } satisfies BusinessView & { partial?: true };
 }

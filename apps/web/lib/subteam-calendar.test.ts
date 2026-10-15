@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   allianceTeamKeys,
+  attendanceDateFromStart,
   buildDayCells,
   buildMonthCells,
   buildWeekCells,
@@ -530,5 +531,18 @@ describe("githubItemsToIcsEvents", () => {
       },
     ]);
     expect(githubItemsToIcsEvents(undefined)).toEqual([]);
+  });
+});
+
+describe("attendanceDateFromStart", () => {
+  it("puts an evening practice on the team's own day, not the next UTC day", () => {
+    // 8 PM Eastern on Oct 15 is 00:00 UTC on Oct 16.
+    expect(attendanceDateFromStart("2026-10-16T00:00:00.000Z", "America/New_York")).toBe("2026-10-15");
+    expect(attendanceDateFromStart("2026-10-16T00:00:00.000Z", "Asia/Tokyo")).toBe("2026-10-16");
+  });
+
+  it("falls back to the UTC date without a zone or with an unknown one", () => {
+    expect(attendanceDateFromStart("2026-10-16T00:00:00.000Z")).toBe("2026-10-16");
+    expect(attendanceDateFromStart("2026-10-16T00:00:00.000Z", "Not/AZone")).toBe("2026-10-16");
   });
 });

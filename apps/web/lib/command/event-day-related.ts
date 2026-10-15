@@ -213,7 +213,7 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Command",
+        title: "Could not load Event day",
         description: "Retry, or open Schedule while this reloads.",
       };
     case "setup":
@@ -221,7 +221,7 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
         kind,
         badge: "Needs setup",
         title: "Set an active event",
-        description: "Set the event you’re at so Command can follow it.",
+        description: "Set the event you’re at so Event day can follow it.",
       };
     case "empty":
       return {
@@ -233,7 +233,7 @@ export function eventDayShellCopy(kind: EventDayShellKind): EventDayEmptyCopy {
     case "ready":
       return {
         kind,
-        title: "Command",
+        title: "Event day",
         description: "Next match, scout gaps, and briefs.",
       };
     default: {

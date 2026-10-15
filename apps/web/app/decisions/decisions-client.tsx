@@ -657,6 +657,11 @@ function DecisionList({
           </li>
         ))}
       </ul>
+      {view.truncated ? (
+        <p className="app-muted">
+          Showing the newest {view.truncated.shown} of {view.truncated.total} notes this season. Search finds older ones.
+        </p>
+      ) : null}
     </section>
   );
 }
