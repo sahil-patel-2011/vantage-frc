@@ -89,12 +89,41 @@ describe("GET /api/team-lessons/[id]", () => {
     expect(view.lesson.body.practice).toHaveLength(2);
   });
 
-  it("gives an editor the answers and the history", async () => {
+  it("gives an editor the answers, and the history only when the editor asks for it", async () => {
     role = "admin";
     const view = await (await GET(new Request(`https://vantage.example/api/team-lessons/${id}?orgId=${orgId}`), context)).json();
     expect(view.lesson.editor).toBe(true);
     expect(view.lesson.body.practice[0].answer).toBe(1);
-    expect(view.revisions).toHaveLength(1);
+    expect(view.revisions).toEqual([]);
+    expect(sqlCalls().some((sql) => sql.includes("team_lesson_revisions"))).toBe(false);
+
+    fake.query.mockClear();
+    const editor = await (await GET(new Request(`https://vantage.example/api/team-lessons/${id}?orgId=${orgId}&part=editor`), context)).json();
+    expect(editor.revisions).toHaveLength(1);
+    expect(editor.attempts).toEqual([]);
+    expect(sqlCalls().some((sql) => sql.includes("FROM team_lesson_attempts"))).toBe(false);
+  });
+
+  it("returns only the history with part=revisions, and only to someone who may edit", async () => {
+    const request = () => new Request(`https://vantage.example/api/team-lessons/${id}?orgId=${orgId}&part=revisions`);
+    expect((await GET(request(), context)).status).toBe(403);
+    expect(sqlCalls().some((sql) => sql.includes("team_lesson_revisions"))).toBe(false);
+    role = "owner";
+    const response = await GET(request(), context);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ revisions: [expect.objectContaining({ id: "rev", version: 3 })] });
+  });
+
+  it("answers an outage as a 503 error, and a missing migration as setup", async () => {
+    const get = () => GET(new Request(`https://vantage.example/api/team-lessons/${id}?orgId=${orgId}`), context);
+    fake.query.mockRejectedValue(Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:5432"), { code: "ECONNREFUSED" }));
+    const down = await get();
+    expect(down.status).toBe(503);
+    expect((await down.json()).status).not.toBe("setup_required");
+    fake.query.mockRejectedValue(Object.assign(new Error('relation "team_lessons" does not exist'), { code: "42P01" }));
+    const missing = await get();
+    expect(missing.status).toBe(200);
+    expect((await missing.json()).status).toBe("setup_required");
   });
 
   it("answers 404 for a lesson id that is not a UUID, without a query", async () => {

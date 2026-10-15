@@ -12,10 +12,19 @@ import {
 } from "./cad-learn-related";
 
 describe("cadLearnRelatedLinks", () => {
-  it("puts CAD vault, the workbench, assembly manual, and Learn in the header strip", () => {
+  it("puts the workbench and Learn in the header strip, and no page that is switched off", () => {
     const links = cadLearnRelatedLinks("org-1", { include: [...CAD_LEARN_RELATED_INCLUDE] });
-    expect(links.map((link) => link.id)).toEqual(["cad-vault", "cad", "assembly-manual", "learn-hub"]);
-    expect(links.find((link) => link.id === "cad-vault")?.href).toBe("/cad-vault?orgId=org-1");
+    expect(links.map((link) => link.id)).toEqual(["cad", "learn-hub"]);
+    expect(links.some((link) => link.href.includes("/assembly-manual"))).toBe(false);
+  });
+
+  it("never repeats a header destination in Next actions", () => {
+    const header = cadLearnRelatedLinks("org-1", { include: [...CAD_LEARN_RELATED_INCLUDE] }).map((link) => link.href);
+    const actions = cadLearnNextActions({ orgId: "org-1", firstUndoneId: "extrude", remainingLessons: 8 });
+    for (const action of actions) expect(header).not.toContain(action.href);
+    // Explore Onshape is a section of the page; Next actions does not link to it again.
+    expect(actions.some((action) => action.href === "#explore")).toBe(false);
+    expect(new Set(actions.map((action) => action.href)).size).toBe(actions.length);
   });
 });
 
@@ -33,7 +42,7 @@ describe("cadLearnNextActions", () => {
       remainingLessons: 8,
     });
     expect(actions[0]?.href).toBe("#extrude");
-    expect(actions.some((action) => action.id === "vault")).toBe(true);
+    expect(actions.find((action) => action.id === "vault")?.href).toBe("/cad-vault?orgId=org-1");
     expectPlainCopy(actions[0]?.detail ?? "");
   });
 });
@@ -49,7 +58,11 @@ describe("cadLearn student copy", () => {
     expectPlainCopy(CAD_LEARN_PAGE_DESCRIPTION);
   });
 
-  it("401/403 is Choose your team with Needs setup", () => {
+  it("401 asks to sign in; 403 is Choose your team with Needs setup", () => {
+    expect(classifyCadLearnShell({ signedOut: true })).toBe("signin");
+    expect(cadLearnShellCopy("signin").title).toBe("Sign in to save your progress");
+    expect(cadLearnShellCopy("signin").title).not.toMatch(/team/i);
+    expectPlainCopy(cadLearnShellCopy("signin").description);
     expect(classifyCadLearnShell({ authBlocked: true })).toBe("setup");
     expect(classifyCadLearnShell({ fetchFailed: true })).toBe("error");
     expect(classifyCadLearnShell({ ready: false })).toBe("loading");

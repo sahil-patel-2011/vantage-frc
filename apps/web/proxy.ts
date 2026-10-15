@@ -457,7 +457,11 @@ export async function proxy(request: NextRequest) {
   // null: not read (or unreadable), so nothing is remembered and nobody is redirected on a guess.
   let memberTeams: string[] | null = null;
 
-  if (!isPendingWorkspacePath(pathname)) {
+  // A read-only API call cannot act during team setup, and the page that made it was already
+  // sent to /team-setup by this gate. Skipping the check spares every data read on every page a
+  // transaction and a pooled connection held through the proxy (pages and writes still check).
+  const apiRead = pathname.startsWith("/api/") && (request.method === "GET" || request.method === "HEAD");
+  if (!apiRead && !isPendingWorkspacePath(pathname)) {
     const requestedOrg = await requestedProvisioningTeam(request, remembered);
     // One transaction for both reads: this runs on nearly every page load.
     const gate = await withRls({ userId: session.user.id, ...(requestedOrg ? { orgId: requestedOrg } : {}) },

@@ -5,9 +5,10 @@ import type { PartMassProperties } from "@vantage/cad";
  * Data access for the CAD learning track.
  *
  * Every query here runs on a `PoolClient` handed down from `withRls`, so the
- * RLS policies in migration 0613 are the real guard. The org is always resolved
- * from the caller's OWN membership and is never taken from a request body —
- * there is no "which team" parameter anywhere in this feature to forge.
+ * RLS policies in migration 0613 are the real guard. A request may NAME a team
+ * (`orgId`, so someone on two teams writes to the one on screen), but the org
+ * used is always one of the caller's OWN memberships: `resolveMembership`
+ * refuses with 403 when they are not on the team they named.
  *
  * The second layer (an explicit `org_id = $n::uuid` on every statement) is the
  * belt-and-braces CLAUDE.md asks for, not the security boundary.
@@ -33,10 +34,26 @@ export function isLead(membership: Membership): boolean {
   return membership.role === "owner" || membership.role === "admin";
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The team a request names, from a query string or a JSON body.
+ * Absent means "my team" (the first membership, for someone on one team).
+ * Present but malformed is refused rather than quietly meaning "my first team",
+ * which is how a two-team member's work would land on the wrong team.
+ */
+export function requestedOrgId(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  if (!text) return null;
+  if (!UUID.test(text)) throw new HttpError(400, "That team link is not valid. Open this page from your team again.");
+  return text;
+}
+
 export async function resolveMembership(
   client: PoolClient,
   userId: string,
-  requestedOrgId: string | null = null,
+  orgId: string | null = null,
 ): Promise<Membership> {
   const result = await client.query<Membership>(
     `SELECT m.org_id AS "orgId", o.name AS "orgName", m.role
@@ -46,7 +63,7 @@ export async function resolveMembership(
         AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
       ORDER BY o.name
       LIMIT 1`,
-    [userId, requestedOrgId],
+    [userId, orgId],
   );
   const membership = result.rows[0];
   if (!membership) throw new HttpError(403, "Organization membership required");
@@ -285,13 +302,17 @@ export type SubmissionRow = {
   gradedAt: string;
 };
 
+/**
+ * Graded attempts on one team. Pass `userId` for one person's own attempts:
+ * RLS narrows a student to their own rows anyway, but a lead sees the whole
+ * team's, and "Your attempts" must be theirs alone.
+ */
 export async function readSubmissions(
   client: PoolClient,
   orgId: string,
+  userId: string | null = null,
   limit = 40,
 ): Promise<SubmissionRow[]> {
-  // RLS narrows this to the caller's own rows unless they are a lead, so one
-  // query serves both views without a role branch that could be got wrong.
   const result = await client.query<SubmissionRow>(
     `SELECT s.id,
             s.lesson_id AS "lessonId",
@@ -306,9 +327,10 @@ export async function readSubmissions(
        FROM cad_learn_submissions s
        LEFT JOIN users u ON u.id = s.user_id
       WHERE s.org_id = $1::uuid
+        AND ($2::uuid IS NULL OR s.user_id = $2::uuid)
       ORDER BY s.graded_at DESC
-      LIMIT $2::int`,
-    [orgId, limit],
+      LIMIT $3::int`,
+    [orgId, userId, limit],
   );
   return result.rows;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Skeleton } from "../../components/ui";
 import { cadLearnCheckNote, cadLearnFactorLabel } from "../../lib/cad-learn/cad-learn-related";
 import type { Lesson } from "../../lib/cad-learn/track";
 import {
@@ -86,19 +87,42 @@ function GradeResult({ response }: { response: Extract<GradeResponse, { status: 
   );
 }
 
+/** Onshape can take a while to measure a part; past this the student hears so instead of waiting forever. */
+const GRADE_TIMEOUT_MS = 30_000;
+
+function timedOut(error: unknown): boolean {
+  return error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError");
+}
+
+async function readJson<T>(response: Response): Promise<T | null> {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Both sides read mass from Onshape. Neither side has a field for typing a number in.
+ *
+ * `teamLoading` while the page is still loading the team (references, attempts);
+ * `unavailableReason` when it could not (signed out, not on a team, offline).
  */
 export function Grader({
   lesson,
   view,
+  teamLoading = false,
+  unavailableReason = null,
   onChanged,
 }: {
   lesson: Lesson;
   view: CadLearnView | null;
+  teamLoading?: boolean;
+  unavailableReason?: string | null;
   onChanged: () => void;
 }) {
   const [url, setUrl] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [response, setResponse] = useState<GradeResponse | null>(null);
 
@@ -106,52 +130,93 @@ export function Grader({
   const [referenceBusy, setReferenceBusy] = useState(false);
   const [referenceNote, setReferenceNote] = useState<string | null>(null);
 
+  const reasonId = `cl-grade-reason-${lesson.id}`;
+  const urlErrorId = `cl-grade-url-error-${lesson.id}`;
+  const canManage = view?.canManage === true;
   const reference = (view?.references ?? []).find((row) => row.lessonId === lesson.id) ?? null;
-  const mine = (view?.submissions ?? []).filter((row) => row.lessonId === lesson.id).slice(0, 5);
+  // Only the viewer's own attempts. The server already sends only theirs; the check here covers an
+  // older copy cached on the device, which for a lead held the whole team's.
+  const mine = (view?.submissions ?? [])
+    .filter((row) => row.lessonId === lesson.id)
+    .filter((row) => (view?.viewerId ? row.userId === view.viewerId : !canManage))
+    .slice(0, 5);
+
+  // Why "Grade my part" cannot run yet, said beside it. Leads get lead wording; students never
+  // hear "set it below" about a section they cannot see.
+  const blockedReason: string | null = teamLoading
+    ? null
+    : !view
+      ? (unavailableReason ?? "Grading needs your team to load first.")
+      : reference
+        ? null
+        : canManage
+          ? "Set the reference part for this lesson below first."
+          : "Your team hasn't set a reference part yet. Ask your CAD lead to set it.";
+  const gradeDisabled = busy || teamLoading || blockedReason !== null;
 
   async function grade() {
-    if (!url.trim()) return;
+    if (!url.trim()) {
+      setUrlError("Paste the URL of your Part Studio first.");
+      return;
+    }
+    setUrlError(null);
     setBusy(true);
     setResponse(null);
     try {
       const result = await fetch("/api/cad-learn/grade", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ lessonId: lesson.id, url }),
+        body: JSON.stringify({ lessonId: lesson.id, url, orgId: view?.orgId ?? null }),
+        signal: AbortSignal.timeout(GRADE_TIMEOUT_MS),
       });
-      const data = (await result.json()) as GradeResponse & { error?: string };
-      if (!result.ok) {
-        setResponse({ status: "error", message: data.error ?? "Could not grade that part." });
+      const data = await readJson<GradeResponse & { error?: string }>(result);
+      if (!result.ok || !data) {
+        setResponse({
+          status: "error",
+          message:
+            result.status === 401
+              ? "Sign in again, then grade your part. Nothing was graded."
+              : (data?.error ?? "Could not grade that part. Nothing was graded."),
+        });
         return;
       }
       setResponse(data);
       if (data.status === "graded") onChanged();
-    } catch {
-      setResponse({ status: "error", message: "Could not reach the server. Nothing was graded." });
+    } catch (error) {
+      setResponse({
+        status: "error",
+        message: timedOut(error)
+          ? "Onshape took too long to answer. Nothing was graded. Try again in a minute."
+          : "Could not reach the server. Nothing was graded.",
+      });
     } finally {
       setBusy(false);
     }
   }
 
   async function bindReference() {
-    if (!referenceUrl.trim()) return;
+    if (!referenceUrl.trim()) {
+      setReferenceNote("Paste the URL of the reference Part Studio first.");
+      return;
+    }
     setReferenceBusy(true);
     setReferenceNote(null);
     try {
       const result = await fetch("/api/cad-learn/reference", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ lessonId: lesson.id, url: referenceUrl }),
+        body: JSON.stringify({ lessonId: lesson.id, url: referenceUrl, orgId: view?.orgId ?? null }),
+        signal: AbortSignal.timeout(GRADE_TIMEOUT_MS),
       });
-      const data = (await result.json()) as {
+      const data = await readJson<{
         status?: string;
         message?: string;
         error?: string;
         massKg?: number;
         gradesInertia?: boolean;
-      };
-      if (!result.ok) {
-        setReferenceNote(data.error ?? "Could not set the reference part.");
+      }>(result);
+      if (!result.ok || !data) {
+        setReferenceNote(data?.error ?? "Could not set the reference part. No reference was stored.");
         return;
       }
       if (data.status === "measured") {
@@ -165,8 +230,12 @@ export function Grader({
         return;
       }
       setReferenceNote(data.message ?? "Nothing was measured, so no reference was stored.");
-    } catch {
-      setReferenceNote("Could not reach the server. No reference was stored.");
+    } catch (error) {
+      setReferenceNote(
+        timedOut(error)
+          ? "Onshape took too long to answer. No reference was stored. Try again in a minute."
+          : "Could not reach the server. No reference was stored.",
+      );
     } finally {
       setReferenceBusy(false);
     }
@@ -184,31 +253,54 @@ export function Grader({
         density, so on a different material neither tells you anything about your shape.
       </p>
 
-      {reference ? (
+      {teamLoading ? (
+        <div className="cl-grade-loading" aria-busy="true">
+          <span className="sr-only">Loading your team&rsquo;s reference part</span>
+          <Skeleton width="60%" height={13} />
+        </div>
+      ) : reference ? (
         <p className="cl-muted">
           Reference set{reference.measuredByName ? ` by ${reference.measuredByName}` : ""} on{" "}
           {new Date(reference.measuredAt).toLocaleDateString()} · {formatKg(Number(reference.massKg))}
           {reference.principalInertia ? "" : " · mass only (no spin numbers in the reference)"}
         </p>
-      ) : (
-        <p className="cl-muted">
-          No reference part is set for this lesson yet, so nothing can be graded. A lead sets it below.
-        </p>
-      )}
+      ) : null}
 
       <label className="cl-field">
         <span>Your Onshape Part Studio URL</span>
         <input
           type="url"
           value={url}
-          onChange={(event) => setUrl(event.target.value)}
+          onChange={(event) => {
+            setUrl(event.target.value);
+            if (urlError) setUrlError(null);
+          }}
           placeholder="https://cad.onshape.com/documents/…/w/…/e/…"
           spellCheck={false}
+          aria-invalid={urlError ? true : undefined}
+          aria-describedby={urlError ? urlErrorId : undefined}
         />
       </label>
-      <button type="button" className="cl-button" disabled={busy || !url.trim()} onClick={() => void grade()}>
-        {busy ? "Measuring…" : "Grade my part"}
-      </button>
+      {urlError ? (
+        <p className="cl-field-error" id={urlErrorId} role="alert">
+          {urlError}
+        </p>
+      ) : null}
+      <div className="cl-grade-actions">
+        <Button
+          variant="primary"
+          disabled={gradeDisabled}
+          aria-describedby={blockedReason ? reasonId : undefined}
+          onClick={() => void grade()}
+        >
+          {busy ? "Measuring… up to 30 seconds" : "Grade my part"}
+        </Button>
+        {blockedReason ? (
+          <span className="cl-muted" id={reasonId}>
+            {blockedReason}
+          </span>
+        ) : null}
+      </div>
 
       {response?.status === "graded" ? <GradeResult response={response} /> : null}
       {response?.status === "no_reference" ? (
@@ -256,14 +348,14 @@ export function Grader({
         </details>
       ) : null}
 
-      {view?.canManage ? (
-        <details className="cl-fold">
+      {canManage ? (
+        <details className="cl-fold" open={!reference}>
           <summary>Lead: set the reference part for this lesson</summary>
           <div className="cl-fold-body">
             <p className="cl-muted">
-              Paste the Onshape URL of the CORRECT part. Vantage measures it over your own Onshape connection and
+              Paste the Onshape URL of the correct part. Vantage measures it over your own Onshape connection and
               stores what it measured — there is no field for typing a mass in, deliberately. Assign cast iron to
-              the reference part before you bind it.
+              the reference part before you set it.
             </p>
             <label className="cl-field">
               <span>Reference Part Studio URL</span>
@@ -275,15 +367,14 @@ export function Grader({
                 spellCheck={false}
               />
             </label>
-            <button
-              type="button"
-              className="cl-button"
-              disabled={referenceBusy || !referenceUrl.trim()}
-              onClick={() => void bindReference()}
-            >
-              {referenceBusy ? "Measuring…" : "Measure and set as reference"}
-            </button>
-            {referenceNote ? <p className="cl-note">{referenceNote}</p> : null}
+            <Button variant="secondary" disabled={referenceBusy} onClick={() => void bindReference()}>
+              {referenceBusy ? "Measuring… up to 30 seconds" : "Measure and set as reference"}
+            </Button>
+            {referenceNote ? (
+              <p className="cl-note" role="status">
+                {referenceNote}
+              </p>
+            ) : null}
           </div>
         </details>
       ) : null}

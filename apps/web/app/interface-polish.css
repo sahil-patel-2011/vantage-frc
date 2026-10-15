@@ -44,6 +44,11 @@ body.has-app-shell .workspace-hub-header {
 }
 .workspace-hub-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 body.has-app-shell .hub-browse-button { gap: 8px; font-weight: 500; }
+/* With the sidebar showing (≥1100px) each workspace's sections are already listed there, and
+   the tab bar and More tools cover the rest: a Browse button was a third way to the same pages. */
+@media (min-width: 1100px) {
+  body:has(.app-sidebar) .hub-browse-button { display: none; }
+}
 .hub-page-picker { width: min(640px, calc(100vw - 32px)); height: min(740px, calc(100dvh - 32px)); }
 .hub-page-picker > :last-child { flex: 1; overflow: hidden; gap: 12px; }
 .hub-picker-search, .hub-picker-filter { flex-shrink: 0; }

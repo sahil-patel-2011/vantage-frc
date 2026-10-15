@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, TextBlockSkeleton } from "../../components/ui";
 import {
   DISPLAY_PHASE_LABELS,
   displayPhase,
@@ -73,7 +73,7 @@ function EventBoardPreview({ orgId, boardId }: { orgId: string; boardId: string 
   if (!data) {
     return (
       <div className="ebp is-loading" aria-busy={!failed}>
-        <p>{failed ? "Couldn't load the preview. Open the board to see it." : "Loading the live preview…"}</p>
+        {failed ? <p>Couldn't load the preview. Open the board to see it.</p> : <><span className="sr-only">Loading the live preview</span><TextBlockSkeleton lines={4} /></>}
       </div>
     );
   }
@@ -153,7 +153,8 @@ export function EventBoardCard({
 }: {
   orgId: string;
   boardId: string | null;
-  canSync: boolean;
+  /** null while we do not know yet: say nothing rather than "an owner or admin…" to the owner. */
+  canSync: boolean | null;
   busy: boolean;
   onCreate: () => void;
   onGetTvLink: (boardId: string) => void;
@@ -186,9 +187,9 @@ export function EventBoardCard({
             <Button variant="primary" type="button" disabled={busy} onClick={onCreate}>
               {busy ? "Setting up…" : "Turn on the event board"}
             </Button>
-          ) : (
+          ) : canSync === false ? (
             <p className="app-muted">An owner or admin turns the event board on once. Then anyone can open it here.</p>
-          )}
+          ) : null}
         </div>
       </div>
       {boardId ? (

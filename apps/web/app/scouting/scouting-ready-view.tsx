@@ -682,8 +682,8 @@ return (
                 savedTeamKey={saveReceipt?.entryType === "pit" ? saveReceipt.teamKey : null}
                 ownTeamNumber={data?.teamNumber ?? null}
                 initialRoster={pitRoster}
+                fallback={<PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />}
               />
-              <PitTeamField teamKey={teamKey} onTeamKey={setTeamKey} />
             </>
           )}
           </div>

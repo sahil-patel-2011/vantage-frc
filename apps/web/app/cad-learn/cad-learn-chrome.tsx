@@ -57,6 +57,11 @@ export function CadLearnEmptyCard({
       description={copy.description}
       aria-busy={shell === "loading"}
     >
+      {shell === "signin" ? (
+        <Button as="a" variant="primary" href="/signin?next=%2Fcad-learn">
+          Sign in
+        </Button>
+      ) : null}
       {shell === "setup" ? (
         <Button as="a" variant="primary" href="/workspace">
           Choose your team

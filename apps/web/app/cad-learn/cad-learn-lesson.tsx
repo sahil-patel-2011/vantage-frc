@@ -41,6 +41,8 @@ export function LessonBody({
   done,
   onToggle,
   view,
+  teamLoading = false,
+  unavailableReason = null,
   onChanged,
   registerRef,
 }: {
@@ -48,9 +50,15 @@ export function LessonBody({
   done: boolean;
   onToggle: () => void;
   view: CadLearnView | null;
+  /** The team (progress, references) is still loading. */
+  teamLoading?: boolean;
+  /** Why the team parts are unavailable (signed out, no team, offline), when they are. */
+  unavailableReason?: string | null;
   onChanged: () => void;
   registerRef: (id: string, element: HTMLElement | null) => void;
 }) {
+  // Ticking a lesson off saves to the team; with no team loaded there is nowhere to save it.
+  const canTrack = Boolean(view);
   return (
     <section className="cl-lesson" id={lesson.id} ref={(element) => registerRef(lesson.id, element)}>
       <header className="cl-lesson-head">
@@ -66,7 +74,13 @@ export function LessonBody({
           </small>
         </div>
         <label className="cl-done">
-          <input type="checkbox" checked={done} onChange={onToggle} />
+          <input
+            type="checkbox"
+            checked={done}
+            onChange={onToggle}
+            disabled={!canTrack}
+            title={canTrack ? undefined : (unavailableReason ?? "Your progress is still loading")}
+          />
           <span>Done</span>
         </label>
       </header>
@@ -123,7 +137,15 @@ export function LessonBody({
         </ul>
       ) : null}
 
-      {lesson.gradable ? <Grader lesson={lesson} view={view} onChanged={onChanged} /> : null}
+      {lesson.gradable ? (
+        <Grader
+          lesson={lesson}
+          view={view}
+          teamLoading={teamLoading}
+          unavailableReason={unavailableReason}
+          onChanged={onChanged}
+        />
+      ) : null}
     </section>
   );
 }

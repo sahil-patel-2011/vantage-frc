@@ -721,6 +721,18 @@ html[data-motion="reduced"] {
   0%, 100% { border-color: var(--line-soft); }
   50% { border-color: color-mix(in srgb, var(--accent) 30%, var(--line-soft)); }
 }
+/* EmptyState's loading card: placeholder lines where the content will land. The shimmer is the
+   motion, so the border stays still. */
+:where(.soft-empty, .app-card, .soft-empty-compact).is-loading {
+  animation: none;
+  text-align: left;
+}
+.empty-state-skeleton {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 560px;
+}
 
 /* Error surfaces read as errors — a tinted hairline and plate, so a failure is
    never mistaken for an empty result. The accent is a variable rather than a

@@ -119,7 +119,7 @@ export const LESSONS_SETUP_MESSAGE =
   "Team resources aren't switched on for this server yet. The person who runs Vantage for your team needs to apply the latest database update.";
 
 export const LESSONS_UNREACHABLE_MESSAGE =
-  "Vantage can't reach its database right now, so lessons can't load. Your work in the editor is kept on this device; try again in a few minutes.";
+  "Couldn't reach Vantage right now, so lessons can't load. Anything you typed in the editor is kept on this device. Try again in a few minutes.";
 
 /** The caller's role in this team, or a 403. */
 export async function requireLessonRole(client: LessonClient, orgId: string, userId: string): Promise<LessonRole> {
@@ -134,46 +134,53 @@ export async function requireLessonRole(client: LessonClient, orgId: string, use
 
 // ---------------------------------------------------------------- reads
 
-type SummaryRow = Omit<LessonSummary, "canEdit" | "best">;
-type BestRow = { lessonId: string; score: number; total: number; passed: boolean; at: string };
+type SummaryRow = Omit<LessonSummary, "canEdit" | "best"> & {
+  bestScore: number | null;
+  bestTotal: number | null;
+  bestPassed: boolean | null;
+  bestAt: string | null;
+};
 
+/**
+ * One statement: the person's best attempt per lesson is a CTE joined onto the list, so the
+ * page waits on one round trip to the database instead of two in a row.
+ */
 export async function listLessons(
   client: LessonClient,
   input: { orgId: string; userId: string; role: LessonRole },
 ): Promise<{ published: LessonSummary[]; drafts: LessonSummary[] }> {
   const lessons = await client.query<SummaryRow>(
-    `SELECT l.id, l.title, l.summary, l.audience, l.minutes, l.status, l.source,
+    `WITH best AS (
+       SELECT DISTINCT ON (a.lesson_id) a.lesson_id, a.score, a.total, a.passed, a.created_at
+         FROM team_lesson_attempts a
+        WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid
+        ORDER BY a.lesson_id, a.passed DESC, (a.score::numeric / NULLIF(a.total, 0)) DESC NULLS LAST, a.created_at DESC
+     )
+     SELECT l.id, l.title, l.summary, l.audience, l.minutes, l.status, l.source,
             jsonb_array_length(l.body -> 'steps') AS "stepCount",
             jsonb_array_length(l.body -> 'practice') AS "questionCount",
             l.created_by AS "createdBy", cu.name AS "createdByName",
-            ${iso("l.updated_at")} AS "updatedAt", ${iso("l.published_at")} AS "publishedAt"
+            ${iso("l.updated_at")} AS "updatedAt", ${iso("l.published_at")} AS "publishedAt",
+            b.score AS "bestScore", b.total AS "bestTotal", b.passed AS "bestPassed", ${iso("b.created_at")} AS "bestAt"
        FROM team_lessons l
        LEFT JOIN users cu ON cu.id = l.created_by
+       LEFT JOIN best b ON b.lesson_id = l.id
       WHERE l.org_id = $1::uuid
       ORDER BY CASE l.status WHEN 'published' THEN 0 WHEN 'draft' THEN 1 ELSE 2 END,
                l.published_at DESC NULLS LAST, l.updated_at DESC
       LIMIT ${LIST_LIMIT}`,
-    [input.orgId],
-  );
-  const best = await client.query<BestRow>(
-    `SELECT DISTINCT ON (a.lesson_id)
-            a.lesson_id AS "lessonId", a.score, a.total, a.passed, ${iso("a.created_at")} AS "at"
-       FROM team_lesson_attempts a
-      WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid
-      ORDER BY a.lesson_id, a.passed DESC, (a.score::numeric / NULLIF(a.total, 0)) DESC NULLS LAST, a.created_at DESC`,
     [input.orgId, input.userId],
   );
-  const bestByLesson = new Map(best.rows.map((row) => [row.lessonId, row]));
-  const rows = lessons.rows.map<LessonSummary>((row) => {
-    const top = bestByLesson.get(row.id);
-    return {
-      ...row,
-      stepCount: Number(row.stepCount),
-      questionCount: Number(row.questionCount),
-      canEdit: canEditLesson(input.role, input.userId, row),
-      best: top ? { score: top.score, total: top.total, passed: top.passed, at: top.at } : null,
-    };
-  });
+  const rows = lessons.rows.map<LessonSummary>(({ bestScore, bestTotal, bestPassed, bestAt, ...row }) => ({
+    ...row,
+    stepCount: Number(row.stepCount),
+    questionCount: Number(row.questionCount),
+    canEdit: canEditLesson(input.role, input.userId, row),
+    best:
+      bestScore != null && bestTotal != null
+        ? { score: Number(bestScore), total: Number(bestTotal), passed: bestPassed === true, at: bestAt ?? "" }
+        : null,
+  }));
   return {
     published: rows.filter((row) => row.status === "published"),
     drafts: rows.filter((row) => row.status !== "published"),
@@ -226,16 +233,43 @@ function toDetail(row: LessonRow, role: LessonRole, userId: string): LessonDetai
   };
 }
 
+const LESSON_NOT_FOUND = "That lesson doesn't exist, or it isn't published yet.";
+
+/**
+ * One lesson, plus only the extras the asking screen shows: the player wants the person's
+ * practice attempts, the editor wants History. Each extra skipped is a query not run.
+ */
 export async function getLessonDetail(
   client: LessonClient,
-  input: { orgId: string; userId: string; role: LessonRole; id: string },
+  input: {
+    orgId: string;
+    userId: string;
+    role: LessonRole;
+    id: string;
+    include?: { attempts?: boolean; revisions?: boolean };
+  },
 ): Promise<{ lesson: LessonDetail; attempts: LessonAttempt[]; revisions: LessonRevisionSummary[] }> {
+  const include = { attempts: true, revisions: false, ...input.include };
   const row = await readLesson(client, input.orgId, input.id);
-  if (!row) throw new LessonHttpError(404, "That lesson doesn't exist, or it isn't published yet.");
+  if (!row) throw new LessonHttpError(404, LESSON_NOT_FOUND);
   const lesson = toDetail(row, input.role, input.userId);
-  const attempts = await listMyAttempts(client, { orgId: input.orgId, userId: input.userId, lessonId: input.id });
-  const revisions = lesson.editor ? await listRevisions(client, { orgId: input.orgId, lessonId: input.id }) : [];
+  const attempts = include.attempts
+    ? await listMyAttempts(client, { orgId: input.orgId, userId: input.userId, lessonId: input.id })
+    : [];
+  const revisions =
+    include.revisions && lesson.editor ? await listRevisions(client, { orgId: input.orgId, lessonId: input.id }) : [];
   return { lesson, attempts, revisions };
+}
+
+/** History alone, for the editor after a restore. Only someone who may edit the lesson sees it. */
+export async function getLessonRevisions(
+  client: LessonClient,
+  input: { orgId: string; userId: string; role: LessonRole; id: string },
+): Promise<LessonRevisionSummary[]> {
+  const row = await readLesson(client, input.orgId, input.id);
+  if (!row) throw new LessonHttpError(404, LESSON_NOT_FOUND);
+  if (!canEditLesson(input.role, input.userId, row)) throw new LessonHttpError(403, editRefusal(input.role, input.userId, row));
+  return listRevisions(client, { orgId: input.orgId, lessonId: input.id });
 }
 
 export async function listMyAttempts(

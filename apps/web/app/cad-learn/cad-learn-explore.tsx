@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, TextBlockSkeleton } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import type { ExploreDocument, ExploreProgressView } from "../../lib/cad-learn/explore-progress";
+
+/** What the board can show: the API's own states, plus "signed out" and "not on this team". */
+type ExploreState = ExploreProgressView | { status: "signin" } | { status: "team" };
 
 function isExploreView(value: unknown): value is ExploreProgressView {
   if (!value || typeof value !== "object") return false;
@@ -19,9 +22,15 @@ function formatEdited(iso: string | null): string {
   return `Last edited ${date.toLocaleString()}`;
 }
 
-export function ExploreOnshapeBoard({ orgId }: { orgId?: string | null }) {
-  const [view, setView] = useState<ExploreProgressView | null>(null);
-  const [ready, setReady] = useState(false);
+const LOAD_FAILED = "Could not load your Onshape documents. Check your connection and try again.";
+
+/**
+ * Documents on the connected Onshape account. `pending` while the page is still
+ * working out which team this is: the board shows placeholder rows and waits,
+ * rather than asking Onshape twice (once without the team, once with it).
+ */
+export function ExploreOnshapeBoard({ orgId, pending = false }: { orgId?: string | null; pending?: boolean }) {
+  const [view, setView] = useState<ExploreState | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -30,40 +39,30 @@ export function ExploreOnshapeBoard({ orgId }: { orgId?: string | null }) {
         cache: "no-store",
         signal: AbortSignal.timeout(FEATURE_API_TIMEOUT_MS),
       });
-      if (response.status === 401 || response.status === 403) {
-        setView({
-          status: "setup",
-          message: "Choose your team to see documents from the connected Onshape account.",
-        });
+      if (response.status === 401) {
+        setView({ status: "signin" });
+        return;
+      }
+      if (response.status === 403) {
+        setView({ status: "team" });
         return;
       }
       const data: unknown = await response.json().catch(() => null);
-      if (!isExploreView(data)) {
-        setView({
-          status: "error",
-          message: "Could not load Explore Onshape. Try again when you have a connection.",
-        });
-        return;
-      }
-      setView(data);
+      setView(isExploreView(data) ? data : { status: "error", message: LOAD_FAILED });
     } catch {
-      setView({
-        status: "error",
-        message: "Could not load Explore Onshape. Try again when you have a connection.",
-      });
-    } finally {
-      setReady(true);
+      setView({ status: "error", message: LOAD_FAILED });
     }
   }, [orgId]);
 
   useEffect(() => {
+    if (pending) return;
     void load();
-  }, [load]);
+  }, [load, pending]);
 
   const documents: ExploreDocument[] = view?.status === "ready" ? view.documents : [];
 
   return (
-    <section className="cl-explore" id="explore" aria-labelledby="cl-explore-title">
+    <section className="cl-explore" id="explore" aria-labelledby="cl-explore-title" aria-busy={!view}>
       <header>
         <h2 id="cl-explore-title">Explore Onshape</h2>
         <p>
@@ -71,24 +70,47 @@ export function ExploreOnshapeBoard({ orgId }: { orgId?: string | null }) {
           Feature counts stay blank unless Onshape sent them.
         </p>
       </header>
-      {!ready ? <p className="cl-muted">Loading documents from Onshape…</p> : null}
-      {ready && view?.status === "setup" ? (
+      {!view ? <TextBlockSkeleton lines={3} /> : null}
+      {view?.status === "signin" ? (
+        <div className="cl-explore-empty">
+          <p>Sign in to see the documents on your Onshape account.</p>
+          <Button as="a" variant="secondary" href="/signin?next=%2Fcad-learn">
+            Sign in
+          </Button>
+        </div>
+      ) : null}
+      {view?.status === "team" ? (
+        <div className="cl-explore-empty">
+          <p>You are not on this team, so its Onshape account is not shown.</p>
+          <Button as="a" variant="secondary" href="/workspace">
+            Choose your team
+          </Button>
+        </div>
+      ) : null}
+      {view?.status === "setup" ? (
         <div className="cl-explore-empty">
           <p>{view.message}</p>
-          <Button as="a" variant="primary" href={withOrgHref("/cad/setup", orgId)}>
+          <Button as="a" variant="secondary" href={withOrgHref("/cad/setup", orgId)}>
             Connect Onshape
           </Button>
         </div>
       ) : null}
-      {ready && view?.status === "error" ? (
-        <div className="cl-explore-empty">
+      {view?.status === "error" ? (
+        <div className="cl-explore-empty" role="alert">
           <p>{view.message}</p>
-          <Button variant="primary" type="button" onClick={() => void load()}>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => {
+              setView(null);
+              void load();
+            }}
+          >
             Retry
           </Button>
         </div>
       ) : null}
-      {ready && view?.status === "ready" && documents.length === 0 ? (
+      {view?.status === "ready" && documents.length === 0 ? (
         <p className="cl-muted">No documents in this Onshape account yet. Build the first lesson part, then refresh.</p>
       ) : null}
       {documents.length > 0 ? (

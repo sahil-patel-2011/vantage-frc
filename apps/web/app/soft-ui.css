@@ -523,7 +523,7 @@ body.soft-nav-panel-open .soft-island{
 .dash-next-glance:hover{box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 25%,transparent);transform:translateY(-1px)}
 .dash-next-glance span{font:700 11px var(--font-source-sans),ui-sans-serif;text-transform:uppercase;letter-spacing:.06em;opacity:.85}
 .dash-next-glance strong{font:700 12px var(--font-source-sans),ui-sans-serif}
-.dash-next-glance b{font:700 12px ui-monospace,monospace}
+.dash-next-glance b{font:700 12px var(--font-source-sans),ui-sans-serif;font-variant-numeric:tabular-nums}
 
 .dash-now{
   display:flex;
@@ -594,7 +594,7 @@ body.soft-nav-panel-open .soft-island{
 .dash-role-strip li a:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
 .dash-role-strip li span{font:700 11px/1 var(--font-source-sans),ui-sans-serif;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .dash-role-strip li strong{font:600 13px/1.35 var(--font-source-sans),ui-sans-serif;color:var(--ink)}
-.dash-role-strip li .dash-strip-countdown{font:700 12px ui-monospace,monospace;color:var(--accent);font-style:normal}
+.dash-role-strip li .dash-strip-countdown{font:700 12px/1.2 var(--font-source-sans),system-ui;font-variant-numeric:tabular-nums;color:var(--accent);font-style:normal}
 .dash-role-strip li[data-tone="warn"] a{border-color:color-mix(in srgb,#ea580c 35%,var(--line))}
 .dash-role-strip li[data-tone="ok"] a{border-color:color-mix(in srgb,#15803d 28%,var(--line))}
 
@@ -1037,7 +1037,7 @@ button.edc-live:disabled{cursor:default}
 .edc-card-title p{margin:2px 0 0;color:var(--muted);font-size:12px;line-height:1.35}
 .edc-icon{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:var(--radius-sm);background:var(--tone-plate);color:var(--tone-ink)}
 .edc-icon svg{width:17px;height:17px}
-.edc-pill{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:var(--radius-pill);background:var(--accent-soft);color:var(--accent);font:700 12px ui-monospace,monospace}
+.edc-pill{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:var(--radius-pill);background:var(--accent-soft);color:var(--accent);font:700 12px var(--font-source-sans),system-ui;font-variant-numeric:tabular-nums}
 .edc-match-hero{display:grid;gap:4px}
 .edc-match-hero strong{font-size:clamp(34px,5vw,48px);letter-spacing:-.04em;line-height:1}
 .edc-match-hero span{color:var(--muted);font-size:13px}

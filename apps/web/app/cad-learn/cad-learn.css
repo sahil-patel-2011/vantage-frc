@@ -470,22 +470,26 @@
   font-size: 14px;
 }
 
-.cl-page .cl-button {
-  min-height: 38px;
-  padding: 8px 16px;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm, 12px);
-  background: var(--accent);
-  color: var(--accent-ink, #fff);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 650;
-  cursor: pointer;
+.cl-grade-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 4px;
 }
 
-.cl-page .cl-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.cl-grade-actions .cl-muted {
+  font-size: 13px;
+}
+
+.cl-grade-loading {
+  margin: 8px 0;
+}
+
+.cl-page .cl-field-error {
+  margin: -2px 0 8px;
+  color: var(--critical);
+  font-size: 13px;
 }
 
 .cl-note {

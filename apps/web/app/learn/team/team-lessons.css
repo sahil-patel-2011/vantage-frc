@@ -16,6 +16,7 @@
 }
 .team-lesson-banner p { margin: 0; }
 .team-lesson-empty-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.team-lesson-loading { display: grid; gap: 12px; }
 
 /* ---- list */
 .team-lesson-grid {
@@ -27,8 +28,6 @@
   border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);
 }
 .team-lesson-card h3 { margin: 0; font-size: 16px; line-height: 1.3; }
-.team-lesson-card h3 a { color: var(--ink); text-decoration: none; }
-.team-lesson-card h3 a:hover { text-decoration: underline; }
 .team-lesson-card-summary { margin: 0; color: var(--muted); line-height: 1.5; flex: 1; }
 .team-lesson-card-meta { margin: 0; color: var(--muted); font-size: 13px; }
 .team-lesson-passed { color: var(--positive); font-weight: 600; }
@@ -40,7 +39,7 @@
   border: 1px dashed var(--line); border-radius: var(--radius-sm); background: var(--surface);
 }
 .team-lesson-draft > div { display: grid; gap: 2px; min-width: 0; }
-.team-lesson-draft a { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.team-lesson-draft-title { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
 .team-lesson-draft span { font-size: 13px; }
 
 /* ---- player */
@@ -99,6 +98,7 @@
   width: 100%; height: min(80vh, 900px); border: 1px solid var(--line); border-radius: var(--radius-xs); background: var(--surface-2);
 }
 .team-lesson-pdf-status { margin: 0; color: var(--muted); line-height: 1.5; }
+.team-lesson-pdf-failed { display: grid; gap: 10px; justify-items: start; }
 
 /* ---- practice */
 .team-lesson-practice {
@@ -179,7 +179,7 @@ textarea.team-lesson-input { resize: vertical; min-height: 44px; }
 }
 .team-lesson-problems p { margin: 0; }
 .team-lesson-problems ul { margin: 6px 0 0; padding-left: 20px; }
-.team-lesson-footer { padding-top: 4px; }
+.team-lesson-footer { justify-content: flex-end; padding-top: 4px; }
 .team-lesson-history { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); }
 .team-lesson-history > p { margin: 8px 0; font-size: 13px; }
 .team-lesson-history ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
@@ -195,5 +195,6 @@ textarea.team-lesson-input { resize: vertical; min-height: 44px; }
   .team-lesson-step, .team-lesson-practice, .team-lesson-edit-section { padding: 14px; }
   .team-lesson-actions.is-split { justify-content: stretch; }
   .team-lesson-actions.is-split > * { flex: 1 1 auto; }
+  .team-lesson-footer > * { flex: 1 1 auto; }
   .team-lesson-pdf-frame { height: 70vh; }
 }

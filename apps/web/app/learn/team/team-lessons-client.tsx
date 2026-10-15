@@ -1,10 +1,20 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Button, EmptyState, PageHeader, Modal } from "../../../components/ui";
+import { Button, CardGridSkeleton, EmptyState, PageHeader, Modal } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import type { LessonSummary, LessonsListView } from "../../../lib/team-lessons/types";
-import { lessonEditHref, lessonFetch, lessonHref, useLessonOrg, whenText } from "./lesson-shared";
+import {
+  lessonEditHref,
+  lessonFetch,
+  lessonHref,
+  LessonLoadError,
+  LessonLoading,
+  LessonOrgProblem,
+  useLessonOrg,
+  whenText,
+  type LessonLoadFailure,
+} from "./lesson-shared";
 
 const DESCRIPTION =
   "Lessons your team wrote: one step at a time, ending in practice questions Vantage checks for you.";
@@ -32,9 +42,8 @@ function LessonCard({ lesson, orgId }: { lesson: LessonSummary; orgId: string })
   ].filter(Boolean);
   return (
     <li className="team-lesson-card" data-testid="team-lesson-card">
-      <h3>
-        <a href={lessonHref(lesson.id, orgId)}>{lesson.title}</a>
-      </h3>
+      {/* Plain text: the button below is the one way into the lesson. */}
+      <h3>{lesson.title}</h3>
       {lesson.summary.trim() ? <p className="team-lesson-card-summary">{lesson.summary}</p> : null}
       <p className="team-lesson-card-meta">{meta.join(" · ")}</p>
       <p className="team-lesson-card-meta">
@@ -60,7 +69,7 @@ function DraftRow({ lesson, orgId }: { lesson: LessonSummary; orgId: string }) {
   return (
     <li className="team-lesson-draft">
       <div>
-        <a href={lesson.canEdit ? lessonEditHref(lesson.id, orgId) : lessonHref(lesson.id, orgId)}>{lesson.title}</a>
+        <strong className="team-lesson-draft-title">{lesson.title}</strong>
         <span className="app-muted">
           {lesson.status === "archived" ? "Archived" : "Draft"}
           {lesson.createdByName ? ` · by ${lesson.createdByName}` : ""} · changed {whenText(lesson.updatedAt)}
@@ -70,7 +79,11 @@ function DraftRow({ lesson, orgId }: { lesson: LessonSummary; orgId: string }) {
         <Button as="a" variant="ghost" size="sm" href={lessonEditHref(lesson.id, orgId)}>
           Edit
         </Button>
-      ) : null}
+      ) : (
+        <Button as="a" variant="ghost" size="sm" href={lessonHref(lesson.id, orgId)}>
+          Open
+        </Button>
+      )}
     </li>
   );
 }
@@ -79,7 +92,7 @@ export function TeamLessonsClient() {
   const org = useLessonOrg();
   const orgId = org.status === "ready" ? org.orgId : null;
   const [view, setView] = useState<LessonsListView | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LessonLoadFailure | null>(null);
   const [creating, setCreating] = useState<"editor" | "pdf" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [newLesson, setNewLesson] = useState<"editor" | "pdf" | null>(null);
@@ -90,7 +103,12 @@ export function TeamLessonsClient() {
     setError(null);
     const result = await lessonFetch<LessonsListView>(`/api/team-lessons?orgId=${encodeURIComponent(orgId)}`);
     if (result.ok && result.data) setView(result.data);
-    else setError(result.error ?? (result.status === 0 ? "Couldn't reach Vantage. Check your connection." : "Team resources could not be loaded."));
+    else {
+      setError({
+        status: result.status,
+        message: result.error ?? (result.status === 0 ? "Couldn't reach Vantage. Check your connection." : "Team resources could not be loaded."),
+      });
+    }
   }, [orgId]);
 
   useEffect(() => {
@@ -120,15 +138,12 @@ export function TeamLessonsClient() {
     </PageHeader>
   );
 
-  if (org.status === "none") {
+  const orgProblem = <LessonOrgProblem org={org} chooseText="Team resources belong to a team. Choose yours to see them." />;
+  if (org.status === "none" || org.status === "signed-out" || org.status === "error") {
     return (
       <main className="module-page team-lessons-page">
         {header()}
-        <EmptyState soft badge="Needs setup" badgeTone="setup" title="Choose your team" description="Team resources belong to a team. Choose yours to see them.">
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
-          </Button>
-        </EmptyState>
+        {orgProblem}
       </main>
     );
   }
@@ -138,13 +153,16 @@ export function TeamLessonsClient() {
       <main className="module-page team-lessons-page">
         {header()}
         {error ? (
-          <EmptyState title="Couldn't load lessons" description={error}>
-            <Button variant="secondary" onClick={() => void load()}>
-              Try again
-            </Button>
-          </EmptyState>
+          <LessonLoadError
+            error={error}
+            title="Couldn't load lessons"
+            onRetry={() => void load()}
+            back={{ href: "/workspace", label: "Choose your team" }}
+          />
         ) : (
-          <EmptyState soft aria-busy title="Loading your team's lessons…" />
+          <LessonLoading label="Loading your team's lessons">
+            <CardGridSkeleton cols={2} rows={2} />
+          </LessonLoading>
         )}
       </main>
     );
@@ -160,11 +178,18 @@ export function TeamLessonsClient() {
   }
 
   const hasAny = view.published.length + view.drafts.length > 0;
+  // One primary (write a lesson) and one secondary (upload a PDF); the empty state carries the
+  // same two choices when there is nothing yet, so the header stays empty then.
   const newButton =
     view.canCreate && hasAny ? (
-      <Button variant="primary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("editor"); }}>
-        {creating === "editor" ? "Creating…" : "New lesson"}
-      </Button>
+      <>
+        <Button variant="secondary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("pdf"); }}>
+          {creating === "pdf" ? "Creating…" : "Upload a PDF"}
+        </Button>
+        <Button variant="primary" disabled={creating !== null} onClick={() => { setNewTitle(""); setNewLesson("editor"); }}>
+          {creating === "editor" ? "Creating…" : "New lesson"}
+        </Button>
+      </>
     ) : undefined;
 
   return (

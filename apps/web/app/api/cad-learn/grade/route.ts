@@ -15,6 +15,7 @@ import {
   readReferenceForLesson,
   recordSubmission,
   referenceAsMassProperties,
+  requestedOrgId,
   resolveMembership,
 } from "../../../../lib/cad-learn/store";
 import { gradableLessons } from "../../../../lib/cad-learn/track";
@@ -51,13 +52,15 @@ import { gradableLessons } from "../../../../lib/cad-learn/track";
  * says anything about geometry.
  */
 
-type Body = { lessonId?: string; url?: string };
+type Body = { lessonId?: string; url?: string; orgId?: string | null };
 
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) throw new HttpError(401, "Authentication required");
-    const body = (await request.json()) as Body;
+    const userId = session.user.id;
+    const body = (await request.json().catch(() => ({}))) as Body;
+    const requestedOrg = requestedOrgId(body.orgId);
 
     const lessonId = String(body.lessonId ?? "");
     const lesson = gradableLessons().find((entry) => entry.id === lessonId);
@@ -65,58 +68,71 @@ export async function POST(request: Request) {
     const url = String(body.url ?? "").trim();
     if (!url) throw new HttpError(400, "Paste the URL of your Onshape Part Studio");
 
-    const result = await withRls({ userId: session.user.id }, async (client) => {
-      const membership = await resolveMembership(client, session.user.id);
+    // 1. A short transaction: whose team, which reference, which Onshape token.
+    //    Onshape is slow, so nothing below holds a database connection while it answers.
+    const prepared = await withRls({ userId }, async (client) => {
+      const membership = await resolveMembership(client, userId, requestedOrg);
 
       const referenceRow = await readReferenceForLesson(client, membership.orgId, lessonId);
       if (!referenceRow) {
         return {
-          status: "no_reference" as const,
-          message:
-            "Nobody on your team has set the reference part for this lesson yet, so there is nothing to compare against. Ask your CAD lead to bind it — an owner or admin can do it from this page. Nothing was graded.",
+          ready: false as const,
+          response: {
+            status: "no_reference" as const,
+            message:
+              "Nobody on your team has set the reference part for this lesson yet, so there is nothing to compare against. Ask your CAD lead to set it. Nothing was graded.",
+          },
         };
       }
 
-      const access = await acquireOnshape(client, membership.orgId, session.user.id);
+      const access = await acquireOnshape(client, membership.orgId, userId);
       if (!access.ok) {
         return {
-          status: "not_connected" as const,
-          message: `${access.message} Nothing was graded.`,
+          ready: false as const,
+          response: { status: "not_connected" as const, message: `${access.message} Nothing was graded.` },
         };
       }
+      return { ready: true as const, orgId: membership.orgId, referenceRow, http: access.http };
+    });
+    if (!prepared.ready) return Response.json(prepared.response);
+    const { orgId, referenceRow, http } = prepared;
 
-      let bound;
-      try {
-        bound = await resolveOnshapeBind(url, access.http);
-      } catch (error) {
-        throw new HttpError(
-          400,
-          error instanceof Error
-            ? error.message
-            : "That is not an Onshape document URL. Paste the link from the Part Studio tab.",
-        );
-      }
+    // 2. Onshape, outside any transaction.
+    let bound;
+    try {
+      bound = await resolveOnshapeBind(url, http);
+    } catch (error) {
+      throw new HttpError(
+        400,
+        error instanceof Error
+          ? error.message
+          : "That is not an Onshape document URL. Paste the link from the Part Studio tab.",
+      );
+    }
 
-      const read = await readOnshapeMassProperties(access.http, {
-        documentId: bound.documentId,
-        workspaceId: bound.workspaceId,
-        elementId: bound.elementId,
-      });
-      if (!read.ok) {
-        return { status: "cannot_read" as const, reason: read.reason, message: read.message };
-      }
+    const read = await readOnshapeMassProperties(http, {
+      documentId: bound.documentId,
+      workspaceId: bound.workspaceId,
+      elementId: bound.elementId,
+    });
+    if (!read.ok) {
+      return Response.json({ status: "cannot_read" as const, reason: read.reason, message: read.message });
+    }
 
-      const grade = gradeMassProperties({
-        reference: referenceAsMassProperties(referenceRow),
-        student: read.value,
-      });
+    const grade = gradeMassProperties({
+      reference: referenceAsMassProperties(referenceRow),
+      student: read.value,
+    });
 
-      const mass = grade.factors.find((factor) => factor.id === "mass")!;
-      const inertia = grade.factors.find((factor) => factor.id === "moment_of_inertia") ?? null;
+    const mass = grade.factors.find((factor) => factor.id === "mass")!;
+    const inertia = grade.factors.find((factor) => factor.id === "moment_of_inertia") ?? null;
 
+    // 3. A second short transaction records the attempt. RLS re-checks that the
+    //    caller is on this team and is writing their own row.
+    await withRls({ userId }, async (client) => {
       await recordSubmission(client, {
-        orgId: membership.orgId,
-        userId: session.user.id,
+        orgId,
+        userId,
         lessonId,
         documentId: bound.documentId,
         workspaceId: bound.workspaceId,
@@ -129,20 +145,18 @@ export async function POST(request: Request) {
         overallBand: grade.overall,
         material: CAD_LEARN_MATERIAL,
       });
-
-      return {
-        status: "graded" as const,
-        lessonId,
-        lessonTitle: lesson.title,
-        material: CAD_LEARN_MATERIAL,
-        tolerance: CAD_GRADE_TOLERANCE,
-        referenceMeasuredAt: referenceRow.measuredAt,
-        grade,
-        openUrl: bound.url,
-      };
     });
 
-    return Response.json(result);
+    return Response.json({
+      status: "graded" as const,
+      lessonId,
+      lessonTitle: lesson.title,
+      material: CAD_LEARN_MATERIAL,
+      tolerance: CAD_GRADE_TOLERANCE,
+      referenceMeasuredAt: referenceRow.measuredAt,
+      grade,
+      openUrl: bound.url,
+    });
   } catch (error) {
     return failResponse(error, "Could not grade that part");
   }

@@ -16,7 +16,7 @@ import {
   deleteLesson,
   detachLessonPdf,
   getLessonDetail,
-  isDatabaseUnavailable,
+  getLessonRevisions,
   isLessonsSchemaMissing,
   LessonHttpError,
   LESSONS_SETUP_MESSAGE,
@@ -42,9 +42,10 @@ function requireVersion(value: unknown): number {
 }
 
 /**
- * One lesson. Editors get the full body (answers included) and the autosave history; everyone
- * else gets the steps and the questions without their answers. `?part=attempts` returns only
- * the signed-in person's practice attempts.
+ * One lesson. Editors get the full body (answers included); everyone else gets the steps and
+ * the questions without their answers. By default the signed-in person's practice attempts
+ * come along (the player); `?part=editor` swaps them for the autosave history (the editor).
+ * `?part=attempts` returns only the attempts and `?part=revisions` only the history.
  */
 export async function GET(request: Request, context: Context) {
   try {
@@ -52,21 +53,37 @@ export async function GET(request: Request, context: Context) {
     const id = requireLessonId((await context.params).id);
     const url = new URL(request.url);
     const orgId = requireOrgId(url.searchParams.get("orgId"));
-    if (url.searchParams.get("part") === "attempts") {
+    const part = url.searchParams.get("part");
+    if (part === "attempts") {
       const attempts = await withRls({ userId, orgId }, async (client) => {
         await requireLessonRole(client, orgId, userId);
         return listMyAttempts(client, { orgId, userId, lessonId: id });
       });
       return privateJson({ attempts });
     }
+    if (part === "revisions") {
+      const revisions = await withRls({ userId, orgId }, async (client) => {
+        const role = await requireLessonRole(client, orgId, userId);
+        return getLessonRevisions(client, { orgId, userId, role, id });
+      });
+      return privateJson({ revisions });
+    }
+    const forEditor = part === "editor";
     const view = await withRls({ userId, orgId }, async (client): Promise<LessonDetailView> => {
       const role = await requireLessonRole(client, orgId, userId);
-      const detail = await getLessonDetail(client, { orgId, userId, role, id });
+      const detail = await getLessonDetail(client, {
+        orgId,
+        userId,
+        role,
+        id,
+        include: { attempts: !forEditor, revisions: forEditor },
+      });
       return { status: "ready", role, ...detail };
     });
     return privateJson(view);
   } catch (error) {
-    if (isLessonsSchemaMissing(error) || isDatabaseUnavailable(error)) {
+    // Only a missing migration is setup; an outage is a 503 error from lessonErrorResponse.
+    if (isLessonsSchemaMissing(error)) {
       return privateJson({ status: "setup_required", message: LESSONS_SETUP_MESSAGE } satisfies LessonDetailView);
     }
     return lessonErrorResponse(error, "This lesson could not be loaded. Try again.");

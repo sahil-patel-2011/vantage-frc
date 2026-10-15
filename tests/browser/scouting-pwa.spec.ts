@@ -62,10 +62,10 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole("tablist",{name:"Scouting task",exact:true})).toBeVisible();
     await expect(page.locator(".next-match")).toBeVisible();
     await page.getByRole("tablist",{name:"Scouting task",exact:true}).getByRole("tab",{name:"Pit",exact:true}).click();
-    await expect(page.getByRole("searchbox",{name:"Find an unvisited pit",exact:true})).toBeVisible();
+    await expect(page.getByRole("searchbox",{name:"Team number or name",exact:true})).toBeVisible();
     await page.reload();
     await expect(page.getByRole("tablist",{name:"Scouting task",exact:true}).getByRole("tab",{name:"Pit",exact:true})).toHaveAttribute("aria-selected","true");
-    await expect(page.getByRole("searchbox",{name:"Find an unvisited pit",exact:true})).toBeVisible();
+    await expect(page.getByRole("searchbox",{name:"Team number or name",exact:true})).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const marker = `PWA pit ${randomUUID()}`;
     const dbUrl = process.env.DATABASE_ADMIN_URL!;
@@ -76,7 +76,8 @@ for (const width of [390, 1440]) {
     let previousQueued = false;
     try {
       const baseline = Number(await page.getByRole("region", {name:"Pit visits",exact:true}).locator("header strong").innerText().then(text=>text.split(" ")[0]));
-      await page.getByRole("textbox",{name:"Team number",exact:true}).fill("9999");
+      await page.getByRole("searchbox",{name:"Team number or name",exact:true}).fill("9999");
+      await page.getByRole("button",{name:/^Pit scout team 9999/}).click();
       await page.getByRole("textbox",{name:"Notes",exact:true}).fill(marker);
       await page.getByRole("button",{name:"Save on this phone",exact:true}).click();
       await expect(page.locator("#scout-save-confirmation")).toContainText("Saved pit report for 9999");

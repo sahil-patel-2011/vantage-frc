@@ -11,7 +11,7 @@ const lessonId = "22222222-2222-4222-8222-222222222222";
 const draftId = "33333333-3333-4333-8333-333333333333";
 let role: string | null = "scout";
 
-const row = (id: string, status: string, createdBy: string) => ({
+const row = (id: string, status: string, createdBy: string, best: { score: number; total: number; passed: boolean; at: string } | null = null) => ({
   id,
   title: status === "published" ? "Deploying code" : "Wiring",
   summary: "",
@@ -25,6 +25,10 @@ const row = (id: string, status: string, createdBy: string) => ({
   createdByName: "Ada",
   updatedAt: "2026-10-11T10:00:00Z",
   publishedAt: status === "published" ? "2026-10-11T10:00:00Z" : null,
+  bestScore: best?.score ?? null,
+  bestTotal: best?.total ?? null,
+  bestPassed: best?.passed ?? null,
+  bestAt: best?.at ?? null,
 });
 
 beforeEach(() => {
@@ -34,8 +38,11 @@ beforeEach(() => {
   fake.withRls.mockImplementation(async (_context, work) => work({ query: fake.query }));
   fake.query.mockImplementation(async (sql: string) => {
     if (sql.includes("FROM memberships")) return { rows: role ? [{ role }] : [], rowCount: role ? 1 : 0 };
-    if (sql.includes("jsonb_array_length")) return { rows: [row(lessonId, "published", "someone"), row(draftId, "draft", "member")], rowCount: 2 };
-    if (sql.includes("DISTINCT ON")) return { rows: [{ lessonId, score: 2, total: 2, passed: true, at: "2026-10-11T11:00:00Z" }], rowCount: 1 };
+    // One statement: the lessons with the person's best attempt joined on.
+    if (sql.includes("jsonb_array_length")) {
+      const best = { score: 2, total: 2, passed: true, at: "2026-10-11T11:00:00Z" };
+      return { rows: [row(lessonId, "published", "someone", best), row(draftId, "draft", "member")], rowCount: 2 };
+    }
     if (sql.includes("INSERT INTO team_lessons")) return { rows: [{ id: draftId, version: 1 }], rowCount: 1 };
     throw new Error(`unexpected SQL: ${sql.slice(0, 60)}`);
   });
@@ -72,6 +79,24 @@ describe("GET /api/team-lessons", () => {
     expect(view).toMatchObject({ status: "ready", orgId, role: "scout", canCreate: true, canManage: false });
     expect(view.published).toEqual([expect.objectContaining({ id: lessonId, canEdit: false, best: expect.objectContaining({ score: 2, passed: true }) })]);
     expect(view.drafts).toEqual([expect.objectContaining({ id: draftId, canEdit: true, best: null })]);
+    expect(view.published[0]).not.toHaveProperty("bestScore");
+  });
+
+  it("reads the list and the best attempts in one statement, with both values as parameters", async () => {
+    await list();
+    const reads = fake.query.mock.calls.filter(([sql]) => !String(sql).includes("FROM memberships"));
+    expect(reads).toHaveLength(1);
+    expect(reads[0][1]).toEqual([orgId, "member"]);
+  });
+
+  it("answers an outage as a 503 error, not as setup", async () => {
+    fake.query.mockRejectedValue(Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:5432"), { code: "ECONNREFUSED" }));
+    const response = await list();
+    expect(response.status).toBe(503);
+    const body = await response.json();
+    expect(body.status).not.toBe("setup_required");
+    expect(body.error).toMatch(/Couldn't reach Vantage/);
+    expect(body.error).not.toMatch(/ECONNREFUSED|5432/);
   });
 
   it("answers a setup state, not an error, before the migration is applied", async () => {

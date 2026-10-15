@@ -8,6 +8,9 @@ import { lessonFetch, whenText } from "../lesson-shared";
 
 type Submitted = { result: PracticeResult; stored: boolean; attempt: LessonAttempt | null };
 
+/** Tries listed under the practice; the summary's count matches this list. */
+const ATTEMPTS_SHOWN = 10;
+
 function QuestionField({
   question,
   number,
@@ -117,6 +120,7 @@ export function LessonPractice({
 
   const byId = new Map(submitted?.result.results.map((result) => [result.id, result]) ?? []);
   const result = submitted?.result;
+  const recent = attempts.slice(0, ATTEMPTS_SHOWN);
 
   return (
     <section className="team-lesson-practice" aria-labelledby="team-lesson-practice-title">
@@ -181,11 +185,12 @@ export function LessonPractice({
           )}
         </div>
       </form>
-      {attempts.length ? (
+      {recent.length ? (
         <details className="team-lesson-attempts">
-          <summary data-disclosure>Your earlier tries ({attempts.length})</summary>
+          {/* The count is what the list shows, not what the server sent (up to 20). */}
+          <summary data-disclosure>Your recent tries ({recent.length})</summary>
           <ul>
-            {attempts.slice(0, 10).map((attempt) => (
+            {recent.map((attempt) => (
               <li key={attempt.id}>
                 {attempt.score} of {attempt.total}
                 {attempt.passed ? " · Passed" : ""} · {whenText(attempt.createdAt)}
