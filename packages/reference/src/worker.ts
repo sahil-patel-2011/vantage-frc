@@ -126,6 +126,19 @@ export async function syncGlobalReferenceSeason(
         offset += rows.length;
         if (rows.length < STATBOTICS_PAGE) break;
       }
+      await options.store.ensureTeams(pages.map((record) => ({
+        teamKey: record.teamKey,
+        teamNumber: Number(record.teamKey.replace(/^frc/, "")),
+        nickname: null,
+        name: `Team ${record.teamKey.replace(/^frc/, "")}`,
+        city: null,
+        stateProv: null,
+        country: null,
+        postalCode: null,
+        rookieYear: null,
+        website: null,
+        syncedAt: now(),
+      })));
       await options.store.upsertTeamYearMetrics(pages);
       summary.teamYearMetrics = pages.length;
       await options.store.saveCursor({
@@ -180,7 +193,12 @@ export async function syncTeamYearHistory(
     const records = rows
       .map((value) => compactYearMetric(value, year, now()))
       .filter((record) => record.teamKey && record.epaTotal != null);
-    if (records.length) await options.store.upsertTeamYearMetrics(records);
+    if (records.length) {
+      // A season rating needs its team's directory row (foreign key): add the teams an event sync
+      // never loaded (old seasons, teams that have since folded), without touching existing ones.
+      await options.store.ensureTeams(records.map((record) => teamFromYearRow(rows, record.teamKey, now())));
+      await options.store.upsertTeamYearMetrics(records);
+    }
     teams += records.length;
     offset += rows.length;
     if (rows.length < STATBOTICS_PAGE) break;
@@ -197,6 +215,26 @@ export async function syncTeamYearHistory(
     updatedAt: now(),
   });
   return { year, teams };
+}
+
+/** The directory row a season rating needs, from what Statbotics' season list carries. */
+function teamFromYearRow(rows: JsonObject[], teamKey: string, syncedAt: Date): TeamRecord {
+  const teamNumber = Number(teamKey.replace(/^frc/, ""));
+  const row = rows.find((value) => normalizeTeamKey(value.team) === teamKey) ?? {};
+  const nickname = typeof row.name === "string" && row.name.trim() ? row.name.trim() : null;
+  return {
+    teamKey,
+    teamNumber,
+    nickname,
+    name: nickname ?? `Team ${teamNumber}`,
+    city: null,
+    stateProv: typeof row.state === "string" ? row.state : null,
+    country: typeof row.country === "string" ? row.country : null,
+    postalCode: null,
+    rookieYear: numberOrNull(row.rookie_year),
+    website: null,
+    syncedAt,
+  };
 }
 
 /** A season rating without the full Statbotics document: what history needs, a fraction of the size. */

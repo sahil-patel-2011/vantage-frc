@@ -25,6 +25,9 @@ class MemoryStore implements GlobalReferenceStore {
   yearMetrics = new Map<string, TeamYearMetricRecord>();
   windows = new Map<number, SeasonWindowRecord>();
 
+  async ensureTeams(records: TeamRecord[]) {
+    for (const record of records) if (!this.teams.has(record.teamKey)) this.teams.set(record.teamKey, record);
+  }
   async getCursor(source: SyncSource, resource: string) {
     return this.cursors.get(`${source}:${resource}`) ?? null;
   }
@@ -361,5 +364,8 @@ describe("past seasons history", () => {
     const stored = store.yearMetrics.get("frc254:2019:statbotics") ?? [...store.yearMetrics.values()].find((row) => row.teamKey === "frc254");
     expect(stored?.epaTotal).toBe(20 + (254 % 30));
     expect(stored?.sourcePayload).toEqual({ team: 254, year: 2019, matches: 10, norm: 1754, history: true });
+    // Every rated team has its directory row first (team_year_metrics has a foreign key to it).
+    expect(store.teams.get("frc254")?.name).toBe("Team 254");
+    expect(store.teams.size).toBe(1412);
   });
 });

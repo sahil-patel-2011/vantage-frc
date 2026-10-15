@@ -121,6 +121,12 @@ export interface GlobalReferenceStore {
     year?: number;
   }): Promise<string[]>;
   upsertTeams(records: TeamRecord[]): Promise<void>;
+  /**
+   * Add teams that aren't in the directory yet and leave existing rows untouched: season ratings
+   * (team_year_metrics) need the team's row first, but a sparse record must never overwrite the
+   * full one an event sync wrote.
+   */
+  ensureTeams(records: TeamRecord[]): Promise<void>;
   upsertEvents(records: EventRecord[]): Promise<void>;
   upsertMatches(records: MatchRecord[]): Promise<void>;
   upsertTeamEventMetrics(records: TeamEventMetricRecord[]): Promise<void>;
