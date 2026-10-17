@@ -22,6 +22,8 @@
 .mfg-card-actions{display:flex;flex-wrap:wrap;gap:6px}
 .mfg-past-due{color:var(--critical);font-weight:600}
 .mfg-assign{display:grid;gap:4px}
+.mfg-part-link{color:inherit;text-decoration:none}
+.mfg-part-link:hover strong{text-decoration:underline}
 
 .mfg-risk-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .mfg-risk-list li{display:flex;flex-wrap:wrap;align-items:center;gap:8px}

@@ -237,7 +237,11 @@ export default function ManufacturingClient() {
       <PageHeader
         title="Part manufacturing"
         description="Track every robot part from needs-design to done — CAM, cutting, and finishing on one board."
-      />
+      >
+        <Button as="a" variant="secondary" href={`/manufacturing/kiosk?orgId=${encodeURIComponent(view.orgId)}`}>
+          Shop kiosk
+        </Button>
+      </PageHeader>
       <OfflineBanner feature="Manufacturing" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
@@ -359,7 +363,10 @@ function PartCard({
   return (
     <li className="mfg-card">
       <div className="mfg-card-top">
-        <strong>{part.partName}</strong>
+        {/* The part's own page: its shop steps, drawing and the QR label for the drawing. */}
+        <a className="mfg-part-link" href={`/manufacturing/part/${part.id}?orgId=${encodeURIComponent(view.orgId)}`}>
+          <strong>{part.partName}</strong>
+        </a>
         {part.priority !== "normal" ? (
           <Badge tone={PRIORITY_TONE[part.priority]}>{priorityLabel(part.priority)}</Badge>
         ) : null}
