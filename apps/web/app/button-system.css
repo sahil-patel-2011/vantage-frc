@@ -90,3 +90,6 @@ body.has-app-shell .telemetry-status.is-stale::before {
   background: transparent !important;
   border-color: var(--line) !important;
 }
+
+/* Offline, the offline banner already says the page is showing its saved copy. */
+html[data-network="offline"] .is-stale { display: none !important; }
