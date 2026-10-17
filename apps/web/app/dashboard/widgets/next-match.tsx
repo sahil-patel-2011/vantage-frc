@@ -126,7 +126,7 @@ export function NextMatchLive({ data, orgId }: { data: Record<string, unknown>; 
       {orgId && typeof data.matchKey === "string" ? (
         <PredictMatchButton key={data.matchKey} orgId={orgId} matchKey={data.matchKey} planHref={typeof data.href === "string" ? data.href : null} />
       ) : null}
-      <NextMatchFooter data={data} />
+      <NextMatchFooter data={data} orgId={orgId} />
       {/* The alliances only when "With … vs …" above could not say them. */}
       {Array.isArray(data.partners) || Array.isArray(data.opponents) ? null : (
         <footer>
@@ -143,18 +143,21 @@ export function NextMatchLive({ data, orgId }: { data: Record<string, unknown>; 
 }
 
 /** Checklist, and which match comes after this one ("After · Qual 52 · 1 hr 51 min"). */
-function NextMatchFooter({ data }: { data: Record<string, unknown> }) {
+function NextMatchFooter({ data, orgId }: { data: Record<string, unknown>; orgId?: string }) {
   const checklist = typeof data.checklistHref === "string" ? data.checklistHref : null;
+  // Any other match, two playoff alliances, or any six robots (the Predict page).
+  const predictHref = orgId ? `/match-sim?orgId=${encodeURIComponent(orgId)}` : null;
   const after = data.after && typeof data.after === "object" ? (data.after as { compLevel?: unknown; matchNumber?: unknown; scheduledTime?: unknown }) : null;
   const afterLabel =
     after && typeof after.compLevel === "string" && Number.isFinite(Number(after.matchNumber))
       ? matchShortLabel(after.compLevel.toLowerCase(), Number(after.matchNumber))
       : null;
   const afterTime = after && typeof after.scheduledTime === "string" ? after.scheduledTime : null;
-  if (!checklist && !afterLabel) return null;
+  if (!checklist && !afterLabel && !predictHref) return null;
   return (
     <div className="nm-footer">
       {checklist ? <a href={checklist}>Checklist</a> : null}
+      {predictHref ? <a href={predictHref}>Predict other matches</a> : null}
       {afterLabel ? (
         <span suppressHydrationWarning>
           After · {afterLabel}

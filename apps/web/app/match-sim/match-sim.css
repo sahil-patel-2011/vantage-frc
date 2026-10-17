@@ -33,3 +33,10 @@
   .msim-upcoming-blue{grid-column:2}
   .msim-upcoming small{grid-column:3;grid-row:1}
 }
+/* Playoff alliances from the alliance board: two pickers and one button. */
+.msim-alliances{display:grid;gap:8px}
+.msim-alliances h2{margin:0;font-size:var(--title-3,17px)}
+.msim-alliances-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.msim-alliances-row label{display:grid;gap:4px;font-size:13px;font-weight:600}
+.msim-alliances-row select{min-height:44px;width:100%;font:inherit;font-size:15px;font-weight:400;font-variant-numeric:tabular-nums}
+.msim-alliances-error{margin:0;color:var(--critical);font-size:13px}
