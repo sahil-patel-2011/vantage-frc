@@ -483,3 +483,17 @@ body.has-app-shell .dash-context-prompt > .app-button { align-self: center; just
 }
 .dash-sync-refresh:disabled { color: var(--muted); cursor: default; }
 .dash-sync-refresh:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* Next match: "Predict this match" and the Checklist · After footer. */
+.nm-predict { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; }
+.nm-predict > span { display: grid; gap: 2px; font-weight: 600; }
+.nm-predict small { font-weight: 400; color: var(--muted); }
+.nm-predict .telemetry-status { flex-basis: 100%; margin: 0; }
+.nm-predict.is-done > a { margin-left: auto; font-weight: 600; }
+.nm-predict-spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--accent); animation: nm-spin 0.9s linear infinite; flex-shrink: 0; }
+@keyframes nm-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .nm-predict-spinner { animation: none; border-top-color: var(--line); } }
+.nm-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding-top: 10px; margin-top: 4px; border-top: 1px solid var(--line); color: var(--muted); }
+.nm-footer a { font-weight: 600; }
+/* Pinned at the top of Home when the board has no Next match card of its own. */
+.dash-pinned-match { min-width: 0; }

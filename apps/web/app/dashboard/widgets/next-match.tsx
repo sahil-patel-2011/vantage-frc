@@ -5,7 +5,8 @@ import { nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
 import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { matchShortLabel } from "../../../lib/matches/no-next-match";
-import { MatchClock } from "./live-countdown";
+import { countdownLabel, MatchClock } from "./live-countdown";
+import { PredictMatchButton } from "./predict-match";
 
 function allianceTeams(alliance: unknown) {
   if (!alliance || typeof alliance !== "object") return "—";
@@ -13,7 +14,7 @@ function allianceTeams(alliance: unknown) {
   return keys.map((key) => key.replace(/^frc/, "")).join(" · ") || "—";
 }
 
-export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
+export function NextMatchLive({ data, orgId }: { data: Record<string, unknown>; orgId?: string }) {
   const scheduled = data.scheduledTime as string | undefined;
   const alliance = data.ourAlliance === "red" || data.ourAlliance === "blue" ? data.ourAlliance : null;
   const win = predictionWinDisplay({
@@ -120,6 +121,12 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
       ) : null}
       {/* No factor rows: "weighted scoring", "autonomous", "foul exposure" are the model's
           words, bare here. The briefing this card links to explains the match. */}
+      {/* Keyed by match: when the card moves on to the next match, the button starts fresh and a
+          result still on its way for the old match is dropped (that instance unmounts). */}
+      {orgId && typeof data.matchKey === "string" ? (
+        <PredictMatchButton key={data.matchKey} orgId={orgId} matchKey={data.matchKey} planHref={typeof data.href === "string" ? data.href : null} />
+      ) : null}
+      <NextMatchFooter data={data} />
       {/* The alliances only when "With … vs …" above could not say them. */}
       {Array.isArray(data.partners) || Array.isArray(data.opponents) ? null : (
         <footer>
@@ -131,6 +138,29 @@ export function NextMatchLive({ data }: { data: Record<string, unknown> }) {
           </div>
         </footer>
       )}
+    </div>
+  );
+}
+
+/** Checklist, and which match comes after this one ("After · Qual 52 · 1 hr 51 min"). */
+function NextMatchFooter({ data }: { data: Record<string, unknown> }) {
+  const checklist = typeof data.checklistHref === "string" ? data.checklistHref : null;
+  const after = data.after && typeof data.after === "object" ? (data.after as { compLevel?: unknown; matchNumber?: unknown; scheduledTime?: unknown }) : null;
+  const afterLabel =
+    after && typeof after.compLevel === "string" && Number.isFinite(Number(after.matchNumber))
+      ? matchShortLabel(after.compLevel.toLowerCase(), Number(after.matchNumber))
+      : null;
+  const afterTime = after && typeof after.scheduledTime === "string" ? after.scheduledTime : null;
+  if (!checklist && !afterLabel) return null;
+  return (
+    <div className="nm-footer">
+      {checklist ? <a href={checklist}>Checklist</a> : null}
+      {afterLabel ? (
+        <span suppressHydrationWarning>
+          After · {afterLabel}
+          {afterTime && new Date(afterTime).getTime() > Date.now() ? ` · ${countdownLabel(afterTime)}` : ""}
+        </span>
+      ) : null}
     </div>
   );
 }

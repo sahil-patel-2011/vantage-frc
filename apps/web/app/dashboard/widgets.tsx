@@ -85,7 +85,7 @@ export const DashboardWidgetView = memo(function DashboardWidgetView({
           orgId={orgId}
           lead={canOpenTeamData}
         >
-          {payload?.status === "live" ? <NextMatchLive data={data} /> : null}
+          {payload?.status === "live" ? <NextMatchLive data={data} orgId={orgId || undefined} /> : null}
         </Shell>
       );
     }
