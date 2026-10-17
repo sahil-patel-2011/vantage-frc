@@ -272,7 +272,17 @@ function isMissingRelation(error: unknown): boolean {
 
 export async function computeSeasonFinanceView(
   client: PoolClient,
-  input: { userId: string; requestedOrg: string | null; seasonYear?: number | null },
+  input: {
+    userId: string;
+    requestedOrg: string | null;
+    seasonYear?: number | null;
+    /**
+     * Count bought requests at what they actually cost once recorded (0738 is applied). The
+     * route decides, because this module is also imported by client code and stays free of
+     * database-module imports (lib/client-bundle-boundary.test.ts).
+     */
+    countActualSpend?: boolean;
+  },
 ): Promise<SeasonFinanceView> {
   const seasonYear = validFinanceSeason(input.seasonYear);
   const membership = await client.query<{
@@ -295,6 +305,8 @@ export async function computeSeasonFinanceView(
   const orgId = org.orgId;
   // Not a role check: admins are not finance managers by role since 0714.
   const canManageFinance = await canManageFinances(client, orgId);
+  // Bought requests count what was actually paid once it's recorded (0738), else the approved figure.
+  const spentExpression = input.countActualSpend ? "COALESCE(actual_cost_usd, total_cost_usd)" : "total_cost_usd";
 
   try {
     const [
@@ -400,8 +412,8 @@ export async function computeSeasonFinanceView(
       client.query<{ requestedUsd: string; committedUsd: string; spentUsd: string }>(
         `SELECT
            COALESCE(SUM(total_cost_usd) FILTER (WHERE status = 'pending'), 0)::text AS "requestedUsd",
-           COALESCE(SUM(total_cost_usd) FILTER (WHERE status IN ('approved','ordered','received','reimbursed')), 0)::text AS "committedUsd",
-           COALESCE(SUM(total_cost_usd) FILTER (WHERE status IN ('ordered','received','reimbursed')), 0)::text AS "spentUsd"
+           COALESCE(SUM(${spentExpression}) FILTER (WHERE status IN ('approved','ordered','received','reimbursed')), 0)::text AS "committedUsd",
+           COALESCE(SUM(${spentExpression}) FILTER (WHERE status IN ('ordered','received','reimbursed')), 0)::text AS "spentUsd"
          FROM purchase_requests
          WHERE org_id = $1 AND season_year = $2`,
         [orgId, seasonYear],

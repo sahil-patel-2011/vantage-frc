@@ -21,6 +21,7 @@ import {
 import { SubmitForm } from "./orders-submit-form";
 import { formatInviteRole } from "../../lib/invite/invite-flow";
 import { formatUsd } from "../../lib/finance/format-usd";
+import { RecordActualCost, VendorCartsPanel } from "./vendor-carts-panel";
 import "./orders.css";
 
 
@@ -370,6 +371,11 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
           ) : (
             <p className="orders-quiet">You have view-only access, so you can look at orders but not ask for one.</p>
           )}
+          {/* Buy by vendor (0738): approved lines grouped one cart per vendor, checked out with what
+              was actually paid. Renders nothing until the database update is applied. */}
+          {!embedded && live!.actualSpendSupported ? (
+            <VendorCartsPanel orgId={live!.orgId} seasonYear={live!.seasonYear} refreshKey={live!.computedAt} onChanged={() => load()} />
+          ) : null}
           <OrdersList view={live!} busy={busy} mutate={mutate} />
         </>
       )}
@@ -563,7 +569,14 @@ function OrderCard({
         </p>
       ) : null}
       <div className="orders-meta">
-        <span>{usd(order.totalCostUsd)} cost</span>
+        {order.actualCostUsd != null ? (
+          <span>
+            {usd(order.actualCostUsd)} paid
+            {Math.abs(order.actualCostUsd - order.totalCostUsd) >= 0.01 ? ` · ${usd(order.totalCostUsd)} expected` : ""}
+          </span>
+        ) : (
+          <span>{usd(order.totalCostUsd)} cost</span>
+        )}
         <span>{orderWhen(order)}</span>
         <span>{order.vendor}</span>
         <span>Requested by {order.requestedByName ?? "team member"}</span>
@@ -609,6 +622,9 @@ function OrderCard({
           </button>
         ) : null}
       </div>
+      {view.canManageFinances && view.actualSpendSupported && (order.status === "ordered" || order.status === "received") && order.actualCostUsd == null ? (
+        <RecordActualCost busy={busy} onSave={(actualUsd) => mutate({ action: "record-actual", orderId: order.id, actualUsd })} />
+      ) : null}
     </li>
   );
 }
