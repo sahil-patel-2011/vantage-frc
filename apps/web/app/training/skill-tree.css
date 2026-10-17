@@ -1,0 +1,46 @@
+/* Skill trees: cards for the nine trees, a detail list for the open one, and the team matrix. */
+.st-panel { display: grid; gap: 14px; }
+.st-toolbar { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 10px; }
+.st-toolbar label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.st-toolbar select { min-height: var(--control-h, 44px); }
+.st-note { margin: 0; color: var(--ink); font-size: 13px; }
+
+.st-trees { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.st-tree {
+  display: grid; gap: 6px; text-align: left; padding: 14px 16px; min-height: 0;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-sm, 12px);
+  cursor: pointer; font: inherit;
+}
+.st-tree:hover, .st-tree.is-open { border-color: var(--accent); }
+.st-tree strong { font-size: 15px; }
+.st-tree small { color: var(--muted); font-size: 12px; }
+.st-tree.is-locked { opacity: 0.7; }
+.st-bar { display: block; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.st-bar i { display: block; height: 100%; background: var(--accent); }
+.st-tree.is-complete .st-bar i { background: var(--positive); }
+
+.st-detail header h2 { margin: 0; }
+.st-detail header p { margin: 4px 0 0; }
+.st-group h3 { margin: 14px 0 6px; font-size: 14px; }
+.st-group ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.st-group li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.st-group li > div { flex: 1; min-width: 0; }
+.st-group li p { margin: 2px 0 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.st-group li.is-locked b { color: var(--muted); }
+.st-chip { flex: none; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface-2); }
+.st-chip.is-available { color: color-mix(in srgb, var(--accent) 80%, var(--ink)); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+.st-chip.is-complete { color: color-mix(in srgb, var(--positive) 84%, var(--ink)); background: var(--positive-soft); }
+.st-chip.is-expired { color: color-mix(in srgb, var(--warning) 84%, var(--ink)); background: var(--warning-soft); }
+
+.st-matrix h2 { margin: 0 0 8px; }
+.st-matrix-scroll { overflow-x: auto; }
+.st-matrix table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.st-matrix th, .st-matrix td { padding: 8px 10px; border-top: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.st-matrix thead th { color: var(--muted); font-weight: 600; border-top: 0; }
+.st-matrix td { font-variant-numeric: tabular-nums; }
+.st-matrix td.is-complete { color: color-mix(in srgb, var(--positive) 84%, var(--ink)); font-weight: 700; }
+.st-matrix td.is-locked { color: var(--muted); }
+
+.st-people { display: grid; gap: 6px; max-height: 320px; overflow: auto; margin: 10px 0; padding: 0; border: 0; }
+.st-date { display: grid; gap: 4px; max-width: 220px; font-size: 13px; font-weight: 600; }
+.st-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }

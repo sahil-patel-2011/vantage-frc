@@ -266,7 +266,7 @@ describe("product hubs", () => {
     const team = hubById("team");
     const people = hubNestedTabs(team, "attendance");
     const training = people.find((tab) => tab.id === "training");
-    expect(training?.label).toBe("Training matrix");
+    expect(training?.label).toBe("Training and skills");
     expect(training?.legacyHref).toBe("/training");
     const roles = people.find((tab) => tab.id === "roles");
     expect(roles?.label).toBe("Season roles");

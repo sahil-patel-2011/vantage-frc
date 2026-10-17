@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "training",
-  title: "Training Matrix",
+  title: "Training",
   route: "/training",
   apiRoute: "/api/training",
   hub: "Team",
