@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState } from "../../components/ui";
@@ -177,7 +178,7 @@ export default function RankingsClient() {
       if (!response.ok || !isRankingsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Rankings. Showing the last copy on this device.");
+          setError(staleCopyNotice("Rankings"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load event rankings.");
@@ -197,7 +198,7 @@ export default function RankingsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Rankings. Showing the last copy on this device.");
+        setError(staleCopyNotice("Rankings"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -371,7 +372,7 @@ export default function RankingsClient() {
       <OfflineBanner feature="Rankings" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

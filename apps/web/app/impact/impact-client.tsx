@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -148,7 +149,7 @@ export default function ImpactClient() {
         if (!response.ok || !isImpactView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Community Impact. Showing the last copy on this device.");
+            setError(staleCopyNotice("Community Impact"));
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -165,7 +166,7 @@ export default function ImpactClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Community Impact. Showing the last copy on this device.");
+          setError(staleCopyNotice("Community Impact"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -280,7 +281,7 @@ export default function ImpactClient() {
       <OfflineBanner feature="Community Impact" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="impact-status" role="alert">
+        <p {...staleCopyProps(error, "impact-status")}>
           {error}
         </p>
       ) : null}

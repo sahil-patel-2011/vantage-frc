@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
@@ -142,7 +143,7 @@ export default function FormsClient() {
       if (!response.ok || !isFormsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Forms. Showing the last copy on this device.");
+          setError(staleCopyNotice("Forms"));
           setFetchFailed(false);
           return;
         }
@@ -163,7 +164,7 @@ export default function FormsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Forms. Showing the last copy on this device.");
+        setError(staleCopyNotice("Forms"));
         setFetchFailed(false);
         return;
       }
@@ -334,7 +335,7 @@ export default function FormsClient() {
           {!title.trim() ? (
             <p className="app-muted forms-hint">Give the form a name first, then pick what it is for.</p>
           ) : null}
-          {error ? <p role="alert" className="forms-error">{error}</p> : null}
+          {error ? <p {...staleCopyProps(error, "forms-error")}>{error}</p> : null}
         </Panel>
       ) : null}
     </main>

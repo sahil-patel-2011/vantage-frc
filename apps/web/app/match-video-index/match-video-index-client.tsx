@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -195,7 +196,7 @@ export default function MatchVideoIndexClient() {
         if (!response.ok || !isMatchVideoIndexView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh the match video index. Showing the last copy on this device.");
+            setError(staleCopyNotice("the match video index"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -209,7 +210,7 @@ export default function MatchVideoIndexClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh the match video index. Showing the last copy on this device.");
+          setError(staleCopyNotice("the match video index"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -321,7 +322,7 @@ export default function MatchVideoIndexClient() {
       <OfflineBanner feature="Match video index" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

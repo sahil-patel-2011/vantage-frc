@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -402,7 +403,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
         if (await showSavedTeam(teamNumber)) return;
         if (sameTeam()) {
           setFromCache(true);
-          setStatus("Could not refresh this team. Showing the last copy on this device.");
+          setStatus(staleCopyNotice("this team"));
           setFetchFailed(false);
         } else if (viewRef.current) {
           setStatus(data.error ?? `Could not load Team ${teamNumber}. Try again.`);
@@ -417,7 +418,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
       if (!data.team) {
         if (sameTeam()) {
           setFromCache(true);
-          setStatus("Could not refresh this team. Showing the last copy on this device.");
+          setStatus(staleCopyNotice("this team"));
           setFetchFailed(false);
         } else if (viewRef.current) {
           setStatus(`Could not load Team ${teamNumber}. Try again.`);
@@ -455,7 +456,7 @@ function IntelLive({ orgId, variant, embedded }: { orgId: string; variant: "vant
         setStatus(
           failure === "timeout"
             ? "This team is taking longer than usual to refresh. Showing the last copy on this device."
-            : "Could not refresh this team. Showing the last copy on this device.",
+            : staleCopyNotice("this team"),
         );
         setFetchFailed(false);
       } else if (viewRef.current) {

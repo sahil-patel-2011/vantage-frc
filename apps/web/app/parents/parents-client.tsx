@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 // Mentor-side parent communications (owner/admin only). One-way by design:
 // contacts + weekly digest + read-only view links. No chat, no reply path.
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -214,7 +215,7 @@ export default function ParentsClient() {
       if (!response.ok || !isParentsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Parent updates. Showing the last copy on this device.");
+          setError(staleCopyNotice("Parent updates"));
           setFetchFailed(false);
           return;
         }
@@ -234,7 +235,7 @@ export default function ParentsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Parent updates. Showing the last copy on this device.");
+        setError(staleCopyNotice("Parent updates"));
         setFetchFailed(false);
         return;
       }
@@ -473,7 +474,7 @@ export default function ParentsClient() {
         </EmptyState>
       ) : null}
 
-      {error ? <p role="alert" className="app-muted">{error}</p> : null}
+      {error ? <p {...staleCopyProps(error, "app-muted")}>{error}</p> : null}
 
       <Panel
         as="form"

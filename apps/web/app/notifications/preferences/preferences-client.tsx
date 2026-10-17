@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
@@ -165,7 +166,7 @@ export default function NotificationPreferencesClient() {
       if (!response.ok || !body || typeof body !== "object") {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Notification preferences. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Notification preferences"));
           setMessageOk(false);
           setFetchFailed(false);
           return;
@@ -196,7 +197,7 @@ export default function NotificationPreferencesClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Notification preferences. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Notification preferences"));
         setMessageOk(false);
         setFetchFailed(false);
         return;

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AskAiButton } from "../../components/ask-ai-button";
 import { ViewOnlyNote } from "../../components/view-only-note";
@@ -396,7 +397,7 @@ export default function CalendarClient() {
       if (!response.ok || !isCalendarView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season Calendar. Showing the last copy on this device.");
+          setError(staleCopyNotice("Season Calendar"));
           setFetchFailed(false);
           return;
         }
@@ -414,7 +415,7 @@ export default function CalendarClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Season Calendar. Showing the last copy on this device.");
+        setError(staleCopyNotice("Season Calendar"));
         setFetchFailed(false);
         return;
       }
@@ -751,7 +752,7 @@ function ReadyCalendar({
       <OfflineBanner feature="Calendar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

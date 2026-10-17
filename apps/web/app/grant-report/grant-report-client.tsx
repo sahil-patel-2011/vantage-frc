@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -210,7 +211,7 @@ export default function GrantReportClient() {
         if (!response.ok || !isGrantReportView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Grant Report. Showing the last copy on this device.");
+            setError(staleCopyNotice("Grant Report"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -225,7 +226,7 @@ export default function GrantReportClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Grant Report. Showing the last copy on this device.");
+          setError(staleCopyNotice("Grant Report"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -378,7 +379,7 @@ export default function GrantReportClient() {
       <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

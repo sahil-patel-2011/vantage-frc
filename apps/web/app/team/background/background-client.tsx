@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
@@ -174,7 +175,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
       if (!response.ok || !data || typeof data !== "object") {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Team background. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Team background"));
           setMessageTone("error");
           setFetchFailed(false);
           return;
@@ -209,7 +210,7 @@ export default function TeamBackgroundClient({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Team background. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Team background"));
         setMessageTone("error");
         setFetchFailed(false);
         return;

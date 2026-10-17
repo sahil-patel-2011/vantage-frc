@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
 import PartnerPlacement from "../../components/partner-placement";
@@ -200,7 +201,7 @@ export function PartnerPlacementsPanel({
         if (typeof message === "string" && /migration/i.test(message)) setMigrationMissing(true);
         if (hadCache || programHold.current) {
           setFromCache(true);
-          setError("Could not refresh Partners. Showing the last copy on this device.");
+          setError(staleCopyNotice("Partners"));
           return;
         }
         throw new Error(message ?? "Could not load partner placements");
@@ -214,7 +215,7 @@ export function PartnerPlacementsPanel({
     } catch (cause) {
       if (hadCache || programHold.current) {
         setFromCache(true);
-        setError("Could not refresh Partners. Showing the last copy on this device.");
+        setError(staleCopyNotice("Partners"));
       } else {
         setError(cause instanceof Error ? cause.message : "Could not load partner placements");
       }

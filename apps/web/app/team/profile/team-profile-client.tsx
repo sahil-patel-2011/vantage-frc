@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
@@ -134,7 +135,7 @@ export default function TeamProfileClient() {
       if (!response.ok || !isTeamProfileView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Team profile. Showing the last copy on this device.");
+          setError(staleCopyNotice("Team profile"));
           setFetchFailed(false);
           return;
         }
@@ -150,7 +151,7 @@ export default function TeamProfileClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Team profile. Showing the last copy on this device.");
+        setError(staleCopyNotice("Team profile"));
         setFetchFailed(false);
         return;
       }
@@ -264,7 +265,7 @@ export default function TeamProfileClient() {
           {header}
           <OfflineBanner feature="Team profile" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="tp-error" role="alert">
+            <p {...staleCopyProps(error, "tp-error")}>
               {error}
             </p>
           ) : null}
@@ -315,7 +316,7 @@ export default function TeamProfileClient() {
     <main className="module-page tp-page">
       {header}
       <OfflineBanner feature="Team profile" fromCache={fromCache} cachedAt={cachedAt} />
-      {error ? <p className="tp-error" role="alert">{error}</p> : null}
+      {error ? <p {...staleCopyProps(error, "tp-error")}>{error}</p> : null}
 
       {view.status === "failed" && /not connected|api key|read api/i.test(String(view.error ?? "")) ? (
         // Not a failure: the public history (past seasons, awards) comes from a source this team

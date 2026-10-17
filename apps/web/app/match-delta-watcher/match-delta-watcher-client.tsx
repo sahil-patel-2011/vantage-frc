@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -222,7 +223,7 @@ export default function MatchDeltaWatcherClient() {
         if (!response.ok || !isMatchDeltaWatcherView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match-delta watcher. Showing the last copy on this device.");
+            setError(staleCopyNotice("Match-delta watcher"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -237,7 +238,7 @@ export default function MatchDeltaWatcherClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match-delta watcher. Showing the last copy on this device.");
+          setError(staleCopyNotice("Match-delta watcher"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -393,7 +394,7 @@ export default function MatchDeltaWatcherClient() {
       <OfflineBanner feature="Match-delta watcher" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

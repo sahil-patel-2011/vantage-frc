@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
@@ -404,7 +405,7 @@ export default function RankingProjectionClient() {
       if (!response.ok || !isRankingProjectionView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Ranking projection. Showing the last copy on this device.");
+          setError(staleCopyNotice("Ranking projection"));
           setFetchFailed(false);
         } else {
           setError(
@@ -423,7 +424,7 @@ export default function RankingProjectionClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Ranking projection. Showing the last copy on this device.");
+        setError(staleCopyNotice("Ranking projection"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);

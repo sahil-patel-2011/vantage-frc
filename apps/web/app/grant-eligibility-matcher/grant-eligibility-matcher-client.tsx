@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -215,7 +216,7 @@ export default function GrantEligibilityMatcherClient() {
         if (!response.ok || !isGrantEligibilityView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Grant Eligibility Matcher. Showing the last copy on this device.");
+            setError(staleCopyNotice("Grant Eligibility Matcher"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -229,7 +230,7 @@ export default function GrantEligibilityMatcherClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Grant Eligibility Matcher. Showing the last copy on this device.");
+          setError(staleCopyNotice("Grant Eligibility Matcher"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -362,7 +363,7 @@ export default function GrantEligibilityMatcherClient() {
       <OfflineBanner feature="Grant Eligibility Matcher" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="impact-status" role="alert">
+        <p {...staleCopyProps(error, "impact-status")}>
           {error}
         </p>
       ) : null}

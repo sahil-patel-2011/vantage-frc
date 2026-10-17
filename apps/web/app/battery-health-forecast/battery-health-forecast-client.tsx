@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -212,7 +213,7 @@ export default function BatteryHealthForecastClient() {
         if (!response.ok || !isBatteryHealthForecastView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Battery Health Forecast. Showing the last copy on this device.");
+            setError(staleCopyNotice("Battery Health Forecast"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -226,7 +227,7 @@ export default function BatteryHealthForecastClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Battery Health Forecast. Showing the last copy on this device.");
+          setError(staleCopyNotice("Battery Health Forecast"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -360,7 +361,7 @@ export default function BatteryHealthForecastClient() {
       <OfflineBanner feature="Battery Health Forecast" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

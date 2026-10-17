@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -120,7 +121,7 @@ export default function PartsRelayClient() {
       if (!response.ok || !isPartsRelayView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Parts Relay. Showing the last copy on this device.");
+          setError(staleCopyNotice("Parts Relay"));
           setFetchFailed(false);
           return;
         }
@@ -140,7 +141,7 @@ export default function PartsRelayClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Parts Relay. Showing the last copy on this device.");
+        setError(staleCopyNotice("Parts Relay"));
         setFetchFailed(false);
         return;
       }
@@ -277,7 +278,7 @@ export default function PartsRelayClient() {
       <OfflineBanner feature="Parts Relay" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

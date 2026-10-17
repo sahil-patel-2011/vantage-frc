@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button, useConfirm } from "../../components/ui";
@@ -69,7 +70,7 @@ export default function TeamTagsClient() {
       if (!response.ok || !isTeamTagsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Drive-team tags. Showing the last copy on this device.");
+          setError(staleCopyNotice("Drive-team tags"));
         } else {
           setErrorStatus(response.status);
           setError("error" in data && data.error ? data.error : "Could not load drive-team tags.");
@@ -84,7 +85,7 @@ export default function TeamTagsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Drive-team tags. Showing the last copy on this device.");
+        setError(staleCopyNotice("Drive-team tags"));
       } else {
         setError("Network error — please try again.");
       }
@@ -180,7 +181,7 @@ export default function TeamTagsClient() {
         <a href={orgId ? hubHref("/competition", "pick-clock", orgId) : "/pick-clock"}>Pick clock</a>
       </nav>
 
-      {error && view ? <p className="app-muted" role="alert">{error}</p> : null}
+      {error && view ? <p {...staleCopyProps(error, "app-muted")}>{error}</p> : null}
       {error && !view
         ? (() => {
             const copy = loadFailureCopy(

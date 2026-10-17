@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -101,7 +102,7 @@ export default function PitMapPlannerClient() {
         if (!response.ok || !isPitMapPlannerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Pit Map Planner. Showing the last copy on this device.");
+            setError(staleCopyNotice("Pit Map Planner"));
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -118,7 +119,7 @@ export default function PitMapPlannerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pit Map Planner. Showing the last copy on this device.");
+          setError(staleCopyNotice("Pit Map Planner"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -195,7 +196,7 @@ export default function PitMapPlannerClient() {
       <OfflineBanner feature="Pit Map Planner" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

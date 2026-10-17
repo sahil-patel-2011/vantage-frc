@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -375,7 +376,7 @@ export default function SeasonPlanningWorkspaceClient() {
         if (!response.ok || !isSeasonPlanningWorkspaceView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Season Planning. Showing the last copy on this device.");
+            setError(staleCopyNotice("Season Planning"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -393,7 +394,7 @@ export default function SeasonPlanningWorkspaceClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season Planning. Showing the last copy on this device.");
+          setError(staleCopyNotice("Season Planning"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -548,7 +549,7 @@ export default function SeasonPlanningWorkspaceClient() {
       <OfflineBanner feature="Season Planning" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p role="alert" className="telemetry-status">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

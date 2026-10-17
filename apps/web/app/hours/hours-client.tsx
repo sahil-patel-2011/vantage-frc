@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import {
@@ -108,7 +109,7 @@ export default function HoursClient() {
       if (!response.ok || !isBuildHoursView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Hours. Showing the last copy on this device.");
+          setError(staleCopyNotice("Hours"));
           setFetchFailed(false);
           return;
         }
@@ -130,7 +131,7 @@ export default function HoursClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Hours. Showing the last copy on this device.");
+        setError(staleCopyNotice("Hours"));
         setFetchFailed(false);
         return;
       }

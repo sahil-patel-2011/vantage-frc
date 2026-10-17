@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
@@ -286,7 +287,7 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
       if (!response.ok || !body || typeof body !== "object") {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Getting started. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Getting started"));
           setFetchFailed(false);
           return;
         }
@@ -305,7 +306,7 @@ export default function GettingStartedClient({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Getting started. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Getting started"));
         setFetchFailed(false);
         return;
       }

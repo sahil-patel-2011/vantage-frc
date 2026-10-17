@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -176,7 +177,7 @@ export default function GoalsClient() {
       if (!response.ok || !isGoalsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Goals. Showing the last copy on this device.");
+          setError(staleCopyNotice("Goals"));
           setFetchFailed(false);
           return;
         }
@@ -197,7 +198,7 @@ export default function GoalsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Goals. Showing the last copy on this device.");
+        setError(staleCopyNotice("Goals"));
         setFetchFailed(false);
         return;
       }
@@ -353,7 +354,7 @@ export default function GoalsClient() {
       {orgId ? <GoalsRelated orgId={orgId} /> : null}
 
       {error ? (
-        <p className="goals-alert" role="alert">
+        <p {...staleCopyProps(error, "goals-alert")}>
           {error}
         </p>
       ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { anySignal } from "../../lib/abort/any-signal";
 import { onTeamDataChanged } from "../../lib/team-data-changed";
 
@@ -251,7 +252,7 @@ export function useDashboardHomeState(initialOrgId = "") {
         setMessageKind("error");
         setMessage(
           lastCacheRef.current
-            ? (typeof err.error === "string" ? err.error : "Could not refresh Home. Showing the last copy on this device.")
+            ? (typeof err.error === "string" ? err.error : staleCopyNotice("Home"))
             : (typeof err.error === "string" ? err.error : "Could not load Home."),
         );
         setBoardLoaded(true);
@@ -276,7 +277,7 @@ export function useDashboardHomeState(initialOrgId = "") {
       if (lastCacheRef.current) {
         setFromCache(true);
         setMessageKind("error");
-        setMessage("Could not refresh Home. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Home"));
       } else {
         setMessageKind("error");
         setMessage("Could not load Home.");

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -314,7 +315,7 @@ export default function PickClockClient({
       if (!response.ok || !("status" in data) || !isPickClockView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pick clock. Showing the last copy on this device.");
+          setError(staleCopyNotice("Pick clock"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load pick clock.");
@@ -342,7 +343,7 @@ export default function PickClockClient({
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Pick clock. Showing the last copy on this device.");
+        setError(staleCopyNotice("Pick clock"));
         setFetchFailed(false);
       } else {
         setError("Could not load pick clock.");

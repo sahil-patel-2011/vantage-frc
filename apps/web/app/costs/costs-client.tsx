@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { BusinessRelated } from "../../components/business-related";
@@ -191,7 +192,7 @@ export default function CostsClient() {
       if (!response.ok || !isCostsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season Costs. Showing the last copy on this device.");
+          setError(staleCopyNotice("Season Costs"));
           setFetchFailed(false);
           return;
         }
@@ -213,7 +214,7 @@ export default function CostsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Season Costs. Showing the last copy on this device.");
+        setError(staleCopyNotice("Season Costs"));
         setFetchFailed(false);
         return;
       }
@@ -322,7 +323,7 @@ export default function CostsClient() {
         </PageHeader>
         <OfflineBanner feature="Season Costs" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
-          <p className="costs-alert" role="alert">
+          <p {...staleCopyProps(error, "costs-alert")}>
             {error}
           </p>
         ) : null}
@@ -395,7 +396,7 @@ export default function CostsClient() {
       {orgId ? <CostsRelated orgId={orgId} /> : null}
 
       {error ? (
-        <p className="costs-alert" role="alert">
+        <p {...staleCopyProps(error, "costs-alert")}>
           {error}
         </p>
       ) : null}

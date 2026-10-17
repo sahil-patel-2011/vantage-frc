@@ -1,4 +1,5 @@
 "use client";
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { Button, askConfirm } from "../../../components/ui";
 import { OfflineBanner } from "../../../components/offline-banner";
 
@@ -168,7 +169,7 @@ export default function KioskClient() {
       if (!response.ok || !isKioskView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Hours kiosk. Showing the last copy on this device.");
+          setError(staleCopyNotice("Hours kiosk"));
           setFetchFailed(false);
           return;
         }
@@ -190,7 +191,7 @@ export default function KioskClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Hours kiosk. Showing the last copy on this device.");
+        setError(staleCopyNotice("Hours kiosk"));
         setFetchFailed(false);
         return;
       }

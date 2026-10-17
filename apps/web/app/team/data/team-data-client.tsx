@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { DataSourceDegradedBanner } from "../../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../../components/offline-banner";
@@ -348,7 +349,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         if (hadCache || paintedOrgRef.current === orgId) {
           setFromCache(true);
           setFetchFailed(false);
-          setMessage("Could not refresh Team Data. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Team Data"));
         } else {
           setOk(false);
           setFetchFailed(true);
@@ -384,7 +385,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
       if (hadCache || paintedOrgRef.current === orgId) {
         setFromCache(true);
         setFetchFailed(false);
-        setMessage("Could not refresh Team Data. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Team Data"));
       } else {
         setOk(false);
         setFetchFailed(true);

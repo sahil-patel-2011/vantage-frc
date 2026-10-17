@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { AllianceAutoRoutes } from "./alliance-auto-routes";
 import { MatchBriefCard } from "./match-brief-card";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -129,7 +130,7 @@ export default function BriefingClient() {
       if (!response.ok || !isFullBriefingView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pre-match briefing. Showing the last copy on this device.");
+          setError(staleCopyNotice("Pre-match briefing"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load the pre-match briefing.");
@@ -148,7 +149,7 @@ export default function BriefingClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Pre-match briefing. Showing the last copy on this device.");
+        setError(staleCopyNotice("Pre-match briefing"));
         setFetchFailed(false);
       } else {
         setErrorStatus(null);

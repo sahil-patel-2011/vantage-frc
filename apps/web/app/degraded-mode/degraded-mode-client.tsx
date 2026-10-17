@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
@@ -123,7 +124,7 @@ export default function DegradedModeClient() {
       if (!response.ok || !isDegradedModeView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Data-source health. Showing the last copy on this device.");
+          setError(staleCopyNotice("Data-source health"));
           setFetchFailed(false);
           return;
         }
@@ -139,7 +140,7 @@ export default function DegradedModeClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Data-source health. Showing the last copy on this device.");
+        setError(staleCopyNotice("Data-source health"));
         setFetchFailed(false);
         return;
       }
@@ -244,7 +245,7 @@ export default function DegradedModeClient() {
           {header}
           <OfflineBanner feature="Data-source health" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="telemetry-status" role="alert">
+            <p {...staleCopyProps(error)}>
               {error}
             </p>
           ) : null}
@@ -270,7 +271,7 @@ export default function DegradedModeClient() {
       {header}
       <OfflineBanner feature="Data-source health" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

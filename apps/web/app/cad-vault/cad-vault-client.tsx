@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 /**
  * CAD Vault client: link Onshape/Fusion by title, then upload printable files.
  * Geometry is a face count only — never shown as kilograms.
@@ -153,7 +154,7 @@ export default function CadVaultClient() {
       if (!response.ok || !isCadVaultView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh CAD Vault. Showing the last copy on this device.");
+          setError(staleCopyNotice("CAD Vault"));
           setFetchFailed(false);
           return;
         }
@@ -168,7 +169,7 @@ export default function CadVaultClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh CAD Vault. Showing the last copy on this device.");
+        setError(staleCopyNotice("CAD Vault"));
         setFetchFailed(false);
         return;
       }
@@ -355,7 +356,7 @@ export default function CadVaultClient() {
         <CadVaultHeader orgId={view.orgId} />
         <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
-          <p className="telemetry-status" role="alert">
+          <p {...staleCopyProps(error)}>
             {error}
           </p>
         ) : null}
@@ -534,7 +535,7 @@ export default function CadVaultClient() {
       <OfflineBanner feature="CAD Vault" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

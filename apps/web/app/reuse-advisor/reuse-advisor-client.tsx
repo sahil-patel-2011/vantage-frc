@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -142,7 +143,7 @@ export default function ReuseAdvisorClient() {
       if (!response.ok || !isReuseAdvisorView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Reuse Advisor. Showing the last copy on this device.");
+          setError(staleCopyNotice("Reuse Advisor"));
           setFetchFailed(false);
           return;
         }
@@ -163,7 +164,7 @@ export default function ReuseAdvisorClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Reuse Advisor. Showing the last copy on this device.");
+        setError(staleCopyNotice("Reuse Advisor"));
         setFetchFailed(false);
         return;
       }
@@ -292,7 +293,7 @@ export default function ReuseAdvisorClient() {
           {header}
           <OfflineBanner feature="Reuse Advisor" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="telemetry-status" role="alert">
+            <p {...staleCopyProps(error)}>
               {error}
             </p>
           ) : null}
@@ -318,7 +319,7 @@ export default function ReuseAdvisorClient() {
       {header}
       <OfflineBanner feature="Reuse Advisor" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

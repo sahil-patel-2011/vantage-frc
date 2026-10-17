@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, ModelProvenance, PageHeader, Panel, Button } from "../../components/ui";
@@ -106,7 +107,7 @@ export default function TroubleshootClient() {
       if (!response.ok || !isTroubleshootView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Get unstuck. Showing the last copy on this device.");
+          setError(staleCopyNotice("Get unstuck"));
           setFetchFailed(false);
           return;
         }
@@ -126,7 +127,7 @@ export default function TroubleshootClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Get unstuck. Showing the last copy on this device.");
+        setError(staleCopyNotice("Get unstuck"));
         setFetchFailed(false);
         return;
       }
@@ -274,7 +275,7 @@ export default function TroubleshootClient() {
       </PageHeader>
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
@@ -80,7 +81,7 @@ export default function PairwiseClient() {
       if (!response.ok || !isPairwiseView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Pairwise ranking. Showing the last copy on this device.");
+          setError(staleCopyNotice("Pairwise ranking"));
         } else {
           setError(data.error ? data.error : "Could not load pairwise ranking.");
           setErrorStatus(response.status);
@@ -99,7 +100,7 @@ export default function PairwiseClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Pairwise ranking. Showing the last copy on this device.");
+        setError(staleCopyNotice("Pairwise ranking"));
       } else {
         setError("Network error — please try again.");
       }
@@ -224,7 +225,7 @@ export default function PairwiseClient() {
         ))}
       </nav>
 
-      {error && view ? <p className="app-muted" role="alert">{error}</p> : null}
+      {error && view ? <p {...staleCopyProps(error, "app-muted")}>{error}</p> : null}
       {!view && error
         ? (() => {
             const copy = loadFailureCopy(

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Skeleton, TextBlockSkeleton } from "../../components/ui";
@@ -99,7 +100,7 @@ export default function CadLearnClient() {
       if (!response.ok) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+          setRefreshError(staleCopyNotice("CAD Learn"));
         } else {
           setFetchFailed(true);
         }
@@ -109,7 +110,7 @@ export default function CadLearnClient() {
       if (!isCadLearnView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+          setRefreshError(staleCopyNotice("CAD Learn"));
         } else {
           setFetchFailed(true);
         }
@@ -123,7 +124,7 @@ export default function CadLearnClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setRefreshError("Could not refresh CAD Learn. Showing the last copy on this device.");
+        setRefreshError(staleCopyNotice("CAD Learn"));
       } else {
         setFetchFailed(true);
       }
@@ -226,7 +227,7 @@ export default function CadLearnClient() {
       <CadLearnHeader orgId={view?.orgId ?? null} />
       <OfflineBanner feature="CAD Learn" fromCache={fromCache} cachedAt={cachedAt} />
       {refreshError ? (
-        <p className="cl-muted" role="alert">
+        <p {...staleCopyProps(refreshError, "cl-muted")}>
           {refreshError}
         </p>
       ) : null}

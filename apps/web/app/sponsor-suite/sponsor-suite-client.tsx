@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { UsageCutoffBanner, resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
@@ -220,7 +221,7 @@ export default function SponsorSuiteClient() {
         if (!response.ok || !isSponsorSuiteView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Sponsor Suite. Showing the last copy on this device.");
+            setError(staleCopyNotice("Sponsor Suite"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -235,7 +236,7 @@ export default function SponsorSuiteClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Sponsor Suite. Showing the last copy on this device.");
+          setError(staleCopyNotice("Sponsor Suite"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -402,7 +403,7 @@ export default function SponsorSuiteClient() {
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

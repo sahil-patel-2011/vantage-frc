@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
@@ -181,7 +182,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
       if (!response.ok || !isSoftwareVersionsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Software versions. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Software versions"));
           setFetchFailed(false);
           return;
         }
@@ -203,7 +204,7 @@ export default function SoftwareVersionsClient({ orgId }: { orgId: string | null
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Software versions. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Software versions"));
         setFetchFailed(false);
         return;
       }

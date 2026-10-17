@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ClaudeConnectorWalkthrough } from "./claude-connector-walkthrough";
 import { OfflineBanner } from "../../../components/offline-banner";
@@ -160,7 +161,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       if (response.status === 401 || response.status === 403) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh CAD connections. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("CAD connections"));
           setFetchFailed(false);
           return;
         }
@@ -175,7 +176,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
       if (!response.ok || !body || typeof body !== "object") {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh CAD connections. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("CAD connections"));
           setFetchFailed(false);
           return;
         }
@@ -223,7 +224,7 @@ export default function CadConnections({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh CAD connections. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("CAD connections"));
         setFetchFailed(false);
         return;
       }

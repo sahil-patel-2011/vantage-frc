@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -180,7 +181,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         if (!response.ok || !isFmeaView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh the failure log. Showing the last copy on this device.");
+            setError(staleCopyNotice("the failure log"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -197,7 +198,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh the failure log. Showing the last copy on this device.");
+          setError(staleCopyNotice("the failure log"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -299,7 +300,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
         />
         <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
-          <p className="fmea-alert" role="alert">
+          <p {...staleCopyProps(error, "fmea-alert")}>
             {error}
           </p>
         ) : null}
@@ -355,7 +356,7 @@ export default function FmeaClient({ embedded = false }: { embedded?: boolean } 
       <OfflineBanner feature="Failure log" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="fmea-alert" role="alert">
+        <p {...staleCopyProps(error, "fmea-alert")}>
           {error}
         </p>
       ) : null}

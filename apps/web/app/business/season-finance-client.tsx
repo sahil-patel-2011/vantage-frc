@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Badge, EmptyState, StatTile, Button, askConfirm, StatRowSkeleton, TextBlockSkeleton } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
@@ -136,7 +137,7 @@ export default function SeasonFinanceClient({
       if (!response.ok || !isSeasonFinanceView(data)) {
         if (hadCache || viewHold.current) {
           setFromCache(true);
-          setError("Could not refresh Money. Showing the last copy on this device.");
+          setError(staleCopyNotice("Money"));
           setLoadFailure(null);
         } else {
           setLoadFailure({
@@ -157,7 +158,7 @@ export default function SeasonFinanceClient({
     } catch (cause) {
       if (hadCache || viewHold.current) {
         setFromCache(true);
-        setError("Could not refresh Money. Showing the last copy on this device.");
+        setError(staleCopyNotice("Money"));
         setLoadFailure(null);
       } else {
         setLoadFailure({
@@ -260,7 +261,7 @@ export default function SeasonFinanceClient({
     <div className={`biz-stack season-finance${embedded ? " embedded" : ""}`}>
       <OfflineBanner feature="Money" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <div className="biz-alert danger" role="alert">
+        <div {...staleCopyProps(error, "biz-alert danger")}>
           <strong>Couldn’t complete that.</strong>
           <span>{error}</span>
           <button type="button" onClick={() => setError("")}>

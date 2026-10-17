@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button, askConfirm } from "../../components/ui";
@@ -123,7 +124,7 @@ export default function AnnouncementsClient() {
       if (!response.ok || !isAnnouncementsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Announcements. Showing the last copy on this device.");
+          setError(staleCopyNotice("Announcements"));
           return;
         }
         setErrorStatus(response.status);
@@ -141,7 +142,7 @@ export default function AnnouncementsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Announcements. Showing the last copy on this device.");
+        setError(staleCopyNotice("Announcements"));
         return;
       }
       setError("Could not reach the server.");
@@ -246,7 +247,7 @@ export default function AnnouncementsClient() {
       />
       <OfflineBanner feature="Announcements" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p role="alert" className="ann-error">
+        <p {...staleCopyProps(error, "ann-error")}>
           {error}
         </p>
       ) : null}
@@ -308,7 +309,7 @@ export default function AnnouncementsClient() {
             <Button variant="primary" type="submit" disabled={busy || !title.trim()}>
               Post to {view.orgName}
             </Button>
-            {error ? <p role="alert" className="ann-error">{error}</p> : null}
+            {error ? <p {...staleCopyProps(error, "ann-error")}>{error}</p> : null}
             {notice ? <p role="status" className="app-muted ann-delivery-note">{notice}</p> : null}
           </form>
         </Panel>

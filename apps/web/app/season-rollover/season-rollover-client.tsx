@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -109,7 +110,7 @@ export default function SeasonRolloverClient() {
       if (!response.ok || !isSeasonRolloverView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season rollover. Showing the last copy on this device.");
+          setError(staleCopyNotice("Season rollover"));
           setFetchFailed(false);
           return;
         }
@@ -129,7 +130,7 @@ export default function SeasonRolloverClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Season rollover. Showing the last copy on this device.");
+        setError(staleCopyNotice("Season rollover"));
         setFetchFailed(false);
         return;
       }
@@ -208,7 +209,7 @@ export default function SeasonRolloverClient() {
       <OfflineBanner feature="Season rollover" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

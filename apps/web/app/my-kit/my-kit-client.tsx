@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -150,7 +151,7 @@ export default function MyKitClient() {
         if (!response.ok || !isMyKitView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setErrorMessage("Could not refresh My Kit. Showing the last copy on this device.");
+            setErrorMessage(staleCopyNotice("My Kit"));
             setFetchFailed(false);
           } else {
             setErrorMessage("error" in data && data.error ? data.error : "");
@@ -166,7 +167,7 @@ export default function MyKitClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setErrorMessage("Could not refresh My Kit. Showing the last copy on this device.");
+          setErrorMessage(staleCopyNotice("My Kit"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);

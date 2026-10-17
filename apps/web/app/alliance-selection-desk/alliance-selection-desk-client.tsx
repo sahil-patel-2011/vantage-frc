@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -371,7 +372,7 @@ export default function AllianceSelectionDeskClient() {
           || (urlSession && (data.status !== "live" || data.session.id !== urlSession))) {
           if (viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Alliance selection desk. Showing the last copy on this device.");
+            setError(staleCopyNotice("Alliance selection desk"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -388,7 +389,7 @@ export default function AllianceSelectionDeskClient() {
         if (!current()) return;
         if (viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Alliance selection desk. Showing the last copy on this device.");
+          setError(staleCopyNotice("Alliance selection desk"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -571,7 +572,7 @@ export default function AllianceSelectionDeskClient() {
       <OfflineBanner feature="Alliance selection desk" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p role="alert" className="telemetry-status">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

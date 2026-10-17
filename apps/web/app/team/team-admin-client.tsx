@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, ConfirmDialog, EmptyState, Modal, PageHeader } from "../../components/ui";
@@ -206,7 +207,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
         // Nothing came back at all: the last copy on this device, or the page's own error.
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh the people list. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("the people list"));
           setMembershipFetchFailed(false);
           setMembershipLoading(false);
           return;
@@ -278,7 +279,7 @@ export default function TeamAdminClient({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh the people list. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("the people list"));
         setMembershipFetchFailed(false);
         setMembershipLoading(false);
         return;

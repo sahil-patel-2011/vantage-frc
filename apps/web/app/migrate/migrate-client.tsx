@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // Subpath imports, not the package barrel: the barrel re-exports parsers that
 // use node:crypto, which must not be pulled into the browser bundle.
@@ -239,7 +240,7 @@ export default function MigrateClient() {
       if (!response.ok || !isMigrateView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Bring your season. Showing the last copy on this device.");
+          setError(staleCopyNotice("Bring your season"));
           return;
         }
         setErrorStatus(response.status);
@@ -261,7 +262,7 @@ export default function MigrateClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Bring your season. Showing the last copy on this device.");
+        setError(staleCopyNotice("Bring your season"));
         return;
       }
       setError("Network error — please try again.");

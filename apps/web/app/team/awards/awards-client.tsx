@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { BusinessRelated } from "../../../components/business-related";
@@ -260,7 +261,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
       if (!response.ok) {
         if (hadCache || submissionsRef.current.length) {
           setFromCache(true);
-          flash(false, "Could not refresh Awards. Showing the last copy on this device.");
+          flash(false, staleCopyNotice("Awards"));
           setLoading(false);
           return;
         }
@@ -288,7 +289,7 @@ function AwardsLive({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || submissionsRef.current.length) {
         setFromCache(true);
-        flash(false, "Could not refresh Awards. Showing the last copy on this device.");
+        flash(false, staleCopyNotice("Awards"));
         setLoading(false);
         return;
       }

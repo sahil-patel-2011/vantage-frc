@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { BuildHubRelated } from "../../components/build-hub-related";
@@ -217,7 +218,7 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
       if (!response.ok || !isPrototypeTrackerView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Prototype-to-Decision Tracker. Showing the last copy on this device.");
+          setError(staleCopyNotice("Prototype-to-Decision Tracker"));
           setFetchFailed(false);
           return;
         }
@@ -238,7 +239,7 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Prototype-to-Decision Tracker. Showing the last copy on this device.");
+        setError(staleCopyNotice("Prototype-to-Decision Tracker"));
         setFetchFailed(false);
         return;
       }
@@ -402,7 +403,7 @@ export default function PrototypeTrackerClient({ embedded = false }: { embedded?
       ) : null}
 
       {error ? (
-        <p className="ptk-alert" role="alert">
+        <p {...staleCopyProps(error, "ptk-alert")}>
           {error}
         </p>
       ) : null}

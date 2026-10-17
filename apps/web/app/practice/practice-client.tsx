@@ -1,4 +1,5 @@
 "use client";
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { Button, askConfirm } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -459,7 +460,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
       if (!response.ok || !isDriverPracticeView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Practice. Showing the last copy on this device.");
+          setError(staleCopyNotice("Practice"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load practice planner.");
@@ -476,7 +477,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Practice. Showing the last copy on this device.");
+        setError(staleCopyNotice("Practice"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -633,7 +634,7 @@ export default function PracticeClient({ embedded = false }: { embedded?: boolea
         </div>
       </header>
 
-      {error ? <p className="practice-alert error" role="alert">{error}</p> : null}
+      {error ? <p {...staleCopyProps(error, "practice-alert error")}>{error}</p> : null}
 
       <PracticeNextActions actions={nextActions} />
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "../../components/icon";
 import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
@@ -254,7 +255,7 @@ export default function ChemistryClient({
           }
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh alliance chemistry. Showing the last copy on this device.");
+            setError(staleCopyNotice("alliance chemistry"));
             setFetchFailed(false);
           } else {
             setError(typeof body.error === "string" ? body.error : "Could not load alliance chemistry.");
@@ -287,7 +288,7 @@ export default function ChemistryClient({
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh alliance chemistry. Showing the last copy on this device.");
+          setError(staleCopyNotice("alliance chemistry"));
           setFetchFailed(false);
         } else {
           setError("Could not load alliance chemistry.");

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, Button } from "../../components/ui";
@@ -146,7 +147,7 @@ export default function SubteamsClient() {
       if (!response.ok || !isSubteamsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Subteam progress. Showing the last copy on this device.");
+          setError(staleCopyNotice("Subteam progress"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load subteams.");
@@ -163,7 +164,7 @@ export default function SubteamsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Subteam progress. Showing the last copy on this device.");
+        setError(staleCopyNotice("Subteam progress"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);

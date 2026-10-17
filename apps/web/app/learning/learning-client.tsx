@@ -1,4 +1,5 @@
 "use client";
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 // /learning — the "Call Your Shot" home page.
 //
 // Mentors (owner/admin) get the foreman view: per-member per-surface rollups
@@ -106,7 +107,7 @@ export default function LearningClient() {
       if (!response.ok || !isLearningOverview(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setRefreshError("Could not refresh Learning. Showing the last copy on this device.");
+          setRefreshError(staleCopyNotice("Learning"));
           setFetchFailed(false);
           return;
         }
@@ -120,7 +121,7 @@ export default function LearningClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setRefreshError("Could not refresh Learning. Showing the last copy on this device.");
+        setRefreshError(staleCopyNotice("Learning"));
         setFetchFailed(false);
         return;
       }
@@ -153,7 +154,7 @@ export default function LearningClient() {
       </nav>
       <OfflineBanner feature="Learning" fromCache={fromCache} cachedAt={cachedAt} />
       {refreshError ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(refreshError)}>
           {refreshError}
         </p>
       ) : null}

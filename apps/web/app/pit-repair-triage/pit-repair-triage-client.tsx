@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Badge,
@@ -234,7 +235,7 @@ export default function PitRepairTriageClient() {
         if (!response.ok || !isPitRepairTriageView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh pit repair. Showing the last copy on this device.");
+            setError(staleCopyNotice("pit repair"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -249,7 +250,7 @@ export default function PitRepairTriageClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh pit repair. Showing the last copy on this device.");
+          setError(staleCopyNotice("pit repair"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -394,7 +395,7 @@ export default function PitRepairTriageClient() {
       <OfflineBanner feature="Pit repair triage" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
@@ -144,7 +145,7 @@ export default function SupportTicketsClient() {
       if (!response.ok || !isSupportView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Support. Showing the last copy on this device.");
+          setError(staleCopyNotice("Support"));
           setFetchFailed(false);
           return;
         }
@@ -164,7 +165,7 @@ export default function SupportTicketsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Support. Showing the last copy on this device.");
+        setError(staleCopyNotice("Support"));
         setFetchFailed(false);
         return;
       }
@@ -313,7 +314,7 @@ export default function SupportTicketsClient() {
       <SupportRelated orgId={view.orgId} />
 
       {error ? (
-        <p className="support-tickets-error" role="alert">
+        <p {...staleCopyProps(error, "support-tickets-error")}>
           {error}
         </p>
       ) : null}

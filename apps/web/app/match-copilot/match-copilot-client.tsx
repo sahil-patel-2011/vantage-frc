@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
@@ -207,7 +208,7 @@ export default function MatchCopilotClient() {
         if (!response.ok || !isMatchCopilotView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match Copilot. Showing the last copy on this device.");
+            setError(staleCopyNotice("Match Copilot"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -221,7 +222,7 @@ export default function MatchCopilotClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match Copilot. Showing the last copy on this device.");
+          setError(staleCopyNotice("Match Copilot"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -352,7 +353,7 @@ export default function MatchCopilotClient() {
       <OfflineBanner feature="Match Copilot" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

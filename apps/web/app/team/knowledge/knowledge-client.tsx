@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   canDeleteKnowledgePage,
@@ -201,7 +202,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
         if (!response.ok || !isKnowledgeWikiView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh the playbook. Showing the last copy on this device.");
+            setError(staleCopyNotice("the playbook"));
             setFetchFailed(false);
             return;
           }
@@ -222,7 +223,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh the playbook. Showing the last copy on this device.");
+          setError(staleCopyNotice("the playbook"));
           setFetchFailed(false);
           return;
         }
@@ -461,7 +462,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
       ) : null}
 
       {error ? (
-        <p className="kb-alert" role="alert">
+        <p {...staleCopyProps(error, "kb-alert")}>
           {error}
         </p>
       ) : null}

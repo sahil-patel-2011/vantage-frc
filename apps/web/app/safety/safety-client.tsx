@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../components/ui";
@@ -130,7 +131,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
       if (!response.ok || !isSafetyView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh tool certifications. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("tool certifications"));
           setLoadFailed(false);
         } else {
           setFailureStatus(response.status);
@@ -151,7 +152,7 @@ export default function SafetyClient({ orgId }: { orgId: string | null }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh tool certifications. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("tool certifications"));
         setLoadFailed(false);
       } else {
         setLoadFailed(true);

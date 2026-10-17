@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -198,7 +199,7 @@ export default function VendorLeadTimesClient() {
         if (!response.ok || !isVendorLeadTimesView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Vendor Lead Times. Showing the last copy on this device.");
+            setError(staleCopyNotice("Vendor Lead Times"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -212,7 +213,7 @@ export default function VendorLeadTimesClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Vendor Lead Times. Showing the last copy on this device.");
+          setError(staleCopyNotice("Vendor Lead Times"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -346,7 +347,7 @@ export default function VendorLeadTimesClient() {
       <OfflineBanner feature="Vendor Lead Times" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -218,7 +219,7 @@ export default function JudgeSimClient() {
         if (!response.ok || !isJudgeSimView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Judge-Pitch. Showing the last copy on this device.");
+            setError(staleCopyNotice("Judge-Pitch"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -233,7 +234,7 @@ export default function JudgeSimClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Judge-Pitch. Showing the last copy on this device.");
+          setError(staleCopyNotice("Judge-Pitch"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -385,7 +386,7 @@ export default function JudgeSimClient() {
       <OfflineBanner feature="Judge-Pitch Simulator" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

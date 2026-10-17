@@ -2,6 +2,16 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2405,
+      "date": "2026-10-16",
+      "headline": "No more warning boxes when a page is simply showing its saved copy",
+      "changes": [
+        "When a page can't refresh but has its last copy on your device, it says so in a quiet grey line instead of an amber warning",
+        "Offline, that line no longer repeats what the offline banner already says",
+        "Real problems, like a page with nothing saved, still show as a warning"
+      ]
+    },
+    {
       "pr": 2404,
       "date": "2026-10-15",
       "headline": "Event pages open from this device first",

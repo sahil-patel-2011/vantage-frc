@@ -1,4 +1,5 @@
 "use client";
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { AIAttribution, Button, EmptyState, PageHeader, askConfirm } from "../../components/ui";
@@ -89,7 +90,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
       if (!response.ok || !isMatchDebriefView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Match debrief. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Match debrief"));
           setFetchFailed(false);
         } else {
           setMessage("error" in data && data.error ? data.error : "Failed to load match log");
@@ -106,7 +107,7 @@ export default function MatchDebriefClient({ orgId }: { orgId: string | null }) 
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Match debrief. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Match debrief"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);

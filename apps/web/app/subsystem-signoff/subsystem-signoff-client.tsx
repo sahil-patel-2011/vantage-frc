@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BuildHubRelated } from "../../components/build-hub-related";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -209,7 +210,7 @@ export default function SubsystemSignoffClient() {
       if (!response.ok || !isSubsystemSignoffView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Subsystem Sign-off. Showing the last copy on this device.");
+          setError(staleCopyNotice("Subsystem Sign-off"));
           setFetchFailed(false);
           return;
         }
@@ -230,7 +231,7 @@ export default function SubsystemSignoffClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Subsystem Sign-off. Showing the last copy on this device.");
+        setError(staleCopyNotice("Subsystem Sign-off"));
         setFetchFailed(false);
         return;
       }
@@ -397,7 +398,7 @@ export default function SubsystemSignoffClient() {
       {orgId ? <SignoffRelated orgId={orgId} /> : null}
 
       {error ? (
-        <p className="signoff-alert" role="alert">
+        <p {...staleCopyProps(error, "signoff-alert")}>
           {error}
         </p>
       ) : null}

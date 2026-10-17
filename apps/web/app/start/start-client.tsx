@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader } from "../../components/ui";
@@ -105,7 +106,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
       if (!response.ok || !isStartView(body)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Your first week. Showing the last copy on this device.");
+          setError(staleCopyNotice("Your first week"));
           setFetchFailed(false);
           return;
         }
@@ -122,7 +123,7 @@ export default function StartClient({ orgId: orgIdProp }: { orgId: string | null
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Your first week. Showing the last copy on this device.");
+        setError(staleCopyNotice("Your first week"));
         setFetchFailed(false);
         return;
       }

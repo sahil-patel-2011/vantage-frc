@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Modal, askConfirm } from "../../../components/ui";
 import { competitionCalendarLabel } from "../../../lib/events/event-planning";
@@ -199,7 +200,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
       if (!response.ok || !isSubteamCalendarView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Calendar. Showing the last copy on this device.");
+          setError(staleCopyNotice("Calendar"));
           setFetchFailed(false);
           return;
         }
@@ -217,7 +218,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Calendar. Showing the last copy on this device.");
+        setError(staleCopyNotice("Calendar"));
         setFetchFailed(false);
         return;
       }
@@ -908,7 +909,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             <aside className="tc-panel">
               {viewOnly ? <ViewOnlyNote /> : null}
               <Modal open={createOpen && !viewOnly} onClose={() => { if (!busy && !competitionBusy) { setCreateOpen(false); setCompetitionKey(null); setPrefill(null); setQuickDay(null); setQuickHour(null); } }} title={competitionKey ? "Competition details" : "Add to calendar"} className="tc-create-dialog" scrollBody>
-              {error ? <p role="alert" className="tc-muted">{error}</p> : null}
+              {error ? <p {...staleCopyProps(error, "tc-muted")}>{error}</p> : null}
               <div id="tc-quick-add">
                 <QuickAddForm
                   orgId={orgId}

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import dynamic from "next/dynamic";
 import { availableSeasonYears, currentSeasonYear } from "@vantage/game-year";
 import { HubPanelSkeleton } from "../../components/product-hub";
@@ -157,7 +158,7 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
       if (!response.ok || !isBusinessPortalView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Business. Showing the last copy on this device.");
+          setError(staleCopyNotice("Business"));
           setLoadFailure(null);
         } else {
           setLoadFailure({
@@ -177,7 +178,7 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
     } catch (cause) {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Business. Showing the last copy on this device.");
+        setError(staleCopyNotice("Business"));
         setLoadFailure(null);
       } else {
         setLoadFailure({
@@ -355,7 +356,7 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
           need to still be where it was when something goes wrong. These belong
           with the panel they are talking about. */}
       {error ? (
-        <div className="biz-alert danger" role="alert">
+        <div {...staleCopyProps(error, "biz-alert danger")}>
           <strong>Couldn’t complete that.</strong>
           <span>{error}</span>
           <button type="button" onClick={() => setError("")}>

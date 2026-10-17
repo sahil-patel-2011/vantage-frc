@@ -1,4 +1,5 @@
 "use client";
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -275,7 +276,7 @@ export default function VideoClient() {
       if (!response.ok || !isVideoView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match video. Showing the last copy on this device.");
+          setError(staleCopyNotice("Match video"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load video reviews.");
@@ -293,7 +294,7 @@ export default function VideoClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Match video. Showing the last copy on this device.");
+        setError(staleCopyNotice("Match video"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -449,7 +450,7 @@ export default function VideoClient() {
       <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

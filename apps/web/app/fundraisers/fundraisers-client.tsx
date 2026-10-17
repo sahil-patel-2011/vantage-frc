@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BusinessRelated } from "../../components/business-related";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -178,7 +179,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
         if (!response.ok || !isFundraisersView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setMessage("Could not refresh Fundraisers. Showing the last copy on this device.");
+            setMessage(staleCopyNotice("Fundraisers"));
             setLoadError("");
             setErrorStatus(null);
           } else {
@@ -197,7 +198,7 @@ export default function FundraisersClient({ orgId }: { orgId: string | null }) {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Fundraisers. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Fundraisers"));
           setLoadError("");
         } else {
           setLoadError("Failed to load fundraisers");

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -124,7 +125,7 @@ export default function ObjectChatBridgeClient() {
       if (!response.ok || !isObjectChatBridgeView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Object chat. Showing the last copy on this device.");
+          setError(staleCopyNotice("Object chat"));
           setFetchFailed(false);
           return;
         }
@@ -145,7 +146,7 @@ export default function ObjectChatBridgeClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Object chat. Showing the last copy on this device.");
+        setError(staleCopyNotice("Object chat"));
         setFetchFailed(false);
         return;
       }
@@ -245,7 +246,7 @@ export default function ObjectChatBridgeClient() {
       <OfflineBanner feature="Object chat" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

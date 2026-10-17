@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -163,7 +164,7 @@ function DecisionSearchShell({
         ) : null}
       </EmptyState>
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}
@@ -229,7 +230,7 @@ export default function DecisionSearchClient() {
         if (!response.ok || !isDecisionSearchView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Decision Search. Showing the last copy on this device.");
+            setError(staleCopyNotice("Decision Search"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -244,7 +245,7 @@ export default function DecisionSearchClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Decision Search. Showing the last copy on this device.");
+          setError(staleCopyNotice("Decision Search"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -430,7 +431,7 @@ export default function DecisionSearchClient() {
       <OfflineBanner feature="Decision Search" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

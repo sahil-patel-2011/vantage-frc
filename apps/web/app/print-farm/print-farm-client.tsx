@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 // Print farm — deliberately small, honest, and MANUAL.
 // Non-goals (also stated in migration 0473): no slicer integration, no G-code upload,
 // no printer telemetry, no OctoPrint/Bambu/Prusa API. Printer status is human-reported
@@ -91,7 +92,7 @@ export default function PrintFarmClient() {
         if (!response.ok || !isPrintFarmView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh the print farm. Showing the last copy on this device.");
+            setError(staleCopyNotice("the print farm"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -105,7 +106,7 @@ export default function PrintFarmClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh the print farm. Showing the last copy on this device.");
+          setError(staleCopyNotice("the print farm"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);

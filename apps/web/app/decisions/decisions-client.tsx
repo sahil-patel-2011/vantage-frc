@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -168,7 +169,7 @@ function DecisionsShell({
         ) : null}
       </EmptyState>
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}
@@ -237,7 +238,7 @@ export default function DecisionsClient() {
         if (!response.ok || !isDecisionsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Decision Log. Showing the last copy on this device.");
+            setError(staleCopyNotice("Decision Log"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -252,7 +253,7 @@ export default function DecisionsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Decision Log. Showing the last copy on this device.");
+          setError(staleCopyNotice("Decision Log"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -438,7 +439,7 @@ export default function DecisionsClient() {
       <OfflineBanner feature="Decision Log" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

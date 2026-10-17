@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -206,7 +207,7 @@ export default function ScoutFieldBudgetClient() {
         if (!response.ok || !isScoutFieldBudgetView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Field-Count Budget. Showing the last copy on this device.");
+            setError(staleCopyNotice("Field-Count Budget"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -220,7 +221,7 @@ export default function ScoutFieldBudgetClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Field-Count Budget. Showing the last copy on this device.");
+          setError(staleCopyNotice("Field-Count Budget"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -333,7 +334,7 @@ export default function ScoutFieldBudgetClient() {
       <OfflineBanner feature="Field-Count Budget" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}
