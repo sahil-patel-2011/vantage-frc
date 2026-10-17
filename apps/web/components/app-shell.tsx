@@ -470,7 +470,12 @@ export default function AppShell() {
   );
 
   useEffect(() => {
-    const update = () => setOnline(navigator.onLine);
+    const update = () => {
+      setOnline(navigator.onLine);
+      // Live connection state for CSS: "showing the last copy" notes (lib/ui/stale-copy) hide
+      // while offline, under the offline banner, and come back on reconnect.
+      document.documentElement.dataset.network = navigator.onLine ? "online" : "offline";
+    };
     update();
     window.addEventListener("online", update);
     window.addEventListener("offline", update);
