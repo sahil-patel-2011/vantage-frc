@@ -1,9 +1,11 @@
 // When a purchase request is marked received, append an inventory_transactions
-// receipt against the linked catalog item — never invent stock. Missing or
-// invalid inventory_item_id skips the ledger and leaves the receive itself alone.
+// receipt for it — never invent stock: the quantity is the order's own quantity, and an
+// order with no quantity skips the ledger and leaves the receive itself alone.
 //
-// Quantity is the order's own quantity. This module does not create inventory_items
-// rows and does not default a count when the order has none.
+// An order linked to a catalog item lands on that item. An order with no link (a pasted
+// vendor link, a one-off part) gets its own inventory item, named and priced from the
+// order, and is linked to it — deliveries used to skip inventory entirely unless someone
+// had picked an existing item when ordering.
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepointOrThrow } from "@vantage/db";
@@ -87,33 +89,65 @@ function isUniqueViolation(error: unknown): boolean {
   return (error as { code?: string } | null)?.code === "23505";
 }
 
-async function loadLinkedOrder(
-  client: PoolClient,
-  input: { orgId: string; orderId: string },
-): Promise<{ inventoryItemId: string | null; quantity: number | null; title: string | null }> {
+type LinkedOrder = { inventoryItemId: string | null; quantity: number | null; title: string | null; vendor: string | null; unitCost: number | null };
+
+async function loadLinkedOrder(client: PoolClient, input: { orgId: string; orderId: string }): Promise<LinkedOrder & { columnMissing: boolean }> {
+  const empty = { inventoryItemId: null, quantity: null, title: null, vendor: null, unitCost: null };
   try {
     const loaded = await client.query<{
       inventoryItemId: string | null;
       quantity: string | number | null;
       title: string | null;
+      vendor: string | null;
+      unitCost: string | number | null;
     }>(
-      `SELECT inventory_item_id AS "inventoryItemId", quantity, title
+      `SELECT inventory_item_id AS "inventoryItemId", quantity, title, vendor, unit_cost_usd AS "unitCost"
        FROM purchase_requests
        WHERE id = $1::uuid AND org_id = $2::uuid`,
       [input.orderId, input.orgId],
     );
     const row = loaded.rows[0];
-    if (!row) return { inventoryItemId: null, quantity: null, title: null };
+    if (!row) return { ...empty, columnMissing: false };
     const quantity = row.quantity == null ? null : Number(row.quantity);
+    const unitCost = row.unitCost == null ? null : Number(row.unitCost);
     return {
       inventoryItemId: row.inventoryItemId,
       quantity: Number.isFinite(quantity) ? quantity : null,
       title: row.title,
+      vendor: row.vendor,
+      unitCost: Number.isFinite(unitCost) ? unitCost : null,
+      columnMissing: false,
     };
   } catch (error) {
-    if (isMissingItemColumn(error)) return { inventoryItemId: null, quantity: null, title: null };
+    if (isMissingItemColumn(error)) return { ...empty, columnMissing: true };
     throw error;
   }
+}
+
+/**
+ * The inventory item an unlinked order becomes: its own name, vendor and unit price, starting at
+ * zero (the receipt below adds the delivered quantity), linked back to the order.
+ */
+async function createItemForOrder(
+  client: PoolClient,
+  input: { orgId: string; userId: string; orderId: string; order: LinkedOrder },
+): Promise<string | null> {
+  const name = input.order.title?.trim();
+  if (!name) return null;
+  const created = await client.query<{ id: string }>(
+    `INSERT INTO inventory_items (org_id, name, vendor, unit_cost, notes, created_by)
+     VALUES ($1::uuid, $2::text, $3::text, $4::numeric, $5::text, $6::uuid)
+     RETURNING id`,
+    [input.orgId, name.slice(0, 200), input.order.vendor?.trim() || null, input.order.unitCost, "Added from a received order", input.userId],
+  );
+  const itemId = created.rows[0]?.id ?? null;
+  if (itemId) {
+    await client.query(
+      `UPDATE purchase_requests SET inventory_item_id = $3::uuid WHERE id = $1::uuid AND org_id = $2::uuid AND inventory_item_id IS NULL`,
+      [input.orderId, input.orgId, itemId],
+    );
+  }
+  return itemId;
 }
 
 /**
@@ -130,11 +164,22 @@ export async function receiveToInventory(
 
   const itemIdKnown = input.inventoryItemId !== undefined;
   const quantityKnown = input.quantity !== undefined;
-  if (!itemIdKnown || !quantityKnown) {
-    const loaded = await loadLinkedOrder(client, { orgId: input.orgId, orderId: input.orderId });
-    if (!itemIdKnown) inventoryItemId = loaded.inventoryItemId;
-    if (!quantityKnown) quantity = loaded.quantity;
-    if (title == null) title = loaded.title;
+  const loaded = await loadLinkedOrder(client, { orgId: input.orgId, orderId: input.orderId });
+  if (!itemIdKnown) inventoryItemId = loaded.inventoryItemId;
+  if (!quantityKnown) quantity = loaded.quantity;
+  if (title == null) title = loaded.title;
+
+  // No catalog link, but a real delivery with a name and a quantity: make its item.
+  const deliveredQuantity = Number(quantity);
+  if (!parseInventoryItemId(inventoryItemId) && !loaded.columnMissing && Number.isFinite(deliveredQuantity) && deliveredQuantity > 0) {
+    try {
+      inventoryItemId = await withSavepointOrThrow(client, () =>
+        createItemForOrder(client, { orgId: input.orgId, userId: input.userId, orderId: input.orderId, order: { ...loaded, title: title ?? loaded.title } }),
+      );
+    } catch {
+      // Inventory isn't set up for this team (or the row was refused): the receive still stands.
+      inventoryItemId = null;
+    }
   }
 
   const plan = planReceiveToInventory({

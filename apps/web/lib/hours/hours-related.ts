@@ -6,6 +6,8 @@ export const HOURS_RELATED_LINKS = [
   { id: "attendance", label: "Attendance", kind: "team" as const, tab: "attendance" },
   { id: "hours-self-view", label: "My hours", kind: "team" as const, tab: "hours-self-view" },
   { id: "kiosk", label: "Hours kiosk", kind: "path" as const, path: "/hours/kiosk" },
+  // A QR code for the shop door: members check in and out by scanning it with their phone.
+  { id: "door", label: "Door check-in", kind: "path" as const, path: "/hours/door" },
 ] as const;
 
 export type HoursRelatedId = (typeof HOURS_RELATED_LINKS)[number]["id"];
@@ -20,6 +22,7 @@ export const HOURS_RELATED_INCLUDE: HoursRelatedId[] = [
   "attendance",
   "hours-self-view",
   "kiosk",
+  "door",
 ];
 
 export function hoursRelatedLinks(

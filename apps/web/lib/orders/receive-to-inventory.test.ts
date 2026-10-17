@@ -73,18 +73,28 @@ describe("planReceiveToInventory", () => {
 });
 
 describe("receiveToInventory", () => {
-  it("skips inventory when the caller already knows the item id is missing", async () => {
-    const { client, query } = stubClient(() => ({ rows: [], rowCount: 0 }));
-    const result = await receiveToInventory(client, {
-      orgId: ORG_ID,
-      userId: USER_ID,
-      orderId: ORDER_ID,
-      inventoryItemId: null,
-      quantity: 2,
-      title: "NEO 550",
+  it("gives an unlinked delivery its own inventory item, linked back to the order", async () => {
+    const NEW_ITEM = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+    const { client, query } = stubClient((sql) => {
+      if (sql.includes("FROM purchase_requests")) return { rows: [{ inventoryItemId: null, quantity: 2, title: "NEO 550", vendor: "REV", unitCost: 45 }], rowCount: 1 };
+      if (sql.includes("INSERT INTO inventory_items")) return { rows: [{ id: NEW_ITEM }], rowCount: 1 };
+      if (sql.includes("UPDATE inventory_items")) return { rows: [{ quantity: 2 }], rowCount: 1 };
+      if (sql.includes("FROM inventory_items")) return { rows: [{ id: NEW_ITEM, quantity: 0 }], rowCount: 1 };
+      return { rows: [], rowCount: 0 };
     });
-    expect(result).toEqual({ applied: false, reason: "missing_item_id" });
-    expect(query).not.toHaveBeenCalled();
+    const result = await receiveToInventory(client, { orgId: ORG_ID, userId: USER_ID, orderId: ORDER_ID, inventoryItemId: null, quantity: 2, title: "NEO 550" });
+    const insert = query.mock.calls.find(([sql]) => String(sql).includes("INSERT INTO inventory_items"));
+    expect(insert?.[1]).toEqual([ORG_ID, "NEO 550", "REV", 45, "Added from a received order", USER_ID]);
+    expect(query.mock.calls.some(([sql]) => String(sql).includes("UPDATE purchase_requests SET inventory_item_id"))).toBe(true);
+    expect(result).toEqual({ applied: true, itemId: NEW_ITEM, delta: 2 });
+  });
+
+  it("still skips a delivery with no name or no quantity, never inventing stock", async () => {
+    const { client, query } = stubClient((sql) =>
+      sql.includes("FROM purchase_requests") ? { rows: [{ inventoryItemId: null, quantity: null, title: "Mystery", vendor: null, unitCost: null }], rowCount: 1 } : { rows: [], rowCount: 0 },
+    );
+    expect(await receiveToInventory(client, { orgId: ORG_ID, userId: USER_ID, orderId: ORDER_ID })).toEqual({ applied: false, reason: "missing_item_id" });
+    expect(query.mock.calls.some(([sql]) => String(sql).includes("INSERT INTO inventory_items"))).toBe(false);
   });
 
   it("still marks-received-safe when the purchase_requests item column is absent", async () => {

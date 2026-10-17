@@ -62,6 +62,8 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
   // Never navigated to directly: the proxy rewrites a paused media tool's own
   // address to this page, so a menu entry would be a link to "this is paused".
   ["/media-paused", "shown in place of a paused media tool, by the proxy's rewrite"],
+  // Opened by scanning the QR on the door screen (/hours/door) with a phone camera.
+  ["/hours/checkin", "opened by scanning the shop-door QR code"],
 ]);
 
 /** Directory names that are not user-facing routes. */
