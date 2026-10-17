@@ -2,6 +2,18 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2407,
+      "date": "2026-10-17",
+      "headline": "Shop steps with drawing QR codes, a shop kiosk, and buying by vendor",
+      "changes": [
+        "Every part on the Manufacturing board has its own page: the steps to make it in order, its drawing, and one button for the next step",
+        "Print a part's QR label onto its drawing; scanning it opens the steps on any phone",
+        "A shop kiosk shows every part on the floor and the step it's on, with big Start and Done buttons and a who's-working picker",
+        "Orders groups approved requests one cart per vendor; check a cart out with what you actually paid, including shipping and tax",
+        "The budget now counts what an order actually cost once it's bought, and each request shows paid next to expected"
+      ]
+    },
+    {
       "pr": 2406,
       "date": "2026-10-16",
       "headline": "Skill trees, a scout points game, and phone check-in at the door",
