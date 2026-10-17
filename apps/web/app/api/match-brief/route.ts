@@ -9,7 +9,8 @@ import { getOrWriteMatchBrief } from "../../../lib/match-brief/generate";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
 
 /** A model writing a brief takes a few seconds to a minute (longer on a local model). */
-export const maxDuration = 120;
+// "Predict this match" on Home says up to five minutes; the plan write gets all of it.
+export const maxDuration = 300;
 
 class HttpError extends Error {
   constructor(

@@ -2,6 +2,16 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2408,
+      "date": "2026-10-17",
+      "headline": "Your next match is always on Home, with Predict this match",
+      "changes": [
+        "During an event, Home shows your next match at the top: bumper colour, who's with and against you, the countdown, and what comes after",
+        "Predict this match re-scores it from the latest data and writes the match plan for the whole team; it can take up to 5 minutes",
+        "The score estimate on Home now uses each robot's ratings at this event, so it shows up even before season ratings are loaded"
+      ]
+    },
+    {
       "pr": 2407,
       "date": "2026-10-17",
       "headline": "Shop steps with drawing QR codes, a shop kiosk, and buying by vendor",

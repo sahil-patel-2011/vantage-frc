@@ -43,7 +43,8 @@ export function snapshotWantsFullContext(url: URL): boolean {
  * something that may not be on screen, so it earns its place by feeding a
  * part of the page that is always there.
  */
-export const HOME_ALWAYS_LOADED: DashboardWidgetType[] = ["calendar_today", "my_day", "scouting_coverage", "team_todos"];
+// next_match feeds the Now / Next card pinned at the top of Home during an event.
+export const HOME_ALWAYS_LOADED: DashboardWidgetType[] = ["calendar_today", "my_day", "scouting_coverage", "team_todos", "next_match"];
 
 export function snapshotPollWidgetTypes(
   layout: Array<{ type: DashboardWidgetType }>,

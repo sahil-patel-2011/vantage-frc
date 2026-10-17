@@ -141,7 +141,7 @@ export async function loadDashboardSnapshot(
          )
          AND ${matchStillAheadSql()}
        ORDER BY COALESCE(actual_time, predicted_time, event_time)
-       LIMIT 1`,
+       LIMIT 2`,
       [eventKey, teamKey],
     );
     if (!match.rows[0]) {
@@ -151,6 +151,8 @@ export async function loadDashboardSnapshot(
       return;
     }
     const row = match.rows[0];
+    // The match after this one, for "After · Qual 52" under the card.
+    const afterRow = match.rows[1] ?? null;
     const redKeys = Array.isArray((row.redAlliance as { teamKeys?: unknown } | null)?.teamKeys)
       ? ((row.redAlliance as { teamKeys: unknown[] }).teamKeys as unknown[]).map(String)
       : [];
@@ -193,30 +195,47 @@ export async function loadDashboardSnapshot(
     let scoreDrivers: string[] = [];
     let briefing: string | null = null;
     if (year && (redKeys.length >= 2 || blueKeys.length >= 2)) {
-      const epa = await client.query<{
-        teamKey: string;
-        autoEpa: number | null;
-        teleopEpa: number | null;
-        endgameEpa: number | null;
-      }>(
+      type EpaRow = { teamKey: string; autoEpa: number | null; teleopEpa: number | null; endgameEpa: number | null };
+      // This event's ratings first (how each robot is playing here, and what the Schedule's
+      // estimates use), then the season's for any robot with no event rating yet. Season-only
+      // left Home with no score at all whenever season ratings weren't loaded.
+      const eventEpa = await client.query<EpaRow>(
         `SELECT DISTINCT ON (team_key)
             team_key AS "teamKey",
             epa_auto AS "autoEpa",
             epa_teleop AS "teleopEpa",
             epa_endgame AS "endgameEpa"
-         FROM team_year_metrics
-         WHERE team_key = ANY($1::text[]) AND year = $2
+         FROM team_event_metrics
+         WHERE team_key = ANY($1::text[]) AND event_key = $2
+           AND (epa_auto IS NOT NULL OR epa_teleop IS NOT NULL OR epa_endgame IS NOT NULL)
          ORDER BY team_key,
            CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
            synced_at DESC NULLS LAST`,
-        [[...redKeys, ...blueKeys], year],
+        [[...redKeys, ...blueKeys], eventKey],
       );
+      const haveEvent = new Set(eventEpa.rows.map((rating) => rating.teamKey));
+      const missing = [...redKeys, ...blueKeys].filter((key) => !haveEvent.has(key));
+      const yearEpa = missing.length
+        ? await client.query<EpaRow>(
+            `SELECT DISTINCT ON (team_key)
+                team_key AS "teamKey",
+                epa_auto AS "autoEpa",
+                epa_teleop AS "teleopEpa",
+                epa_endgame AS "endgameEpa"
+             FROM team_year_metrics
+             WHERE team_key = ANY($1::text[]) AND year = $2
+             ORDER BY team_key,
+               CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+               synced_at DESC NULLS LAST`,
+            [missing, year],
+          )
+        : { rows: [] as EpaRow[] };
       const card = nextMatchScoreCard({
         matchKey: row.matchKey,
         ourAlliance,
         redKeys,
         blueKeys,
-        rows: epa.rows,
+        rows: [...eventEpa.rows, ...yearEpa.rows],
       });
       if (!isNextMatchScoreSkip(card)) {
         redPredicted = card.redPredicted;
@@ -231,6 +250,8 @@ export async function loadDashboardSnapshot(
     }
     widgets.next_match = stamp("live", "next_match", {
       ...row,
+      after: afterRow ? { compLevel: afterRow.compLevel, matchNumber: afterRow.matchNumber, scheduledTime: afterRow.scheduledTime } : null,
+      checklistHref: `/competition?tab=match-checklist&orgId=${encodeURIComponent(input.orgId)}`,
       ourAlliance,
       partners: partnerKeys.map(strip),
       opponents: opponentKeys.map(strip),
