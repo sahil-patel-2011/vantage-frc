@@ -14,7 +14,7 @@ import { useScoutQueueRefresh } from "../../lib/scouting/use-queue-refresh";
 import type { Bootstrap } from "../scouting/scouting-model";
 import { SCOUTING_NAV } from "./scouting-shell";
 import { hubHref } from "../../lib/nav/hubs";
-import { ScoutHomeLead, ScoutHomeMatch, ScoutHomeMe, ScoutHomePit } from "./scout-home-sections";
+import { ScoutHomeLead, ScoutHomeMatch, ScoutHomeMe, ScoutHomePit, ScoutHomePoints } from "./scout-home-sections";
 import { useScoutingSummary } from "../../lib/scouting/use-scouting-summary";
 import { useViewOnly } from "../../lib/nav/use-view-only";
 import { readActiveScoutDraft } from "../../lib/scouting/draft-autosave";
@@ -380,6 +380,7 @@ export function ScoutingHome() {
             />
           </div>
           <ScoutHomeMe view={view} resume={resume} />
+          <ScoutHomePoints view={view} userId={scoutUserId} />
           {view.canLead && orgId ? <ScoutHomeLead view={view} orgId={orgId} withOrg={withOrg} /> : null}
         </>
       ) : orgId && summary.status === "failed" ? (
