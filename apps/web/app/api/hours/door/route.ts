@@ -4,6 +4,7 @@ import { auth, resolveAuthSecret } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { doorCheckinPath, doorCode, verifyDoorCode } from "../../../../lib/hours/door-code";
+import { toggleDoorCheckin } from "../../../../lib/hours/door-toggle";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 class HttpError extends Error {
@@ -59,20 +60,7 @@ export async function POST(request: Request) {
     const result = await withRls({ userId: user.id, orgId }, async (client) => {
       const role = await roleIn(client, orgId, user.id);
       if (!role) throw new HttpError(403, "You're not on this team.");
-      const closed = await client.query<{ clockIn: string; clockOut: string }>(
-        `UPDATE hour_logs SET clock_out = now(), closed_by = $2::uuid
-          WHERE org_id = $1::uuid AND user_id = $2::uuid AND clock_out IS NULL
-          RETURNING clock_in::text AS "clockIn", clock_out::text AS "clockOut"`,
-        [orgId, user.id],
-      );
-      if (closed.rows[0]) return { state: "out" as const, clockIn: closed.rows[0].clockIn, clockOut: closed.rows[0].clockOut };
-      const opened = await client.query<{ clockIn: string }>(
-        `INSERT INTO hour_logs (org_id, user_id, kind, note, created_by)
-         VALUES ($1::uuid, $2::uuid, 'build', 'Door check-in', $2::uuid)
-         RETURNING clock_in::text AS "clockIn"`,
-        [orgId, user.id],
-      );
-      return { state: "in" as const, clockIn: opened.rows[0]!.clockIn, clockOut: null };
+      return toggleDoorCheckin(client, { orgId, userId: user.id, codeWindow: window });
     });
     return Response.json(result);
   } catch (error) {

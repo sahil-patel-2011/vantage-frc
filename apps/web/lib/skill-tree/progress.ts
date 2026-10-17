@@ -1,6 +1,9 @@
 import type { TrainingCertification, TrainingSkill } from "../training/types";
 import { allSkillNodes, SKILL_TREES, skillKeyFromDescription, type SkillNode, type SkillTreeDef } from "./trees";
 
+/** Most members a single group sign-off may cover (the dialog caps picks at this too). */
+export const MAX_GROUP_SIGN_OFF = 60;
+
 /** One skill for one member. Expired counts as not done (Safety is redone each year). */
 export type SkillState = "locked" | "available" | "complete" | "expired";
 /** One tree for one member. */

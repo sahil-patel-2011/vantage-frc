@@ -1,10 +1,9 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { addSkill, certifyMember, computeTrainingView } from "../training/compute-training";
-import { buildSkillTreeModel, signOffBlocker } from "./progress";
+import { buildSkillTreeModel, MAX_GROUP_SIGN_OFF, signOffBlocker } from "./progress";
 import { SKILL_TREES, trainingSkillForNode } from "./trees";
 
-/** Most members a single group sign-off may cover. */
-export const MAX_GROUP_SIGN_OFF = 60;
+export { MAX_GROUP_SIGN_OFF };
 
 /**
  * Create the team's tree skills that don't exist yet (one training skill per tree skill). Run
@@ -25,7 +24,8 @@ export async function setupSkillTrees(client: PoolClient, input: { orgId: string
 /**
  * Sign off one tree skill for several members at once (a whole training session). Each member
  * is checked against the unlock order on the server; anyone not ready yet, or already signed
- * off, is skipped and named in the result.
+ * off, is skipped and named in the result — and so is anyone past the batch cap, so no one is
+ * left out silently.
  */
 export async function signOffGroup(
   client: PoolClient,
@@ -34,12 +34,17 @@ export async function signOffGroup(
   const view = await computeTrainingView(client, { userId: input.userId, requestedOrg: input.orgId });
   if (view.status !== "live") throw new Error("Choose your team first.");
   const members = new Set(view.members.map((member) => member.userId));
-  const ids = [...new Set(input.memberUserIds)].filter((id) => members.has(id)).slice(0, MAX_GROUP_SIGN_OFF);
+  const onTeam = [...new Set(input.memberUserIds)].filter((id) => members.has(id));
+  const ids = onTeam.slice(0, MAX_GROUP_SIGN_OFF);
   const model = buildSkillTreeModel({ skills: view.skills, certifications: view.certifications, memberIds: ids });
   const skillId = model.skillIdByKey.get(input.skillKey);
   if (!skillId) throw new Error("Set up the skill trees before signing off.");
   let signed = 0;
   const skipped: Array<{ memberUserId: string; reason: string }> = [];
+  const overflow = onTeam.slice(MAX_GROUP_SIGN_OFF).map((memberUserId) => ({
+    memberUserId,
+    reason: `more than ${MAX_GROUP_SIGN_OFF} at once — sign them off in a second batch`,
+  }));
   for (const memberUserId of ids) {
     const blocker = signOffBlocker(model, memberUserId, input.skillKey);
     if (blocker) {
@@ -57,5 +62,5 @@ export async function signOffGroup(
     });
     signed += 1;
   }
-  return { signed, skipped };
+  return { signed, skipped: [...skipped, ...overflow] };
 }

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "../../../components/ui";
 import { friendlyErrorMessage } from "../../../lib/ui/friendly-error";
 
-type Result = { state: "in" | "out"; clockIn: string; clockOut: string | null };
+type Result = { state: "in" | "out"; clockIn: string; clockOut: string | null; repeat?: boolean };
 
 function timeOf(iso: string | null) {
   if (!iso) return "";
@@ -19,7 +19,8 @@ function duration(from: string, to: string) {
 
 /**
  * Where the door QR lands: checks the signed-in member in, or out if they were in, once, as soon
- * as the page opens, and says which in big words.
+ * as the page opens, and says which in big words. Opening the same code again doesn't toggle back
+ * (lib/hours/door-toggle); it says where they already are.
  */
 export default function CheckinClient() {
   const [result, setResult] = useState<Result | null>(null);
@@ -61,7 +62,9 @@ export default function CheckinClient() {
           <strong>{result.state === "in" ? "You're checked in" : "You're checked out"}</strong>
           <p className="app-muted">
             {result.state === "in"
-              ? `At ${timeOf(result.clockIn)}. Scan the door code again when you leave.`
+              ? result.repeat
+                ? `Since ${timeOf(result.clockIn)}. To check out, scan the door code again once it changes.`
+                : `At ${timeOf(result.clockIn)}. Scan the door code again when you leave.`
               : `At ${timeOf(result.clockOut)}, after ${duration(result.clockIn, result.clockOut!)}.`}
           </p>
           <Button as="a" variant="secondary" href={orgId ? `/hours?orgId=${encodeURIComponent(orgId)}` : "/hours"}>

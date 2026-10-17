@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Button, EmptyState, Modal } from "../../components/ui";
 import type { TrainingView } from "../../lib/training/compute-training";
-import { buildSkillTreeModel, signOffBlocker, type SkillState, type TreeState } from "../../lib/skill-tree/progress";
+import { buildSkillTreeModel, MAX_GROUP_SIGN_OFF, signOffBlocker, type SkillState, type TreeState } from "../../lib/skill-tree/progress";
 import { SKILL_TREES, type SkillNode } from "../../lib/skill-tree/trees";
 import "./skill-tree.css";
 
@@ -214,11 +214,15 @@ function SignOffDialog({
   const notReady = members.length - ready.length;
   const [picked, setPicked] = useState<string[]>([]);
   const [date, setDate] = useState(today());
+  // One batch signs off at most MAX_GROUP_SIGN_OFF people; a bigger session goes in two batches.
+  const batch = Math.min(ready.length, MAX_GROUP_SIGN_OFF);
+  const full = picked.length >= MAX_GROUP_SIGN_OFF;
   return (
     <Modal open onClose={onClose} title={`Sign off: ${node.title}`}>
       <p className="app-muted">
         Choose everyone who showed this skill (a whole training session at once).
         {notReady ? ` ${notReady} ${notReady === 1 ? "person isn't" : "people aren't"} listed: already done or still need an earlier skill.` : ""}
+        {ready.length > MAX_GROUP_SIGN_OFF ? ` Up to ${MAX_GROUP_SIGN_OFF} at a time; sign off the rest in a second batch.` : ""}
       </p>
       {ready.length ? (
         <fieldset className="st-people">
@@ -226,15 +230,16 @@ function SignOffDialog({
           <label className="check-field">
             <input
               type="checkbox"
-              checked={picked.length === ready.length}
-              onChange={(event) => setPicked(event.target.checked ? ready.map((member) => member.userId) : [])}
+              checked={picked.length === batch}
+              onChange={(event) => setPicked(event.target.checked ? ready.slice(0, batch).map((member) => member.userId) : [])}
             />{" "}
-            Everyone ready ({ready.length})
+            {ready.length > MAX_GROUP_SIGN_OFF ? `First ${batch} ready` : `Everyone ready (${ready.length})`}
           </label>
           {ready.map((member) => (
             <label key={member.userId} className="check-field">
               <input
                 type="checkbox"
+                disabled={full && !picked.includes(member.userId)}
                 checked={picked.includes(member.userId)}
                 onChange={(event) =>
                   setPicked((current) => (event.target.checked ? [...current, member.userId] : current.filter((id) => id !== member.userId)))
