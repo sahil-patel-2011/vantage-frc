@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -235,7 +236,7 @@ export default function SponsorRenewalRoiClient() {
         if (!response.ok || !isSponsorRenewalRoiView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Sponsor Renewal ROI. Showing the last copy on this device.");
+            setError(staleCopyNotice("Sponsor Renewal ROI"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -250,7 +251,7 @@ export default function SponsorRenewalRoiClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Sponsor Renewal ROI. Showing the last copy on this device.");
+          setError(staleCopyNotice("Sponsor Renewal ROI"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -411,7 +412,7 @@ export default function SponsorRenewalRoiClient() {
       <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="app-muted" role="alert">
+        <p {...staleCopyProps(error, "app-muted")}>
           {error}
         </p>
       ) : null}

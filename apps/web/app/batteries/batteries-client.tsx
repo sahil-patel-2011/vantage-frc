@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { batteryNextActions, packHasMeasurement } from "../../lib/battery/battery-related";
@@ -128,7 +129,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
       if (!response.ok || !isBatteriesView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Batteries. Showing the last copy on this device.");
+          setError(staleCopyNotice("Batteries"));
           setFetchFailed(false);
           return;
         }
@@ -156,7 +157,7 @@ export default function BatteriesClient({ embedded = false }: { embedded?: boole
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Batteries. Showing the last copy on this device.");
+        setError(staleCopyNotice("Batteries"));
         setFetchFailed(false);
         return;
       }

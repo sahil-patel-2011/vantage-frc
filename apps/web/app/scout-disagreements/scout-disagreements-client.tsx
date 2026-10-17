@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button } from "../../components/ui";
@@ -266,7 +267,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
           if (!response.ok || !isScoutDisagreementsView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh Scout Disagreements. Showing the last copy on this device.");
+              setError(staleCopyNotice("Scout Disagreements"));
               setFetchFailed(false);
             } else {
               setFetchFailed(true);
@@ -283,7 +284,7 @@ export default function ScoutDisagreementsClient({ orgId: initialOrgId }: { orgI
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Disagreements. Showing the last copy on this device.");
+            setError(staleCopyNotice("Scout Disagreements"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);

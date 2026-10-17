@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button, askConfirm } from "../../components/ui";
@@ -103,7 +104,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
       if (!response.ok || !isRecognitionView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Recognition. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Recognition"));
           setFetchFailed(false);
         } else {
           setMessage("error" in data && data.error ? data.error : "Failed to load team awards");
@@ -119,7 +120,7 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Recognition. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Recognition"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);

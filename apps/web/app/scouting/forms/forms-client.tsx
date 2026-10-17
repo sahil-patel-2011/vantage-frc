@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { FormsResponses } from "./forms-responses";
 import { ScoringFormulas } from "./scoring-formulas";
 import { useSearchParams } from "next/navigation";
@@ -311,7 +312,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
       if (!response.ok || !isSchemasPayload(body)) {
         if (hadCache || payloadRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh scout forms. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("scout forms"));
           setLoadError("");
           return;
         }
@@ -340,7 +341,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
       if (generation !== loadGenerationRef.current) return;
       if (hadCache || payloadRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh scout forms. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("scout forms"));
         setLoadError("");
         return;
       }

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { BusinessRelated } from "../../components/business-related";
@@ -180,7 +181,7 @@ export default function SponsorTierCalculatorClient() {
       if (!response.ok || !isSponsorTierView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Sponsor Tier Calculator. Showing the last copy on this device.");
+          setError(staleCopyNotice("Sponsor Tier Calculator"));
           setFetchFailed(false);
           return;
         }
@@ -197,7 +198,7 @@ export default function SponsorTierCalculatorClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Sponsor Tier Calculator. Showing the last copy on this device.");
+        setError(staleCopyNotice("Sponsor Tier Calculator"));
         setFetchFailed(false);
         return;
       }
@@ -322,7 +323,7 @@ export default function SponsorTierCalculatorClient() {
           {header}
           <OfflineBanner feature="Sponsor Tier Calculator" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="telemetry-status" role="alert">
+            <p {...staleCopyProps(error)}>
               {error}
             </p>
           ) : null}
@@ -341,7 +342,7 @@ export default function SponsorTierCalculatorClient() {
           {header}
           <OfflineBanner feature="Sponsor Tier Calculator" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="telemetry-status" role="alert">
+            <p {...staleCopyProps(error)}>
               {error}
             </p>
           ) : null}

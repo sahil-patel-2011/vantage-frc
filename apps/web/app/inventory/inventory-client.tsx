@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AskAiButton } from "../../components/ask-ai-button";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -101,7 +102,7 @@ export default function InventoryClient() {
       if (!response.ok || !isInventoryView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh inventory. Showing the last copy on this device.");
+          setError(staleCopyNotice("inventory"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load inventory.");
@@ -118,7 +119,7 @@ export default function InventoryClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh inventory. Showing the last copy on this device.");
+        setError(staleCopyNotice("inventory"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -276,7 +277,7 @@ export default function InventoryClient() {
       <OfflineBanner feature="Inventory" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

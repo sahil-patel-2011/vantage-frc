@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, StatTile, Button } from "../../components/ui";
@@ -163,7 +164,7 @@ export default function BudgetClient() {
       if (!response.ok || !isBudgetPayload(data)) {
         if (hadCache || payloadRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season budget. Showing the last copy on this device.");
+          setError(staleCopyNotice("Season budget"));
           setDenied(null);
           setFetchFailed(false);
         } else {
@@ -188,7 +189,7 @@ export default function BudgetClient() {
     } catch {
       if (hadCache || payloadRef.current) {
         setFromCache(true);
-        setError("Could not refresh Season budget. Showing the last copy on this device.");
+        setError(staleCopyNotice("Season budget"));
         setDenied(null);
         setFetchFailed(false);
       } else {

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -129,7 +130,7 @@ export default function DriverTryoutsClient() {
       if (!response.ok || !isDriverTryoutsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Driver Tryouts. Showing the last copy on this device.");
+          setError(staleCopyNotice("Driver Tryouts"));
           setFetchFailed(false);
           return;
         }
@@ -150,7 +151,7 @@ export default function DriverTryoutsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Driver Tryouts. Showing the last copy on this device.");
+        setError(staleCopyNotice("Driver Tryouts"));
         setFetchFailed(false);
         return;
       }
@@ -250,7 +251,7 @@ export default function DriverTryoutsClient() {
       <OfflineBanner feature="Driver Tryouts" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

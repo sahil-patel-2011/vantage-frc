@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -171,7 +172,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
         if (!response.ok || !isSponsorshipView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Sponsorship. Showing the last copy on this device.");
+            setError(staleCopyNotice("Sponsorship"));
           } else {
             setError("error" in data && data.error ? data.error : "Could not load sponsorship one-pagers.");
             setErrorStatus(response.status);
@@ -201,7 +202,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Sponsorship. Showing the last copy on this device.");
+          setError(staleCopyNotice("Sponsorship"));
         } else {
           setError("Network error — please try again.");
         }
@@ -455,7 +456,7 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
 
       <OfflineBanner feature="Sponsorship" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

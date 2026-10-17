@@ -71,3 +71,22 @@ body.has-app-shell .app-badge.setup {
   color: color-mix(in srgb, var(--accent) 78%, var(--ink));
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
+
+/* "Couldn't refresh just now. Showing the last copy on this device." (lib/ui/stale-copy): the page
+   works from its saved copy, so the line is a quiet note — muted ink, no warning colour, an info
+   glyph — never the amber box or a red alert. */
+body.has-app-shell .telemetry-status.is-stale {
+  color: var(--muted);
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+body.has-app-shell .telemetry-status.is-stale::before {
+  --glyph-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6.4' fill='none' stroke='black' stroke-width='1.5'/%3E%3Cpath d='M8 7.2v3.4M8 5.1v.1' stroke='black' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  -webkit-mask: var(--glyph-info) center/16px no-repeat;
+  mask: var(--glyph-info) center/16px no-repeat;
+}
+.is-stale:not(.telemetry-status) {
+  color: var(--muted) !important;
+  background: transparent !important;
+  border-color: var(--line) !important;
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -77,7 +78,7 @@ export default function DocRolesClient() {
       if (response.status === 401 || response.status === 403) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Document roles. Showing the last copy on this device.");
+          setError(staleCopyNotice("Document roles"));
           return;
         }
         setView(null);
@@ -90,7 +91,7 @@ export default function DocRolesClient() {
       if (!response.ok || !isDocRolesView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Document roles. Showing the last copy on this device.");
+          setError(staleCopyNotice("Document roles"));
           return;
         }
         setErrorStatus(response.status);
@@ -105,7 +106,7 @@ export default function DocRolesClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Document roles. Showing the last copy on this device.");
+        setError(staleCopyNotice("Document roles"));
         return;
       }
       setError("Could not reach the server.");

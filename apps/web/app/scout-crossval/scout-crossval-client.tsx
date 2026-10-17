@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -244,7 +245,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
           if (!response.ok || !isScoutCrossvalView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh Scout Cross-Validation. Showing the last copy on this device.");
+              setError(staleCopyNotice("Scout Cross-Validation"));
               setFetchFailed(false);
             } else {
               setFetchFailed(true);
@@ -260,7 +261,7 @@ export default function ScoutCrossvalClient({ orgId: initialOrgId }: { orgId?: s
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scout Cross-Validation. Showing the last copy on this device.");
+            setError(staleCopyNotice("Scout Cross-Validation"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);

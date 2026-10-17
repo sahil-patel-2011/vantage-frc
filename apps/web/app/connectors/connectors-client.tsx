@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { askConfirm, Badge, Button, EmptyState, PageHeader } from "../../components/ui";
@@ -105,7 +106,7 @@ export default function ConnectorsClient() {
       if (response.status === 401 || response.status === 403) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Connectors. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Connectors"));
           setFetchFailed(false);
           return;
         }
@@ -124,7 +125,7 @@ export default function ConnectorsClient() {
       if (!response.ok || !isConnectorsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Connectors. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Connectors"));
           setFetchFailed(false);
           return;
         }
@@ -144,7 +145,7 @@ export default function ConnectorsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Connectors. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Connectors"));
         setFetchFailed(false);
         return;
       }

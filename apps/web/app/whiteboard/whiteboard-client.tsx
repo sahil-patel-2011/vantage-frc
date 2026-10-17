@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, askConfirm } from "../../components/ui";
@@ -261,7 +262,7 @@ export default function WhiteboardClient() {
       if (!response.ok || !isWhiteboardView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Whiteboard. Showing the last copy on this device.");
+          setError(staleCopyNotice("Whiteboard"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load the whiteboard.");
@@ -279,7 +280,7 @@ export default function WhiteboardClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Whiteboard. Showing the last copy on this device.");
+        setError(staleCopyNotice("Whiteboard"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -478,7 +479,7 @@ export default function WhiteboardClient() {
 
       <OfflineBanner feature="Whiteboard" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

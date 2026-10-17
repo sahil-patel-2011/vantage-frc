@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -217,7 +218,7 @@ export default function ScoutingHeatSignalsClient() {
         if (!response.ok || !isScoutingHeatSignalsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Scouting Heat Signals. Showing the last copy on this device.");
+            setError(staleCopyNotice("Scouting Heat Signals"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -231,7 +232,7 @@ export default function ScoutingHeatSignalsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Scouting Heat Signals. Showing the last copy on this device.");
+          setError(staleCopyNotice("Scouting Heat Signals"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -344,7 +345,7 @@ export default function ScoutingHeatSignalsClient() {
       <OfflineBanner feature="Scouting Heat Signals" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

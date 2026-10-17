@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { anySignal } from "../../lib/abort/any-signal";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -330,7 +331,7 @@ function EventPickListWorkbench({
           if (hadCache || deskRef.current) {
             setStatusKind("error");
             setFromCache(true);
-            setStatus("Could not refresh Pick desk. Showing the last copy on this device.");
+            setStatus(staleCopyNotice("Pick desk"));
             return;
           }
           setFetchFailed(true);
@@ -351,7 +352,7 @@ function EventPickListWorkbench({
         if (hadCache || deskRef.current) {
           setStatusKind("error");
           setFromCache(true);
-          setStatus("Could not refresh Pick desk. Showing the last copy on this device.");
+          setStatus(staleCopyNotice("Pick desk"));
           return;
         }
         setDesk(null);

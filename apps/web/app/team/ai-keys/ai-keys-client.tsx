@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useEffect, useRef, useState } from "react";
 import { AiAgentStatus } from "../../../components/ai-agent-status";
 import { OfflineBanner } from "../../../components/offline-banner";
@@ -170,7 +171,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       if (!response.ok || !isAiKeysPayload(data)) {
         if (hadCache || payloadRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh AI keys. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("AI keys"));
           setMessageIsError(true);
           setErrorStatus(null);
           return;
@@ -191,7 +192,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
     } catch {
       if (hadCache || payloadRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh AI keys. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("AI keys"));
         setMessageIsError(true);
         setErrorStatus(null);
         return;

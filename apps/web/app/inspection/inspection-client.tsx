@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { AskAiButton } from "../../components/ask-ai-button";
@@ -173,7 +174,7 @@ export default function InspectionClient() {
       if (!response.ok || !isInspectionView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Inspection. Showing the last copy on this device.");
+          setError(staleCopyNotice("Inspection"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load inspection.");
@@ -191,7 +192,7 @@ export default function InspectionClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Inspection. Showing the last copy on this device.");
+        setError(staleCopyNotice("Inspection"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -375,7 +376,7 @@ export default function InspectionClient() {
       <OfflineBanner feature="Inspection" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

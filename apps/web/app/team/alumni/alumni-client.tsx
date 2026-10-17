@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, askConfirm } from "../../../components/ui";
@@ -124,7 +125,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
       ) {
         if (hadCache || snapshotRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Alumni. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Alumni"));
         } else {
           setMessage(
             alumniData && typeof alumniData === "object" && "error" in alumniData && typeof alumniData.error === "string"
@@ -147,7 +148,7 @@ export default function AlumniClient({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || snapshotRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Alumni. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Alumni"));
       } else {
         setMessage("Unable to load alumni");
       }

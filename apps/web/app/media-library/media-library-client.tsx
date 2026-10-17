@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -291,7 +292,7 @@ export default function MediaLibraryClient() {
       if (!response.ok || !isMediaLibraryView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setLoadError("Could not refresh Media Library. Showing the last copy on this device.");
+          setLoadError(staleCopyNotice("Media Library"));
           return;
         }
         setErrorStatus(response.status);
@@ -310,7 +311,7 @@ export default function MediaLibraryClient() {
     } catch (error) {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setLoadError("Could not refresh Media Library. Showing the last copy on this device.");
+        setLoadError(staleCopyNotice("Media Library"));
         return;
       }
       setLoadError(error instanceof Error ? error.message : "Could not load the media library");

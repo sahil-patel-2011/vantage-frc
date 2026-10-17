@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel } from "../../../components/ui";
@@ -172,7 +173,7 @@ export default function AiRunsClient({ orgId }: { orgId: string }) {
       if (!response.ok || !isRunsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Ask AI history. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Ask AI history"));
           return;
         }
         setFailureStatus(response.status);
@@ -191,7 +192,7 @@ export default function AiRunsClient({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Ask AI history. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Ask AI history"));
         return;
       }
       setMessage("Could not reach the server.");

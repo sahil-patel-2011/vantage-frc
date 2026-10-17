@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, SelectField, Button, askConfirm } from "../../components/ui";
@@ -212,7 +213,7 @@ export default function OnboardingBuddyClient() {
         if (!response.ok || !isOnboardingBuddyView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Onboarding Buddy. Showing the last copy on this device.");
+            setError(staleCopyNotice("Onboarding Buddy"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -226,7 +227,7 @@ export default function OnboardingBuddyClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Onboarding Buddy. Showing the last copy on this device.");
+          setError(staleCopyNotice("Onboarding Buddy"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -376,7 +377,7 @@ export default function OnboardingBuddyClient() {
       <OfflineBanner feature="Onboarding Buddy" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -202,7 +203,7 @@ export default function CadChangeRadarClient() {
         if (!response.ok || !isCadChangeRadarView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh CAD Change Radar. Showing the last copy on this device.");
+            setError(staleCopyNotice("CAD Change Radar"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -216,7 +217,7 @@ export default function CadChangeRadarClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh CAD Change Radar. Showing the last copy on this device.");
+          setError(staleCopyNotice("CAD Change Radar"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -350,7 +351,7 @@ export default function CadChangeRadarClient() {
       <OfflineBanner feature="CAD Change Radar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="app-status" role="alert">
+        <p {...staleCopyProps(error, "app-status")}>
           {error}
         </p>
       ) : null}

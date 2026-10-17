@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
@@ -182,7 +183,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
       if (!response.ok || !isPowerBudgetView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Power budget. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Power budget"));
           setFetchFailed(false);
           return;
         }
@@ -204,7 +205,7 @@ export default function PowerBudgetClient({ orgId }: { orgId: string | null }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Power budget. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Power budget"));
         setFetchFailed(false);
         return;
       }

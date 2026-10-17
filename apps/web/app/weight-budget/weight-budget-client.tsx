@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, useConfirm } from "../../components/ui";
@@ -180,7 +181,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
       if (!response.ok || !isWeightBudgetView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Weight budget. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Weight budget"));
           setFetchFailed(false);
           return;
         }
@@ -209,7 +210,7 @@ export default function WeightBudgetClient({ orgId }: { orgId: string | null }) 
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Weight budget. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Weight budget"));
         setFetchFailed(false);
         return;
       }

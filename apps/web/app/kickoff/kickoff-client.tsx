@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { availableSeasonYears, currentSeasonYear, lastPublishedPack, packForYear } from "@vantage/game-year";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -95,7 +96,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
       if (!response.ok || !isKickoffView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Kickoff. Showing the last copy on this device.");
+          setError(staleCopyNotice("Kickoff"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load kickoff analysis.");
@@ -112,7 +113,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Kickoff. Showing the last copy on this device.");
+        setError(staleCopyNotice("Kickoff"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -277,7 +278,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
       })()}
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

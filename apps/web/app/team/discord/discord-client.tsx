@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button, askConfirm } from "../../../components/ui";
@@ -126,7 +127,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
           setOk(false);
-          setStatus("Could not refresh Discord. Showing the last copy on this device.");
+          setStatus(staleCopyNotice("Discord"));
           setFetchFailed(false);
           return;
         }
@@ -152,7 +153,7 @@ export default function TeamDiscordClient({ orgId }: { orgId: string }) {
       if (hadCache || viewRef.current) {
         setFromCache(true);
         setOk(false);
-        setStatus("Could not refresh Discord. Showing the last copy on this device.");
+        setStatus(staleCopyNotice("Discord"));
         setFetchFailed(false);
         return;
       }

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -212,7 +213,7 @@ export default function MatchStrategyCardsClient() {
         if (!response.ok || !isMatchStrategyCardsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Match cards. Showing the last copy on this device.");
+            setError(staleCopyNotice("Match cards"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -226,7 +227,7 @@ export default function MatchStrategyCardsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match cards. Showing the last copy on this device.");
+          setError(staleCopyNotice("Match cards"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -450,7 +451,7 @@ export default function MatchStrategyCardsClient() {
       <OfflineBanner feature="Match strategy cards" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

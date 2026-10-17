@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { availableSeasonYears } from "@vantage/game-year";
 import { ActionMenu, EmptyState, PageHeader, Button, useConfirm } from "../../components/ui";
@@ -522,7 +523,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       if (!response.ok || !isAttendanceView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Attendance. Showing the last copy on this device.");
+          setError(staleCopyNotice("Attendance"));
           setErrorStatus(null);
           setFetchFailed(false);
         } else {
@@ -551,7 +552,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Attendance. Showing the last copy on this device.");
+        setError(staleCopyNotice("Attendance"));
         setErrorStatus(null);
         setFetchFailed(false);
       } else {
@@ -744,7 +745,7 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       {embedded && orgId ? <TeamRoster orgId={orgId} /> : null}
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

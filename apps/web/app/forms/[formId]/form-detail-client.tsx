@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../../components/ui";
@@ -363,7 +364,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
       if (!response.ok || !isFormDetailView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh this form. Showing the last copy on this device.");
+          setError(staleCopyNotice("this form"));
           return;
         }
         setError(
@@ -381,7 +382,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh this form. Showing the last copy on this device.");
+        setError(staleCopyNotice("this form"));
         return;
       }
       setError("Could not reach the server.");
@@ -520,7 +521,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
       <OfflineBanner feature="Form" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

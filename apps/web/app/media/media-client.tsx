@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { HUB_SECTION_DENIED_COPY, SoftAccessDenied } from "../../components/hub-access-gate";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -235,7 +236,7 @@ export default function MediaClient() {
         if (!response.ok || !isMediaView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Media. Showing the last copy on this device.");
+            setError(staleCopyNotice("Media"));
             setFetchFailed(false);
           } else {
             setErrorStatus(response.status);
@@ -251,7 +252,7 @@ export default function MediaClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Media. Showing the last copy on this device.");
+          setError(staleCopyNotice("Media"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);

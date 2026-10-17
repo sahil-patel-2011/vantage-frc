@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -175,7 +176,7 @@ function SeasonReportShell({
         ) : null}
       </EmptyState>
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}
@@ -241,7 +242,7 @@ export default function SeasonReportClient() {
         if (!response.ok || !isSeasonReportView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Season Report. Showing the last copy on this device.");
+            setError(staleCopyNotice("Season Report"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -256,7 +257,7 @@ export default function SeasonReportClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season Report. Showing the last copy on this device.");
+          setError(staleCopyNotice("Season Report"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -441,7 +442,7 @@ export default function SeasonReportClient() {
       <OfflineBanner feature="Season Report" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

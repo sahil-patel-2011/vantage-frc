@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
@@ -98,7 +99,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       if (!response.ok || !isAuthPolicy(next)) {
         if (hadCache || loadedRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh sign-in policy. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("sign-in policy"));
           setLoaded(true);
           return;
         }
@@ -115,7 +116,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || loadedRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh sign-in policy. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("sign-in policy"));
       }
       setLoaded(true);
     }

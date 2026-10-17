@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -128,7 +129,7 @@ export default function SafetyTrainingClient() {
       if (!response.ok || !isSafetyTrainingView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Safety Training. Showing the last copy on this device.");
+          setError(staleCopyNotice("Safety Training"));
           setFetchFailed(false);
           return;
         }
@@ -148,7 +149,7 @@ export default function SafetyTrainingClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Safety Training. Showing the last copy on this device.");
+        setError(staleCopyNotice("Safety Training"));
         setFetchFailed(false);
         return;
       }
@@ -211,7 +212,7 @@ export default function SafetyTrainingClient() {
       <OfflineBanner feature="Safety Training" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

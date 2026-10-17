@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, ProgressMeter, Button } from "../../components/ui";
@@ -159,7 +160,7 @@ export default function RoadmapClient() {
       if (!response.ok || !isRoadmapView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Season roadmap. Showing the last copy on this device.");
+          setError(staleCopyNotice("Season roadmap"));
           setFetchFailed(false);
           return;
         }
@@ -176,7 +177,7 @@ export default function RoadmapClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Season roadmap. Showing the last copy on this device.");
+        setError(staleCopyNotice("Season roadmap"));
         setFetchFailed(false);
         return;
       }
@@ -314,7 +315,7 @@ export default function RoadmapClient() {
           {header}
           <OfflineBanner feature="Season roadmap" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="telemetry-status" role="alert">
+            <p {...staleCopyProps(error)}>
               {error}
             </p>
           ) : null}
@@ -340,7 +341,7 @@ export default function RoadmapClient() {
       {header}
       <OfflineBanner feature="Season roadmap" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

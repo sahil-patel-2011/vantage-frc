@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -222,7 +223,7 @@ export default function FieldResetTimerClient() {
         if (!response.ok || !isFieldResetTimerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Field reset timer. Showing the last copy on this device.");
+            setError(staleCopyNotice("Field reset timer"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -237,7 +238,7 @@ export default function FieldResetTimerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Field reset timer. Showing the last copy on this device.");
+          setError(staleCopyNotice("Field reset timer"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -379,7 +380,7 @@ export default function FieldResetTimerClient() {
       <OfflineBanner feature="Field reset timer" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

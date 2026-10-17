@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
@@ -105,7 +106,7 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
         if (!response.ok) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setMessage("Could not refresh Showcase. Showing the last copy on this device.");
+            setMessage(staleCopyNotice("Showcase"));
             return;
           }
           setFailureStatus(response.status);
@@ -125,7 +126,7 @@ export default function ShowcaseClient({ orgId }: { orgId: string }) {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Showcase. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Showcase"));
           return;
         }
         setMessage("Could not reach the server.");

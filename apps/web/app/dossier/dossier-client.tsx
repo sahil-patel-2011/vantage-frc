@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EmptyState, FormRow, PageHeader, Panel, Button } from "../../components/ui";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
@@ -247,7 +248,7 @@ export default function DossierClient() {
           if (!response.ok || !isDossierView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh the dossier. Showing the last copy on this device.");
+              setError(staleCopyNotice("the dossier"));
               setFetchFailed(false);
             } else {
               setError("error" in data && data.error ? data.error : "Could not load dossier");
@@ -266,7 +267,7 @@ export default function DossierClient() {
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh the dossier. Showing the last copy on this device.");
+            setError(staleCopyNotice("the dossier"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -413,7 +414,7 @@ export default function DossierClient() {
       </Panel>
 
       {error ? (
-        <p className="edc-banner error" role="alert">
+        <p {...staleCopyProps(error, "edc-banner error")}>
           {error}
         </p>
       ) : null}

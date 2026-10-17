@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../../../lib/ui/stale-copy";
 // Grant calendar: upcoming deadlines, honest eligibility chips, and a per-member watch that
 // turns into 30/14/3-day alerts. Deliberately a separate route from the grant WRITING
 // workbench at /team/grants — finding a grant and writing one are different jobs on
@@ -210,7 +211,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
       if (!response.ok || !isGrantCalendarView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Grant calendar. Showing the last copy on this device.");
+          setError(staleCopyNotice("Grant calendar"));
           setFetchFailed(false);
           return;
         }
@@ -232,7 +233,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Grant calendar. Showing the last copy on this device.");
+        setError(staleCopyNotice("Grant calendar"));
         setFetchFailed(false);
         return;
       }
@@ -411,7 +412,7 @@ export default function GrantCalendarClient({ orgId: orgIdProp }: { orgId?: stri
       <OfflineBanner feature="Grant calendar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="app-error" role="alert">
+        <p {...staleCopyProps(error, "app-error")}>
           {error}
         </p>
       ) : null}

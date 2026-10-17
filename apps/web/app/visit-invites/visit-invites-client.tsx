@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useBrowserValue } from "../../lib/use-browser-value";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -247,7 +248,7 @@ export default function VisitInvitesClient() {
       if (!res.ok || !isVisitInvitesView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Visit Invites. Showing the last copy on this device.");
+          setError(staleCopyNotice("Visit Invites"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load visit invites");
@@ -265,7 +266,7 @@ export default function VisitInvitesClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Visit Invites. Showing the last copy on this device.");
+        setError(staleCopyNotice("Visit Invites"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -392,7 +393,7 @@ export default function VisitInvitesClient() {
       </PageHeader>
       <OfflineBanner feature="Visit Invites" fromCache={fromCache} cachedAt={cachedAt} />
 
-      {error ? <p className="visit-warn" role="alert">{error}</p> : null}
+      {error ? <p {...staleCopyProps(error, "visit-warn")}>{error}</p> : null}
       {shareNote ? <p className="visit-share-note" role="status">{shareNote}</p> : null}
 
       <div className="visit-summary">

@@ -1,4 +1,5 @@
 "use client";
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { Button, PageMain } from "../../components/ui";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -158,7 +159,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
           if (!response.ok || !isOrdersView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh Orders. Showing the last copy on this device.");
+              setError(staleCopyNotice("Orders"));
               setErrorStatus(null);
             } else {
               setError("error" in data && data.error ? data.error : "Could not load the buy sheet");
@@ -174,7 +175,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Orders. Showing the last copy on this device.");
+            setError(staleCopyNotice("Orders"));
             setErrorStatus(null);
           } else {
             setError("Network error — please try again.");
@@ -255,7 +256,7 @@ export default function OrdersClient({ embedded = false, seasonYear, orgId: orgI
     <>
       <OfflineBanner feature="Orders" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? (
-        <p className="orders-error" role="alert">
+        <p {...staleCopyProps(error, "orders-error")}>
           {error}
         </p>
       ) : null}

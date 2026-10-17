@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../../components/ui";
@@ -352,7 +353,7 @@ export default function DraftClient() {
         if (!response.ok) {
           if (hadCache || paintedRef.current) {
             setFromCache(true);
-            setErrorMessage("Could not refresh Alliance board. Showing the last copy on this device.");
+            setErrorMessage(staleCopyNotice("Alliance board"));
             setFetchFailed(false);
             setLoading(false);
           } else {
@@ -380,7 +381,7 @@ export default function DraftClient() {
         if (!isDraftCacheView(payload) || isDraftSetupCache(payload)) {
           if (hadCache || paintedRef.current) {
             setFromCache(true);
-            setErrorMessage("Could not refresh Alliance board. Showing the last copy on this device.");
+            setErrorMessage(staleCopyNotice("Alliance board"));
             setFetchFailed(false);
           } else {
             setData(null);
@@ -397,7 +398,7 @@ export default function DraftClient() {
       } catch {
         if (hadCache || paintedRef.current) {
           setFromCache(true);
-          setErrorMessage("Could not refresh Alliance board. Showing the last copy on this device.");
+          setErrorMessage(staleCopyNotice("Alliance board"));
           setFetchFailed(false);
         } else {
           setData(null);

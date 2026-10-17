@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
@@ -274,7 +275,7 @@ export default function WhatsNewClient() {
       if (!response.ok || !next) {
         if (hadCache || paintedRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh What’s new. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("What’s new"));
           setFetchFailed(false);
           setLoading(false);
           return;
@@ -296,7 +297,7 @@ export default function WhatsNewClient() {
     } catch {
       if (hadCache || paintedRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh What’s new. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("What’s new"));
         setFetchFailed(false);
         setLoading(false);
         return;

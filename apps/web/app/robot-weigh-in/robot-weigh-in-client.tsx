@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -226,7 +227,7 @@ export default function RobotWeighInClient() {
         if (!response.ok || !isRobotWeighInView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Robot weigh-in. Showing the last copy on this device.");
+            setError(staleCopyNotice("Robot weigh-in"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -241,7 +242,7 @@ export default function RobotWeighInClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Robot weigh-in. Showing the last copy on this device.");
+          setError(staleCopyNotice("Robot weigh-in"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -377,7 +378,7 @@ export default function RobotWeighInClient() {
       <OfflineBanner feature="Robot weigh-in" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

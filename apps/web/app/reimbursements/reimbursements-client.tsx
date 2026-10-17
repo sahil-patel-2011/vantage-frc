@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 /**
  * Reimbursements — the surface a treasurer-parent actually opens.
  *
@@ -165,7 +166,7 @@ export default function ReimbursementsClient() {
         if (hadCache || viewRef.current) {
           setFromCache(true);
           setStatus("ready");
-          setError("Could not refresh Reimbursements. Showing the last copy on this device.");
+          setError(staleCopyNotice("Reimbursements"));
           return;
         }
         setStatus("error");
@@ -200,7 +201,7 @@ export default function ReimbursementsClient() {
       if (hadCache || viewRef.current) {
         setFromCache(true);
         setStatus("ready");
-        setError("Could not refresh Reimbursements. Showing the last copy on this device.");
+        setError(staleCopyNotice("Reimbursements"));
         return;
       }
       setStatus("error");
@@ -498,7 +499,7 @@ export default function ReimbursementsClient() {
       <OfflineBanner feature="Reimbursements" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="rb-alert" role="alert">
+        <p {...staleCopyProps(error, "rb-alert")}>
           {error}
         </p>
       ) : null}

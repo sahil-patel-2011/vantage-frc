@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel, askConfirm } from "../../../components/ui";
@@ -134,7 +135,7 @@ export default function PromptsClient({ orgId }: { orgId: string }) {
       if (!response.ok) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Prompts. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Prompts"));
           return;
         }
         setFailureStatus(response.status);
@@ -154,7 +155,7 @@ export default function PromptsClient({ orgId }: { orgId: string }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Prompts. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Prompts"));
         return;
       }
       setMessage("Could not reach the server.");

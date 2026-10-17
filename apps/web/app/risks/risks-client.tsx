@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -170,7 +171,7 @@ export default function RisksClient() {
       if (!response.ok || !isRisksView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Risk Register. Showing the last copy on this device.");
+          setError(staleCopyNotice("Risk Register"));
           setFetchFailed(false);
           return;
         }
@@ -191,7 +192,7 @@ export default function RisksClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Risk Register. Showing the last copy on this device.");
+        setError(staleCopyNotice("Risk Register"));
         setFetchFailed(false);
         return;
       }
@@ -341,7 +342,7 @@ export default function RisksClient() {
       {orgId ? <RisksRelated orgId={orgId} /> : null}
 
       {error ? (
-        <p className="risks-alert" role="alert">
+        <p {...staleCopyProps(error, "risks-alert")}>
           {error}
         </p>
       ) : null}

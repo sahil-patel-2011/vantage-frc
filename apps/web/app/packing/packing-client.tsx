@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, askConfirm } from "../../components/ui";
@@ -377,7 +378,7 @@ export default function PackingClient() {
       if (!response.ok || !isPackingView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Packing. Showing the last copy on this device.");
+          setError(staleCopyNotice("Packing"));
           setFetchFailed(false);
           return;
         }
@@ -395,7 +396,7 @@ export default function PackingClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Packing. Showing the last copy on this device.");
+        setError(staleCopyNotice("Packing"));
         setFetchFailed(false);
         return;
       }
@@ -623,7 +624,7 @@ export default function PackingClient() {
       <OfflineBanner feature="Packing" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

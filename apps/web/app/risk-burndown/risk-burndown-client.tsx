@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -226,7 +227,7 @@ export default function RiskBurndownClient() {
         if (!response.ok || !isRiskBurndownView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Risk-Register Burndown. Showing the last copy on this device.");
+            setError(staleCopyNotice("Risk-Register Burndown"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -241,7 +242,7 @@ export default function RiskBurndownClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Risk-Register Burndown. Showing the last copy on this device.");
+          setError(staleCopyNotice("Risk-Register Burndown"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -394,7 +395,7 @@ export default function RiskBurndownClient() {
       <OfflineBanner feature="Risk-Register Burndown" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

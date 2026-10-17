@@ -1,4 +1,5 @@
 "use client";
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { teamProseLabel } from "../../components/app-shell-model";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -352,7 +353,7 @@ export default function RobotClient({ embedded = false }: { embedded?: boolean }
       if (!response.ok || !isBlueprintView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Robot. Showing the last copy on this device.");
+          setError(staleCopyNotice("Robot"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load the robot blueprint.");
@@ -369,7 +370,7 @@ export default function RobotClient({ embedded = false }: { embedded?: boolean }
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Robot. Showing the last copy on this device.");
+        setError(staleCopyNotice("Robot"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -522,7 +523,7 @@ export default function RobotClient({ embedded = false }: { embedded?: boolean }
 
       <OfflineBanner feature="Robot" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, FormGrid, FormRow, PageHeader, Panel, StatTile, askConfirm } from "../../components/ui";
@@ -171,7 +172,7 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
       if (!response.ok || !isBringupView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Bring-up. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Bring-up"));
           setFetchFailed(false);
           return;
         }
@@ -193,7 +194,7 @@ export default function BringupClient({ orgId }: { orgId: string | null }) {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Bring-up. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Bring-up"));
         setFetchFailed(false);
         return;
       }

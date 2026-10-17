@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -120,7 +121,7 @@ export default function CrossDomainAlertsClient() {
       if (!response.ok || !isCrossDomainAlertsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Cross-domain alerts. Showing the last copy on this device.");
+          setError(staleCopyNotice("Cross-domain alerts"));
           setFetchFailed(false);
           return;
         }
@@ -141,7 +142,7 @@ export default function CrossDomainAlertsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Cross-domain alerts. Showing the last copy on this device.");
+        setError(staleCopyNotice("Cross-domain alerts"));
         setFetchFailed(false);
         return;
       }
@@ -248,7 +249,7 @@ export default function CrossDomainAlertsClient() {
       <OfflineBanner feature="Cross-domain alerts" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

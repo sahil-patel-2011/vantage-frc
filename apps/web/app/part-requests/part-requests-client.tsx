@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Badge, EmptyState, PageHeader, Panel, type BadgeTone, Button } from "../../components/ui";
@@ -164,7 +165,7 @@ export default function PartRequestsClient() {
       if (!response.ok || !isPartRequestsView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Part requests. Showing the last copy on this device.");
+          setError(staleCopyNotice("Part requests"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load part requests.");
@@ -181,7 +182,7 @@ export default function PartRequestsClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Part requests. Showing the last copy on this device.");
+        setError(staleCopyNotice("Part requests"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
@@ -185,7 +186,7 @@ export default function AssemblyManualClient() {
     } catch {
       if (hadCache || overviewRef.current) {
         setFromCache(true);
-        setLoadError("Could not refresh the assembly manual. Showing the last copy on this device.");
+        setLoadError(staleCopyNotice("the assembly manual"));
       } else {
         setLoadError("Could not load assembly manual runs.");
       }

@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BusinessRelated } from "../../../components/business-related";
 import { MeteredAiCutoffBanner } from "../../../components/metered-ai-cutoff-banner";
@@ -146,7 +147,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
           if (!response.ok || !isGrantWritingView(data)) {
             if (hadCache || viewRef.current) {
               setFromCache(true);
-              setError("Could not refresh Grant writing. Showing the last copy on this device.");
+              setError(staleCopyNotice("Grant writing"));
               setFetchFailed(false);
             } else {
               setError("error" in data && data.error ? data.error : "");
@@ -163,7 +164,7 @@ export default function GrantsClient({ orgId: orgIdProp }: { orgId?: string }) {
         } catch {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Grant writing. Showing the last copy on this device.");
+            setError(staleCopyNotice("Grant writing"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -510,7 +511,7 @@ function GrantWritingWorkspace({
       <AllocateSpend orgId={view.orgId} seasonYear={season ?? view.seasonYear} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

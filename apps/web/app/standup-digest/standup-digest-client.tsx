@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
@@ -129,7 +130,7 @@ export default function StandupDigestClient() {
       if (!response.ok || !isStandupView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Morning standup. Showing the last copy on this device.");
+          setError(staleCopyNotice("Morning standup"));
           setFetchFailed(false);
           return;
         }
@@ -146,7 +147,7 @@ export default function StandupDigestClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Morning standup. Showing the last copy on this device.");
+        setError(staleCopyNotice("Morning standup"));
         setFetchFailed(false);
         return;
       }
@@ -237,7 +238,7 @@ export default function StandupDigestClient() {
           {header}
           <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="telemetry-status" role="alert">
+            <p {...staleCopyProps(error)}>
               {error}
             </p>
           ) : null}
@@ -256,7 +257,7 @@ export default function StandupDigestClient() {
           {header}
           <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="telemetry-status" role="alert">
+            <p {...staleCopyProps(error)}>
               {error}
             </p>
           ) : null}
@@ -276,7 +277,7 @@ export default function StandupDigestClient() {
       {header}
       <OfflineBanner feature="Morning standup" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

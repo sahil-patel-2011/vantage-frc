@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -183,7 +184,7 @@ export default function BomCostRollupClient() {
       if (!response.ok || !isBomCostRollupView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh BOM cost rollup. Showing the last copy on this device.");
+          setError(staleCopyNotice("BOM cost rollup"));
           setFetchFailed(false);
           return;
         }
@@ -199,7 +200,7 @@ export default function BomCostRollupClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh BOM cost rollup. Showing the last copy on this device.");
+        setError(staleCopyNotice("BOM cost rollup"));
         setFetchFailed(false);
         return;
       }
@@ -319,7 +320,7 @@ export default function BomCostRollupClient() {
           {header}
           <OfflineBanner feature="BOM cost rollup" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
-            <p className="telemetry-status" role="alert">
+            <p {...staleCopyProps(error)}>
               {error}
             </p>
           ) : null}
@@ -345,7 +346,7 @@ export default function BomCostRollupClient() {
       {header}
       <OfflineBanner feature="BOM cost rollup" fromCache={fromCache} cachedAt={cachedAt} />
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

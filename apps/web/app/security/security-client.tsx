@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { Button, EmptyState, PageHeader, Panel, askConfirm } from "../../components/ui";
@@ -113,7 +114,7 @@ export default function SecurityClient({
       if (!response.ok || !body || typeof body !== "object") {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Security. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Security"));
           setFetchFailed(false);
           return;
         }
@@ -137,7 +138,7 @@ export default function SecurityClient({
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Security. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Security"));
         setFetchFailed(false);
         return;
       }

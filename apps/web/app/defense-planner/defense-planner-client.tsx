@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -238,7 +239,7 @@ export default function DefensePlannerClient() {
         if (!response.ok || !isDefensePlannerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Defense planner. Showing the last copy on this device.");
+            setError(staleCopyNotice("Defense planner"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -253,7 +254,7 @@ export default function DefensePlannerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Defense planner. Showing the last copy on this device.");
+          setError(staleCopyNotice("Defense planner"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -413,7 +414,7 @@ export default function DefensePlannerClient() {
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

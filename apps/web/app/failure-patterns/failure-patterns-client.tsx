@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Badge,
@@ -221,7 +222,7 @@ export default function FailurePatternsClient() {
         if (!response.ok || !isFailurePatternsView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Repeat Failure Patterns. Showing the last copy on this device.");
+            setError(staleCopyNotice("Repeat Failure Patterns"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -236,7 +237,7 @@ export default function FailurePatternsClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Repeat Failure Patterns. Showing the last copy on this device.");
+          setError(staleCopyNotice("Repeat Failure Patterns"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -372,7 +373,7 @@ export default function FailurePatternsClient() {
       <OfflineBanner feature="Repeat Failure Patterns" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

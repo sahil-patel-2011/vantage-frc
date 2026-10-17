@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -200,7 +201,7 @@ export default function BinShelfLocatorClient() {
         if (!response.ok || !isBinShelfLocatorView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Bin/Shelf Locator. Showing the last copy on this device.");
+            setError(staleCopyNotice("Bin/Shelf Locator"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -214,7 +215,7 @@ export default function BinShelfLocatorClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Bin/Shelf Locator. Showing the last copy on this device.");
+          setError(staleCopyNotice("Bin/Shelf Locator"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -351,7 +352,7 @@ export default function BinShelfLocatorClient() {
       <OfflineBanner feature="Bin/Shelf Locator" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="app-muted" role="alert">
+        <p {...staleCopyProps(error, "app-muted")}>
           {error}
         </p>
       ) : null}

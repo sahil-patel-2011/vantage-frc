@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import {
@@ -109,7 +110,7 @@ export default function DutiesClient() {
       if (!response.ok || !isDutiesView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Duties. Showing the last copy on this device.");
+          setError(staleCopyNotice("Duties"));
           return;
         }
         setErrorStatus(response.status);
@@ -127,7 +128,7 @@ export default function DutiesClient() {
     } catch (err: unknown) {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Duties. Showing the last copy on this device.");
+        setError(staleCopyNotice("Duties"));
         return;
       }
       setError(err instanceof Error ? err.message : "Could not load duties");
@@ -232,7 +233,7 @@ export default function DutiesClient() {
         </PageHeader>
         <OfflineBanner feature="Duties" fromCache={fromCache} cachedAt={cachedAt} />
         {error ? (
-          <p className="telemetry-status" role="alert">
+          <p {...staleCopyProps(error)}>
             {error}
           </p>
         ) : null}

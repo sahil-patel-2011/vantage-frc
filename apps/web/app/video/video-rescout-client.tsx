@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { VideoPlayer, type VideoPlayerHandle } from "../../components/video-player";
@@ -337,7 +338,7 @@ export default function VideoRescoutClient() {
       if (!response.ok || !isRescoutView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Match video. Showing the last copy on this device.");
+          setError(staleCopyNotice("Match video"));
           setFetchFailed(false);
         } else {
           setError("error" in data && data.error ? data.error : "Could not load match video.");
@@ -355,7 +356,7 @@ export default function VideoRescoutClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError("Could not refresh Match video. Showing the last copy on this device.");
+        setError(staleCopyNotice("Match video"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);
@@ -533,7 +534,7 @@ export default function VideoRescoutClient() {
           />
         ) : null}
         {error ? (
-          <p className="telemetry-status" role="alert">
+          <p {...staleCopyProps(error)}>
             {error}
           </p>
         ) : null}
@@ -863,7 +864,7 @@ export default function VideoRescoutClient() {
       <OfflineBanner feature="Match video" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}

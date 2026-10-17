@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -272,7 +273,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
       if (!response.ok || !isControlMapView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setMessage("Could not refresh Control Map. Showing the last copy on this device.");
+          setMessage(staleCopyNotice("Control Map"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -289,7 +290,7 @@ export default function ControlMapClient({ orgId: orgIdProp }: { orgId: string |
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setMessage("Could not refresh Control Map. Showing the last copy on this device.");
+        setMessage(staleCopyNotice("Control Map"));
         setFetchFailed(false);
       } else {
         setFetchFailed(true);

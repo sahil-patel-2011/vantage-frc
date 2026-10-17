@@ -1,5 +1,6 @@
 "use client";
 
+import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
 import { EmptyState, FormGrid, FormRow, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
@@ -235,7 +236,7 @@ export default function CrossTeamScrimClient() {
         if (!response.ok || !isCrossTeamScrimView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError("Could not refresh Cross-Team Scrims. Showing the last copy on this device.");
+            setError(staleCopyNotice("Cross-Team Scrims"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -250,7 +251,7 @@ export default function CrossTeamScrimClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError("Could not refresh Cross-Team Scrims. Showing the last copy on this device.");
+          setError(staleCopyNotice("Cross-Team Scrims"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -413,7 +414,7 @@ export default function CrossTeamScrimClient() {
       <OfflineBanner feature="Cross-Team Scrims" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
-        <p className="telemetry-status" role="alert">
+        <p {...staleCopyProps(error)}>
           {error}
         </p>
       ) : null}
