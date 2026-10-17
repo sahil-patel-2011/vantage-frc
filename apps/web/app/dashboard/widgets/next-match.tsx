@@ -121,8 +121,10 @@ export function NextMatchLive({ data, orgId }: { data: Record<string, unknown>; 
       ) : null}
       {/* No factor rows: "weighted scoring", "autonomous", "foul exposure" are the model's
           words, bare here. The briefing this card links to explains the match. */}
+      {/* Keyed by match: when the card moves on to the next match, the button starts fresh and a
+          result still on its way for the old match is dropped (that instance unmounts). */}
       {orgId && typeof data.matchKey === "string" ? (
-        <PredictMatchButton orgId={orgId} matchKey={data.matchKey} planHref={typeof data.href === "string" ? data.href : null} />
+        <PredictMatchButton key={data.matchKey} orgId={orgId} matchKey={data.matchKey} planHref={typeof data.href === "string" ? data.href : null} />
       ) : null}
       <NextMatchFooter data={data} />
       {/* The alliances only when "With … vs …" above could not say them. */}
