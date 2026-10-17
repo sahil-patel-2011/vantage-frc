@@ -20,14 +20,3 @@ export async function vendorOrdersSupported(client: PoolClient): Promise<boolean
   if (supported) supportedOnce = true;
   return supported === true;
 }
-
-/**
- * What a request "spent" for season totals: what it actually cost once known, else the
- * approved figure. A constant SQL expression (never user input), chosen by whether 0738 exists.
- */
-export async function orderSpendExpression(client: PoolClient, alias = ""): Promise<string> {
-  const prefix = alias ? `${alias}.` : "";
-  return (await vendorOrdersSupported(client))
-    ? `COALESCE(${prefix}actual_cost_usd, ${prefix}total_cost_usd)`
-    : `${prefix}total_cost_usd`;
-}

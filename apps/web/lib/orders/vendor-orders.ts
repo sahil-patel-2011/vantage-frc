@@ -3,7 +3,7 @@
 // Ships ahead of its migration: until 0738 is applied the carts view answers a
 // calm "not set up yet" and every other order path behaves exactly as before.
 
-export { orderSpendExpression, vendorOrdersSupported } from "./actual-spend-support";
+export { vendorOrdersSupported } from "./actual-spend-support";
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { assertFinanceManager, canManageFinances } from "../finance/finance-managers";
