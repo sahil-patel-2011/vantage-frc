@@ -13,6 +13,7 @@ import {
 import { assertOrgManager, orgRole } from "../../../lib/team-admin/permissions";
 import type { TrainingCategory } from "../../../lib/training/types";
 import { publicErrorMessage } from "../../../lib/security/public-error";
+import { setupSkillTrees, signOffGroup } from "../../../lib/skill-tree/actions";
 
 export type { TrainingView };
 
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
   const userId = session.user.id;
 
   try {
+    let signOff: Awaited<ReturnType<typeof signOffGroup>> | null = null;
     const view = await withRls({ userId, orgId }, async (client) => {
       const role = await orgRole(client, orgId, userId);
       if (!role) throw new Error("forbidden");
@@ -135,11 +137,30 @@ export async function POST(request: Request) {
           await revokeCertification(client, { orgId, certificationId });
           break;
         }
+        case "setup-skill-trees": {
+          assertOrgManager(role, "set up the skill trees");
+          await setupSkillTrees(client, { orgId, userId });
+          break;
+        }
+        case "sign-off-group": {
+          assertOrgManager(role, "sign off a skill");
+          const skillKey = trimmedOrNull(body.skillKey, 80);
+          const certifiedAt = isoDateOrNull(body.certifiedAt);
+          const memberUserIds = Array.isArray(body.memberUserIds)
+            ? body.memberUserIds.filter((id): id is string => typeof id === "string" && id.length <= 64)
+            : [];
+          if (!skillKey) throw new Error("skillKey is required");
+          if (!certifiedAt) throw new Error("certifiedAt (YYYY-MM-DD) is required");
+          if (!memberUserIds.length) throw new Error("Choose at least one person");
+          signOff = await signOffGroup(client, { orgId, userId, skillKey, memberUserIds, certifiedAt, notes: trimmedOrNull(body.notes, 2000) });
+          break;
+        }
         default:
           throw new Error("Unknown action");
       }
 
-      return computeTrainingView(client, { userId, requestedOrg: orgId });
+      const next = await computeTrainingView(client, { userId, requestedOrg: orgId });
+      return signOff ? { ...next, signOff } : next;
     });
 
     return Response.json(view);

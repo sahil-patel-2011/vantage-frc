@@ -212,7 +212,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         // Learning sits next to Skills because its predictions feed the skills graph;
         // the mentor "who is struggling" view is the same people list, one level in.
         { id: "learning", label: "Learning", legacyHref: "/learning" },
-        { id: "training", label: "Training matrix", legacyHref: "/training" },
+        { id: "training", label: "Training and skills", legacyHref: "/training" },
         { id: "roles", label: "Season roles", legacyHref: "/roles", featured: true },
         { id: "leadership", label: "Leadership", legacyHref: "/leadership" },
         { id: "driver-tryouts", label: "Driver tryouts", legacyHref: "/driver-tryouts" },

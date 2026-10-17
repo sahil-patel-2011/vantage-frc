@@ -247,3 +247,12 @@ button.scout-card-link{background:none;border:0;padding:0;cursor:pointer;font:in
   .scout-lead-table [role="row"]{grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,.7fr));}
   .scout-lead-table [role="row"] > :last-child{display:none}
 }
+
+/* Scout points board: rank, name, best streak, points. */
+.scout-points-board { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.scout-points-board li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+.scout-points-board li.is-me { font-weight: 700; }
+.scout-points-rank { color: var(--muted); font-variant-numeric: tabular-nums; }
+.scout-points-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scout-points-detail { color: var(--muted); font-size: 12px; }
+.scout-points-board b { font-variant-numeric: tabular-nums; }

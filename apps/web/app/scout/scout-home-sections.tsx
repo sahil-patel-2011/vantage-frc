@@ -179,6 +179,12 @@ export function ScoutHomeMe({ view, resume }: { view: Ready; resume: { href: str
             <dd>{me.missed}</dd>
           </div>
         ) : null}
+        {me.points ? (
+          <div>
+            <dt>Points{me.rank ? ` · #${me.rank}` : ""}</dt>
+            <dd>{me.points}</dd>
+          </div>
+        ) : null}
       </dl>
       {resume ? (
         <a className="scout-card-link" href={resume.href}>
@@ -256,6 +262,34 @@ export function ScoutHomeLead({ view, orgId, withOrg }: { view: Ready; orgId: st
           Export CSV
         </a>
       </nav>
+    </section>
+  );
+}
+
+/**
+ * The points game: who's done the most scouting at this event. Points only come from filed work
+ * (10 a match, 15 a pit visit, +5 for covering your own assignment), so the board rewards the
+ * reports that make the data good. Hidden until someone has scored.
+ */
+export function ScoutHomePoints({ view, userId }: { view: Ready; userId: string | null }) {
+  const board = view.scouts.filter((row) => row.points > 0).sort((a, b) => b.points - a.points || b.bestStreak - a.bestStreak).slice(0, 8);
+  if (!board.length) return null;
+  return (
+    <section className="scout-card scout-card-points" aria-labelledby="scout-points-title">
+      <header>
+        <h2 id="scout-points-title">Scout points</h2>
+        <p className="app-muted">10 a match, 15 a pit visit, +5 for covering your own assignment.</p>
+      </header>
+      <ol className="scout-points-board">
+        {board.map((row, index) => (
+          <li key={row.userId} className={row.userId === userId ? "is-me" : undefined}>
+            <span className="scout-points-rank">{index + 1}</span>
+            <span className="scout-points-name">{row.userId === userId ? `${row.name} (you)` : row.name}</span>
+            <span className="scout-points-detail">{row.bestStreak > 1 ? `${row.bestStreak} in a row` : ""}</span>
+            <b>{row.points}</b>
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }

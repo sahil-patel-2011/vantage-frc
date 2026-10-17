@@ -42,6 +42,8 @@ export type TrainingView =
       summary: TrainingSummary;
       /** Writes are owner/admin; the matrix itself stays readable by the whole team. */
       canManage: boolean;
+      /** Who is looking, so the skill trees can open on their own progress. */
+      viewerUserId: string;
       computedAt: string;
     };
 
@@ -179,6 +181,7 @@ export async function computeTrainingView(
     members: memberResult.rows,
     summary,
     canManage: org.role === "owner" || org.role === "admin",
+    viewerUserId: input.userId,
     computedAt: now.toISOString(),
   };
 }

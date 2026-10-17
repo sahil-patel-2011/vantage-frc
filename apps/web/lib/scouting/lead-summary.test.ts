@@ -110,7 +110,7 @@ describe("scouting summary", () => {
       ["Cam", 0, 0, 0, 0],
     ]);
     expect(summary.scouts[0]!.lastActiveAt).toBe("2026-10-01T10:00:00Z");
-    expect(summary.me).toEqual({ pitReports: 0, matchReports: 0, missed: 1, upcoming: 1 });
+    expect(summary.me).toEqual({ pitReports: 0, matchReports: 0, missed: 1, upcoming: 1, points: 0, bestStreak: 0, rank: null });
   });
 
   it("reports a share only when there is something to divide", () => {

@@ -13,6 +13,7 @@
  */
 
 import { detectMissedAssignments, isBackupRole, type AccountabilityAssignment } from "./assignment-accountability";
+import { scoutPoints } from "./scout-points";
 
 export type SummaryRosterTeam = { teamKey: string; teamNumber: number; nickname: string | null };
 export type SummaryMatch = { matchKey: string; teamKeys: string[]; played: boolean };
@@ -30,6 +31,10 @@ export type ScoutStats = {
   /** Robots still to come that are assigned to this scout. */
   upcoming: number;
   lastActiveAt: string | null;
+  /** The points game (lib/scouting/scout-points): filed work only. */
+  points: number;
+  /** Most qualification matches in a row this scout filed a report for. */
+  bestStreak: number;
 };
 
 export type LeadSummary = {
@@ -56,7 +61,7 @@ export type LeadSummary = {
     upcomingUnassigned: number;
     reports: number;
   };
-  me: { pitReports: number; matchReports: number; missed: number; upcoming: number };
+  me: { pitReports: number; matchReports: number; missed: number; upcoming: number; points: number; bestStreak: number; rank: number | null };
   scouts: ScoutStats[];
 };
 
@@ -119,7 +124,7 @@ export function summarizeScouting(input: {
   const statFor = (userId: string, name = "Team member", role = "member") => {
     let row = stats.get(userId);
     if (!row) {
-      row = { userId, name, role, pitReports: 0, matchReports: 0, missed: 0, upcoming: 0, lastActiveAt: null };
+      row = { userId, name, role, pitReports: 0, matchReports: 0, missed: 0, upcoming: 0, lastActiveAt: null, points: 0, bestStreak: 0 };
       stats.set(userId, row);
     }
     return row;
@@ -136,6 +141,13 @@ export function summarizeScouting(input: {
     if (isBackupRole(assignment.role) || !upcomingKeys.has(assignment.matchKey)) continue;
     if (scoutedRobots.has(`${assignment.matchKey}|${assignment.teamKey}`)) continue;
     statFor(assignment.userId, assignment.name ?? undefined).upcoming++;
+  }
+
+  const game = scoutPoints({ entries: input.entries, assignments: input.assignments, isBackupRole });
+  for (const [userId, value] of game) {
+    const row = statFor(userId);
+    row.points = value.points;
+    row.bestStreak = value.bestStreak;
   }
 
   // Scouts who did something, or were given something, or are scouts by role. A mentor who
@@ -172,6 +184,9 @@ export function summarizeScouting(input: {
       matchReports: mine?.matchReports ?? 0,
       missed: mine?.missed ?? 0,
       upcoming: mine?.upcoming ?? 0,
+      points: mine?.points ?? 0,
+      bestStreak: mine?.bestStreak ?? 0,
+      rank: mine && mine.points > 0 ? [...stats.values()].filter((row) => row.points > mine.points).length + 1 : null,
     },
     scouts,
   };

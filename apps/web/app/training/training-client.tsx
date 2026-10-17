@@ -13,6 +13,8 @@ import {
   type TrainingView,
 } from "../../lib/training/compute-training";
 import type { CertificationStatus, TrainingCategory } from "../../lib/training/types";
+import { TabBar } from "../../components/ui/tab-bar";
+import { SkillTreePanel } from "./skill-tree-panel";
 
 const STATUS_LABEL: Record<CertificationStatus, string> = {
   active: "Active",
@@ -56,6 +58,7 @@ type LiveView = Extract<TrainingView, { status: "live" }>;
 
 export default function TrainingClient() {
   const [view, setView] = useState<TrainingView | null>(null);
+  const [section, setSection] = useState<"trees" | "matrix">("trees");
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -145,8 +148,8 @@ export default function TrainingClient() {
   }, [load]);
 
   const mutate = useCallback(
-    async (payload: Record<string, unknown>) => {
-      if (!orgId || busy) return;
+    async (payload: Record<string, unknown>): Promise<Record<string, unknown> | null> => {
+      if (!orgId || busy) return null;
       setBusy(true);
       setError("");
       try {
@@ -163,13 +166,15 @@ export default function TrainingClient() {
               ? data.error
               : "That didn't go through. Check your connection and try again.",
           );
-          return;
+          return null;
         }
         setView(data);
         setFromCache(false);
         void persistTrainingSnapshot(orgId, data);
+        return data as unknown as Record<string, unknown>;
       } catch {
         setError("Network error — please try again.");
+        return null;
       } finally {
         setBusy(false);
       }
@@ -202,11 +207,11 @@ export default function TrainingClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/team?orgId=${encodeURIComponent(orgId)}` : "/team"}>Team</a>
-            {" / Training Matrix"}
+            {" / Training"}
           </>
         }
-        title="Training Matrix"
-        description="Who is certified on mill, lathe, wiring, drive, and safety — with sign-off and expiry. Coverage reflects only what you record."
+        title="Training"
+        description="Skills that unlock in order, starting with safety, and who is signed off on what."
       />
       <OfflineBanner feature="Training" fromCache={fromCache} cachedAt={cachedAt} />
 
@@ -243,6 +248,21 @@ export default function TrainingClient() {
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
+          {/* Skill trees first: what each person can learn next. The certification matrix is the
+              same sign-offs as a table, for checking who may run which machine. */}
+          <TabBar
+            aria-label="Training views"
+            value={section}
+            onChange={(id) => setSection(id === "matrix" ? "matrix" : "trees")}
+            tabs={[
+              { id: "trees", label: "Skill trees" },
+              { id: "matrix", label: "Certifications" },
+            ]}
+          />
+          {section === "trees" ? (
+            <SkillTreePanel view={view} busy={busy} mutate={mutate} />
+          ) : (
+          <>
           <CoveragePanel view={view} />
           <SummaryTiles view={view} />
           {view.canManage ? (
@@ -257,6 +277,8 @@ export default function TrainingClient() {
           )}
           <SkillsList view={view} busy={busy || !view.canManage} mutate={mutate} />
           <CertificationsList view={view} busy={busy || !view.canManage} mutate={mutate} />
+          </>
+          )}
         </div>
       )}
     </main>
