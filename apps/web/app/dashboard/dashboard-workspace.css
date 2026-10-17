@@ -119,3 +119,18 @@ body.has-app-shell .dash-home .dash-stat-row strong, body.has-app-shell .dash-ho
    whole width (flex-basis 100%), so on a phone Edit dropped to a line of its own. */
 .dash-home .dash-board-heading .dash-board-identity { flex: 1 1 auto; min-width: 0; }
 .dash-home .dash-board-heading .dash-board-tools { flex: none; width: auto; }
+/* Predict a match: always on Home when there is no next match card to carry it. */
+.dash-home .dash-workspace > .dash-predict {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px;
+  padding: 16px 24px; margin: 0; min-width: 0;
+  border: 1px solid var(--line-soft); border-radius: 20px; background: var(--surface);
+}
+.dash-predict-copy { flex: 1 1 260px; min-width: 0; }
+.dash-predict-copy h2 { margin: 0 0 4px; font-size: 17px; }
+.dash-predict-copy p { margin: 0; max-width: 62ch; color: var(--muted); font-size: 14px; }
+.dash-predict-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.dash-predict-actions > a:not(.app-button) { color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
+@media (max-width: 640px) {
+  .dash-home .dash-workspace > .dash-predict { padding: 16px; }
+}
+.dash-predict-actions > a:not(.app-button):hover { text-decoration: underline; text-underline-offset: 4px; }

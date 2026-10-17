@@ -9,6 +9,7 @@ import { flipMatchSimResult, matchSimHasNoData, phaseLabel } from "../../lib/mat
 import type { MatchSimView } from "../../lib/match-sim/compute-match-sim";
 import { eventKeyOfMatch } from "../../lib/match-sim/upcoming";
 import { UpcomingMatchPicker } from "./upcoming-match-picker";
+import { PlayoffAlliancePicker } from "./playoff-alliance-picker";
 import type { AllianceColor, MatchSimRun } from "../../lib/match-sim/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
@@ -271,6 +272,21 @@ export default function MatchSimClient() {
               });
             }}
           />
+          <PlayoffAlliancePicker
+            orgId={orgId}
+            teamNumber={view.teamNumber ?? null}
+            busy={busy}
+            onPredict={(red, blue) => {
+              setRevealRun(true);
+              mutate({
+                action: "simulate",
+                label: `Alliance ${red.seed} vs Alliance ${blue.seed}`,
+                eventKey: view.eventKey ?? undefined,
+                redTeamKeys: red.teamKeys,
+                blueTeamKeys: blue.teamKeys,
+              });
+            }}
+          />
           {view.active ? (
             <div ref={resultRef} style={{ scrollMarginTop: 72 }}>
               <ActiveRunResult key={view.active.id} view={view} run={view.active} />
@@ -403,10 +419,10 @@ function ActiveRunResult({ view, run }: { view: LiveView; run: MatchSimRun }) {
         <div>
           <span className={`app-badge ${noData || result.favored === "even" ? "setup" : "good"}`}>
             {noData
-              ? "NOT ENOUGH DATA"
+              ? "Not enough data"
               : result.favored === "even"
-                ? "TOSS-UP"
-                : `${allianceLabel(result.favored)} FAVORED`}
+                ? "Toss-up"
+                : `${allianceLabel(result.favored)} favored`}
           </span>
           <h2 style={{ margin: "6px 0 0" }}>{run.label}</h2>
           <small className="app-muted">

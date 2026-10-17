@@ -8,6 +8,7 @@ import {
   simulateMatch,
   type MatchSimView,
 } from "../../../lib/match-sim/compute-match-sim";
+import { loadPlayoffAlliances } from "../../../lib/match-sim/load-alliances";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 export type { MatchSimView };
@@ -51,6 +52,22 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const requestedOrg = url.searchParams.get("orgId");
   const activeRunId = url.searchParams.get("runId");
+
+  // The alliances on the team's selection board, for "Alliance 1 vs Alliance 8" before the
+  // playoff schedule is out. Read on demand so the page's main load stays one query lighter.
+  if (url.searchParams.get("view") === "alliances") {
+    if (!requestedOrg || !/^[0-9a-f-]{36}$/i.test(requestedOrg)) {
+      return Response.json({ error: "orgId is required" }, { status: 400 });
+    }
+    try {
+      const view = await withRls({ userId: session.user.id, orgId: requestedOrg }, (client) =>
+        loadPlayoffAlliances(client, requestedOrg),
+      );
+      return Response.json(view, { headers: { "Cache-Control": "private, no-store" } });
+    } catch {
+      return Response.json({ error: "Couldn't load the alliances just now." }, { status: 503 });
+    }
+  }
 
   try {
     const view = await withRls({ userId: session.user.id }, (client) =>

@@ -117,7 +117,8 @@ export async function loadDashboardSnapshot(
       widgets.next_match = stamp(
         "setup_required",
         "next_match",
-        undefined,
+        // Home's Predict card offers "Set active event" only when the event is what is missing.
+        { missing: !eventKey ? "event" : "team" },
         !eventKey ? "No event picked yet. Matches appear once the team's event is chosen." : "Add your team number so Home can find your matches.",
       );
       return;
