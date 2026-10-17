@@ -1,0 +1,63 @@
+/* Shop steps: the part page a drawing QR opens, and the shop kiosk. Tokens only. */
+.shop-page{display:grid;gap:16px}
+.shop-page button,.shop-page select,.shop-page input{min-height:44px}
+.shop-part-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.shop-back{margin-left:auto}
+.shop-panel{display:grid;gap:12px}
+.shop-drawing{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.shop-drawing input{flex:1 1 260px}
+
+.shop-steps{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.shop-step{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:var(--radius-xs);background:var(--bg)}
+.shop-step.is-next{border-color:var(--accent);background:var(--accent-soft)}
+.shop-step.is-doing{border-color:var(--accent)}
+.shop-step.is-done{opacity:.7}
+.shop-step-mark{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--surface-2);font-weight:600}
+.shop-step.is-done .shop-step-mark{background:var(--positive-soft);color:var(--positive)}
+.shop-step-body{display:grid;gap:2px;min-width:0}
+.shop-step-notes{margin:4px 0 0;white-space:pre-wrap}
+.shop-step-edit{display:flex;flex-wrap:wrap;gap:6px}
+.shop-step-edit input:first-child{flex:2 1 160px}
+.shop-step-edit input:nth-child(2){flex:1 1 100px}
+.shop-step-actions{display:flex;gap:6px}
+.shop-empty{display:grid;gap:10px;justify-items:start}
+.shop-empty p{margin:0}
+.shop-add{display:flex;flex-wrap:wrap;gap:8px}
+.shop-add input:first-child{flex:2 1 220px}
+.shop-add input:nth-child(2){flex:1 1 120px}
+.shop-edit-toggle{display:flex;justify-content:flex-end}
+
+.shop-label-wrap{display:grid;gap:10px;justify-items:start}
+.shop-label{display:flex;align-items:center;gap:16px;padding:12px;border:1px dashed var(--line);border-radius:var(--radius-xs);background:#fff;color:#172126}
+.shop-label div{display:grid;gap:4px}
+.shop-label strong{font-size:var(--title-3)}
+.shop-label-qr-placeholder{width:180px;height:180px;background:var(--surface-2)}
+
+/* Print only the label, at a size that fits the corner of a drawing. */
+@media print{
+  body *{visibility:hidden}
+  .shop-label,.shop-label *{visibility:visible}
+  .shop-label{position:absolute;left:0;top:0;border:1px solid #000}
+}
+
+/* Kiosk: big type and big targets for a tablet on the shop wall. */
+.shop-kiosk{display:grid;gap:16px;padding:16px;min-height:100vh;background:var(--bg)}
+.shop-kiosk h1{margin:0;font-size:var(--title-1)}
+.shop-kiosk-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.shop-kiosk-who{display:flex;align-items:center;gap:8px;font-weight:600}
+.shop-kiosk-who select,.shop-kiosk-scan input{min-height:52px;font-size:var(--text-lg)}
+.shop-kiosk-scan{margin-left:auto}
+.shop-kiosk-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.shop-kiosk-card{display:grid;gap:6px;align-content:start;padding:16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface)}
+.shop-kiosk-card.is-doing{border-color:var(--accent)}
+.shop-kiosk-card.is-found{outline:3px solid var(--accent);outline-offset:2px}
+.shop-kiosk-name{font-size:var(--title-3);font-weight:700;color:inherit;text-decoration:none}
+.shop-kiosk-step{margin:6px 0 0;font-size:var(--title-2);font-weight:600;line-height:1.2}
+.shop-kiosk-card button{min-height:56px;margin-top:8px}
+
+@media(max-width:640px){
+  .shop-step{grid-template-columns:32px 1fr}
+  .shop-step-actions{grid-column:2}
+  .shop-kiosk-scan{margin-left:0;width:100%}
+  .shop-kiosk-scan input{width:100%}
+}
