@@ -36,6 +36,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
 import type { RoleOnboardingView } from "../../lib/role-onboarding/types";
 import { DashboardGridItem } from "./dashboard-grid-item";
+import { DashboardWidgetView } from "./widgets";
 import { DashboardRoleStrip } from "./dashboard-role-strip";
 import { WIDGET_PICKER_ICON, greeting } from "./dashboard-canvas";
 import type { HomeStripItem } from "../../lib/home-workflows";
@@ -548,7 +549,10 @@ export function DashboardHomeView(props: {
   const inlineError = !editing && !previewing && messageKind === "error" && message;
   // Home itself did not load (no copy on this device): one banner, one Retry.
   const homeFailed = Boolean(inlineError && message === "Could not load Home." && props.onRetryHome);
-  const matchCardLeads = now.title === "Our next match" && displayLayout.some((item) => item.type === "next_match");
+  // During an event the next match is always on Home: pinned at the top when this board has no
+  // Next match card of its own (the card on the board already shows it otherwise).
+  const pinNextMatch = Boolean(orgId) && !editing && widgets.next_match?.status === "live" && !displayLayout.some((item) => item.type === "next_match");
+  const matchCardLeads = now.title === "Our next match" && (pinNextMatch || displayLayout.some((item) => item.type === "next_match"));
   const taskCardLeads = now.href === "/todos" && displayLayout.some((item) => item.type === "team_todos");
   // Exactly one setup surface while the team's setup is unfinished: the hero when nothing more
   // pressing is on, otherwise its own card under what leads (see homeSetupSurfaces).
@@ -588,7 +592,12 @@ export function DashboardHomeView(props: {
         eventName={eventName}
       />
       {orgId ? (
-        <div className={`dash-workspace${showDailyBrief ? " has-brief" : ""}`} {...dim}>
+        <div className={`dash-workspace${showDailyBrief || pinNextMatch ? " has-brief" : ""}`} {...dim}>
+          {pinNextMatch ? (
+            <section className="dash-pinned-match" aria-label="Now / Next" data-testid="home-pinned-match">
+              <DashboardWidgetView type="next_match" payload={widgets.next_match} orgId={orgId} canOpenTeamData={canOpenTeamData} />
+            </section>
+          ) : null}
           {showDailyBrief ? <DashboardNowCard now={now} setupHero={heroSetup} loaded={widgetsLoaded !== false} orgId={orgId} editing={editing} /> : null}
           {/* Up next is Home's one main action. The row of quick-action tiles under it repeated
               the menu (Scout, Tasks) as three more things that looked like the main action. */}
