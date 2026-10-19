@@ -19,6 +19,15 @@ describe("the five places", () => {
     expect(placeForPath("/media")).toBe("business");
   });
 
+  it("place Business tools that live under /team/… in Business, as access does", () => {
+    expect(placeForPath("/team/grants")).toBe("business");
+    expect(placeForPath("/team/grants/calendar")).toBe("business");
+    expect(placeForPath("/team/finance")).toBe("business");
+    expect(placeForPath("/team/sponsors")).toBe("business");
+    expect(placeForPath("/team/calendar")).toBe("team");
+    expect(placeForPath("/team/admin")).toBe("team");
+  });
+
   it("leave settings, account and help pages without a place", () => {
     expect(placeForPath("/account")).toBeNull();
     expect(placeForPath("/help")).toBeNull();

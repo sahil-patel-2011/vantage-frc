@@ -6,6 +6,7 @@
  * as Business (it is Business › Outreach), AI as no place.
  */
 import { findNavMatch, type ProductNavIcon } from "./product-nav";
+import { hubIdForPath, type ClientHubId } from "./hub-access-filter";
 
 export type PlaceId = "home" | "competition" | "team" | "build" | "business";
 
@@ -28,28 +29,32 @@ export const PLACES: readonly Place[] = [
 
 const BY_GROUP_LABEL = new Map<string, PlaceId>(PLACES.map((place) => [place.label, place.id]));
 
-/** Paths that belong to a place without being one of its hub tabs. */
-const PREFIXES: ReadonlyArray<readonly [string, PlaceId]> = [
-  ["/dashboard", "home"],
-  ["/competition", "competition"],
-  ["/team", "team"],
-  ["/build", "build"],
-  ["/business", "business"],
-  ["/media", "business"],
-];
+/** Hubs that are not a place of their own: Media is Business › Outreach; AI is search's row. */
+const PLACE_FOR_HUB: Record<ClientHubId, PlaceId | null> = {
+  competition: "competition",
+  team: "team",
+  build: "build",
+  business: "business",
+  media: "business",
+  ai: null,
+};
 
 /**
- * The place a page belongs to, or null (Settings, Account, Help, Ask AI, Admin). A hub's own URL
- * wins; otherwise the page's nav match decides, so legacy tool URLs (/scouting, /hours) still
- * light up their place.
+ * The place a page belongs to, or null (Settings, Account, Help, Ask AI, Admin). Home and a
+ * hub's own URL are themselves; then the page's nav match decides, so legacy tool URLs
+ * (/scouting, /hours) and Business tools that live under /team/… (/team/grants) light up the
+ * place that lists them; then the hub the access rules file the path under.
  */
 export function placeForPath(pathname: string): PlaceId | null {
   const path = pathname.split("?")[0] || "/";
-  for (const [prefix, id] of PREFIXES) {
-    if (path === prefix || path.startsWith(`${prefix}/`)) return id;
-  }
+  if (path === "/dashboard" || path.startsWith("/dashboard/")) return "home";
+  const root = PLACES.find((place) => place.href === path);
+  if (root) return root.id;
   const match = findNavMatch(path);
-  return match ? (BY_GROUP_LABEL.get(match.group.label) ?? null) : null;
+  const matched = match ? BY_GROUP_LABEL.get(match.group.label) : undefined;
+  if (matched) return matched;
+  const hub = hubIdForPath(path);
+  return hub ? PLACE_FOR_HUB[hub] : null;
 }
 
 /** The places this person may open, in order. */
