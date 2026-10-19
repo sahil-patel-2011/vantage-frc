@@ -15,6 +15,7 @@ import {
   unitCostFromEstimate,
   validateOrderSubmit,
 } from "./evaluate";
+import { vendorOrdersSupported } from "./actual-spend-support";
 import { receiveToInventory } from "./receive-to-inventory";
 import type { OrderMember, OrderRequest, OrderStatus, OrdersView } from "./types";
 import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
@@ -53,6 +54,8 @@ type OrderRow = {
   receivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** What it actually cost (0738); absent from reads that don't need it. */
+  actualCostUsd?: string | number | null;
 };
 
 function num(value: string | number | null | undefined): number {
@@ -85,6 +88,7 @@ function mapOrder(row: OrderRow): OrderRequest {
     receivedAt: row.receivedAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    actualCostUsd: row.actualCostUsd == null ? null : num(row.actualCostUsd),
   };
 }
 
@@ -132,6 +136,8 @@ async function loadMembers(client: PoolClient, orgId: string): Promise<OrderMemb
 }
 
 async function loadOrders(client: PoolClient, orgId: string, seasonYear: number): Promise<OrderRequest[]> {
+  // What it actually cost exists once 0738 is applied; before that the column is a NULL.
+  const actualColumn = (await vendorOrdersSupported(client)) ? "p.actual_cost_usd" : "NULL::numeric";
   const rows = await client.query<OrderRow>(
     `SELECT
        p.id,
@@ -155,7 +161,8 @@ async function loadOrders(client: PoolClient, orgId: string, seasonYear: number)
        p.ordered_at::text AS "orderedAt",
        p.received_at::text AS "receivedAt",
        p.created_at::text AS "createdAt",
-       p.updated_at::text AS "updatedAt"
+       p.updated_at::text AS "updatedAt",
+       ${actualColumn} AS "actualCostUsd"
      FROM purchase_requests p
      LEFT JOIN users r ON r.id = p.requested_by
      LEFT JOIN users b ON b.id = p.buyer_user_id
@@ -347,6 +354,7 @@ export async function computeOrdersView(
       financeAiEnabled,
       aiSummary,
       focusOrderId,
+      actualSpendSupported: await vendorOrdersSupported(client),
       computedAt: new Date().toISOString(),
     };
   }

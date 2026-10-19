@@ -13,6 +13,7 @@ import {
 } from "../../../lib/orders/compute-orders";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 import { FINANCE_MANAGER_REQUIRED, isFinanceAccessDenied } from "../../../lib/finance/finance-managers";
+import { recordActualCost } from "../../../lib/orders/vendor-orders";
 
 export type { OrdersView };
 
@@ -163,6 +164,15 @@ export async function POST(request: Request) {
           const orderId = uuidOrNull(body.orderId) ?? trimmedOrNull(body.orderId, 64);
           if (!orderId) throw new Error("orderId is required");
           await progressOrder(client, { orgId, userId, orderId, status: "received" });
+          break;
+        }
+        case "record-actual": {
+          // What a bought request actually cost (0738); moves its budget line to that figure.
+          const orderId = uuidOrNull(body.orderId);
+          const actualUsd = moneyOrNull(body.actualUsd);
+          if (!orderId) throw new Error("orderId is required");
+          if (actualUsd == null) throw new Error("Enter what it cost, from 0 to 1,000,000.");
+          await recordActualCost(client, { orgId, userId, orderId, actualUsd });
           break;
         }
         default:

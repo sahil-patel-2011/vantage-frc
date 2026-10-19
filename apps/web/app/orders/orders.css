@@ -486,3 +486,30 @@
 .orders-history[open] > summary::before { transform: rotate(90deg); }
 .orders-history[open] > summary { margin-bottom: 10px; }
 .orders-quiet { margin: 0 2px; color: var(--muted); font-size: 14px; }
+
+/* Buy by vendor (0738): one cart per vendor, checked out with what was actually paid. */
+.orders-carts { display: grid; gap: 12px; }
+.orders-carts h2 { margin: 0; font-size: var(--title-3, 17px); }
+.orders-cart-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.orders-cart { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-xs, 8px); background: var(--bg); }
+.orders-cart-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.orders-cart-head .app-button, .orders-cart-head button { margin-left: auto; }
+.orders-cart-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.orders-cart-lines li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.orders-checkout { display: grid; gap: 10px; }
+.orders-checkout p { margin: 0; }
+.orders-checkout-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.orders-checkout-lines label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.orders-checkout-lines input { width: 120px; min-height: 44px; text-align: right; }
+.orders-checkout-extras { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.orders-checkout-extras label { display: grid; gap: 4px; }
+.orders-checkout-extras input { min-height: 44px; }
+.orders-checkout-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: flex-end; }
+.orders-checkout-foot strong { margin-right: auto; }
+.orders-placed > summary { cursor: pointer; color: var(--muted); }
+.orders-placed > ul { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.orders-placed-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.orders-placed-head button { margin-left: auto; }
+.orders-record-actual { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.orders-record-actual label { display: grid; gap: 4px; }
+.orders-record-actual input { min-height: 44px; width: 180px; }

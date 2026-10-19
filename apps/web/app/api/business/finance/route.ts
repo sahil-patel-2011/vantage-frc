@@ -13,6 +13,7 @@ import {
   validFinanceSeason,
   type SeasonFinanceView,
 } from "../../../../lib/business/compute-season-finance";
+import { vendorOrdersSupported } from "../../../../lib/orders/actual-spend-support";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 import {
   FINANCE_MANAGER_REQUIRED,
@@ -42,8 +43,9 @@ export async function GET(request: Request) {
   const requestedOrg = url.searchParams.get("orgId");
   const seasonYear = url.searchParams.get("season") ?? url.searchParams.get("seasonYear");
   try {
-    const view = await withRls({ userId: session.user.id }, (client) =>
+    const view = await withRls({ userId: session.user.id }, async (client) =>
       computeSeasonFinanceView(client, {
+        countActualSpend: await vendorOrdersSupported(client),
         userId: session.user.id,
         requestedOrg,
         seasonYear: seasonYear ? Number(seasonYear) : null,
@@ -240,6 +242,7 @@ export async function POST(request: Request) {
       }
 
       return computeSeasonFinanceView(client, {
+        countActualSpend: await vendorOrdersSupported(client),
         userId: session.user.id,
         requestedOrg: orgId,
         seasonYear,

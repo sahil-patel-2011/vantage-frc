@@ -40,6 +40,11 @@ export type OrderRequest = {
   receivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * What it actually cost once bought: its price plus its share of shipping and tax (0738).
+   * totalCostUsd stays the approved figure. Null until recorded, or before 0738 is applied.
+   */
+  actualCostUsd?: number | null;
 };
 
 export type OrderMetrics = {
@@ -93,6 +98,8 @@ export type OrdersView =
       financeAiEnabled: boolean;
       aiSummary: OrderAiSummary | null;
       focusOrderId: string | null;
+      /** Vendor carts and actual spend are available (database update 0738 is applied). */
+      actualSpendSupported?: boolean;
       computedAt: string;
     };
 

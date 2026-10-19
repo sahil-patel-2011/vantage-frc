@@ -451,6 +451,7 @@ const STANDALONE: CommandEntry[] = [
   { id: "editor-pair", label: "Pair VS Code", context: "Build › Code", href: "/editor/pair", kind: "destination", keywords: ["vs code", "vscode", "pair editor", "editor", "extension", "connect editor"] },
   { id: "data-export", label: "Data export", context: "Settings", href: "/exports", kind: "destination", keywords: ["export", "download", "csv", "zip", "backup", "takeout", "export data"] },
   { id: "hours-kiosk", label: "Scan-in kiosk", context: "Team › Shop hours", href: "/hours/kiosk", kind: "destination", keywords: ["kiosk", "scan in", "sign in kiosk", "badge", "qr scan", "shop sign in", "clock in station"] },
+  { id: "manufacturing-kiosk", label: "Shop kiosk", context: "Build › Part manufacturing", href: "/manufacturing/kiosk", kind: "destination", keywords: ["kiosk", "shop kiosk", "shop steps", "shop floor", "machine queue", "drawing qr", "part steps"] },
   { id: "hours-door", label: "Door check-in QR", context: "Team › Shop hours", href: "/hours/door", kind: "destination", keywords: ["door", "qr code", "check in", "check out", "phone check in", "attendance qr"] },
   { id: "inspection", label: "Robot inspection", context: "Competition", href: "/inspection", kind: "destination", keywords: ["inspection", "robot inspection", "inspect", "rules check", "weigh in", "inspection checklist"] },
   { id: "inventory", label: "Inventory and BOM", context: "Build", href: "/inventory", kind: "destination", keywords: ["inventory", "bom", "bill of materials", "parts", "stock", "what parts do we have"] },
