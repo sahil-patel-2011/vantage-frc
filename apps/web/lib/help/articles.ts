@@ -11,7 +11,7 @@
  *   already working.
  */
 
-import { BAR_SLOTS, PIN_LIMIT, defaultPinLabelList } from "../nav/pins";
+import { PIN_LIMIT, defaultPinLabelList } from "../nav/pins";
 
 export type HelpCategoryId =
   | "getting-started"
@@ -227,9 +227,9 @@ export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: "bottom-island",
     slug: "bottom-island",
-    title: "Your apps: the bottom bar, the menu and the sidebar",
+    title: "The five places, and your pins",
     summary:
-      `Pin up to ${PIN_LIMIT} places. The first ${BAR_SLOTS} sit in your phone's bottom bar; all of them lead the menu and the desktop sidebar.`,
+      `Home, Competition, Team, Build and Business are the sidebar on a computer and the bottom bar on a phone. Pin up to ${PIN_LIMIT} tools as shortcuts.`,
     category: "getting-started",
     keywords: [
       "island",
@@ -247,17 +247,17 @@ export const HELP_ARTICLES: HelpArticle[] = [
     relatedHref: "/dashboard?island=1",
     sections: [
       {
-        heading: "One set of pins, three places",
+        heading: "Five places, everywhere the same",
         body: [
-          `Your apps are the places you pinned. The first ${BAR_SLOTS} sit in the bar at the bottom of your phone, with More at the end for everything else.`,
-          "All of them sit at the top of the menu (the ☰ button) and in the Pinned group at the top of the sidebar on a computer.",
-          `Out of the box they are ${defaultPinLabelList()}.`,
+          "Home, Competition, Team, Build and Business are the whole of Vantage. On a computer they are the sidebar; on a phone they are the bar at the bottom. Every tool lives in one of them, as a tab inside it.",
+          "Search or ask (⌘K or Ctrl+K, or the magnifier on a phone) finds any tool, team or record. Type a question and choose Ask AI to hand it to the assistant.",
+          `Your pins are shortcuts on top: the Pinned list in the sidebar, and the top of search on a phone. Out of the box they are ${defaultPinLabelList()}.`,
         ],
       },
       {
         heading: "Change them",
         body: [
-          "Tap Edit next to Your apps in the menu, the pencil next to Pinned in the sidebar, or press and hold the bottom bar (right-click on a computer). Account → Appearance has the same button.",
+          "Click the pencil next to Pinned in the sidebar, or tap Edit next to Pinned in search on a phone. Account → Appearance has the same button.",
           `Tap the red minus to remove a place, or the plus next to any place below to add it (up to ${PIN_LIMIT}). Drag the handle on the right to change the order, or focus it and use the arrow keys.`,
           "Tap Done to keep your changes, or Cancel to leave everything as it was.",
         ],
@@ -265,7 +265,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Nothing gets lost",
         body: [
-          "Every place is still in the menu under its workspace (Competition, Team, Build, Business, AI) and in search (⌘K or Ctrl+K), pinned or not.",
+          "Every tool is still in its place (Competition, Team, Build or Business) and in search (⌘K or Ctrl+K), pinned or not.",
           "Reset to default puts the original pins back.",
         ],
       },

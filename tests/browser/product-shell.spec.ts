@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
 import { resetHomeBoard } from "./dashboard-fixture";
-import { openNav, openSearch, searchOpener } from "./nav";
+import { openSearch, primaryNavigation, searchOpener, searchPalette } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   expect(await signInAs(context, "owner")).toBe(true);
@@ -99,54 +99,44 @@ test("dashboard editor rearranges widgets with drag-and-drop", async ({ page }) 
   await expect(page.getByTestId("dash-grid-item")).toHaveCount(beforeCount + 1);
 });
 
-test("product shell keeps four favorite apps and one way to see the rest", async ({ page }) => {
-  const island = page.getByRole("navigation", { name: "Primary apps" });
+test("product shell is the five places, with search for everything else", async ({ page }) => {
+  const island = page.getByRole("navigation", { name: "Places" }).and(page.getByTestId("soft-island"));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard");
   await expect(island).toBeVisible();
-  await expect(island.getByRole("link")).toHaveCount(4);
-  await expect(island.getByRole("link", { name: "Home" })).toBeVisible();
-  // Four apps and the gear that edits them (#2321). The island used to carry a
-  // fifth "All" button that opened the drawer the hamburger already opens — a
-  // duplicate sitting among Team, Compete, Scout and Build as if it were one of
-  // your apps. The gear is not an app and says so.
-  // Four apps and nothing else: press and hold (or right-click, or the Menu key) to change them.
+  // Five places and nothing else: no More, no gear, no hamburger, no drawer behind them.
+  await expect(island.getByRole("link")).toHaveText(["Home", "Compete", "Team", "Build", "Business"]);
   await expect(island.getByRole("button")).toHaveCount(0);
-  await openNav(page);
-  const drawer = page.getByRole("dialog", { name: "Product navigation" });
-  await expect(drawer).toBeVisible();
-  // Search is a field in the panel, not a button that opened a second overlay.
-  await expect(drawer.getByRole("combobox", { name: /Search pages, tools/ })).toBeVisible();
-  // The island lists four of these same apps, so it steps aside while the panel is up.
-  await expect(island).toBeHidden();
-  // "Your apps" leads the menu: the stock pins are the bar's four, then My Day, Tasks and
-  // Team resources, with Edit beside the heading.
-  await expect(drawer.locator(".main-menu-launch a")).toHaveText(["Home", "Scout", "Teams", "Match plan", "My Day", "Tasks", "Team resources"]);
-  await expect(drawer.getByRole("button", { name: "Edit your apps", exact: true })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Competition", exact: true })).toHaveCount(0);
-  await expect(drawer.locator(".main-menu-section > summary").filter({ has: page.getByText("AI", { exact: true }) })).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Forms", exact: true })).toHaveCount(0);
-  await expect(drawer.getByRole("link", { name: "Settings", exact: true })).toHaveCount(1);
-  await expect(drawer.getByRole("link", { name: "Account", exact: true })).toHaveCount(0);
-  // Sign out lives in the avatar menu only; the menu is for going places.
-  await expect(drawer.getByRole("button", { name: "Sign out" })).toHaveCount(0);
-  await drawer.getByRole("combobox").fill("scout");
-  await drawer.getByRole("option").filter({ hasText: /Scout/ }).first().click();
+  await expect(page.locator(".soft-menu-btn:visible, .soft-drawer:visible")).toHaveCount(0);
+  await expect(island.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
+  // Search or ask: the pins lead it, then Ask AI.
+  await openSearch(page);
+  const palette = searchPalette(page);
+  await expect(palette.getByRole("navigation", { name: "Pinned", exact: true }).getByRole("link")).toHaveText(["Scout", "Teams", "Match plan", "My Day", "Tasks", "Team resources"]);
+  await expect(palette.getByRole("button", { name: "Edit", exact: true })).toBeVisible();
+  await expect(palette.getByRole("link", { name: /Ask AI/ })).toBeVisible();
+  await palette.getByRole("combobox").fill("scout");
+  await palette.getByRole("option").filter({ hasText: /Scout/ }).first().click();
   await expect(page).toHaveURL(/\/competition\?tab=scouting/);
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Scout");
-  await expect(island).toBeVisible();
+  await expect(island.getByRole("link", { name: "Competition", exact: true })).toHaveAttribute("aria-current", "page");
+  // Settings, Help and Sign out live in the account menu, once.
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+  const account = page.getByRole("menu", { name: "Account", exact: true });
+  for (const name of ["Your profile", "Settings", "Help", "Sign out"]) await expect(account.getByRole("menuitem", { name, exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
 
-  // Desktop keeps workspaces in the sidebar; its search button opens search, not the menu.
+  // Desktop: the same five places in the sidebar, then Pinned; search opens the palette.
   await page.setViewportSize({ width: 1400, height: 900 });
   await expect(island).toBeHidden();
   await expect(page.locator(".app-sidebar")).toBeVisible();
-  await expect(searchOpener(page)).toBeVisible();
+  await expect(primaryNavigation(page).getByRole("link")).toHaveText(["Home", "Competition", "Team", "Build", "Business"]);
+  await expect(page.locator(".app-sidebar").getByRole("link", { name: /^(Settings|Help|Ask AI)$/ })).toHaveCount(0);
   await searchOpener(page).click();
-  await expect(page.getByRole("dialog", { name: "Search Vantage", exact: true })).toBeVisible();
-  await expect(drawer).toBeHidden();
+  await expect(searchPalette(page)).toBeVisible();
 });
 
-test("search is one field at every width: the palette on desktop, the menu's field on phones", async ({ page }) => {
+test("search is one field at every width: the palette, from the top bar", async ({ page }) => {
   const field = page.getByRole("combobox", { name: /Search pages, tools/ });
 
   const oldButton = page.getByRole("button", { name: "Search Vantage" });

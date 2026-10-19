@@ -43,7 +43,7 @@ test.describe("the public intake page is not part of the app", () => {
     await expect(page.locator("header.soft-topbar")).toHaveCount(0);
     await expect(page.getByTestId("soft-island")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Account menu" })).toHaveCount(0);
-    await expect(page.getByRole("navigation", { name: "Product navigation" })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Places" })).toHaveCount(0);
   });
 
   /** An unknown or retired token says so instead of 500ing or blanking. */

@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { loadFailureHeading } from "./hub-org-gate";
 import { signInAs, signInFixture } from "./session";
-import { openMenuSection } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -87,7 +86,7 @@ test("student this week can walk Business Sponsors, Budget, and Grants", async (
 
   // The tabs are the way around Business: a link row repeating Sponsors and Grants above
   // them was a second navigation for the same places.
-  let tabs = await openMenuSection(page, "Business");
+  let tabs = page.getByRole("navigation", { name: "Business sections", exact: true });
   await expect(tabs).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("navigation", { name: /Related funding tools/i })).toHaveCount(0);
   await tabs.getByRole("link", { name: "Overview" }).click();
@@ -95,18 +94,18 @@ test("student this week can walk Business Sponsors, Budget, and Grants", async (
   await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
   await expect(page.getByLabel("Season funding summary")).toHaveCount(0);
 
-  tabs = await openMenuSection(page, "Business");
+  tabs = page.getByRole("navigation", { name: "Business sections", exact: true });
   await expect(tabs.getByRole("link", { name: "Sponsors" })).toBeVisible();
   await tabs.getByRole("link", { name: "Money" }).click();
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByText("Setup required")).toHaveCount(0);
 
-  tabs = await openMenuSection(page, "Business");
+  tabs = page.getByRole("navigation", { name: "Business sections", exact: true });
   await tabs.getByRole("link", { name: "Sponsors" }).click();
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByText("Stripe")).toHaveCount(0);
 
-  tabs = await openMenuSection(page, "Business");
+  tabs = page.getByRole("navigation", { name: "Business sections", exact: true });
   await tabs.getByRole("link", { name: "Grants" }).click();
   await expect(page.locator("body")).not.toContainText("Application error");
   await expect(page.getByText("Setup required")).toHaveCount(0);

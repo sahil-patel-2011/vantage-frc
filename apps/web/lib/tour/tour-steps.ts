@@ -59,16 +59,9 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     id: "menu",
     target: "menu",
-    title: "Search and menu",
-    body: "Tap here to find any page, tool or team record fast.",
+    title: "Search or ask",
+    body: "Find any page, tool or team record here. Type a question to ask AI, which answers from your team's own records.",
     prefer: "bottom",
-  },
-  {
-    id: "ask-ai",
-    target: "ask-ai",
-    title: "Ask AI",
-    body: "Ask about strategy, match predictions or design. It answers from your team's own records and says when it doesn't know.",
-    prefer: "right",
   },
   {
     id: "customise",
@@ -81,15 +74,15 @@ export const TOUR_STEPS: readonly TourStep[] = [
     id: "feedback",
     target: "feedback",
     title: "Tell us anything",
-    body: "Found a bug or have an idea? Open Help, then Send feedback.",
+    body: "Found a bug or have an idea? Open your account menu, then Help, then Send feedback.",
     prefer: "top",
   },
 ] as const;
 
 /**
  * Which `data-tour` name a navigation link carries, so the shell does not decide it twice.
- * The sidebar lists hubs ("/competition", "/team"); the bottom bar lists the four apps a person
- * picked ("/competition?tab=scouting"). Scouting is the Competition hub's front door, so both
+ * The sidebar and the bottom bar list the five places ("/competition", "/team"); a pin can
+ * be a section ("/competition?tab=scouting"). Scouting is the Competition hub's front door, so both
  * point there. Anything else is not a tour stop.
  */
 export function tourTargetForHref(href: string): string | undefined {

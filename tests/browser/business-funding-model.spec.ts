@@ -1,6 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
 import { signInAs, signInFixture } from "./session";
-import { openMenuSection } from "./nav";
 
 test.beforeEach(async ({ context }) => {
   const signed = await signInAs(context, "owner");
@@ -78,20 +77,19 @@ async function stubBusiness(page: Page, payload: ReturnType<typeof livePortal>) 
 }
 
 test("school-funded teams without sponsors open on Overview and hide CRM", async ({ page }) => {
-  // Business sections are walked through the menu: the phone and tablet layout.
+  // Business sections are the row under the title, at every width.
   await page.setViewportSize({ width: 1024, height: 900 });
   await stubBusiness(page, livePortal({ schoolFunded: true, sponsorsAllowed: false }));
   await page.goto("/business");
 
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Overview");
-  const tabs = await openMenuSection(page, "Business");
+  const tabs = page.getByRole("navigation", { name: "Business sections", exact: true });
   await expect(tabs).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Overview" })).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Money" })).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Sponsors" })).toHaveCount(0);
   // /business always opens on Overview unless the link names a tab.
   await expect(tabs.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
-  await page.keyboard.press("Escape");
   await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open CRM" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Open sponsors" })).toHaveCount(0);
@@ -99,27 +97,26 @@ test("school-funded teams without sponsors open on Overview and hide CRM", async
 });
 
 test("a Sponsors deep-link is sent back to Overview when sponsors are not allowed", async ({ page }) => {
-  // Business sections are walked through the menu: the phone and tablet layout.
+  // Business sections are the row under the title, at every width.
   await page.setViewportSize({ width: 1024, height: 900 });
   await stubBusiness(page, livePortal({ schoolFunded: true, sponsorsAllowed: false }));
   await page.goto("/business?tab=sponsors");
 
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Overview");
-  const tabs = await openMenuSection(page, "Business");
+  const tabs = page.getByRole("navigation", { name: "Business sections", exact: true });
   await expect(tabs.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
   await expect(tabs.getByRole("link", { name: "Sponsors" })).toHaveCount(0);
-  await page.keyboard.press("Escape");
   await expect(page.getByRole("heading", { name: "Set your season budget" })).toBeVisible();
 });
 
 test("sponsored teams still offer the Sponsors workbench", async ({ page }) => {
-  // Business sections are walked through the menu: the phone and tablet layout.
+  // Business sections are the row under the title, at every width.
   await page.setViewportSize({ width: 1024, height: 900 });
   await stubBusiness(page, livePortal({ schoolFunded: false, sponsorsAllowed: true }));
   await page.goto("/business");
 
   await expect(page.locator(".workspace-hub-header h1")).toHaveText("Overview");
-  const tabs = await openMenuSection(page, "Business");
+  const tabs = page.getByRole("navigation", { name: "Business sections", exact: true });
   await expect(tabs.getByRole("link", { name: "Sponsors" })).toBeVisible();
   await expect(tabs.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
 });

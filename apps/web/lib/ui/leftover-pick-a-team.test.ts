@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 const WEB_ROOT = join(__dirname, "..", "..");
 
 const FILES = [
-  "components/app-shell-nav-panel.tsx",
+  "components/app-shell-sidebar.tsx",
   "app/messages/page.tsx",
   "app/onboarding/onboarding-steps.tsx",
   "lib/alumni/related.ts",
@@ -53,13 +53,11 @@ describe("leftover student chrome says Choose your team", () => {
   });
 
   it("team context is a label, not a switcher, and switching teams lives in Settings", () => {
-    const nav = readFileSync(join(WEB_ROOT, "components/app-shell-nav-panel.tsx"), "utf8");
     // A6-15 had three team controls with different destinations. db5f7d5ec settled it: the shell
-    // shows the current team as a label, and switching lives in Settings → Your teams.
-    expect(nav).toMatch(/<div className="soft-org-chip" aria-label=\{`Current team — \$\{orgLabel\}`\}>/);
-    expect(nav).toMatch(/"Choose your team"/);
-    expect(nav).not.toMatch(/aria-expanded=\{workspaceOpen\}/);
-    for (const rel of ["components/app-shell-nav-panel.tsx", "components/app-shell.tsx", "components/app-shell-topbar.tsx"]) {
+    // shows the current team as a label, and switching lives in Settings → Your teams. With no
+    // menu drawer, the sidebar's team card is the only control, and it says so.
+    expect(readFileSync(join(WEB_ROOT, "components/app-shell-sidebar.tsx"), "utf8")).toMatch(/"Choose your team"/);
+    for (const rel of ["components/app-shell.tsx", "components/app-shell-topbar.tsx"]) {
       const src = readFileSync(join(WEB_ROOT, rel), "utf8");
       expect(src, rel).not.toMatch(/workspacePickerHref|onOpenTeams|Switch team/);
     }

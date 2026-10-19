@@ -1,16 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
 
-// The stock pins ("Your apps"): the bottom bar shows the first four.
+// The stock pins: the sidebar's Pinned group on a computer, the top of search on a phone.
 const defaults = [
   "/dashboard", "/competition?tab=scouting", "/competition?tab=teams", "/competition?tab=strategy",
   "/competition?tab=my-day", "/team?tab=todos", "/learn/team",
 ];
-// Match plan un-pinned and Stats pinned at the end: My Day moves up into the bar.
+// Match plan un-pinned and Stats pinned at the end.
 const personal = [...defaults.filter(href => href !== "/competition?tab=strategy"), "/rankings"];
 
-// The bottom bar is the phone layout; from 1100px up the sidebar's Pinned group carries the pins.
-test.use({ viewport: { width: 390, height: 844 } });
+// From 1100px up the sidebar's Pinned group carries the pins and the pencil that edits them.
+test.use({ viewport: { width: 1440, height: 900 } });
 test.beforeEach(async ({ context }) => { expect(await signInAs(context, "owner")).toBe(true); });
 
 for (const phase of ["editing", "saved"] as const) {
@@ -30,8 +30,8 @@ for (const phase of ["editing", "saved"] as const) {
     });
     await page.goto("/dashboard");
     await expect.poll(() => loading).toBe(true);
-    await page.getByRole("navigation", { name: "Primary apps" }).click({ button: "right" });
-    const editor = page.getByRole("dialog", { name: "Your apps" });
+    await page.getByRole("button", { name: "Edit pinned places", exact: true }).click();
+    const editor = page.getByRole("dialog", { name: "Pinned" });
     await editor.getByRole("button", { name: "Remove Match plan", exact: true }).click();
     await editor.getByRole("button", { name: "Pin Stats", exact: true }).click();
     if (phase === "saved") await editor.getByRole("button", { name: "Done", exact: true }).click();
@@ -46,9 +46,10 @@ for (const phase of ["editing", "saved"] as const) {
       await editor.getByRole("button", { name: "Done", exact: true }).click();
     }
     await expect(editor).toBeHidden();
-    const island = page.getByRole("navigation", { name: "Primary apps" });
-    await expect(island.getByRole("link")).toHaveText(["Home", "Scout", "Teams", "My Day"]);
-    await expect(island.getByRole("link", { name: "Match plan", exact: true })).toHaveCount(0);
+    // Home is one of the five places, so Pinned does not repeat it.
+    const pinned = page.getByRole("navigation", { name: "Pinned", exact: true });
+    await expect(pinned.getByRole("link")).toHaveText(["Scout", "Teams", "My Day", "Tasks", "Team resources", "Stats"]);
+    await expect(pinned.getByRole("link", { name: "Match plan", exact: true })).toHaveCount(0);
   });
 }
 
@@ -64,10 +65,11 @@ test("a saved app unavailable to this team can be removed without granting acces
   expect((await preferences).ok()).toBe(true);
   // Wait until the saved choices are applied before opening their editor. The
   // separate late-loading stories above intentionally preserve an open draft.
-  await expect(page.getByRole("navigation", { name: "Primary apps" }).getByRole("link")).toHaveCount(3);
-  await expect(page.getByRole("navigation", { name: "Primary apps" }).getByRole("link", { name: "Build", exact: true })).toHaveCount(0);
-  await page.getByRole("navigation", { name: "Primary apps" }).click({ button: "right" });
-  const editor = page.getByRole("dialog", { name: "Your apps" });
+  const pinned = page.getByRole("navigation", { name: "Pinned", exact: true });
+  await expect(pinned).toBeVisible();
+  await expect(pinned.getByRole("link", { name: "Build", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Edit pinned places", exact: true }).click();
+  const editor = page.getByRole("dialog", { name: "Pinned" });
   const unavailable = editor.locator(".pins-editor-list li").filter({ hasText: "Not on this team" });
   await expect(unavailable).toHaveCount(1);
   await expect(unavailable).toContainText("Build");

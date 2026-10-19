@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { type Me } from "./app-shell-model";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { Icon } from "./icon";
+import { SETTINGS_HREF } from "../lib/nav/settings-nav";
 
 function menuItems(menu: HTMLElement | null): HTMLElement[] {
   return menu ? [...menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)')] : [];
@@ -24,6 +25,7 @@ export function AppShellAccountMenu({
   me,
   accountLabel,
   orgId,
+  rolePlanCue = null,
   minimal = false,
   signingOut,
   onClose,
@@ -33,6 +35,7 @@ export function AppShellAccountMenu({
   me: Me;
   accountLabel: string | null;
   orgId: string;
+  rolePlanCue?: string | null;
   minimal?: boolean;
   signingOut: boolean;
   onClose: () => void;
@@ -74,10 +77,24 @@ export function AppShellAccountMenu({
         <div className="soft-account-pop-head">
           <strong>{accountLabel ?? "Signed-in user"}</strong>
           <span>{me.email ?? "Account"}</span>
+          {rolePlanCue ? <span>{rolePlanCue}</span> : null}
         </div>
-        {!minimal ? <a className="soft-account-destination" role="menuitem" href={withOrgHref("/account", orgId)} onClick={onClose}>
-          <Icon name="users" /><span>Your profile</span>
-        </a> : null}
+        {/* Everything about you and the app lives here, once: the sidebar and the bottom bar are
+            the five places only. */}
+        {!minimal ? <>
+          <a className="soft-account-destination" role="menuitem" href={withOrgHref("/account", orgId)} onClick={onClose}>
+            <Icon name="users" /><span>Your profile</span>
+          </a>
+          <a className="soft-account-destination" role="menuitem" href={withOrgHref(SETTINGS_HREF, orgId)} onClick={onClose}>
+            <Icon name="gear" /><span>Settings</span>
+          </a>
+          <a className="soft-account-destination" role="menuitem" href={withOrgHref("/help", orgId)} onClick={onClose}>
+            <Icon name="book" /><span>Help</span>
+          </a>
+          {me.platformAdmin ? <a className="soft-account-destination" role="menuitem" href="/admin" onClick={onClose}>
+            <Icon name="shield" /><span>Admin</span>
+          </a> : null}
+        </> : null}
         <button
           role="menuitem"
           type="button"

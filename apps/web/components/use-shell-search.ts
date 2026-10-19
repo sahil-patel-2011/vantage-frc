@@ -9,9 +9,23 @@ import { isCurrentDestination } from "../lib/nav/current-destination";
 import { loadRoster, searchRosterOffline, type OfflineRosterTeam } from "../lib/intel/offline-teams";
 import { navResultRows, type NavResultRow, type SearchHit } from "./app-shell-model";
 
+/** The assistant's own address: the palette offers it as its Ask AI row instead. */
+export function isAskAiHref(href: string): boolean {
+  const [path = "", query = ""] = href.split("?");
+  if (path !== "/ai" && path !== "/chat") return false;
+  const tab = new URLSearchParams(query).get("tab");
+  return !tab || tab === "chat";
+}
+
+/** Words that start a question ("who should we pick"), or a trailing question mark. */
+export function looksLikeQuestion(text: string): boolean {
+  const q = text.trim().toLowerCase();
+  if (q.length < 6 || !q.includes(" ")) return false;
+  return q.endsWith("?") || /^(who|what|when|where|why|how|which|should|can|could|would|is|are|do|does|did|will|explain|compare|summari[sz]e|tell me|help me)\b/.test(q);
+}
+
 /**
- * One search, used by the phone menu's field and by the search palette (⌘K / Ctrl+K and the
- * top bar's "Search anything"). Pages and tools come from the command catalog as you type;
+ * One search: the search palette (⌘K / Ctrl+K and the top bar's "Search or ask"). Pages and tools come from the command catalog as you type;
  * matching team data comes from /api/search a moment later. With `suggestWhenEmpty`, an empty
  * field lists recent places, then a few suggestions.
  */
@@ -119,8 +133,9 @@ export function useShellSearch({
             isAllowed,
             recentHrefs,
             canManageTeam,
-          // Never suggest the page you are on: choosing it only reloaded it.
-          }).filter((hit) => typeof window === "undefined" || !isCurrentDestination(hit.href, window.location))
+          // Never suggest the page you are on: choosing it only reloaded it. Ask AI is the
+          // palette's own row, so it is not a result as well.
+          }).filter((hit) => !isAskAiHref(hit.href) && (typeof window === "undefined" || !isCurrentDestination(hit.href, window.location)))
         : [],
     [active, canManageTeam, catalog, isAllowed, query, queryActive, recentHrefs, suggestWhenEmpty],
   );

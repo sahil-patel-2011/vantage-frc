@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, Suspense, useState, type ReactNode } f
 import { hubPageTitle } from "../lib/nav/hub-navigation";
 import { HUB_SECTION_DENIED_COPY, HubTabForbidden } from "./hub-access-gate";
 import { OfflineBanner } from "./offline-banner";
+import { HubSections } from "./hub-sections";
 import { EmptyState, PageHeader, PageMain, Button } from "./ui";
 import {
   clientCanAccessHub,
@@ -285,11 +286,12 @@ export function ProductHubShell({
           <h1>{hubPageTitle(hub, tab)}</h1>
         </div>
         <div className="workspace-hub-actions">
-          {/* No per-hub Browse picker: the bottom bar's Browse (phone) and the sidebar (desktop)
-              list every workbench, and each workbench's More tools lists the rest. */}
           {headerActions}
         </div>
       </div>
+      {/* The place's sections, one tap each on every screen size: the sidebar and the bottom bar
+          are the five places only. Each section's More tools lists the rest. */}
+      <HubSections hubId={hubId} orgId={orgId} hubAccess={access.hubAccess} sponsorsAllowed={access.sponsorsAllowed} />
       <div
         className="product-hub-panel"
         data-hub-tab={tab}

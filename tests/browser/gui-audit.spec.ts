@@ -1,4 +1,4 @@
-import { navigationOpener } from "./nav";
+import { primaryNavigation } from "./nav";
 /**
  * The GUI test agent.
  *
@@ -417,17 +417,10 @@ test.describe("GUI test agent", () => {
       let found = false;
       await page.goto(withOrgHref("/dashboard", org), { waitUntil: "domcontentloaded" });
       for (let step = 0; step < 4 && !found; step += 1) {
-        // The drawer is the only always-available way into a workspace, so it
-        // is opened first — the same thing a person who cannot see the island
-        // has to do.
-        const menu = navigationOpener(page);
-        if (await menu.isVisible().catch(() => false)) {
-          await menu.click();
-          path.push("menu");
-          clicks += 1;
-          await page.waitForTimeout(250);
-        }
-        const row = page.getByRole("link", { name: new RegExp(`^${label}\\b`), exact: false }).first();
+        // The five places are always on screen (sidebar or bottom bar); a tool is its place's
+        // section, then the section's own links.
+        const row = primaryNavigation(page).getByRole("link", { name: new RegExp(`^${label}\\b`), exact: false }).first()
+          .or(page.getByRole("link", { name: new RegExp(`^${label}\\b`), exact: false }).first());
         const visible = await row.isVisible().catch(() => false);
         if (!visible) break;
         await row.click();

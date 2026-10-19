@@ -1,0 +1,30 @@
+import { describe, expect, it } from "vitest";
+import { PLACES, placeForPath, visiblePlaces } from "./places";
+
+describe("the five places", () => {
+  it("are Home, Competition, Team, Build and Business, in that order", () => {
+    expect(PLACES.map((place) => place.label)).toEqual(["Home", "Competition", "Team", "Build", "Business"]);
+    expect(PLACES.map((place) => place.href)).toEqual(["/dashboard", "/competition", "/team", "/build", "/business"]);
+  });
+
+  it("place a page by its hub, and old tool URLs by the hub they moved into", () => {
+    expect(placeForPath("/dashboard")).toBe("home");
+    expect(placeForPath("/competition")).toBe("competition");
+    expect(placeForPath("/team/calendar")).toBe("team");
+    expect(placeForPath("/scouting")).toBe("competition");
+    expect(placeForPath("/strategy")).toBe("competition");
+    expect(placeForPath("/hours")).toBe("team");
+    expect(placeForPath("/cad")).toBe("build");
+    expect(placeForPath("/sponsorship")).toBe("business");
+    expect(placeForPath("/media")).toBe("business");
+  });
+
+  it("leave settings, account and help pages without a place", () => {
+    expect(placeForPath("/account")).toBeNull();
+    expect(placeForPath("/help")).toBeNull();
+  });
+
+  it("hide what this person may not open", () => {
+    expect(visiblePlaces((href) => href !== "/business").map((place) => place.id)).toEqual(["home", "competition", "team", "build"]);
+  });
+});

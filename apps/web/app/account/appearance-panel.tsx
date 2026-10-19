@@ -15,7 +15,6 @@ import {
 import { applyBranding, broadcastAppearance } from "../../lib/branding/appearance-runtime";
 import { type OrgBrandingView } from "../../lib/branding/branding";
 import {
-  BAR_SLOTS,
   PINS_CHANGED_EVENT,
   PINS_EDIT_EVENT,
   defaultPinHrefs,
@@ -285,15 +284,14 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       ) : null}
 
       <section className="appearance-group" aria-labelledby="appearance-island-title">
-        <h3 id="appearance-island-title">Your apps</h3>
+        <h3 id="appearance-island-title">Pinned</h3>
         <p>
-          The places you pin. The first {BAR_SLOTS} sit in the bottom bar on your phone; all of them show at the top
-          of the menu and the sidebar.
+          Your shortcuts: the Pinned list in the sidebar on a computer, and the top of search on your phone.
         </p>
-        {islandProblem ? <div><p role="alert">Your apps could not load.</p><Button type="button" variant="secondary" onClick={() => setIslandAttempt(current => current + 1)}>Try again</Button></div> : !islandLoaded ? (
-          <p className="app-muted">Loading your apps…</p>
+        {islandProblem ? <div><p role="alert">Your pins could not load.</p><Button type="button" variant="secondary" onClick={() => setIslandAttempt(current => current + 1)}>Try again</Button></div> : !islandLoaded ? (
+          <p className="app-muted">Loading your pins…</p>
         ) : (
-          <ol className="appearance-island-slots appearance-pins" aria-label="Your pinned apps, in order">
+          <ol className="appearance-island-slots appearance-pins" aria-label="Your pins, in order">
             {visiblePins.map((item) => (
               <li key={item.href} className="filled">
                 <Icon name={item.icon} />
@@ -309,7 +307,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
             disabled={!islandLoaded || islandProblem}
             onClick={() => window.dispatchEvent(new CustomEvent(PINS_EDIT_EVENT))}
           >
-            Edit your apps
+            Edit pins
           </Button>
         </div>
       </section>

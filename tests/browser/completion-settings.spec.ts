@@ -97,9 +97,9 @@ test("Appearance shows your apps and opens the one editor; order persists and re
     await page.getByText("More display settings", { exact: true }).click();
     const pins = page.locator(".appearance-pins > li");
     await expect(pins.first()).toBeVisible();
-    // No second editor here: the button opens the same sheet as the menu and the sidebar.
-    await page.getByRole("button", { name: "Edit your apps", exact: true }).click();
-    const editor = page.getByRole("dialog", { name: "Your apps", exact: true });
+    // No second editor here: the button opens the same sheet as the sidebar and search.
+    await page.getByRole("button", { name: "Edit pins", exact: true }).click();
+    const editor = page.getByRole("dialog", { name: "Pinned", exact: true });
     await expect(editor).toBeVisible();
     const rows = editor.locator(".pins-editor-list strong");
     const before = await rows.allInnerTexts();
@@ -115,7 +115,7 @@ test("Appearance shows your apps and opens the one editor; order persists and re
     await page.reload();
     await page.getByText("More display settings", { exact: true }).click();
     await expect(pins).toHaveText(labels);
-    await page.getByRole("button", { name: "Edit your apps", exact: true }).click();
+    await page.getByRole("button", { name: "Edit pins", exact: true }).click();
     await editor.getByRole("button", { name: "Reset to default", exact: true }).click();
     await expect(editor.getByRole("button", { name: "Reset to default", exact: true })).toBeDisabled();
     await editor.getByRole("button", { name: "Done", exact: true }).click();
