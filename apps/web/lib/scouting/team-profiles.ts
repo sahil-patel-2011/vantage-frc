@@ -5,9 +5,12 @@ import {
   pickListRowsFromScouting,
   profilesFromScouting,
   rankByWeightedZScores,
+  ratingsByTeam,
+  ratingsFromScouting,
   scoutingPicklistWeights,
   type MetricWeight,
   type ScoutedTeamProfile,
+  type ScoutedTeamRating,
 } from "@vantage/prediction-strategy";
 import type { FormulaExpression } from "@vantage/scouting";
 import { onePerMatch, scoutedRowsFromEntries, type OrgValueFormula } from "./scouted-ratings";
@@ -173,4 +176,39 @@ export async function loadTeamProfiles(
     thin: profiles.filter((profile) => profile.matches < MIN_MATCHES_TO_STAND_ALONE).length,
     observations,
   };
+}
+
+/**
+ * This team's scouting of a handful of robots, as ratings a match prediction can use.
+ *
+ * The same reports, formula and one-row-per-match rule as the profiles above, limited to the
+ * robots in one match so Home pays for six robots, not the field. Empty when nobody has scouted
+ * them or the team has not said what its fields are worth: a prediction then rests on the
+ * official numbers alone, which is what it did before.
+ */
+export async function loadScoutedRatingsForTeams(
+  client: PoolClient,
+  input: { orgId: string; eventKey: string; teamKeys: readonly string[] },
+): Promise<Map<string, ScoutedTeamRating>> {
+  if (!input.teamKeys.length) return new Map();
+  const [entries, formulas] = await Promise.all([
+    client.query<EntryRow>(
+      `SELECT e.team_key AS "teamKey", e.match_key AS "matchKey", e.payload, e.confidence, NULL::jsonb AS fields
+         FROM match_scout_entries e
+         JOIN matches_ref m ON m.match_key = e.match_key
+        WHERE e.org_id = $1::uuid AND e.event_key = $2 AND e.team_key = ANY($3::text[])
+          AND ${observableMatchSql("m")}
+        ORDER BY CASE m.comp_level WHEN 'qm' THEN 0 WHEN 'ef' THEN 1 WHEN 'qf' THEN 2 WHEN 'sf' THEN 3 WHEN 'f' THEN 4 ELSE 5 END,
+                 m.set_number, m.match_number, e.team_key, e.updated_at DESC, e.id`,
+      [input.orgId, input.eventKey, [...input.teamKeys]],
+    ),
+    client.query<FormulaRow>(
+      `SELECT name, expression FROM org_value_formulas WHERE org_id = $1::uuid ORDER BY name`,
+      [input.orgId],
+    ),
+  ]);
+  if (!entries.rows.length) return new Map();
+  const converted = scoutedRowsFromEntries(entries.rows.filter((row) => row.confidence !== "low"), usableFormulas(formulas.rows));
+  if (!converted.ok) return new Map();
+  return ratingsByTeam(ratingsFromScouting(onePerMatch(converted.rows)));
 }

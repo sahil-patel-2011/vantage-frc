@@ -87,6 +87,12 @@ export type MatchPredictionInput = {
    * read on this season's scale. Absent means ratings are used as stored.
    */
   seasonScales?: import("./season-scale").SeasonScale[];
+  /**
+   * This event's average alliance score over its played matches. When the season's win curve
+   * has not been measured, the curve is set from it (EVENT_WIN_CURVE_SHARE) instead of a fixed
+   * 12 points, which in a game where alliances score 200 called every match 98% to 2%.
+   */
+  eventScoringLevel?: number | null;
 };
 
 /** Deterministic explainability step (Max tier). Never invents DEMO metrics. */
