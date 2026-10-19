@@ -50,6 +50,7 @@ import {
 } from "./prediction-empty-copy";
 import { resolveActiveSeasonYear } from "@vantage/agent";
 import { VANTAGE_PRODUCT_VERSION } from "../product-version";
+import { loadEventScoring } from "../opr/alliance-results";
 
 function allianceKeys(alliance: unknown): string[] {
   if (!alliance || typeof alliance !== "object") return [];
@@ -657,6 +658,38 @@ export async function computeStrategyView(
     syncedAt: metric.syncedAt,
   }));
 
+  // What each robot has scored at this event, from the played quals. A robot Statbotics has not
+  // rated is rated by that instead of being left out: without it, an event with no Statbotics
+  // numbers (every event in production today) had no prediction at all.
+  const eventScoring = await loadEventScoring(client, row.eventKey);
+  const hasEpa = new Set(metricRows.filter((metric) => metric.epaTotal != null).map((metric) => metric.teamKey));
+  for (const robot of eventScoring.opr) {
+    if (hasEpa.has(robot.teamKey) || !allTeams.includes(robot.teamKey)) continue;
+    // Replace the robot's TBA row (OPR stored, EPA null) rather than adding a second row behind
+    // it: the matchup brief reads a robot's first row, so the rating the prediction used has to
+    // be the row it finds. Its record and rank come along.
+    const at = metricRows.findIndex((metric) => metric.teamKey === robot.teamKey);
+    const previous = at >= 0 ? metricRows[at] : undefined;
+    const fromOpr: EventMetricRow = {
+      teamKey: robot.teamKey,
+      year,
+      eventKey: row.eventKey!,
+      source: "event-opr",
+      epaTotal: robot.total,
+      epaAuto: robot.auto,
+      epaEndgame: robot.endgame,
+      wins: previous?.wins ?? null,
+      losses: previous?.losses ?? null,
+      ties: previous?.ties ?? null,
+      rank: previous?.rank ?? null,
+      // How many quals the OPR rests on; the TBA record would count the same matches.
+      matches: robot.matches,
+      syncedAt: previous?.syncedAt ?? null,
+    };
+    if (at >= 0) metricRows[at] = fromOpr;
+    else metricRows.push(fromOpr);
+  }
+
   // Season-long year ratings for up to ten seasons — prefer Statbotics when both sources exist.
   // Older seasons count for little (season-weight.ts) and are read on this season's scale.
   const yearMetricsResult = await client.query<{
@@ -833,6 +866,7 @@ export async function computeStrategyView(
     engineId: enginePolicy.engineId,
     shrink,
     seasonScales,
+    eventScoringLevel: eventScoring.averageAllianceScore,
   };
 
   const prediction = predictMatch(predictionInput);

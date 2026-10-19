@@ -97,12 +97,17 @@ export function nextMatchScoreCard(input: {
   blueKeys: string[];
   rows: readonly EpaMetricRow[];
   scouted?: ReadonlyMap<string, ScoutedTeamRating>;
+  /** This event's average alliance score, so the ± and the win chance fit the game. */
+  scoringLevel?: number | null;
 }): NextMatchScoreCard | { skipReason: string } {
-  const prediction = predictAllianceScores({
-    matchKey: input.matchKey,
-    red: featuresForAlliance(input.redKeys, input.rows, input.scouted),
-    blue: featuresForAlliance(input.blueKeys, input.rows, input.scouted),
-  });
+  const prediction = predictAllianceScores(
+    {
+      matchKey: input.matchKey,
+      red: featuresForAlliance(input.redKeys, input.rows, input.scouted),
+      blue: featuresForAlliance(input.blueKeys, input.rows, input.scouted),
+    },
+    { scoringLevel: input.scoringLevel ?? null },
+  );
   if (isScorePredictionSkip(prediction)) {
     return { skipReason: prediction.skipReason };
   }

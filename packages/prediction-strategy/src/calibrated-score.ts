@@ -118,8 +118,17 @@ export type ScorePredictionMetrics = {
 
 const MODEL_VERSION = "calibrated-linear-v2" as const;
 
-/** Three robots share field space and game pieces — do not sum three full ratings. */
-const ALLIANCE_INTERACTION = 0.5;
+/**
+ * How much of the three robots' summed ratings an alliance actually scores.
+ *
+ * It was 0.5, fitted to a two-match toy fixture. Both official ratings are built so that three
+ * of them add up to an alliance's score — that is the definition of OPR, and Statbotics fits EPA
+ * the same way — so halving the sum halved every prediction. Replayed match by match on the 141
+ * played matches at 2025gagai and 2026gagr (each predicted only from the matches before it), a
+ * full sum missed by 35 points on average, 0.9 by 37, 0.6 by 52, and the old 0.5 × the OPR-only
+ * blend by 86. See docs/PREDICTION_RESULTS.md.
+ */
+const ALLIANCE_INTERACTION = 1;
 const SCOUT_SHRINK = 0.65;
 const OPPONENT_DPR_WEIGHT = 0.12;
 
@@ -133,24 +142,73 @@ export function errorBandFromMae(mae: number): number {
 }
 
 /**
- * Rounded MAE of `fixtureSeasonRows()` after v2. Tests lock this to
- * `scorePredictionMetrics` so the widget cannot silently drift back to a
- * placeholder. Not a season claim — the fixture scores are toy totals vs ratings.
+ * Rounded MAE of `fixtureSeasonRows()` (four real 2026gagr alliances). Tests lock this to
+ * `scorePredictionMetrics` so the widget cannot silently drift back to a placeholder. It is the
+ * ± shown only when the event's own scoring level is unknown; with it, use
+ * `errorBandForScoringLevel`, which scales to the game being played.
  */
-export const FIXTURE_ERROR_BAND = 4;
+export const FIXTURE_ERROR_BAND = 36;
 
 /** @deprecated Use FIXTURE_ERROR_BAND. Alias kept so older imports still resolve. */
 export const DEFAULT_ERROR_BAND = FIXTURE_ERROR_BAND;
+
+/**
+ * The measured typical miss, as a share of the event's average alliance score.
+ *
+ * Replaying 2025gagai and 2026gagr match by match (each match predicted from the robots' OPR
+ * over the matches before it), an alliance's predicted score missed by 0.43 of that event's
+ * average alliance score. Stated relative to the event because a 2025 alliance scored about 50
+ * and a 2026 one about 150: a fixed ±4 was a promise no game could keep.
+ */
+export const MEASURED_RELATIVE_ERROR = 0.43;
+
+/**
+ * The model's own uncertainty, as a share of the event's average alliance score.
+ *
+ * Not the same number as the typical miss above. The per-robot spreads already carry part of
+ * the doubt, so the model term on top is smaller: on the same replay the win chances were best
+ * calibrated at 0.3 (Brier 0.144, log loss 0.443), against 0.152 / 0.487 for the old fixed ±4
+ * and 0.152 / 0.472 at 0.6.
+ */
+export const MEASURED_MODEL_SPREAD = 0.3;
+
+/** The ± to show for a match at an event whose alliances average `averageAllianceScore`. */
+export function errorBandForScoringLevel(averageAllianceScore: number | null | undefined): number | undefined {
+  if (averageAllianceScore == null || !Number.isFinite(averageAllianceScore) || averageAllianceScore <= 0) return undefined;
+  return errorBandFromMae(averageAllianceScore * MEASURED_RELATIVE_ERROR);
+}
 
 export function typicalScoreErrorCopy(errorBand: number): string {
   return `typical error ±${Math.round(errorBand)} (last measured set)`;
 }
 
-function resolveErrorBand(override: number | undefined): number {
+/**
+ * The scoring level to measure this prediction against: the event's average alliance score when
+ * the caller knows it, else this match's own predicted scores (a stand-in, so a low-scoring
+ * game is not handed a high-scoring game's ±).
+ */
+function resolveScoringLevel(scoringLevel: number | null | undefined, predicted: readonly number[]): number | null {
+  if (scoringLevel != null && Number.isFinite(scoringLevel) && scoringLevel > 0) return scoringLevel;
+  const positive = predicted.filter((value) => Number.isFinite(value) && value > 0);
+  return positive.length ? positive.reduce((sum, value) => sum + value, 0) / positive.length : null;
+}
+
+/**
+ * The ± shown as "typical error" and the model spread behind the win chance. An explicit
+ * `errorBand` sets both (a backtest's own number); otherwise both scale with the game.
+ */
+function resolveBands(
+  override: number | undefined,
+  level: number | null,
+): { errorBand: number; modelSpread: number } {
   if (typeof override === "number" && Number.isFinite(override) && override > 0) {
-    return Math.round(override);
+    return { errorBand: Math.round(override), modelSpread: Math.round(override) };
   }
-  return FIXTURE_ERROR_BAND;
+  if (level == null) return { errorBand: FIXTURE_ERROR_BAND, modelSpread: FIXTURE_ERROR_BAND };
+  return {
+    errorBand: errorBandForScoringLevel(level) ?? FIXTURE_ERROR_BAND,
+    modelSpread: Math.max(1, level * MEASURED_MODEL_SPREAD),
+  };
 }
 
 function tanh(value: number): number {
@@ -187,9 +245,14 @@ function teamContribution(team: TeamScoreFeatures): number | null {
     return scouted.shrunkTotal * SCOUTED_AS_RATING + climb + defense;
   }
 
+  const hasEpa = auto != null || teleop != null || endgame != null;
   const epa = (auto ?? 0) + (teleop ?? 0) + (endgame ?? 0);
   let rating = epa;
-  if (team.opr != null && team.ccwm != null) {
+  if (!hasEpa) {
+    // No EPA at all is not an EPA of zero. The blends below used to run anyway, so a robot rated
+    // only by its OPR counted at 38% of it. On their own, OPR (or CCWM) is the rating.
+    rating = team.opr ?? team.ccwm ?? 0;
+  } else if (team.opr != null && team.ccwm != null) {
     rating = 0.52 * epa + 0.28 * team.opr + 0.2 * team.ccwm;
   } else if (team.opr != null) {
     rating = 0.62 * epa + 0.38 * team.opr;
@@ -318,7 +381,11 @@ function beliefFor(team: TeamScoreFeatures, mean: number): TeamScoreBelief {
 
 export function predictAllianceScores(
   row: Omit<ScoreFeatureRow, "redScore" | "blueScore"> & { redScore?: number; blueScore?: number },
-  options?: { errorBand?: number },
+  options?: {
+    errorBand?: number;
+    /** This event's average alliance score so far; sets the ± to the game being played. */
+    scoringLevel?: number | null;
+  },
 ): AllianceScorePrediction | ScorePredictionSkip {
   const red = allianceTotal(row.red, row.blue);
   const blue = allianceTotal(row.blue, row.red);
@@ -339,11 +406,12 @@ export function predictAllianceScores(
   // `errorBand` keeps its meaning — how well this model does on average, and
   // what an explicit override sets. The per-match numbers below are a
   // different question and get their own fields rather than redefining it.
-  const modelBand = widenForBasis(resolveErrorBand(options?.errorBand), basis);
+  const bands = resolveBands(options?.errorBand, resolveScoringLevel(options?.scoringLevel, [red.total, blue.total]));
+  const modelBand = widenForBasis(bands.errorBand, basis);
   const belief = matchBelief(
     { mean: red.total, beliefs: beliefsFor(row.red) },
     { mean: blue.total, beliefs: beliefsFor(row.blue) },
-    { modelSd: modelBand },
+    { modelSd: widenForBasis(Math.round(bands.modelSpread), basis) },
   );
 
   return {
@@ -455,39 +523,40 @@ export function scorePredictionMetrics(rows: ScoreFeatureRow[]): ScorePrediction
   };
 }
 
-/** Tiny fixture used when the reference tables are empty — not a season claim. */
+/**
+ * Four real alliances, as a small fixed set the tests and the fallback ± can lean on.
+ *
+ * 2026gagr quals 57 and 58, each robot rated by its event OPR over the 56 or 57 quals played
+ * before that match (decay 1, rated from one match), with fouls the alliance drew removed from
+ * the score it is compared to. Real robots and real results, not toy totals: the set this
+ * replaced had made-up scores at half the robots' ratings, which is how 0.5 got fitted.
+ */
 export function fixtureSeasonRows(): ScoreFeatureRow[] {
-  const team = (
-    key: string,
-    auto: number,
-    tele: number,
-    end: number,
-    extra: Partial<TeamScoreFeatures> = {},
-  ): TeamScoreFeatures => ({
+  const robot = (key: string, opr: number): TeamScoreFeatures => ({
     teamKey: key,
-    autoEpa: auto,
-    teleopEpa: tele,
-    endgameEpa: end,
-    ...extra,
+    autoEpa: null,
+    teleopEpa: null,
+    endgameEpa: null,
+    opr,
   });
   return [
     {
-      matchKey: "2025test_qm1",
+      matchKey: "2026gagr_qm57",
       eventType: "week",
-      week: 1,
-      redScore: 94,
-      blueScore: 81,
-      red: [team("frc254", 18, 42, 12, { climbRate: 0.91 }), team("frc1678", 14, 38, 10), team("frc971", 11, 30, 8)],
-      blue: [team("frc1323", 16, 36, 10), team("frc2056", 12, 34, 9), team("frc1114", 10, 28, 7)],
+      week: 7,
+      redScore: 158,
+      blueScore: 46,
+      red: [robot("frc1771", 154.3), robot("frc5074", 4.8), robot("frc5608", 3.7)],
+      blue: [robot("frc8865", 50.6), robot("frc8100", 11.2), robot("frc5109", 60.3)],
     },
     {
-      matchKey: "2025test_qm2",
-      eventType: "championship",
-      week: 8,
-      redScore: 110,
-      blueScore: 102,
-      red: [team("frc254", 20, 48, 14, { climbRate: 0.94 }), team("frc1678", 16, 40, 12), team("frc4414", 12, 32, 9)],
-      blue: [team("frc1323", 18, 44, 12), team("frc2056", 15, 38, 11), team("frc3538", 12, 33, 8)],
+      matchKey: "2026gagr_qm58",
+      eventType: "week",
+      week: 7,
+      redScore: 138,
+      blueScore: 67,
+      red: [robot("frc11214", 6.4), robot("frc10376", 33.3), robot("frc1648", 62.4)],
+      blue: [robot("frc4112", 42), robot("frc9477", 60.4), robot("frc5900", -8.9)],
     },
   ];
 }

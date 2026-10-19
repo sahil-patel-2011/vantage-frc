@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ERROR_BAND,
   FIXTURE_ERROR_BAND,
+  errorBandForScoringLevel,
   errorBandFromMae,
   fixtureSeasonRows,
   isScorePredictionSkip,
@@ -34,22 +35,30 @@ describe("calibrated alliance score predictor", () => {
   });
 
   it("explains the top drivers in student-facing words", () => {
-    const [row] = fixtureSeasonRows();
-    const prediction = predictAllianceScores(row!);
+    const robot = (teamKey: string, auto: number, extra: Record<string, unknown> = {}) =>
+      ({ teamKey, autoEpa: auto, teleopEpa: 40, endgameEpa: 10, ...extra }) as never;
+    const prediction = predictAllianceScores({
+      matchKey: "2026test_qm1",
+      red: [robot("frc254", 18, { climbRate: 0.91 }), robot("frc1678", 14), robot("frc971", 11)],
+      blue: [robot("frc1323", 16), robot("frc2056", 12), robot("frc1114", 10)],
+    });
     expect(isScorePredictionSkip(prediction)).toBe(false);
     if (isScorePredictionSkip(prediction)) return;
     expect(prediction.drivers.length).toBeGreaterThan(0);
     expect(prediction.drivers.join(" ")).toMatch(/auto|climb/i);
-    expect(prediction.errorBand).toBe(FIXTURE_ERROR_BAND);
+    // With no event level given, the ± is the measured share of this match's own scores.
+    expect(prediction.errorBand).toBe(
+      errorBandForScoringLevel((prediction.redPredicted + prediction.bluePredicted) / 2),
+    );
   });
 
   it("reports honest metrics on the fixture (not a live TBA claim)", () => {
     const metrics = scorePredictionMetrics(fixtureSeasonRows());
     expect(metrics.n).toBe(4);
-    expect(metrics.mae).toBe(3.75);
-    expect(metrics.rmse).toBe(4.89);
-    expect(metrics.within3).toBe(0.5);
-    expect(metrics.within5).toBe(0.5);
+    expect(metrics.mae).toBe(35.83);
+    expect(metrics.rmse).toBe(44.17);
+    expect(metrics.within3).toBe(0);
+    expect(metrics.within5).toBe(0.25);
     expect(metrics.modelVersion).toBe("calibrated-linear-v2");
   });
 
@@ -57,12 +66,12 @@ describe("calibrated alliance score predictor", () => {
     expect(errorBandFromMae(Number.NaN)).toBe(1);
     expect(errorBandFromMae(-4)).toBe(1);
     expect(errorBandFromMae(0)).toBe(1);
-    expect(errorBandFromMae(3.75)).toBe(4);
+    expect(errorBandFromMae(35.83)).toBe(36);
     const metrics = scorePredictionMetrics(fixtureSeasonRows());
     expect(errorBandFromMae(metrics.mae)).toBe(FIXTURE_ERROR_BAND);
-    expect(FIXTURE_ERROR_BAND).toBe(4);
+    expect(FIXTURE_ERROR_BAND).toBe(36);
     expect(DEFAULT_ERROR_BAND).toBe(FIXTURE_ERROR_BAND);
-    expect(typicalScoreErrorCopy(FIXTURE_ERROR_BAND)).toBe("typical error ±4 (last measured set)");
+    expect(typicalScoreErrorCopy(FIXTURE_ERROR_BAND)).toBe("typical error ±36 (last measured set)");
     const [row] = fixtureSeasonRows();
     const overridden = predictAllianceScores(row!, { errorBand: 12.4 });
     expect(isScorePredictionSkip(overridden)).toBe(false);
@@ -98,8 +107,9 @@ describe("per-match confidence, as opposed to how the model does on average", ()
   it("is less sure about robots that swing, at the same predicted score", () => {
     // The whole reason this exists: `errorBand` cannot tell these apart,
     // because it is a property of the model and not of the match.
-    const steady = predict({ matchSd: 2 }, { matchSd: 2 });
-    const wild = predict({ matchSd: 30 }, { matchSd: 30 });
+    // Same model spread for both (an explicit band), so only the robots differ.
+    const steady = predictAllianceScores({ matchKey: "2026test_qm1", red: trio("R", { matchSd: 2 }) as never, blue: trio("B", { matchSd: 2 }) as never }, { errorBand: 4 });
+    const wild = predictAllianceScores({ matchKey: "2026test_qm1", red: trio("R", { matchSd: 30 }) as never, blue: trio("B", { matchSd: 30 }) as never }, { errorBand: 4 });
     if (isScorePredictionSkip(steady) || isScorePredictionSkip(wild)) throw new Error("skipped");
 
     expect(wild.redPredicted).toBe(steady.redPredicted);

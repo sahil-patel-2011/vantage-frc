@@ -18,6 +18,8 @@ import { countLodgingGaps } from "../logistics";
 import { snapshotShouldLoadHomeStrip } from "./refresh";
 import { isDemoPrediction } from "../strategy/prediction-display";
 import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
+import { loadEventScoring } from "../opr/alliance-results";
+import { loadScoutedRatingsForTeams } from "../scouting/team-profiles";
 import { HOME_WIDGET_TYPES, loadHomeWidget } from "./home-widget-loaders";
 import { LIVE_NOTIFICATION_SQL } from "../notifications/live-sql";
 
@@ -195,6 +197,7 @@ export async function loadDashboardSnapshot(
     let confidence: string | null = null;
     let scoreDrivers: string[] = [];
     let briefing: string | null = null;
+    let cardRedWin: number | null = null;
     if (year && (redKeys.length >= 2 || blueKeys.length >= 2)) {
       type EpaRow = { teamKey: string; autoEpa: number | null; teleopEpa: number | null; endgameEpa: number | null };
       // This event's ratings first (how each robot is playing here, and what the Schedule's
@@ -231,12 +234,36 @@ export async function loadDashboardSnapshot(
             [missing, year],
           )
         : { rows: [] as EpaRow[] };
+      // What each robot has actually scored here (OPR over the played quals) and what the team's
+      // scouts saw it do. Without these the card rested on Statbotics alone and showed nothing at
+      // an event Statbotics had not rated — every event in production today.
+      const matchKeys = [...redKeys, ...blueKeys];
+      const [scoring, scouted] = await Promise.all([
+        loadEventScoring(client, eventKey),
+        withSavepoint(client, () => loadScoutedRatingsForTeams(client, { orgId: input.orgId, eventKey, teamKeys: matchKeys }), new Map()),
+      ]);
+      const oprByTeam = new Map(scoring.opr.map((robot) => [robot.teamKey, robot.total]));
+      const epaByTeam = new Map([...eventEpa.rows, ...yearEpa.rows].map((rating) => [rating.teamKey, rating]));
       const card = nextMatchScoreCard({
         matchKey: row.matchKey,
         ourAlliance,
         redKeys,
         blueKeys,
-        rows: [...eventEpa.rows, ...yearEpa.rows],
+        rows: matchKeys.map((key) => {
+          const epa = epaByTeam.get(key);
+          const hasEpa = epa != null && (epa.autoEpa != null || epa.teleopEpa != null || epa.endgameEpa != null);
+          return {
+            teamKey: key,
+            autoEpa: epa?.autoEpa ?? null,
+            teleopEpa: epa?.teleopEpa ?? null,
+            endgameEpa: epa?.endgameEpa ?? null,
+            // The event OPR stands in only for a robot with no season rating, exactly as in the
+            // match plan (compute-strategy.ts), so Home and Predict rate a robot the same way.
+            opr: hasEpa ? null : (oprByTeam.get(key) ?? null),
+          };
+        }),
+        scouted,
+        scoringLevel: scoring.averageAllianceScore,
       });
       if (!isNextMatchScoreSkip(card)) {
         redPredicted = card.redPredicted;
@@ -247,6 +274,7 @@ export async function loadDashboardSnapshot(
         confidence = card.confidence;
         scoreDrivers = card.drivers;
         briefing = card.briefing;
+        cardRedWin = card.redWinProbability;
       }
     }
     widgets.next_match = stamp("live", "next_match", {
@@ -264,8 +292,10 @@ export async function loadDashboardSnapshot(
             : "Alliance TBD — confirm bumpers",
       bumperColor: ourAlliance ? ourAlliance.toUpperCase() : null,
       href: `/briefing?orgId=${encodeURIComponent(input.orgId)}&matchKey=${encodeURIComponent(row.matchKey)}`,
-      pRed: stored?.pRed ?? null,
-      pBlue: stored?.pBlue ?? null,
+      // The match plan's saved chance when Predict has run; otherwise the score card's own, from
+      // the same robots, so Home is never blank just because nobody pressed Predict yet.
+      pRed: stored?.pRed ?? cardRedWin,
+      pBlue: stored?.pBlue ?? (cardRedWin == null ? null : Math.round((1 - cardRedWin) * 1000) / 1000),
       confidenceLow: stored?.confidenceLow ?? null,
       confidenceHigh: stored?.confidenceHigh ?? null,
       keyFactors: stored?.keyFactors ?? null,

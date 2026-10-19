@@ -261,6 +261,21 @@ function resolvePolicy(engineId?: StrategyEngineId): StrategyEnginePolicy {
 }
 
 /**
+ * The win curve's width as a share of the event's average alliance score.
+ *
+ * Replayed on 2025gagai and 2026gagr (each match from the robots' OPR over the matches before
+ * it), a logistic curve this wide scored Brier 0.144 / log loss 0.452; the fixed 12 points
+ * scored 0.159 / 0.530, and 0.15 or 0.6 of the level were both worse.
+ */
+export const EVENT_WIN_CURVE_SHARE = 0.3;
+
+/** The win curve for an event whose alliances average `level` points, or null when unknown. */
+export function eventWinCurveScale(level: number | null | undefined): number | null {
+  if (level == null || !Number.isFinite(level) || level <= 0) return null;
+  return EVENT_WIN_CURVE_SHARE * level;
+}
+
+/**
  * Alliance-level (3v3) win probability with per-team contribution breakdown.
  * Contributions use leave-one-out Δp so each robot's impact on p(red) is explicit and MODEL-labeled.
  */
@@ -300,7 +315,9 @@ export function buildAllianceWinBreakdown(
   const blueDetails = input.blue.map(rate);
   const redTotal = sumRatings(redDetails);
   const blueTotal = sumRatings(blueDetails);
-  const scale = algorithm.effectiveScale;
+  const eventScale = eventWinCurveScale(input.eventScoringLevel);
+  // A season's own measured curve wins; an unmeasured one gives way to this event's scoring.
+  const scale = !algorithm.scaleMeasured && eventScale != null ? eventScale : algorithm.effectiveScale;
   const logisticPRed = (redRating: number, blueRating: number) =>
     allianceWinProbability(redRating, blueRating, scale);
   const pRedFull = logisticPRed(redTotal, blueTotal);
@@ -438,7 +455,9 @@ export function buildAllianceWinBreakdown(
     caveats: [
       "MODEL output — not an official TBA result.",
       `Engine ${policy.engineId} (depth ${policy.depth}).`,
-      algorithmProvenance(algorithm),
+      !algorithm.scaleMeasured && eventScale != null
+        ? `Win curve set from this event's scoring (${Math.round(input.eventScoringLevel!)} points an alliance on average), the way it was measured on 2025gagai and 2026gagr.`
+        : algorithmProvenance(algorithm),
       "Per-team Δp values are leave-one-out MODEL attributions, not TBA facts.",
       ...(policy.thisSeasonOnly
         ? ["This-season rules only — prior-year EPA is not blended."]

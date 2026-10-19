@@ -10,8 +10,8 @@ describe("match plan from a score prediction", () => {
     if (isScorePredictionSkip(prediction)) return;
     const plan = matchPlanFromPrediction(prediction, "red");
     expect(plan.briefing).toMatch(/You are red/);
-    expect(plan.briefing).toMatch(/typical error ±4 \(last measured set\)/);
-    expect(plan.pointDeltas[0]).toMatch(/typical error ±4 \(last measured set\)/);
+    expect(plan.briefing).toMatch(/typical error ±\d+ \(last measured set\)/);
+    expect(plan.pointDeltas[0]).toMatch(/typical error ±\d+ \(last measured set\)/);
     expect(plan.auto.length).toBeGreaterThan(10);
     expect(plan.climb.length).toBeGreaterThan(10);
   });
@@ -41,7 +41,8 @@ describe("the briefing measures a lead against this match, not the model", () =>
       matchKey: "2026test_qm7",
       red: trio("R", { teleopEpa: 25 + redMean, ...redOver }) as never,
       blue: trio("B", blueOver) as never,
-    });
+    // One model spread for both cases (an explicit band), so only how predictable the robots are differs.
+    }, { errorBand: 4 });
     if (isScorePredictionSkip(prediction)) throw new Error("skipped");
     return { plan: matchPlanFromPrediction(prediction, "red"), prediction };
   };

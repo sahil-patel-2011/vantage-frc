@@ -21,6 +21,9 @@ export * from "./season-form";
 export {
   DEFAULT_ERROR_BAND,
   FIXTURE_ERROR_BAND,
+  MEASURED_MODEL_SPREAD,
+  MEASURED_RELATIVE_ERROR,
+  errorBandForScoringLevel,
   errorBandFromMae,
   fixtureSeasonRows,
   isScorePredictionSkip,
@@ -131,8 +134,10 @@ export { seasonWeight, seasonSampleWeight, SEASON_WEIGHTS, MAX_SEASONS_COUNTED }
 export * from "./season-scale";
 export * from "./team-trend";
 export {
+  EVENT_WIN_CURVE_SHARE,
   allianceWinProbability,
   buildAllianceWinBreakdown,
+  eventWinCurveScale,
   citeMatchResults,
   rateTeam,
 } from "./alliance-outcome";

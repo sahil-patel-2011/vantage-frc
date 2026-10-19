@@ -70,10 +70,45 @@ export function allianceResultsFromMatches(rows: readonly PlayedMatchRow[]): All
  * a failed read leaves the caller's transaction usable and returns nothing.
  */
 export async function loadEventOpr(client: PoolClient, eventKey: string): Promise<TeamOpr[]> {
-  return withSavepoint(client, () => readEventOpr(client, eventKey), []);
+  return withSavepoint(client, async () => eventOpr(await readPlayedResults(client, eventKey)), []);
 }
 
-async function readEventOpr(client: PoolClient, eventKey: string): Promise<TeamOpr[]> {
+/** What a match prediction needs from the event's played quals. */
+export type EventScoring = {
+  /** Every robot that has played, rated by OPR; the ridge pulls a one-match robot toward the field. */
+  opr: TeamOpr[];
+  /** Average alliance score over the played quals (fouls drawn removed), or null before any. */
+  averageAllianceScore: number | null;
+  /** Alliance results the numbers rest on. */
+  alliances: number;
+};
+
+/**
+ * Each robot's OPR at this event and the event's scoring level, for Home and the match plan.
+ *
+ * Rated from a robot's first match rather than its third: replayed on 2025gagai and 2026gagr,
+ * that predicted every match (not 115 of 141) for about the same accuracy, because the ridge in
+ * eventOpr already keeps a one-match robot near the event average. Recent matches are not
+ * weighted up (decay 1): on the same replay, decay picked fewer winners.
+ */
+export async function loadEventScoring(client: PoolClient, eventKey: string): Promise<EventScoring> {
+  return withSavepoint(client, async () => eventScoringFrom(await readPlayedResults(client, eventKey)), {
+    opr: [],
+    averageAllianceScore: null,
+    alliances: 0,
+  });
+}
+
+export function eventScoringFrom(results: readonly AllianceResult[]): EventScoring {
+  if (!results.length) return { opr: [], averageAllianceScore: null, alliances: 0 };
+  return {
+    opr: eventOpr(results, { decay: 1, minMatches: 1 }),
+    averageAllianceScore: Math.round((results.reduce((sum, row) => sum + row.total, 0) / results.length) * 10) / 10,
+    alliances: results.length,
+  };
+}
+
+async function readPlayedResults(client: PoolClient, eventKey: string): Promise<AllianceResult[]> {
   const played = await client.query<PlayedMatchRow>(
     `SELECT match_key AS "matchKey", match_number AS "matchNumber",
             red_alliance AS "redAlliance", blue_alliance AS "blueAlliance",
@@ -82,5 +117,5 @@ async function readEventOpr(client: PoolClient, eventKey: string): Promise<TeamO
       WHERE event_key = $1::text AND comp_level = 'qm' AND winning_alliance IS NOT NULL`,
     [eventKey],
   );
-  return eventOpr(allianceResultsFromMatches(played.rows));
+  return allianceResultsFromMatches(played.rows);
 }
