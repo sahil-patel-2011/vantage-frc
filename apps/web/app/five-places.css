@@ -1,0 +1,307 @@
+/* The five places (lib/nav/places.ts): the sidebar on a computer and the bottom bar on a phone
+   are the same five, and nothing else navigates. Loaded last so it settles the shell over the
+   older menu and drawer sheets. */
+
+/* Bottom bar: five equal tabs, a fifth of a phone each. */
+body.has-app-shell .soft-island {
+  width: min(400px, calc(100vw - 24px));
+}
+body.has-app-shell .soft-island a {
+  min-height: 52px;
+}
+body.has-app-shell .soft-island a > svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* No menu drawer: the bar is complete, so nothing hides it while a panel is open. */
+body.has-app-shell .soft-menu-btn,
+body.has-app-shell .soft-drawer,
+body.has-app-shell .soft-navigation-scrim {
+  display: none !important;
+}
+
+/* Phones: the top bar's search is its icon alone; the field opens full width. */
+@media (max-width: 1099px) {
+  body.has-app-shell .app-topbar-search {
+    width: 44px;
+    min-height: 44px;
+    margin-right: 0;
+    padding: 0;
+    justify-content: center;
+    border-color: transparent;
+    background: transparent;
+    color: var(--ink);
+  }
+  body.has-app-shell .app-topbar-search > :is(span, kbd) {
+    display: none;
+  }
+  body.has-app-shell .app-topbar-search > svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Sidebar: the five places, then Pinned. */
+@media (min-width: 1100px) {
+  .app-sidebar .app-sidebar-places {
+    display: grid;
+    gap: 2px;
+    margin-bottom: 24px;
+  }
+  .app-sidebar .app-sidebar-places a {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .app-sidebar .app-sidebar-places a > svg {
+    width: 20px;
+    height: 20px;
+  }
+  .app-sidebar .app-sidebar-pins {
+    margin-bottom: 0;
+  }
+  .app-sidebar .app-sidebar-pin-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--muted);
+    font: 500 13px var(--font-sans);
+    cursor: pointer;
+  }
+  .app-sidebar .app-sidebar-pin-empty:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .app-sidebar .app-sidebar-pin-empty > svg {
+    width: 16px;
+    height: 16px;
+  }
+  /* A pinned section is current: its place is marked quietly, not in a second accent. */
+  .app-sidebar:has(.app-sidebar-pins a[aria-current="page"]) .app-sidebar-places a[aria-current="page"] {
+    background: transparent;
+    color: var(--ink);
+    font-weight: 550;
+  }
+}
+
+/* Search palette: Pinned (phones; the sidebar holds them on a computer) and Ask AI. */
+.search-palette-pins {
+  padding: 4px 0 8px;
+}
+.search-palette-pins > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 6px;
+}
+.search-palette-pins-edit {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--accent);
+  font: 550 13px var(--font-sans);
+  cursor: pointer;
+}
+.search-palette-pins > nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 0 6px;
+}
+.search-palette-pins > nav a {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-height: 76px;
+  padding: 8px 4px;
+  border-radius: 14px;
+  color: var(--ink);
+  font: 500 12px/1.2 var(--font-sans);
+  text-align: center;
+  text-decoration: none;
+}
+.search-palette-pins > nav a:hover {
+  background: var(--surface-2);
+}
+.search-palette-pins > nav a > i {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.search-palette-pins > nav a > i > svg {
+  width: 22px;
+  height: 22px;
+}
+.search-palette-pins > nav a > span {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 1100px) {
+  .search-palette-pins {
+    display: none;
+  }
+}
+.search-palette-ask {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  margin: 2px 0 6px;
+  padding: 8px 14px;
+  border-radius: 14px;
+  color: var(--ink);
+  font: 400 15px/1.3 var(--font-sans);
+  text-decoration: none;
+}
+.search-palette-ask:hover,
+.search-palette-ask:focus-visible {
+  background: var(--accent-soft);
+}
+.search-palette-ask > i {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.search-palette-ask > i > svg {
+  width: 18px;
+  height: 18px;
+}
+.search-palette-ask > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-palette-ask strong {
+  font-weight: 550;
+}
+.search-palette-ask > small {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 520px) {
+  .search-palette-ask > small {
+    display: none;
+  }
+}
+
+/* Account menu: Profile, Settings, Help (and Admin) now live here. */
+body.has-app-shell .soft-account-pop .soft-account-destination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+/* Search results: one row shape for pages, tools and team data (the rows had no base style of
+   their own and drew as underlined browser links). */
+body.has-app-shell .search-palette-results [role="option"] {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  color: var(--ink);
+  text-decoration: none;
+}
+body.has-app-shell .search-palette-results [role="option"] > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--muted);
+}
+body.has-app-shell .search-palette-results [role="option"] > span {
+  flex: 1;
+  min-width: 0;
+}
+body.has-app-shell .search-palette-results [role="option"] small {
+  color: var(--muted);
+}
+body.has-app-shell .search-palette-results [role="option"]:hover {
+  background: var(--surface-2);
+}
+body.has-app-shell .search-palette-results .command-search-hits > nav {
+  display: grid;
+  gap: 2px;
+}
+/* A question: Enter asks AI, so the Ask AI row is the one that looks chosen. */
+.search-palette-ask[data-default] {
+  background: var(--accent-soft);
+}
+.search-palette-results:has(.search-palette-ask[data-default]) [role="option"].is-active {
+  background: transparent;
+}
+
+/* A place's sections (components/hub-sections.tsx): a segmented row under the title, one line,
+   scrolling sideways on a phone rather than wrapping. */
+body.has-app-shell .workspace-hub-sections {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  width: max-content;
+  max-width: 100%;
+  margin: -8px 0 24px;
+  padding: 3px;
+  overflow-x: auto;
+  border-radius: 999px;
+  background: var(--surface-2);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+body.has-app-shell .workspace-hub-sections::-webkit-scrollbar {
+  display: none;
+}
+body.has-app-shell .workspace-hub-sections a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: var(--muted);
+  font: 550 13px/1 var(--font-sans);
+  text-decoration: none;
+  white-space: nowrap;
+}
+body.has-app-shell .workspace-hub-sections a > svg {
+  width: 16px;
+  height: 16px;
+}
+body.has-app-shell .workspace-hub-sections a:hover {
+  color: var(--ink);
+}
+body.has-app-shell .workspace-hub-sections a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px #0000000d, 0 0 0 1px var(--line-soft);
+}
+body.has-app-shell .workspace-hub-sections a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+@media (pointer: coarse) {
+  body.has-app-shell .workspace-hub-sections a {
+    min-height: 44px;
+  }
+}

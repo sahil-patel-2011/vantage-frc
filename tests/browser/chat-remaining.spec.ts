@@ -75,12 +75,9 @@ test("Chat remaining student chrome keeps one primary and drops leftover copy", 
   // element carries it — the hub rail, the primary-app bar — is a layout
   // decision that has changed before and will again; that a student can leave
   // this page is not.
-  // On a phone the hub rail is a closed drawer — present but hidden — and the
-  // primary-app bar is the one on screen. Either counts; what must not happen
-  // is both being hidden.
-  const wayOut = page
-    .locator('nav[aria-label="Hubs"], nav[aria-label="Primary apps"]')
-    .locator("visible=true");
+  // The five places (the sidebar on a computer, the bottom bar on a phone) are always a way
+  // out of chat.
+  const wayOut = page.locator('nav[aria-label="Places"]').locator("visible=true");
   await expect(wayOut.first()).toBeVisible({ timeout: 20_000 });
 
   const empty = page.getByRole("button", { name: "New private chat" });

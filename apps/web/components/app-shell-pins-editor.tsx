@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerE
 import { Icon } from "./icon";
 import { useExitPresence } from "./ui/use-exit-presence";
 import {
-  BAR_SLOTS,
   PIN_LIMIT,
   defaultPinHrefs,
   movePin,
@@ -17,9 +16,9 @@ import {
 const FOCUSABLE = 'a[href],button:not(:disabled):not([tabindex="-1"]),input:not(:disabled)';
 
 /**
- * "Your apps": the one editor for the pinned places (bottom bar, the menu's top row, the
- * sidebar's Pinned group). Opened by "Edit" in the menu or the sidebar, by pressing and holding
- * the bottom bar, or from Account → Appearance.
+ * Pinned: the one editor for the pinned places (the sidebar's Pinned group on a computer, the top
+ * of search on a phone). Opened by the pencil in the sidebar, Edit in search, or from
+ * Account → Appearance.
  *
  * The pins are a list you reorder by dragging the handle, or with the arrow keys on it; the
  * minus removes one. Everything else is listed below by workspace with a plus to add it.
@@ -196,15 +195,15 @@ export function AppShellPinsEditor({
           <button type="button" className="pins-editor-cancel" onClick={onCancel} disabled={saving}>
             Cancel
           </button>
-          <h2 id="pins-editor-title">Your apps</h2>
+          <h2 id="pins-editor-title">Pinned</h2>
           <button type="button" className="pins-editor-done" onClick={() => void done()} disabled={saving}>
             {saving ? "Saving…" : "Done"}
           </button>
         </header>
         <div className="pins-editor-body">
           <p id="pins-editor-about" className="pins-editor-about">
-            Pin up to {PIN_LIMIT} places. The first {BAR_SLOTS} sit in the bottom bar on your phone; all of them
-            show at the top of the menu and the sidebar. Everything stays in the menu either way.
+            Pin up to {PIN_LIMIT} tools as shortcuts. They show in the sidebar on a computer and at the top of
+            search on your phone. Every tool stays in its place either way.
           </p>
 
           <section aria-labelledby="pins-editor-pinned">
@@ -225,7 +224,6 @@ export function AppShellPinsEditor({
                     key={href}
                     data-pin={href}
                     data-dragging={dragging === href || undefined}
-                    data-after-bar={index === BAR_SLOTS && draft.length > BAR_SLOTS ? "true" : undefined}
                   >
                     <button
                       type="button"
@@ -239,7 +237,7 @@ export function AppShellPinsEditor({
                     <i className="pins-editor-symbol"><Icon name={pin?.icon ?? "grid"} /></i>
                     <span className="pins-editor-label">
                       <strong>{label}</strong>
-                      {!usable ? <small>Not on this team. Remove it, or keep it for another team.</small> : index < BAR_SLOTS ? <small>Bottom bar</small> : null}
+                      {!usable ? <small>Not on this team. Remove it, or keep it for another team.</small> : null}
                     </span>
                     <button
                       type="button"

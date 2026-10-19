@@ -1,47 +1,47 @@
 import type { Page } from "@playwright/test";
 
 /**
- * Phones and tablets: the hamburger, which opens the menu. A desktop-width page has the sidebar
- * instead, so there is no menu button there.
+ * The five places (Home, Competition, Team, Build, Business): the sidebar on a desktop-width
+ * page, the bottom bar on phones and tablets. Both are the navigation "Places"; only one of the
+ * two is visible at a time. There is no menu drawer.
  */
-export function navigationOpener(page: Page) {
-  return page.locator(".soft-menu-btn:visible");
+export function primaryNavigation(page: Page) {
+  return page.locator('nav[aria-label="Places"]:visible');
 }
 
 /**
- * Where a person starts a search at this width: the top bar's "Search anything" on desktop (it
- * opens the search palette), the menu on phones and tablets (its search field). Both fields are
- * the combobox "Search pages, tools, and your team's data". ⌘K / Ctrl+K opens the palette at
- * every width.
+ * Where a person starts a search: the top bar's "Search or ask" (the field on desktop, the
+ * magnifier on phones). It opens the search palette; ⌘K / Ctrl+K does too, at every width.
  */
 export function searchOpener(page: Page) {
-  return page.locator(".app-topbar-search:visible, .soft-menu-btn:visible");
+  return page.locator(".app-topbar-search:visible");
 }
 
-/** The search palette: ⌘K / Ctrl+K, and "Search anything" on desktop. */
+/** The search palette: ⌘K / Ctrl+K, and "Search or ask" in the top bar. */
 export function searchPalette(page: Page) {
   return page.getByRole("dialog", { name: "Search Vantage", exact: true });
 }
 
-/** Desktop has a persistent workspace sidebar; smaller screens keep shortcuts. */
-export function primaryNavigation(page: Page) {
-  return page.getByRole("navigation", { name: page.viewportSize()!.width >= 1100 ? "Workspaces" : "Primary apps", exact: true });
-}
-
-/** Open the menu (phones and tablets). */
-export async function openNav(page: Page): Promise<void> {
-  await navigationOpener(page).click();
-}
-
-/** Start a search the way a person would at this width (palette on desktop, menu on phones). */
+/** Start a search the way a person would. */
 export async function openSearch(page: Page): Promise<void> {
   await searchOpener(page).click();
 }
 
-/** Destination groups belong to the one hamburger menu. */
-export async function openMenuSection(page: Page, label: string) {
-  await openNav(page);
-  const section = page.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ has: page.getByText(label, { exact: true }) }) });
-  if (await section.getAttribute("open") === null) await section.locator("summary").click();
-  return section.getByRole("navigation", { name: label, exact: true });
+/** Go to one of the five places the way a person would at this width. */
+export async function openPlace(page: Page, label: "Home" | "Competition" | "Team" | "Build" | "Business"): Promise<void> {
+  await primaryNavigation(page).getByRole("link", { name: label, exact: false }).first().click();
+}
+
+/** Open the account menu (Your profile, Settings, Help, Admin, Sign out). */
+export async function openAccountMenu(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Account menu", exact: true }).click();
+}
+
+/**
+ * A place's sections: the hub's own tab bar, reached through the place. Returns the hub's tab
+ * list so a spec can check or click a section.
+ */
+export async function openPlaceSections(page: Page, label: "Competition" | "Team" | "Build" | "Business") {
+  await openPlace(page, label);
+  return page.getByRole("tablist").first();
 }

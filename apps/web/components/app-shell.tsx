@@ -4,7 +4,6 @@ import { anySignal } from "../lib/abort/any-signal";
 import "../app/product-styles";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AppShellNavPanel } from "./app-shell-nav-panel";
 import { AppShellIsland } from "./app-shell-island";
 import { AppShellSearchPalette } from "./app-shell-search-palette";
 import { AppShellPinsEditor } from "./app-shell-pins-editor";
@@ -17,12 +16,8 @@ import { ServiceNoticeBanner } from "./service-notice-banner";
 import { useSheetsAutoSync } from "./use-sheets-auto-sync";
 import { AppShellTopbar } from "./app-shell-topbar";
 import { AppShellSidebar } from "./app-shell-sidebar";
-import {
-  PRODUCT_NAV_GROUPS,
-  breadcrumbForPath,
-  findNavMatch,
-} from "../lib/nav/product-nav";
-import { BAR_SLOTS, PINS_CHANGED_EVENT, PINS_EDIT_EVENT, defaultPinHrefs, pinCatalog, resolvePins, resolveStoredPins } from "../lib/nav/pins";
+import { breadcrumbForPath } from "../lib/nav/product-nav";
+import { PINS_CHANGED_EVENT, PINS_EDIT_EVENT, defaultPinHrefs, pinCatalog, resolvePins, resolveStoredPins } from "../lib/nav/pins";
 import { publishPinnedHrefs } from "../lib/nav/pin-snapshot";
 import {
   pathAllowedByHubAccess,
@@ -34,6 +29,7 @@ import { pushAppNavigation, softNavigationTarget } from "../lib/nav/soft-navigat
 import { fetchProductSession } from "../lib/nav/product-session";
 import { pathnameIsEntryScreen } from "../lib/nav/product-route";
 import { probeSessionUser } from "../lib/nav/session-probe";
+import { placeForPath, visiblePlaces } from "../lib/nav/places";
 import { Icon, type IconName } from "./icon";
 import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
@@ -47,9 +43,7 @@ import { NextActionsDedupe } from "./next-actions-dedupe";
 import {
   accountInitialFor,
   accountLabelFor,
-  activeIslandHref,
   backHrefForPath,
-  filterVisibleNavGroups,
   formatRolePlanCue,
   isHubRootPath,
   readRememberedTeamLabel,
@@ -62,8 +56,6 @@ import {
   type MembershipOption,
 } from "./app-shell-model";
 import { readRememberedInitial, readRememberedRoleCue, rememberInitial, rememberRoleCue } from "../lib/nav/shell-memory";
-
-const groups = PRODUCT_NAV_GROUPS;
 
 /** localStorage, or null where the browser blocks it (private mode, blocked site data). */
 function safeLocalStorage(): Storage | null {
@@ -87,12 +79,10 @@ export default function AppShell() {
   // The team's spreadsheets follow the app on their own: no Sync button to remember.
   useSheetsAutoSync(orgId);
   /**
-   * The menu (phones and tablets: the hamburger and the bottom bar's More) is for going
-   * places, with its own search field. ⌘K / Ctrl+K and the top bar's "Search anything" open
-   * the search palette instead: one field, centered, on every screen size. Desktop already has
-   * the sidebar, so search never opens a second navigation menu on top of it.
+   * Going places is the five places (the sidebar on a computer, the bottom bar on a phone).
+   * Finding anything else is the search palette: ⌘K / Ctrl+K or the top bar's "Search or ask",
+   * one field, centered, on every screen size. There is no menu drawer behind either.
    */
-  const [navOpen, setNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   useEffect(() => {
@@ -122,7 +112,7 @@ export default function AppShell() {
   const [signingOut, setSigningOut] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [online, setOnline] = useState(true);
-  /** "Your apps": the bottom bar shows the first four; the menu and the sidebar show them all. */
+  /** Pins: the sidebar on a computer, empty search on a phone. */
   const [pinHrefs, setPinHrefs] = useState<string[]>(defaultPinHrefs);
   useEffect(() => {
     publishPinnedHrefs(pinHrefs);
@@ -132,20 +122,12 @@ export default function AppShell() {
   const [teamsLoaded, setTeamsLoaded] = useState(false);
   const [pathSearch, setPathSearch] = useState("");
   const [shortcutHint, setShortcutHint] = useState("");
-  const panelCloseRef = useRef<HTMLButtonElement>(null);
   const islandQueryOpened = useRef(false);
   // A save that lands wins over a late-arriving read of the old pins.
   const pinsRevision = useRef(0);
-  const islandPressTimer = useRef<number | null>(null);
-  const islandPressOrigin = useRef<{ x: number; y: number } | null>(null);
-  const islandLongPressed = useRef(false);
-  const navOpenerRef = useRef<HTMLElement | null>(null);
-  /** Focus goes back only after a real close, never on the first render. */
-  const navWasOpenRef = useRef(false);
   /** Bumps when the URL changes without a pathname change (?orgId=, ?tab=), so query-driven state follows soft navigations. */
   const [locationTick, setLocationTick] = useState(0);
 
-  const activeNav = findNavMatch(pathname);
   // Another person signing in on this device (another tab) ends this tab's session view.
   useEffect(() => { watchSessionBoundary(); }, []);
   // Keep Event Day, My Day and the schedule saved on this device (lib/offline/event-day-pack):
@@ -161,38 +143,14 @@ export default function AppShell() {
     const id = window.setTimeout(run, 8_000);
     return () => window.clearTimeout(id);
   }, [orgId, me.userId]);
-  const activeGroupLabel = activeNav?.group.label;
-
-  const openNav = useCallback(() => {
-    if (!document.activeElement?.closest(".soft-drawer")) {
-      // Ctrl/⌘+K from the page itself has <body> as the "opener"; focusing that again on close
-      // dropped keyboard users at the top of the document. null sends focus to the search button.
-      const active = document.activeElement;
-      navOpenerRef.current = active instanceof HTMLElement && active !== document.body ? active : null;
-    }
-    setAccountMenuOpen(false);
-    setIslandEditorOpen(false);
-    setPaletteOpen(false);
-    setNavOpen(true);
-  }, []);
-
-  const closeNav = useCallback(() => {
-    setNavOpen(false);
-  }, []);
 
   /** ⌘K / Ctrl+K and "Search anything": the search palette, never the menu. */
   const openPalette = useCallback(() => {
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
-    setNavOpen(false);
     setPaletteOpen(true);
   }, []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
-
-  /** The menu has no search field of its own: Search opens the one palette, at every size. */
-  const toggleMenu = useCallback(() => {
-    openNav();
-  }, [openNav]);
 
   const navigate = useCallback((href: string) => {
     pushAppNavigation((path) => router.push(path), href);
@@ -273,21 +231,18 @@ export default function AppShell() {
   useEffect(() => {
     document.body.classList.toggle(
       "soft-nav-open",
-      navOpen || accountMenuOpen || islandEditorOpen || paletteOpen,
+      accountMenuOpen || islandEditorOpen || paletteOpen,
     );
-    document.body.classList.toggle("soft-nav-panel-open", navOpen);
     return () => {
       document.body.classList.remove("soft-nav-open");
-      document.body.classList.remove("soft-nav-panel-open");
     };
-  }, [navOpen, accountMenuOpen, islandEditorOpen, paletteOpen]);
+  }, [accountMenuOpen, islandEditorOpen, paletteOpen]);
 
   useEffect(() => {
     setPathSearch(window.location.search);
   }, [pathname, locationTick]);
 
   useEffect(() => {
-    setNavOpen(false);
     setPaletteOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
@@ -297,32 +252,6 @@ export default function AppShell() {
     const mac = /mac|iphone|ipad|ipod/i.test(window.navigator.platform || window.navigator.userAgent);
     setShortcutHint(mac ? "⌘K" : "Ctrl K");
   }, []);
-
-  useEffect(() => {
-    if (!navOpen) {
-      const opener = navOpenerRef.current;
-      const wasOpen = navWasOpenRef.current;
-      navOpenerRef.current = null;
-      navWasOpenRef.current = false;
-      if (wasOpen) requestAnimationFrame(() => {
-        // The menu closed to open the "Your apps" editor or the search palette: focus is theirs.
-        if (document.activeElement?.closest(".pins-editor, .search-palette")) return;
-        const visible = Boolean(opener?.isConnected && opener.getClientRects().length > 0 && getComputedStyle(opener).visibility !== "hidden");
-        const fallback = [...document.querySelectorAll<HTMLElement>(".app-topbar-search, .soft-menu-btn")]
-          .find(control => control.getClientRects().length > 0 && getComputedStyle(control).visibility !== "hidden");
-        (visible ? opener : fallback)?.focus();
-      });
-      return;
-    }
-    navWasOpenRef.current = true;
-    const focusTimer = window.setTimeout(() => {
-      // A person may already have moved to a destination while the drawer
-      // animates. Delayed initial focus must not steal their next keystroke.
-      if (document.activeElement?.closest(".soft-drawer")) return;
-      panelCloseRef.current?.focus();
-    }, 40);
-    return () => window.clearTimeout(focusTimer);
-  }, [navOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -421,7 +350,6 @@ export default function AppShell() {
   }, [entryScreen]);
 
   const openIslandEditor = useCallback(() => {
-    setNavOpen(false);
     setPaletteOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(true);
@@ -452,22 +380,15 @@ export default function AppShell() {
         signal: AbortSignal.timeout(8_000),
       });
       const data = (await response.json().catch(() => ({}))) as { tabs?: unknown; error?: string };
-      if (!response.ok) return data.error ?? "Your apps couldn't be saved. Try again.";
+      if (!response.ok) return data.error ?? "Your pins couldn't be saved. Try again.";
       if (id === pinsRevision.current) setPinHrefs(resolveStoredPins(data.tabs));
       window.dispatchEvent(new CustomEvent(PINS_CHANGED_EVENT, { detail: { tabs: data.tabs } }));
       setIslandEditorOpen(false);
       return null;
     } catch {
-      return "Your apps couldn't be saved. Check your connection and try again.";
+      return "Your pins couldn't be saved. Check your connection and try again.";
     }
   }, []);
-
-  useEffect(
-    () => () => {
-      if (islandPressTimer.current !== null) window.clearTimeout(islandPressTimer.current);
-    },
-    [],
-  );
 
   useEffect(() => {
     const update = () => {
@@ -495,7 +416,6 @@ export default function AppShell() {
         else openPalette();
       }
       if (event.key === "Escape") {
-        setNavOpen(false);
         setPaletteOpen(false);
         setAccountMenuOpen(false);
         setIslandEditorOpen(false);
@@ -520,10 +440,6 @@ export default function AppShell() {
     [hubAccess, sponsorsAllowed],
   );
   const visiblePinCatalog = useMemo(() => pinCatalog(navHrefAllowed), [navHrefAllowed]);
-  const visibleNavGroups = useMemo(
-    () => filterVisibleNavGroups(groups, navHrefAllowed),
-    [navHrefAllowed],
-  );
 
   const paletteCatalog = useMemo(() => commandCatalogFor({ platformAdmin: me.platformAdmin }), [me.platformAdmin]);
 
@@ -565,16 +481,15 @@ export default function AppShell() {
   // Every settings page is "Settings › Section", whichever page it is underneath.
   const crumbHint = isSettingsPath(pathname) ? "Settings" : breadcrumbForPath(pathname);
   // Match context lives on Home and My Day, without another global navigation band.
-  // Pins this team may open; the bottom bar takes the first four of them.
+  // Pins this team may open.
   const pins = useMemo(() => resolvePins(pinHrefs).filter((pin) => navHrefAllowed(pin.href)), [pinHrefs, navHrefAllowed]);
-  const islandTabs = useMemo(() => pins.slice(0, BAR_SLOTS), [pins]);
-  const activeIslandTabHref = useMemo(
-    () => activeIslandHref(pathname, pathSearch, islandTabs),
-    [islandTabs, pathname, pathSearch],
-  );
+  // The five places this person may open, and the one this page belongs to.
+  const places = useMemo(() => visiblePlaces(navHrefAllowed), [navHrefAllowed]);
+  const currentPlace = useMemo(() => placeForPath(pathname), [pathname]);
+  // A pin to a place itself (Home) is already one tap away in the sidebar and the bottom bar.
+  const pinShortcuts = useMemo(() => pins.filter((pin) => !places.some((place) => place.href === pin.href)), [pins, places]);
 
   const closeOverlays = useCallback(() => {
-    setNavOpen(false);
     setPaletteOpen(false);
     setAccountMenuOpen(false);
     setIslandEditorOpen(false);
@@ -596,9 +511,9 @@ export default function AppShell() {
         Skip to main content
       </a>
       <NextActionsDedupe routeKey={`${pathname}:${locationTick}`} />
-      {!onboarding ? <AppShellSidebar groups={visibleNavGroups} pins={pins} pathname={pathname} pathSearch={pathSearch}
+      {!onboarding ? <AppShellSidebar places={places} currentPlace={currentPlace} pins={pinShortcuts} pathname={pathname} pathSearch={pathSearch}
         orgId={orgId} orgLabel={orgLabel} collapsed={sidebarCollapsed} onCollapse={toggleSidebar}
-        platformAdmin={me.platformAdmin} onEditPins={openIslandEditor} allowed={navHrefAllowed} /> : null}
+        onEditPins={openIslandEditor} allowed={navHrefAllowed} /> : null}
       <AppShellTopbar
         showBack={showBack}
         onBack={() => navigate(backHref)}
@@ -607,9 +522,6 @@ export default function AppShell() {
         orgLabel={orgLabel}
         crumbHint={crumbHint}
         orgId={orgId}
-        navOpen={navOpen}
-        menuOpen={navOpen}
-        onOpenNav={toggleMenu}
         searchOpen={paletteOpen}
         onOpenSearch={openPalette}
         shortcutHint={shortcutHint}
@@ -622,6 +534,7 @@ export default function AppShell() {
         initial={initial}
         accountLabel={accountLabel}
         memberships={memberships}
+        rolePlanCue={orgId ? rolePlanCue : null}
         signingOut={signingOut}
         onSignOut={() => void handleSignOut()}
       />
@@ -639,29 +552,14 @@ export default function AppShell() {
           onClick={() => setAccountMenuOpen(false)}
         />
       ) : null}
-      <AppShellNavPanel
-        navOpen={navOpen}
-        closeNav={closeNav}
-        panelCloseRef={panelCloseRef}
-        orgLabel={orgLabel}
-        rolePlanCue={rolePlanCue}
-        orgId={orgId}
-        onOpenSearch={openPalette}
-        visibleNavGroups={visibleNavGroups}
-        pins={pins}
-        activeGroupLabel={activeGroupLabel}
-        pathname={pathname}
-        pathSearch={pathSearch}
-        navHrefAllowed={navHrefAllowed}
-        onEditPins={openIslandEditor}
-        platformAdmin={me.platformAdmin === true}
-      />
       <AppShellSearchPalette
         open={paletteOpen}
         onClose={closePalette}
         search={paletteSearch}
         orgId={orgId}
         shortcutHint={shortcutHint}
+        pins={pinShortcuts}
+        onEditPins={openIslandEditor}
       />
       <AppTour />
       <FeedbackButton orgId={orgId} signedIn={Boolean(me.userId) && !entryScreen} showTrigger={false} />
@@ -669,15 +567,9 @@ export default function AppShell() {
       {onboarding ? null : (
       <AppShellIsland
         orgId={orgId}
-        islandTabs={islandTabs}
-        activeIslandTabHref={activeIslandTabHref}
+        places={places}
+        currentPlace={currentPlace}
         unreadMessages={unreadMessages}
-        onOpenEditor={openIslandEditor}
-        onOpenMore={toggleMenu}
-        navOpen={navOpen}
-        islandPressTimer={islandPressTimer}
-        islandPressOrigin={islandPressOrigin}
-        islandLongPressed={islandLongPressed}
       />
       )}
       <AppShellPinsEditor

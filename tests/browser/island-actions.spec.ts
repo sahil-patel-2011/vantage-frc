@@ -1,19 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
 
-test("the Your apps editor traps focus, retries a failed save, and persists the chosen order", async ({ page, context }) => {
+test("the Pinned editor traps focus, retries a failed save, and persists the chosen order", async ({ page, context }) => {
   expect(await signInAs(context, "owner")).toBe(true);
   const original = await (await context.request.get("/api/navigation/preferences")).json();
   expect(original.persisted).toBe(true);
   try {
-    await page.setViewportSize({ width: 390, height: 900 });
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/dashboard?orgId=6925a000-0000-4000-8000-000000000001");
-    // No gear: the editor opens from the bar itself (right-click here; press-and-hold or the Menu
-    // key elsewhere) or from Edit in the menu, and focus returns to where it was opened from.
-    const opener = page.getByRole("navigation", { name: "Primary apps" }).getByRole("link").first();
+    // The editor opens from the pencil beside Pinned in the sidebar (Edit in search on a phone),
+    // and focus returns to where it was opened from.
+    const opener = page.getByRole("button", { name: "Edit pinned places", exact: true });
     await opener.focus();
-    await opener.click({ button: "right" });
-    const dialog = page.getByRole("dialog", { name: "Your apps" });
+    await opener.click();
+    const dialog = page.getByRole("dialog", { name: "Pinned" });
     // Cancel on the left takes focus first; Done is on the right.
     await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
     await page.keyboard.press("Shift+Tab");
@@ -24,7 +24,7 @@ test("the Your apps editor traps focus, retries a failed save, and persists the 
     await expect(dialog).toBeHidden();
     await expect(opener).toBeFocused();
 
-    await opener.click({ button: "right" });
+    await opener.click();
     // Remove every pin but Home (the last one can't go), add three, then move Home to the end
     // with the keyboard on its handle.
     const removes = dialog.locator(".pins-editor-remove");
@@ -47,9 +47,10 @@ test("the Your apps editor traps focus, retries a failed save, and persists the 
     await dialog.getByRole("button", { name: "Done", exact: true }).click();
     await expect(dialog).toBeHidden();
     await page.reload();
-    const island = page.getByRole("navigation", { name: "Primary apps" });
-    await expect(island.getByRole("link")).toHaveText(labels);
-    await island.getByRole("link", { name: "Money", exact: true }).click();
+    // Home is one of the five places already, so the sidebar's Pinned list does not repeat it.
+    const pinned = page.getByRole("navigation", { name: "Pinned", exact: true });
+    await expect(pinned.getByRole("link")).toHaveText(labels.filter((label) => label !== "Home"));
+    await pinned.getByRole("link", { name: "Money", exact: true }).click();
     await expect(page).toHaveURL(/\/business\?tab=finance&orgId=6925a000-0000-4000-8000-000000000001/);
   } finally {
     await page.unroute("**/api/navigation/preferences");

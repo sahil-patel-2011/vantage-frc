@@ -1,4 +1,4 @@
-import { navigationOpener } from "./nav";
+import { searchOpener, searchPalette } from "./nav";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./session";
@@ -74,9 +74,9 @@ test("workspace search keeps its results usable on narrow and landscape screens"
   for(const viewport of [{width:320,height:667},{width:844,height:390},{width:768,height:1024}]) {
     await page.setViewportSize(viewport); await page.goto("/competition?tab=strategy");
     await expect(page.getByRole("tab",{name:"Match plan",exact:true})).toHaveAttribute("aria-selected","true");
-    const opener=navigationOpener(page); await opener.click();
-    const panel=page.getByRole("dialog",{name:"Product navigation",exact:true});
-    const search=panel.getByRole("combobox",{name:"Search pages, tools, and your team's data",exact:true});
+    const opener=searchOpener(page); await opener.click();
+    const panel=searchPalette(page);
+    const search=panel.getByRole("combobox",{name:"Search pages, tools, and your team's data, or ask AI",exact:true});
     const loaded=page.waitForResponse(response=>new URL(response.url()).pathname==="/api/search" && new URL(response.url()).searchParams.get("q")==="scouting");
     await search.fill("scouting");
     expect((await loaded).ok()).toBe(true);

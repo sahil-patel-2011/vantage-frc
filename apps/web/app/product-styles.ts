@@ -33,6 +33,8 @@ import "./nav-pins-search.css";
 import "./interface-polish.css";
 // Last of all: the button system (tiers, control tokens, the destructive tone).
 import "./button-system.css";
+// After the button system: the five places settle the shell (sidebar, bottom bar, search or ask).
+import "./five-places.css";
 
 /** Side-effect module: product shells import this so marketing routes do not. */
 export {};

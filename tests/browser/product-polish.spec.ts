@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { signInFixture } from "./session";
 import { workspace } from "./fixtures/workspace-ui";
-import { openNav, openSearch } from "./nav";
+import { openSearch, searchOpener } from "./nav";
 import AxeBuilder from "@axe-core/playwright";
 
 // Real page components with API fixtures; persistence is covered by the API suites.
@@ -102,17 +102,18 @@ test("sidebar collapse persists, workspace tabs support the keyboard, and search
   expect(destination.searchParams.get("orgId")).toBe("ui-team");
   // Desktop search is the palette; Escape returns focus to the control that is visible now.
   await openSearch(page);
-  const search = page.getByRole("combobox", { name: "Search pages, tools, and your team's data", exact: true });
+  const search = page.getByRole("combobox", { name: "Search pages, tools, and your team's data, or ask AI", exact: true });
   await expect(search).toBeFocused();
   await search.fill("calendar");
   await expect(page.locator(".command-group").first()).toContainText("Calendar");
   await page.setViewportSize({ width: 390, height: 960 });
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Menu", exact: true })).toBeFocused();
-  await openNav(page);
+  // The phone's search is the same control, drawn as its magnifier.
+  await expect(searchOpener(page)).toBeFocused();
+  await openSearch(page);
   await page.setViewportSize({ width: 1440, height: 960 });
   await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Search pages, tools, and team data", exact: true })).toBeFocused();
+  await expect(searchOpener(page)).toBeFocused();
 });
 
 test("shared navigation and workspace tabs have no accessibility violations", async ({ page, context }) => {

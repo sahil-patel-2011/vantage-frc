@@ -2,6 +2,18 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2410,
+      "date": "2026-10-19",
+      "headline": "Five places to find everything: Home, Competition, Team, Build and Business",
+      "changes": [
+        "The sidebar on a computer and the bar at the bottom of your phone are now the same five places, in the same order; the menu button, the slide-out menu and More are gone",
+        "Each place shows its sections in a row under the title, so Scout, Match plan, Pick list and the rest are one tap away",
+        "Search is now Search or ask: type a question and choose Ask AI, or just press Enter, and the assistant picks it up",
+        "On your phone, your pinned tools sit at the top of search; on a computer they stay under the five places in the sidebar",
+        "Settings, Help and Admin moved into the account menu at the top right"
+      ]
+    },
+    {
       "pr": 2408,
       "date": "2026-10-17",
       "headline": "Your next match is always on Home, with Predict this match",

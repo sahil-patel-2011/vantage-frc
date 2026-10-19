@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { signInAs } from "./session";
-import { openNav, navigationOpener } from "./nav";
+import { openSearch, primaryNavigation, searchOpener, searchPalette } from "./nav";
 
 test.use({ actionTimeout: 15_000 });
 
@@ -88,38 +88,31 @@ for (const width of [390, 1440]) {
   });
 }
 
-test("compact navigation keeps search, keyboard dismissal, and every workspace reachable", async ({ page, context }, testInfo) => {
+test("compact navigation keeps search, keyboard dismissal, and every place reachable", async ({ page, context }, testInfo) => {
   expect(await signInAs(context, "owner")).toBe(true);
-  // Phones and tablets: the menu. A desktop-width page has the sidebar and the search palette.
-  for (const width of [390, 1024]) {
+  // The bottom bar on phones and tablets, the sidebar on a computer: the same five places.
+  for (const width of [390, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/dashboard");
     await expect(page.getByRole("button", { name: "Edit Home — rearrange, add, or remove widgets" })).toBeVisible({ timeout: 25_000 });
-    const opener = navigationOpener(page);
-    await openNav(page);
-    const drawer = page.getByRole("dialog", { name: "Product navigation" });
-    for (const name of ["Home", "Scout"]) await expect(drawer.getByRole("link", { name, exact: true }).first()).toBeVisible();
-    for (const name of ["Competition", "Team", "Build", "Business", "AI"]) {
-      const section = drawer.locator(".main-menu-section").filter({ has: page.locator("summary").filter({ has: page.getByText(name, { exact: true }) }) });
-      await section.locator("summary").click();
-      await expect(section.getByRole("navigation", { name, exact: true }).getByRole("link").first()).toBeVisible();
-      await section.locator("summary").click();
+    const places = primaryNavigation(page);
+    for (const name of ["Home", "Competition", "Team", "Build", "Business"]) {
+      const link = places.getByRole("link", { name, exact: true });
+      await expect(link).toBeVisible();
+      const box = await link.boundingBox();
+      expect(box!.height).toBeGreaterThanOrEqual(44);
     }
-    await expect(drawer.getByRole("link", { name: "Logistics", exact: true })).toHaveCount(0);
-    await expect(drawer.getByRole("button", { name: /Show .* tools/ })).toHaveCount(0);
-    const workspace = drawer.getByRole("link", { name: "Scout", exact: true }).first();
-    await drawer.evaluate(async (node) => {
-      await Promise.all(node.getAnimations().map((animation) => animation.finished.catch(() => {})));
-    });
-    const box = await workspace.boundingBox();
-    expect(box!.width).toBeGreaterThanOrEqual(44);
-    expect(box!.height).toBeGreaterThanOrEqual(48);
-    await drawer.getByRole("combobox").fill("logistics");
-    await expect(drawer.getByRole("option").filter({ hasText: /Logistics|Travel/ }).first()).toBeVisible();
+    await expect(page.locator(".soft-drawer:visible, .soft-menu-btn:visible")).toHaveCount(0);
+    // Each place shows its sections under its title.
+    await places.getByRole("link", { name: "Competition", exact: true }).click();
+    await expect(page.getByRole("navigation", { name: "Competition sections", exact: true }).getByRole("link", { name: "Scout", exact: true })).toBeVisible();
+    // Search finds a tool that has no place of its own.
+    const opener = searchOpener(page);
+    await openSearch(page);
+    await searchPalette(page).getByRole("combobox").fill("logistics");
+    await expect(searchPalette(page).getByRole("option").filter({ hasText: /Logistics|Travel/ }).first()).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(opener).toBeFocused();
-    await opener.click();
     await page.screenshot({ path: testInfo.outputPath(`navigation-${width}.png`), fullPage: true });
-    await page.keyboard.press("Escape");
   }
 });

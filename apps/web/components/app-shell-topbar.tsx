@@ -3,7 +3,6 @@
 import { Icon } from "./icon";
 import { ShellOutboxStatus } from "./shell-outbox-status";
 import { AppShellAccountMenu } from "./app-shell-account-menu";
-import { AskAiTopbarLink } from "./ask-ai-button";
 import { withOrgHref } from "../lib/nav/product-nav";
 import { VIEW_ONLY_CHIP_TITLE, isViewOnlyIn } from "../lib/nav/view-only";
 import type { Me, MembershipOption } from "./app-shell-model";
@@ -32,9 +31,6 @@ export function AppShellTopbar({
   orgLabel,
   crumbHint,
   orgId,
-  navOpen,
-  menuOpen,
-  onOpenNav,
   searchOpen,
   onOpenSearch,
   shortcutHint,
@@ -48,6 +44,7 @@ export function AppShellTopbar({
   initial,
   accountLabel,
   memberships,
+  rolePlanCue,
   signingOut,
   onSignOut,
 }: {
@@ -58,10 +55,6 @@ export function AppShellTopbar({
   orgLabel: string;
   crumbHint: string | null;
   orgId: string;
-  navOpen: boolean;
-  /** Whether the on-demand navigation drawer is showing. */
-  menuOpen: boolean;
-  onOpenNav: () => void;
   /** Whether the search palette is showing. */
   searchOpen: boolean;
   /** Opens the search palette (⌘K / Ctrl+K does the same). */
@@ -81,6 +74,8 @@ export function AppShellTopbar({
   initial: string;
   accountLabel: string | null;
   memberships: MembershipOption[];
+  /** "Owner · Team plan" for the team in view, shown in the account menu. */
+  rolePlanCue: string | null;
   signingOut: boolean;
   onSignOut: () => void;
 }) {
@@ -89,8 +84,6 @@ export function AppShellTopbar({
   return (
     <header className={`soft-topbar${accountMenuOpen ? " account-menu-open" : ""}`}>
       <div className={`soft-topbar-lead${showBack ? " has-back" : ""}`}>
-        {/* Browse in the phone dock opens navigation; desktop has the sidebar. */}
-        {minimal ? null : <button className="soft-icon-btn soft-menu-btn" type="button" aria-label="Browse all pages" aria-controls="vantage-navigation-panel" aria-expanded={menuOpen || navOpen} onClick={onOpenNav}><Icon name="sidebar" /></button>}
         <div className="soft-page-head">
           {showBack ? (
             <button
@@ -150,13 +143,12 @@ export function AppShellTopbar({
             View only
           </span>
         ) : null}
-        {/* Search, not a second menu: it opens the centered search palette. */}
-        {minimal ? null : <button className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenSearch} aria-label="Search pages, tools, and team data" aria-haspopup="dialog" aria-expanded={searchOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search anything</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
+        {/* Search or ask: the one field for finding a tool, team data, or asking AI. On a phone it
+            is the icon alone. */}
+        {minimal ? null : <button className="app-topbar-search" data-tour="menu" type="button" onClick={onOpenSearch} aria-label="Search or ask AI" aria-haspopup="dialog" aria-expanded={searchOpen} aria-keyshortcuts="Control+K Meta+K"><Icon name="search" /><span>Search or ask</span><kbd aria-hidden="true">{shortcutHint}</kbd></button>}
         {/* Nothing is queued before someone is on a team, and its 12-second check read /api/me,
             which answers 403 during onboarding. */}
         {minimal ? null : <ShellOutboxStatus orgId={orgId || null} />}
-        {/* One way into Ask AI from every page, opened on this page's skill (lib/ai-skills). */}
-        <AskAiTopbarLink className="soft-icon-btn soft-ask-ai" orgId={orgId || null} />
         <a
           className="soft-icon-btn soft-notif"
           href={withOrgHref("/notifications", orgId || null)}
@@ -169,6 +161,7 @@ export function AppShellTopbar({
           <button
             className="soft-avatar soft-avatar-btn"
             type="button"
+            data-tour="feedback"
             aria-label="Account menu"
             aria-expanded={accountMenuOpen}
             aria-haspopup="menu"
@@ -189,6 +182,7 @@ export function AppShellTopbar({
             me={me}
             accountLabel={accountLabel}
             orgId={orgId}
+            rolePlanCue={rolePlanCue}
             minimal={minimal}
             signingOut={signingOut}
             onClose={onCloseAccount}

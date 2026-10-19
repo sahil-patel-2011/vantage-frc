@@ -16,12 +16,12 @@ const read = (path: string) => readFileSync(join(WEB, path), "utf8");
 const tabLabel = (hub: Parameters<typeof hubById>[0], id: string) => hubById(hub).tabs.find((tab) => tab.id === id)?.label;
 
 describe("one name per destination", () => {
-  it("Settings: one word, one place, in the phone menu and the sidebar (not the avatar menu)", () => {
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: SETTINGS_HREF, label: "Settings"/);
-    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/<Icon name="gear" \/><span>Settings<\/span>/);
-    // 33f265f79: app utilities have one location; the avatar holds only personal account actions.
-    expect(read("components/app-shell-account-menu.tsx")).not.toMatch(/SETTINGS_HREF|<span>Settings<\/span>/);
-    for (const file of ["components/app-shell-sidebar.tsx", "components/app-shell-account-menu.tsx", "components/app-shell-nav-panel.tsx"]) {
+  it("Settings: one word, one place, the account menu (the sidebar is the five places)", () => {
+    // App utilities keep one location. With the five places, that is the avatar menu: the
+    // sidebar and the bottom bar navigate, and nothing else.
+    expect(read("components/app-shell-account-menu.tsx")).toMatch(/href=\{withOrgHref\(SETTINGS_HREF, orgId\)\}[^>]*>\s*<Icon name="gear" \/><span>Settings<\/span>/);
+    expect(read("components/app-shell-sidebar.tsx")).not.toMatch(/SETTINGS_HREF|<span>Settings<\/span>/);
+    for (const file of ["components/app-shell-sidebar.tsx", "components/app-shell-account-menu.tsx"]) {
       expect(read(file)).not.toMatch(/Personal settings|Account and settings|label: "Account"|<span>Account<\/span>|<span>Team admin<\/span>/);
     }
   });
@@ -35,9 +35,8 @@ describe("one name per destination", () => {
 
   it("Help, in US spelling, with one word in every menu", () => {
     expect(shellTitleForPath("/help")).toBe("Help");
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/help", label: "Help"/);
-    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/<Icon name="book" \/><span>Help<\/span>/);
-    expect(read("components/app-shell-account-menu.tsx")).not.toMatch(/<span>Help<\/span>/);
+    expect(read("components/app-shell-account-menu.tsx")).toMatch(/<Icon name="book" \/><span>Help<\/span>/);
+    expect(read("components/app-shell-sidebar.tsx")).not.toMatch(/<span>Help<\/span>|"\/help"/);
     expect(read("app/help/help-client.tsx")).not.toMatch(/Help centre/);
     // The Help center, in US spelling, with one breadcrumb and no row of links above it.
     const center = read("app/help/help-center.tsx");
@@ -58,23 +57,28 @@ describe("one name per destination", () => {
   });
 });
 
-describe("two menus, no repeats", () => {
-  it("the hamburger menu goes places; Sign out is the avatar menu's", () => {
-    const panel = read("components/app-shell-nav-panel.tsx");
+describe("five places, no repeats", () => {
+  it("there is no menu drawer: the sidebar and the bottom bar are the five places", () => {
+    const shell = read("components/app-shell.tsx");
+    expect(shell).not.toMatch(/AppShellNavPanel|setNavOpen/);
+    expect(read("components/app-shell-topbar.tsx")).not.toMatch(/soft-menu-btn|Browse all pages/);
+    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{places\.map\(\(place\) =>/);
+    expect(read("components/app-shell-island.tsx")).toMatch(/\{places\.map\(\(place\) =>/);
+    expect(shell).toMatch(/const places = useMemo\(\(\) => visiblePlaces\(navHrefAllowed\), \[navHrefAllowed\]\);/);
+  });
+
+  it("Sign out is the avatar menu's, once", () => {
     const account = read("components/app-shell-account-menu.tsx");
-    for (const label of ["Sign out", "Team admin", "Platform admin"]) {
-      expect(panel).not.toMatch(new RegExp(`>${label}<`));
-    }
+    expect(read("components/app-shell-sidebar.tsx")).not.toMatch(/>Sign out</);
     expect(account).toMatch(/"Signing out…" : "Sign out"/);
     // Team admin is a section of Settings ("Members and invites"), not a second menu item.
     expect(account).not.toMatch(/Team admin<\/span>/);
   });
 
-  it("one \"Your apps\": the menu's top row, the sidebar's Pinned group and the bottom bar show the same pins", () => {
-    expect(read("components/app-shell-nav-groups.tsx")).toMatch(/\{pins\.map\(item =>/);
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{pins\.map\(item =>/);
-    const shell = read("components/app-shell.tsx");
-    expect(shell).toMatch(/const islandTabs = useMemo\(\(\) => pins\.slice\(0, BAR_SLOTS\), \[pins\]\);/);
+  it("one set of pins: the sidebar's Pinned group and the top of search on a phone", () => {
+    expect(read("components/app-shell-sidebar.tsx")).toMatch(/pins\.map\(\(item\) =>/);
+    expect(read("components/app-shell-search-palette.tsx")).toMatch(/\{pins\.map\(\(pin\) =>/);
+    expect(read("components/app-shell.tsx")).toMatch(/pins=\{pinShortcuts\}\n\s*onEditPins=\{openIslandEditor\}/);
     // The stock pins keep the old menu dock's everyday places (Home, Scout, My Day, Tasks).
     const pins = read("lib/nav/pins.ts");
     for (const href of ["/dashboard", "/competition?tab=my-day", "/team?tab=todos", "/learn/team"]) {
@@ -86,16 +90,16 @@ describe("two menus, no repeats", () => {
 describe("one icon per meaning (A6-23)", () => {
   it("Ask AI is sparkles everywhere, Help is a book, Security and Platform admin a shield", () => {
     expect(read("lib/nav/product-nav.ts")).not.toMatch(/label: "Ask AI", icon: "bolt"/);
-    // The top bar's Ask AI is the shared page-aware link (components/ask-ai-button.tsx).
-    expect(read("components/app-shell-topbar.tsx")).toMatch(/<AskAiTopbarLink\b/);
-    expect(read("components/ask-ai-button.tsx")).toMatch(/aria-label=\{label \? undefined : "Ask AI"\}[\s\S]{0,600}<Icon name="sparkles" \/>/);
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/<AskAiTopbarLink orgId=\{orgId \|\| null\} label="Ask AI" \/>/);
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/\{ href: "\/help", label: "Help", icon: "book"/);
+    // The shell's one Ask AI is the search palette's row ("Search or ask"), with sparkles.
+    expect(read("components/app-shell-search-palette.tsx")).toMatch(/className="search-palette-ask"[\s\S]{0,120}<Icon name="sparkles" \/>/);
+    expect(read("components/app-shell-topbar.tsx")).not.toMatch(/AskAiTopbarLink/);
+    expect(read("components/app-shell-sidebar.tsx")).not.toMatch(/AskAiTopbarLink/);
+    const account = read("components/app-shell-account-menu.tsx");
+    expect(account).toMatch(/<Icon name="book" \/><span>Help<\/span>/);
     expect(read("lib/nav/settings-nav.ts")).toMatch(/label: "Security", href: "\/security", icon: "shield"/);
-    // Platform admin sits with the other app utilities (sidebar footer, phone menu footer).
-    expect(read("components/app-shell-sidebar.tsx")).toMatch(/href="\/admin" title="Platform admin"[^>]*><Icon name="shield" \/>/);
-    expect(read("components/app-shell-nav-panel.tsx")).toMatch(/href="\/admin"[^>]*><Icon name="shield" \/><span>Admin<\/span>/);
-    expect(read("components/app-shell-account-menu.tsx")).not.toMatch(/Platform admin/);
+    // Platform admin sits with the other app utilities, in the account menu.
+    expect(account).toMatch(/href="\/admin"[^>]*>\s*<Icon name="shield" \/><span>Admin<\/span>/);
+    expect(account).not.toMatch(/Platform admin/);
   });
 });
 

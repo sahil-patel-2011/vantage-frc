@@ -10,6 +10,7 @@ import { EmptyState, Button, PageMain } from "../../components/ui";
 import { hubPageTitle } from "../../lib/nav/hub-navigation";
 import { MoneyAddMenu } from "./money-add-menu";
 import { OfflineBanner } from "../../components/offline-banner";
+import { HubSections } from "../../components/hub-sections";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { isBusinessPortalView, type BusinessPortalView } from "../../lib/business-portal";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
@@ -348,6 +349,7 @@ export default function BusinessClient({ initialTab = null }: { initialTab?: str
         ) : null}
         </div>
       </div>
+      <HubSections hubId="business" orgId={orgId ?? null} hubAccess={access.hubAccess} sponsorsAllowed={sponsorsAllowed} />
 
       <OfflineBanner feature="Business" fromCache={fromCache} cachedAt={cachedAt} />
 
