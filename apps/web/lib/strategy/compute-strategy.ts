@@ -665,7 +665,12 @@ export async function computeStrategyView(
   const hasEpa = new Set(metricRows.filter((metric) => metric.epaTotal != null).map((metric) => metric.teamKey));
   for (const robot of eventScoring.opr) {
     if (hasEpa.has(robot.teamKey) || !allTeams.includes(robot.teamKey)) continue;
-    metricRows.push({
+    // Replace the robot's TBA row (OPR stored, EPA null) rather than adding a second row behind
+    // it: the matchup brief reads a robot's first row, so the rating the prediction used has to
+    // be the row it finds. Its record and rank come along.
+    const at = metricRows.findIndex((metric) => metric.teamKey === robot.teamKey);
+    const previous = at >= 0 ? metricRows[at] : undefined;
+    const fromOpr: EventMetricRow = {
       teamKey: robot.teamKey,
       year,
       eventKey: row.eventKey!,
@@ -673,13 +678,16 @@ export async function computeStrategyView(
       epaTotal: robot.total,
       epaAuto: robot.auto,
       epaEndgame: robot.endgame,
-      wins: null,
-      losses: null,
-      ties: null,
-      rank: null,
+      wins: previous?.wins ?? null,
+      losses: previous?.losses ?? null,
+      ties: previous?.ties ?? null,
+      rank: previous?.rank ?? null,
+      // How many quals the OPR rests on; the TBA record would count the same matches.
       matches: robot.matches,
-      syncedAt: null,
-    });
+      syncedAt: previous?.syncedAt ?? null,
+    };
+    if (at >= 0) metricRows[at] = fromOpr;
+    else metricRows.push(fromOpr);
   }
 
   // Season-long year ratings for up to ten seasons — prefer Statbotics when both sources exist.

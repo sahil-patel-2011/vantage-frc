@@ -249,13 +249,19 @@ export async function loadDashboardSnapshot(
         ourAlliance,
         redKeys,
         blueKeys,
-        rows: matchKeys.map((key) => ({
-          teamKey: key,
-          autoEpa: epaByTeam.get(key)?.autoEpa ?? null,
-          teleopEpa: epaByTeam.get(key)?.teleopEpa ?? null,
-          endgameEpa: epaByTeam.get(key)?.endgameEpa ?? null,
-          opr: oprByTeam.get(key) ?? null,
-        })),
+        rows: matchKeys.map((key) => {
+          const epa = epaByTeam.get(key);
+          const hasEpa = epa != null && (epa.autoEpa != null || epa.teleopEpa != null || epa.endgameEpa != null);
+          return {
+            teamKey: key,
+            autoEpa: epa?.autoEpa ?? null,
+            teleopEpa: epa?.teleopEpa ?? null,
+            endgameEpa: epa?.endgameEpa ?? null,
+            // The event OPR stands in only for a robot with no season rating, exactly as in the
+            // match plan (compute-strategy.ts), so Home and Predict rate a robot the same way.
+            opr: hasEpa ? null : (oprByTeam.get(key) ?? null),
+          };
+        }),
         scouted,
         scoringLevel: scoring.averageAllianceScore,
       });
