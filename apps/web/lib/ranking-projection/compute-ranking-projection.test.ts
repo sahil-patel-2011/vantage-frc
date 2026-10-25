@@ -1,11 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { computeRankingProjectionView } from "./compute-ranking-projection";
+import { PLAYED_MATCH_RATING_CAVEAT, computeRankingProjectionView, ratingsForProjection } from "./compute-ranking-projection";
 import type { PoolClient } from "@neondatabase/serverless";
 
 function client(bySql: (sql: string) => { rows: unknown[] }): PoolClient {
   return {
     query: async (sql: string) => bySql(sql),
   } as unknown as PoolClient;
+}
+
+function routeProjection(
+  sql: string,
+  input: {
+    teams: string[];
+    epa: Record<string, number>;
+    played: unknown[];
+    remaining: unknown[];
+  },
+): { rows: unknown[] } {
+  if (sql.includes("memberships")) return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
+  if (sql.includes("org_active_context")) return { rows: [{ eventKey: "2026gagr" }] };
+  if (sql.includes("events_ref")) return { rows: [{ name: "GRITS", year: 2026 }] };
+  if (sql.includes("GROUP BY team_key")) {
+    return {
+      rows: input.teams.map((teamKey, index) => ({
+        teamKey,
+        rank: index + 1,
+        wins: 1,
+        losses: 0,
+        ties: 0,
+        epaTotal: input.epa[teamKey] ?? null,
+      })),
+    };
+  }
+  // Played-match ratings: the only read that asks for match_number and a result.
+  if (sql.includes("match_number") && sql.includes("winning_alliance IS NOT NULL")) return { rows: input.played };
+  if (sql.includes("match_number") && sql.includes("winning_alliance IS NULL")) return { rows: input.remaining };
+  if (sql.includes("winning_alliance IS NULL")) return { rows: [{ count: String(input.remaining.length) }] };
+  if (sql.includes("winning_alliance IS NOT NULL")) return { rows: [{ count: String(input.played.length) }] };
+  if (sql.includes("team_event_metrics")) {
+    return { rows: [{ rank: 1, wins: 1, losses: 0, ties: 0, epaTotal: null }] };
+  }
+  return { rows: [] };
 }
 
 describe("ranking projection", () => {
@@ -94,6 +129,7 @@ describe("ranking projection", () => {
     // 254 + 604 = 100 EPA vs 1678 + 971 = 123 EPA.
     expect(view.whatIf?.remaining[0].predicted).toBe("blue");
     expect(view.whatIf?.caveats.join(" ")).toMatch(/tiebreakers aren't modelled/i);
+    expect(view.whatIf?.caveats).not.toContain(PLAYED_MATCH_RATING_CAVEAT);
   });
 
   it("says so instead of projecting when the event has no cached ranking rows", async () => {
@@ -114,5 +150,98 @@ describe("ranking projection", () => {
     if (view.status !== "live") return;
     expect(view.whatIf).toBeNull();
     expect(view.whatIfMessage).toMatch(/sync live data/i);
+  });
+
+  it("keeps a saved season rating and does not replace it with points scored here", () => {
+    const { ratings, fromPlayedMatches } = ratingsForProjection(
+      [
+        { teamKey: "frc1", epaTotal: 10 },
+        { teamKey: "frc2", epaTotal: null },
+      ],
+      [
+        { teamKey: "frc1", total: 80 },
+        { teamKey: "frc2", total: 40 },
+        { teamKey: "frc3", total: 15 },
+      ],
+    );
+    expect(ratings.frc1).toBe(10);
+    expect(ratings.frc2).toBe(40);
+    expect(ratings.frc3).toBe(15);
+    expect(fromPlayedMatches).toBe(2);
+  });
+
+  it("rates robots from played matches when no season rating is saved, and leaves an unplayed robot unrated", async () => {
+    const played = {
+      matchKey: "2026gagr_qm1",
+      matchNumber: 1,
+      redAlliance: { teamKeys: ["frc254", "frc2", "frc3"], score: 130 },
+      blueAlliance: { teamKeys: ["frc4", "frc5", "frc6"], score: 50 },
+      scoreBreakdown: null,
+    };
+    const remaining = [
+      {
+        matchKey: "2026gagr_qm2",
+        matchNumber: 2,
+        redAlliance: { teamKeys: ["frc254", "frc2", "frc3"] },
+        blueAlliance: { teamKeys: ["frc4", "frc5", "frc6"] },
+      },
+      {
+        matchKey: "2026gagr_qm3",
+        matchNumber: 3,
+        redAlliance: { teamKeys: ["frc254", "frc2", "frc7"] },
+        blueAlliance: { teamKeys: ["frc4", "frc5", "frc6"] },
+      },
+    ];
+    const view = await computeRankingProjectionView(
+      client((sql) =>
+        routeProjection(sql, {
+          teams: ["frc254", "frc2", "frc3", "frc4", "frc5", "frc6", "frc7"],
+          epa: {},
+          played: [played],
+          remaining,
+        }),
+      ),
+      { userId: "u1", requestedOrg: "org-1" },
+    );
+    expect(view.status).toBe("live");
+    if (view.status !== "live") return;
+    expect(view.whatIf?.remaining).toHaveLength(2);
+    expect(view.whatIf?.remaining[0].predicted).toBe("red");
+    expect(view.whatIf?.remaining[1].predicted).toBeNull();
+    expect(view.whatIf?.caveats).toContain(PLAYED_MATCH_RATING_CAVEAT);
+    expect(view.whatIf?.seedOdds?.unpredictedMatches).toBe(1);
+  });
+
+  it("does not let a played-match rating overwrite a saved season rating", async () => {
+    const played = {
+      matchKey: "2026gagr_qm1",
+      matchNumber: 1,
+      redAlliance: { teamKeys: ["frc254", "frc2", "frc3"], score: 130 },
+      blueAlliance: { teamKeys: ["frc4", "frc5", "frc6"], score: 50 },
+      scoreBreakdown: null,
+    };
+    const view = await computeRankingProjectionView(
+      client((sql) =>
+        routeProjection(sql, {
+          teams: ["frc254", "frc2", "frc3", "frc4", "frc5", "frc6"],
+          epa: { frc4: 500 },
+          played: [played],
+          remaining: [
+            {
+              matchKey: "2026gagr_qm2",
+              matchNumber: 2,
+              redAlliance: { teamKeys: ["frc254", "frc2", "frc3"] },
+              blueAlliance: { teamKeys: ["frc4", "frc5", "frc6"] },
+            },
+          ],
+        }),
+      ),
+      { userId: "u1", requestedOrg: "org-1" },
+    );
+    expect(view.status).toBe("live");
+    if (view.status !== "live") return;
+    // 500 on the lower-scoring alliance outweighs ratings from one played match.
+    expect(view.whatIf?.remaining[0].predicted).toBe("blue");
+    expect(view.whatIf?.caveats).toContain(PLAYED_MATCH_RATING_CAVEAT);
   });
 });

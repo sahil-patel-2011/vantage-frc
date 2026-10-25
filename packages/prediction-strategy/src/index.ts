@@ -136,6 +136,7 @@ export * from "./team-trend";
 export {
   EVENT_WIN_CURVE_SHARE,
   allianceWinProbability,
+  allianceWinProbabilityForEvent,
   buildAllianceWinBreakdown,
   eventWinCurveScale,
   citeMatchResults,

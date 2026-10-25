@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
-import { allianceWinProbability, seedOdds, type TeamSeedOdds } from "@vantage/prediction-strategy";
+import { allianceWinProbabilityForEvent, seedOdds, type TeamSeedOdds } from "@vantage/prediction-strategy";
 import {
   buildRemainingMatches,
   buildStandings,
@@ -12,6 +12,7 @@ import {
   type RatingMap,
   type StandingTeam,
 } from "../best-path";
+import { loadEventScoring } from "../opr/alliance-results";
 
 export type RankingProjectionSetupStep = {
   id: string;
@@ -21,9 +22,12 @@ export type RankingProjectionSetupStep = {
 };
 
 /**
- * Everything the in-browser Best Path planner needs. Built from cached TBA rows
+ * Everything the in-browser Best Path planner needs. Built from cached rows
  * only: standings the event actually published, the unplayed schedule, and a
- * per-match prediction that is null whenever a robot has no cached rating.
+ * per-match prediction that is null whenever a robot has no rating. A rating
+ * is a saved season rating or, when that is missing, the points that robot
+ * scored in matches already played at this event. A robot with no played
+ * match is left unrated.
  */
 export type RankingProjectionWhatIf = {
   rules: RankingPointRules;
@@ -93,6 +97,41 @@ function setup(message: string, orgId: string | null): RankingProjectionView {
 }
 
 type EventMetricRow = MetricRow & { epaTotal: number | null };
+
+function finiteRating(value: number | null | undefined): number | null {
+  if (value == null) return null;
+  const rating = Number(value);
+  return Number.isFinite(rating) ? rating : null;
+}
+
+/**
+ * Season rating when one is saved; otherwise the robot's rating from matches
+ * already played at this event. A robot with neither stays null so any match
+ * that needs them stays unpredicted.
+ */
+export function ratingsForProjection(
+  metricRows: readonly { teamKey: string; epaTotal: number | null }[],
+  playedMatchRatings: readonly { teamKey: string; total: number }[],
+): { ratings: RatingMap; fromPlayedMatches: number } {
+  const ratings: RatingMap = {};
+  for (const row of metricRows) {
+    if (!row?.teamKey) continue;
+    ratings[row.teamKey] = finiteRating(row.epaTotal);
+  }
+  let fromPlayedMatches = 0;
+  for (const robot of playedMatchRatings) {
+    if (!robot?.teamKey || ratings[robot.teamKey] != null) continue;
+    const rating = finiteRating(robot.total);
+    if (rating == null) continue;
+    ratings[robot.teamKey] = rating;
+    fromPlayedMatches += 1;
+  }
+  return { ratings, fromPlayedMatches };
+}
+
+/** Shown only when a played-match rating stood in for a missing season rating. */
+export const PLAYED_MATCH_RATING_CAVEAT =
+  "Some robots are rated from the points they scored in matches already played at this event.";
 
 /**
  * Loads the cached inputs for the in-browser what-if planner. Every branch here
@@ -171,8 +210,12 @@ async function loadWhatIf(
     };
   }
 
-  const ratings: RatingMap = {};
-  for (const metricRow of metricRows) ratings[metricRow.teamKey] = metricRow.epaTotal ?? null;
+  // Same rating the match plan uses: a saved season rating, else this event's
+  // played-match rating. The curve is applied below, not here.
+  // buildRemainingMatches only needs the sign of the margin (an exact tie stays
+  // unpredicted); a wider curve never flips which alliance is ahead.
+  const eventScoring = await loadEventScoring(client, eventKey);
+  const { ratings, fromPlayedMatches } = ratingsForProjection(metricRows, eventScoring.opr);
   const remaining = buildRemainingMatches(remainingResult.rows, ratings);
   const unpredictedMatches = remaining.filter((match) => match.predicted == null).length;
 
@@ -187,6 +230,7 @@ async function loadWhatIf(
       "Bonus ranking points already earned aren't counted: only wins and ties are saved for this event.",
     );
   }
+  if (fromPlayedMatches > 0) caveats.push(PLAYED_MATCH_RATING_CAVEAT);
   if (unpredictedMatches) {
     caveats.push(
       `${unpredictedMatches} remaining match${unpredictedMatches === 1 ? " has" : "es have"} no win chance because a robot has no rating yet. Set them by hand below.`,
@@ -215,7 +259,11 @@ async function loadWhatIf(
           blue: match.blue,
           redWinProbability:
             match.redRating != null && match.blueRating != null
-              ? allianceWinProbability(match.redRating, match.blueRating)
+              ? allianceWinProbabilityForEvent(
+                  match.redRating,
+                  match.blueRating,
+                  eventScoring.averageAllianceScore,
+                )
               : null,
         })),
         rules,

@@ -1,6 +1,10 @@
 # Vantage status
 
-*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-09-22.*
+*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-10-25.*
+
+## Rank projection — 2026-10-25
+
+Seed chances on Rank projection now use a saved season rating or, when that is missing, each robot's points from matches already played at the event, on the same win curve as the match plan. A robot with no played match stays unrated. Measured on 2026gagr only (see `docs/PREDICTION_RESULTS.md`): better than a coin flip and better than freezing the current standings at quals 20, 30, and 40. The old 12-point curve was worse than a coin flip after 20 quals. Not deployed. No migration.
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 

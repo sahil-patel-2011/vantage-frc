@@ -291,7 +291,7 @@ function BestPathPlanner({
                   <span className="bp-match-note">
                     {match.predicted
                       ? `Predicted: ${match.predicted === "tie" ? "tie" : `${match.predicted} wins`}`
-                      : "No prediction — a robot here has no cached rating"}
+                      : "No prediction — a robot here has no rating yet"}
                     {forced
                       ? ` · forced ${forced === "tie" ? "tie" : `${forced} wins`}`
                       : effective == null
