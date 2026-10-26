@@ -133,7 +133,7 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
         { id: "match-strategy-cards", label: "Match cards", legacyHref: "/match-strategy-cards" },
         // "Match copilot" was consolidated into the Pre-match briefing (Event day tab);
         // /match-copilot now redirects to /briefing.
-        { id: "match-sim", label: "Match sim", legacyHref: "/match-sim" },
+        { id: "match-sim", label: "Match prediction", legacyHref: "/match-sim" },
         { id: "match-notes-timeline", label: "Match notes", legacyHref: "/match-notes-timeline" },
         { id: "match-delta-watcher", label: "Match delta", legacyHref: "/match-delta-watcher" },
         { id: "match-video-index", label: "Video index", legacyHref: "/match-video-index" },

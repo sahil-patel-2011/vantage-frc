@@ -29,7 +29,7 @@ import { pushAppNavigation, softNavigationTarget } from "../lib/nav/soft-navigat
 import { fetchProductSession } from "../lib/nav/product-session";
 import { pathnameIsEntryScreen } from "../lib/nav/product-route";
 import { probeSessionUser } from "../lib/nav/session-probe";
-import { placeForPath, visiblePlaces } from "../lib/nav/places";
+import { IDLE_PREFETCH_HREFS, placeForPath, visiblePlaces } from "../lib/nav/places";
 import { Icon, type IconName } from "./icon";
 import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
@@ -76,6 +76,12 @@ export default function AppShell() {
    */
   const entryScreen = pathnameIsEntryScreen(pathname);
   const [orgId, setOrgId] = useState("");
+  /**
+   * null until the address is read. /api/me is fetched for this scope, not on every pathname:
+   * the shell used to ask again on each navigation even when the team had not changed.
+   * "global" is the notification inbox with no team selected.
+   */
+  const [sessionScope, setSessionScope] = useState<string | null>(null);
   // The team's spreadsheets follow the app on their own: no Sync button to remember.
   useSheetsAutoSync(orgId);
   /**
@@ -204,6 +210,17 @@ export default function AppShell() {
     window.addEventListener(URL_CHANGE_EVENT, onPop);
     const readyTimer = window.setTimeout(() => {
       routerReady = true;
+      const warmIdle = () => {
+        const here = window.location.pathname;
+        for (const path of IDLE_PREFETCH_HREFS) {
+          if (warmed.size >= 12) break;
+          if (path === here || warmed.has(path)) continue;
+          warmed.add(path);
+          router.prefetch(path);
+        }
+      };
+      if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(warmIdle, { timeout: 1500 });
+      else window.setTimeout(warmIdle, 400);
     }, 300);
     return () => {
       window.clearTimeout(readyTimer);
@@ -217,8 +234,11 @@ export default function AppShell() {
   }, [navigate, router, orgId, me.userId]);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("orgId") ?? "";
     setOrgId(id);
+    const globalInbox = pathname === "/notifications" && !params.has("orgId");
+    setSessionScope(globalInbox ? "global" : id || "member");
     // Same render as the team id, so the label goes straight from the placeholder to the name
     // this device last showed for the team.
     setRememberedTeamLabel(readRememberedTeamLabel(safeLocalStorage(), id));
@@ -268,8 +288,9 @@ export default function AppShell() {
         cancelled = true;
       };
     }
+    if (sessionScope === null) return;
     const revision = notificationRevision.current;
-    const globalInbox = pathname === "/notifications" && !new URLSearchParams(window.location.search).has("orgId");
+    const globalInbox = sessionScope === "global";
     void fetchProductSession(globalInbox ? null : orgId || null)
       .then((data) => {
         if (cancelled || !data) return;
@@ -292,7 +313,8 @@ export default function AppShell() {
       cancelled = true;
     };
     // `online`: an answer that never came while offline is asked for again on reconnecting.
-  }, [orgId, pathname, entryScreen, online]);
+    // Pathname is intentionally not a dependency: the same team does not reload /api/me on every page.
+  }, [orgId, sessionScope, entryScreen, online]);
 
   useEffect(() => {
     const update = (event: Event) => {

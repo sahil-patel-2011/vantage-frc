@@ -29,6 +29,9 @@ describe("one main menu", () => {
     expect(items.some(item => item.href === "/scout-coverage-live" && item.label === "Assignments")).toBe(true);
     expect(items.some(item => item.href === "/competition?tab=scouting")).toBe(true);
     expect(items.some(item => item.href === "/competition?tab=my-day")).toBe(true);
+    const competition = sections.find(section => section.id === "competition")?.items ?? [];
+    const planAt = competition.findIndex(item => item.label === "Match plan");
+    expect(competition[planAt + 1]).toEqual({ href: "/match-sim", label: "Match prediction", icon: "target" });
     expect(sections.find(section => section.id === "team")?.items).toContainEqual({ href: "/learn/team", label: "Team resources", icon: "book" });
     // Four workspaces; Ask AI has its own door (sidebar footer, phone top bar), not a section.
     expect(sections.map(section => section.label)).toEqual(["Competition", "Team", "Build", "Business"]);
@@ -41,6 +44,7 @@ describe("one main menu", () => {
     const sections = mainMenuSections(PRODUCT_NAV_GROUPS, href => pathAllowedByHubAccess(href, access));
     expect(sections.some(section => section.id === "ai")).toBe(false);
     expect(sections.flatMap(section => section.items).some(item => item.href.includes("tab=strategy"))).toBe(false);
+    expect(sections.flatMap(section => section.items).some(item => item.href === "/match-sim")).toBe(false);
     expect(sections.flatMap(section => section.items).some(item => item.label === "Pit TV")).toBe(false);
     const sponsors = mainMenuSections(PRODUCT_NAV_GROUPS, href => pathAllowedBySponsors(href, false));
     expect(sponsors.flatMap(section => section.items).some(item => item.href.includes("tab=sponsors"))).toBe(false);

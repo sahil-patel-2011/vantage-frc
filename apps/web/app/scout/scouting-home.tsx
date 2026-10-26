@@ -478,7 +478,7 @@ export function ScoutingHome() {
           <span>Every team at the event, averages and a trend line for each stat you collect.</span>
         </a>
         <a href={withOrg("/scout/predict")}>
-          <strong>Predict</strong>
+          <strong>Match prediction</strong>
           <span>Put six robots on the field and see who is likely to win, and why.</span>
         </a>
         <a href={withOrg("/scout/picklist")}>

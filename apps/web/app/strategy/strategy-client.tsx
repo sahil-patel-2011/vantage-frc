@@ -276,6 +276,9 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
         description="Win/loss and pick lists use synced event numbers and your scout notes."
       >
         <div className="strategy-header-actions">
+          <Button as="a" variant="secondary" href={withOrgHref("/match-sim", orgId)}>
+            Match prediction
+          </Button>
           <StrategyRelatedStrip orgId={orgId} />
           <CopyShareLink orgId={orgId} />
           <Button variant="secondary" type="button" onClick={() => window.print()}>

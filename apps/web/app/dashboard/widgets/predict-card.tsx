@@ -27,9 +27,9 @@ export function HomePredictCard({
   // Why there is no next match is the Next match card's to say; repeating it here put the same
   // sentence on Home twice.
   return (
-    <section className="dash-predict" aria-label="Predict a match" data-testid="home-predict">
+    <section className="dash-predict" aria-label="Match prediction" data-testid="home-predict">
       <div className="dash-predict-copy">
-        <h2>Predict a match</h2>
+        <h2>Match prediction</h2>
         <p>
           {noEvent
             ? canSetEvent
@@ -40,7 +40,7 @@ export function HomePredictCard({
       </div>
       <div className="dash-predict-actions">
         <Button as="a" variant="secondary" href={predictHref}>
-          Predict a match
+          Match prediction
         </Button>
         {noEvent ? (
           canSetEvent ? <a href={hubHref("/competition", "command", orgId)}>Set active event</a> : null

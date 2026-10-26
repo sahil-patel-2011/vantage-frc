@@ -52,7 +52,7 @@ const BLURBS: Record<string, string> = {
   "defense-planner": "Whether to play defense, and on whom",
   "opponent-watchlist": "Notes on teams to keep an eye on",
   "match-notes-timeline": "What the drive team noted after each match",
-  "match-sim": "Play out a match with different lineups",
+  "match-sim": "See who is likely to win a match, and why.",
   video: "Tag match video with notes",
   "match-video-index": "Find a moment in match video",
   "match-delta-watcher": "What changed since a team's last match",

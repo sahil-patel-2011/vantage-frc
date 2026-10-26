@@ -298,7 +298,7 @@ function MatchRow({
           ) : null}
           {!played ? (
             <Button as="a" variant="ghost" size="sm" href={predictHref} className="sched-predict">
-              Predict
+              Match prediction
             </Button>
           ) : null}
         </div>
@@ -487,6 +487,9 @@ function ScheduleShell({
           <p>{description}</p>
         </div>
         <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
+        <Button as="a" variant="secondary" href={withOrgHref("/match-sim", orgId)}>
+          Match prediction
+        </Button>
       </header>
       <OfflineBanner
         feature="Schedule"

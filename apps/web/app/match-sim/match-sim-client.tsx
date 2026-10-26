@@ -200,13 +200,13 @@ export default function MatchSimClient() {
           breadcrumbs={
             <>
               <a href="/competition">Competition</a>
-              {" / Predict"}
+              {" / Match prediction"}
             </>
           }
-          title="Predict"
+          title="Match prediction"
           description="Who is likely to win any match, why, and the one phase that would swing it. From your scouting and this event's ratings; nothing is guessed."
         />
-        <OfflineBanner feature="Predict" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Match prediction" fromCache={fromCache} cachedAt={cachedAt} />
         {copy ? (
           <EmptyState title={copy.title} description={copy.description}>
             {copy.primary ? (
@@ -233,13 +233,13 @@ export default function MatchSimClient() {
         breadcrumbs={
           <>
             <a href={orgId ? `/competition?orgId=${encodeURIComponent(orgId)}` : "/competition"}>Competition</a>
-            {" / Predict"}
+            {" / Match prediction"}
           </>
         }
-        title="Predict"
+        title="Match prediction"
         description="Who is likely to win any match, why, and the one phase that would swing it. From your scouting and this event's ratings; nothing is guessed."
       />
-      <OfflineBanner feature="Predict" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Match prediction" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p {...staleCopyProps(error)}>
@@ -540,10 +540,10 @@ function SavedRuns({
   if (view.runs.length === 0) {
     return (
       <EmptyState
-        badge="No simulations yet"
+        badge="No predictions yet"
         badgeTone="setup"
-        title="Run your first match simulation"
-        description="Enter both alliances above to project a score timeline from synced ratings."
+        title="Run your first match prediction"
+        description="Enter both alliances above to see who is likely to win, from this event's ratings."
       />
     );
   }

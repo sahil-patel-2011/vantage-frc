@@ -76,7 +76,7 @@ export async function GET(request: Request) {
     return Response.json(view);
   } catch {
     return Response.json(
-      setupResponse("Could not load the match simulator. Check that you've chosen your team, then try again."),
+      setupResponse("Could not load match prediction. Check that you've chosen your team, then try again."),
       { status: 200 },
     );
   }

@@ -19,6 +19,7 @@ import {
   mergeMessages,
   nextWatermark,
   pollBackoffMs,
+  pollGapMs,
   totalUnread,
 } from "../../lib/messages/sync";
 import {
@@ -333,7 +334,12 @@ export default function MessagesClient({
       }
       applyInbox(data.conversations ?? []);
       // A long poll that saw nothing new carries the inbox only; the thread stays as it is.
-      if (data.unchanged) return false;
+      if (data.unchanged) {
+        // An empty thread has no message time to watermark. Park it on the server clock
+        // so the next poll can wait instead of re-reading the thread with no `since`.
+        if (!sinceRef.current && typeof data.asOf === "string" && data.asOf) sinceRef.current = data.asOf;
+        return false;
+      }
       if (typeof data.pinsSupported === "boolean") setPinsSupported(data.pinsSupported);
       // Refreshed on every poll, not just the initial load: a supervisor added to an existing
       // thread (policy tightened after the fact) has to show up without a manual reload.
@@ -365,7 +371,7 @@ export default function MessagesClient({
         setMessagesFor(conversationId);
         setPinned((data.pinned ?? []) as Message[]);
         setHasEarlier(Boolean(data.hasEarlier));
-        sinceRef.current = nextWatermark(incoming, null);
+        sinceRef.current = nextWatermark(incoming, null) ?? (typeof data.asOf === "string" && data.asOf ? data.asOf : null);
       }
       return incoming.length > 0;
     },
@@ -442,15 +448,18 @@ export default function MessagesClient({
         }
 
         try {
+          const started = Date.now();
+          const since = sinceRef.current;
           const changed = await loadThread(activeId, {
             quiet: true,
-            since: sinceRef.current,
+            since,
             wait: LONG_POLL_MAX_MS,
           });
           failures = 0;
           setLive(true);
-          if (!changed && activeIdRef.current === activeId) {
-            continue;
+          if (activeIdRef.current === activeId) {
+            const gap = pollGapMs(Date.now() - started, since ? LONG_POLL_MAX_MS : 0, Boolean(changed));
+            if (gap > 0) await sleep(gap, controller.signal);
           }
         } catch {
           failures += 1;

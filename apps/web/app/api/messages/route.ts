@@ -924,7 +924,10 @@ async function listMessages(
   // "Removed by a team admin" (and, for the author, that it was theirs) — migration 0674.
   await attachRemovalNotices(client, orgId, messageList);
 
-  if (options?.markRead !== false) {
+  // An incremental poll with nothing new must not rewrite read state. The open-chat
+  // loop used to do that on every tick (thousands of writes on one page view) when
+  // the thread had no watermark and the wait was skipped.
+  if (options?.markRead !== false && !(since && messageList.length === 0)) {
     await client.query(
       `INSERT INTO org_conversation_participants (conversation_id, user_id, last_read_at)
        SELECT $1, $2, now()
@@ -1364,8 +1367,16 @@ export async function GET(request: Request) {
     const waitMs = clampWaitMs(url.searchParams.get("wait"));
     if (!orgId) throw new Error("orgId is required");
 
-    if (conversationId && since && waitMs > 0 && !NON_THREAD_MODES.has(mode)) {
-      const changed = await waitForThreadUpdates({ userId: session.user.id, orgId }, conversationId, since, waitMs);
+    // A poll with `wait` but no watermark (a thread that has no messages yet) still has to
+    // block. Treating that as a normal read marked the thread read and returned at once, and
+    // the client asked again immediately.
+    const pollSince =
+      since ||
+      (conversationId && waitMs > 0 && !before && !NON_THREAD_MODES.has(mode)
+        ? "1970-01-01T00:00:00.000Z"
+        : null);
+    if (conversationId && pollSince && waitMs > 0 && !NON_THREAD_MODES.has(mode)) {
+      const changed = await waitForThreadUpdates({ userId: session.user.id, orgId }, conversationId, pollSince, waitMs);
       if (!changed) {
         // Nothing new in this thread: answer with the inbox only (other conversations' unread
         // counts still move) instead of re-reading the thread and rewriting its read state.
@@ -1373,7 +1384,13 @@ export async function GET(request: Request) {
         const quiet = await withRls({ userId: session.user.id, orgId }, async (client) => {
           await requireMembership(client, orgId, session.user.id);
           const conversations = await listInbox(client, orgId, session.user.id);
-          return { unchanged: true, conversations, unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0) };
+          const asOf = await client.query<{ asOf: string }>(`SELECT now()::text AS "asOf"`);
+          return {
+            unchanged: true,
+            asOf: asOf.rows[0]?.asOf ?? "",
+            conversations,
+            unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+          };
         });
         return Response.json(quiet);
       }
@@ -1437,6 +1454,7 @@ export async function GET(request: Request) {
 
       if (conversationId) {
         // Any long-poll wait already ran above, outside this transaction.
+        const asOf = await client.query<{ asOf: string }>(`SELECT now()::text AS "asOf"`);
         const { inbox, ...thread } = await listMessages(client, orgId, session.user.id, conversationId, since, {
           before,
           // Paging back through history should not rewrite read state; the
@@ -1457,6 +1475,7 @@ export async function GET(request: Request) {
           // Same transaction as the gate read at the top: reuse it rather than
           // re-running its four queries on every poll.
           youthProtection,
+          asOf: asOf.rows[0]?.asOf ?? "",
           ...thread,
         };
       }

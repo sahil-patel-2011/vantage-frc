@@ -43,6 +43,8 @@
 .sched-group h2 span{font-size:11px;font-variant-numeric:tabular-nums}
 .sched-group ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .sched-row{display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm)}
+.sched-predict{flex:none}
+.sched-page .app-page-header{flex-wrap:wrap;align-items:flex-start}
 .sched-row.ours{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .sched-row.next{background:var(--surface-2)}
 .sched-id{display:grid;gap:2px;flex:0 0 96px}

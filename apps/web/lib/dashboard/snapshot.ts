@@ -1007,6 +1007,115 @@ export async function loadDashboardSnapshot(
     let mineOpenTodos = 0;
     let kickoffReady = false;
 
+    // One round trip for the strip. A missing table (a deploy that has not migrated yet)
+    // falls back to the per-query reads below, which each tolerate their own absence.
+    let combined = false;
+    try {
+      const year = new Date().getFullYear();
+      const packed = await client.query<{
+        needsAssignment: number;
+        lodgingGaps: number;
+        unsignedChecklists: number;
+        visitHostGaps: number;
+        nextPracticeTitle: string | null;
+        nextPracticeAt: string | null;
+        hotelName: string | null;
+        roomLabel: string | null;
+        nextTravelLabel: string | null;
+        nextTravelAt: string | null;
+        mineOpenTodos: number;
+        kickoffReady: boolean;
+      }>(
+        `SELECT
+           (SELECT count(*)::int FROM duty_assignments
+             WHERE org_id = $1 AND assigned_user_id IS NULL AND starts_at >= now()) AS "needsAssignment",
+           (SELECT count(*)::int FROM logistics_room_assignments
+             WHERE org_id = $1
+               AND occupant_user_id IS NULL
+               AND btrim(coalesce(occupant_name, '')) = '') AS "lodgingGaps",
+           (SELECT count(DISTINCT m.user_id)::int
+             FROM memberships m
+             CROSS JOIN logistics_checklist_items i
+             WHERE m.org_id = $1
+               AND i.org_id = $1
+               AND i.audience IN ('all', 'student', 'mentor')
+               AND NOT EXISTS (
+                 SELECT 1 FROM logistics_checklist_checks c
+                 WHERE c.item_id = i.id AND c.user_id = m.user_id
+               )) AS "unsignedChecklists",
+           (SELECT count(*)::int FROM visit_invites v
+             WHERE v.org_id = $1
+               AND v.status IN ('draft', 'scheduled')
+               AND NOT EXISTS (
+                 SELECT 1 FROM visit_invite_hosts h
+                 WHERE h.visit_id = v.id AND h.org_id = v.org_id
+               )) AS "visitHostGaps",
+           practice.title AS "nextPracticeTitle",
+           practice.starts_at::text AS "nextPracticeAt",
+           room.name AS "hotelName",
+           room.room_label AS "roomLabel",
+           travel.title AS "nextTravelLabel",
+           travel.starts_at::text AS "nextTravelAt",
+           (SELECT count(*)::int FROM team_todos
+             WHERE org_id = $1 AND assignee_user_id = $2 AND status <> 'done') AS "mineOpenTodos",
+           (
+             EXISTS (SELECT 1 FROM game_scoring_actions WHERE org_id = $1 AND season_year = $3)
+             OR EXISTS (SELECT 1 FROM design_priorities WHERE org_id = $1 AND season_year = $3)
+           ) AS "kickoffReady"
+         FROM (SELECT 1) AS one
+         LEFT JOIN LATERAL (
+           SELECT e.title, e.starts_at
+           FROM subteam_calendar_events e
+           WHERE e.org_id = $1
+             AND e.starts_at >= now()
+             AND e.kind IN ('practice', 'build', 'meeting')
+             AND (
+               e.subteam_id IS NULL
+               OR e.subteam_id IN (
+                 SELECT subteam_id FROM team_subteam_members
+                 WHERE org_id = $1 AND user_id = $2
+               )
+             )
+           ORDER BY e.starts_at ASC
+           LIMIT 1
+         ) practice ON true
+         LEFT JOIN LATERAL (
+           SELECT h.name, r.room_label
+           FROM logistics_room_assignments r
+           JOIN logistics_hotels h ON h.id = r.hotel_id
+           WHERE r.org_id = $1 AND r.occupant_user_id = $2
+           LIMIT 1
+         ) room ON true
+         LEFT JOIN LATERAL (
+           SELECT title, starts_at
+           FROM logistics_travel_legs
+           WHERE org_id = $1 AND starts_at >= now()
+           ORDER BY starts_at ASC
+           LIMIT 1
+         ) travel ON true`,
+        [orgId, input.userId, year],
+      );
+      const row = packed.rows[0];
+      if (row) {
+        needsAssignment = Number(row.needsAssignment ?? 0);
+        lodgingGaps = Number(row.lodgingGaps ?? 0);
+        unsignedChecklists = Number(row.unsignedChecklists ?? 0);
+        visitHostGaps = Number(row.visitHostGaps ?? 0);
+        nextPracticeTitle = row.nextPracticeTitle;
+        nextPracticeAt = row.nextPracticeAt;
+        hotelName = row.hotelName;
+        roomLabel = row.roomLabel;
+        nextTravelLabel = row.nextTravelLabel;
+        nextTravelAt = row.nextTravelAt;
+        mineOpenTodos = Number(row.mineOpenTodos ?? 0);
+        kickoffReady = Boolean(row.kickoffReady);
+        combined = true;
+      }
+    } catch {
+      combined = false;
+    }
+
+    if (!combined) {
     try {
       const duties = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM duty_assignments
@@ -1142,6 +1251,7 @@ export async function loadDashboardSnapshot(
       visitHostGaps = Number(hosts.rows[0]?.count ?? 0);
     } catch {
       // stays 0
+    }
     }
 
     context.homeStrip = {

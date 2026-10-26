@@ -2,6 +2,10 @@
 
 *Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-10-26.*
 
+## Instant pages and Match prediction — 2026-10-26
+
+Signed-in route timing is measured by `scripts/route-speed.mjs` against a local production build (`next build` + `next start`) and the seeded owner. The before table is in the pull request. Document TTFB on that machine was already under 50 ms. The page that was not instant was Messages: an open thread with no watermark rewrote read state in a tight loop (about 5,900 queries on one sample). That poll now waits, and an empty thread gets a server clock watermark. Home's strip is one query instead of eight, with the old per-table reads if a table is missing. The shell asks `/api/me` when the team changes, not on every pathname, and prefetches the five places plus schedule, match prediction, match plan, rank projection, and scouting when idle. Main routes have a loading skeleton. No new migration: the slowest local query was about 16 ms, which does not justify an index. Match prediction is the label in the Competition menu under Match plan, and the button on Home, the schedule, Match plan, Ranking projection, and the scouting home. Prediction math was not changed. Not deployed.
+
 ## Rank projection — 2026-10-26
 
 Seed chances on Rank projection use one rating for the whole event: a saved season rating when every robot has one, otherwise each robot's points from matches already played. The two are never added together. A robot with no played match stays unrated. If those played-match ratings fail to load, the saved rank stays up and remaining matches stay without a win chance. Measured on 2026gagr only (see `docs/PREDICTION_RESULTS.md`): better than a coin flip and better than freezing the current standings at quals 20, 30, and 40. The one-scale rule does not change that table, because the file has no season ratings. The old 12-point curve was worse than a coin flip after 20 quals. Teams 2974 and 1414 appear in nine qualifications because qualification 16 is a real surrogate match, not a duplicate row. Not deployed. No migration.
