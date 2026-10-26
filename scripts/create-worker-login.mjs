@@ -27,7 +27,20 @@ try {
   const existing = await admin.query("SELECT 1 FROM pg_roles WHERE rolname='vantage_worker_login'");
   if (existing.rowCount) throw new Error("Worker login already exists; verify its saved connection instead of rotating it implicitly.");
   const password = randomBytes(32).toString("base64url");
-  await admin.query(`CREATE ROLE vantage_worker_login LOGIN PASSWORD '${password}' IN ROLE vantage_worker`);
+  // CREATE ROLE does not accept a bind parameter. format(%L) quotes the password
+  // as a literal; the alphabet check refuses anything base64url cannot produce.
+  if (!/^[A-Za-z0-9_-]+$/.test(password)) {
+    throw new Error("Generated worker password left the base64url alphabet.");
+  }
+  const formatted = await admin.query(
+    "SELECT format('CREATE ROLE vantage_worker_login LOGIN PASSWORD %L IN ROLE vantage_worker', $1::text) AS statement",
+    [password],
+  );
+  const statement = formatted.rows[0]?.statement;
+  if (typeof statement !== "string" || !statement.startsWith("CREATE ROLE vantage_worker_login LOGIN PASSWORD ")) {
+    throw new Error("Worker login statement was not the expected CREATE ROLE.");
+  }
+  await admin.query(statement);
   const url = new URL(adminUrl);
   url.username = "vantage_worker_login";
   url.password = password;

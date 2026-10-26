@@ -248,8 +248,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; status: string }[] }));
     return rows.rows.map((row) => ({
@@ -270,8 +270,8 @@ async function listLinkTargets(
          WHERE c.org_id = $1::uuid
            AND lower(COALESCE(j.title, c.id::text)) LIKE lower($2)
          ORDER BY c.created_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string }[] }));
     return rows.rows.map((row) => ({
@@ -291,8 +291,8 @@ async function listLinkTargets(
            AND archived = false
            AND lower(name) LIKE lower($2)
          ORDER BY updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; name: string; category: string | null }[] }));
     return rows.rows.map((row) => ({
@@ -312,8 +312,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY starts_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; kind: string }[] }));
     return rows.rows.map((row) => ({
@@ -333,8 +333,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY created_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string }[] }));
     return rows.rows.map((row) => ({
@@ -353,8 +353,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; category: string }[] }));
     return rows.rows.map((row) => ({
@@ -374,8 +374,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; status: string }[] }));
     return rows.rows.map((row) => ({
@@ -395,8 +395,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY pinned DESC, updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; templateKind: string }[] }));
     return rows.rows.map((row) => ({

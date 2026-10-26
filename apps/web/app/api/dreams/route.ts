@@ -9,7 +9,7 @@ import {
   type DreamRunKind,
   type DreamRunStatus,
 } from "../../../lib/dreaming/journal";
-import { runTeamDream } from "../../../lib/dreaming/run-dream";
+import { dispatchCron } from "../../../lib/reference/dispatch-cron";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 /**
@@ -259,10 +259,14 @@ export async function POST(request: Request) {
       }
     });
 
-    // Outside the RLS transaction: the sweep opens its own worker connection,
-    // and it is handed nothing but the org id we just authorised.
-    const summary = await runTeamDream({ orgId });
-    return Response.json({ summary });
+    // Writes on team_dream_runs are granted to vantage_worker only. This request
+    // already checked owner/admin; the cron route runs the one-org sweep.
+    const dispatched = await dispatchCron<Record<string, unknown>>(
+      `/api/cron/team-dream?orgId=${encodeURIComponent(orgId)}`,
+      {},
+    );
+    if (!dispatched.ok) return Response.json({ pending: true });
+    return Response.json({ summary: dispatched.body });
   } catch (error) {
     return fail(error);
   }

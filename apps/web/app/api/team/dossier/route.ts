@@ -3,22 +3,20 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import {
   claimDossierBuild,
-  failDossier,
   loadTeamDossier,
   resolveDossierOrg,
-  saveDossier,
   type TeamDossierView,
 } from "../../../../lib/team-dossier/store";
+import { dispatchCron } from "../../../../lib/reference/dispatch-cron";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /**
  * The team dossier — what The Blue Alliance and Statbotics know about this
  * team, built once and refreshed weekly.
  *
- * GET returns it. POST {action:"build"} builds it now for an owner/admin. The
- * build itself is a bounded handful of calls through the platform's
- * coordinated TBA path (credential rotation, retry, the same client the season
- * sync uses) — it is not a poll and it is not a bare fetch. A claim row stops
+ * GET returns it. POST {action:"build"} claims a build for an owner/admin and
+ * asks the reference cron to run it. The page already shows status "running"
+ * as "Gathering the public record" until that cron finishes. A claim row stops
  * two clicks building twice.
  */
 
@@ -73,23 +71,18 @@ export async function POST(request: Request) {
       return Response.json(view);
     }
 
-    const { createProductionReferenceJobs } = await import("@vantage/reference/production-worker");
-    let payload;
-    try {
-      // preferOrgIds: this org's own TBA key (if it has one) is tried first,
-      // the platform key otherwise — the coordinator decides.
-      payload = await createProductionReferenceJobs({ preferOrgIds: [orgId] }).teamDossier.run(teamNumber);
-    } catch (error) {
-      const message = publicErrorMessage(error, "Dossier build failed");
-      await withRls({ userId, orgId }, (client) => failDossier(client, orgId, message));
+    // The claim is the pending row the page already knows how to show. The
+    // worker build runs on the cron route, which holds the admin role.
+    const dispatched = await dispatchCron<{ status: "ready" | "failed" }>("/api/cron/reference-refresh", {
+      kind: "team-dossier",
+      orgId,
+      teamNumber,
+    });
+    if (!dispatched.ok) {
       const view = await withRls({ userId, orgId }, (client) => loadTeamDossier(client, { orgId, userId }));
       return Response.json(view);
     }
-
-    const view = await withRls({ userId, orgId }, async (client) => {
-      await saveDossier(client, orgId, payload);
-      return loadTeamDossier(client, { orgId, userId });
-    });
+    const view = await withRls({ userId, orgId }, (client) => loadTeamDossier(client, { orgId, userId }));
     return Response.json(view);
   } catch (error) {
     return fail(error);
