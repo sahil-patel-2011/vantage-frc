@@ -45,7 +45,12 @@ and build are intentionally credential-free; RLS integration tests need a real P
 
 - **Tenancy/RLS is the security model, not a convenience.** Every request DB access goes through
   `withRls({ userId, orgId? }, async (client) => …)`, which sets `SET LOCAL app.user_id` / `app.org_id`.
-  Product/request code must **never** import `@vantage/db/admin` (the worker role) — this is lint-blocked.
+  Product/request code must **never** import `@vantage/db/admin` (the worker role) — this is lint-blocked
+  on `apps/**/app`, `apps/web/lib`, `apps/web/components`, `apps/web/proxy.ts`, `packages/**`, and
+  `scripts/**`, including `import()`. `@supabase/*` is banned the same way. Exceptions are rows in
+  `scripts/security-boundary-allowlist.mjs`. `scripts/security-boundaries.test.ts` also fails on
+  template-literal SQL outside the drizzle `sql` tag, on a migration that differs from `origin/main`,
+  and on a new `requestPool.query` / `requestPool.connect` in `apps/web`.
   Only queue/worker jobs use `dbAdmin` / `vantage_worker`.
 - **Data access is raw parameterized SQL** through the `PoolClient` from `withRls` (see
   `apps/web/lib/strategy/compute-strategy.ts` or `apps/web/lib/impact/compute-impact.ts` for the pattern).

@@ -40,10 +40,14 @@ need Postgres. **Preferred hosted path:** create a Neon project and follow
 These are enforced by lint or tests where possible. Read them once.
 
 1. **Every request database access goes through `withRls({ userId, orgId })`.** Product code never
-   imports the worker client (`@vantage/db/admin`); lint blocks it.
+   imports the worker client (`@vantage/db/admin`) or a Supabase client; lint blocks both, including
+   `import()`, and `scripts/security-boundaries.test.ts` fails if a new `apps/web` file calls
+   `requestPool.query` / `requestPool.connect` without an allowlist row.
 2. **SQL is parameterized with explicit casts** (`$1::uuid`, `= ANY($2::text[])`). Never build SQL
-   from strings.
-3. **Migrations are append-only.** Take the next free number in `packages/db/migrations/`. Every new
+   from strings. The same test fails when a template literal interpolates into a SQL statement
+   outside the drizzle `sql` tag, unless that file is already on the allowlist.
+3. **Migrations are append-only.** Take the next free number in `packages/db/migrations/`. The test
+   fails if a file that exists on `origin/main` is edited, deleted, or renamed. Every new
    team-scoped table has `org_id`, row-level security, policies and grants — copy an existing
    migration's pattern — and a block in `scripts/rls-proof.mjs`.
 4. **AI calls are metered** through `meteredAI` (request path) or the relay adapter (worker path), and
