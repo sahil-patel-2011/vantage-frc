@@ -138,6 +138,7 @@ async function measureDocument(page, db, route) {
   });
   let contentMs = null;
   let skeletonMs = null;
+  let atContent = null;
   const deadline = started + 12_000;
   while (Date.now() < deadline) {
     const probe = await page.evaluate(CONTENT_PROBE);
@@ -145,11 +146,13 @@ async function measureDocument(page, db, route) {
     if (probe.skeleton && skeletonMs == null) skeletonMs = elapsed;
     if (probe.ready) {
       contentMs = elapsed;
+      atContent = await readStatements(db);
       break;
     }
     await page.waitForTimeout(40);
   }
-  // Let in-flight API calls land so the query count includes them.
+  // Later queries include idle prefetch and any long poll still open. The count at
+  // content-ready is the page itself.
   await page.waitForLoadState("networkidle", { timeout: 4_000 }).catch(() => undefined);
   const sql = await readStatements(db);
   return {
@@ -158,6 +161,7 @@ async function measureDocument(page, db, route) {
     contentMs,
     skeletonMs,
     jsBytes: timing.js,
+    queriesAtContent: atContent?.queries ?? null,
     ...sql,
   };
 }
@@ -168,11 +172,12 @@ async function measureClick(page, db, route) {
   const link = page.locator(`a[href="${route}"], a[href^="${route}?"]`).first();
   if ((await link.count()) === 0) return { missingLink: true };
   await resetStatements(db);
-  await page.evaluate(() => { window.__navMark = performance.now(); });
+  await page.evaluate(() => { globalThis.__navMark = performance.now(); });
   const started = Date.now();
   await link.click();
   let contentMs = null;
   let skeletonMs = null;
+  let atContent = null;
   const deadline = started + 12_000;
   while (Date.now() < deadline) {
     const probe = await page.evaluate(CONTENT_PROBE);
@@ -180,13 +185,14 @@ async function measureClick(page, db, route) {
     if (probe.skeleton && skeletonMs == null) skeletonMs = elapsed;
     if (probe.ready && !page.url().includes("/dashboard")) {
       contentMs = elapsed;
+      atContent = await readStatements(db);
       break;
     }
     await page.waitForTimeout(30);
   }
   await page.waitForLoadState("networkidle", { timeout: 4_000 }).catch(() => undefined);
   const flight = await page.evaluate(() => {
-    const clickAt = window.__navMark || 0;
+    const clickAt = globalThis.__navMark || 0;
     const entries = performance.getEntriesByType("resource");
     let ttfb = null;
     let js = 0;
@@ -206,6 +212,7 @@ async function measureClick(page, db, route) {
     skeletonMs,
     jsBytes: flight.js,
     url: page.url(),
+    queriesAtContent: atContent?.queries ?? null,
     ...sql,
   };
 }
@@ -221,6 +228,7 @@ function summarize(samples) {
     contentP95: round(percentile(pick("contentMs"), 95)),
     skeletonP50: round(percentile(pick("skeletonMs"), 50)),
     jsBytesP50: round(percentile(pick("jsBytes"), 50)),
+    queriesAtContentP50: round(percentile(pick("queriesAtContent"), 50)),
     queriesP50: round(percentile(pick("queries"), 50)),
     slowestMs: slowest?.slowestMs ?? null,
     slowestQuery: slowest?.slowestQuery ?? "",
@@ -230,7 +238,7 @@ function summarize(samples) {
 
 function printTable(title, rows) {
   console.log(`\n${title}`);
-  console.log("route | ttfb p50 | ttfb p95 | content p50 | content p95 | skeleton p50 | js bytes | queries | slowest ms");
+  console.log("route | ttfb p50 | ttfb p95 | content p50 | content p95 | skeleton p50 | js bytes | queries at content | queries with prefetch | slowest ms");
   for (const row of rows) {
     const s = row.summary;
     console.log(
@@ -242,6 +250,7 @@ function printTable(title, rows) {
         s.contentP95,
         s.skeletonP50,
         s.jsBytesP50,
+        s.queriesAtContentP50,
         s.queriesP50,
         s.slowestMs,
       ].join(" | "),
