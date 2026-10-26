@@ -16,6 +16,7 @@ import {
   resolveOrgChatAdapterWithProvenance,
   type ChatAdapter,
 } from "@vantage/agent";
+import { wrapUntrusted } from "@vantage/agent/untrusted";
 import { meteredAI } from "@vantage/billing";
 import {
   PREDICTION_AI_ENABLED,
@@ -102,7 +103,7 @@ async function adjustWithMeteredModel(input: {
     "Keys: red and blue. Each may have auto, teleop, endgame, foul (a small point delta, not a score) and note (one short sentence).",
     "Do not invent a score. Deltas larger than a few points are thrown away.",
     `Statistical red total ${input.forecast.red.total}, blue total ${input.forecast.blue.total}.`,
-    `Note from the team: ${input.notes.slice(0, 600)}`,
+    `Note from the team:\n${wrapUntrusted({ kind: "scouting_note", content: input.notes.slice(0, 600) })}`,
   ].join("\n");
 
   const text = await meteredAI({

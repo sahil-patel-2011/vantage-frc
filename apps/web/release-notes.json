@@ -2,6 +2,17 @@
   "$comment": "What each web release changed, for the person deciding whether to press Update in the desktop app (and anyone reading release notes). Newest first; one entry per merged pull request that ships to production, keyed by its number. Plain words only: no file paths, component names or migration numbers. A release with no entry here still ships with notes: /api/web-release falls back to the pull request's title.",
   "releases": [
     {
+      "pr": 2413,
+      "date": "2026-10-26",
+      "headline": "Next match shows auto, teleop, endgame, and a measured win chance",
+      "changes": [
+        "The next-match card predicts auto, teleop, endgame, and the total from matches already played at the event, and it says how often that kind of prediction has been wrong",
+        "On championship divisions and Einstein that were not used to choose the model, the typical miss was 95 points on a 446-point average, and the winner was right about 72% of the time. That is closer than the previous card on the same matches. It is not a promise of a 3-point miss",
+        "A season whose scoring manual is not published yet, including 2027, shows a total only",
+        "A note from a configured AI model can only nudge the prediction by a few points, and that path is off until it is shown to help"
+      ]
+    },
+    {
       "pr": 2412,
       "date": "2026-10-26",
       "headline": "Rank projection uses the points robots have already scored",
