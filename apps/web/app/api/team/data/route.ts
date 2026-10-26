@@ -3,7 +3,7 @@ import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
 import { notifyNextMatchReady } from "../../../../lib/notify-match";
 import { loadDataSourceHealth } from "../../../../lib/reference-health";
-import { runTbaEventDaySync } from "../../../../lib/reference/run-ingest";
+import { dispatchCron } from "../../../../lib/reference/dispatch-cron";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function current() {
@@ -116,21 +116,29 @@ export async function POST(request: Request) {
            updated_at = now()`,
         [body.orgId, active.rows[0]?.credentialId ?? null, session.user.id],
       );
-      const summary = await runTbaEventDaySync({ eventKeys: [eventKey] }, { preferOrgIds: [body.orgId] });
+      return { eventKey };
+    });
+    const dispatched = await dispatchCron<{ summary: Record<string, unknown> }>("/api/cron/reference-refresh", {
+      kind: "event-day",
+      eventKeys: [result.eventKey],
+      preferOrgIds: [body.orgId],
+    });
+    if (!dispatched.ok) return Response.json({ success: true, pending: true });
+    const matchNotify = await withRls({ userId: session.user.id, orgId: body.orgId }, async (client) => {
       const orgMeta = await client.query<{ teamNumber: number | null; eventName: string | null }>(
         `SELECT o.team_number AS "teamNumber", e.name AS "eventName"
          FROM organizations o
          LEFT JOIN events_ref e ON e.event_key = $2
          WHERE o.id = $1::uuid`,
-        [body.orgId, eventKey],
+        [body.orgId, result.eventKey],
       );
       // notifyNextMatchReady savepoints itself and reports status "failed" rather
       // than throwing, so the SQL fingerprint path below still runs on a live
       // transaction — which the previous bare catch could not deliver.
-      const matchNotify = await notifyNextMatchReady(client, {
+      const notice = await notifyNextMatchReady(client, {
         orgId: body.orgId,
         actorUserId: session.user.id,
-        eventKey,
+        eventKey: result.eventKey,
         eventName: orgMeta.rows[0]?.eventName ?? null,
         teamNumber: orgMeta.rows[0]?.teamNumber ?? null,
         announce: true,
@@ -141,12 +149,12 @@ export async function POST(request: Request) {
       // org_live_subscriptions upsert this request had just made, behind a 200.
       await withSavepoint(
         client,
-        () => client.query(`SELECT emit_match_schedule_alerts(ARRAY[$1::text])`, [eventKey]),
+        () => client.query(`SELECT emit_match_schedule_alerts(ARRAY[$1::text])`, [result.eventKey]),
         null,
       );
-      return { summary, matchNotify };
+      return notice;
     });
-    return Response.json({ success: true, ...result });
+    return Response.json({ success: true, summary: dispatched.body.summary, matchNotify });
   } catch (error) {
     return responseError(error);
   }

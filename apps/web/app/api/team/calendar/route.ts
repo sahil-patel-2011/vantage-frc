@@ -250,16 +250,16 @@ async function loadStoredEventRows(
        ${EVENT_JOINS}
        WHERE e.org_id = $1
          AND (
-           e.starts_at > now() - interval '${OCCURRENCE_LOOKBACK_DAYS} days'
+           e.starts_at > now() - ($2::int * interval '1 day')
            OR (
              e.rrule IS NOT NULL
              AND (e.recurrence_end IS NULL
-                  OR e.recurrence_end > CURRENT_DATE - ${OCCURRENCE_LOOKBACK_DAYS})
+                  OR e.recurrence_end > CURRENT_DATE - $2::int)
            )
          )
        ORDER BY e.starts_at ASC
        LIMIT 800`,
-      [orgId],
+      [orgId, OCCURRENCE_LOOKBACK_DAYS],
     );
     return { rows: result.rows, recurrenceReady: true };
   } catch (error) {
@@ -271,10 +271,10 @@ async function loadStoredEventRows(
       `SELECT ${BASE_EVENT_COLUMNS}
        ${EVENT_JOINS}
        WHERE e.org_id = $1
-         AND e.starts_at > now() - interval '${OCCURRENCE_LOOKBACK_DAYS} days'
+         AND e.starts_at > now() - ($2::int * interval '1 day')
        ORDER BY e.starts_at ASC
        LIMIT 800`,
-      [orgId],
+      [orgId, OCCURRENCE_LOOKBACK_DAYS],
     );
     return { rows: result.rows, recurrenceReady: false };
   }

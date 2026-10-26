@@ -49,8 +49,11 @@ and build are intentionally credential-free; RLS integration tests need a real P
   on `apps/**/app`, `apps/web/lib`, `apps/web/components`, `apps/web/proxy.ts`, `packages/**`, and
   `scripts/**`, including `import()`. `@supabase/*` is banned the same way. Exceptions are rows in
   `scripts/security-boundary-allowlist.mjs`. `scripts/security-boundaries.test.ts` also fails on
-  template-literal SQL outside the drizzle `sql` tag, on a migration that differs from `origin/main`,
-  and on a new `requestPool.query` / `requestPool.connect` in `apps/web`.
+  template-literal SQL outside the drizzle `sql` tag (uppercase statements and lowercase
+  `select … from` / `insert into` / `update … set` / `delete from`), on `"SELECT " + x` concatenation,
+  on a migration that differs from `origin/main`, on a new `requestPool.query` / `requestPool.connect`
+  in `apps/web`, and when a signed-in route reaches an admin-pool module that is not on
+  `signedInAdminImportAllowlist`. SQL fragment rows name the file and the exact expression.
   Only queue/worker jobs use `dbAdmin` / `vantage_worker`.
 - **Data access is raw parameterized SQL** through the `PoolClient` from `withRls` (see
   `apps/web/lib/strategy/compute-strategy.ts` or `apps/web/lib/impact/compute-impact.ts` for the pattern).

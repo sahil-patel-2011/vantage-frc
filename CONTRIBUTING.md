@@ -42,14 +42,33 @@ These are enforced by lint or tests where possible. Read them once.
 1. **Every request database access goes through `withRls({ userId, orgId })`.** Product code never
    imports the worker client (`@vantage/db/admin`) or a Supabase client; lint blocks both, including
    `import()`, and `scripts/security-boundaries.test.ts` fails if a new `apps/web` file calls
-   `requestPool.query` / `requestPool.connect` without an allowlist row.
+   `requestPool.query` / `requestPool.connect` without an allowlist row. A signed-in route that
+   reaches an admin-pool helper (`signedInAdminImportAllowlist`) fails the same test. Refresh work
+   goes to a `CRON_SECRET` route after the role check.
 2. **SQL is parameterized with explicit casts** (`$1::uuid`, `= ANY($2::text[])`). Never build SQL
    from strings. The same test fails when a template literal interpolates into a SQL statement
-   outside the drizzle `sql` tag, unless that file is already on the allowlist.
+   outside the drizzle `sql` tag, including lowercase `select … from`, and when source concatenates
+   `"SELECT " + x`. A fragment that cannot be a parameter is an allowlist row of file plus the exact
+   expression text.
 3. **Migrations are append-only.** Take the next free number in `packages/db/migrations/`. The test
    fails if a file that exists on `origin/main` is edited, deleted, or renamed. Every new
    team-scoped table has `org_id`, row-level security, policies and grants — copy an existing
    migration's pattern — and a block in `scripts/rls-proof.mjs`.
+
+### Migrations already edited after they were added
+
+These 24 files differ from the commit that added them. They were not rewritten by the boundary
+checks. The check compares the worktree to current `origin/main`, so those historical edits do not
+fail the suite, and editing any of them again does.
+
+`0004_intel_research.sql`, `0005_secure_membership.sql`, `0011_unified_ai.sql`,
+`0048_battery_tracking.sql`, `0050_driver_practice.sql`, `0103_driver_practice.sql`,
+`0113_team_alumni_discord.sql`, `0127_robot_blueprint.sql`, `0127_team_knowledge_revisions.sql`,
+`0130_team_roles.sql`, `0133_consumables.sql`, `0158_reference_cursor_health.sql`,
+`0184_cross_feature_context_graph.sql`, `0219_support_tickets.sql`, `0220_product_releases.sql`,
+`0301_alliance_partner_brief.sql`, `0641_vantage_drive.sql`, `0685_display_match_intel.sql`,
+`0693_invite_accepted_notice.sql`, `0697_recovery_journal.sql`, `0720_team_lifecycle.sql`,
+`0723_operations_trust.sql`, `0727_platform_admin_credits.sql`, `0735_competition_calendar_planning.sql`.
 4. **AI calls are metered** through `meteredAI` (request path) or the relay adapter (worker path), and
    tagged with a feature name.
 5. **Never invent a number.** No demo values, no placeholders. An empty state says what is missing

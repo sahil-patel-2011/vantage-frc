@@ -2,9 +2,9 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { withRls } from "@vantage/db";
 import { eventReferenceIsFresh, isTbaEventKey } from "@vantage/reference";
 import { after } from "next/server";
-import { runOnDemandEventRefresh } from "./run-ingest";
+import { dispatchCron } from "./dispatch-cron";
 
-const inflight = new Map<string, Promise<void>>();
+const inflight = new Map<string, Promise<boolean>>();
 // Public reference freshness only: never memberships, credentials or tenant reports.
 const freshnessCache = new Map<string, { at: number; value: EventCacheFreshness }>();
 const FRESHNESS_TTL_MS = 30_000;
@@ -47,8 +47,9 @@ export async function readEventCacheFreshness(
 
 /**
  * If Neon already has this event's TBA matches + Statbotics EPA, skip upstream.
- * Otherwise pull once (TBA key + public Statbotics), upsert into Neon, and
- * let later product reads use the database.
+ * Otherwise ask the reference cron to pull once. fetched is true only when that
+ * cron accepted the job. A missing cron secret leaves the cached rows, including
+ * an empty cache, for the page to show.
  */
 export async function hydrateOrgActiveEvent(input: {
   userId: string;
@@ -95,8 +96,8 @@ export async function hydrateOrgActiveEvent(input: {
       // Outside a request (a script or test): fall through and refresh inline.
     }
   }
-  await refreshEventOnce(eventKey, orgId);
-  return { orgId, eventKey, fetched: true };
+  const fetched = await refreshEventOnce(eventKey, orgId);
+  return { orgId, eventKey, fetched };
 }
 
 /**
@@ -108,20 +109,21 @@ export function refreshPlan(input: { needsFetch: boolean; hasCachedMatches?: boo
   return input.hasCachedMatches ? "background" : "blocking";
 }
 
-/** One refresh per event per instance at a time; runOnDemandEventRefresh adds the cross-instance claim. */
-async function refreshEventOnce(eventKey: string, orgId: string): Promise<void> {
+/** One refresh per event per instance at a time. The cron claim is the cross-instance lock. */
+async function refreshEventOnce(eventKey: string, orgId: string): Promise<boolean> {
   const existing = inflight.get(eventKey);
-  if (existing) {
-    await existing;
-    return;
-  }
-  const pending = runOnDemandEventRefresh(eventKey, { preferOrgIds: [orgId] })
-    .then(() => undefined)
-    .catch(() => undefined)
+  if (existing) return existing;
+  const pending = dispatchCron("/api/cron/reference-refresh", {
+    kind: "on-demand-event",
+    eventKey,
+    preferOrgIds: [orgId],
+  })
+    .then((result) => result.ok)
+    .catch(() => false)
     .finally(() => {
       inflight.delete(eventKey);
       freshnessCache.delete(eventKey);
     });
   inflight.set(eventKey, pending);
-  await pending;
+  return pending;
 }

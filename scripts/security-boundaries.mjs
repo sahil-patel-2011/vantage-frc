@@ -12,10 +12,10 @@
  * and the ESLint config share the banned specifier list so the two checks
  * cannot drift.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { workerImportAllowlist } from "./security-boundary-allowlist.mjs";
+import { signedInAdminImportAllowlist, workerImportAllowlist } from "./security-boundary-allowlist.mjs";
 
 export const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -415,6 +415,159 @@ export function interpolatedSqlTemplates(source) {
       !SAFE_SQL_TAGS.has(template.tag) &&
       SQL_STATEMENT.test(template.staticText),
   );
+}
+
+/**
+ * Lowercase SQL the uppercase keyword scan misses. The shape has to be a
+ * statement (`select … from`, `insert into`, `update <table> set`, `delete from`)
+ * so "Delete ${name}?" and ordinary sentences stay quiet.
+ */
+const LOWER_SQL =
+  /^\s*(?:select\b[\s\S]{0,800}?\bfrom\b|insert\s+into\b|update\s+[A-Za-z_][\w."]*\s+set\b|delete\s+from\b)/i;
+
+export function lowercaseSqlTemplates(source) {
+  return scanTemplates(source).filter((template) => {
+    if (!template.expressions.length || SAFE_SQL_TAGS.has(template.tag)) return false;
+    if (SQL_STATEMENT.test(template.staticText)) return false;
+    return LOWER_SQL.test(template.staticText.trim());
+  });
+}
+
+export function unsafeSqlTemplates(source) {
+  return [...interpolatedSqlTemplates(source), ...lowercaseSqlTemplates(source)];
+}
+
+function sqlConcatLiteral(body) {
+  if (/^\s*(?:SELECT\b|INSERT\s+INTO\b|UPDATE\b|DELETE\s+FROM\b|WITH\b)/.test(body)) return true;
+  return /^\s*(?:select\b[\s\S]{0,400}?\bfrom\b|insert\s+into\b|update\s+[A-Za-z_][\w."]*\s+set\b|delete\s+from\b)/i.test(
+    body,
+  );
+}
+
+/** `"SELECT " + x` and the same shape in lowercase, when the literal is concatenated. */
+export function concatenatedSql(source) {
+  const hits = [];
+  const text = blankComments(source);
+  let index = 0;
+  while (index < text.length) {
+    const char = text[index];
+    if (char !== '"' && char !== "'") {
+      index += 1;
+      continue;
+    }
+    const start = index;
+    const quote = char;
+    index += 1;
+    let body = "";
+    while (index < text.length) {
+      if (text[index] === "\\") {
+        body += text[index] + (text[index + 1] ?? "");
+        index += 2;
+        continue;
+      }
+      if (text[index] === quote) {
+        index += 1;
+        break;
+      }
+      body += text[index];
+      index += 1;
+    }
+    if (!sqlConcatLiteral(body)) continue;
+    const before = text.slice(Math.max(0, start - 24), start);
+    const after = text.slice(index, index + 24);
+    if (/\+\s*$/.test(before) || /^\s*\+/.test(after)) {
+      hits.push({ line: lineAt(source, start), literal: body.slice(0, 80) });
+    }
+  }
+  return hits;
+}
+
+/**
+ * Modules that open the worker/admin pool. A signed-in route must not import
+ * them, directly or through another apps/web module. Cron routes, webhook
+ * receivers, and the token-gated release route are not signed-in sessions.
+ */
+export const ADMIN_POOL_MODULES = [
+  "apps/web/lib/team-dossier/refresh.ts",
+  "apps/web/lib/dreaming/run-dream.ts",
+  "apps/web/lib/run-product-release-publish.ts",
+  "apps/web/lib/run-sponsor-reminders.ts",
+  "apps/web/lib/release-notes/agent-publish.ts",
+  "apps/web/lib/product-analytics/retention.ts",
+  "apps/web/lib/performance-email/run-performance-email.ts",
+  "apps/web/lib/assembly-manual/worker.ts",
+  "apps/web/lib/parent-comms/run-parent-digest.ts",
+  "apps/web/lib/mirror/scheduled-mirror.ts",
+  "apps/web/lib/microsoft/scheduled-sync.ts",
+  "apps/web/lib/member-onboarding/run-member-onboarding.ts",
+  "apps/web/lib/webhooks/tba-fanout.ts",
+  "apps/web/lib/grants-calendar/run-grant-deadline-alerts.ts",
+  "apps/web/lib/provisioning/pool.ts",
+  "apps/web/lib/reference/worker-ingest.ts",
+];
+
+const NON_SESSION_PREFIXES = ["apps/web/app/api/cron/", "apps/web/app/api/webhooks/"];
+
+const NON_SESSION_FILES = new Set([
+  "apps/web/app/api/analytics/retention/route.ts",
+  "apps/web/app/api/agent/release-notes/route.ts",
+  "apps/web/app/api/desktop/updates/route.ts",
+]);
+
+export function isSignedInAppFile(file) {
+  const norm = file.replace(/\\/g, "/");
+  if (!norm.startsWith("apps/web/app/")) return false;
+  if (isTestPath(norm)) return false;
+  if (NON_SESSION_PREFIXES.some((prefix) => norm.startsWith(prefix))) return false;
+  if (NON_SESSION_FILES.has(norm)) return false;
+  return true;
+}
+
+function resolveLocalImport(fromFile, specifier) {
+  if (!specifier.startsWith(".")) return null;
+  const base = join(dirname(fromFile), specifier).replace(/\\/g, "/");
+  const candidates = [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    `${base}.mjs`,
+    `${base}.js`,
+    `${base}/index.ts`,
+    `${base}/route.ts`,
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(join(REPO_ROOT, candidate))) return candidate;
+  }
+  return null;
+}
+
+export function signedInAdminImportHits(allowlist = signedInAdminImportAllowlist) {
+  const files = productSourceFiles().filter((file) => file.startsWith("apps/web/"));
+  const imports = new Map();
+  for (const file of files) {
+    const specs = importSpecifiers(readRepoFile(file))
+      .map((hit) => resolveLocalImport(file, hit.specifier))
+      .filter((value) => typeof value === "string");
+    imports.set(file, specs);
+  }
+  const hits = [];
+  for (const file of files) {
+    if (!isSignedInAppFile(file)) continue;
+    const allowed = new Set(allowlist.find((entry) => entry.file === file)?.modules ?? []);
+    const seen = new Set();
+    const queue = [...(imports.get(file) ?? [])];
+    while (queue.length) {
+      const next = queue.pop();
+      if (!next || seen.has(next)) continue;
+      seen.add(next);
+      if (ADMIN_POOL_MODULES.includes(next)) {
+        if (!allowed.has(next)) hits.push({ file, module: next });
+        continue;
+      }
+      for (const child of imports.get(next) ?? []) queue.push(child);
+    }
+  }
+  return hits;
 }
 
 export function requestPoolCalls(source) {

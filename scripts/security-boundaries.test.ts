@@ -13,19 +13,24 @@ import { ESLint } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   requestPoolAllowlist,
-  sqlInterpolationAllowlist,
+  signedInAdminImportAllowlist,
+  sqlFragmentAllowlist,
   workerImportAllowlist,
 } from "./security-boundary-allowlist.mjs";
 import {
+  concatenatedSql,
   forbiddenImports,
   interpolatedSqlTemplates,
+  lowercaseSqlTemplates,
   migrationDrift,
   productSourceFiles,
   readRepoFile,
   REPO_ROOT,
   requestPoolCalls,
+  signedInAdminImportHits,
   supabaseKeyReads,
   unexpectedForbiddenImports,
+  unsafeSqlTemplates,
   withRlsRoleGaps,
 } from "./security-boundaries.mjs";
 
@@ -154,22 +159,51 @@ describe("interpolated SQL templates", () => {
     expect(interpolatedSqlTemplates("// SELECT ${id} FROM t\nconst ok = 1;\n")).toEqual([]);
   });
 
-  it("matches the SQL allowlist counts on this tree", () => {
-    const found = new Map<string, { templates: number; interpolations: number }>();
+  it("flags lowercase select…from and does not flag an English sentence", () => {
+    expect(lowercaseSqlTemplates("client.query(`select ${id} from teams`)")).toHaveLength(1);
+    expect(lowercaseSqlTemplates("client.query(`delete from teams where id = ${id}`)")).toHaveLength(1);
+    expect(lowercaseSqlTemplates("`Delete ${name}?`")).toEqual([]);
+    expect(lowercaseSqlTemplates("`Please select ${name} from the menu`")).toEqual([]);
+  });
+
+  it("flags concatenated SQL and does not flag ordinary string addition", () => {
+    expect(concatenatedSql('client.query("SELECT " + column + " FROM teams")')).toHaveLength(1);
+    expect(concatenatedSql('client.query("select id from " + table)')).toHaveLength(1);
+    expect(concatenatedSql('const label = "Delete " + name + "?"')).toEqual([]);
+    expect(concatenatedSql('const note = "Please select " + name')).toEqual([]);
+  });
+
+  it("matches the SQL fragment allowlist on this tree", () => {
+    const found = new Set<string>();
     for (const file of productSourceFiles()) {
-      const hits = interpolatedSqlTemplates(readRepoFile(file));
-      if (!hits.length) continue;
-      found.set(file, {
-        templates: hits.length,
-        interpolations: hits.reduce((sum, hit) => sum + hit.expressions.length, 0),
-      });
+      for (const hit of unsafeSqlTemplates(readRepoFile(file))) {
+        for (const expression of hit.expressions) found.add(`${file}\0${expression}`);
+      }
     }
-    expect([...found.keys()].sort()).toEqual(filesOf(sqlInterpolationAllowlist).sort());
-    for (const entry of sqlInterpolationAllowlist) {
-      expect(found.get(entry.file), entry.file).toEqual({
-        templates: entry.templates,
-        interpolations: entry.interpolations,
-      });
+    const listed = new Set(sqlFragmentAllowlist.map((entry) => `${entry.file}\0${entry.expression}`));
+    expect([...found].sort()).toEqual([...listed].sort());
+  });
+});
+
+describe("signed-in admin-pool imports", () => {
+  it("flags the platform connector route when its allowlist row is removed", () => {
+    const hits = signedInAdminImportHits([]);
+    expect(
+      hits.some(
+        (hit) =>
+          hit.file === "apps/web/app/api/admin/data-connectors/route.ts" &&
+          hit.module === "apps/web/lib/reference/worker-ingest.ts",
+      ),
+    ).toBe(true);
+  });
+
+  it("allows only the modules named on each row", () => {
+    expect(signedInAdminImportHits()).toEqual([]);
+    const hits = signedInAdminImportHits([]);
+    for (const entry of signedInAdminImportAllowlist) {
+      for (const moduleName of entry.modules) {
+        expect(hits).toContainEqual({ file: entry.file, module: moduleName });
+      }
     }
   });
 });
@@ -286,7 +320,12 @@ describe("Supabase key reads", () => {
 });
 
 describe("allowlist rows", () => {
-  const rows = [...workerImportAllowlist, ...requestPoolAllowlist, ...sqlInterpolationAllowlist];
+  const rows = [
+    ...workerImportAllowlist,
+    ...requestPoolAllowlist,
+    ...sqlFragmentAllowlist,
+    ...signedInAdminImportAllowlist,
+  ];
 
   it("names a real file and a reason", () => {
     for (const entry of rows) {
@@ -296,9 +335,23 @@ describe("allowlist rows", () => {
   });
 
   it("does not list the same file twice in one list", () => {
-    for (const list of [workerImportAllowlist, requestPoolAllowlist, sqlInterpolationAllowlist]) {
+    for (const list of [workerImportAllowlist, requestPoolAllowlist, signedInAdminImportAllowlist]) {
       const files = filesOf(list);
       expect(new Set(files).size).toBe(files.length);
     }
+  });
+
+  it("does not list the same SQL expression twice in one file", () => {
+    const keys = sqlFragmentAllowlist.map((entry) => `${entry.file}\0${entry.expression}`);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe("worker login password", () => {
+  it("binds the password through format and checks the alphabet", () => {
+    const source = readRepoFile("scripts/create-worker-login.mjs");
+    expect(source.includes("${password}")).toBe(false);
+    expect(source).toContain("format('CREATE ROLE vantage_worker_login LOGIN PASSWORD %L IN ROLE vantage_worker', $1::text)");
+    expect(source).toContain("/^[A-Za-z0-9_-]+$/");
   });
 });
