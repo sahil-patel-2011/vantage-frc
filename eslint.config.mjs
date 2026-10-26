@@ -3,6 +3,15 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 import nextPlugin from "@next/eslint-plugin-next";
 import reactHooks from "eslint-plugin-react-hooks";
+import { workerImportAllowlist } from "./scripts/security-boundary-allowlist.mjs";
+import {
+  allowlistedImportRule,
+  FEATURE_BOUNDARY_PATTERNS,
+  PACKAGE_APP_PATTERNS,
+  REQUEST_IMPORT_PATHS,
+  SUPABASE_IMPORT_PATTERNS,
+  vantageSecurityPlugin,
+} from "./scripts/security-boundaries.mjs";
 
 export default tseslint.config(
   {
@@ -73,12 +82,8 @@ export default tseslint.config(
       "no-restricted-imports": [
         "error",
         {
-          patterns: [
-            {
-              group: ["apps/*", "**/apps/**"],
-              message: "Domain packages must not import apps/web. Put UI in the composition root.",
-            },
-          ],
+          paths: REQUEST_IMPORT_PATHS,
+          patterns: [...PACKAGE_APP_PATTERNS, ...SUPABASE_IMPORT_PATTERNS],
         },
       ],
     },
@@ -89,23 +94,41 @@ export default tseslint.config(
       "no-restricted-imports": [
         "error",
         {
-          paths: [
-            {
-              name: "@vantage/db/admin",
-              message:
-                "dbAdmin is worker-only and must never enter request paths.",
-            },
-            {
-              name: "@vantage/reference/admin-store",
-              message:
-                "Reference writes are worker-only and must never enter request paths.",
-            },
-            {
-              name: "@vantage/reference/production-worker",
-              message:
-                "Reference workers are privileged and must never enter request paths.",
-            },
-          ],
+          paths: REQUEST_IMPORT_PATHS,
+          patterns: SUPABASE_IMPORT_PATTERNS,
+        },
+      ],
+    },
+  },
+  {
+    // Route handlers and server components live under app/. The modules they
+    // call live in lib/ and components/, and the session gate is proxy.ts.
+    // The worker-role ban has to cover those too, or a route can import() the
+    // worker from a helper the app/ glob never sees.
+    files: [
+      "apps/web/lib/**/*.{ts,tsx}",
+      "apps/web/components/**/*.{ts,tsx}",
+      "apps/web/proxy.ts",
+      "apps/web/middleware.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: REQUEST_IMPORT_PATHS,
+          patterns: SUPABASE_IMPORT_PATTERNS,
+        },
+      ],
+    },
+  },
+  {
+    files: ["scripts/**/*.{js,mjs,cjs,ts}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: REQUEST_IMPORT_PATHS,
+          patterns: SUPABASE_IMPORT_PATTERNS,
         },
       ],
     },
@@ -131,14 +154,29 @@ export default tseslint.config(
       "no-restricted-imports": [
         "error",
         {
-          patterns: [
-            {
-              group: ["**/lib/scouting/**", "**/lib/messages/**", "**/lib/pit/**", "**/lib/hours/**"],
-              message: "This feature folder may not import another feature's internals. Put shared helpers in lib/ui, lib/nav, or a package.",
-            },
-          ],
+          paths: REQUEST_IMPORT_PATHS,
+          patterns: [...FEATURE_BOUNDARY_PATTERNS, ...SUPABASE_IMPORT_PATTERNS],
         },
       ],
     },
   },
+  {
+    // import() is a different AST node from a static import. The rule reads
+    // the allowlist itself, so a cron file can keep the worker import it names.
+    files: [
+      "apps/**/*.{ts,tsx,js,mjs}",
+      "packages/**/*.{ts,tsx,js,mjs}",
+      "scripts/**/*.{js,mjs,cjs,ts}",
+    ],
+    plugins: { vantage: vantageSecurityPlugin },
+    rules: { "vantage/no-dynamic-worker-import": "error" },
+  },
+  // Last, so it wins over the bans above. Each file may import only the
+  // worker specifiers its allowlist row names. Supabase stays banned.
+  ...workerImportAllowlist.map((entry) => ({
+    files: [entry.file],
+    rules: {
+      "no-restricted-imports": allowlistedImportRule(entry),
+    },
+  })),
 );

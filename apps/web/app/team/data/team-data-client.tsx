@@ -411,6 +411,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     });
     const data = (await response.json()) as {
       summary?: Record<string, unknown>;
+      pending?: boolean;
       error?: string;
     };
     setBusy(false);
@@ -418,7 +419,13 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
     // unconnected team ("Match data isn't connected yet" showed above 36 cached matches).
     const haveData = referenceCount(reference, "matches_ref") > 0;
     setOk(response.ok || haveData);
-    if (response.ok) {
+    if (response.ok && data.pending) {
+      setMessage(
+        haveData
+          ? "Couldn't refresh just now. The event data already here is still in use; try again in a few minutes."
+          : "Couldn't refresh. Try again in a few minutes.",
+      );
+    } else if (response.ok) {
       const summary = data.summary;
       const matches = Number(summary?.matches ?? 0);
       const teams = Number(summary?.teams ?? 0);

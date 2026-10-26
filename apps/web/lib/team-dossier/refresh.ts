@@ -89,3 +89,46 @@ export async function runTeamDossierRefresh(options: { limit?: number } = {}): P
     await pool.end();
   }
 }
+
+/**
+ * Finish a build a signed-in owner already claimed. The cron route calls this
+ * after CRON_SECRET; the request itself only writes the claim through withRls.
+ */
+export async function buildClaimedDossier(orgId: string, teamNumber: number): Promise<"ready" | "failed"> {
+  const pool = workerPool();
+  try {
+    const { createProductionReferenceJobs } = await import("@vantage/reference/production-worker");
+    try {
+      const payload = await createProductionReferenceJobs({ preferOrgIds: [orgId] }).teamDossier.run(teamNumber);
+      const ok = payload.sources.tba.ok || payload.sources.statbotics.ok;
+      await pool.query(
+        `UPDATE team_dossiers
+            SET status = $2, profile = $3::jsonb, years_participated = $4::int[], awards = $5::jsonb,
+                events = $6::jsonb, stats = $7::jsonb, sources = $8::jsonb, error = $9,
+                computed_at = now(), updated_at = now()
+          WHERE org_id = $1::uuid`,
+        [
+          orgId,
+          ok ? "ready" : "failed",
+          JSON.stringify(payload.profile),
+          payload.yearsParticipated,
+          JSON.stringify(payload.awards),
+          JSON.stringify(payload.events),
+          JSON.stringify(payload.stats),
+          JSON.stringify(payload.sources),
+          ok ? null : [payload.sources.tba.error, payload.sources.statbotics.error].filter(Boolean).join(" · "),
+        ],
+      );
+      return ok ? "ready" : "failed";
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Dossier build failed";
+      await pool.query(
+        `UPDATE team_dossiers SET status = 'failed', error = $2, updated_at = now() WHERE org_id = $1::uuid`,
+        [orgId, message.slice(0, 500)],
+      );
+      throw error;
+    }
+  } finally {
+    await pool.end();
+  }
+}

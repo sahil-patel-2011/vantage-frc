@@ -3,9 +3,10 @@ import { withRls } from "@vantage/db";
 import { canManageScouting } from "@vantage/scouting/permissions";
 import { cookies, headers } from "next/headers";
 import { parseEventYear } from "../../../../../lib/events/event-planning";
+import { dispatchCron } from "../../../../../lib/reference/dispatch-cron";
 import { publicErrorMessage } from "../../../../../lib/security/public-error";
 
-/** Intentional bounded refresh. No cron, background worker, or season crawl. */
+/** Intentional bounded refresh. The worker runs on the reference cron, not in this request. */
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -22,9 +23,15 @@ export async function POST(request: Request) {
         rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
       });
     });
-    const { createProductionReferenceJobs } = await import("@vantage/reference/production-worker");
-    const count = await createProductionReferenceJobs({ preferOrgIds: [orgId] }).eventDirectory.run(year);
-    return Response.json({ ok: true, count }, { headers: { "Cache-Control": "no-store" } });
+    const dispatched = await dispatchCron<{ count: number | null }>("/api/cron/reference-refresh", {
+      kind: "event-directory",
+      year,
+      preferOrgIds: [orgId],
+    });
+    if (!dispatched.ok) {
+      return Response.json({ ok: true, pending: true, count: null }, { headers: { "Cache-Control": "no-store" } });
+    }
+    return Response.json({ ok: true, count: dispatched.body.count }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return Response.json({ error: publicErrorMessage(error, "Published events couldn't be refreshed. Your saved events are still available; you can add an unlisted event.") }, { status: 400 });
   }
