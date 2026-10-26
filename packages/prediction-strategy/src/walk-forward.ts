@@ -397,7 +397,7 @@ function solveForSpec(samples: readonly CategorySample[], spec: ModelSpec): Map<
   }
   const field = strengthN ? strengthSum / strengthN : 0;
   return solveCategories(samples, spec.decay, spec.ridge, (sample, decayWeight) => {
-    let weight = scaleZero(sample, decayWeight);
+    const weight = scaleZero(sample, decayWeight);
     const group = sample.matchKey ? partners.get(sample.matchKey) : undefined;
     const opponent = group?.find((other) => other !== sample);
     if (!opponent || !(field > 0)) return weight;
