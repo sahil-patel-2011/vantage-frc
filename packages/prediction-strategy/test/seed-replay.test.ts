@@ -6,7 +6,9 @@ import { deriveQualOrder, loadGagrQuals, measureCutoff, spearman, type SeedModel
  * Public qualification rankings for 2026gagr (GRITS), read from
  * https://www.thebluealliance.com/event/2026gagr on 2026-10-25 with no API key.
  * Order is the published rank. Two teams appear in nine quals in the match file
- * and eight in this ranking; the match file is still what the replay plays.
+ * and eight in this ranking. Qualification 16 marks both as surrogates on the
+ * public match page (read 2026-10-26, no API key). The file has no surrogate
+ * column, the rows are not duplicates, and the replay still counts them.
  */
 const OFFICIAL = [
   1261, 2974, 6829, 8866, 1648, 1771, 4188, 4026, 3635, 4112, 1002, 9477, 6910, 8080, 1683, 6905,
@@ -43,6 +45,20 @@ describe("2026gagr seed replay", () => {
     expect(lions!.earned / lions!.played).toBeCloseTo(285.75, 2);
     expect(spearman(["a", "b", "c"], ["a", "b", "c"])).toBeCloseTo(1, 6);
     expect(spearman(["a", "b", "c"], ["c", "b", "a"])).toBeCloseTo(-1, 6);
+  });
+
+  it("counts nine real qualifications for the two surrogate teams, not a duplicate row", () => {
+    const appearances = (team: string) =>
+      quals.filter((qual) => qual.red.includes(team) || qual.blue.includes(team));
+    expect(appearances("frc2974")).toHaveLength(9);
+    expect(appearances("frc1414")).toHaveLength(9);
+    const signatures = quals.map((qual) =>
+      [...qual.red, ...qual.blue, qual.redScore, qual.blueScore, qual.redFouls, qual.blueFouls].join(","),
+    );
+    expect(new Set(signatures).size).toBe(quals.length);
+    const sixteenth = quals.find((qual) => qual.number === 16);
+    expect(sixteenth?.red).toContain("frc2974");
+    expect(sixteenth?.blue).toContain("frc1414");
   });
 
   it("agrees with the published ranking on the captain group, and differs in the middle", () => {

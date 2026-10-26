@@ -3,11 +3,13 @@
   "releases": [
     {
       "pr": 2412,
-      "date": "2026-10-25",
+      "date": "2026-10-26",
       "headline": "Rank projection uses the points robots have already scored",
       "changes": [
         "Seed chances now rate a robot from the points it has scored at this event when no season rating is saved, so a finish can be projected once matches have been played",
+        "Every robot at an event is rated the same way. A saved season rating is used only when every robot has one, so it is never added to points from this event",
         "A robot that has not played yet is still left out, and that match stays without a win chance",
+        "If those played-match points cannot be loaded, the page still shows the saved rank and leaves the remaining matches without a win chance",
         "Win chances follow how high alliances have been scoring at the event. On one measured event, the old fixed curve was worse than a coin flip after 20 qualification matches; the wider curve was not",
         "On that same event the projected order tracked the real finish more closely than freezing the current standings, after 20, 30, and 40 qualification matches"
       ]

@@ -1,10 +1,10 @@
 # Vantage status
 
-*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-10-25.*
+*Working log of what is done, what is in progress, and what only the owner can unblock. Last updated 2026-10-26.*
 
-## Rank projection — 2026-10-25
+## Rank projection — 2026-10-26
 
-Seed chances on Rank projection now use a saved season rating or, when that is missing, each robot's points from matches already played at the event, on the same win curve as the match plan. A robot with no played match stays unrated. Measured on 2026gagr only (see `docs/PREDICTION_RESULTS.md`): better than a coin flip and better than freezing the current standings at quals 20, 30, and 40. The old 12-point curve was worse than a coin flip after 20 quals. Not deployed. No migration.
+Seed chances on Rank projection use one rating for the whole event: a saved season rating when every robot has one, otherwise each robot's points from matches already played. The two are never added together. A robot with no played match stays unrated. If those played-match ratings fail to load, the saved rank stays up and remaining matches stay without a win chance. Measured on 2026gagr only (see `docs/PREDICTION_RESULTS.md`): better than a coin flip and better than freezing the current standings at quals 20, 30, and 40. The one-scale rule does not change that table, because the file has no season ratings. The old 12-point curve was worse than a coin flip after 20 quals. Teams 2974 and 1414 appear in nine qualifications because qualification 16 is a real surrogate match, not a duplicate row. Not deployed. No migration.
 
 Living record of the master engineering brief. Update this file at the end of every task. Numbers are from commands that were actually run, not memory.
 

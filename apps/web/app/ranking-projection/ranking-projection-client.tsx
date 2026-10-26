@@ -3,7 +3,7 @@
 import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, Skeleton, StatRowSkeleton, TableSkeleton } from "../../components/ui";
 import {
   bestPath,
   describeBestPath,
@@ -27,6 +27,20 @@ import "./ranking-projection.css";
 const teamLabel = (teamKey: string) => teamKey.replace(/^frc/i, "") || teamKey;
 const allianceLabel = (teamKeys: string[]) =>
   teamKeys.length ? teamKeys.map(teamLabel).join(" ") : "—";
+
+function formatRating(value: number): string {
+  const text = value.toFixed(1);
+  return text.endsWith(".0") ? text.slice(0, -2) : text;
+}
+
+function unpredictedSentence(count: number): string {
+  if (count === 1) {
+    return "One match has no win chance yet, because a robot in it has no rating. Set that match by hand.";
+  }
+  return `${count} matches have no win chance yet, because a robot in them has no rating. Set those matches by hand.`;
+}
+
+export type RankingProjectionInitial = RankingProjectionView | "loading" | "error";
 
 function isRankingProjectionView(value: unknown): value is RankingProjectionView {
   if (!value || typeof value !== "object") return false;
@@ -123,11 +137,11 @@ function BestPathPlanner({
   if (!whatIf.remaining.length) {
     return (
       <Panel>
-        <span className="eyebrow">Best path</span>
+        <span className="eyebrow">Seed plan</span>
         <h2>Every qualification match is played</h2>
         <p className="app-muted">
-          {eventName} has no unplayed quals in the cache, so there is nothing left to plan. The seed
-          order above is the finished one.
+          {eventName} has no qualification matches left to play, so there is nothing left to plan. The
+          rank above is the finished seed order.
         </p>
       </Panel>
     );
@@ -135,8 +149,8 @@ function BestPathPlanner({
 
   return (
     <Panel>
-      <span className="eyebrow">Best path</span>
-      <h2>What-if the rest of quals</h2>
+        <span className="eyebrow">Seed plan</span>
+        <h2>What if the rest of the qualifications</h2>
       <div className="bp-planner">
         <section className="bp-kpis">
           <article>
@@ -171,7 +185,7 @@ function BestPathPlanner({
             );
           })()}
           <article>
-            <span>Projected RP</span>
+            <span>Ranking points</span>
             <strong>{ours ? ours.projectedRankingPoints : "—"}</strong>
             <small>{ours ? `${ours.rankingPoints} banked` : "no standings row"}</small>
           </article>
@@ -181,9 +195,9 @@ function BestPathPlanner({
             <small>{projection.decidedMatches} of {whatIf.remaining.length} decided</small>
           </article>
           <article>
-            <span>Undecided</span>
+            <span>Not set</span>
             <strong>{projection.undecidedMatches}</strong>
-            <small>no prediction, not forced</small>
+            <small>no win chance, and not set by hand</small>
           </article>
         </section>
 
@@ -192,10 +206,14 @@ function BestPathPlanner({
         <details className="bp-caveats-more">
           <summary data-disclosure>About these numbers</summary>
         <ul className="bp-caveats">
-          {whatIf.rules.confirmed ? <li>Ranking points: {whatIf.rules.label}.</li> : null}
+          {whatIf.rules.confirmed ? (
+            <li>
+              A win is {whatIf.rules.win} ranking points and a tie is {whatIf.rules.tie}.
+            </li>
+          ) : null}
           {whatIf.seedOdds ? (
             <li>
-              Chance to captain plays the rest of quals {whatIf.seedOdds.iterations.toLocaleString()} times from each
+              Chance to captain plays the remaining qualification matches {whatIf.seedOdds.iterations.toLocaleString()} times from each
               match&apos;s win chance and counts how often we finish in the top {whatIf.seedOdds.captains}
               {whatIf.seedOdds.unpredictedMatches
                 ? `; ${whatIf.seedOdds.unpredictedMatches} match${whatIf.seedOdds.unpredictedMatches === 1 ? " has" : "es have"} no prediction and count as a coin flip`
@@ -267,6 +285,10 @@ function BestPathPlanner({
           </div>
         ) : null}
 
+        {whatIf.unpredictedMatches > 0 ? (
+          <p className="bp-partial">{unpredictedSentence(whatIf.unpredictedMatches)}</p>
+        ) : null}
+
         <div className="bp-match-list">
           {visibleMatches.map((match) => {
             const forced = overrides[match.matchKey] ?? null;
@@ -291,11 +313,11 @@ function BestPathPlanner({
                   <span className="bp-match-note">
                     {match.predicted
                       ? `Predicted: ${match.predicted === "tie" ? "tie" : `${match.predicted} wins`}`
-                      : "No prediction — a robot here has no rating yet"}
+                      : "No win chance yet. A robot in this match has no rating."}
                     {forced
                       ? ` · forced ${forced === "tie" ? "tie" : `${forced} wins`}`
                       : effective == null
-                        ? " · counts for nobody until you set it"
+                        ? " · changes no ranking points until you set a winner"
                         : ""}
                   </span>
                 </div>
@@ -305,7 +327,7 @@ function BestPathPlanner({
                     aria-pressed={forced == null}
                     onClick={() => setOutcome(match.matchKey, null)}
                   >
-                    Predicted
+                    {match.predicted ? "Predicted" : "Not set"}
                   </button>
                   <button
                     type="button"
@@ -343,9 +365,9 @@ function BestPathPlanner({
               <tr>
                 <th scope="col">Seed</th>
                 <th scope="col">Team</th>
-                <th scope="col">Proj RP</th>
+                <th scope="col">Projected</th>
                 <th scope="col">Now</th>
-                <th scope="col">Undecided</th>
+                <th scope="col">Not set</th>
               </tr>
             </thead>
             <tbody>
@@ -366,12 +388,32 @@ function BestPathPlanner({
   );
 }
 
-export default function RankingProjectionClient() {
-  const [view, setView] = useState<RankingProjectionView | null>(null);
-  const [error, setError] = useState("");
+function RankingProjectionSkeleton() {
+  return (
+    <div className="rp-loading" aria-busy="true" aria-live="polite">
+      <p className="sr-only">Loading ranking projection</p>
+      <Panel>
+        <Skeleton width="42%" height={18} />
+        <Skeleton width="28%" height={14} />
+        <Skeleton width="36%" height={14} />
+        <Skeleton width={148} height={40} radius={999} />
+      </Panel>
+      <Panel>
+        <StatRowSkeleton count={4} />
+        <TableSkeleton rows={6} cols={5} />
+      </Panel>
+    </div>
+  );
+}
+
+export default function RankingProjectionClient({ initial }: { initial?: RankingProjectionInitial } = {}) {
+  const [view, setView] = useState<RankingProjectionView | null>(
+    initial && initial !== "loading" && initial !== "error" ? initial : null,
+  );
+  const [error, setError] = useState(initial === "error" ? "Ranking projection could not be loaded." : "");
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
-  const [errorStatus, setErrorStatus] = useState<number | null>(null);
-  const [fetchFailed, setFetchFailed] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(initial === "error" ? 500 : null);
+  const [fetchFailed, setFetchFailed] = useState(initial === "error");
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<RankingProjectionView | null>(null);
@@ -433,8 +475,9 @@ export default function RankingProjectionClient() {
   }, []);
 
   useEffect(() => {
+    if (initial !== undefined) return;
     void load();
-  }, [load]);
+  }, [initial, load]);
 
   const orgId = view && "orgId" in view ? view.orgId : null;
   const failure =
@@ -465,23 +508,25 @@ export default function RankingProjectionClient() {
           </>
         }
         title="Ranking projection"
-        description="Current event rank plus remaining qualification matches from the cache."
+        description="Where your team is likely to finish, from the matches already saved for this event."
       />
       <OfflineBanner feature="Ranking projection" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? <p className="app-muted">{error}</p> : null}
-      {!view ? (
+      {!view && !failure ? <RankingProjectionSkeleton /> : null}
+      {!view && failure ? (
         <EmptyState
           soft
-          title={failure ? failure.title : "Loading ranking projection…"}
-          description={failure ? failure.description : undefined}
-          aria-busy={!fetchFailed}
+          badge={failure.badge}
+          badgeTone={failure.kind === "setup" ? "setup" : "error"}
+          title={failure.title}
+          description={failure.description}
         >
-          {failure?.primary ? (
+          {failure.primary ? (
             <Button as="a" variant="primary" href={failure.primary.href}>
               {failure.primary.label}
             </Button>
           ) : null}
-          {failure?.showRetry ? (
+          {failure.showRetry ? (
             <Button variant="secondary" type="button" onClick={() => void load()}>
               Retry
             </Button>
@@ -493,27 +538,34 @@ export default function RankingProjectionClient() {
           badge="Needs setup"
           badgeTone="setup"
           soft
-          title="Choose your team"
+          title={view.steps[0]?.label ?? "Choose your team"}
           description={view.message}
         >
-          <Button as="a" variant="primary" href="/workspace">
-            Choose your team
+          <Button as="a" variant="primary" href={view.steps[0]?.href ?? "/workspace"}>
+            {view.steps[0]?.label ?? "Choose your team"}
           </Button>
         </EmptyState>
       ) : null}
       {view?.status === "live" ? (
         <>
           <Panel>
-            <p>
-              {view.eventName} · rank {view.currentRank} · {view.record ?? "no record yet"}
-            </p>
-            <p>
-              {view.playedQuals} quals played, {view.remainingQuals} remaining
-              {view.epaTotal != null ? ` · Rating ${view.epaTotal}` : ""}
-            </p>
+            <div className="rp-summary">
+              <p className="rp-summary-event">{view.eventName}</p>
+              <p>
+                Rank {view.currentRank}
+                {view.record ? ` · ${view.record}` : ""}
+              </p>
+              <p>
+                {view.playedQuals} qualification {view.playedQuals === 1 ? "match" : "matches"} played,{" "}
+                {view.remainingQuals} remaining
+                {view.whatIf?.ratingSource === "season" && view.epaTotal != null && Number.isFinite(Number(view.epaTotal))
+                  ? ` · Season rating ${formatRating(Number(view.epaTotal))}`
+                  : ""}
+              </p>
+            </div>
             <p>
               <Button as="a" variant="secondary" href={withOrgHref("/rankings", view.orgId)}>
-                Open Rankings
+                Open rankings
               </Button>
             </p>
           </Panel>
@@ -528,7 +580,7 @@ export default function RankingProjectionClient() {
               title="No seed path to plan yet"
               description={
                 view.whatIfMessage ??
-                "The cached standings and remaining schedule for this event are not complete enough to project a seed."
+                "The saved standings and remaining schedule for this event are not complete enough to project a seed."
               }
             />
           )}

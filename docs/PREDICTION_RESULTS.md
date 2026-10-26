@@ -66,7 +66,7 @@ This is one event (GRITS, 44 teams, 59 qualification matches). It is a check, no
 
 ### Check against the public ranking
 
-The public ranking on The Blue Alliance event page for 2026gagr (read 2026-10-25, no API key) includes bonus ranking points. Against the derived win-point order: Spearman **0.974**, the same eight teams in the top eight, **32** of 44 teams on a different rank, mean absolute gap **2** ranks. Two teams (2974 and 1414) appear in nine qualifications in the file; that ranking's points-per-match math counts eight, which fits a surrogate appearance. 1414's extra match is qualification 16. 2974's is qualification 16 or 31 (both are wins with the same foul-free score, so the average cannot tell them apart). The replay does not drop them.
+The public ranking on The Blue Alliance event page for 2026gagr (read 2026-10-25, no API key) includes bonus ranking points. Against the derived win-point order: Spearman **0.974**, the same eight teams in the top eight, **32** of 44 teams on a different rank, mean absolute gap **2** ranks. Two teams (2974 and 1414) appear in nine qualifications in the file and eight on that ranking. Checked on 2026-10-26: the rows are not duplicates (no repeated alliance or score), and they match the public match list. The public page for qualification 16 marks both 2974 and 1414 as surrogates. Qualification 31 does not. Dropping qualification 16 is the only match that restores 1414's published 4-4 record and 133.12 average. Dropping either qualification 16 or 31 restores 2974's 199.50 average, because both are wins with the same foul-free 271 points; the surrogate label is what picks qualification 16. The file has no surrogate column, so the replay still counts that match. A surrogate match is real; official rankings leave it out for the surrogate teams only.
 
 The event page's insights count Energized on 67 of 118 alliance-matches, Supercharged on 2, and Traversal on 0. That is the bonus the file cannot show.
 
@@ -99,6 +99,14 @@ Brier score of those win chances (0.25 is a coin flip, lower is better). The fro
 | 40 | 0.250 | 0.171 | **0.141** |
 
 After 20 quals the fixed curve is more confident than a coin flip and less accurate. The event curve is not. Its width at the three cuts was 45.75, 42.57, and 42.12 points (0.3 × the foul-free average so far).
+
+### One rating scale per event (2026-10-26)
+
+A saved season rating and a rating from matches already played are both in points, but they are different estimates. The first version of this page filled a gap with the other and then added them in one alliance. A unit case where one robot's season rating is 500 and everyone else is rated from a 130–50 match flips the predicted winner; rating every robot from the played match does not.
+
+The rule now is: use the season rating only when every robot in the projection has one. Otherwise rate every robot from matches already played, and leave a robot with no played match unrated. This file has no season ratings, so the rule does not change the table above. Re-run on 2026-10-26: the same Spearman, top-8, and Brier numbers.
+
+A failed read of those played-match ratings no longer throws out of the planner. Zero played matches, an empty result, and a thrown read all leave the saved rank on the page and leave remaining matches without a win chance when no season rating covers every robot.
 
 ### Not in this change
 
