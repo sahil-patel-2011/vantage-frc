@@ -232,6 +232,83 @@ export async function loadDataSourceHealth(
 }
 
 async function readHealthInputs(client: PoolClient): Promise<HealthInputs> {
+  // Four independent reads used to be four round trips on every cold open.
+  // One statement is enough when the tables are present. A database that has
+  // not migrated yet falls through to the per-table reads below.
+  try {
+    const packed = await client.query<{
+      cacheHasRows: boolean;
+      health: HealthRow[] | null;
+      cursors: CursorRow[] | null;
+      freshness: FreshnessRow | null;
+    }>(
+      `SELECT
+         (SELECT EXISTS(SELECT 1 FROM matches_ref LIMIT 1)
+              OR EXISTS(SELECT 1 FROM team_event_metrics LIMIT 1)
+              OR EXISTS(SELECT 1 FROM events_ref LIMIT 1)) AS "cacheHasRows",
+         (SELECT COALESCE(json_agg(json_build_object(
+              'source', source,
+              'status', status,
+              'consecutiveFailures', consecutive_failures,
+              'lastSuccessAt', last_success_at::text,
+              'lastFailureAt', last_failure_at::text,
+              'lastError', details->>'error'
+            ) ORDER BY source), '[]'::json)
+            FROM data_source_health
+           WHERE source IN ('tba', 'statbotics')) AS health,
+         (SELECT COALESCE(json_agg(json_build_object(
+              'source', source,
+              'resourcesTracked', resources_tracked,
+              'resourcesWithEtag', resources_with_etag,
+              'resourcesWithError', resources_with_error,
+              'lastSyncedAt', last_synced_at::text,
+              'lastError', last_error,
+              'lastStatus', last_status
+            )), '[]'::json)
+            FROM app_reference_cursor_summary()) AS cursors,
+         (SELECT json_build_object(
+              'syncedAt', synced_at::text,
+              'healthStatus', health_status,
+              'lastError', last_error,
+              'lastSuccessAt', last_success_at::text,
+              'etagResources', etag_resources,
+              'erroredResources', errored_resources,
+              'lastHttpStatus', last_http_status
+            )
+            FROM tba_cache_freshness
+           LIMIT 1) AS freshness`,
+    );
+    const row = packed.rows[0];
+    if (row) {
+      const healthRows = (row.health ?? []).map((item) => ({
+        source: item.source,
+        status: item.status,
+        consecutiveFailures: Number(item.consecutiveFailures ?? 0),
+        lastSuccessAt: item.lastSuccessAt,
+        lastFailureAt: item.lastFailureAt,
+        lastError: item.lastError,
+      }));
+      const cursorRows = (row.cursors ?? []).map((item) => ({
+        ...item,
+        resourcesTracked: Number(item.resourcesTracked ?? 0),
+        resourcesWithEtag: Number(item.resourcesWithEtag ?? 0),
+        resourcesWithError: Number(item.resourcesWithError ?? 0),
+        lastStatus: item.lastStatus == null ? null : Number(item.lastStatus),
+      }));
+      const freshness = row.freshness
+        ? {
+            ...row.freshness,
+            etagResources: row.freshness.etagResources == null ? null : Number(row.freshness.etagResources),
+            erroredResources: row.freshness.erroredResources == null ? null : Number(row.freshness.erroredResources),
+            lastHttpStatus: row.freshness.lastHttpStatus == null ? null : Number(row.freshness.lastHttpStatus),
+          }
+        : null;
+      return { healthRows, cursorRows, freshness, cacheHasRows: Boolean(row.cacheHasRows) };
+    }
+  } catch {
+    // Older schema: read each source on its own.
+  }
+
   let cacheHasRows: boolean;
   try {
     const cache = await client.query<{ ok: boolean }>(

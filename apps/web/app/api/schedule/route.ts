@@ -1,6 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { withSavepoint } from "@vantage/db/savepoint";
+import { after } from "next/server";
 import { headers } from "next/headers";
 import type { ScheduleContext } from "../../../lib/schedule-board";
 import { fieldStdFromRatings } from "../../../lib/schedule/schedule-predictions";
@@ -39,7 +39,11 @@ export async function GET(request: Request) {
     const session = await requireSession();
     const url = new URL(request.url);
     const requestedOrg = url.searchParams.get("orgId");
-    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg });
+    try {
+      after(() => hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg }));
+    } catch {
+      // Called outside a request. The schedule still reads the stored matches.
+    }
 
     const view = await withRls({ userId: session.user.id }, async (client) => {
       const membership = await client.query<ScheduleContext>(
@@ -73,7 +77,7 @@ export async function GET(request: Request) {
       // One round trip per source, all in parallel. Every org-scoped read is
       // filtered by org_id on top of RLS; per-match joining happens in
       // attachTimelineDetail, never as a query per match.
-      const [matches, metrics, assignments, entries, notes, videos] = await Promise.all([
+      const [matches, metrics, assignments, entries, notes, videos, savedRows] = await Promise.all([
         client.query<TbaMatchCacheRow>(
           `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
                   m.set_number AS "setNumber",
@@ -139,26 +143,18 @@ export async function GET(request: Request) {
            ORDER BY v.match_key, v.created_at DESC`,
           [row.orgId, row.eventKey],
         ),
+        // The team's own saved prediction wins where there is one. A missing table keeps the ratings estimate.
+        client.query<{ matchKey: string; pRed: number }>(
+          `SELECT DISTINCT ON (p.match_key) p.match_key AS "matchKey", p.p_red AS "pRed"
+             FROM predictions p
+             JOIN matches_ref m ON m.match_key = p.match_key AND m.event_key = $2::text
+            WHERE p.org_id = $1::uuid AND p.p_red IS NOT NULL
+            ORDER BY p.match_key, p.scored_at DESC`,
+          [row.orgId, row.eventKey],
+        ).catch(() => ({ rows: [] as Array<{ matchKey: string; pRed: number }> })),
       ]);
 
-      // The team's own saved prediction wins where there is one: the Predict list said 71% for a
-      // match Home and Strategy put at 75%. Missing table or no rows: the ratings estimate stays.
-      const saved = await withSavepoint(
-        client,
-        async () =>
-          (
-            await client.query<{ matchKey: string; pRed: number }>(
-              `SELECT DISTINCT ON (p.match_key) p.match_key AS "matchKey", p.p_red AS "pRed"
-                 FROM predictions p
-                 JOIN matches_ref m ON m.match_key = p.match_key AND m.event_key = $2::text
-                WHERE p.org_id = $1::uuid AND p.p_red IS NOT NULL
-                ORDER BY p.match_key, p.scored_at DESC`,
-              [row.orgId, row.eventKey],
-            )
-          ).rows,
-        [] as Array<{ matchKey: string; pRed: number }>,
-      );
-      const savedRedWin = new Map(saved.map((entry) => [entry.matchKey, Number(entry.pRed)]));
+      const savedRedWin = new Map(savedRows.rows.map((entry) => [entry.matchKey, Number(entry.pRed)]));
 
       const teamRatings = new Map<string, number>();
       for (const metric of metrics.rows) {

@@ -120,55 +120,55 @@ async function loadOrgConnectorSnapshot(
   orgId: string,
   userId: string,
 ): Promise<OrgConnectorSnapshot> {
-  const onshape = await client.query<{ id: string }>(
+  const onshapeP = client.query<{ id: string }>(
     `SELECT id FROM cad_connections
      WHERE org_id=$1::uuid AND user_id=$2::uuid AND platform='onshape'
        AND status='connected' AND disabled_at IS NULL
      LIMIT 1`,
     [orgId, userId],
   );
+  const discordP = client.query<{
+    webhookUrl: string | null;
+    channelId: string | null;
+    chatBridgeEnabled: boolean;
+  }>(
+    `SELECT webhook_url AS "webhookUrl", channel_id AS "channelId",
+            chat_bridge_enabled AS "chatBridgeEnabled"
+     FROM team_discord WHERE org_id=$1::uuid LIMIT 1`,
+    [orgId],
+  ).catch(() => ({ rows: [] as Array<{ webhookUrl: string | null; channelId: string | null; chatBridgeEnabled: boolean }> }));
+  const slackP = client.query<{ webhookUrl: string | null; chatBridgeEnabled: boolean }>(
+    `SELECT webhook_url AS "webhookUrl", chat_bridge_enabled AS "chatBridgeEnabled"
+     FROM team_slack WHERE org_id=$1::uuid LIMIT 1`,
+    [orgId],
+  ).catch(() => ({ rows: [] as Array<{ webhookUrl: string | null; chatBridgeEnabled: boolean }> }));
+  const [onshape, discord, github, slack] = await Promise.all([
+    onshapeP,
+    discordP,
+    loadGitHubConnection(client, orgId),
+    slackP,
+  ]);
 
   let discordHasWebhook = false;
   let discordChannelId: string | null = null;
   let discordChatBridgeEnabled = false;
-  try {
-    const discord = await client.query<{
-      webhookUrl: string | null;
-      channelId: string | null;
-      chatBridgeEnabled: boolean;
-    }>(
-      `SELECT webhook_url AS "webhookUrl", channel_id AS "channelId",
-              chat_bridge_enabled AS "chatBridgeEnabled"
-       FROM team_discord WHERE org_id=$1::uuid LIMIT 1`,
-      [orgId],
-    );
+  {
     const row = discord.rows[0];
     if (row) {
       discordHasWebhook = Boolean(row.webhookUrl && isValidDiscordWebhook(row.webhookUrl));
       discordChannelId = row.channelId;
       discordChatBridgeEnabled = Boolean(row.chatBridgeEnabled);
     }
-  } catch {
-    // team_discord may be mid-migration — stay empty, never invent Connected.
   }
-
-  const github = await loadGitHubConnection(client, orgId);
 
   let slackHasWebhook = false;
   let slackChatBridgeEnabled = false;
-  try {
-    const slack = await client.query<{ webhookUrl: string | null; chatBridgeEnabled: boolean }>(
-      `SELECT webhook_url AS "webhookUrl", chat_bridge_enabled AS "chatBridgeEnabled"
-       FROM team_slack WHERE org_id=$1::uuid LIMIT 1`,
-      [orgId],
-    );
+  {
     const row = slack.rows[0];
     if (row) {
       slackHasWebhook = Boolean(row.webhookUrl && isValidSlackWebhook(row.webhookUrl));
       slackChatBridgeEnabled = Boolean(row.chatBridgeEnabled);
     }
-  } catch {
-    // team_slack may be mid-migration
   }
 
   return {
@@ -356,7 +356,7 @@ export async function GET() {
 
   try {
     const profile = await withRls({ userId: session.user.id }, async (client) => {
-      const result = await client.query<{
+      const profileP = client.query<{
         displayName: string | null;
         notificationPrefs: unknown;
         themePreference: string;
@@ -381,14 +381,17 @@ export async function GET() {
          FROM profiles WHERE user_id=$1`,
         [session.user.id],
       );
-      const unread = await client.query<{ count: string }>(
-        `SELECT count(*)::text AS count FROM notifications
-         WHERE user_id=$1 AND read_at IS NULL AND ${LIVE_NOTIFICATION_SQL}`,
-        [session.user.id],
-      );
-      const emailPrefs = await getUserEmailPreferences(client, session.user.id);
-      const tba = await resolveTbaConfigured(client, null);
-      const membershipOrgId = await resolveMembershipOrgId(client, session.user.id);
+      const [result, unread, emailPrefs, tba, membershipOrgId] = await Promise.all([
+        profileP,
+        client.query<{ count: string }>(
+          `SELECT count(*)::text AS count FROM notifications
+           WHERE user_id=$1 AND read_at IS NULL AND ${LIVE_NOTIFICATION_SQL}`,
+          [session.user.id],
+        ),
+        getUserEmailPreferences(client, session.user.id),
+        resolveTbaConfigured(client, null),
+        resolveMembershipOrgId(client, session.user.id),
+      ]);
       return {
         row: result.rows[0] ?? null,
         unreadCount: Number(unread.rows[0]?.count ?? 0),

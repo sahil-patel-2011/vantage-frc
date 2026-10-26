@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
-import { withRls, withSavepoint } from "@vantage/db";
+import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import type { OverlayMeeting } from "../../../lib/calendar/meetings-overlay";
 import {
@@ -47,7 +47,7 @@ function fail(error: unknown) {
 
 /** Upcoming grant / purchase dates from business — read-only markers, never invented. */
 async function loadLinkedDeadlines(client: PoolClient, orgId: string): Promise<LinkedDeadline[]> {
-  const grants = await client.query<{ id: string; title: string; dueOn: string }>(
+  const grantsP = client.query<{ id: string; title: string; dueOn: string }>(
     `SELECT id, name AS title, deadline::text AS "dueOn"
      FROM grant_opportunities
      WHERE org_id = $1 AND deadline IS NOT NULL AND deadline >= CURRENT_DATE
@@ -55,7 +55,7 @@ async function loadLinkedDeadlines(client: PoolClient, orgId: string): Promise<L
      LIMIT 12`,
     [orgId],
   );
-  const purchases = await client.query<{ id: string; title: string; dueOn: string }>(
+  const purchasesP = client.query<{ id: string; title: string; dueOn: string }>(
     `SELECT id, title, needed_by::text AS "dueOn"
      FROM purchase_requests
      WHERE org_id = $1
@@ -66,6 +66,10 @@ async function loadLinkedDeadlines(client: PoolClient, orgId: string): Promise<L
      LIMIT 12`,
     [orgId],
   );
+  const [grants, purchases] = await Promise.all([
+    grantsP.catch(() => ({ rows: [] as Array<{ id: string; title: string; dueOn: string }> })),
+    purchasesP.catch(() => ({ rows: [] as Array<{ id: string; title: string; dueOn: string }> })),
+  ]);
 
   const linked: LinkedDeadline[] = [
     ...grants.rows.map((row) => ({
@@ -118,6 +122,14 @@ async function loadMeetingOverlay(client: PoolClient, orgId: string): Promise<Ov
   const joins = `FROM subteam_calendar_events e
                  LEFT JOIN team_subteams st ON st.id = e.subteam_id`;
 
+  const exceptionsP = client.query<StoredException>(
+    `SELECT series_id AS "seriesId", occurrence_date::text AS "occurrenceDate",
+            action, detached_event_id AS "detachedEventId"
+     FROM calendar_event_exceptions
+     WHERE org_id = $1`,
+    [orgId],
+  ).then((result) => result.rows).catch(() => [] as StoredException[]);
+
   let rows: OverlayEventRow[];
   try {
     const result = await client.query<OverlayEventRow>(
@@ -148,20 +160,7 @@ async function loadMeetingOverlay(client: PoolClient, orgId: string): Promise<Ov
     rows = result.rows;
   }
 
-  const exceptions = await withSavepoint(
-    client,
-    async () => {
-      const result = await client.query<StoredException>(
-        `SELECT series_id AS "seriesId", occurrence_date::text AS "occurrenceDate",
-                action, detached_event_id AS "detachedEventId"
-         FROM calendar_event_exceptions
-         WHERE org_id = $1`,
-        [orgId],
-      );
-      return result.rows;
-    },
-    [] as StoredException[],
-  );
+  const exceptions = await exceptionsP;
 
   const expanded = expandSeriesRows(rows, exceptions, window);
   const meetings: OverlayMeeting[] = [];
@@ -197,13 +196,11 @@ function strip(
   };
 }
 
-export async function GET(request: Request) {
-  try {
-    const session = await requireSession();
-    const url = new URL(request.url);
-    const requestedOrg = url.searchParams.get("orgId");
-
-    const view = await withRls({ userId: session.user.id, orgId: requestedOrg ?? undefined }, async (client) => {
+export async function loadCalendarPaint(
+  client: PoolClient,
+  userId: string,
+  requestedOrg: string | null,
+): Promise<CalendarView> {
       const membership = await client.query<{
         orgId: string;
         orgName: string;
@@ -216,7 +213,7 @@ export async function GET(request: Request) {
          WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
          LIMIT 1`,
-        [session.user.id, requestedOrg],
+        [userId, requestedOrg],
       );
 
       const row = membership.rows[0];
@@ -225,11 +222,11 @@ export async function GET(request: Request) {
         return {
           status: "setup_required",
           message: "Choose your team to plan your season calendar, or join the waitlist.",
-          context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: session.user.id },
+          context: { orgId: null, orgName: null, teamNumber: null, role: null, userId },
         } satisfies CalendarView;
       }
 
-      const milestones = await client.query<Milestone>(
+      const milestonesP = client.query<Milestone>(
         `SELECT s.id, s.title, s.kind, s.starts_on::text AS "startsOn", s.ends_on::text AS "endsOn",
                 s.notes, s.meeting_url AS "meetingUrl", s.series_id AS "seriesId",
                 s.done, s.done_at::text AS "doneAt", db.name AS "doneByName", cb.name AS "createdByName",
@@ -243,21 +240,12 @@ export async function GET(request: Request) {
         [row.orgId],
       );
 
-      // Business tables may be absent in partial local setups — calendar still
-      // works. Savepointed so that is true of the sections after it as well.
-      const linkedDeadlines: LinkedDeadline[] = await withSavepoint(
-        client,
-        () => loadLinkedDeadlines(client, row.orgId),
-        [],
-      );
-
-      // Savepointed for the same reason: a database without the team calendar
-      // tables is a partial setup, not a broken season calendar.
-      const meetings: OverlayMeeting[] = await withSavepoint(
-        client,
-        () => loadMeetingOverlay(client, row.orgId),
-        [],
-      );
+      // Milestones, grant deadlines, and team meetings do not depend on each other.
+      const [milestones, linkedDeadlines, meetings] = await Promise.all([
+        milestonesP,
+        loadLinkedDeadlines(client, row.orgId).catch(() => [] as LinkedDeadline[]),
+        loadMeetingOverlay(client, row.orgId).catch(() => [] as OverlayMeeting[]),
+      ]);
 
       return {
         status: "ready",
@@ -266,14 +254,24 @@ export async function GET(request: Request) {
           orgName: row.orgName,
           teamNumber: row.teamNumber,
           role: row.role,
-          userId: session.user.id,
+          userId,
         },
         milestones: milestones.rows,
         linkedDeadlines,
         meetings,
         templates: listSeasonTemplates(),
       } satisfies CalendarView;
-    });
+}
+
+export async function GET(request: Request) {
+  try {
+    const session = await requireSession();
+    const url = new URL(request.url);
+    const requestedOrg = url.searchParams.get("orgId");
+
+    const view = await withRls({ userId: session.user.id, orgId: requestedOrg ?? undefined }, (client) =>
+      loadCalendarPaint(client, session.user.id, requestedOrg),
+    );
 
     return Response.json(view);
   } catch (error) {

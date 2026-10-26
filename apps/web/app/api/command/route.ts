@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { loadEventDayCommand } from "../../../lib/command/load-command";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import { loadDataSourceHealth } from "../../../lib/reference-health";
@@ -14,10 +15,15 @@ export async function GET(request: Request) {
   if (!orgId) return Response.json({ error: "orgId is required" }, { status: 400 });
 
   try {
-    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
+    try {
+      after(() => hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId }));
+    } catch {
+      // Called outside a request. Event day still reads the stored schedule.
+    }
     const snapshot = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const command = await loadEventDayCommand(client, { orgId, userId: session.user.id });
-      const dataSourceHealth = await loadDataSourceHealth(client, orgId);
+      const commandP = loadEventDayCommand(client, { orgId, userId: session.user.id });
+      const healthP = loadDataSourceHealth(client, orgId);
+      const [command, dataSourceHealth] = await Promise.all([commandP, healthP]);
       return { ...command, dataSourceHealth };
     });
     return Response.json(snapshot, {

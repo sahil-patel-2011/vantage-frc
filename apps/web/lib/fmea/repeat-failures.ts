@@ -224,8 +224,10 @@ export async function loadRepeatFailureAlerts(
   const threshold = options.threshold ?? DEFAULT_REPEAT_THRESHOLD;
   const limit = options.limit ?? 12;
 
-  try {
-    const fmea = await client.query<FmeaRow>(
+  // Both logs are read together. The pit log is used only when the FMEA log is empty
+  // or missing, same as before, without a second round trip after the first comes back empty.
+  const [fmea, pit] = await Promise.all([
+    client.query<FmeaRow>(
       `SELECT f.id, f.title, f.failure_mode AS "failureMode", f.context,
               f.subsystem_id AS "subsystemId", f.subsystem_name AS "subsystemName",
               f.occurrence, f.severity, f.detection,
@@ -239,23 +241,8 @@ export async function loadRepeatFailureAlerts(
        ORDER BY f.occurred_at DESC
        LIMIT 500`,
       [orgId, seasonYear],
-    );
-    if (fmea.rows.length) {
-      const failures: FmeaFailure[] = fmea.rows.map((row) => ({
-        ...row,
-        occurrence: Number(row.occurrence) || 1,
-        severity: Number(row.severity) || 1,
-        detection: Number(row.detection) || 1,
-        recordedByName: null,
-      }));
-      return detectRepeatFailures(failures, { threshold, limit, seasonYear });
-    }
-  } catch {
-    // fmea_failures not migrated yet
-  }
-
-  try {
-    const pit = await client.query<{
+    ).catch(() => ({ rows: [] as FmeaRow[] })),
+    client.query<{
       subsystem: string;
       severity: string;
       symptoms: string;
@@ -268,9 +255,17 @@ export async function loadRepeatFailureAlerts(
        ORDER BY occurred_at DESC
        LIMIT 500`,
       [orgId, seasonYear],
-    );
-    return detectRepeatFailuresFromPitLog(pit.rows, { threshold, limit, seasonYear });
-  } catch {
-    return [];
+    ).catch(() => ({ rows: [] as Array<{ subsystem: string; severity: string; symptoms: string; occurredAt: string }> })),
+  ]);
+  if (fmea.rows.length) {
+    const failures: FmeaFailure[] = fmea.rows.map((row) => ({
+      ...row,
+      occurrence: Number(row.occurrence) || 1,
+      severity: Number(row.severity) || 1,
+      detection: Number(row.detection) || 1,
+      recordedByName: null,
+    }));
+    return detectRepeatFailures(failures, { threshold, limit, seasonYear });
   }
+  return detectRepeatFailuresFromPitLog(pit.rows, { threshold, limit, seasonYear });
 }

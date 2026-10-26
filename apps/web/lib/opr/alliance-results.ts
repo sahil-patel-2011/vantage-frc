@@ -99,6 +99,19 @@ export async function loadEventScoring(client: PoolClient, eventKey: string): Pr
   });
 }
 
+/**
+ * Same numbers as `loadEventScoring`, without a savepoint.
+ * Call it inside a wave of other reads. A failed statement is isolated by that
+ * wave; a savepoint here would split the wave into its own round trips.
+ */
+export async function readEventScoring(client: PoolClient, eventKey: string): Promise<EventScoring> {
+  try {
+    return eventScoringFrom(await readPlayedResults(client, eventKey));
+  } catch {
+    return { opr: [], averageAllianceScore: null, alliances: 0 };
+  }
+}
+
 export function eventScoringFrom(results: readonly AllianceResult[]): EventScoring {
   if (!results.length) return { opr: [], averageAllianceScore: null, alliances: 0 };
   return {

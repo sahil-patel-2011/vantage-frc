@@ -87,7 +87,7 @@ export async function loadMyDayLogistics(
   };
 
   try {
-    const rooms = await client.query<{
+    const roomsP = client.query<{
       hotelName: string;
       hotelAddress: string;
       hotelPhone: string;
@@ -109,6 +109,37 @@ export async function loadMyDayLogistics(
        LIMIT 1`,
       [input.orgId, input.userId],
     );
+    const lens = input.teamRole === "mentor" || input.teamRole === "coach" ? "mentor" : "student";
+    const [rooms, legs, onDuty, counts] = await Promise.all([
+      roomsP,
+      client.query<MyDayTravelStop>(
+        `SELECT l.id::text AS id, l.kind, l.title,
+                l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
+                l.location, l.meeting_point AS "meetingPoint", l.notes,
+                l.trip_id::text AS "tripId", t.title AS "tripTitle"
+         FROM logistics_travel_legs l
+         JOIN logistics_trips t ON t.id = l.trip_id
+         WHERE l.org_id = $1::uuid
+           AND ($2::text IS NULL OR t.event_key = $2 OR t.event_key IS NULL)
+         ORDER BY l.starts_at ASC
+         LIMIT 40`,
+        [input.orgId, input.eventKey],
+      ).catch(() => ({ rows: [] as MyDayTravelStop[] })),
+      loadOnDutyForMyDay(client, {
+        orgId: input.orgId,
+        userId: input.userId,
+        now: input.now,
+      }),
+      client.query<{ total: string; done: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM logistics_checklist_items i
+            WHERE i.org_id = $1::uuid AND i.audience IN ('all', $3)) AS total,
+           (SELECT count(*)::text FROM logistics_checklist_items i
+            JOIN logistics_checklist_checks c ON c.item_id = i.id AND c.user_id = $2::uuid
+            WHERE i.org_id = $1::uuid AND i.audience IN ('all', $3)) AS done`,
+        [input.orgId, input.userId, lens],
+      ).catch(() => ({ rows: [] as Array<{ total: string; done: string }> })),
+    ]);
     const lodging = rooms.rows[0]
       ? {
           hotelName: rooms.rows[0].hotelName,
@@ -121,53 +152,10 @@ export async function loadMyDayLogistics(
           tripId: rooms.rows[0].tripId,
         }
       : null;
-
-    let nextTravel: MyDayTravelStop | null = null;
-    try {
-      const legs = await client.query<MyDayTravelStop>(
-        `SELECT l.id::text AS id, l.kind, l.title,
-                l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
-                l.location, l.meeting_point AS "meetingPoint", l.notes,
-                l.trip_id::text AS "tripId", t.title AS "tripTitle"
-         FROM logistics_travel_legs l
-         JOIN logistics_trips t ON t.id = l.trip_id
-         WHERE l.org_id = $1::uuid
-           AND ($2::text IS NULL OR t.event_key = $2 OR t.event_key IS NULL)
-         ORDER BY l.starts_at ASC
-         LIMIT 40`,
-        [input.orgId, input.eventKey],
-      );
-      nextTravel = pickNextTravel(legs.rows);
-    } catch {
-      nextTravel = null;
-    }
-
-    const onDuty = await loadOnDutyForMyDay(client, {
-      orgId: input.orgId,
-      userId: input.userId,
-      now: input.now,
-    });
-
-    let checklistPercent: number | null = null;
-    try {
-      const lens =
-        input.teamRole === "mentor" || input.teamRole === "coach" ? "mentor" : "student";
-      const counts = await client.query<{ total: string; done: string }>(
-        `SELECT
-           (SELECT count(*)::text FROM logistics_checklist_items i
-            WHERE i.org_id = $1::uuid AND i.audience IN ('all', $3)) AS total,
-           (SELECT count(*)::text FROM logistics_checklist_items i
-            JOIN logistics_checklist_checks c ON c.item_id = i.id AND c.user_id = $2::uuid
-            WHERE i.org_id = $1::uuid AND i.audience IN ('all', $3)) AS done`,
-        [input.orgId, input.userId, lens],
-      );
-      const total = Number(counts.rows[0]?.total ?? 0);
-      const done = Number(counts.rows[0]?.done ?? 0);
-      checklistPercent = total > 0 ? Math.round((done / total) * 100) : null;
-    } catch {
-      checklistPercent = null;
-    }
-
+    const nextTravel = pickNextTravel(legs.rows);
+    const total = Number(counts.rows[0]?.total ?? 0);
+    const done = Number(counts.rows[0]?.done ?? 0);
+    const checklistPercent = total > 0 ? Math.round((done / total) * 100) : null;
     return { lodging, nextTravel, onDuty, checklistPercent };
   } catch {
     return empty;

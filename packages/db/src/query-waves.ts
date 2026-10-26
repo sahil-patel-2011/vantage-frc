@@ -15,6 +15,7 @@
  * The request prelude (BEGIN, role, identity) rides along on the first script so
  * opening the transaction is not its own round trip.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import pg from "pg";
 
 type QueryArgs = unknown[];
@@ -90,6 +91,20 @@ export function inlinePlaceholders(text: string, values: unknown[] | undefined):
 
 let waveSeq = 0;
 
+const roundTripCount = new AsyncLocalStorage<{ n: number }>();
+
+/** Counts scripts actually sent to Postgres while `work` runs (one batched wave is one). */
+export async function countRoundTrips<T>(work: () => Promise<T>): Promise<{ result: T; roundTrips: number }> {
+  const box = { n: 0 };
+  const result = await roundTripCount.run(box, work);
+  return { result, roundTrips: box.n };
+}
+
+function noteRoundTrip(): void {
+  const box = roundTripCount.getStore();
+  if (box) box.n += 1;
+}
+
 function resultList(result: unknown): unknown[] {
   return Array.isArray(result) ? result : [result];
 }
@@ -144,7 +159,11 @@ export type WaveControl = (() => void) & {
 export function installQueryWaves(client: { query: (...args: QueryArgs) => unknown }): WaveControl {
   const hadOwn = Object.prototype.hasOwnProperty.call(client, "query");
   const previous = client.query;
-  const original = previous.bind(client) as OriginalQuery;
+  const bound = previous.bind(client) as OriginalQuery;
+  const original: OriginalQuery = (...args) => {
+    noteRoundTrip();
+    return bound(...args);
+  };
   let queue: Queued[] = [];
   let flushing = false;
   let scheduled = false;

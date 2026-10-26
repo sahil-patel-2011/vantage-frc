@@ -52,9 +52,22 @@ function activationDue(context: RequestContext, now = Date.now()): boolean {
  */
 export async function withRls<T>(
   context: RequestContext,
-  work: (client: PoolClient) => Promise<T>
+  work: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
-  const client = await requestPool.connect();
+  return withRlsOnPool(requestPool, context, work);
+}
+
+/**
+ * Same transaction as `withRls`, on a caller-supplied pool.
+ * The route budget test uses this so it can talk to the local fixture without
+ * the process-wide pool, which is created from env at import time.
+ */
+export async function withRlsOnPool<T>(
+  pool: { connect: () => Promise<PoolClient> },
+  context: RequestContext,
+  work: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
   const restoreWaves = installQueryWaves(client as unknown as Parameters<typeof installQueryWaves>[0]);
   const userId = context.userId.trim();
   const orgId = context.orgId?.trim() ?? "";
@@ -104,6 +117,7 @@ export async function withRls<T>(
   }
 }
 
+export { countRoundTrips } from "./query-waves";
 export * from "./savepoint";
 export * from "./view-only";
 export * from "./schema";

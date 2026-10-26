@@ -1347,6 +1347,67 @@ async function youthProtectionState(
   return { supported, dmMode, viewerClass, canManage, teamChatEnabled };
 }
 
+/** Inbox paint: membership, youth-protection, and the conversation list share as few trips as they can. */
+export async function loadMessagesHome(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  youthAlready?: YouthProtectionState,
+) {
+  let youthProtection: YouthProtectionState;
+  if (youthAlready) {
+    youthProtection = youthAlready;
+  } else {
+    const membershipP = requireMembership(client, orgId, userId);
+    const youthP = youthProtectionState(client, orgId, userId);
+    await membershipP;
+    youthProtection = await youthP;
+  }
+  if (!youthProtection.teamChatEnabled) {
+    const role = await memberRole(client, orgId, userId);
+    return {
+      currentUserId: userId,
+      conversations: [],
+      unreadCount: 0,
+      canManageChannels: canManageChannels(role),
+      channelArchiveSupported: false,
+      messages: [] as MessageRow[],
+      pinned: [] as MessageRow[],
+      pinsSupported: false,
+      mentionsSupported: false,
+      youthProtection,
+      conversation: null,
+      supervisors: [] as SupervisorRef[],
+      supervisionNotice: "",
+      channels: [],
+      archiveSupported: false,
+      targets: [],
+    };
+  }
+  const [conversations, role, channelArchiveSupported, pinsSupported, mentionsSupported] = await Promise.all([
+    listInbox(client, orgId, userId),
+    memberRole(client, orgId, userId),
+    supportsChannelArchive(client),
+    supportsMessagePins(client),
+    supportsMessageMentions(client),
+  ]);
+  return {
+    currentUserId: userId,
+    conversations,
+    unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+    canManageChannels: canManageChannels(role),
+    channelArchiveSupported,
+    messages: [] as MessageRow[],
+    pinned: [] as MessageRow[],
+    pinsSupported,
+    mentionsSupported,
+    youthProtection,
+    conversation: null,
+    supervisors: [] as SupervisorRef[],
+    supervisionNotice: "",
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const session = await requireSession();
@@ -1397,9 +1458,10 @@ export async function GET(request: Request) {
     }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      await requireMembership(client, orgId, session.user.id);
-
-      const youthProtection = await youthProtectionState(client, orgId, session.user.id);
+      const membershipP = requireMembership(client, orgId, session.user.id);
+      const youthP = youthProtectionState(client, orgId, session.user.id);
+      await membershipP;
+      const youthProtection = await youthP;
       if (!youthProtection.teamChatEnabled && mode !== "members") {
         const role = await memberRole(client, orgId, session.user.id);
         return {
@@ -1480,22 +1542,7 @@ export async function GET(request: Request) {
         };
       }
 
-      const conversations = await listInbox(client, orgId, session.user.id);
-      return {
-        currentUserId: session.user.id,
-        conversations,
-        unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
-        canManageChannels: canManageChannels(await memberRole(client, orgId, session.user.id)),
-        channelArchiveSupported: await supportsChannelArchive(client),
-        messages: [] as MessageRow[],
-        pinned: [] as MessageRow[],
-        pinsSupported: await supportsMessagePins(client),
-        mentionsSupported: await supportsMessageMentions(client),
-        youthProtection,
-        conversation: null,
-        supervisors: [] as SupervisorRef[],
-        supervisionNotice: "",
-      };
+      return loadMessagesHome(client, orgId, session.user.id, youthProtection);
     });
 
     return Response.json(data);
