@@ -17,7 +17,12 @@ import {
 import { countLodgingGaps } from "../logistics";
 import { snapshotShouldLoadHomeStrip } from "./refresh";
 import { isDemoPrediction } from "../strategy/prediction-display";
+import { isMatchForecastSkip } from "@vantage/prediction-strategy";
+import { forecastActiveMatch } from "../strategy/card-forecast";
+import { eventStartIso } from "../strategy/card-strength";
+import { predictionAiRequested } from "../strategy/prediction-ai";
 import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
+import { nextMatchCategoryLine } from "./next-match-copy";
 import { loadEventScoring } from "../opr/alliance-results";
 import { loadScoutedRatingsForTeams } from "../scouting/team-profiles";
 import { HOME_WIDGET_TYPES, loadHomeWidget } from "./home-widget-loaders";
@@ -194,10 +199,16 @@ export async function loadDashboardSnapshot(
     // score-uncertainty.ts.
     let redBand: number | null = null;
     let blueBand: number | null = null;
+    let redLow: number | null = null;
+    let redHigh: number | null = null;
+    let blueLow: number | null = null;
+    let blueHigh: number | null = null;
     let confidence: string | null = null;
     let scoreDrivers: string[] = [];
     let briefing: string | null = null;
     let cardRedWin: number | null = null;
+    let categoryLine: string | null = null;
+    let useForecastWin = false;
     if (year && (redKeys.length >= 2 || blueKeys.length >= 2)) {
       type EpaRow = { teamKey: string; autoEpa: number | null; teleopEpa: number | null; endgameEpa: number | null };
       // This event's ratings first (how each robot is playing here, and what the Schedule's
@@ -276,6 +287,46 @@ export async function loadDashboardSnapshot(
         briefing = card.briefing;
         cardRedWin = card.redWinProbability;
       }
+      const dated = await client.query<{ startDate: Date | string | null }>(
+        `SELECT start_date AS "startDate" FROM events_ref WHERE event_key = $1`,
+        [eventKey],
+      );
+      const forecast = forecastActiveMatch({
+        season: year,
+        eventKey,
+        startDate: eventStartIso(dated.rows[0]?.startDate),
+        level: row.compLevel,
+        red: redKeys,
+        blue: blueKeys,
+        played: scoring.samples,
+      });
+      if (!isMatchForecastSkip(forecast)) {
+        redPredicted = forecast.red.total;
+        bluePredicted = forecast.blue.total;
+        errorBand = forecast.errorBand;
+        redBand = forecast.redBand;
+        blueBand = forecast.blueBand;
+        confidence = forecast.confidence;
+        scoreDrivers = [];
+        briefing = null;
+        cardRedWin = forecast.redWinProbability;
+        useForecastWin = true;
+        redLow = forecast.redLow ?? null;
+        redHigh = forecast.redHigh ?? null;
+        blueLow = forecast.blueLow ?? null;
+        blueHigh = forecast.blueHigh ?? null;
+        categoryLine = forecast.categoriesKnown
+          ? nextMatchCategoryLine({
+              redAuto: forecast.red.auto,
+              redTeleop: forecast.red.teleop,
+              redEndgame: forecast.red.endgame,
+              blueAuto: forecast.blue.auto,
+              blueTeleop: forecast.blue.teleop,
+              blueEndgame: forecast.blue.endgame,
+              ranges: forecast.categoryRanges,
+            })
+          : null;
+      }
     }
     widgets.next_match = stamp("live", "next_match", {
       ...row,
@@ -294,17 +345,27 @@ export async function loadDashboardSnapshot(
       href: `/briefing?orgId=${encodeURIComponent(input.orgId)}&matchKey=${encodeURIComponent(row.matchKey)}`,
       // The match plan's saved chance when Predict has run; otherwise the score card's own, from
       // the same robots, so Home is never blank just because nobody pressed Predict yet.
-      pRed: stored?.pRed ?? cardRedWin,
-      pBlue: stored?.pBlue ?? (cardRedWin == null ? null : Math.round((1 - cardRedWin) * 1000) / 1000),
-      confidenceLow: stored?.confidenceLow ?? null,
-      confidenceHigh: stored?.confidenceHigh ?? null,
-      keyFactors: stored?.keyFactors ?? null,
-      modelVersion: stored?.modelVersion ?? null,
+      pRed: useForecastWin ? cardRedWin : (stored?.pRed ?? cardRedWin),
+      pBlue: useForecastWin
+        ? cardRedWin == null
+          ? null
+          : Math.round((1 - cardRedWin) * 1000) / 1000
+        : (stored?.pBlue ?? (cardRedWin == null ? null : Math.round((1 - cardRedWin) * 1000) / 1000)),
+      confidenceLow: useForecastWin ? null : (stored?.confidenceLow ?? null),
+      confidenceHigh: useForecastWin ? null : (stored?.confidenceHigh ?? null),
+      keyFactors: useForecastWin ? null : (stored?.keyFactors ?? null),
+      modelVersion: useForecastWin ? null : (stored?.modelVersion ?? null),
+      categoryLine,
+      predictionAi: predictionAiRequested(),
       redPredicted,
       bluePredicted,
       errorBand,
       redBand,
       blueBand,
+      redLow,
+      redHigh,
+      blueLow,
+      blueHigh,
       confidence,
       scoreDrivers,
       briefing,
