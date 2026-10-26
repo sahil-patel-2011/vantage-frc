@@ -4,12 +4,13 @@
     {
       "pr": 2413,
       "date": "2026-10-26",
-      "headline": "Next match shows auto, teleop, endgame, and a measured win chance",
+      "headline": "Next match shows a wide score range and a measured win chance",
       "changes": [
-        "The next-match card predicts auto, teleop, endgame, and the total from matches already played at the event, and it says how often that kind of prediction has been wrong",
-        "On championship divisions and Einstein that were not used to choose the model, the typical miss was 95 points on a 446-point average, and the winner was right about 72% of the time. That is closer than the previous card on the same matches. It is not a promise of a 3-point miss",
+        "The next-match card predicts auto, teleop, endgame, fouls, and the total from matches already played at the event, and it shows each as a range instead of a single plus or minus",
+        "On matches that were not used to size those ranges, the real score landed inside about 88% of the time. The total range is about 375 points wide. The point in the middle is still typically about 95 points off on a 446-point average",
+        "The winner was right about 72% of the time on those matches. That is not 90%. A pick is marked high confidence only when the win chance is already at least 90%, and that smaller set was right on 63 of 66 matches",
         "A season whose scoring manual is not published yet, including 2027, shows a total only",
-        "A note from a configured AI model can only nudge the prediction by a few points, and that path is off until it is shown to help"
+        "A later note can use whatever AI model the team has configured. Claude Haiku is one example of that setup, not a model this release picks. The note runs after the statistical card is already on screen and does not hold the page. The step is off, and it was not measured, because no model credential was configured"
       ]
     },
     {

@@ -11,6 +11,8 @@
 import { allianceWinProbability } from "./alliance-outcome";
 import { predictAllianceScores, isScorePredictionSkip } from "./calibrated-score";
 import { eventOpr, type AllianceResult } from "./event-opr";
+import { rangeHalfWidth, seasonPoints, seasonPriorsForStudy, type StrengthEvent, type StrengthRating, type TeamSeasonPrior } from "./match-factors";
+import { CARD_HIGH_CONFIDENCE_AT, CARD_RANGE_FITS, type FrozenRange } from "./range-display";
 import { scoringForSeason } from "./season-scoring";
 
 export type CategoryName = "auto" | "teleop" | "endgame" | "foul";
@@ -74,6 +76,37 @@ export type ModelSpec = {
    * the holdout. Display only — it is not used to pick the model.
    */
   relativeError: number | null;
+  /**
+   * Optional factors. Omitted means off, so an older spec replays unchanged.
+   * `seasonPriorK` is pseudo-matches of a preseason strength prior.
+   * `seasonDecay` weights a year by seasonDecay^(2026-year).
+   */
+  seasonPriorK?: number;
+  seasonDecay?: number;
+  /** Extra shrink when a robot has fewer than 3 matches here and no season prior. */
+  rookieShrink?: number;
+  /** Weight of a zero scoreboard. 1, or omitted, leaves the sample as it was. */
+  zeroWeight?: number;
+  /** Subtract this times (opponent rating − field mean) after the linear sum. */
+  defense?: number;
+  /** When all three robots are above the mean, subtract this times the smallest excess. */
+  synergy?: number;
+  /** Second OPR pass, reweighted by opponent strength. */
+  scheduleStrength?: boolean;
+  /** Prior-event playoff-minus-qual gap, applied only when predicting a playoff. */
+  playoffShift?: number;
+};
+
+export type ReplayOptions = {
+  strengths?: {
+    events: readonly StrengthEvent[];
+    ratings: readonly StrengthRating[];
+  };
+  /**
+   * Strength events that must not be used. `replayTuning` also blocks the
+   * holdout keys, so a tuning score cannot see those events' full results.
+   */
+  blockedStrengthEvents?: ReadonlySet<string>;
 };
 
 /** How hard a previous event's rating is pulled toward the mean before it is reused. Stated, not tuned. */
@@ -101,6 +134,11 @@ type Rating = {
   teleop: number;
   endgame: number;
   foul: number;
+  /**
+   * Scoreboard points carried from a prior when this event has no category mix yet.
+   * The pieces stay unknown instead of being invented by splitting the total in thirds.
+   */
+  carriedTotal?: number;
 };
 
 type SidePrediction = {
@@ -191,6 +229,7 @@ function solveCategories(
   samples: readonly CategorySample[],
   decay: number,
   ridge: number,
+  weightOf?: (sample: CategorySample, decayWeight: number) => number,
 ): Map<string, Rating> | null {
   const complete = samples.filter(
     (sample): sample is CategorySample & { auto: number; teleop: number; endgame: number; foul: number } =>
@@ -212,7 +251,8 @@ function solveCategories(
   const weightedSum = new Float64Array(cats);
   let weightedSlots = 0;
   for (const sample of complete) {
-    const weight = decay ** (age.get(sample.order) ?? latest - sample.order);
+    const decayWeight = decay ** (age.get(sample.order) ?? latest - sample.order);
+    const weight = weightOf ? weightOf(sample, decayWeight) : decayWeight;
     const members = sample.teams.map((team) => index.get(team)).filter((i): i is number => i != null);
     const values = [sample.auto, sample.teleop, sample.endgame, sample.foul];
     for (const i of members) {
@@ -270,10 +310,120 @@ function solveCategories(
   return out;
 }
 
+function robotTotal(rating: Rating): number {
+  return rating.auto + rating.teleop + rating.endgame + rating.foul;
+}
+
+function splitPrior(points: number, mean: Rating, matches: number): Rating {
+  const foul = mean.foul;
+  const body = points - foul;
+  const base = mean.auto + mean.teleop + mean.endgame;
+  if (!(base > 0)) return { matches, auto: 0, teleop: 0, endgame: 0, foul: 0, carriedTotal: points };
+  const share = (part: number) => (part / base) * body;
+  return { matches, auto: share(mean.auto), teleop: share(mean.teleop), endgame: share(mean.endgame), foul };
+}
+
+function addBody(rating: Rating, points: number): Rating {
+  const base = rating.auto + rating.teleop + rating.endgame;
+  const share = (part: number) => (base > 0 ? part / base : 1 / 3);
+  return {
+    ...rating,
+    auto: rating.auto + points * share(rating.auto),
+    teleop: rating.teleop + points * share(rating.teleop),
+    endgame: rating.endgame + points * share(rating.endgame),
+  };
+}
+
+function shiftScores(scores: CategoryScores, points: number): CategoryScores {
+  if (scores.auto == null || scores.teleop == null || scores.endgame == null) {
+    return { ...scores, total: scores.total + points };
+  }
+  const auto = scores.auto;
+  const teleop = scores.teleop;
+  const endgame = scores.endgame;
+  const base = auto + teleop + endgame;
+  const share = (part: number) => (base > 0 ? part / base : 1 / 3);
+  const nextAuto = auto + points * share(auto);
+  const nextTeleop = teleop + points * share(teleop);
+  const nextEndgame = endgame + points * share(endgame);
+  const foul = scores.foul;
+  return {
+    auto: scores.auto == null ? null : nextAuto,
+    teleop: scores.teleop == null ? null : nextTeleop,
+    endgame: scores.endgame == null ? null : nextEndgame,
+    foul,
+    total: nextAuto + nextTeleop + nextEndgame + (foul ?? 0),
+  };
+}
+
+function robotSpread(samples: readonly CategorySample[]): { mean: number; sd: number } {
+  if (samples.length < 2) return { mean: samples.length ? samples[0]!.total / 3 : 0, sd: 0 };
+  let sum = 0;
+  for (const sample of samples) sum += sample.total / 3;
+  const mean = sum / samples.length;
+  let sq = 0;
+  for (const sample of samples) {
+    const delta = sample.total / 3 - mean;
+    sq += delta * delta;
+  }
+  return { mean, sd: Math.sqrt(sq / samples.length) };
+}
+
+/**
+ * Zero-score downweight and a second pass reweighted by opponent strength.
+ * Neither runs unless the spec asks, so the default matrix matches the original.
+ */
+function solveForSpec(samples: readonly CategorySample[], spec: ModelSpec): Map<string, Rating> | null {
+  const zero = spec.zeroWeight;
+  const schedule = spec.scheduleStrength === true;
+  const scaleZero = (sample: CategorySample, decayWeight: number) =>
+    zero != null && zero !== 1 && sample.total === 0 ? decayWeight * zero : decayWeight;
+  if (!schedule && (zero == null || zero === 1)) return solveCategories(samples, spec.decay, spec.ridge);
+  if (!schedule) return solveCategories(samples, spec.decay, spec.ridge, scaleZero);
+  const first = solveCategories(samples, spec.decay, spec.ridge, zero != null && zero !== 1 ? scaleZero : undefined);
+  if (!first) return null;
+  const partners = new Map<string, CategorySample[]>();
+  for (const sample of samples) {
+    if (!sample.matchKey) continue;
+    const list = partners.get(sample.matchKey);
+    if (list) list.push(sample);
+    else partners.set(sample.matchKey, [sample]);
+  }
+  let strengthSum = 0;
+  let strengthN = 0;
+  for (const rating of first.values()) {
+    strengthSum += robotTotal(rating);
+    strengthN += 1;
+  }
+  const field = strengthN ? strengthSum / strengthN : 0;
+  return solveCategories(samples, spec.decay, spec.ridge, (sample, decayWeight) => {
+    let weight = scaleZero(sample, decayWeight);
+    const group = sample.matchKey ? partners.get(sample.matchKey) : undefined;
+    const opponent = group?.find((other) => other !== sample);
+    if (!opponent || !(field > 0)) return weight;
+    let oppTotal = 0;
+    let count = 0;
+    for (const team of opponent.teams) {
+      const rating = first.get(team);
+      if (!rating) continue;
+      oppTotal += robotTotal(rating);
+      count += 1;
+    }
+    if (!count) return weight;
+    const ratio = oppTotal / count / field;
+    return weight * Math.min(4, Math.max(0.25, ratio));
+  });
+}
+
 function sumRatings(teams: readonly string[], ratings: Map<string, Rating>, fallback: Rating, foulMean: number | null): CategoryScores {
+  const carried = teams.map((team) => ratings.get(team) ?? fallback);
+  const unseen = (row: Rating) => row.carriedTotal != null || (row.matches === 0 && robotTotal(row) === 0);
+  if (carried.length > 0 && carried.some((row) => row.carriedTotal != null) && carried.every(unseen)) {
+    const total = carried.reduce((sum, row) => sum + (row.carriedTotal ?? 0), 0);
+    return { auto: null, teleop: null, endgame: null, foul: null, total };
+  }
   const total = emptyRating();
-  for (const team of teams) {
-    const row = ratings.get(team) ?? fallback;
+  for (const row of carried) {
     total.auto += row.auto;
     total.teleop += row.teleop;
     total.endgame += row.endgame;
@@ -302,21 +452,73 @@ function componentPredict(
   spec: ModelSpec,
   red: readonly string[],
   blue: readonly string[],
+  extras?: { season?: Map<string, TeamSeasonPrior> | null; level?: string },
 ): SidePrediction | null {
-  if (!history.length && !(spec.priorK > 0 && pastSamples.length)) return null;
+  const seasonK = spec.seasonPriorK ?? 0;
+  const season = seasonK > 0 ? extras?.season : null;
+  if (!history.length && !(spec.priorK > 0 && pastSamples.length) && !season?.size) return null;
   const pool = history.length ? history : pastSamples;
-  const solved = history.length ? solveCategories(history, spec.decay, spec.ridge) : null;
+  const solved = history.length ? solveForSpec(history, spec) : null;
   if (history.length && !solved) return null;
   const mean = meanRobot([...pastSamples, ...history]);
+  const spread = robotSpread(history);
   const ratings = new Map<string, Rating>();
   const teams = new Set<string>([...red, ...blue, ...(solved?.keys() ?? [])]);
   for (const team of teams) {
-    ratings.set(team, blendRating(solved?.get(team), pastRatings.get(team), mean, spec.priorK));
+    let rating = blendRating(solved?.get(team), pastRatings.get(team), mean, spec.priorK);
+    let usedSeason = false;
+    const prior = season?.get(team);
+    if (prior && seasonK > 0) {
+      const points = seasonPoints(prior, spread.mean > 0 ? spread.mean : robotTotal(mean), spread.sd);
+      if (points) {
+        const seasonRating = splitPrior(points.points, mean, points.weight);
+        if (seasonRating.carriedTotal != null && rating.matches === 0) {
+          rating = seasonRating;
+        } else {
+          const matches = rating.matches;
+          const weight = matches + seasonK;
+          rating = {
+            matches,
+            auto: (matches * rating.auto + seasonK * seasonRating.auto) / weight,
+            teleop: (matches * rating.teleop + seasonK * seasonRating.teleop) / weight,
+            endgame: (matches * rating.endgame + seasonK * seasonRating.endgame) / weight,
+            foul: (matches * rating.foul + seasonK * seasonRating.foul) / weight,
+          };
+        }
+        usedSeason = true;
+      }
+    }
+    if ((spec.rookieShrink ?? 0) > 0 && !usedSeason && rating.matches < 3) {
+      rating = shrinkRating(rating, mean, spec.rookieShrink ?? 0);
+    }
+    if ((spec.playoffShift ?? 0) !== 0 && extras?.level && extras.level !== "qm") {
+      const delta = prior?.playoffDelta;
+      if (delta != null && prior && prior.playoffWeight > 0) rating = addBody(rating, (spec.playoffShift ?? 0) * delta);
+    }
+    ratings.set(team, rating);
   }
   const foulMean = spec.foul === "mean" ? (allianceMean(pool)?.foul ?? null) : null;
-  const redScores = sumRatings(red, ratings, mean, foulMean);
-  const blueScores = sumRatings(blue, ratings, mean, foulMean);
-  const scale = winScale(pool, spec.winShare);
+  let redScores = sumRatings(red, ratings, mean, foulMean);
+  let blueScores = sumRatings(blue, ratings, mean, foulMean);
+  const synergy = spec.synergy ?? 0;
+  if (synergy !== 0) {
+    const damp = (teamsOnSide: readonly string[], scores: CategoryScores) => {
+      const excesses = teamsOnSide.map((team) => robotTotal(ratings.get(team) ?? mean) - robotTotal(mean));
+      if (excesses.every((excess) => excess > 0)) return shiftScores(scores, -synergy * Math.min(...excesses));
+      return scores;
+    };
+    redScores = damp(red, redScores);
+    blueScores = damp(blue, blueScores);
+  }
+  const defense = spec.defense ?? 0;
+  if (defense !== 0) {
+    const field = allianceMean(pool)?.total ?? robotTotal(mean) * 3;
+    const sideTotal = (teamsOnSide: readonly string[]) =>
+      teamsOnSide.reduce((sum, team) => sum + robotTotal(ratings.get(team) ?? mean), 0);
+    redScores = shiftScores(redScores, -defense * (sideTotal(blue) - field));
+    blueScores = shiftScores(blueScores, -defense * (sideTotal(red) - field));
+  }
+  const scale = winScale(pool.length ? pool : history, spec.winShare);
   return finish(redScores, blueScores, scale, true);
 }
 
@@ -464,8 +666,18 @@ function vantagePredict(history: readonly CategorySample[], spec: ModelSpec, red
       ? prediction.redWinProbability
       : allianceWinProbability(prediction.redPredicted, prediction.bluePredicted, winShare > 0 ? winShare * scoreboardMean : 12);
   const side = (total: number): CategoryScores => ({ auto: null, teleop: null, endgame: null, foul: null, total });
-  const redScores = side(prediction.redPredicted);
-  const blueScores = side(prediction.bluePredicted);
+  let redScores = side(prediction.redPredicted);
+  let blueScores = side(prediction.bluePredicted);
+  // The card's OPR is foul-free. Adding the same historical foul to both sides
+  // makes the total comparable to the scoreboard. The margin, the pick, and the
+  // card's own win chance stay as they were.
+  if (spec.kind === "vantage" && spec.foul === "mean") {
+    const foul = allianceMean(history)?.foul;
+    if (foul != null && Number.isFinite(foul)) {
+      redScores = { ...redScores, total: redScores.total + foul };
+      blueScores = { ...blueScores, total: blueScores.total + foul };
+    }
+  }
   return {
     scores: redScores,
     pRed,
@@ -500,6 +712,14 @@ export type ForecastRow = {
   blue: CategoryScores;
   actualRed: CategoryScores;
   actualBlue: CategoryScores;
+  /** Present so a later probability or range step can stay in time order. */
+  order?: number;
+  phase?: number;
+  level?: string;
+  redExperience?: number;
+  blueExperience?: number;
+  /** Mean scoreboard of matches already used for this prediction. */
+  historyMean?: number;
 };
 
 function cutFor(match: ReplayMatch): ForecastRow["cut"] {
@@ -555,6 +775,7 @@ export function replaySplit(
   spec: ModelSpec,
   scoreEvents: ReadonlySet<string>,
   historyEvents: ReadonlySet<string>,
+  options?: ReplayOptions,
 ): ForecastRow[] {
   const byEvent = new Map<string, ReplayMatch[]>();
   for (const match of matches) {
@@ -572,6 +793,16 @@ export function replaySplit(
     epaRatings: Map<string, Rating>;
   }[] = [];
   const rows: ForecastRow[] = [];
+  const seasonK = spec.seasonPriorK ?? 0;
+  const seasonPriors =
+    seasonK > 0 && options?.strengths
+      ? seasonPriorsForStudy({
+          events: options.strengths.events,
+          ratings: options.strengths.ratings,
+          blockedEvents: options.blockedStrengthEvents,
+          seasonDecay: spec.seasonDecay && spec.seasonDecay > 0 ? spec.seasonDecay : 0.7,
+        })
+      : null;
 
   for (const phase of phases) {
     const events = [...byEvent.keys()].filter((event) => (byEvent.get(event)?.[0]?.phase ?? 0) === phase).sort();
@@ -588,7 +819,13 @@ export function replaySplit(
       const keepScore = scoreEvents.has(event);
       if (!keepHistory && !keepScore) continue;
       const history: CategorySample[] = [];
+      const seen = new Map<string, number>();
+      let historySum = 0;
+      let historyCount = 0;
       const epa = new Map<string, EpaTeam>();
+      const season = seasonPriors?.get(event) ?? null;
+      const experience = (teams: readonly string[]) =>
+        teams.length ? teams.reduce((sum, team) => sum + (seen.get(team) ?? 0), 0) / teams.length : 0;
       for (const match of list) {
         const past = spec.priorK > 0 ? pastRatings : new Map<string, Rating>();
         const pastRows = spec.priorK > 0 || spec.kind === "mean" ? priorSamples : [];
@@ -604,7 +841,9 @@ export function replaySplit(
         } else if (spec.kind === "vantage" || spec.kind === "plain-opr") {
           predicted = asStored(vantagePredict(history, spec, match.red, match.blue, match.key));
         } else if (spec.kind === "component-opr") {
-          predicted = asStored(componentPredict(history, past, pastRows, spec, match.red, match.blue));
+          predicted = asStored(
+            componentPredict(history, past, pastRows, spec, match.red, match.blue, { season, level: match.level }),
+          );
         } else if (spec.kind === "epa") {
           predicted = asStored(
             epaPredictAndUpdate(epa, history, past, pastRows, spec, match.red, match.blue, {
@@ -664,9 +903,18 @@ export function replaySplit(
             blue: predicted.blue,
             actualRed: match.redScore,
             actualBlue: match.blueScore,
+            order: match.order,
+            phase: match.phase,
+            level: match.level,
+            redExperience: experience(match.red),
+            blueExperience: experience(match.blue),
+            historyMean: historyCount ? historySum / historyCount : 0,
           });
         }
         history.push(sampleOf(match, "red"), sampleOf(match, "blue"));
+        historySum += match.redScore.total + match.blueScore.total;
+        historyCount += 2;
+        for (const team of [...match.red, ...match.blue]) seen.set(team, (seen.get(team) ?? 0) + 1);
       }
       if (keepHistory) {
         const past = spec.priorK > 0 ? pastRatings : new Map<string, Rating>();
@@ -816,12 +1064,19 @@ const tuningSet = () => new Set<string>(TUNING_EVENT_KEYS);
 const holdoutSet = () => new Set<string>(HOLDOUT_EVENT_KEYS);
 const allEvents = (matches: readonly ReplayMatch[]) => new Set(matches.map((match) => match.event));
 
-export function replayTuning(matches: readonly ReplayMatch[], spec: ModelSpec): ForecastRow[] {
-  return replaySplit(matches, spec, tuningSet(), tuningSet());
+export function replayTuning(matches: readonly ReplayMatch[], spec: ModelSpec, options?: ReplayOptions): ForecastRow[] {
+  const blocked = new Set(options?.blockedStrengthEvents ?? []);
+  if (options?.strengths) for (const key of HOLDOUT_EVENT_KEYS) blocked.add(key);
+  return replaySplit(matches, spec, tuningSet(), tuningSet(), { ...options, blockedStrengthEvents: blocked });
 }
 
-export function replayHoldout(matches: readonly ReplayMatch[], spec: ModelSpec): ForecastRow[] {
-  return replaySplit(matches, spec, holdoutSet(), allEvents(matches));
+export function replayHoldout(matches: readonly ReplayMatch[], spec: ModelSpec, options?: ReplayOptions): ForecastRow[] {
+  return replaySplit(matches, spec, holdoutSet(), allEvents(matches), options);
+}
+
+/** Tuning choice rule: total MAE, then winner accuracy, then Brier. */
+export function isBetterTuning(next: MetricsBundle, best: MetricsBundle | null): boolean {
+  return better(next, best);
 }
 
 function better(next: MetricsBundle, best: MetricsBundle | null): boolean {
@@ -1012,9 +1267,22 @@ export type MatchForecast = {
   errorBand: number | null;
   redBand: number | null;
   blueBand: number | null;
+  /** 90% interval for the scoreboard total, when that interval held on the holdout. */
+  redLow?: number | null;
+  redHigh?: number | null;
+  blueLow?: number | null;
+  blueHigh?: number | null;
   confidence: string;
   categoriesKnown: boolean;
+  categoryRanges?: {
+    auto: AllianceRange | null;
+    teleop: AllianceRange | null;
+    endgame: AllianceRange | null;
+    foul: AllianceRange | null;
+  } | null;
 };
+
+export type AllianceRange = { redLow: number; redHigh: number; blueLow: number; blueHigh: number };
 
 export type MatchForecastSkip = { skipReason: string };
 
@@ -1165,23 +1433,84 @@ export function forecastMatch(input: {
       ? Math.max(1, Math.round(meanTotal * spec.relativeError))
       : null;
   const margin = Math.round(red.total - blue.total);
-  const bandBit = errorBand == null ? "" : ` Typical miss ±${errorBand}.`;
+  const shownP = Math.round(Math.min(0.98, Math.max(0.02, pRed)) * 1000) / 1000;
+  const totalRange = allianceInterval(red.total, blue.total, input.red, input.blue, played, CARD_RANGE_FITS.total);
+  const marginFit = CARD_RANGE_FITS.margin;
+  const marginTeams = [...input.red, ...input.blue];
+  const marginN = marginTeams.reduce((sum, team) => sum + playedCount(played, team), 0) / Math.max(1, marginTeams.length);
+  const marginHalf = marginFit ? rangeHalfWidth(marginN, marginFit) : 0;
+  const marginLow = marginFit && marginHalf > 0 ? Math.round(margin - marginHalf) : null;
+  const marginHigh = marginFit && marginHalf > 0 ? Math.round(margin + marginHalf) : null;
+  const bandBit = totalRange ? "" : errorBand == null ? "" : ` Typical miss ±${errorBand}.`;
+  const marginBit = marginLow == null || marginHigh == null ? "" : ` Margin ${marginLow} to ${marginHigh}.`;
   const categoryBit = categoriesKnown ? "" : " Scoring categories for this season are not published yet, so this is a total only.";
+  const confident =
+    CARD_HIGH_CONFIDENCE_AT != null && Math.max(shownP, 1 - shownP) >= CARD_HIGH_CONFIDENCE_AT ? " High confidence." : "";
   const confidence =
     margin === 0
-      ? `Even match.${bandBit}${categoryBit}`
-      : `${margin > 0 ? "Red" : "Blue"} by ${Math.abs(margin)} points.${bandBit}${categoryBit}`;
+      ? `Even match.${bandBit}${marginBit}${categoryBit}${confident}`
+      : `${margin > 0 ? "Red" : "Blue"} by ${Math.abs(margin)} points.${bandBit}${marginBit}${categoryBit}${confident}`;
+  const categoryRanges = categoriesKnown
+    ? {
+        auto: pieceInterval(red.auto, blue.auto, input.red, input.blue, played, CARD_RANGE_FITS.auto),
+        teleop: pieceInterval(red.teleop, blue.teleop, input.red, input.blue, played, CARD_RANGE_FITS.teleop),
+        endgame: pieceInterval(red.endgame, blue.endgame, input.red, input.blue, played, CARD_RANGE_FITS.endgame),
+        foul: pieceInterval(red.foul, blue.foul, input.red, input.blue, played, CARD_RANGE_FITS.foul),
+      }
+    : null;
   return {
     modelId: spec.id,
     red,
     blue,
-    redWinProbability: Math.round(Math.min(0.98, Math.max(0.02, pRed)) * 1000) / 1000,
+    redWinProbability: shownP,
     errorBand,
     redBand: bandFor(errorBand, played, input.red),
     blueBand: bandFor(errorBand, played, input.blue),
+    redLow: totalRange?.redLow ?? null,
+    redHigh: totalRange?.redHigh ?? null,
+    blueLow: totalRange?.blueLow ?? null,
+    blueHigh: totalRange?.blueHigh ?? null,
     confidence: confidence.trim(),
     categoriesKnown,
+    categoryRanges,
   };
+}
+
+function intervalAround(center: number | null, teams: readonly string[], samples: readonly CategorySample[], fit: FrozenRange | null): { low: number; high: number } | null {
+  if (center == null || !fit) return null;
+  const counts = teams.map((team) => playedCount(samples, team));
+  const n = counts.reduce((sum, value) => sum + value, 0) / Math.max(1, counts.length);
+  const half = rangeHalfWidth(n, fit);
+  if (!(half > 0)) return null;
+  // A score cannot be negative. Actuals are ≥ 0, so flooring the low end does not
+  // drop a real result out of an interval that started below zero.
+  return { low: Math.max(0, Math.round(center - half)), high: Math.max(0, Math.round(center + half)) };
+}
+
+function allianceInterval(
+  red: number,
+  blue: number,
+  redTeams: readonly string[],
+  blueTeams: readonly string[],
+  samples: readonly CategorySample[],
+  fit: FrozenRange | null,
+): AllianceRange | null {
+  const left = intervalAround(red, redTeams, samples, fit);
+  const right = intervalAround(blue, blueTeams, samples, fit);
+  if (!left || !right) return null;
+  return { redLow: left.low, redHigh: left.high, blueLow: right.low, blueHigh: right.high };
+}
+
+function pieceInterval(
+  red: number | null,
+  blue: number | null,
+  redTeams: readonly string[],
+  blueTeams: readonly string[],
+  samples: readonly CategorySample[],
+  fit: FrozenRange | null,
+): AllianceRange | null {
+  if (red == null || blue == null || !fit) return null;
+  return allianceInterval(red, blue, redTeams, blueTeams, samples, fit);
 }
 
 /**

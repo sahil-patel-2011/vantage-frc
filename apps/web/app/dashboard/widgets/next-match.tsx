@@ -2,6 +2,7 @@
 
 import { ourSideRange } from "../../../lib/strategy/our-side-range";
 import { nextMatchScoreLine } from "../../../lib/dashboard/next-match-copy";
+import { PredictionFollowup } from "./prediction-followup";
 import { numericOrNull } from "../../../lib/strategy/numeric-or-null";
 import { predictionWinDisplay } from "../../../lib/strategy/prediction-display";
 import { matchShortLabel } from "../../../lib/matches/no-next-match";
@@ -107,12 +108,21 @@ export function NextMatchLive({ data, orgId }: { data: Record<string, unknown>; 
             errorBand: typeof data.errorBand === "number" ? data.errorBand : null,
             redBand: numericOrNull(data.redBand),
             blueBand: numericOrNull(data.blueBand),
+            redLow: numericOrNull(data.redLow),
+            redHigh: numericOrNull(data.redHigh),
+            blueLow: numericOrNull(data.blueLow),
+            blueHigh: numericOrNull(data.blueHigh),
           })}
         </p>
       ) : null}
       {typeof data.categoryLine === "string" && data.categoryLine.trim() ? (
         <p className="app-muted">{data.categoryLine.trim()}</p>
       ) : null}
+      <PredictionFollowup
+        enabled={data.predictionAi === true}
+        orgId={orgId}
+        matchKey={typeof data.matchKey === "string" ? data.matchKey : undefined}
+      />
       {/* Where the doubt is coming from, in one sentence — usually a named
           robot that has been breaking down, which is the thing a drive team
           can actually do something about before the match starts. */}

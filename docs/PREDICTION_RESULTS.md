@@ -2,7 +2,144 @@
 
 *For anyone evaluating match-prediction accuracy. Read the first paragraph before quoting a number. Last updated 2026-10-26.*
 
-**This is not a ±3 claim.** On 1,209 already-played 2026 matches, the model shipped below misses a scoreboard total by about 95 points on events it was not tuned on (mean scoreboard 446). It names the winner on 71.5% of decided holdout matches. A coin flip scores 0.25 on Brier; this model scores 0.188. The older two-event replay (totals only, different comparison) is kept further down and is not the number to quote for categories.
+**This is not a ±3 claim, and it is not a 90% winner claim.** On events the model was not tuned on, the in-event model on the next-match card misses a scoreboard total by about 95 points (mean scoreboard 446) and names the winner on 71.5% of decided matches. A further model that may use earlier public events, chosen on the tuning set only, misses by about 87 points and names the winner on 73.2%. Its own win chances say the expected winner rate is 73.3%, so 90% winners is above what those chances can support. What did land near 90% is a wide score range, and the small set of picks whose win chance was already at least 90%. Detail is in the follow-up section. The older two-event replay (totals only) is kept at the bottom and is not the number to quote.
+
+## Follow-up: earlier events, ranges, and which numbers reach 90%
+
+Fetched 2026-10-26. Same 1,209 matches and the same split as the section below. Tuning was scored before any holdout number from this follow-up was read. The choice rule is unchanged: lower total MAE first (within 0.005), then higher winner accuracy, then lower Brier.
+
+### Earlier-season ratings
+
+FACT. Public event pages at `https://www.thebluealliance.com/event/{key}`, no API key. Statbotics REST was HTTP 500 on 2026-10-26 and was not used. The pages list both alliances and both scoreboard totals. They do not list auto, teleop, or fouls, so a prior is a total only. 876 events ended before 16 October 2026 and had at least 6 parsed matches (31,341 team-event ratings). 102 events had fewer than 6 matches and were left out. 0 downloads failed. The ten events in the category replay are not in this file, so a full-event rating cannot include a match that had not been played yet. Empty keys and failures are stored with the ratings.
+
+FACT. Within a year, the match-weighted robot totals were: 2024 mean 19.1, spread 10.4; 2025 mean 36.0, spread 20.4; 2026 mean 62.1, spread 54.5. A 2024 or 2025 rating is turned into a z-score against that year's robots, then into the current event's points using only matches already played. A 2026 rating stays in points. Weight of a year is `0.45^(2026-year)` on the chosen model. A prior is eligible only when that event's last day is before the study event's first day. During tuning, the five holdout event keys are blocked as well.
+
+INFERENCE. The first match of an event has no category mix yet. The prior is applied to the total only. Auto, teleop, endgame, and fouls stay blank for that match instead of splitting the total into thirds (that split was predicting a tower of about 100 points before anyone had played).
+
+### Fair re-score of the current card
+
+The card's own total leaves fouls out of the rating and compares that number to a scoreboard that includes fouls. Adding the historical foul average to both alliances does not change the margin, the pick, or Brier. It is a fairer total, not a better winner model. The foul-free numbers in the next section stay as they were.
+
+| model | split | matches | total MAE | winners | Brier |
+| --- | --- | --- | --- | --- | --- |
+| card, fouls left out | tuning | 629 | 92.38 | 0.752 | 0.178 |
+| card, foul average added | tuning | 629 | 92.45 | 0.752 | 0.178 |
+| card, fouls left out | holdout | 570 | 99.14 | 0.707 | 0.190 |
+| card, foul average added | holdout | 570 | 98.37 | 0.707 | 0.190 |
+
+### What was tried, one change at a time
+
+Each row starts from the shipped in-event model and turns one factor on. Total MAE is the tuning number the rule looks at. Holdout is reported after the choice was frozen. It did not pick the winner.
+
+| factor | tuning matches | tuning total MAE | tuning winners | tuning Brier | holdout total MAE | holdout winners | holdout Brier |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| shipped, nothing extra | 629 | 89.44 | 0.752 | 0.173 | 94.53 | 0.715 | 0.188 |
+| recent matches weighted 0.93 | 629 | 100.76 | 0.716 | 0.198 | 105.86 | 0.679 | 0.215 |
+| recent matches weighted 0.85 | 629 | 107.98 | 0.655 | 0.221 | 111.71 | 0.662 | 0.233 |
+| extra shrink for a robot with under 3 matches | 629 | 91.25 | 0.750 | 0.180 | 95.86 | 0.715 | 0.196 |
+| ignore a zero scoreboard | 629 | 89.44 | 0.752 | 0.173 | 94.53 | 0.715 | 0.188 |
+| defense proxy 0.05 | 629 | 89.15 | 0.754 | 0.173 | 94.19 | 0.715 | 0.188 |
+| defense proxy 0.10 | 629 | 89.06 | 0.754 | 0.173 | 93.96 | 0.715 | 0.188 |
+| synergy 0.5 | 629 | 89.15 | 0.756 | 0.173 | 94.66 | 0.713 | 0.188 |
+| synergy 1 | 629 | 89.09 | 0.757 | 0.173 | 95.06 | 0.713 | 0.188 |
+| schedule-strength reweight | 629 | 89.23 | 0.757 | 0.173 | 95.04 | 0.711 | 0.188 |
+| prior playoff-minus-qual gap | 629 | 89.44 | 0.752 | 0.173 | 94.53 | 0.715 | 0.188 |
+| season prior, decay 0.45, 2 matches | 634 | 82.01 | 0.767 | 0.161 | 87.50 | 0.737 | 0.170 |
+| season prior, decay 0.45, 6 matches | 634 | 81.21 | 0.772 | 0.160 | 86.80 | 0.737 | 0.167 |
+| season prior, decay 0.45, 12 matches | 634 | 81.69 | 0.772 | 0.163 | 87.16 | 0.741 | 0.167 |
+| season prior, decay 0.45, 24 matches | 634 | 82.64 | 0.767 | 0.166 | 87.94 | 0.736 | 0.169 |
+| season prior, decay 0.70, 2 matches | 634 | 83.29 | 0.769 | 0.162 | 88.25 | 0.741 | 0.171 |
+| season prior, decay 0.70, 6 matches | 634 | 83.11 | 0.766 | 0.162 | 87.94 | 0.741 | 0.168 |
+| season prior, decay 0.70, 12 matches | 634 | 84.00 | 0.767 | 0.166 | 88.70 | 0.739 | 0.169 |
+| season prior, decay 0.70, 24 matches | 634 | 85.32 | 0.755 | 0.170 | 89.65 | 0.737 | 0.172 |
+| season prior, decay 1, 2 matches | 634 | 84.61 | 0.769 | 0.163 | 89.17 | 0.744 | 0.172 |
+| season prior, decay 1, 6 matches | 634 | 85.23 | 0.758 | 0.165 | 89.57 | 0.744 | 0.170 |
+| season prior, decay 1, 12 matches | 634 | 86.77 | 0.759 | 0.169 | 90.85 | 0.730 | 0.172 |
+| season prior, decay 1, 24 matches | 634 | 88.63 | 0.755 | 0.174 | 92.30 | 0.720 | 0.175 |
+
+The zero-score row matches the shipped row. One alliance side in the whole file scored 0, and the cached match pages did not contain a red-card, disabled, or no-show line, so that factor had nothing to move. The playoff-gap row also matches the shipped row. Recency and the extra rookie shrink made tuning error worse and were not kept. Defense, synergy, and schedule each helped a little on their own. The season prior helped by about 8 points of total MAE and was the only large gain.
+
+The frozen model starts from the best season prior (decay 0.45, 6 pseudo-matches) and then adds a factor only when the tuning rule says it is better. Defense 0.10 and the schedule reweight both cleared that bar. Synergy on top of that stack did not. Holdout was not used to add or remove them.
+
+### Frozen model
+
+Season prior, decay 0.45, strength 6, defense proxy 0.10, schedule reweight. 634 tuning predictions (the five opening matches can be scored from the prior) and 575 holdout predictions.
+
+| | tuning | holdout |
+| --- | --- | --- |
+| matches / decided / picks | 634 / 632 / 632 | 575 / 575 / 575 |
+| MAE auto | 21.77 | 23.35 |
+| MAE teleop | 72.12 | 77.90 |
+| MAE endgame | 0.89 | 1.13 |
+| MAE foul | 8.73 | 8.27 |
+| MAE total | 80.99 | 86.54 |
+| RMSE total | 104.00 | 107.31 |
+| winners | 0.769 | 0.732 |
+| Brier (logistic) | 0.158 | 0.165 |
+| log loss | 0.487 | 0.500 |
+
+Tuning by time: early 188 matches, total MAE 88.31, winners 0.747; mid 187, total MAE 78.89, winners 0.797; late 259, total MAE 77.20, winners 0.764.
+
+Holdout early 168 matches, total MAE 90.81, winners 0.768; mid 166 matches, total MAE 83.39, winners 0.717; late 241 matches, total MAE 85.73, winners 0.718.
+
+Season prior alone, without defense or schedule, is holdout total MAE 86.80 and winners 0.737. The two added factors improved tuning MAE from 81.21 to 80.99 and holdout MAE from 86.80 to 86.54, and they lowered the holdout winner rate from 0.737 to 0.732. The rule keeps them because it looks at tuning MAE first. They were not removed after the holdout.
+
+A normal margin, with width 0.30 times the scoreboard mean of matches already played, was chosen on tuning Brier only. It does not change the pick. Holdout Brier moves from 0.165 to 0.163. Log loss 0.494. Calibration of that win chance on the holdout:
+
+| bin | n | predicted | actual |
+| --- | --- | --- | --- |
+| 0–20% | 92 | 0.105 | 0.087 |
+| 20–40% | 109 | 0.296 | 0.257 |
+| 40–60% | 130 | 0.495 | 0.531 |
+| 60–80% | 144 | 0.701 | 0.701 |
+| 80–100% | 100 | 0.904 | 0.940 |
+
+The expected winner rate, the average of the larger of the two win chances, is 0.733 on 575 holdout matches. The model hit 0.732. It is sitting on its own ceiling. A 90% winner rate would require the chances themselves to average 90%, and they do not.
+
+### 90% ranges
+
+Widths were fit on tuning residuals only, widened when the robots have few matches, then measured once on the holdout. "Held" means coverage between 0.85 and 0.95. Widths were not refit after that.
+
+The card runs the in-event model, not the frozen prior model, because the card does not load other events. These are the ranges on the card:
+
+| piece | holdout sides | coverage | mean width |
+| --- | --- | --- | --- |
+| auto | 1,140 | 0.883 | 97 |
+| teleop | 1,140 | 0.882 | 338 |
+| endgame | 1,140 | 0.882 | 5 |
+| foul | 1,140 | 0.911 | 33 |
+| total | 1,140 | 0.883 | 375 |
+| margin | 570 | 0.895 | 506 |
+
+Every one of those is inside the band, so the card shows "Red 210 to 590" style ranges instead of a single ±. A score cannot be negative, so a low end below zero is shown as 0. Actual scores are never negative, so that does not push a real result out of the interval. The interval is wide on purpose: a point forecast cannot be "90% accurate" when a typical miss is about 95 points. The honest version is that the real score lands inside the range about 9 times in 10, and about 1 in 10 it does not.
+
+The frozen prior model, measured the same way and not shown on the card: auto 0.881 (width 89), teleop 0.887 (309), endgame 0.867 (3), foul 0.911 (33), total 0.897 (343), margin 0.915 (462). All inside the band.
+
+### Which numbers reach 90%, and which cannot
+
+| metric | where | result | reaches 90%? |
+| --- | --- | --- | --- |
+| winner, every holdout match | card model | 0.715 of 523 picks | no |
+| winner, every holdout match | frozen model | 0.732 of 575 | no |
+| expected winner rate from the win chances | frozen model | 0.733 | no — this is the ceiling |
+| score inside the 90% total range | card | 0.883 | yes, about 90%, and the range is about 375 points wide |
+| score inside the other category ranges | card | 0.882 to 0.911 | yes, same meaning |
+| picks whose win chance is at least 80% | card | 0.880 of 150 (132 correct) | no |
+| picks whose win chance is at least 90% | card | 0.955 of 66 | yes |
+| picks whose win chance is at least 80% | frozen model | 0.927 of 192 | yes |
+| picks whose win chance is at least 90% | frozen model | 0.968 of 94 | yes |
+
+Nothing here is "never below 90%." The ranges miss about one match in ten by design. The high-confidence band on the card was wrong on about 3 of 66 holdout matches. The card marks a pick high confidence only when the win chance is at least 90%, because the 80% band was 88% and the rule required at least 40 matches and at least 90% correct. The words on the card do not say "90%."
+
+### What the card does, and what the AI step does
+
+The next-match card still scores from matches already played at that event. It does not read the 31,341 earlier ratings. Those stay in the backtest. Putting them on the card would need a server load of that file or a season query, and neither is wired, so the card's point prediction is the 95-point model, with the ranges and the high-confidence mark from that same model.
+
+The optional AI step calls whatever chat model the team has already configured. Anthropic Claude Haiku is an example of that configuration, not a model the code selects. The statistical prediction is on the page first. The model call, if it happens, is a later request and does not hold the page. It may only nudge the prediction by a few points. No model credential was available in this environment (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `AI_GATEWAY_API_KEY`, and the other provider keys that were checked were unset), so the step was not run on the holdout. Accuracy, range coverage, latency, and cost per prediction are unmeasured. The step ships off. A dollar cost was not invented. One live call would be one extra completion, and the receipt would carry the provider's cost.
+
+### What this follow-up did not change
+
+The category-model choice in the next section, the foul-free card numbers, and the older two-event replay are the same measurements as before. The home card was not clicked through in a signed-in browser. That needs a team session and a database, and this run did not query production.
 
 ## 2026 category backtest (2026-10-26)
 

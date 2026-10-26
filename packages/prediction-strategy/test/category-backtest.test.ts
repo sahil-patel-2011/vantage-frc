@@ -282,6 +282,9 @@ describe("shipped category model", () => {
     expect(forecast.red.auto).not.toBeNull();
     expect(forecast.red.total).toBeGreaterThan(0);
     expect(forecast.errorBand).not.toBeNull();
-    expect(forecast.confidence).toMatch(/Typical miss/);
+    expect(forecast.redLow).not.toBeNull();
+    expect(forecast.redHigh).toBeGreaterThan(forecast.redLow ?? 0);
+    expect(forecast.confidence).toMatch(/Margin/);
+    expect(forecast.confidence).not.toMatch(/Typical miss/);
   });
 });

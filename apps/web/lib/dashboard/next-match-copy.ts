@@ -28,9 +28,22 @@ export function nextMatchScoreLine(input: {
   errorBand?: number | null;
   redBand?: number | null;
   blueBand?: number | null;
+  redLow?: number | null;
+  redHigh?: number | null;
+  blueLow?: number | null;
+  blueHigh?: number | null;
 }): string {
   const red = Math.round(input.redPredicted);
   const blue = Math.round(input.bluePredicted);
+
+  if (
+    Number.isFinite(input.redLow) &&
+    Number.isFinite(input.redHigh) &&
+    Number.isFinite(input.blueLow) &&
+    Number.isFinite(input.blueHigh)
+  ) {
+    return `Red ${Math.round(input.redLow!)} to ${Math.round(input.redHigh!)} · Blue ${Math.round(input.blueLow!)} to ${Math.round(input.blueHigh!)}`;
+  }
 
   if (usable(input.redBand) && usable(input.blueBand)) {
     return `Red ${red} ±${Math.round(input.redBand)} · Blue ${blue} ±${Math.round(input.blueBand)}`;
@@ -51,15 +64,31 @@ export function nextMatchCategoryLine(input: {
   blueAuto: number | null;
   blueTeleop: number | null;
   blueEndgame: number | null;
+  ranges?: {
+    auto?: { redLow: number; redHigh: number; blueLow: number; blueHigh: number } | null;
+    teleop?: { redLow: number; redHigh: number; blueLow: number; blueHigh: number } | null;
+    endgame?: { redLow: number; redHigh: number; blueLow: number; blueHigh: number } | null;
+    foul?: { redLow: number; redHigh: number; blueLow: number; blueHigh: number } | null;
+  } | null;
 }): string | null {
   const parts: string[] = [];
-  const add = (label: string, red: number | null, blue: number | null) => {
+  const add = (
+    label: string,
+    red: number | null,
+    blue: number | null,
+    range?: { redLow: number; redHigh: number; blueLow: number; blueHigh: number } | null,
+  ) => {
+    if (range && [range.redLow, range.redHigh, range.blueLow, range.blueHigh].every((value) => Number.isFinite(value))) {
+      parts.push(`${label} ${Math.round(range.redLow)} to ${Math.round(range.redHigh)} / ${Math.round(range.blueLow)} to ${Math.round(range.blueHigh)}`);
+      return;
+    }
     if (red == null || blue == null || !Number.isFinite(red) || !Number.isFinite(blue)) return;
     parts.push(`${label} ${Math.round(red)} / ${Math.round(blue)}`);
   };
-  add("Auto", input.redAuto, input.blueAuto);
-  add("Teleop", input.redTeleop, input.blueTeleop);
-  add("Endgame", input.redEndgame, input.blueEndgame);
+  add("Auto", input.redAuto, input.blueAuto, input.ranges?.auto);
+  add("Teleop", input.redTeleop, input.blueTeleop, input.ranges?.teleop);
+  add("Endgame", input.redEndgame, input.blueEndgame, input.ranges?.endgame);
+  if (input.ranges?.foul) add("Foul", null, null, input.ranges.foul);
   if (!parts.length) return null;
   return `Red / blue · ${parts.join(" · ")}`;
 }

@@ -649,6 +649,7 @@ export {
   TUNING_EVENT_KEYS,
   chooseCategoryModel,
   forecastMatch,
+  isBetterTuning,
   isMatchForecastSkip,
   metricsOf,
   phaseForEvent,
@@ -657,6 +658,7 @@ export {
   replayTuning,
 } from "./walk-forward";
 export type {
+  AllianceRange,
   CalibrationBin,
   CategoryName,
   CategorySample,
@@ -671,4 +673,40 @@ export type {
   ModelKind,
   ModelSpec,
   ReplayMatch,
+  ReplayOptions,
 } from "./walk-forward";
+
+export {
+  CARD_HIGH_CONFIDENCE_AT,
+  CARD_RANGE_FITS,
+} from "./range-display";
+export type { FrozenRange } from "./range-display";
+
+export {
+  STUDY_EVENT_START,
+  applyProbability,
+  chooseProbability,
+  confidenceTier,
+  expectedAccuracy,
+  fitRange,
+  measureRange,
+  normalWinProbability,
+  rangeHalfWidth,
+  rangeHeld,
+  seasonPoints,
+  seasonPriorsForStudy,
+  walkForwardCalibrate,
+  withNormalMargin,
+  yearScales,
+} from "./match-factors";
+export type {
+  ProbabilityChoice,
+  ProbabilityRow,
+  RangeCategory,
+  RangeFit,
+  RangeRow,
+  StrengthEvent,
+  StrengthRating,
+  TeamSeasonPrior,
+  YearScale,
+} from "./match-factors";

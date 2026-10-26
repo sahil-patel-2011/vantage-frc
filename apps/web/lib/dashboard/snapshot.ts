@@ -18,6 +18,7 @@ import { countLodgingGaps } from "../logistics";
 import { snapshotShouldLoadHomeStrip } from "./refresh";
 import { isDemoPrediction } from "../strategy/prediction-display";
 import { forecastMatch, isMatchForecastSkip } from "@vantage/prediction-strategy";
+import { predictionAiRequested } from "../strategy/prediction-ai";
 import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
 import { nextMatchCategoryLine } from "./next-match-copy";
 import { loadEventScoring } from "../opr/alliance-results";
@@ -196,6 +197,10 @@ export async function loadDashboardSnapshot(
     // score-uncertainty.ts.
     let redBand: number | null = null;
     let blueBand: number | null = null;
+    let redLow: number | null = null;
+    let redHigh: number | null = null;
+    let blueLow: number | null = null;
+    let blueHigh: number | null = null;
     let confidence: string | null = null;
     let scoreDrivers: string[] = [];
     let briefing: string | null = null;
@@ -297,6 +302,10 @@ export async function loadDashboardSnapshot(
         briefing = null;
         cardRedWin = forecast.redWinProbability;
         useForecastWin = true;
+        redLow = forecast.redLow ?? null;
+        redHigh = forecast.redHigh ?? null;
+        blueLow = forecast.blueLow ?? null;
+        blueHigh = forecast.blueHigh ?? null;
         categoryLine = forecast.categoriesKnown
           ? nextMatchCategoryLine({
               redAuto: forecast.red.auto,
@@ -305,6 +314,7 @@ export async function loadDashboardSnapshot(
               blueAuto: forecast.blue.auto,
               blueTeleop: forecast.blue.teleop,
               blueEndgame: forecast.blue.endgame,
+              ranges: forecast.categoryRanges,
             })
           : null;
       }
@@ -337,11 +347,16 @@ export async function loadDashboardSnapshot(
       keyFactors: useForecastWin ? null : (stored?.keyFactors ?? null),
       modelVersion: useForecastWin ? null : (stored?.modelVersion ?? null),
       categoryLine,
+      predictionAi: predictionAiRequested(),
       redPredicted,
       bluePredicted,
       errorBand,
       redBand,
       blueBand,
+      redLow,
+      redHigh,
+      blueLow,
+      blueHigh,
       confidence,
       scoreDrivers,
       briefing,

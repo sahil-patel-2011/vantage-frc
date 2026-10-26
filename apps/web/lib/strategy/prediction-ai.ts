@@ -1,11 +1,15 @@
 /**
  * Optional nudge on a statistical match forecast.
  *
- * The model is whichever chat adapter the org already configured. It may only
- * return small point deltas, which are checked and clamped. A missing, slow,
- * or nonsense reply leaves the statistical forecast as it was. Home does not
- * call this. Both switches below stay off: no held-out run has shown that the
- * nudge helps, and it cannot be measured here without a provider secret.
+ * The model is whichever chat adapter the org already configured. That can be
+ * any provider the adapter supports. Anthropic Claude Haiku is one example of
+ * that configuration; this file does not name or prefer a vendor.
+ *
+ * It may only return small point deltas, which are checked and clamped. A
+ * missing, slow, or nonsense reply leaves the statistical forecast as it was.
+ * Home shows the statistical card first. A follow-up request may run this
+ * later, and only when both switches below are on. They stay off: no held-out
+ * run has measured the nudge, and this environment has no model credential.
  */
 
 import { randomUUID } from "node:crypto";
