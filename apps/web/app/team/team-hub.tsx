@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import TeamCalendarClient from "./calendar/team-calendar-client";
 import type { SubteamCalendarView } from "../../lib/subteam-calendar";
 import { EmptyState } from "../../components/ui";
@@ -65,10 +65,15 @@ export default function TeamHub({
   initialTab,
   initialOrgId = null,
   initialCalendar = null,
+  messagesPanel = null,
+  todosPanel = null,
 }: {
   initialTab?: string | null;
   initialOrgId?: string | null;
   initialCalendar?: SubteamCalendarView | null;
+  /** Server-rendered tab. A client-side tab change still loads the panel itself. */
+  messagesPanel?: ReactNode;
+  todosPanel?: ReactNode;
 }) {
   return (
     <ProductHubShell hubId="team" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab} initialOrgId={initialOrgId}>
@@ -86,7 +91,7 @@ export default function TeamHub({
         if (tab === "todos") {
           return (
             <HubOrgGate orgId={orgId} label="Tasks">
-              {() => <TodosClient embedded />}
+              {() => todosPanel ?? <TodosClient embedded />}
             </HubOrgGate>
           );
         }
@@ -128,7 +133,7 @@ export default function TeamHub({
         if (tab === "messages") {
           return (
             <HubOrgGate orgId={orgId} label="Chat">
-              {(id) => <MessagesTab orgId={id} />}
+              {(id) => messagesPanel ?? <MessagesTab orgId={id} />}
             </HubOrgGate>
           );
         }

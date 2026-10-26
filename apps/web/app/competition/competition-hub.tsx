@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ReactNode } from "react";
 import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
 import ScoutingClient from "../scouting/scouting-client";
 import type { Bootstrap } from "../scouting/scouting-model";
@@ -33,11 +34,18 @@ export default function CompetitionHub({
   initialOrgId = null,
   initialSearch = "",
   initialScouting = null,
+  commandPanel = null,
+  myDayPanel = null,
+  strategyPanel = null,
 }: {
   initialTab?: string | null;
   initialOrgId?: string | null;
   initialSearch?: string;
   initialScouting?: Bootstrap | null;
+  /** Server-rendered tab. A client-side tab change still loads the panel itself. */
+  commandPanel?: ReactNode;
+  myDayPanel?: ReactNode;
+  strategyPanel?: ReactNode;
 }) {
   return (
     <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab} initialOrgId={initialOrgId}>
@@ -48,21 +56,21 @@ export default function CompetitionHub({
         if (tab === "command") {
           return (
             <HubOrgGate orgId={orgId} label="Event day">
-              {() => <CommandClient embedded />}
+              {() => commandPanel ?? <CommandClient embedded />}
             </HubOrgGate>
           );
         }
         if (tab === "my-day") {
           return (
             <HubOrgGate orgId={orgId} label="My Day">
-              {() => <MyDayClient embedded />}
+              {() => myDayPanel ?? <MyDayClient embedded />}
             </HubOrgGate>
           );
         }
         if (tab === "strategy") {
           return (
             <HubOrgGate orgId={orgId} label="Strategy">
-              {() => <StrategyClient embedded />}
+              {() => strategyPanel ?? <StrategyClient embedded />}
             </HubOrgGate>
           );
         }
