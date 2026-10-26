@@ -1,0 +1,93 @@
+/*
+ * Page toolbar. One filled action, quiet companions, More for the rest.
+ * Tokens only, so light and dark follow the theme. Touch targets are 44px.
+ * The label is always visible: an icon, when a button has one, sits in the
+ * 8px gap .app-button already uses. This toolbar does not use icon-only actions.
+ */
+
+.page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.page-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.page-toolbar-actions :is(button, a.app-button, .app-button, .page-options > summary) {
+  min-height: 44px;
+}
+
+.page-toolbar-actions :is(button, a):focus-visible,
+.page-toolbar-actions .page-options > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* More is a text control, the same weight as a quiet action. */
+.page-toolbar-actions .page-options > summary {
+  background: transparent;
+  border-color: transparent;
+  min-height: 44px;
+}
+
+.page-toolbar-actions .page-options > summary:hover,
+.page-toolbar-actions .page-options[open] > summary {
+  background: var(--surface-2);
+}
+
+.page-toolbar kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Phone: the action cluster sits on a sheet above the tab bar. Related links
+   and layout switches stay in the header. */
+@media (max-width: 720px) {
+  .page-toolbar-actions[data-has-actions="true"] {
+    position: fixed;
+    z-index: 35;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--island-clearance, 80px) + 8px + var(--safe-bottom, 0px));
+    justify-content: flex-end;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+
+  :is(main, section, div).module-page:has(.page-toolbar-actions[data-has-actions="true"]),
+  .workspace-page:has(.page-toolbar-actions[data-has-actions="true"]) {
+    padding-bottom: calc(var(--island-clearance, 80px) + 88px + var(--safe-bottom, 0px));
+  }
+
+  .page-toolbar-actions[data-has-actions="true"] .page-options-panel {
+    top: auto;
+    bottom: calc(100% + 8px);
+    right: 0;
+  }
+}
+
+/* The old quick-action cards were six equal tiles. The toolbar is one row. */
+.workspace-page .quick-actions {
+  display: block;
+  padding: 16px clamp(16px, 4vw, 52px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-toolbar-actions {
+    transition: none;
+  }
+}

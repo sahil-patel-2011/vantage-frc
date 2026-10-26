@@ -95,6 +95,7 @@ export function HoursReadyView({
             <Button
               variant="secondary"
               type="button"
+              data-action-intent="destructive"
               disabled={busy}
               onClick={async () => {
                 if (
