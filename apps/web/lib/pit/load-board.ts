@@ -44,7 +44,8 @@ export async function loadPitBoard(
   },
 ): Promise<PitBoardPayload> {
   const now = input.now ?? new Date();
-  const [contextQuery, maintenanceQuery, issueQuery, fleet, repeatAlerts] = await Promise.all([
+  const teamKey = input.member.teamNumber ? `frc${input.member.teamNumber}` : null;
+  const [contextQuery, maintenanceQuery, issueQuery, fleet, repeatAlerts, nextMatchQuery] = await Promise.all([
     client.query<{ eventKey: string | null; eventName: string | null }>(
       `SELECT c.active_event_key AS "eventKey",e.name AS "eventName"
        FROM organizations o
@@ -73,28 +74,24 @@ export async function loadPitBoard(
     ),
     loadBatteryFleet(client, input.orgId, now),
     loadRepeatFailureAlerts(client, input.orgId, { limit: 8 }),
+    teamKey
+      ? client.query<PitNextMatch>(
+          `SELECT match_key AS "matchKey",comp_level AS "compLevel",
+                  match_number AS "matchNumber",
+                  COALESCE(predicted_time,event_time)::text AS "scheduledTime"
+           FROM matches_ref
+           WHERE event_key = (SELECT active_event_key FROM org_active_context WHERE org_id = $1)
+             AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)
+             AND ${matchStillAheadSql()}
+           ORDER BY COALESCE(predicted_time,event_time), match_number
+           LIMIT 1`,
+          [input.orgId, teamKey],
+        )
+      : Promise.resolve({ rows: [] as PitNextMatch[] }),
   ]);
 
   const context = contextQuery.rows[0] ?? { eventKey: null, eventName: null };
-  const teamKey = input.member.teamNumber ? `frc${input.member.teamNumber}` : null;
-  const nextMatch: PitNextMatch | null =
-    context.eventKey && teamKey
-      ? (
-          await client.query<PitNextMatch>(
-            `SELECT match_key AS "matchKey",comp_level AS "compLevel",
-                    match_number AS "matchNumber",
-                    COALESCE(predicted_time,event_time)::text AS "scheduledTime"
-             FROM matches_ref
-             WHERE event_key=$1
-               AND (red_alliance->'teamKeys' ? $2 OR blue_alliance->'teamKeys' ? $2)
-               -- Event day's still-ahead rule: a late match that has not started stays next.
-               AND ${matchStillAheadSql()}
-             ORDER BY COALESCE(predicted_time,event_time), match_number
-             LIMIT 1`,
-            [context.eventKey, teamKey],
-          )
-        ).rows[0] ?? null
-      : null;
+  const nextMatch: PitNextMatch | null = nextMatchQuery.rows[0] ?? null;
 
   const batteries: PitBatteryRow[] = fleet.packs.map((pack) => ({
     id: pack.id,

@@ -1,8 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ReactNode } from "react";
 import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
-import { ScoutingLoadingSkeleton } from "../scouting/scouting-chrome";
+import ScoutingClient from "../scouting/scouting-client";
+import type { Bootstrap } from "../scouting/scouting-model";
 import "../product-hub.css";
 import "../scouting/scouting.css";
 import "../scouting/forms/forms.css";
@@ -14,10 +16,6 @@ const MyDayClient = dynamic(() => import("../my-day/my-day-client"), { ssr: fals
 const StrategyClient = dynamic(() => import("../strategy/strategy-client"), { ssr: false, loading: HubPanelSkeleton });
 // The scouting screen's own shape while its code downloads, not a blank panel:
 // on a phone that blank was the first thing a scout saw after signing in.
-const ScoutingClient = dynamic(() => import("../scouting/scouting-client"), {
-  ssr: false,
-  loading: () => <ScoutingLoadingSkeleton />,
-});
 const FormsClient = dynamic(() => import("../scouting/forms/forms-client"), { ssr: false, loading: HubPanelSkeleton });
 const CompetitionTeams = dynamic(() => import("./competition-teams"), { ssr: false, loading: HubPanelSkeleton });
 const MatchChecklistClient = dynamic(() => import("../match-checklist/match-checklist-client"), {
@@ -31,9 +29,26 @@ const ChemistryClient = dynamic(() => import("../chemistry/chemistry-client"), {
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
 const EMBEDDED_TABS = ["command", "my-day", "teams", "strategy", "pick-clock", "chemistry", "match-checklist", "scouting", "forms", "picks"] as const;
 
-export default function CompetitionHub({ initialTab }: { initialTab?: string | null }) {
+export default function CompetitionHub({
+  initialTab,
+  initialOrgId = null,
+  initialSearch = "",
+  initialScouting = null,
+  commandPanel = null,
+  myDayPanel = null,
+  strategyPanel = null,
+}: {
+  initialTab?: string | null;
+  initialOrgId?: string | null;
+  initialSearch?: string;
+  initialScouting?: Bootstrap | null;
+  /** Server-rendered tab. A client-side tab change still loads the panel itself. */
+  commandPanel?: ReactNode;
+  myDayPanel?: ReactNode;
+  strategyPanel?: ReactNode;
+}) {
   return (
-    <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab}>
+    <ProductHubShell hubId="competition" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab} initialOrgId={initialOrgId}>
       {({ tab, orgId }) => {
         if (tab === "teams") {
           return <HubOrgGate orgId={orgId} label="Teams">{id => <CompetitionTeams orgId={id} />}</HubOrgGate>;
@@ -41,21 +56,21 @@ export default function CompetitionHub({ initialTab }: { initialTab?: string | n
         if (tab === "command") {
           return (
             <HubOrgGate orgId={orgId} label="Event day">
-              {() => <CommandClient embedded />}
+              {() => commandPanel ?? <CommandClient embedded />}
             </HubOrgGate>
           );
         }
         if (tab === "my-day") {
           return (
             <HubOrgGate orgId={orgId} label="My Day">
-              {() => <MyDayClient embedded />}
+              {() => myDayPanel ?? <MyDayClient embedded />}
             </HubOrgGate>
           );
         }
         if (tab === "strategy") {
           return (
             <HubOrgGate orgId={orgId} label="Strategy">
-              {() => <StrategyClient embedded />}
+              {() => strategyPanel ?? <StrategyClient embedded />}
             </HubOrgGate>
           );
         }
@@ -84,7 +99,15 @@ export default function CompetitionHub({ initialTab }: { initialTab?: string | n
         if (tab === "scouting") {
           return (
             <HubOrgGate orgId={orgId} label="Scouting">
-              {(id) => <ScoutingClient key={id} orgId={id} embedded />}
+              {(id) => (
+                <ScoutingClient
+                  key={id}
+                  orgId={id}
+                  embedded
+                  initialSearch={initialSearch}
+                  initialData={id === initialOrgId ? initialScouting : null}
+                />
+              )}
             </HubOrgGate>
           );
         }

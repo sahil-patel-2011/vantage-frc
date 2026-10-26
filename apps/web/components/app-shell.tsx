@@ -76,6 +76,12 @@ export default function AppShell() {
    */
   const entryScreen = pathnameIsEntryScreen(pathname);
   const [orgId, setOrgId] = useState("");
+  /**
+   * null until the address is read. /api/me is fetched for this scope, not on every pathname:
+   * the shell used to ask again on each navigation even when the team had not changed.
+   * "global" is the notification inbox with no team selected.
+   */
+  const [sessionScope, setSessionScope] = useState<string | null>(null);
   // The team's spreadsheets follow the app on their own: no Sync button to remember.
   useSheetsAutoSync(orgId);
   /**
@@ -202,6 +208,9 @@ export default function AppShell() {
     window.addEventListener("popstate", onPop);
     // A hub switching tabs in place rewrites the address without navigating.
     window.addEventListener(URL_CHANGE_EVENT, onPop);
+    // Hover and focus warm a page. Idle time does not: prefetching ten routes
+    // after one visit ran each of their server renders and multiplied database
+    // load for a person who never opened them.
     const readyTimer = window.setTimeout(() => {
       routerReady = true;
     }, 300);
@@ -217,8 +226,11 @@ export default function AppShell() {
   }, [navigate, router, orgId, me.userId]);
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("orgId") ?? "";
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("orgId") ?? "";
     setOrgId(id);
+    const globalInbox = pathname === "/notifications" && !params.has("orgId");
+    setSessionScope(globalInbox ? "global" : id || "member");
     // Same render as the team id, so the label goes straight from the placeholder to the name
     // this device last showed for the team.
     setRememberedTeamLabel(readRememberedTeamLabel(safeLocalStorage(), id));
@@ -268,8 +280,9 @@ export default function AppShell() {
         cancelled = true;
       };
     }
+    if (sessionScope === null) return;
     const revision = notificationRevision.current;
-    const globalInbox = pathname === "/notifications" && !new URLSearchParams(window.location.search).has("orgId");
+    const globalInbox = sessionScope === "global";
     void fetchProductSession(globalInbox ? null : orgId || null)
       .then((data) => {
         if (cancelled || !data) return;
@@ -292,7 +305,8 @@ export default function AppShell() {
       cancelled = true;
     };
     // `online`: an answer that never came while offline is asked for again on reconnecting.
-  }, [orgId, pathname, entryScreen, online]);
+    // Pathname is intentionally not a dependency: the same team does not reload /api/me on every page.
+  }, [orgId, sessionScope, entryScreen, online]);
 
   useEffect(() => {
     const update = (event: Event) => {

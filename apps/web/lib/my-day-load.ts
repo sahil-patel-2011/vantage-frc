@@ -8,7 +8,6 @@ import {
 } from "./my-day";
 import type { ScheduleMatch } from "./schedule-board";
 import { matchLabelFromKey } from "./matches/no-next-match";
-import { withSavepoint } from "@vantage/db";
 
 export type MyDayLodging = {
   hotelName: string;
@@ -87,7 +86,7 @@ export async function loadMyDayLogistics(
   };
 
   try {
-    const rooms = await client.query<{
+    const roomsP = client.query<{
       hotelName: string;
       hotelAddress: string;
       hotelPhone: string;
@@ -109,6 +108,37 @@ export async function loadMyDayLogistics(
        LIMIT 1`,
       [input.orgId, input.userId],
     );
+    const lens = input.teamRole === "mentor" || input.teamRole === "coach" ? "mentor" : "student";
+    const [rooms, legs, onDuty, counts] = await Promise.all([
+      roomsP,
+      client.query<MyDayTravelStop>(
+        `SELECT l.id::text AS id, l.kind, l.title,
+                l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
+                l.location, l.meeting_point AS "meetingPoint", l.notes,
+                l.trip_id::text AS "tripId", t.title AS "tripTitle"
+         FROM logistics_travel_legs l
+         JOIN logistics_trips t ON t.id = l.trip_id
+         WHERE l.org_id = $1::uuid
+           AND ($2::text IS NULL OR t.event_key = $2 OR t.event_key IS NULL)
+         ORDER BY l.starts_at ASC
+         LIMIT 40`,
+        [input.orgId, input.eventKey],
+      ).catch(() => ({ rows: [] as MyDayTravelStop[] })),
+      loadOnDutyForMyDay(client, {
+        orgId: input.orgId,
+        userId: input.userId,
+        now: input.now,
+      }),
+      client.query<{ total: string; done: string }>(
+        `SELECT
+           (SELECT count(*)::text FROM logistics_checklist_items i
+            WHERE i.org_id = $1::uuid AND i.audience IN ('all', $3)) AS total,
+           (SELECT count(*)::text FROM logistics_checklist_items i
+            JOIN logistics_checklist_checks c ON c.item_id = i.id AND c.user_id = $2::uuid
+            WHERE i.org_id = $1::uuid AND i.audience IN ('all', $3)) AS done`,
+        [input.orgId, input.userId, lens],
+      ).catch(() => ({ rows: [] as Array<{ total: string; done: string }> })),
+    ]);
     const lodging = rooms.rows[0]
       ? {
           hotelName: rooms.rows[0].hotelName,
@@ -121,53 +151,10 @@ export async function loadMyDayLogistics(
           tripId: rooms.rows[0].tripId,
         }
       : null;
-
-    let nextTravel: MyDayTravelStop | null = null;
-    try {
-      const legs = await client.query<MyDayTravelStop>(
-        `SELECT l.id::text AS id, l.kind, l.title,
-                l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
-                l.location, l.meeting_point AS "meetingPoint", l.notes,
-                l.trip_id::text AS "tripId", t.title AS "tripTitle"
-         FROM logistics_travel_legs l
-         JOIN logistics_trips t ON t.id = l.trip_id
-         WHERE l.org_id = $1::uuid
-           AND ($2::text IS NULL OR t.event_key = $2 OR t.event_key IS NULL)
-         ORDER BY l.starts_at ASC
-         LIMIT 40`,
-        [input.orgId, input.eventKey],
-      );
-      nextTravel = pickNextTravel(legs.rows);
-    } catch {
-      nextTravel = null;
-    }
-
-    const onDuty = await loadOnDutyForMyDay(client, {
-      orgId: input.orgId,
-      userId: input.userId,
-      now: input.now,
-    });
-
-    let checklistPercent: number | null = null;
-    try {
-      const lens =
-        input.teamRole === "mentor" || input.teamRole === "coach" ? "mentor" : "student";
-      const counts = await client.query<{ total: string; done: string }>(
-        `SELECT
-           (SELECT count(*)::text FROM logistics_checklist_items i
-            WHERE i.org_id = $1::uuid AND i.audience IN ('all', $3)) AS total,
-           (SELECT count(*)::text FROM logistics_checklist_items i
-            JOIN logistics_checklist_checks c ON c.item_id = i.id AND c.user_id = $2::uuid
-            WHERE i.org_id = $1::uuid AND i.audience IN ('all', $3)) AS done`,
-        [input.orgId, input.userId, lens],
-      );
-      const total = Number(counts.rows[0]?.total ?? 0);
-      const done = Number(counts.rows[0]?.done ?? 0);
-      checklistPercent = total > 0 ? Math.round((done / total) * 100) : null;
-    } catch {
-      checklistPercent = null;
-    }
-
+    const nextTravel = pickNextTravel(legs.rows);
+    const total = Number(counts.rows[0]?.total ?? 0);
+    const done = Number(counts.rows[0]?.done ?? 0);
+    const checklistPercent = total > 0 ? Math.round((done / total) * 100) : null;
     return { lodging, nextTravel, onDuty, checklistPercent };
   } catch {
     return empty;
@@ -270,7 +257,7 @@ export async function loadMyDayView(
   }
 
   const teamKey = `frc${row.teamNumber}`;
-  const matchesRes = await client.query<{
+  const matchesP = client.query<{
     matchKey: string;
     compLevel: string;
     matchNumber: number;
@@ -300,6 +287,38 @@ export async function loadMyDayView(
               END, m.match_number`,
     [row.eventKey],
   );
+  // The feed check, lodging, and the next scout duties do not depend on the match rows.
+  // A missing health row says the feed is unknown; it does not fail the page.
+  const feedP = client
+    .query<{ lastSuccessAt: string | null }>(
+      `SELECT last_success_at::text AS "lastSuccessAt" FROM data_source_health WHERE source = 'tba' LIMIT 1`,
+    )
+    .then((health) => ({ known: health.rows.length > 0, checkedAt: health.rows[0]?.lastSuccessAt ?? null }))
+    .catch(() => ({ known: false, checkedAt: null as string | null }));
+  const logisticsP = loadMyDayLogistics(client, {
+    orgId: row.orgId,
+    userId: input.userId,
+    teamRole: row.teamRole,
+    eventKey: row.eventKey,
+  });
+  const dutiesP = client.query<{ matchKey: string; teamKey: string; scheduledTime: string | null }>(
+    `SELECT /* my-day:scouting */ a.match_key AS "matchKey", a.team_key AS "teamKey",
+            coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at)::text AS "scheduledTime"
+       FROM scout_assignments a
+       JOIN matches_ref m ON m.match_key = a.match_key
+      WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid AND a.event_key = $3::text
+        AND lower(coalesce(a.role, '')) <> 'backup'
+        AND coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at, now())
+            > now() - interval '15 minutes'
+        AND NOT EXISTS (
+          SELECT 1 FROM match_scout_entries e
+           WHERE e.org_id = a.org_id AND e.match_key = a.match_key AND e.team_key = a.team_key
+        )
+      ORDER BY coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at) NULLS LAST, m.match_number
+      LIMIT 4`,
+    [row.orgId, input.userId, row.eventKey],
+  );
+  const [matchesRes, feed, logistics, duties] = await Promise.all([matchesP, feedP, logisticsP, dutiesP]);
 
   const schedule: ScheduleMatch[] = matchesRes.rows.map((entry) => ({
     matchKey: entry.matchKey,
@@ -322,16 +341,6 @@ export async function loadMyDayView(
   // The feed's last good check counts as a sync: an unchanged schedule answers "not modified"
   // and its rows keep their old synced_at.
   // No health to read means: say how old the rows are, never that they are out of date.
-  const feed = await withSavepoint(
-    client,
-    async () => {
-      const health = await client.query<{ lastSuccessAt: string | null }>(
-        `SELECT last_success_at::text AS "lastSuccessAt" FROM data_source_health WHERE source = 'tba' LIMIT 1`,
-      );
-      return { known: health.rows.length > 0, checkedAt: health.rows[0]?.lastSuccessAt ?? null };
-    },
-    { known: false, checkedAt: null as string | null },
-  );
   const feedKnown = feed.known;
   const feedCheckedAt = feed.checkedAt;
   const syncedAt =
@@ -342,32 +351,8 @@ export async function loadMyDayView(
       .sort((a, b) => a.at - b.at)
       .at(-1)?.value ?? null;
 
-  const logistics = await loadMyDayLogistics(client, {
-    orgId: row.orgId,
-    userId: input.userId,
-    teamRole: row.teamRole,
-    eventKey: row.eventKey,
-  });
-
   // The robots this person scouts next: primary duties, not filed yet, not long past. The
   // same rules as Home's "what to do now" card (lib/dashboard/home-widget-loaders.ts).
-  const duties = await client.query<{ matchKey: string; teamKey: string; scheduledTime: string | null }>(
-    `SELECT /* my-day:scouting */ a.match_key AS "matchKey", a.team_key AS "teamKey",
-            coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at)::text AS "scheduledTime"
-       FROM scout_assignments a
-       JOIN matches_ref m ON m.match_key = a.match_key
-      WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid AND a.event_key = $3::text
-        AND lower(coalesce(a.role, '')) <> 'backup'
-        AND coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at, now())
-            > now() - interval '15 minutes'
-        AND NOT EXISTS (
-          SELECT 1 FROM match_scout_entries e
-           WHERE e.org_id = a.org_id AND e.match_key = a.match_key AND e.team_key = a.team_key
-        )
-      ORDER BY coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at) NULLS LAST, m.match_number
-      LIMIT 4`,
-    [row.orgId, input.userId, row.eventKey],
-  );
   const byKey = new Map(schedule.map((match) => [match.matchKey, match]));
   const scouting = duties.rows.map((duty) => {
     const match = byKey.get(duty.matchKey);

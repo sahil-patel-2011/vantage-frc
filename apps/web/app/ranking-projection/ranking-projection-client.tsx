@@ -511,7 +511,11 @@ export default function RankingProjectionClient({ initial }: { initial?: Ranking
         }
         title="Ranking projection"
         description="Where your team is likely to finish, from the matches already saved for this event."
-      />
+      >
+        <Button as="a" variant="secondary" href={withOrgHref("/match-sim", orgId)}>
+          Match prediction
+        </Button>
+      </PageHeader>
       <OfflineBanner feature="Ranking projection" fromCache={fromCache} cachedAt={cachedAt} />
       {error && view ? <p className="app-muted">{error}</p> : null}
       {!view && !failure ? <RankingProjectionSkeleton /> : null}

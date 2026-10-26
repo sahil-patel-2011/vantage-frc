@@ -107,14 +107,20 @@ function InboxRelated() {
   );
 }
 
-export default function NotificationsClient({ orgId }: { orgId: string | null }) {
+export default function NotificationsClient({
+  orgId,
+  initial = null,
+}: {
+  orgId: string | null;
+  initial?: NotificationsView | null;
+}) {
   // The team in the address, if any. Without one the server picks the default team in the same
   // request (scope=active) and says which, instead of the page waiting on /api/me first.
   const cacheOrg = orgId?.trim() ?? "";
   // The team the inbox is scoped to: the address's, else the one the server resolved.
   const [scopeOrgId, setScopeOrgId] = useState<string | null>(orgId);
   const [loadingOlder, setLoadingOlder] = useState(false);
-  const [view, setView] = useState<NotificationsView | null>(null);
+  const [view, setView] = useState<NotificationsView | null>(initial);
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [message, setMessage] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);

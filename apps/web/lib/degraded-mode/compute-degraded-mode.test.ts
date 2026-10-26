@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { computeDegradedFallbacks } from ".";
 import { computeDegradedModeView } from "./compute-degraded-mode";
+import { resetDataSourceHealthMemo } from "../reference-health";
 
 type QueryCall = { text: string; values: unknown[] };
 
@@ -16,6 +17,31 @@ function makeClient(rows: {
   const query = vi.fn(async (text: string, values: unknown[] = []) => {
     calls.push({ text, values });
     if (text.includes("FROM memberships")) return { rows: rows.membership ?? [] };
+    // The live read packs cache, health, cursors, and freshness into one statement.
+    if (text.includes('AS "cacheHasRows"')) {
+      const health = (rows.health ?? []).map((row) => ({
+        source: row.source,
+        status: row.status,
+        consecutiveFailures: row.consecutiveFailures,
+        lastSuccessAt: row.lastSuccessAt,
+        lastFailureAt: row.lastFailureAt,
+        lastError:
+          row.lastError ??
+          (row.details && typeof row.details === "object" && "error" in row.details
+            ? (row.details as { error?: unknown }).error
+            : null),
+      }));
+      return {
+        rows: [
+          {
+            cacheHasRows: (rows.cache ?? [{ ok: false }])[0]?.ok !== false,
+            health,
+            cursors: rows.cursors ?? [],
+            freshness: rows.freshness?.[0] ?? null,
+          },
+        ],
+      };
+    }
     if (text.includes("FROM matches_ref") || text.includes("EXISTS(SELECT 1 FROM matches_ref")) {
       return { rows: rows.cache ?? [{ ok: false }] };
     }
@@ -29,6 +55,10 @@ function makeClient(rows: {
 }
 
 describe("computeDegradedModeView", () => {
+  beforeEach(() => {
+    resetDataSourceHealthMemo();
+  });
+
   it("returns setup_required when the user has no org membership", async () => {
     const client = makeClient({ membership: [] });
     const view = await computeDegradedModeView(client, { userId: "u1", requestedOrg: null });

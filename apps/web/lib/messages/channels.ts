@@ -154,6 +154,14 @@ export const CHANNEL_ARCHIVE_MIGRATION = "org_conversations.archived_at (channel
 
 let archiveSupportedCache: boolean | null = null;
 
+export function channelArchiveCached(): boolean | null {
+  return archiveSupportedCache;
+}
+
+export function rememberChannelArchive(value: boolean): void {
+  archiveSupportedCache = value;
+}
+
 /** Test seam: the capability probe is cached per process like the other chat capability checks. */
 export function resetChannelCapabilityCache(): void {
   archiveSupportedCache = null;

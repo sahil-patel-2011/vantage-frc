@@ -105,6 +105,8 @@ export async function loadBusinessView(
     impactResult,
     monthResult,
     seasonsResult,
+    aiFlagResult,
+    financeManager,
   ] = await Promise.all([
     // One season budget everywhere: the number set on /budget (season_budgets)
     // wins; the older Business-only operating budget is only a fallback. RLS
@@ -288,6 +290,14 @@ export async function loadBusinessView(
        ) seasons ORDER BY season_year DESC`,
       [orgId],
     ),
+    full
+      ? client.query<{ aiAssistEnabled: boolean }>(
+          `SELECT ai_assist_enabled AS "aiAssistEnabled"
+           FROM season_budgets WHERE org_id = $1 AND season_year = $2`,
+          [orgId, seasonYear],
+        ).catch(() => ({ rows: [] as Array<{ aiAssistEnabled: boolean }> }))
+      : Promise.resolve({ rows: [] as Array<{ aiAssistEnabled: boolean }> }),
+    canManageFinances(client, orgId),
   ]);
 
   const categories: BudgetCategory[] = categoriesResult.rows.map((row) => ({ id: row.id, name: row.name, allocatedCents: toCents(row.allocatedUsd) }));
@@ -376,19 +386,7 @@ export async function loadBusinessView(
   const seasons = seasonsResult.rows.map((row) => Number(row.seasonYear));
   if (!seasons.includes(seasonYear)) seasons.unshift(seasonYear);
 
-  let financeAiEnabled = false;
-  if (full) {
-    try {
-      const aiFlag = await client.query<{ aiAssistEnabled: boolean }>(
-        `SELECT ai_assist_enabled AS "aiAssistEnabled"
-         FROM season_budgets WHERE org_id = $1 AND season_year = $2`,
-        [orgId, seasonYear],
-      );
-      financeAiEnabled = Boolean(aiFlag.rows[0]?.aiAssistEnabled);
-    } catch {
-      // stays false
-    }
-  }
+  const financeAiEnabled = Boolean(aiFlagResult.rows[0]?.aiAssistEnabled);
   const ordersPulse = buildOrdersPulse(purchases, seasonYear, financeAiEnabled);
 
   return {
@@ -398,7 +396,7 @@ export async function loadBusinessView(
     teamNumber: org.teamNumber,
     role: org.role,
     canManageFinance: org.role === "owner" || org.role === "admin",
-    canManageFinances: await canManageFinances(client, orgId),
+    canManageFinances: financeManager,
     seasonYear,
     seasons,
     teamAffiliation: org.teamAffiliation ?? null,

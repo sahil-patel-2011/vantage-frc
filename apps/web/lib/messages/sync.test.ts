@@ -4,6 +4,7 @@ import {
   mergeMessages,
   nextWatermark,
   pollBackoffMs,
+  pollGapMs,
   totalUnread,
   LONG_POLL_MAX_MS,
 } from "./sync";
@@ -14,6 +15,14 @@ describe("messages sync helpers", () => {
     expect(clampWaitMs("abc")).toBe(0);
     expect(clampWaitMs("3000")).toBe(3000);
     expect(clampWaitMs("99999")).toBe(LONG_POLL_MAX_MS);
+  });
+
+  it("waits out a poll that returned before the server could have been waiting", () => {
+    expect(pollGapMs(40, LONG_POLL_MAX_MS, false)).toBe(1460);
+    expect(pollGapMs(40, LONG_POLL_MAX_MS, true)).toBe(1460);
+    expect(pollGapMs(400, LONG_POLL_MAX_MS, true)).toBe(0);
+    expect(pollGapMs(LONG_POLL_MAX_MS, LONG_POLL_MAX_MS, false)).toBe(0);
+    expect(pollGapMs(10, 0, false)).toBe(1490);
   });
 
   it("backs off failures without exceeding the ceiling", () => {

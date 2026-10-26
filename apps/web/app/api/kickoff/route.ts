@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
-import { withRls, withSavepoint } from "@vantage/db";
+import { withRls } from "@vantage/db";
 import { currentSeasonYear } from "@vantage/game-year";
 import { headers } from "next/headers";
 import {
@@ -83,13 +83,11 @@ function fail(error: unknown) {
   return Response.json({ error: publicErrorMessage(error, "Kickoff request failed") }, { status });
 }
 
-export async function GET(request: Request) {
-  try {
-    const session = await requireSession();
-    const url = new URL(request.url);
-    const requestedOrg = url.searchParams.get("orgId");
-
-    const view = await withRls({ userId: session.user.id }, async (client) => {
+export async function loadKickoffView(
+  client: PoolClient,
+  userId: string,
+  requestedOrg: string | null,
+): Promise<KickoffView> {
       const membership = await client.query<{
         orgId: string;
         orgName: string;
@@ -102,7 +100,7 @@ export async function GET(request: Request) {
          WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
          LIMIT 1`,
-        [session.user.id, requestedOrg],
+        [userId, requestedOrg],
       );
 
       const row = membership.rows[0];
@@ -153,25 +151,18 @@ export async function GET(request: Request) {
            LIMIT 500`,
           [row.orgId],
         ),
-        // Savepointed: a deploy can briefly run ahead of the migration that
-        // creates this table, and next-season notes are not worth taking the
-        // whole Kickoff page down for. Missing reads as "nothing recorded".
-        withSavepoint(
-          client,
-          async () =>
-            (
-              await client.query<NextSeasonSignal>(
-                `SELECT id, kind, observed_on::text AS "observedOn", source, note,
-                        points_at AS "pointsAt"
-                 FROM next_season_signals
-                 WHERE org_id = $1
-                 ORDER BY observed_on DESC, created_at DESC
-                 LIMIT 200`,
-                [row.orgId],
-              )
-            ).rows,
-          [] as NextSeasonSignal[],
-        ).then((rows: NextSeasonSignal[]) => ({ rows })),
+        // A deploy can briefly run ahead of the migration that creates this
+        // table. Missing reads as "nothing recorded", without a savepoint that
+        // would split this wave into its own round trips.
+        client.query<NextSeasonSignal>(
+          `SELECT id, kind, observed_on::text AS "observedOn", source, note,
+                  points_at AS "pointsAt"
+           FROM next_season_signals
+           WHERE org_id = $1
+           ORDER BY observed_on DESC, created_at DESC
+           LIMIT 200`,
+          [row.orgId],
+        ).catch(() => ({ rows: [] as NextSeasonSignal[] })),
       ]);
 
       return {
@@ -181,7 +172,7 @@ export async function GET(request: Request) {
           orgName: row.orgName,
           teamNumber: row.teamNumber,
           role: row.role,
-          userId: session.user.id,
+          userId,
           defaultSeasonYear,
         },
         actions: actions.rows,
@@ -189,8 +180,16 @@ export async function GET(request: Request) {
         ruleNotes: ruleNotes.rows,
         nextSeasonSignals: nextSeasonSignals.rows,
       } satisfies KickoffView;
-    });
+}
 
+export async function GET(request: Request) {
+  try {
+    const session = await requireSession();
+    const url = new URL(request.url);
+    const requestedOrg = url.searchParams.get("orgId");
+    const view = await withRls({ userId: session.user.id }, (client) =>
+      loadKickoffView(client, session.user.id, requestedOrg),
+    );
     return Response.json(view);
   } catch (error) {
     return fail(error);

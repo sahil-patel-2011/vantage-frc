@@ -16,8 +16,18 @@ import { HISTORY_PAGE_SIZE, trimHistoryPage } from "../../../lib/messages/histor
 import { attachRemovalNotices } from "../../../lib/messages/moderation";
 import { cachedSchemaSupport } from "../../../lib/schema-probe";
 import {
+  messageMentionsCached,
+  messageObjectLinksCached,
+  messagePinsCached,
+  primeChatSchema,
+  rememberMessageMentions,
+  rememberMessagePins,
+  rememberObjectLinks,
+} from "../../../lib/messages/chat-schema";
+import {
   assertChannelWritable,
   canManageChannels,
+  channelArchiveCached,
   channelNotificationTitle,
   createChannel,
   isDefaultChannelName,
@@ -38,6 +48,8 @@ import {
   readDmMode,
   readTeamChatEnabled,
   supportsYouthProtection,
+  teamChatFlagCached,
+  youthProtectionSupportCached,
   type SupervisorRef,
 } from "../../../lib/messages/supervision";
 import { supervisionBadge, type DmMode } from "../../../lib/messages/youth-protection";
@@ -85,23 +97,17 @@ type MessageRow = {
 
 type MemberRow = { id: string; name: string; email: string; role: string };
 
-let pinsSupportedCache: boolean | null = null;
-let mentionsSupportedCache: boolean | null = null;
-let objectLinksSupportedCache: boolean | null = null;
-
 // The savepoint-protected, never-caches-a-failure probe these three share now
 // lives in lib/schema-probe.ts, alongside the identical caches in channels.ts,
 // supervision.ts and hours/sweep.ts. Its header explains what the old
-// `catch { cache = false }` cost.
+// `catch { cache = false }` cost. primeChatSchema fills all of them in one read.
 
 async function supportsObjectLinks(client: PoolClient): Promise<boolean> {
   return cachedSchemaSupport(
     client,
     {
-      read: () => objectLinksSupportedCache,
-      write: (value) => {
-        objectLinksSupportedCache = value;
-      },
+      read: () => messageObjectLinksCached(),
+      write: (value) => rememberObjectLinks(value),
     },
     `SELECT 1
        FROM information_schema.tables
@@ -415,10 +421,8 @@ async function supportsMessageMentions(client: PoolClient): Promise<boolean> {
   return cachedSchemaSupport(
     client,
     {
-      read: () => mentionsSupportedCache,
-      write: (value) => {
-        mentionsSupportedCache = value;
-      },
+      read: () => messageMentionsCached(),
+      write: (value) => rememberMessageMentions(value),
     },
     `SELECT 1
        FROM information_schema.tables
@@ -432,10 +436,8 @@ async function supportsMessagePins(client: PoolClient): Promise<boolean> {
   return cachedSchemaSupport(
     client,
     {
-      read: () => pinsSupportedCache,
-      write: (value) => {
-        pinsSupportedCache = value;
-      },
+      read: () => messagePinsCached(),
+      write: (value) => rememberMessagePins(value),
     },
     `SELECT 1
        FROM information_schema.columns
@@ -604,7 +606,8 @@ async function listInbox(
   await ensureTeamChannel(client, orgId, userId);
 
   // Archived channels keep their history and stay exportable; they just leave the working inbox.
-  const archiveSupported = await supportsChannelArchive(client);
+  const archiveKnown = channelArchiveCached();
+  const archiveSupported = archiveKnown != null ? archiveKnown : await supportsChannelArchive(client);
   const archivedSelect = archiveSupported ? "c.archived_at" : "NULL::timestamptz";
   const archivedFilter =
     archiveSupported && !options.includeArchived ? "AND (c.kind <> 'team' OR c.archived_at IS NULL)" : "";
@@ -612,7 +615,8 @@ async function listInbox(
   // A supervised DM has three participants, so the peer label has to aggregate rather than join
   // row-per-participant (that would duplicate the conversation in the inbox). Supervisors are
   // excluded from the label: the thread is still "you and Sam", with a supervision banner inside.
-  const supervisionSupported = await supportsYouthProtection(client);
+  const youthKnown = youthProtectionSupportCached();
+  const supervisionSupported = youthKnown != null ? youthKnown : await supportsYouthProtection(client);
   const peersCte = supervisionSupported
     ? `peers AS (
        SELECT p.conversation_id,
@@ -924,7 +928,10 @@ async function listMessages(
   // "Removed by a team admin" (and, for the author, that it was theirs) — migration 0674.
   await attachRemovalNotices(client, orgId, messageList);
 
-  if (options?.markRead !== false) {
+  // An incremental poll with nothing new must not rewrite read state. The open-chat
+  // loop used to do that on every tick (thousands of writes on one page view) when
+  // the thread had no watermark and the wait was skipped.
+  if (options?.markRead !== false && !(since && messageList.length === 0)) {
     await client.query(
       `INSERT INTO org_conversation_participants (conversation_id, user_id, last_read_at)
        SELECT $1, $2, now()
@@ -1325,7 +1332,10 @@ async function youthProtectionState(
   orgId: string,
   userId: string,
 ): Promise<YouthProtectionState> {
-  const supported = await supportsYouthProtection(client);
+  if (youthProtectionSupportCached() == null || teamChatFlagCached() == null) {
+    await primeChatSchema(client);
+  }
+  const supported = youthProtectionSupportCached() === true;
   if (!supported) {
     return {
       supported: false,
@@ -1342,6 +1352,67 @@ async function youthProtectionState(
     readTeamChatEnabled(client, orgId),
   ]);
   return { supported, dmMode, viewerClass, canManage, teamChatEnabled };
+}
+
+/** Inbox paint: membership, youth-protection, and the conversation list share as few trips as they can. */
+export async function loadMessagesHome(
+  client: PoolClient,
+  orgId: string,
+  userId: string,
+  youthAlready?: YouthProtectionState,
+) {
+  let youthProtection: YouthProtectionState;
+  if (youthAlready) {
+    youthProtection = youthAlready;
+  } else {
+    const membershipP = requireMembership(client, orgId, userId);
+    const youthP = youthProtectionState(client, orgId, userId);
+    await membershipP;
+    youthProtection = await youthP;
+  }
+  if (!youthProtection.teamChatEnabled) {
+    const role = await memberRole(client, orgId, userId);
+    return {
+      currentUserId: userId,
+      conversations: [],
+      unreadCount: 0,
+      canManageChannels: canManageChannels(role),
+      channelArchiveSupported: false,
+      messages: [] as MessageRow[],
+      pinned: [] as MessageRow[],
+      pinsSupported: false,
+      mentionsSupported: false,
+      youthProtection,
+      conversation: null,
+      supervisors: [] as SupervisorRef[],
+      supervisionNotice: "",
+      channels: [],
+      archiveSupported: false,
+      targets: [],
+    };
+  }
+  const [conversations, role, channelArchiveSupported, pinsSupported, mentionsSupported] = await Promise.all([
+    listInbox(client, orgId, userId),
+    memberRole(client, orgId, userId),
+    supportsChannelArchive(client),
+    supportsMessagePins(client),
+    supportsMessageMentions(client),
+  ]);
+  return {
+    currentUserId: userId,
+    conversations,
+    unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+    canManageChannels: canManageChannels(role),
+    channelArchiveSupported,
+    messages: [] as MessageRow[],
+    pinned: [] as MessageRow[],
+    pinsSupported,
+    mentionsSupported,
+    youthProtection,
+    conversation: null,
+    supervisors: [] as SupervisorRef[],
+    supervisionNotice: "",
+  };
 }
 
 export async function GET(request: Request) {
@@ -1364,8 +1435,16 @@ export async function GET(request: Request) {
     const waitMs = clampWaitMs(url.searchParams.get("wait"));
     if (!orgId) throw new Error("orgId is required");
 
-    if (conversationId && since && waitMs > 0 && !NON_THREAD_MODES.has(mode)) {
-      const changed = await waitForThreadUpdates({ userId: session.user.id, orgId }, conversationId, since, waitMs);
+    // A poll with `wait` but no watermark (a thread that has no messages yet) still has to
+    // block. Treating that as a normal read marked the thread read and returned at once, and
+    // the client asked again immediately.
+    const pollSince =
+      since ||
+      (conversationId && waitMs > 0 && !before && !NON_THREAD_MODES.has(mode)
+        ? "1970-01-01T00:00:00.000Z"
+        : null);
+    if (conversationId && pollSince && waitMs > 0 && !NON_THREAD_MODES.has(mode)) {
+      const changed = await waitForThreadUpdates({ userId: session.user.id, orgId }, conversationId, pollSince, waitMs);
       if (!changed) {
         // Nothing new in this thread: answer with the inbox only (other conversations' unread
         // counts still move) instead of re-reading the thread and rewriting its read state.
@@ -1373,16 +1452,23 @@ export async function GET(request: Request) {
         const quiet = await withRls({ userId: session.user.id, orgId }, async (client) => {
           await requireMembership(client, orgId, session.user.id);
           const conversations = await listInbox(client, orgId, session.user.id);
-          return { unchanged: true, conversations, unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0) };
+          const asOf = await client.query<{ asOf: string }>(`SELECT now()::text AS "asOf"`);
+          return {
+            unchanged: true,
+            asOf: asOf.rows[0]?.asOf ?? "",
+            conversations,
+            unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
+          };
         });
         return Response.json(quiet);
       }
     }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      await requireMembership(client, orgId, session.user.id);
-
-      const youthProtection = await youthProtectionState(client, orgId, session.user.id);
+      const membershipP = requireMembership(client, orgId, session.user.id);
+      const youthP = youthProtectionState(client, orgId, session.user.id);
+      await membershipP;
+      const youthProtection = await youthP;
       if (!youthProtection.teamChatEnabled && mode !== "members") {
         const role = await memberRole(client, orgId, session.user.id);
         return {
@@ -1437,6 +1523,7 @@ export async function GET(request: Request) {
 
       if (conversationId) {
         // Any long-poll wait already ran above, outside this transaction.
+        const asOf = await client.query<{ asOf: string }>(`SELECT now()::text AS "asOf"`);
         const { inbox, ...thread } = await listMessages(client, orgId, session.user.id, conversationId, since, {
           before,
           // Paging back through history should not rewrite read state; the
@@ -1457,26 +1544,12 @@ export async function GET(request: Request) {
           // Same transaction as the gate read at the top: reuse it rather than
           // re-running its four queries on every poll.
           youthProtection,
+          asOf: asOf.rows[0]?.asOf ?? "",
           ...thread,
         };
       }
 
-      const conversations = await listInbox(client, orgId, session.user.id);
-      return {
-        currentUserId: session.user.id,
-        conversations,
-        unreadCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
-        canManageChannels: canManageChannels(await memberRole(client, orgId, session.user.id)),
-        channelArchiveSupported: await supportsChannelArchive(client),
-        messages: [] as MessageRow[],
-        pinned: [] as MessageRow[],
-        pinsSupported: await supportsMessagePins(client),
-        mentionsSupported: await supportsMessageMentions(client),
-        youthProtection,
-        conversation: null,
-        supervisors: [] as SupervisorRef[],
-        supervisionNotice: "",
-      };
+      return loadMessagesHome(client, orgId, session.user.id, youthProtection);
     });
 
     return Response.json(data);

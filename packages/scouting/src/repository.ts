@@ -39,31 +39,34 @@ export class ScoutingRepository {
   constructor(private readonly client: PoolClient) {}
 
   async bootstrap(orgId: string, userId: string, selectedEvent?: { eventKey: string; eventName: string | null }) {
-    const canManageSchemas = await canManageScouting(this.client, orgId);
-
-    const context = selectedEvent ? { rows: [] } : await this.client.query<{
-      activeEventKey: string | null;
-      eventName: string | null;
-    }>(
-      `SELECT c.active_event_key AS "activeEventKey", e.name AS "eventName"
-       FROM org_active_context c
-       LEFT JOIN events_ref e ON e.event_key = c.active_event_key
-       WHERE c.org_id = $1`,
-      [orgId],
-    );
+    const [canManageSchemas, context, profile] = await Promise.all([
+      canManageScouting(this.client, orgId),
+      selectedEvent
+        ? Promise.resolve({ rows: [] as Array<{ activeEventKey: string | null; eventName: string | null }> })
+        : this.client.query<{
+            activeEventKey: string | null;
+            eventName: string | null;
+          }>(
+            `SELECT c.active_event_key AS "activeEventKey", e.name AS "eventName"
+             FROM org_active_context c
+             LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+             WHERE c.org_id = $1`,
+            [orgId],
+          ),
+      this.client.query<{
+        name: string | null;
+        email: string | null;
+        displayName: string | null;
+      }>(
+        `SELECT u.name, u.email, p.display_name AS "displayName"
+         FROM users u
+         LEFT JOIN profiles p ON p.user_id = u.id
+         WHERE u.id = $1`,
+        [userId],
+      ),
+    ]);
     const eventKey = selectedEvent ? selectedEvent.eventKey : context.rows[0]?.activeEventKey ?? null;
     const eventName = selectedEvent ? selectedEvent.eventName : context.rows[0]?.eventName ?? null;
-    const profile = await this.client.query<{
-      name: string | null;
-      email: string | null;
-      displayName: string | null;
-    }>(
-      `SELECT u.name, u.email, p.display_name AS "displayName"
-       FROM users u
-       LEFT JOIN profiles p ON p.user_id = u.id
-       WHERE u.id = $1`,
-      [userId],
-    );
     const scoutIdentity = bindScoutIdentity({
       userId,
       displayName: profile.rows[0]?.displayName || profile.rows[0]?.name,
@@ -80,10 +83,6 @@ export class ScoutingRepository {
         canManageSchemas,
         scoutIdentity,
       };
-    }
-
-    if (canManageSchemas) {
-      await this.ensureDefaultSchemas(orgId, userId, eventKey);
     }
 
     const [schemas, assignments, matches, recentEntries] = await Promise.all([
@@ -127,10 +126,24 @@ export class ScoutingRepository {
         [orgId, eventKey],
       ),
     ]);
+    let schemaRows = schemas.rows;
+    if (canManageSchemas && eventKey) {
+      const types = new Set(schemaRows.map((row) => String((row as { type?: string }).type)));
+      if (!types.has("match") || !types.has("pit")) {
+        await this.ensureDefaultSchemas(orgId, userId, eventKey);
+        schemaRows = (await this.client.query(
+          `SELECT DISTINCT ON (type) id, org_id AS "orgId", year, type, version,
+            schema AS definition FROM scout_schemas
+           WHERE org_id = $1 AND year = (SELECT year FROM events_ref WHERE event_key = $2)
+           ORDER BY type, version DESC`,
+          [orgId, eventKey],
+        )).rows;
+      }
+    }
     return {
       eventKey,
       eventName,
-      schemas: schemas.rows.map((row) => ({
+      schemas: schemaRows.map((row) => ({
         ...row,
         definition: stripScoutIdentityFields(
           (row as { definition: Parameters<typeof stripScoutIdentityFields>[0] }).definition,

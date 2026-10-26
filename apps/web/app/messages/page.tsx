@@ -1,10 +1,14 @@
+import { loadMessagesHome } from "../api/messages/route";
 import { EmptyState, PageHeader, Button } from "../../components/ui";
 import { parseComposerLinkFromSearch } from "../../lib/messages/object-links";
+import { withPagePaint } from "../../lib/page-org";
 import MessagesClient from "./messages-client";
 
 export const metadata = {
   title: "Chat",
 };
+
+export const dynamic = "force-dynamic";
 
 export default async function MessagesPage({
   searchParams,
@@ -18,11 +22,12 @@ export default async function MessagesPage({
   }>;
 }) {
   const params = await searchParams;
-  const { orgId, conversationId } = params;
-  const initialObjectLink = orgId
-    ? parseComposerLinkFromSearch(new URLSearchParams(params as Record<string, string>), orgId)
-    : null;
-  if (!orgId) {
+  const paint = await withPagePaint("/messages", params.orgId, async ({ client, userId, orgId }) => {
+    if (!orgId) return null;
+    const home = await loadMessagesHome(client, orgId, userId);
+    return { orgId, home };
+  });
+  if (!paint) {
     return (
       <main className="module-page">
         <PageHeader breadcrumbs="Team / Chat" title="Chat" />
@@ -39,11 +44,13 @@ export default async function MessagesPage({
       </main>
     );
   }
+  const initialObjectLink = parseComposerLinkFromSearch(new URLSearchParams(params as Record<string, string>), paint.orgId);
   return (
     <MessagesClient
-      orgId={orgId}
-      initialConversationId={conversationId ?? null}
+      orgId={paint.orgId}
+      initialConversationId={params.conversationId ?? null}
       initialObjectLink={initialObjectLink}
+      initialInbox={paint.home}
     />
   );
 }

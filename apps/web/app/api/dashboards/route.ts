@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { pickHomeBoard } from "../../../lib/dashboard/boards";
 import { HOME_ALWAYS_LOADED } from "../../../lib/dashboard/refresh";
 import {
@@ -13,7 +14,9 @@ import {
   type DashboardWidgetType,
 } from "../../../lib/dashboard/catalog";
 import { snapshotWantsFullContext } from "../../../lib/dashboard/refresh";
+import { loadHomePaint } from "../../../lib/dashboard/load-home";
 import { loadDashboardSnapshot } from "../../../lib/dashboard/snapshot";
+import { loadDataSourceHealth } from "../../../lib/reference-health";
 import { homeAudienceFromTeamRole } from "../../../lib/home-workflows";
 import { hydrateOrgActiveEvent } from "../../../lib/reference/hydrate-active-event";
 import { publicErrorMessage } from "../../../lib/security/public-error";
@@ -134,27 +137,41 @@ export async function GET(request: Request) {
     const mode = url.searchParams.get("mode") ?? "list";
     const boardId = url.searchParams.get("boardId");
     if (!orgId) throw new Error("orgId is required");
-    if (mode === "snapshot" || mode === "home") {
-      await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
+    // Event refresh used to run in its own transaction before any card loaded.
+    // A fresh cache made that a wasted round trip on every Home open; a cold
+    // cache waited on TBA. Paint from what is stored, and refresh after.
+    if ((mode === "snapshot" || mode === "home") && orgId) {
+      try {
+        after(() => hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId }));
+      } catch {
+        // Called outside a request (a test). The board still reads stored matches.
+      }
     }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const role = await membership(client, orgId, session.user.id);
+      if (mode === "home") {
+        return loadHomePaint(client, { orgId, userId: session.user.id, boardId });
+      }
+      const roleP = membership(client, orgId, session.user.id);
+      // The board list does not need the role. Start it with the membership read.
+      const boardsP = mode === "snapshot" ? null : listBoards(client, orgId, session.user.id);
+      const role = await roleP;
 
       if (mode === "snapshot") {
         const fullContext = snapshotWantsFullContext(url);
-        const snapshot = await loadDashboardSnapshot(client, {
-          orgId,
-          userId: session.user.id,
-          role,
-          widgetTypes: requestedWidgetTypes(url),
-          includeHomeStrip: fullContext,
-        });
-        if (!fullContext) {
+        const [snapshot, dataSourceHealth] = await Promise.all([
+          loadDashboardSnapshot(client, {
+            orgId,
+            userId: session.user.id,
+            role,
+            widgetTypes: requestedWidgetTypes(url),
+            includeHomeStrip: fullContext,
+          }),
+          fullContext ? loadDataSourceHealth(client, orgId) : Promise.resolve(null),
+        ]);
+        if (!fullContext || !dataSourceHealth) {
           return { role, ...snapshot };
         }
-        const { loadDataSourceHealth } = await import("../../../lib/reference-health");
-        const dataSourceHealth = await loadDataSourceHealth(client, orgId);
         return {
           role,
           ...snapshot,
@@ -162,7 +179,7 @@ export async function GET(request: Request) {
         };
       }
 
-      const boards = await listBoards(client, orgId, session.user.id);
+      const boards = await boardsP!;
       const active = pickHomeBoard(boards.rows, {
         userId: session.user.id,
         preferredId: boardId,
@@ -195,7 +212,6 @@ export async function GET(request: Request) {
 
       if (mode !== "home") return boardState;
 
-      const { loadDataSourceHealth } = await import("../../../lib/reference-health");
       const [snapshot, dataSourceHealth] = await Promise.all([
         loadDashboardSnapshot(client, {
           orgId,

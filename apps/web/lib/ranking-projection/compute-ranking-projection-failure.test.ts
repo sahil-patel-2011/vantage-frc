@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PoolClient } from "@neondatabase/serverless";
-import { loadEventScoring } from "../opr/alliance-results";
+import { loadEventScoring, readEventScoring } from "../opr/alliance-results";
 import { PLAYED_MATCH_RATING_CAVEAT, computeRankingProjectionView } from "./compute-ranking-projection";
 
 vi.mock("../opr/alliance-results", () => ({
   loadEventScoring: vi.fn(),
+  readEventScoring: vi.fn(),
 }));
 
 const loadEventScoringMock = vi.mocked(loadEventScoring);
+const readEventScoringMock = vi.mocked(readEventScoring);
 
 function client(bySql: (sql: string) => { rows: unknown[] }): PoolClient {
   return { query: async (sql: string) => bySql(sql) } as unknown as PoolClient;
@@ -15,9 +17,9 @@ function client(bySql: (sql: string) => { rows: unknown[] }): PoolClient {
 
 function rows(epa: Record<string, number | null>) {
   return (sql: string) => {
-    if (sql.includes("memberships")) return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
-    if (sql.includes("org_active_context")) return { rows: [{ eventKey: "2026gagr" }] };
-    if (sql.includes("events_ref")) return { rows: [{ name: "GRITS", year: 2026 }] };
+    if (sql.includes("FROM memberships")) {
+      return { rows: [{ orgId: "org-1", teamNumber: 254, eventKey: "2026gagr", eventName: "GRITS", eventYear: 2026 }] };
+    }
     if (sql.includes("GROUP BY team_key")) {
       return {
         rows: ["frc254", "frc2", "frc3", "frc4", "frc5", "frc6"].map((teamKey, index) => ({
@@ -56,6 +58,8 @@ describe("ranking projection when played-match ratings throw", () => {
   beforeEach(() => {
     loadEventScoringMock.mockReset();
     loadEventScoringMock.mockRejectedValue(new Error("matches_ref missing"));
+    readEventScoringMock.mockReset();
+    readEventScoringMock.mockRejectedValue(new Error("matches_ref missing"));
   });
 
   it("keeps season ratings when every robot has one", async () => {

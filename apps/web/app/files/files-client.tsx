@@ -46,11 +46,13 @@ import { Body, PreviewPane, ShareDialog, UploadList } from "./files-panels";
 import { ScopeNotice } from "./files-scope-notice";
 import { isPausedMediaFile, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../../lib/media-availability";
 
-export default function FilesClient() {
-  const [orgId, setOrgId] = useState<string | null>(null);
+export default function FilesClient({ initial = null }: { initial?: Listing | null } = {}) {
+  const seededOrg = initial && "orgId" in initial ? initial.orgId : null;
+  const [orgId, setOrgId] = useState<string | null>(seededOrg);
   const [rail, setRail] = useState<Rail>("team");
   const [folderId, setFolderId] = useState<string | null>(null);
-  const [listing, setListing] = useState<Listing>({ status: "loading" });
+  const [listing, setListing] = useState<Listing>(initial ?? { status: "loading" });
+  const keepSeed = useRef(initial != null && initial.status !== "loading");
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -171,7 +173,9 @@ export default function FilesClient() {
   }, [orgId, rail, folderId]);
 
   useEffect(() => {
-    setListing({ status: "loading" });
+    // The server already painted this folder. Blanking it here made the first view a skeleton.
+    if (keepSeed.current) keepSeed.current = false;
+    else setListing({ status: "loading" });
     void load();
   }, [load]);
 

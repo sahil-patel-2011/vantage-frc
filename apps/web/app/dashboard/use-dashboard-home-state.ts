@@ -27,6 +27,17 @@ import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl, readOrgIdFromSearch } from "
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { CONTEXT_REFRESH_MS } from "./dashboard-canvas";
 import type { BoardMeta, BoardState, Me } from "./dashboard-board-types";
+
+export type DashboardHomeSeed = {
+  userId: string;
+  orgId: string;
+  role: string | null;
+  canShareOrg: boolean;
+  boards: BoardMeta[];
+  active: BoardState | null;
+  widgets: Record<string, WidgetPayload>;
+  context: Record<string, unknown>;
+};
 import { apiErrorMessage } from "../../lib/ui/load-failure";
 import {
   dashboardCacheFromHomePayload,
@@ -40,20 +51,30 @@ import {
  * Session, board load, snapshot poll, and the URL customize flag. The client
  * keeps measurement, mutations, drag, and the painted grid.
  */
-export function useDashboardHomeState(initialOrgId = "") {
-  const [me, setMe] = useState<Me>({ orgId: initialOrgId || undefined });
-  const [board, setBoard] = useState<BoardState | null>(null);
-  const [layout, setLayout] = useState<DashboardWidgetLayout[]>(() =>
-    defaultDashboardLayoutForAudience("student"),
+export function useDashboardHomeState(initialOrgId = "", initialHome: DashboardHomeSeed | null = null) {
+  const seeded = initialHome?.userId && initialHome.orgId ? dashboardCacheFromHomePayload(initialHome) : null;
+  const seedScope = seeded && initialHome ? `${initialHome.userId}:${initialHome.orgId}` : "";
+  const [me, setMe] = useState<Me>({
+    userId: initialHome?.userId,
+    orgId: initialHome?.orgId || initialOrgId || undefined,
+    orgName: typeof initialHome?.context.orgName === "string" ? initialHome.context.orgName : undefined,
+    teamNumber: typeof initialHome?.context.teamNumber === "number" ? initialHome.context.teamNumber : undefined,
+    role: initialHome?.role,
+    teamRole: typeof initialHome?.context.teamRole === "string" ? initialHome.context.teamRole : undefined,
+    tbaConfigured: initialHome?.context.tbaConfigured === true ? true : undefined,
+  });
+  const [board, setBoard] = useState<BoardState | null>(seeded?.board ?? null);
+  const [layout, setLayout] = useState<DashboardWidgetLayout[]>(
+    seeded?.layout ?? defaultDashboardLayoutForAudience("student"),
   );
-  const [widgets, setWidgets] = useState<Record<string, WidgetPayload>>({});
-  const [context, setContext] = useState<Record<string, unknown>>({});
+  const [widgets, setWidgets] = useState<Record<string, WidgetPayload>>(seeded?.widgets ?? {});
+  const [context, setContext] = useState<Record<string, unknown>>(seeded?.context ?? {});
   const [editing, setEditing] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [scope, setScope] = useState<"personal" | "org">("personal");
-  const [canShareOrg, setCanShareOrg] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
+  const [scope, setScope] = useState<"personal" | "org">(seeded?.scope ?? "personal");
+  const [canShareOrg, setCanShareOrg] = useState(seeded?.canShareOrg ?? false);
+  const [role, setRole] = useState<string | null>(seeded?.role ?? null);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("error");
   /** A one-tap follow-up offered with the message — "Undo" after a remove. */
@@ -61,12 +82,12 @@ export function useDashboardHomeState(initialOrgId = "") {
   /** The card just added, so the board can scroll to it and flash it once. */
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(seeded ? new Date().toISOString() : null);
   const [fromCache, setFromCache] = useState(false);
   const [accessStatus, setAccessStatus] = useState<number | null>(null);
-  const [loadedScope, setLoadedScope] = useState("");
+  const [loadedScope, setLoadedScope] = useState(seedScope);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
-  const [meLoaded, setMeLoaded] = useState(false);
+  const [meLoaded, setMeLoaded] = useState(Boolean(seeded));
   // The account call failed or timed out: unknown, not "no team". Home used to answer a slow
   // /api/me with "Choose your team" and the waitlist card to a team's own owner.
   const [meFailed, setMeFailed] = useState(false);
@@ -83,14 +104,14 @@ export function useDashboardHomeState(initialOrgId = "") {
     built-in "My Home" board and its copy first, and Edit worked on that
     placeholder, so a captain could arrange a board that was not theirs.
   */
-  const [boardLoaded, setBoardLoaded] = useState(false);
+  const [boardLoaded, setBoardLoaded] = useState(Boolean(seeded));
   /** The first widget data has arrived (or failed), so cards can say what they know. */
-  const [widgetsLoaded, setWidgetsLoaded] = useState(false);
+  const [widgetsLoaded, setWidgetsLoaded] = useState(Boolean(seeded));
   /** ?customize=1 asked for edit mode; it waits for the real board. */
   const [pendingCustomize, setPendingCustomize] = useState(false);
   const [announce, setAnnounce] = useState("");
   const [grabbedId, setGrabbedId] = useState<string | null>(null);
-  const [boards, setBoards] = useState<BoardMeta[]>([]);
+  const [boards, setBoards] = useState<BoardMeta[]>(seeded?.boards ?? []);
   const [boardsOpen, setBoardsOpen] = useState(false);
   const [renameId, setRenameId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
@@ -102,9 +123,9 @@ export function useDashboardHomeState(initialOrgId = "") {
   const displayRef = useRef<DashboardWidgetLayout[]>([]);
   const grabBaseRef = useRef<DashboardWidgetLayout[] | null>(null);
   const shellRef = useRef<DashboardShellKind>("loading");
-  const lastCacheRef = useRef<DashboardOfflineCache | null>(null);
-  const widgetsRef = useRef(widgets);
-  const contextRef = useRef(context);
+  const lastCacheRef = useRef<DashboardOfflineCache | null>(seeded);
+  const widgetsRef = useRef(seeded?.widgets ?? widgets);
+  const contextRef = useRef(seeded?.context ?? context);
   const snapshotSequence = useRef(0);
   const appliedSequence = useRef<Record<string, number>>({});
   const homeSequence = useRef(0);
@@ -325,7 +346,8 @@ export function useDashboardHomeState(initialOrgId = "") {
     return () => { active = false; };
   }, [initialOrgId, meAttempt]);
 
-  const loadedScopeRef = useRef<string | null>(null);
+  const loadedScopeRef = useRef<string | null>(seedScope || null);
+  const serverPainted = useRef(Boolean(seeded));
   useEffect(() => {
     const nextScope = `${userId}:${orgId}`;
     setLoadedScope(nextScope);
@@ -402,7 +424,9 @@ export function useDashboardHomeState(initialOrgId = "") {
     // mode=home now returns every widget's data with the board (api/dashboards), so a good
     // answer is fresh data: polling straight after asked the server for the same snapshot again.
     // Only a failed or empty answer falls back to the separate snapshot request.
-    void loadHome(orgId).then((ok) => {
+    const painted = serverPainted.current;
+    serverPainted.current = false;
+    void (painted ? Promise.resolve(true) : loadHome(orgId)).then((ok) => {
       if (cancelled) return;
       if (ok === true) {
         lastFull = Date.now();

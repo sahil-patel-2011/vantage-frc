@@ -83,9 +83,15 @@ async function persistBusinessSnapshot(
   }
 }
 
-export default function BusinessClient({ initialTab = null }: { initialTab?: string | null }) {
+export default function BusinessClient({
+  initialTab = null,
+  initialView = null,
+}: {
+  initialTab?: string | null;
+  initialView?: BusinessPortalView | null;
+}) {
   const access = useClientAccessProfile();
-  const [view, setView] = useState<BusinessPortalView | null>(null);
+  const [view, setView] = useState<BusinessPortalView | null>(initialView);
   // `?tab=` as the server saw it, so the server HTML already has the right heading.
   const [tab, setTab] = useState<Tab>(() => (isTab(initialTab) ? initialTab : "overview"));
   useDocumentTitle(hubDocumentTitle("business", tab));

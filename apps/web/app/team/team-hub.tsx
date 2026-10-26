@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import TeamCalendarClient from "./calendar/team-calendar-client";
+import type { SubteamCalendarView } from "../../lib/subteam-calendar";
 import { EmptyState } from "../../components/ui";
 import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
 import { parseComposerLinkFromSearch, type MessageObjectLink } from "../../lib/messages/object-links";
@@ -14,7 +16,6 @@ import "../batteries/batteries.css";
 import "../todos/todos.css";
 import "../logistics/logistics.css";
 
-const TeamCalendarClient = dynamic(() => import("./calendar/team-calendar-client"), { ssr: false, loading: HubPanelSkeleton });
 const TodosClient = dynamic(() => import("../todos/todos-client"), { ssr: false, loading: HubPanelSkeleton });
 const MessagesClient = dynamic(() => import("../messages/messages-client"), { ssr: false, loading: HubPanelSkeleton });
 const PracticeClient = dynamic(() => import("../practice/practice-client"), { ssr: false, loading: HubPanelSkeleton });
@@ -60,9 +61,22 @@ function MessagesTab({ orgId }: { orgId: string }) {
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
 const EMBEDDED_TABS = ["calendar", "logistics", "todos", "practice", "knowledge", "attendance", "batteries", "fmea", "messages"] as const;
 
-export default function TeamHub({ initialTab }: { initialTab?: string | null }) {
+export default function TeamHub({
+  initialTab,
+  initialOrgId = null,
+  initialCalendar = null,
+  messagesPanel = null,
+  todosPanel = null,
+}: {
+  initialTab?: string | null;
+  initialOrgId?: string | null;
+  initialCalendar?: SubteamCalendarView | null;
+  /** Server-rendered tab. A client-side tab change still loads the panel itself. */
+  messagesPanel?: ReactNode;
+  todosPanel?: ReactNode;
+}) {
   return (
-    <ProductHubShell hubId="team" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab}>
+    <ProductHubShell hubId="team" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab} initialOrgId={initialOrgId}>
       {({ tab, orgId }) => {
         if (tab === "logistics") {
           return <HubOrgGate orgId={orgId} label="Logistics">{() => <LogisticsClient embedded />}</HubOrgGate>;
@@ -70,14 +84,14 @@ export default function TeamHub({ initialTab }: { initialTab?: string | null }) 
         if (tab === "calendar") {
           return (
             <HubOrgGate orgId={orgId} label="Calendar">
-              {() => <TeamCalendarClient embedded />}
+              {() => <TeamCalendarClient embedded initial={initialCalendar} />}
             </HubOrgGate>
           );
         }
         if (tab === "todos") {
           return (
             <HubOrgGate orgId={orgId} label="Tasks">
-              {() => <TodosClient embedded />}
+              {() => todosPanel ?? <TodosClient embedded />}
             </HubOrgGate>
           );
         }
@@ -119,7 +133,7 @@ export default function TeamHub({ initialTab }: { initialTab?: string | null }) 
         if (tab === "messages") {
           return (
             <HubOrgGate orgId={orgId} label="Chat">
-              {(id) => <MessagesTab orgId={id} />}
+              {(id) => messagesPanel ?? <MessagesTab orgId={id} />}
             </HubOrgGate>
           );
         }

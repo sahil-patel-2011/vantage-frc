@@ -40,6 +40,7 @@ import type {
 import { computePrivateEdgeView } from "./compute-private-edge";
 import { matchSpecificPlan } from "./match-plan";
 import { loadSeasonScales } from "./season-scales";
+import { loadScoutFieldRoles } from "./scout-field-roles";
 import { projectScoutEntriesForEngine } from "./scout-engine-payload";
 import {
   EMPTY_PREDICTION_COPY,
@@ -50,7 +51,8 @@ import {
 } from "./prediction-empty-copy";
 import { resolveActiveSeasonYear } from "@vantage/agent";
 import { VANTAGE_PRODUCT_VERSION } from "../product-version";
-import { loadEventScoring } from "../opr/alliance-results";
+import { readEventScoring } from "../opr/alliance-results";
+import { loadEventEntryValidations, trustScoutPayloads } from "../scouting-trust";
 
 function allianceKeys(alliance: unknown): string[] {
   if (!alliance || typeof alliance !== "object") return [];
@@ -93,44 +95,36 @@ export async function resolveReferenceAccess(
   orgId: string | null,
 ): Promise<ReferenceAccessInfo> {
   const platformEnvKey = platformTbaEnvConfigured();
-  let credentialAvailable = false;
-  try {
-    const credentials = await client.query<{ ok: boolean }>(
-      `SELECT EXISTS(
-         SELECT 1 FROM data_source_credentials
-         WHERE source = 'tba'
-           AND disabled_at IS NULL
-           AND (org_id IS NULL OR org_id IS NOT DISTINCT FROM $1::uuid)
-       ) AS ok`,
-      [orgId],
-    );
-    credentialAvailable = Boolean(credentials.rows[0]?.ok);
-  } catch {
-    // stays false
-  }
+  // Three facts, none of which needs the previous answer. One wave.
+  const [credentials, cache, statCounts] = await Promise.all([
+    client
+      .query<{ ok: boolean }>(
+        `SELECT EXISTS(
+           SELECT 1 FROM data_source_credentials
+           WHERE source = 'tba'
+             AND disabled_at IS NULL
+             AND (org_id IS NULL OR org_id IS NOT DISTINCT FROM $1::uuid)
+         ) AS ok`,
+        [orgId],
+      )
+      .catch(() => ({ rows: [{ ok: false }] })),
+    client.query<{ ok: boolean }>(
+      `SELECT EXISTS(SELECT 1 FROM matches_ref LIMIT 1)
+              OR EXISTS(SELECT 1 FROM team_event_metrics LIMIT 1) AS ok`,
+    ),
+    client
+      .query<{ eventMetricRows: number; yearMetricRows: number }>(
+        `SELECT
+           (SELECT COUNT(*)::int FROM team_event_metrics WHERE source = 'statbotics') AS "eventMetricRows",
+           (SELECT COUNT(*)::int FROM team_year_metrics WHERE source = 'statbotics') AS "yearMetricRows"`,
+      )
+      .catch(() => ({ rows: [{ eventMetricRows: 0, yearMetricRows: 0 }] })),
+  ]);
+  const credentialAvailable = Boolean(credentials.rows[0]?.ok);
   // sync_cursors is worker-private; infer cache from readable reference tables.
-  const cache = await client.query<{ ok: boolean }>(
-    `SELECT EXISTS(SELECT 1 FROM matches_ref LIMIT 1)
-            OR EXISTS(SELECT 1 FROM team_event_metrics LIMIT 1) AS ok`,
-  );
   const cacheHasSync = Boolean(cache.rows[0]?.ok);
-
-  let eventMetricRows = 0;
-  let yearMetricRows = 0;
-  try {
-    const statCounts = await client.query<{
-      eventMetricRows: number;
-      yearMetricRows: number;
-    }>(
-      `SELECT
-         (SELECT COUNT(*)::int FROM team_event_metrics WHERE source = 'statbotics') AS "eventMetricRows",
-         (SELECT COUNT(*)::int FROM team_year_metrics WHERE source = 'statbotics') AS "yearMetricRows"`,
-    );
-    eventMetricRows = Number(statCounts.rows[0]?.eventMetricRows ?? 0);
-    yearMetricRows = Number(statCounts.rows[0]?.yearMetricRows ?? 0);
-  } catch {
-    // both stay 0
-  }
+  const eventMetricRows = Number(statCounts.rows[0]?.eventMetricRows ?? 0);
+  const yearMetricRows = Number(statCounts.rows[0]?.yearMetricRows ?? 0);
 
   return {
     platformEnvKey,
@@ -245,10 +239,9 @@ async function loadScoutOperations(
   if (!teamKeys.length) return { operations: [], opponentFoulRisk: "unknown", provenance: [] };
 
   // Published-schema role map so custom form-builder fields reach strategy.
-  const { loadScoutFieldRoles } = await import("./scout-field-roles");
-  const fieldRoles = await loadScoutFieldRoles(client, orgId, eventKey);
-
-  const [matchRows, pitRows] = await Promise.all([
+  // Roles do not depend on the entries, so they share the entries' round trip.
+  const [fieldRoles, matchRows, pitRows, eventValidations] = await Promise.all([
+    loadScoutFieldRoles(client, orgId, eventKey),
     client.query<{
       id: string;
       teamKey: string;
@@ -287,14 +280,11 @@ async function loadScoutOperations(
        LIMIT 200`,
       [orgId, eventKey, teamKeys],
     ),
+    loadEventEntryValidations(client, orgId, eventKey, teamKeys).catch(() => []),
   ]);
 
-  const { loadEntryValidations, trustScoutPayloads } = await import("../scouting-trust");
-  const validations = await loadEntryValidations(
-    client,
-    orgId,
-    matchRows.rows.map((row) => row.id),
-  );
+  const loadedIds = new Set(matchRows.rows.map((row) => row.id));
+  const validations = eventValidations.filter((row) => loadedIds.has(row.entryId));
   const trustedByEntry = trustScoutPayloads(
     matchRows.rows.map((row) => ({ id: row.id, payload: row.payload ?? {} })),
     validations,
@@ -407,6 +397,12 @@ export async function computeStrategyView(
     userId: string;
     requestedOrg: string | null;
     matchKey?: string | null;
+    /**
+     * Paint path. The match is still predicted for the page. The save, the
+     * engineering links, and Private Edge wait, because those are the long
+     * chain and the page does not need them to draw.
+     */
+    readOnly?: boolean;
   },
 ): Promise<StrategyView> {
   const membership = await client.query<{
@@ -431,22 +427,65 @@ export async function computeStrategyView(
   );
 
   const row = membership.rows[0];
-  const access = await resolveReferenceAccess(client, row?.orgId ?? null);
   const dataHref = row?.orgId ? `/team/data?orgId=${encodeURIComponent(row.orgId)}` : "/team/data";
   const seasonYear = resolveActiveSeasonYear({
     seasonYear: row?.eventYear,
     activeEventKey: row?.eventKey,
   });
-  const gameRules = row?.orgId ? await loadSeasonGameRules(client, row.orgId, seasonYear) : undefined;
-
-  let planCode = "free";
-  if (row?.orgId) {
-    const entitlement = await client.query<{ planCode: string | null }>(
-      `SELECT plan_code AS "planCode" FROM org_entitlements WHERE org_id = $1::uuid LIMIT 1`,
-      [row.orgId],
-    );
-    planCode = entitlement.rows[0]?.planCode?.trim().toLowerCase() || "free";
-  }
+  const teamKeyEarly = row?.teamNumber ? `frc${row.teamNumber}` : null;
+  // Access, rules, plan, and the match do not depend on each other once the
+  // team row is known. One wave, not four.
+  const [access, gameRules, entitlement, match] = await Promise.all([
+    resolveReferenceAccess(client, row?.orgId ?? null),
+    row?.orgId ? loadSeasonGameRules(client, row.orgId, seasonYear) : Promise.resolve(undefined),
+    row?.orgId
+      ? client.query<{ planCode: string | null }>(
+          `SELECT plan_code AS "planCode" FROM org_entitlements WHERE org_id = $1::uuid LIMIT 1`,
+          [row.orgId],
+        )
+      : Promise.resolve({ rows: [] as Array<{ planCode: string | null }> }),
+    row?.eventKey && teamKeyEarly
+      ? client.query<{
+          matchKey: string;
+          compLevel: string;
+          matchNumber: number;
+          year: number | null;
+          redAlliance: unknown;
+          blueAlliance: unknown;
+        }>(
+          input.matchKey
+            ? `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
+                      e.year, m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
+               FROM matches_ref m
+               JOIN events_ref e ON e.event_key = m.event_key
+               WHERE m.event_key = $1 AND m.match_key = $2
+               LIMIT 1`
+            : `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
+                      e.year, m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
+               FROM matches_ref m
+               JOIN events_ref e ON e.event_key = m.event_key
+               WHERE m.event_key = $1
+                 AND (
+                   m.red_alliance->'teamKeys' ? $2
+                   OR m.blue_alliance->'teamKeys' ? $2
+                 )
+                 AND ${matchStillAheadSql("m")}
+               ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time)
+               LIMIT 1`,
+          input.matchKey ? [row.eventKey, input.matchKey] : [row.eventKey, teamKeyEarly],
+        )
+      : Promise.resolve({
+          rows: [] as Array<{
+            matchKey: string;
+            compLevel: string;
+            matchNumber: number;
+            year: number | null;
+            redAlliance: unknown;
+            blueAlliance: unknown;
+          }>,
+        }),
+  ]);
+  const planCode = entitlement.rows[0]?.planCode?.trim().toLowerCase() || "free";
   const enginePolicy = selectStrategyEngine(planCode);
   const engine = toEngineSummary(enginePolicy, planCode);
 
@@ -522,39 +561,7 @@ export async function computeStrategyView(
     );
   }
 
-  const teamKey = `frc${row.teamNumber}`;
-  const match = await client.query<{
-    matchKey: string;
-    compLevel: string;
-    matchNumber: number;
-    year: number | null;
-    redAlliance: unknown;
-    blueAlliance: unknown;
-  }>(
-    input.matchKey
-      ? `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
-                e.year, m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
-         FROM matches_ref m
-         JOIN events_ref e ON e.event_key = m.event_key
-         WHERE m.event_key = $1 AND m.match_key = $2
-         LIMIT 1`
-      : `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
-                e.year, m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
-         FROM matches_ref m
-         JOIN events_ref e ON e.event_key = m.event_key
-         WHERE m.event_key = $1
-           AND (
-             m.red_alliance->'teamKeys' ? $2
-             OR m.blue_alliance->'teamKeys' ? $2
-           )
-           -- The same "next match" as Home, My Day and the pit TV: the first of ours still
-           -- ahead. A six-hour window here opened Strategy on a match scored hours ago.
-           AND ${matchStillAheadSql("m")}
-         ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time)
-         LIMIT 1`,
-    input.matchKey ? [row.eventKey, input.matchKey] : [row.eventKey, teamKey],
-  );
-
+  const teamKey = teamKeyEarly!;
   const upcoming = match.rows[0];
   if (!upcoming) {
     const message = !access.tbaConfigured
@@ -612,7 +619,19 @@ export async function computeStrategyView(
   }
 
   const year = upcoming.year ?? new Date().getFullYear();
-  const metricsResult = await client.query<{
+  // Ratings, scouting, history, the field, and pick lists need the match's
+  // teams and nothing else from each other.
+  const [
+    metricsResult,
+    eventScoring,
+    yearMetricsResult,
+    seasonScales,
+    scoutLoaded,
+    matchHistory,
+    fieldResult,
+    pickLists,
+  ] = await Promise.all([
+    client.query<{
     teamKey: string;
     epaTotal: number | null;
     epaAuto: number | null;
@@ -640,7 +659,86 @@ export async function computeStrategyView(
        CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
        synced_at DESC NULLS LAST`,
     [row.eventKey, allTeams],
-  );
+    ),
+    readEventScoring(client, row.eventKey!),
+    client.query<{
+      teamKey: string;
+      year: number;
+      epaTotal: number | null;
+      epaAuto: number | null;
+      epaEndgame: number | null;
+      source: string;
+      syncedAt: string | null;
+      matchesHint: number | null;
+    }>(
+      `SELECT DISTINCT ON (team_key, year)
+          team_key AS "teamKey",
+          year,
+          epa_total AS "epaTotal",
+          epa_auto AS "epaAuto",
+          epa_endgame AS "epaEndgame",
+          source,
+          synced_at::text AS "syncedAt",
+          NULLIF((source_payload->>'matches')::int, 0) AS "matchesHint"
+       FROM team_year_metrics
+       WHERE team_key = ANY($1::text[])
+         AND year BETWEEN $2 AND $3
+       ORDER BY team_key, year,
+         CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+         synced_at DESC NULLS LAST`,
+      [allTeams, year - (MAX_SEASONS_COUNTED - 1), year],
+    ),
+    loadSeasonScales(client, year),
+    loadScoutOperations(client, row.orgId, row.eventKey!, allTeams),
+    client.query<{
+      matchKey: string;
+      winningAlliance: string | null;
+      redAlliance: unknown;
+      blueAlliance: unknown;
+    }>(
+      `SELECT m.match_key AS "matchKey",
+              m.winning_alliance AS "winningAlliance",
+              m.red_alliance AS "redAlliance",
+              m.blue_alliance AS "blueAlliance"
+       FROM matches_ref m
+       WHERE m.event_key = $1
+         AND m.winning_alliance IN ('red', 'blue')
+         AND m.match_key <> $2
+         AND (
+           m.red_alliance->'teamKeys' ?| $3::text[]
+           OR m.blue_alliance->'teamKeys' ?| $3::text[]
+         )
+       ORDER BY COALESCE(m.actual_time, m.post_result_time, m.event_time) DESC NULLS LAST
+       LIMIT 24`,
+      [row.eventKey, upcoming.matchKey, allTeams],
+    ),
+    client.query<{ teamKey: string; epaTotal: number | null; matches: number | null }>(
+      `SELECT DISTINCT ON (team_key)
+          team_key AS "teamKey",
+          epa_total AS "epaTotal",
+          NULLIF((source_payload->>'matches')::int, 0) AS matches
+       FROM team_event_metrics
+       WHERE event_key = $1
+       ORDER BY team_key,
+         CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+         synced_at DESC NULLS LAST`,
+      [row.eventKey],
+    ),
+    client.query<{
+      teamKey: string;
+      listName: string;
+      rank: number;
+      tier: string | null;
+      notes: string | null;
+    }>(
+      `SELECT e.team_key AS "teamKey", l.name AS "listName", e.rank, e.tier, e.notes
+       FROM pick_list_entries e
+       JOIN pick_lists l ON l.id = e.pick_list_id
+       WHERE l.org_id = $1 AND l.event_key = $2 AND e.team_key = ANY($3::text[])
+       ORDER BY e.rank, l.name`,
+      [row.orgId, row.eventKey, allTeams],
+    ),
+  ]);
 
   const metricRows: EventMetricRow[] = metricsResult.rows.map((metric) => ({
     teamKey: metric.teamKey,
@@ -661,7 +759,6 @@ export async function computeStrategyView(
   // What each robot has scored at this event, from the played quals. A robot Statbotics has not
   // rated is rated by that instead of being left out: without it, an event with no Statbotics
   // numbers (every event in production today) had no prediction at all.
-  const eventScoring = await loadEventScoring(client, row.eventKey);
   const hasEpa = new Set(metricRows.filter((metric) => metric.epaTotal != null).map((metric) => metric.teamKey));
   for (const robot of eventScoring.opr) {
     if (hasEpa.has(robot.teamKey) || !allTeams.includes(robot.teamKey)) continue;
@@ -692,35 +789,6 @@ export async function computeStrategyView(
 
   // Season-long year ratings for up to ten seasons — prefer Statbotics when both sources exist.
   // Older seasons count for little (season-weight.ts) and are read on this season's scale.
-  const yearMetricsResult = await client.query<{
-    teamKey: string;
-    year: number;
-    epaTotal: number | null;
-    epaAuto: number | null;
-    epaEndgame: number | null;
-    source: string;
-    syncedAt: string | null;
-    matchesHint: number | null;
-  }>(
-    `SELECT DISTINCT ON (team_key, year)
-        team_key AS "teamKey",
-        year,
-        epa_total AS "epaTotal",
-        epa_auto AS "epaAuto",
-        epa_endgame AS "epaEndgame",
-        source,
-        synced_at::text AS "syncedAt",
-        NULLIF((source_payload->>'matches')::int, 0) AS "matchesHint"
-     FROM team_year_metrics
-     WHERE team_key = ANY($1::text[])
-       AND year BETWEEN $2 AND $3
-     ORDER BY team_key, year,
-       CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
-       synced_at DESC NULLS LAST`,
-    [allTeams, year - (MAX_SEASONS_COUNTED - 1), year],
-  );
-  const seasonScales = await loadSeasonScales(client, year);
-
   const yearMetricRows: YearMetricRow[] = yearMetricsResult.rows.map((metric) => ({
     teamKey: metric.teamKey,
     year: metric.year,
@@ -759,12 +827,7 @@ export async function computeStrategyView(
 
   const ourAlliance: Alliance = red.includes(teamKey) ? "red" : "blue";
   const opponentKeys = ourAlliance === "red" ? blue : red;
-  const { operations, opponentFoulRisk, provenance: scoutProvenance } = await loadScoutOperations(
-    client,
-    row.orgId,
-    row.eventKey,
-    allTeams,
-  );
+  const { operations, opponentFoulRisk, provenance: scoutProvenance } = scoutLoaded;
 
   const opponentOps = operations.filter((op) => opponentKeys.includes(op.teamKey));
   let foulForPlaybook = opponentFoulRisk;
@@ -774,29 +837,6 @@ export async function computeStrategyView(
     foulForPlaybook =
       avg >= 1.5 ? "high" : avg >= 0.5 ? "medium" : rates.some((r) => r > 0) ? "low" : "unknown";
   }
-
-  const matchHistory = await client.query<{
-    matchKey: string;
-    winningAlliance: string | null;
-    redAlliance: unknown;
-    blueAlliance: unknown;
-  }>(
-    `SELECT m.match_key AS "matchKey",
-            m.winning_alliance AS "winningAlliance",
-            m.red_alliance AS "redAlliance",
-            m.blue_alliance AS "blueAlliance"
-     FROM matches_ref m
-     WHERE m.event_key = $1
-       AND m.winning_alliance IN ('red', 'blue')
-       AND m.match_key <> $2
-       AND (
-         m.red_alliance->'teamKeys' ?| $3::text[]
-         OR m.blue_alliance->'teamKeys' ?| $3::text[]
-       )
-     ORDER BY COALESCE(m.actual_time, m.post_result_time, m.event_time) DESC NULLS LAST
-     LIMIT 24`,
-    [row.eventKey, upcoming.matchKey, allTeams],
-  );
 
   const matchResults: MatchResultFact[] = matchHistory.rows.map((matchRow) => {
     const redKeys = allianceKeys(matchRow.redAlliance);
@@ -827,18 +867,6 @@ export async function computeStrategyView(
   // six robots in this match. A rookie who drew two strong alliances tops the
   // rankings on Friday morning, and without this every pick list built that
   // morning inherits the mistake.
-  const fieldResult = await client.query<{ teamKey: string; epaTotal: number | null; matches: number | null }>(
-    `SELECT DISTINCT ON (team_key)
-        team_key AS "teamKey",
-        epa_total AS "epaTotal",
-        NULLIF((source_payload->>'matches')::int, 0) AS matches
-     FROM team_event_metrics
-     WHERE event_key = $1
-     ORDER BY team_key,
-       CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
-       synced_at DESC NULLS LAST`,
-    [row.eventKey],
-  );
   const fieldSamples = fieldResult.rows
     .filter((metric) => metric.epaTotal != null && Number(metric.matches ?? 0) > 0)
     .map((metric) => ({
@@ -925,21 +953,6 @@ export async function computeStrategyView(
     operations,
   });
 
-  const pickLists = await client.query<{
-    teamKey: string;
-    listName: string;
-    rank: number;
-    tier: string | null;
-    notes: string | null;
-  }>(
-    `SELECT e.team_key AS "teamKey", l.name AS "listName", e.rank, e.tier, e.notes
-     FROM pick_list_entries e
-     JOIN pick_lists l ON l.id = e.pick_list_id
-     WHERE l.org_id = $1 AND l.event_key = $2 AND e.team_key = ANY($3::text[])
-     ORDER BY e.rank, l.name`,
-    [row.orgId, row.eventKey, allTeams],
-  );
-
   const pickListHints = pickListHintsForAlliance(
     allTeams,
     pickLists.rows.map((entry) => ({
@@ -987,6 +1000,12 @@ export async function computeStrategyView(
   };
 
   const scoredAt = new Date().toISOString();
+  // Paint skips the save, the engineering links, and Private Edge. Those are a
+  // chain of writes. The page already has the prediction. A later save (the
+  // explicit recompute, or readOnly left false) stores it for Home and the pit TV.
+  let engineeringContext: StrategyEngineeringContext[] = [];
+  let privateEdge: PrivateEdgeView | undefined;
+  if (!input.readOnly) {
   // Stored for the team (briefing, pit TV, Home) when the viewer may write predictions. A scout
   // may not (RLS), and the whole view failed for them with "Choose your team": the strategy is
   // still computed and shown, only not saved.
@@ -1078,7 +1097,7 @@ export async function computeStrategyView(
   // Deploys may briefly run before the cross-feature graph migration lands, so
   // this read is optional — under a savepoint, because the plain catch aborted
   // the transaction and took Private Edge and everything after it down too.
-  const engineeringContext: StrategyEngineeringContext[] = await withSavepoint(
+  engineeringContext = await withSavepoint(
     client,
     async () =>
       (
@@ -1113,7 +1132,7 @@ export async function computeStrategyView(
   // failure there costs the Edge panel and not the whole match strategy screen —
   // the bare catch left the transaction aborted, and everything the caller read
   // afterwards came back empty on a competition day.
-  const privateEdge: PrivateEdgeView | undefined = await withSavepoint(
+  privateEdge = await withSavepoint(
     client,
     () =>
       computePrivateEdgeView(client, {
@@ -1129,7 +1148,7 @@ export async function computeStrategyView(
       }),
     undefined,
   );
-
+  }
 
   return {
     status: "live",

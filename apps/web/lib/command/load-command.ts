@@ -12,7 +12,6 @@ import { commandSetupMessage } from "./event-day-related";
 import { emptyCommandCoverage } from "./empty-coverage";
 import { buildCoverageBoard, summarizeCoverageBoard } from "./match-coverage";
 import { buildNexusQueueSnapshot } from "./nexus-queue";
-import { maybeNotifyCoverageGaps } from "./notify-coverage-gaps";
 import { loadCommandPitFlags } from "./pit-flags";
 import { buildScoutQueue, teamNumberFromKey, withScoutFormHrefs } from "./scout-queue";
 import type {
@@ -24,7 +23,6 @@ import type {
   PitFlag,
 } from "./types";
 import { loadOurMatchSummary, loadOurQualRecord, noNextMatchMessage } from "../matches/no-next-match";
-import { withSavepoint } from "@vantage/db";
 
 /** Nexus is setup-required by design — no key means the panel shows guidance, not blanks. */
 function nexusKeyConfigured(): boolean {
@@ -115,25 +113,36 @@ export async function loadEventDayCommand(
   input: { orgId: string; userId: string },
 ): Promise<CommandSnapshot> {
   const computedAt = new Date().toISOString();
+  // The match plan is the long read. Start it in this turn so its queries share
+  // the round trip with the membership lookup instead of waiting behind it.
+  const strategyPromise = computeStrategyView(client, {
+    userId: input.userId,
+    requestedOrg: input.orgId,
+    readOnly: true,
+  });
   const membership = await client.query<{
     role: string;
     orgName: string;
     teamNumber: number | null;
     eventKey: string | null;
     eventName: string | null;
+    teamRole: string | null;
   }>(
     `SELECT m.role, o.name AS "orgName", o.team_number AS "teamNumber",
-            c.active_event_key AS "eventKey", e.name AS "eventName"
+            c.active_event_key AS "eventKey", e.name AS "eventName",
+            p.team_role AS "teamRole"
      FROM memberships m
      JOIN organizations o ON o.id = m.org_id
      LEFT JOIN org_active_context c ON c.org_id = o.id
      LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+     LEFT JOIN profiles p ON p.user_id = m.user_id
      WHERE m.org_id = $1 AND m.user_id = $2
      LIMIT 1`,
     [input.orgId, input.userId],
   );
   const row = membership.rows[0];
   if (!row) {
+    await strategyPromise;
     return emptySnapshot({
       computedAt,
       message: "Join a team to open Event day.",
@@ -150,7 +159,8 @@ export async function loadEventDayCommand(
 
   const teamKey = row.teamNumber ? `frc${row.teamNumber}` : null;
   const canSetEvent = ["owner", "admin"].includes(row.role);
-  const tbaAccess = await resolveTbaAccess(client, input.orgId);
+  // Schedule access shares the match plan's next wave instead of blocking the panels.
+  const tbaP = resolveTbaAccess(client, input.orgId);
   const links = {
     strategy: hubHref("/competition", "strategy", input.orgId),
     scouting: hubHref("/competition", "scouting", input.orgId),
@@ -168,7 +178,7 @@ export async function loadEventDayCommand(
     matchChecklist: hubHref("/competition", "match-checklist", input.orgId),
   };
 
-  const setupSteps = [
+  const setupFor = (tbaAccess: Awaited<typeof tbaP>) => [
     {
       id: "event",
       label: "Set active event",
@@ -200,9 +210,7 @@ export async function loadEventDayCommand(
     },
   ];
 
-  const base: Omit<CommandSnapshot, "status" | "matches" | "scoutQueue" | "briefs" | "pitFlags" | "prediction" | "record" | "coverage"> & {
-    status?: CommandSnapshot["status"];
-  } = {
+  const baseFor = (tbaAccess: Awaited<typeof tbaP>) => ({
     computedAt,
     orgId: input.orgId,
     role: row.role,
@@ -214,13 +222,16 @@ export async function loadEventDayCommand(
     eventName: row.eventName,
     tbaConfigured: tbaAccess.tbaConfigured,
     tbaAccess,
-    setupSteps,
+    setupSteps: setupFor(tbaAccess),
     links,
     myDay: null,
     nexus: null,
-  };
+  });
 
   if (!row.eventKey || !teamKey) {
+    const tbaAccess = await tbaP;
+    const base = baseFor(tbaAccess);
+    await strategyPromise;
     return {
       ...base,
       status: "setup_required",
@@ -250,30 +261,76 @@ export async function loadEventDayCommand(
 
   const eventKey = row.eventKey;
 
-  const upcomingRows = await client.query<{
-    matchKey: string;
-    compLevel: string;
-    matchNumber: number;
-    scheduledTime: string | null;
-    predictedTime: string | null;
-    redAlliance: unknown;
-    blueAlliance: unknown;
-  }>(
-    `SELECT match_key AS "matchKey", comp_level AS "compLevel", match_number AS "matchNumber",
-            COALESCE(predicted_time, event_time)::text AS "scheduledTime",
-            predicted_time::text AS "predictedTime",
-            red_alliance AS "redAlliance", blue_alliance AS "blueAlliance"
-     FROM matches_ref
-     WHERE event_key = $1
-       AND (
-         red_alliance->'teamKeys' ? $2
-         OR blue_alliance->'teamKeys' ? $2
-       )
-       AND ${matchStillAheadSql()}
-     ORDER BY COALESCE(actual_time, predicted_time, event_time)
-     LIMIT 4`,
-    [eventKey, teamKey],
-  );
+  const panelReads = Promise.all([
+    tbaP,
+    client.query<{
+      matchKey: string;
+      compLevel: string;
+      matchNumber: number;
+      scheduledTime: string | null;
+      predictedTime: string | null;
+      redAlliance: unknown;
+      blueAlliance: unknown;
+    }>(
+      `SELECT match_key AS "matchKey", comp_level AS "compLevel", match_number AS "matchNumber",
+              COALESCE(predicted_time, event_time)::text AS "scheduledTime",
+              predicted_time::text AS "predictedTime",
+              red_alliance AS "redAlliance", blue_alliance AS "blueAlliance"
+       FROM matches_ref
+       WHERE event_key = $1
+         AND (
+           red_alliance->'teamKeys' ? $2
+           OR blue_alliance->'teamKeys' ? $2
+         )
+         AND ${matchStillAheadSql()}
+       ORDER BY COALESCE(actual_time, predicted_time, event_time)
+       LIMIT 4`,
+      [eventKey, teamKey],
+    ),
+    client.query<{ matchReports: string; pitReports: string; openDisagreements: string }>(
+      `SELECT
+         (SELECT count(*)::text FROM match_scout_entries WHERE org_id = $1 AND event_key = $2) AS "matchReports",
+         (SELECT count(*)::text FROM pit_scout_entries WHERE org_id = $1 AND event_key = $2) AS "pitReports",
+         (SELECT count(*)::text FROM scout_disagreements WHERE org_id = $1 AND event_key = $2 AND status = 'open') AS "openDisagreements"`,
+      [input.orgId, eventKey],
+    ),
+    loadCommandPitFlags(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      member: { role: row.role, name: row.orgName, teamNumber: row.teamNumber },
+      teamKey,
+    }),
+    client.query<{
+      epaTotal: number | null;
+      rank: number | null;
+      wins: number | null;
+      losses: number | null;
+      ties: number | null;
+      source: string;
+      syncedAt: string | null;
+    }>(
+      `SELECT epa_total AS "epaTotal", rank, wins, losses, ties, source, synced_at::text AS "syncedAt"
+       FROM team_event_metrics
+       WHERE team_key = $1 AND event_key = $2
+       ORDER BY CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END, synced_at DESC
+       LIMIT 1`,
+      [teamKey, eventKey],
+    ),
+    loadMyDayLogistics(client, {
+      orgId: input.orgId,
+      userId: input.userId,
+      teamRole: row.teamRole,
+      eventKey,
+    }),
+    client.query<{ pits: unknown; live: unknown; syncedAt: string | null }>(
+      `SELECT pits, live, synced_at::text AS "syncedAt"
+       FROM nexus_event_snapshots WHERE event_key = $1`,
+      [eventKey],
+    ),
+    loadOurQualRecord(client, eventKey, teamKey).catch(() => null),
+  ] as const);
+  const [tbaAccess, upcomingRows, counts, pitFlagRows, metrics, logistics, nexusRow, results] = await panelReads;
+  const base = baseFor(tbaAccess);
 
   const matches: CommandMatch[] = upcomingRows.rows.map((match, index) => {
     const redKeys = allianceKeys(match.redAlliance);
@@ -330,10 +387,12 @@ export async function loadEventDayCommand(
   const teamKeysForCoverage = [
     ...new Set(upcomingAllianceTeams.map((row) => row.teamKey).filter((key) => key !== teamKey)),
   ];
+  const focusMatchKeys = matches.map((match) => match.matchKey);
 
-  const coverageRows =
+  // Coverage, pit notes, and the assignment board all depend only on the match list.
+  const [coverageRows, pitEntries, matchEntries, assignmentRows, entryRows] = await Promise.all([
     teamKeysForCoverage.length > 0
-      ? await client.query<{ teamKey: string; matchReports: string; pitReports: string }>(
+      ? client.query<{ teamKey: string; matchReports: string; pitReports: string }>(
           `SELECT t.team_key AS "teamKey",
                   COALESCE(m.cnt, 0)::text AS "matchReports",
                   COALESCE(p.cnt, 0)::text AS "pitReports"
@@ -352,7 +411,54 @@ export async function loadEventDayCommand(
            ) p ON p.team_key = t.team_key`,
           [input.orgId, eventKey, teamKeysForCoverage],
         )
-      : { rows: [] as Array<{ teamKey: string; matchReports: string; pitReports: string }> };
+      : Promise.resolve({ rows: [] as Array<{ teamKey: string; matchReports: string; pitReports: string }> }),
+    focusTeams.length
+      ? client.query<{
+          teamKey: string;
+          payload: Record<string, unknown>;
+          submittedAt: string | null;
+        }>(
+          `SELECT DISTINCT ON (team_key)
+                  team_key AS "teamKey", payload, synced_at::text AS "submittedAt"
+           FROM pit_scout_entries
+           WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
+           ORDER BY team_key, synced_at DESC`,
+          [input.orgId, eventKey, focusTeams],
+        )
+      : Promise.resolve({ rows: [] as Array<{ teamKey: string; payload: Record<string, unknown>; submittedAt: string | null }> }),
+    focusTeams.length
+      ? client.query<{
+          teamKey: string;
+          payload: Record<string, unknown>;
+          submittedAt: string | null;
+        }>(
+          `SELECT team_key AS "teamKey", payload, synced_at::text AS "submittedAt"
+           FROM match_scout_entries
+           WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
+           ORDER BY synced_at DESC
+           LIMIT 80`,
+          [input.orgId, eventKey, focusTeams],
+        )
+      : Promise.resolve({ rows: [] as Array<{ teamKey: string; payload: Record<string, unknown>; submittedAt: string | null }> }),
+    focusMatchKeys.length
+      ? client.query<{ matchKey: string; teamKey: string; count: string }>(
+          `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::text AS count
+           FROM scout_assignments
+           WHERE org_id = $1 AND event_key = $2 AND match_key = ANY($3::text[])
+           GROUP BY match_key, team_key`,
+          [input.orgId, eventKey, focusMatchKeys],
+        )
+      : Promise.resolve({ rows: [] as Array<{ matchKey: string; teamKey: string; count: string }> }),
+    focusMatchKeys.length
+      ? client.query<{ matchKey: string; teamKey: string; count: string }>(
+          `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::text AS count
+           FROM match_scout_entries
+           WHERE org_id = $1 AND event_key = $2 AND match_key = ANY($3::text[])
+           GROUP BY match_key, team_key`,
+          [input.orgId, eventKey, focusMatchKeys],
+        )
+      : Promise.resolve({ rows: [] as Array<{ matchKey: string; teamKey: string; count: string }> }),
+  ]);
 
   const coverage = coverageRows.rows.map((row) => ({
     teamKey: row.teamKey,
@@ -370,53 +476,9 @@ export async function loadEventDayCommand(
     input.orgId,
   );
 
-  const counts = await client.query<{
-    matchReports: string;
-    pitReports: string;
-    openDisagreements: string;
-  }>(
-    `SELECT
-       (SELECT count(*)::text FROM match_scout_entries WHERE org_id = $1 AND event_key = $2) AS "matchReports",
-       (SELECT count(*)::text FROM pit_scout_entries WHERE org_id = $1 AND event_key = $2) AS "pitReports",
-       (SELECT count(*)::text FROM scout_disagreements WHERE org_id = $1 AND event_key = $2 AND status = 'open') AS "openDisagreements"`,
-    [input.orgId, eventKey],
-  );
-
-  const pitFlags: PitFlag[] = await loadCommandPitFlags(client, {
-    orgId: input.orgId,
-    userId: input.userId,
-    member: { role: row.role, name: row.orgName, teamNumber: row.teamNumber },
-    teamKey,
-  });
+  const pitFlags: PitFlag[] = [...pitFlagRows];
 
   if (focusTeams.length) {
-    const [pitEntries, matchEntries] = await Promise.all([
-      client.query<{
-        teamKey: string;
-        payload: Record<string, unknown>;
-        submittedAt: string | null;
-      }>(
-        `SELECT DISTINCT ON (team_key)
-                team_key AS "teamKey", payload, synced_at::text AS "submittedAt"
-         FROM pit_scout_entries
-         WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
-         ORDER BY team_key, synced_at DESC`,
-        [input.orgId, eventKey, focusTeams],
-      ),
-      client.query<{
-        teamKey: string;
-        payload: Record<string, unknown>;
-        submittedAt: string | null;
-      }>(
-        `SELECT team_key AS "teamKey", payload, synced_at::text AS "submittedAt"
-         FROM match_scout_entries
-         WHERE org_id = $1 AND event_key = $2 AND team_key = ANY($3::text[])
-         ORDER BY synced_at DESC
-         LIMIT 80`,
-        [input.orgId, eventKey, focusTeams],
-      ),
-    ]);
-
     for (const entry of pitEntries.rows) {
       pitFlags.push(
         ...pitFlagsFromPayload({
@@ -469,30 +531,7 @@ export async function loadEventDayCommand(
     return true;
   }).slice(0, 10);
 
-  const metrics = await client.query<{
-    epaTotal: number | null;
-    rank: number | null;
-    wins: number | null;
-    losses: number | null;
-    ties: number | null;
-    source: string;
-    syncedAt: string | null;
-  }>(
-    `SELECT epa_total AS "epaTotal", rank, wins, losses, ties, source, synced_at::text AS "syncedAt"
-     FROM team_event_metrics
-     WHERE team_key = $1 AND event_key = $2
-     ORDER BY CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END, synced_at DESC
-     LIMIT 1`,
-    [teamKey, eventKey],
-  );
-
-  const strategy = finalizeStrategyRecompute(
-    await computeStrategyView(client, {
-      userId: input.userId,
-      requestedOrg: input.orgId,
-      matchKey: focusMatch?.matchKey ?? null,
-    }),
-  );
+  const strategy = finalizeStrategyRecompute(await strategyPromise);
 
   let briefs: DriveCoachBrief[] = [];
   let prediction: CommandSnapshot["prediction"] = emptyPrediction("empty");
@@ -557,7 +596,6 @@ export async function loadEventDayCommand(
   const metric = metrics.rows[0];
   // The record comes from this event's posted results when there are any, so it agrees with
   // "All 16 of our matches here are played"; the synced copy can be days behind.
-  const results = await withSavepoint(client, () => loadOurQualRecord(client, eventKey, teamKey), null);
   const record: CommandSnapshot["record"] = metric || results
     ? {
         status: "live",
@@ -575,7 +613,6 @@ export async function loadEventDayCommand(
   const upcomingUnscouted = scoutQueue.filter((item) => !item.hasMatchScout).length;
   const c = counts.rows[0];
 
-  const focusMatchKeys = matches.map((match) => match.matchKey);
   let liveBoard: CommandSnapshot["coverage"]["liveBoard"] = [];
   let coordinatorNudge: CommandSnapshot["coverage"]["coordinatorNudge"] = null;
   let missingRows = 0;
@@ -583,22 +620,6 @@ export async function loadEventDayCommand(
   let coveredRows = 0;
   let doubleCovered = 0;
   if (focusMatchKeys.length) {
-    const [assignmentRows, entryRows] = await Promise.all([
-      client.query<{ matchKey: string; teamKey: string; count: string }>(
-        `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::text AS count
-         FROM scout_assignments
-         WHERE org_id = $1 AND event_key = $2 AND match_key = ANY($3::text[])
-         GROUP BY match_key, team_key`,
-        [input.orgId, eventKey, focusMatchKeys],
-      ),
-      client.query<{ matchKey: string; teamKey: string; count: string }>(
-        `SELECT match_key AS "matchKey", team_key AS "teamKey", count(*)::text AS count
-         FROM match_scout_entries
-         WHERE org_id = $1 AND event_key = $2 AND match_key = ANY($3::text[])
-         GROUP BY match_key, team_key`,
-        [input.orgId, eventKey, focusMatchKeys],
-      ),
-    ]);
     const assignmentCounts = new Map(
       assignmentRows.rows.map((row) => [`${row.matchKey}|${row.teamKey}`, Number(row.count)]),
     );
@@ -624,30 +645,13 @@ export async function loadEventDayCommand(
     assignedWaiting = summary.assigned;
     coveredRows = summary.covered;
     doubleCovered = summary.doubleCovered;
-    const nudge = await maybeNotifyCoverageGaps(client, {
-      orgId: input.orgId,
-      eventKey,
-      actorUserId: input.userId,
-      actorRole: row.role,
-      board,
-    });
     coordinatorNudge = {
-      status: nudge.status,
-      missingRows: nudge.missingRows,
-      message: nudge.message,
+      status: missingRows === 0 ? "no_gaps" : "skipped",
+      missingRows,
+      message: missingRows > 0 ? "Coverage gaps are noted. Coordinators are told after the page is up." : undefined,
     };
   }
 
-  const profile = await client.query<{ teamRole: string | null }>(
-    `SELECT team_role AS "teamRole" FROM profiles WHERE user_id = $1::uuid`,
-    [input.userId],
-  );
-  const logistics = await loadMyDayLogistics(client, {
-    orgId: input.orgId,
-    userId: input.userId,
-    teamRole: profile.rows[0]?.teamRole ?? null,
-    eventKey,
-  });
   const focus = matches[0] ?? null;
   const travelWhen = formatMyDayWhen(logistics.nextTravel?.startsAt);
   const myDay: CommandMyDay = {
@@ -669,11 +673,6 @@ export async function loadEventDayCommand(
     href: links.myDay,
   };
 
-  const nexusRow = await client.query<{ pits: unknown; live: unknown; syncedAt: string | null }>(
-    `SELECT pits, live, synced_at::text AS "syncedAt"
-     FROM nexus_event_snapshots WHERE event_key = $1`,
-    [eventKey],
-  );
   const snapshot = nexusRow.rows[0];
   const nexusConfigured = nexusKeyConfigured();
   const nexusPits =
@@ -698,33 +697,31 @@ export async function loadEventDayCommand(
     : null;
 
   // The same reason Home and My Day give (lib/matches/no-next-match.ts), not a guess that the
-  // schedule is missing when every match is simply over.
-  const summary =
-    matches.length === 0 ? await withSavepoint(client, () => loadOurMatchSummary(client, eventKey, teamKey), null) : null;
+  // schedule is missing when every match is simply over. The playoff check does not depend on
+  // the summary, so the two share one wave; the flag is only kept when the event is over.
+  const summaryP =
+    matches.length === 0 ? loadOurMatchSummary(client, eventKey, teamKey).catch(() => null) : Promise.resolve(null);
+  const playoffP =
+    matches.length === 0
+      ? client
+          .query<{ ahead: boolean }>(
+            `SELECT (
+                EXISTS (SELECT 1 FROM matches_ref
+                         WHERE event_key = $1::text AND comp_level <> 'qm' AND NOT placeholder
+                           AND winning_alliance IS NULL AND post_result_time IS NULL AND actual_time IS NULL)
+                OR (NOT EXISTS (SELECT 1 FROM matches_ref WHERE event_key = $1::text AND comp_level <> 'qm')
+                    AND COALESCE((SELECT end_date FROM events_ref WHERE event_key = $1::text), now() - interval '2 days')
+                        >= now() - interval '1 day')
+              ) AS ahead`,
+            [eventKey],
+          )
+          .then((result) => result.rows[0]?.ahead === true)
+          .catch(() => false)
+      : Promise.resolve(false);
+  const [summary, playoffAhead] = await Promise.all([summaryP, playoffP]);
   const noMatchMessage = matches.length === 0 ? noNextMatchMessage(summary) : undefined;
   const eventOver = Boolean(summary && summary.total > 0 && summary.played >= summary.total);
-  // Playoff matches still to play, or none posted yet while the event's last day has not
-  // passed: alliance selection and playoffs are what happens next.
-  const playoffsAhead = eventOver
-    ? await withSavepoint(
-        client,
-        async () =>
-          (
-            await client.query<{ ahead: boolean }>(
-              `SELECT (
-                  EXISTS (SELECT 1 FROM matches_ref
-                           WHERE event_key = $1::text AND comp_level <> 'qm' AND NOT placeholder
-                             AND winning_alliance IS NULL AND post_result_time IS NULL AND actual_time IS NULL)
-                  OR (NOT EXISTS (SELECT 1 FROM matches_ref WHERE event_key = $1::text AND comp_level <> 'qm')
-                      AND COALESCE((SELECT end_date FROM events_ref WHERE event_key = $1::text), now() - interval '2 days')
-                          >= now() - interval '1 day')
-                ) AS ahead`,
-              [eventKey],
-            )
-          ).rows[0]?.ahead === true,
-        false,
-      )
-    : false;
+  const playoffsAhead = eventOver && playoffAhead;
 
   return {
     ...base,

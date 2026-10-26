@@ -273,17 +273,16 @@ export default function RecognitionClient({ orgId }: { orgId: string | null }) {
             <small>
               Quick add:{" "}
               {SUGGESTED_AWARDS.map((s) => (
-                <a
+                <Button
                   key={s}
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    void createAward(s);
-                  }}
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void createAward(s)}
                   style={{ marginRight: 10 }}
                 >
                   {s}
-                </a>
+                </Button>
               ))}
             </small>
           </p>

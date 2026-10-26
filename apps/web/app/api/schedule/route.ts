@@ -1,6 +1,6 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { withSavepoint } from "@vantage/db/savepoint";
+import { after } from "next/server";
 import { headers } from "next/headers";
 import type { ScheduleContext } from "../../../lib/schedule-board";
 import { fieldStdFromRatings } from "../../../lib/schedule/schedule-predictions";
@@ -34,14 +34,11 @@ function fail(error: unknown) {
   return Response.json({ error: publicErrorMessage(error, "Schedule request failed") }, { status });
 }
 
-export async function GET(request: Request) {
-  try {
-    const session = await requireSession();
-    const url = new URL(request.url);
-    const requestedOrg = url.searchParams.get("orgId");
-    await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg });
-
-    const view = await withRls({ userId: session.user.id }, async (client) => {
+export async function loadSchedulePaint(
+  client: import("@neondatabase/serverless").PoolClient,
+  userId: string,
+  requestedOrg: string | null,
+) {
       const membership = await client.query<ScheduleContext>(
         `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber", m.role,
                 c.active_event_key AS "eventKey", e.name AS "eventName"
@@ -52,7 +49,7 @@ export async function GET(request: Request) {
          WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
          LIMIT 1`,
-        [session.user.id, requestedOrg],
+        [userId, requestedOrg],
       );
 
       const row = membership.rows[0];
@@ -65,7 +62,7 @@ export async function GET(request: Request) {
 
       if (!row.eventKey) {
         return buildScheduleView({
-          context: { ...row, viewerUserId: session.user.id },
+          context: { ...row, viewerUserId: userId },
           setupMessage: "Set your active event on Your team.",
         });
       }
@@ -73,7 +70,7 @@ export async function GET(request: Request) {
       // One round trip per source, all in parallel. Every org-scoped read is
       // filtered by org_id on top of RLS; per-match joining happens in
       // attachTimelineDetail, never as a query per match.
-      const [matches, metrics, assignments, entries, notes, videos] = await Promise.all([
+      const [matches, metrics, assignments, entries, notes, videos, savedRows] = await Promise.all([
         client.query<TbaMatchCacheRow>(
           `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
                   m.set_number AS "setNumber",
@@ -139,26 +136,18 @@ export async function GET(request: Request) {
            ORDER BY v.match_key, v.created_at DESC`,
           [row.orgId, row.eventKey],
         ),
+        // The team's own saved prediction wins where there is one. A missing table keeps the ratings estimate.
+        client.query<{ matchKey: string; pRed: number }>(
+          `SELECT DISTINCT ON (p.match_key) p.match_key AS "matchKey", p.p_red AS "pRed"
+             FROM predictions p
+             JOIN matches_ref m ON m.match_key = p.match_key AND m.event_key = $2::text
+            WHERE p.org_id = $1::uuid AND p.p_red IS NOT NULL
+            ORDER BY p.match_key, p.scored_at DESC`,
+          [row.orgId, row.eventKey],
+        ).catch(() => ({ rows: [] as Array<{ matchKey: string; pRed: number }> })),
       ]);
 
-      // The team's own saved prediction wins where there is one: the Predict list said 71% for a
-      // match Home and Strategy put at 75%. Missing table or no rows: the ratings estimate stays.
-      const saved = await withSavepoint(
-        client,
-        async () =>
-          (
-            await client.query<{ matchKey: string; pRed: number }>(
-              `SELECT DISTINCT ON (p.match_key) p.match_key AS "matchKey", p.p_red AS "pRed"
-                 FROM predictions p
-                 JOIN matches_ref m ON m.match_key = p.match_key AND m.event_key = $2::text
-                WHERE p.org_id = $1::uuid AND p.p_red IS NOT NULL
-                ORDER BY p.match_key, p.scored_at DESC`,
-              [row.orgId, row.eventKey],
-            )
-          ).rows,
-        [] as Array<{ matchKey: string; pRed: number }>,
-      );
-      const savedRedWin = new Map(saved.map((entry) => [entry.matchKey, Number(entry.pRed)]));
+      const savedRedWin = new Map(savedRows.rows.map((entry) => [entry.matchKey, Number(entry.pRed)]));
 
       const teamRatings = new Map<string, number>();
       for (const metric of metrics.rows) {
@@ -167,7 +156,7 @@ export async function GET(request: Request) {
       }
 
       return buildScheduleView({
-        context: { ...row, viewerUserId: session.user.id },
+        context: { ...row, viewerUserId: userId },
         rows: matches.rows,
         teamRatings,
         fieldStd: fieldStdFromRatings(teamRatings.values()),
@@ -179,7 +168,20 @@ export async function GET(request: Request) {
           videos: videos.rows,
         },
       });
-    });
+}
+
+export async function GET(request: Request) {
+  try {
+    const session = await requireSession();
+    const url = new URL(request.url);
+    const requestedOrg = url.searchParams.get("orgId");
+    try {
+      after(() => hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg }));
+    } catch {
+      // Called outside a request. The schedule still reads the stored matches.
+    }
+
+    const view = await withRls({ userId: session.user.id }, (client) => loadSchedulePaint(client, session.user.id, requestedOrg));
 
     return Response.json(view);
   } catch (error) {

@@ -274,14 +274,14 @@ function PitShell({
   );
 }
 
-export default function PitCommandClient({ orgId }: { orgId: string }) {
-  const [data, setData] = useState<Data | null>(null);
+export default function PitCommandClient({ orgId, initial = null }: { orgId: string; initial?: Data | null }) {
+  const [data, setData] = useState<Data | null>(initial);
   const [form, setForm] = useState<Form>(null);
   const [busy, setBusy] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [now, setNow] = useState(Date.now());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initial == null);
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);

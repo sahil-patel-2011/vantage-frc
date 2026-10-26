@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { loadDataSourceHealth } from "../../../lib/reference-health";
 import { computeStrategyView } from "../../../lib/strategy/compute-strategy";
 import {
@@ -13,22 +14,33 @@ import type { StrategyView } from "../../../lib/strategy/types";
 
 export type { StrategyView };
 
-async function loadStrategyView(input: {
+export async function loadStrategyView(input: {
   userId: string;
   requestedOrg: string | null;
   matchKey: string | null;
   refresh: boolean;
 }): Promise<StrategyView> {
-  await hydrateOrgActiveEvent({ userId: input.userId, requestedOrg: input.requestedOrg });
-  return withRls({ userId: input.userId }, async (client) => {
-    const compute = input.refresh ? recomputeStrategyView : computeStrategyView;
-    const strategy = await compute(client, {
-      userId: input.userId,
-      requestedOrg: input.requestedOrg,
-      matchKey: input.matchKey,
-    });
+  try {
+    after(() => hydrateOrgActiveEvent({ userId: input.userId, requestedOrg: input.requestedOrg }));
+  } catch {
+    // Called outside a request. The plan still reads stored matches.
+  }
+  return withRls({ userId: input.userId, orgId: input.requestedOrg ?? undefined }, async (client) => {
+    const strategyP = input.refresh
+      ? recomputeStrategyView(client, {
+          userId: input.userId,
+          requestedOrg: input.requestedOrg,
+          matchKey: input.matchKey,
+        })
+      : computeStrategyView(client, {
+          userId: input.userId,
+          requestedOrg: input.requestedOrg,
+          matchKey: input.matchKey,
+          readOnly: true,
+        });
+    const healthP = loadDataSourceHealth(client, input.requestedOrg);
+    const [strategy, dataSourceHealth] = await Promise.all([strategyP, healthP]);
     const view = input.refresh ? strategy : finalizeStrategyRecompute(strategy);
-    const dataSourceHealth = await loadDataSourceHealth(client, view.orgId);
     return { ...view, dataSourceHealth };
   });
 }

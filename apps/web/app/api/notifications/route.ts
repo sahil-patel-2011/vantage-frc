@@ -1,3 +1,4 @@
+import type { PoolClient } from "@neondatabase/serverless";
 import { notificationBody, notificationHref, notificationTitle } from "../../../lib/notifications";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
@@ -22,6 +23,50 @@ function fail(error: unknown, status = 400) {
   );
 }
 
+export async function loadNotificationsInbox(
+  client: PoolClient,
+  input: {
+    userId: string;
+    orgId: string | null;
+    active: boolean;
+    filter: "all" | "unread";
+    limit: number;
+    cursor: ReturnType<typeof parseInboxCursor>;
+  },
+) {
+  const { userId, orgId, active, filter, limit, cursor } = input;
+  const page = await loadInboxPage(client, { userId, orgId, active, filter, limit, cursor });
+  const rows: NotificationRow[] = page.rows;
+  const scopeOrgId = active ? page.orgId : orgId;
+  const joinerIds = rows
+    .filter((row) => row.type === "invite_accepted" && typeof row.payload?.userId === "string")
+    .map((row) => String(row.payload.userId));
+  const joiners = await joinerNames(client, [...new Set(joinerIds)]);
+  return {
+    userId,
+    orgId: scopeOrgId,
+    unreadCount: page.unreadCount,
+    nextCursor: page.nextCursor,
+    items: rows.map((row) => {
+      const payload = row.payload ?? {};
+      const title = notificationTitle(row.type, payload);
+      return {
+        id: row.id,
+        orgId: row.orgId,
+        type: row.type,
+        title:
+          row.type === "invite_accepted" && typeof payload.userId === "string"
+            ? nameTheJoiner(title, joiners.get(String(payload.userId)))
+            : title,
+        body: notificationBody(payload, row.type),
+        href: notificationHref(row.type, payload, row.orgId ?? scopeOrgId),
+        readAt: row.readAt,
+        createdAt: row.createdAt,
+      };
+    }),
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
@@ -40,40 +85,14 @@ export async function GET(request: Request) {
       if (url.searchParams.get("mode") === "count") return {
         userId: session.user.id, orgId, unreadCount: await unreadNotificationCount(client, session.user.id, orgId),
       };
-      // One statement: the page, the unread count and (for scope=active) the team.
-      const page = await loadInboxPage(client, { userId: session.user.id, orgId, active, filter, limit, cursor });
-      const rows: NotificationRow[] = page.rows;
-      const scopeOrgId = active ? page.orgId : orgId;
-
-      const joinerIds = rows
-        .filter((row) => row.type === "invite_accepted" && typeof row.payload?.userId === "string")
-        .map((row) => String(row.payload.userId));
-      const joiners = await joinerNames(client, [...new Set(joinerIds)]);
-
-      return {
+      return loadNotificationsInbox(client, {
         userId: session.user.id,
-        orgId: scopeOrgId,
-        unreadCount: page.unreadCount,
-        nextCursor: page.nextCursor,
-        // Only what the inbox draws: the payload stays on the server.
-        items: rows.map((row) => {
-          const payload = row.payload ?? {};
-          const title = notificationTitle(row.type, payload);
-          return {
-            id: row.id,
-            orgId: row.orgId,
-            type: row.type,
-            title:
-              row.type === "invite_accepted" && typeof payload.userId === "string"
-                ? nameTheJoiner(title, joiners.get(String(payload.userId)))
-                : title,
-            body: notificationBody(payload, row.type),
-            href: notificationHref(row.type, payload, row.orgId ?? scopeOrgId),
-            readAt: row.readAt,
-            createdAt: row.createdAt,
-          };
-        }),
-      };
+        orgId,
+        active,
+        filter,
+        limit,
+        cursor,
+      });
     });
 
     return Response.json(data);

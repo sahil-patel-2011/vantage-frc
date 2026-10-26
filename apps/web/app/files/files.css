@@ -53,12 +53,30 @@
 }
 
 @media (max-width: 860px) {
+  .drive-page {
+    /* The floating places bar sits over the last line. Body padding clears most
+       pages; this page's last row was still under it at 390px. */
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+  .drive-layout {
+    min-width: 0;
+  }
   .drive-rail {
     position: static;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(180px, 1fr);
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     overflow-x: auto;
+    overscroll-behavior-x: contain;
     padding-bottom: 4px;
+  }
+  .drive-rail-item {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: min(220px, 78vw);
   }
 }
 

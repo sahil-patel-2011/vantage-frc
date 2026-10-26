@@ -55,26 +55,34 @@ async function access(
   return member;
 }
 
+export async function loadPitCommand(
+  client: PoolClient,
+  session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>,
+  orgId: string,
+) {
+  const member = await access(client, session, orgId);
+  const board = await loadPitBoard(client, {
+    orgId,
+    userId: session.user.id,
+    member,
+  });
+  return {
+    ...board,
+    summary: {
+      ...board.summary,
+      repeatFailureSubsystems: board.repeatAlerts.length,
+    },
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const session = await currentSession();
     const orgId = new URL(request.url).searchParams.get("orgId");
     if (!orgId) throw new PitHttpError(400, "orgId is required");
-    const payload = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const member = await access(client, session, orgId);
-      const board = await loadPitBoard(client, {
-        orgId,
-        userId: session.user.id,
-        member,
-      });
-      return {
-        ...board,
-        summary: {
-          ...board.summary,
-          repeatFailureSubsystems: board.repeatAlerts.length,
-        },
-      };
-    });
+    const payload = await withRls({ userId: session.user.id, orgId }, (client) =>
+      loadPitCommand(client, session, orgId),
+    );
     return Response.json(payload, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return failure(error);

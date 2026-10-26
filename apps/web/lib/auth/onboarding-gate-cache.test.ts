@@ -27,6 +27,23 @@ describe("the proxy's onboarding check", () => {
     expect(load).toHaveBeenCalledTimes(2);
   });
 
+  it("shares one lookup when the same session is asked together", async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const load = vi.fn(async () => {
+      await gate;
+      return settled;
+    });
+    const first = readOnboardingGate("s5", load, { sleep: noSleep });
+    const second = readOnboardingGate("s5", load, { sleep: noSleep });
+    release?.();
+    expect(await first).toEqual(settled);
+    expect(await second).toEqual(settled);
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
   it("retries a failed lookup once before giving up", async () => {
     const load = vi.fn().mockRejectedValueOnce(new Error("max clients reached")).mockResolvedValueOnce(settled);
     expect(await readOnboardingGate("s3", load, { sleep: noSleep })).toEqual(settled);

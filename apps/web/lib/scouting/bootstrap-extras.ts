@@ -58,14 +58,16 @@ export async function loadBootstrapExtras(
   client: Queryable,
   input: { orgId: string; userId: string; eventKey: string | null },
 ): Promise<BootstrapExtras> {
-  const team = await client.query<{ teamNumber: number | null }>(
+  const teamP = client.query<{ teamNumber: number | null }>(
     `SELECT team_number AS "teamNumber" FROM organizations WHERE id = $1::uuid`,
     [input.orgId],
   );
-  const teamNumber = team.rows[0]?.teamNumber ?? null;
-  if (!input.eventKey) return { myEntries: [], scouted: [], pitScouted: [], roster: [], rosterComplete: false, matchStatus: [], teamNumber };
+  if (!input.eventKey) {
+    const team = await teamP;
+    return { myEntries: [], scouted: [], pitScouted: [], roster: [], rosterComplete: false, matchStatus: [], teamNumber: team.rows[0]?.teamNumber ?? null };
+  }
 
-  const mine = await client.query<MyScoutEntry>(
+  const mineP = client.query<MyScoutEntry>(
     `SELECT e.id::text AS id, 'match' AS type, e.match_key AS "matchKey", e.team_key AS "teamKey",
             e.client_id AS "clientId", e.schema_id AS "schemaId", e.payload, e.confidence::text AS confidence, e.updated_at AS "updatedAt"
      FROM match_scout_entries e
@@ -78,7 +80,7 @@ export async function loadBootstrapExtras(
      LIMIT 1000`,
     [input.orgId, input.eventKey, input.userId],
   );
-  const scouted = await client.query<{ type: string; matchKey: string | null; teamKey: string; nickname: string | null }>(
+  const scoutedP = client.query<{ type: string; matchKey: string | null; teamKey: string; nickname: string | null }>(
     `WITH coverage AS (SELECT DISTINCT 'match' AS type, match_key AS "matchKey", team_key AS "teamKey"
      FROM match_scout_entries
      WHERE org_id = $1::uuid AND event_key = $2 AND match_key IS NOT NULL
@@ -92,13 +94,15 @@ export async function loadBootstrapExtras(
      SELECT coverage.*, t.nickname FROM coverage LEFT JOIN teams_ref t ON t.team_key=coverage."teamKey"`,
     [input.orgId, input.eventKey],
   );
-  const status = await client.query<MatchStatus>(
+  const statusP = client.query<MatchStatus>(
     `SELECT match_key AS "matchKey", actual_time AS "actualTime", predicted_time AS "predictedTime",
             event_time AS "plannedTime", post_result_time AS "postResultTime",
             NULLIF(winning_alliance, '') AS "winningAlliance"
      FROM matches_ref WHERE event_key = $1`,
     [input.eventKey],
   );
+  const [team, mine, scouted, status] = await Promise.all([teamP, mineP, scoutedP, statusP]);
+  const teamNumber = team.rows[0]?.teamNumber ?? null;
   const roster = new Map<string, RosterTeam>();
   for (const row of scouted.rows) {
     const teamNumber = Number(row.teamKey.replace(/^frc/, ""));

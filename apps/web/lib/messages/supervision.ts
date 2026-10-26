@@ -24,6 +24,15 @@ import {
 
 let youthProtectionSupportedCache: boolean | null = null;
 
+/** Already-known answer, so a caller can query without waiting on the probe. */
+export function youthProtectionSupportCached(): boolean | null {
+  return youthProtectionSupportedCache;
+}
+
+export function rememberYouthProtection(value: boolean): void {
+  youthProtectionSupportedCache = value;
+}
+
 export type SupervisorRef = {
   userId: string;
   name: string;
@@ -65,6 +74,14 @@ export function resetYouthProtectionCapabilityCache(): void {
 
 let teamChatColumnCache: boolean | null = null;
 
+export function teamChatFlagCached(): boolean | null {
+  return teamChatColumnCache;
+}
+
+export function rememberTeamChatFlag(value: boolean): void {
+  teamChatColumnCache = value;
+}
+
 export async function supportsTeamChatFlag(client: PoolClient): Promise<boolean> {
   return cachedSchemaSupport(
     client,
@@ -88,7 +105,15 @@ export function resetTeamChatFlagCapabilityCache(): void {
 
 /** Default on: existing teams keep chat until a mentor turns it off. */
 export async function readTeamChatEnabled(client: PoolClient, orgId: string): Promise<boolean> {
-  if (!(await supportsYouthProtection(client)) || !(await supportsTeamChatFlag(client))) return true;
+  const youth = youthProtectionSupportCached();
+  const column = teamChatFlagCached();
+  if (youth === false || column === false) return true;
+  if (
+    (youth == null || column == null) &&
+    (!(await supportsYouthProtection(client)) || !(await supportsTeamChatFlag(client)))
+  ) {
+    return true;
+  }
   const row = await client.query<{ enabled: boolean | null }>(
     `SELECT team_chat_enabled AS enabled FROM org_chat_policy WHERE org_id = $1::uuid LIMIT 1`,
     [orgId],
@@ -127,7 +152,9 @@ export async function writeTeamChatEnabled(
 }
 
 export async function readDmMode(client: PoolClient, orgId: string): Promise<DmMode> {
-  if (!(await supportsYouthProtection(client))) return DEFAULT_DM_MODE;
+  const known = youthProtectionSupportCached();
+  if (known === false) return DEFAULT_DM_MODE;
+  if (known == null && !(await supportsYouthProtection(client))) return DEFAULT_DM_MODE;
   const row = await client.query<{ dmMode: string }>(
     `SELECT dm_mode AS "dmMode" FROM org_chat_policy WHERE org_id = $1::uuid LIMIT 1`,
     [orgId],
@@ -184,7 +211,9 @@ export async function memberChatClass(
   orgId: string,
   userId: string,
 ): Promise<ChatMemberClass> {
-  if (!(await supportsYouthProtection(client))) return "youth";
+  const known = youthProtectionSupportCached();
+  if (known === false) return "youth";
+  if (known == null && !(await supportsYouthProtection(client))) return "youth";
   const row = await client.query<{ chatClass: string | null }>(
     `SELECT org_member_chat_class($1::uuid, $2::uuid) AS "chatClass"`,
     [orgId, userId],

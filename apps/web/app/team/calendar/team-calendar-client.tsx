@@ -106,10 +106,13 @@ async function persistTeamCalendarSnapshot(orgHint: string, data: SubteamCalenda
   }
 }
 
-export default function TeamCalendarClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function TeamCalendarClient({
+  embedded = false,
+  initial = null,
+}: { embedded?: boolean; initial?: SubteamCalendarView | null } = {}) {
   const Root = embedded ? "section" : "main";
   const online = useOnline();
-  const [view, setView] = useState<SubteamCalendarView | null>(null);
+  const [view, setView] = useState<SubteamCalendarView | null>(initial);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.

@@ -543,9 +543,9 @@ const FILTER_LABELS: Record<TimelineFilter, string> = {
   mine: "My assignments",
 };
 
-export default function ScheduleClient() {
+export default function ScheduleClient({ initial = null }: { initial?: ScheduleView | null } = {}) {
   const cockpit = useCockpitPrefs();
-  const [view, setView] = useState<ScheduleView | null>(null);
+  const [view, setView] = useState<ScheduleView | null>(initial);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.

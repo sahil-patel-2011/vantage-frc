@@ -122,6 +122,8 @@ export async function computeTodosView(
     focusTodoId?: string | null;
     /** The viewer's own calendar date (resolveAsOf); UTC's when absent or implausible. */
     today?: string | null;
+    /** Paint skips the savepoint so the three reads share the next wave. Writes keep it. */
+    isolateReads?: boolean;
   },
 ): Promise<TodosView> {
   const org = await resolveOrg(client, input.userId, input.requestedOrg);
@@ -144,18 +146,18 @@ export async function computeTodosView(
   // created was discarded at COMMIT and the answer was "setup_required" —
   // the phantom setup state that hides a write that silently did not happen.
   // The savepoint keeps the write and lets the read degrade on its own.
-  const loaded = await withSavepoint(
-    client,
-    async () => {
-      const [todos, members, subteams] = await Promise.all([
-        loadTodos(client, org.orgId, asOf),
-        loadMembers(client, org.orgId),
-        loadSubteams(client, org.orgId),
-      ]);
-      return { todos, members, subteams };
-    },
-    null,
-  );
+  // Paint does not write, so it skips the savepoint and shares one wave.
+  const readLists = async () => {
+    const [todos, members, subteams] = await Promise.all([
+      loadTodos(client, org.orgId, asOf),
+      loadMembers(client, org.orgId),
+      loadSubteams(client, org.orgId),
+    ]);
+    return { todos, members, subteams };
+  };
+  const loaded = input.isolateReads === false
+    ? await readLists().catch(() => null)
+    : await withSavepoint(client, readLists, null);
   if (loaded) {
     const { todos, members, subteams } = loaded;
     const focusTodoId =

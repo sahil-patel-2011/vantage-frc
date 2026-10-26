@@ -1,3 +1,4 @@
+import type { PoolClient } from "@neondatabase/serverless";
 import { getOrgPromptCachingEnabled, isSkillToolOutput, resolveOrgChatAdapterWithProvenance, skillIdFromToolName, skillToolName } from "@vantage/agent";
 import { AgentRepository } from "@vantage/agent/repository";
 import { auth } from "@vantage/core";
@@ -88,6 +89,32 @@ async function withConnectionState(
   return Response.json({ ...payload, aiConnection }, { status: response.status });
 }
 
+export async function loadAgentHome(
+  client: PoolClient,
+  userId: string,
+  orgId: string | null,
+  threadId: string | null = null,
+) {
+  const repository = new AgentRepository(client);
+  const [promptCachingEnabled, facts, threads, memories, memorySettings, messages] = await Promise.all([
+    orgId ? getOrgPromptCachingEnabled(client, orgId) : Promise.resolve(true),
+    orgId ? loadSkillAccessFacts(client, orgId, userId) : Promise.resolve(null),
+    repository.listThreads(),
+    repository.listUserMemories(userId),
+    repository.getMemorySettings(userId, orgId ?? undefined),
+    threadId ? repository.getMessages(threadId) : Promise.resolve([]),
+  ]);
+  return {
+    threads,
+    memories,
+    memorySettings,
+    messages,
+    promptCachingEnabled,
+    role: facts?.role ?? null,
+    skills: facts ? skillAvailabilityList(facts) : [],
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const session = await current();
@@ -104,23 +131,9 @@ export async function GET(request: Request) {
       });
       return Response.json({ aiConnection: connection });
     }
-    const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const repository = new AgentRepository(client);
-      const promptCachingEnabled = orgId
-          ? await getOrgPromptCachingEnabled(client, orgId)
-          : true; // platform default since 0448 — personal chats cache too
-      const facts = orgId ? await loadSkillAccessFacts(client, orgId, session.user.id) : null;
-      return {
-        threads: await repository.listThreads(),
-        memories: await repository.listUserMemories(session.user.id),
-        memorySettings: await repository.getMemorySettings(session.user.id, orgId),
-        messages: threadId ? await repository.getMessages(threadId) : [],
-        promptCachingEnabled,
-        // Which Ask AI skills this member may use here, and in plain words why not.
-        role: facts?.role ?? null,
-        skills: facts ? skillAvailabilityList(facts) : [],
-      };
-    });
+    const data = await withRls({ userId: session.user.id, orgId }, (client) =>
+      loadAgentHome(client, session.user.id, orgId ?? null, threadId),
+    );
     return Response.json(data);
   } catch (error) {
     return fail(error);

@@ -153,55 +153,68 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
     );
   }
 
+  const rememberedDevice = (await cookies()).get("vantage_mfa_device")?.value;
   const data = await withRls({ userId: session.user.id, orgId }, async (client) => {
-    const membership = await client.query<{ role: string }>(
+    const membershipP = client.query<{ role: string }>(
       "SELECT role FROM memberships WHERE org_id=$1 AND user_id=$2",
       [orgId, session.user.id],
     );
-    if (!membership.rows[0]) throw new Error("Organization access denied");
-    try {
-      await assertOrgAuthentication(client, {
-        userId: session.user.id,
-        orgId,
-        sessionId: session.session.id,
-        authMethod: String(
-          (session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown",
-        ),
-        rememberedDeviceToken: (await cookies()).get("vantage_mfa_device")?.value,
-      });
-    } catch {
-      redirect(
-        `/security?orgId=${encodeURIComponent(orgId)}&stepup=1&returnTo=${encodeURIComponent(`/workspace?orgId=${orgId}`)}`,
-      );
-    }
-    const context = await client.query<{ eventKey: string | null; eventName: string | null }>(
+    const authP = assertOrgAuthentication(client, {
+      userId: session.user.id,
+      orgId,
+      sessionId: session.session.id,
+      authMethod: String(
+        (session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown",
+      ),
+      rememberedDeviceToken: rememberedDevice,
+    }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    const contextP = client.query<{ eventKey: string | null; eventName: string | null }>(
       `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
        FROM org_active_context c
        LEFT JOIN events_ref e ON e.event_key = c.active_event_key
        WHERE c.org_id = $1`,
       [orgId],
     );
-    const next = context.rows[0]?.eventKey
-      ? await client.query(
-          `SELECT match_key AS "matchKey", comp_level AS "compLevel", match_number AS "matchNumber",
-            event_time AS "eventTime"
-           FROM matches_ref WHERE event_key = $1
-           AND COALESCE(actual_time, event_time, predicted_time) > now()
-           ORDER BY COALESCE(actual_time, event_time, predicted_time)
-           LIMIT 2`,
-          [context.rows[0].eventKey],
-        )
-      : { rows: [] };
-    const eventKey = context.rows[0]?.eventKey ?? null;
-    const freshness = await client.query<{ syncedAt: string | null; lastError: string | null }>(
-      eventKey
-        ? `SELECT max(m.synced_at)::text AS "syncedAt",
-                  (SELECT details->>'error' FROM data_source_health WHERE source='tba' LIMIT 1) AS "lastError"
-           FROM matches_ref m WHERE m.event_key = $1`
-        : `SELECT synced_at::text AS "syncedAt", last_error AS "lastError" FROM tba_cache_freshness LIMIT 1`,
-      eventKey ? [eventKey] : [],
+    const nextP = client.query(
+      `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
+              m.event_time AS "eventTime"
+       FROM org_active_context c
+       JOIN matches_ref m ON m.event_key = c.active_event_key
+       WHERE c.org_id = $1
+         AND COALESCE(m.actual_time, m.event_time, m.predicted_time) > now()
+       ORDER BY COALESCE(m.actual_time, m.event_time, m.predicted_time)
+       LIMIT 2`,
+      [orgId],
     );
-    const dataSourceHealth = await loadDataSourceHealth(client, orgId);
+    const freshnessP = client.query<{ syncedAt: string | null; lastError: string | null }>(
+      `SELECT COALESCE(max(m.synced_at)::text, (SELECT synced_at::text FROM tba_cache_freshness LIMIT 1)) AS "syncedAt",
+              COALESCE(
+                (SELECT details->>'error' FROM data_source_health WHERE source = 'tba' LIMIT 1),
+                (SELECT last_error FROM tba_cache_freshness LIMIT 1)
+              ) AS "lastError"
+       FROM org_active_context c
+       LEFT JOIN matches_ref m ON m.event_key = c.active_event_key
+       WHERE c.org_id = $1`,
+      [orgId],
+    );
+    const healthP = loadDataSourceHealth(client, orgId);
+    const [membership, authError, context, next, freshness, dataSourceHealth] = await Promise.all([
+      membershipP,
+      authP,
+      contextP,
+      nextP,
+      freshnessP,
+      healthP,
+    ]);
+    if (!membership.rows[0]) throw new Error("Organization access denied");
+    if (authError) {
+      redirect(
+        `/security?orgId=${encodeURIComponent(orgId)}&stepup=1&returnTo=${encodeURIComponent(`/workspace?orgId=${orgId}`)}`,
+      );
+    }
     return {
       role: membership.rows[0].role,
       context: context.rows[0] ?? { eventKey: null, eventName: null },

@@ -20,15 +20,30 @@ export async function withIntelRequest<T>(
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new IntelHttpError(401, "Authentication required");
   if (!orgId) throw new IntelHttpError(400, "orgId is required");
+  const rememberedDeviceToken = (await cookies()).get("vantage_mfa_device")?.value;
   return withRls({ userId: session.user.id, orgId }, async (client) => {
-    // The role comes back with the membership check, so callers need not read it again.
-    const membership = await client.query<{ role: string }>(
+    // Membership and the sign-in policy do not depend on each other. The cookie
+    // was read before this transaction so both queries share one round trip.
+    const membershipP = client.query<{ role: string }>(
       "SELECT role::text AS role FROM memberships WHERE org_id=$1::uuid AND user_id=$2::uuid LIMIT 1",
       [orgId, session.user.id],
     );
+    const authP = assertOrgAuthentication(client, {
+      userId: session.user.id,
+      orgId,
+      sessionId: session.session.id,
+      authMethod: String((session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown"),
+      rememberedDeviceToken,
+    }).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    const [membership, authError] = await Promise.all([membershipP, authP]);
     const role = membership.rows[0]?.role;
     if (!role) throw new IntelHttpError(403, "Organization access denied");
-    try{await assertOrgAuthentication(client,{userId:session.user.id,orgId,sessionId:session.session.id,authMethod:String((session.session as typeof session.session&{authMethod?:string}).authMethod??"unknown"),rememberedDeviceToken:(await cookies()).get("vantage_mfa_device")?.value});}catch(error){throw new IntelHttpError(403,error instanceof Error?error.message:"Organization authentication policy denied access");}
+    if (authError) {
+      throw new IntelHttpError(403, authError instanceof Error ? authError.message : "Organization authentication policy denied access");
+    }
     return work(client, { userId: session.user.id, role });
   });
 }

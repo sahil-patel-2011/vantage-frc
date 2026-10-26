@@ -158,6 +158,7 @@ export default function ChatClient({
   initialSkill = null,
   page = {},
   initialMode = null,
+  initialHome = null,
 }: {
   orgId: string;
   initialPrompt?: string;
@@ -168,12 +169,27 @@ export default function ChatClient({
   page?: AskAiPageContext;
   /** "background": open with "Work on this in the background" on (the former Agent tab). */
   initialMode?: "background" | null;
+  /** Threads already read on the server, so the first paint is the chat and not a skeleton. */
+  initialHome?: {
+    threads?: Array<{ id: string; title?: string | null; scope?: string | null }>;
+    memories?: ChatMemory[];
+    memorySettings?: ChatMemorySettings | null;
+    promptCachingEnabled?: boolean;
+    role?: string | null;
+    skills?: SkillAvailabilityRow[];
+  } | null;
 }) {
-  const [threads, setThreads] = useState<Thread[]>([]);
+  const [threads, setThreads] = useState<Thread[]>(() =>
+    (initialHome?.threads ?? []).map((row) => ({
+      id: row.id,
+      title: row.title?.trim() || "Chat",
+      scope: row.scope === "team" ? "team" as const : "private" as const,
+    })),
+  );
   const [thread, setThread] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [memories, setMemories] = useState<ChatMemory[]>([]);
-  const [memorySettings, setMemorySettings] = useState<ChatMemorySettings | null>(null);
+  const [memories, setMemories] = useState<ChatMemory[]>(initialHome?.memories ?? []);
+  const [memorySettings, setMemorySettings] = useState<ChatMemorySettings | null>(initialHome?.memorySettings ?? null);
   const [text, setText] = useState(initialPrompt);
   const [status, setStatus] = useState(
     source === "vscode"
@@ -185,12 +201,12 @@ export default function ChatClient({
         : "",
   );
   const [pendingEditorContextId, setPendingEditorContextId] = useState(contextId);
-  const [promptCachingEnabled, setPromptCachingEnabled] = useState(false);
+  const [promptCachingEnabled, setPromptCachingEnabled] = useState(Boolean(initialHome?.promptCachingEnabled));
   const [contextOpen, setContextOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [cutoffCode, setCutoffCode] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialHome == null);
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -204,8 +220,8 @@ export default function ChatClient({
 
   // Skills: which ones this member may use, the one pinned (chip / page), the one the last
   // question used, and what it found when AI couldn't answer.
-  const [availability, setAvailability] = useState<SkillAvailabilityRow[] | null>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const [availability, setAvailability] = useState<SkillAvailabilityRow[] | null>(initialHome?.skills ?? null);
+  const [role, setRole] = useState<string | null>(initialHome?.role ?? null);
   const [pinned, setPinned] = useState<string | null>(aiSkillById(initialSkill)?.id ?? null);
   const [lastSkill, setLastSkill] = useState<TurnSkill | null>(null);
   const [skillNotice, setSkillNotice] = useState<string | null>(null);
@@ -217,6 +233,7 @@ export default function ChatClient({
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const transcriptRef = useRef<HTMLDivElement | null>(null);
   const followLatest = useRef(true);
+  const seededHome = useRef(initialHome != null);
   useEffect(() => {
     if (!followLatest.current) return;
     const frame = requestAnimationFrame(() => {
@@ -270,6 +287,12 @@ export default function ChatClient({
   }
 
   useEffect(() => {
+    // The server already filled the thread list. Clearing it put the skeleton back on screen.
+    if (seededHome.current) {
+      seededHome.current = false;
+      void load(undefined, true).catch(() => undefined);
+      return () => { loadRequest.current?.abort(); };
+    }
     setThread(null); setMessages([]); setThreads([]); setConnectOpen(false);
     setNotSent(null);
     void load();

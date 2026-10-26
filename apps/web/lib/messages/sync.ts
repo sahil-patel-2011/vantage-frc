@@ -24,6 +24,22 @@ export function pollBackoffMs(failures: number): number {
   return Math.min(POLL_BACKOFF_MAX_MS, POLL_BACKOFF_BASE_MS * 2 ** exp);
 }
 
+/**
+ * Pause before the next poll when this one returned too quickly to have been waiting.
+ * A long poll that actually blocked already spent the wait, so the next one starts at once.
+ * An instant answer (an empty thread with no watermark, or the same rows coming back
+ * immediately) must not be retried in a tight loop.
+ */
+export function pollGapMs(elapsedMs: number, requestedWaitMs: number, changed: boolean): number {
+  const elapsed = Number.isFinite(elapsedMs) ? Math.max(0, elapsedMs) : 0;
+  const requested = Number.isFinite(requestedWaitMs) ? Math.max(0, requestedWaitMs) : 0;
+  if (requested > 0 && elapsed >= requested * 0.5) return 0;
+  // A change that arrived during the wait is shown already; poll again at once.
+  if (changed && elapsed >= 250) return 0;
+  const floor = Math.min(requested > 0 ? requested : 1500, 1500);
+  return Math.max(0, Math.round(floor - elapsed));
+}
+
 export function nextWatermark(messages: SyncMessage[], previous: string | null): string | null {
   let max = previous;
   for (const message of messages) {

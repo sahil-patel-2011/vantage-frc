@@ -66,9 +66,9 @@ const SECTION_COPY: Record<Tab, { title: string; description: string }> = {
   notifications: { title: "Notifications", description: "What Vantage tells you about, and how." },
 };
 
-export default function AccountClient() {
+export default function AccountClient({ initial = null }: { initial?: AccountView | null } = {}) {
   const [tab, setTab] = useState<Tab>("profile");
-  const [account, setAccount] = useState<AccountView | null>(null);
+  const [account, setAccount] = useState<AccountView | null>(initial);
   const [org, setOrg] = useState<OrgContext>({
     orgId: null,
     orgName: null,
@@ -77,20 +77,20 @@ export default function AccountClient() {
     planCode: null,
     workspaceCount: 0,
   });
-  const [displayName, setDisplayName] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
-  const [teamRole, setTeamRole] = useState("");
-  const [recoveryEmail, setRecoveryEmail] = useState("");
-  const [phoneE164, setPhoneE164] = useState("");
+  const [displayName, setDisplayName] = useState(initial?.displayName ?? initial?.name ?? "");
+  const [firstName, setFirstName] = useState(initial?.firstName ?? "");
+  const [lastName, setLastName] = useState(initial?.lastName ?? "");
+  const [dateOfBirth, setDateOfBirth] = useState(initial?.dateOfBirth ?? "");
+  const [teamRole, setTeamRole] = useState(initial?.teamRole ?? "");
+  const [recoveryEmail, setRecoveryEmail] = useState(initial?.recoveryEmail ?? "");
+  const [phoneE164, setPhoneE164] = useState(initial?.phoneE164 ?? "");
   const [otpCode, setOtpCode] = useState("");
-  const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_NOTIFICATION_PREFS);
-  const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(DEFAULT_EMAIL_PREFS);
+  const [prefs, setPrefs] = useState<NotificationPrefs>(initial?.notificationPrefs ?? DEFAULT_NOTIFICATION_PREFS);
+  const [emailPrefs, setEmailPrefs] = useState<EmailPrefs>(initial?.emailPrefs ?? DEFAULT_EMAIL_PREFS);
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initial == null);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);

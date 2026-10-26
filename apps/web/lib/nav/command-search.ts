@@ -80,7 +80,7 @@ const KEYWORDS: Record<string, string[]> = {
   "competition:defense-planner": ["defense", "block", "pin", "disrupt", "d"],
   "competition:opponent-watchlist": ["watchlist", "opponents", "threats", "teams to watch"],
   "competition:match-strategy-cards": ["match cards", "game plan", "auto", "teleop", "endgame"],
-  "competition:match-sim": ["simulate match", "match sim", "predict score"],
+  "competition:match-sim": ["simulate match", "match sim", "match prediction", "predict score"],
   "competition:match-notes-timeline": ["notes", "timeline", "timestamps", "match log"],
   "competition:match-delta-watcher": ["delta", "changes", "what changed", "diff"],
   "competition:match-video-index": ["video", "film", "footage", "rewatch", "clips"],

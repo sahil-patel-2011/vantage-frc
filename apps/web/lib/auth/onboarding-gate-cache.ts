@@ -10,6 +10,9 @@
  *
  * A failed lookup is retried once after a short pause before the request is turned away: a
  * blip in the connection pool is not "we couldn't check your access".
+ *
+ * Concurrent requests for the same session share one lookup. A burst of page
+ * opens used to miss the cache together and each open its own transaction.
  */
 
 export type OnboardingGateAnswer = {
@@ -23,6 +26,7 @@ const GATE_CACHE_LIMIT = 1_000;
 const RETRY_DELAY_MS = 250;
 
 const cache = new Map<string, { answer: OnboardingGateAnswer; at: number }>();
+const inflight = new Map<string, Promise<OnboardingGateAnswer | null>>();
 
 function remember(key: string, answer: OnboardingGateAnswer, at: number) {
   if (cache.size >= GATE_CACHE_LIMIT) {
@@ -44,24 +48,40 @@ export async function readOnboardingGate(
   if (cached && now() - cached.at < GATE_CACHE_TTL_MS) return cached.answer;
   if (cached) cache.delete(sessionKey);
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const answer = await load();
-      if (answer.onboardingComplete && answer.workspaceApproved) remember(sessionKey, answer, now());
-      return answer;
-    } catch (error) {
-      if (attempt === 1) {
-        options.onFailure?.(error);
-        return null;
+  const existing = inflight.get(sessionKey);
+  if (existing) return existing;
+
+  const run = (async (): Promise<OnboardingGateAnswer | null> => {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const answer = await load();
+        if (answer.onboardingComplete && answer.workspaceApproved) remember(sessionKey, answer, now());
+        return answer;
+      } catch (error) {
+        if (attempt === 1) {
+          options.onFailure?.(error);
+          return null;
+        }
+        await sleep(RETRY_DELAY_MS);
       }
-      await sleep(RETRY_DELAY_MS);
     }
+    return null;
+  })();
+  inflight.set(sessionKey, run);
+  try {
+    return await run;
+  } finally {
+    if (inflight.get(sessionKey) === run) inflight.delete(sessionKey);
   }
-  return null;
 }
 
 /** For tests, and for a session that just changed what it may open. */
 export function forgetOnboardingGate(sessionKey?: string) {
-  if (sessionKey) cache.delete(sessionKey);
-  else cache.clear();
+  if (sessionKey) {
+    cache.delete(sessionKey);
+    inflight.delete(sessionKey);
+  } else {
+    cache.clear();
+    inflight.clear();
+  }
 }

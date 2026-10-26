@@ -170,7 +170,7 @@ function NextMatchFooter({ data, orgId }: { data: Record<string, unknown>; orgId
   return (
     <div className="nm-footer">
       {checklist ? <a href={checklist}>Checklist</a> : null}
-      {predictHref ? <a href={predictHref}>Predict other matches</a> : null}
+      {predictHref ? <a href={predictHref}>Match prediction</a> : null}
       {afterLabel ? (
         <span suppressHydrationWarning>
           After · {afterLabel}

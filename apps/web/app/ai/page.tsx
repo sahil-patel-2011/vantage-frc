@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { loadAgentHome } from "../api/agent/route";
 import { hubDocumentTitle } from "../../lib/nav/hub-title";
+import { withPagePaint } from "../../lib/page-org";
 import AiHub, { type AskAiParams } from "./ai-hub";
 
 type Props = {
@@ -17,6 +19,7 @@ type Props = {
     mode?: string;
     source?: string;
     contextId?: string;
+    orgId?: string;
   }>;
 };
 
@@ -34,8 +37,10 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return { title: hubDocumentTitle("ai", tab), description };
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function AiPage({ searchParams }: Props) {
-  const { tab, ...rest } = await searchParams;
+  const { tab, orgId, ...rest } = await searchParams;
   const ask: AskAiParams = {
     skill: rest.skill ?? null,
     prompt: rest.prompt ?? rest.q ?? "",
@@ -48,5 +53,19 @@ export default async function AiPage({ searchParams }: Props) {
     source: rest.source ?? "",
     contextId: rest.contextId ?? "",
   };
-  return <AiHub initialTab={tab ?? null} ask={ask} />;
+  const assistant = !tab || tab === "chat" || tab === "agent";
+  const paint = assistant
+    ? await withPagePaint("/ai", orgId, async ({ client, userId, orgId: resolved }) => {
+        if (!resolved) return { orgId: null, home: null };
+        return { orgId: resolved, home: await loadAgentHome(client, userId, resolved, null) };
+      })
+    : null;
+  return (
+    <AiHub
+      initialTab={tab ?? null}
+      ask={ask}
+      initialOrgId={paint?.orgId ?? null}
+      initialHome={paint?.home ?? null}
+    />
+  );
 }

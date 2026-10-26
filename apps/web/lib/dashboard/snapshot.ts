@@ -1,9 +1,7 @@
 import { matchStillAheadSql } from "../matches/match-ahead-sql";
 import type { PoolClient } from "@neondatabase/serverless";
-import { readOrgAllowance, TEAM_USAGE_SQL } from "@vantage/billing";
-import { probeChatModel } from "../ai/capabilities";
+import { TEAM_USAGE_SQL } from "@vantage/billing";
 import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
-import { withSavepoint } from "@vantage/db";
 import { platformTbaEnvConfigured } from "@vantage/reference";
 import { dashboardNextActions } from "./dashboard-related";
 import { buildOnboardingChecklistSteps } from "../onboarding-workflow";
@@ -23,7 +21,7 @@ import { eventStartIso } from "../strategy/card-strength";
 import { predictionAiRequested } from "../strategy/prediction-ai";
 import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
 import { nextMatchCategoryLine } from "./next-match-copy";
-import { loadEventScoring } from "../opr/alliance-results";
+import { readEventScoring } from "../opr/alliance-results";
 import { loadScoutedRatingsForTeams } from "../scouting/team-profiles";
 import { HOME_WIDGET_TYPES, loadHomeWidget } from "./home-widget-loaders";
 import { LIVE_NOTIFICATION_SQL } from "../notifications/live-sql";
@@ -130,6 +128,9 @@ export async function loadDashboardSnapshot(
       );
       return;
     }
+    // The "why is there no next match" summary shares this upcoming-match wave.
+    // My Day and the schedule card join the same in-flight promise.
+    const summaryP = loadOurMatchSummary(client, eventKey, teamKey);
     const match = await client.query<{
       matchKey: string;
       compLevel: string;
@@ -154,10 +155,11 @@ export async function loadDashboardSnapshot(
     );
     if (!match.rows[0]) {
       // Say why: schedule not out, every match played (with the last result), or no time yet.
-      const summary = await withSavepoint(client, () => loadOurMatchSummary(client, eventKey, teamKey), null);
+      const summary = await summaryP.catch(() => null);
       widgets.next_match = stamp("empty", "next_match", undefined, noNextMatchMessage(summary));
       return;
     }
+    summaryP.catch(() => null);
     const row = match.rows[0];
     // The match after this one, for "After · Qual 52" under the card.
     const afterRow = match.rows[1] ?? null;
@@ -173,24 +175,6 @@ export async function loadDashboardSnapshot(
     );
     const opponentKeys = ourAlliance === "red" ? blueKeys : ourAlliance === "blue" ? redKeys : [];
     const strip = (key: string) => key.replace(/^frc/i, "");
-    const pred = await client.query<{
-      pRed: number;
-      pBlue: number;
-      confidenceLow: number;
-      confidenceHigh: number;
-      keyFactors: unknown;
-      modelVersion: string;
-    }>(
-      `SELECT p_red AS "pRed", p_blue AS "pBlue",
-              confidence_low AS "confidenceLow", confidence_high AS "confidenceHigh",
-              key_factors AS "keyFactors", model_version AS "modelVersion"
-       FROM predictions
-       WHERE org_id = $1::uuid AND match_key = $2
-       ORDER BY scored_at DESC
-       LIMIT 1`,
-      [input.orgId, row.matchKey],
-    );
-    const stored = pred.rows[0];
     const year = seasonYearFromEventKey(eventKey);
     let redPredicted: number | null = null;
     let bluePredicted: number | null = null;
@@ -209,29 +193,48 @@ export async function loadDashboardSnapshot(
     let cardRedWin: number | null = null;
     let categoryLine: string | null = null;
     let useForecastWin = false;
-    if (year && (redKeys.length >= 2 || blueKeys.length >= 2)) {
-      type EpaRow = { teamKey: string; autoEpa: number | null; teleopEpa: number | null; endgameEpa: number | null };
-      // This event's ratings first (how each robot is playing here, and what the Schedule's
-      // estimates use), then the season's for any robot with no event rating yet. Season-only
-      // left Home with no score at all whenever season ratings weren't loaded.
-      const eventEpa = await client.query<EpaRow>(
-        `SELECT DISTINCT ON (team_key)
-            team_key AS "teamKey",
-            epa_auto AS "autoEpa",
-            epa_teleop AS "teleopEpa",
-            epa_endgame AS "endgameEpa"
-         FROM team_event_metrics
-         WHERE team_key = ANY($1::text[]) AND event_key = $2
-           AND (epa_auto IS NOT NULL OR epa_teleop IS NOT NULL OR epa_endgame IS NOT NULL)
-         ORDER BY team_key,
-           CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
-           synced_at DESC NULLS LAST`,
-        [[...redKeys, ...blueKeys], eventKey],
-      );
-      const haveEvent = new Set(eventEpa.rows.map((rating) => rating.teamKey));
-      const missing = [...redKeys, ...blueKeys].filter((key) => !haveEvent.has(key));
-      const yearEpa = missing.length
-        ? await client.query<EpaRow>(
+    type EpaRow = { teamKey: string; autoEpa: number | null; teleopEpa: number | null; endgameEpa: number | null };
+    type PredRow = {
+      pRed: number;
+      pBlue: number;
+      confidenceLow: number;
+      confidenceHigh: number;
+      keyFactors: unknown;
+      modelVersion: string;
+    };
+    const matchKeys = [...redKeys, ...blueKeys];
+    const canScore = Boolean(year && (redKeys.length >= 2 || blueKeys.length >= 2));
+    // Prediction, ratings, scoring, scout notes, and the event date do not depend
+    // on each other. One wave. Season rows fill robots that have no event rating.
+    const [pred, eventEpa, yearEpa, scoring, scouted, dated] = await Promise.all([
+      client.query<PredRow>(
+        `SELECT p_red AS "pRed", p_blue AS "pBlue",
+                confidence_low AS "confidenceLow", confidence_high AS "confidenceHigh",
+                key_factors AS "keyFactors", model_version AS "modelVersion"
+         FROM predictions
+         WHERE org_id = $1::uuid AND match_key = $2
+         ORDER BY scored_at DESC
+         LIMIT 1`,
+        [input.orgId, row.matchKey],
+      ),
+      canScore
+        ? client.query<EpaRow>(
+            `SELECT DISTINCT ON (team_key)
+                team_key AS "teamKey",
+                epa_auto AS "autoEpa",
+                epa_teleop AS "teleopEpa",
+                epa_endgame AS "endgameEpa"
+             FROM team_event_metrics
+             WHERE team_key = ANY($1::text[]) AND event_key = $2
+               AND (epa_auto IS NOT NULL OR epa_teleop IS NOT NULL OR epa_endgame IS NOT NULL)
+             ORDER BY team_key,
+               CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+               synced_at DESC NULLS LAST`,
+            [matchKeys, eventKey],
+          )
+        : Promise.resolve({ rows: [] as EpaRow[] }),
+      canScore
+        ? client.query<EpaRow>(
             `SELECT DISTINCT ON (team_key)
                 team_key AS "teamKey",
                 epa_auto AS "autoEpa",
@@ -242,19 +245,26 @@ export async function loadDashboardSnapshot(
              ORDER BY team_key,
                CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
                synced_at DESC NULLS LAST`,
-            [missing, year],
+            [matchKeys, year],
           )
-        : { rows: [] as EpaRow[] };
-      // What each robot has actually scored here (OPR over the played quals) and what the team's
-      // scouts saw it do. Without these the card rested on Statbotics alone and showed nothing at
-      // an event Statbotics had not rated — every event in production today.
-      const matchKeys = [...redKeys, ...blueKeys];
-      const [scoring, scouted] = await Promise.all([
-        loadEventScoring(client, eventKey),
-        withSavepoint(client, () => loadScoutedRatingsForTeams(client, { orgId: input.orgId, eventKey, teamKeys: matchKeys }), new Map()),
-      ]);
+        : Promise.resolve({ rows: [] as EpaRow[] }),
+      canScore ? readEventScoring(client, eventKey) : Promise.resolve(null),
+      canScore
+        ? loadScoutedRatingsForTeams(client, { orgId: input.orgId, eventKey, teamKeys: matchKeys }).catch(() => new Map())
+        : Promise.resolve(new Map()),
+      client.query<{ startDate: Date | string | null }>(
+        `SELECT start_date AS "startDate" FROM events_ref WHERE event_key = $1`,
+        [eventKey],
+      ),
+    ]);
+    const stored = pred.rows[0];
+    if (canScore && scoring && year != null) {
+      const haveEvent = new Set(eventEpa.rows.map((rating) => rating.teamKey));
       const oprByTeam = new Map(scoring.opr.map((robot) => [robot.teamKey, robot.total]));
-      const epaByTeam = new Map([...eventEpa.rows, ...yearEpa.rows].map((rating) => [rating.teamKey, rating]));
+      const epaByTeam = new Map([
+        ...yearEpa.rows.filter((rating) => !haveEvent.has(rating.teamKey)),
+        ...eventEpa.rows,
+      ].map((rating) => [rating.teamKey, rating]));
       const card = nextMatchScoreCard({
         matchKey: row.matchKey,
         ourAlliance,
@@ -268,8 +278,6 @@ export async function loadDashboardSnapshot(
             autoEpa: epa?.autoEpa ?? null,
             teleopEpa: epa?.teleopEpa ?? null,
             endgameEpa: epa?.endgameEpa ?? null,
-            // The event OPR stands in only for a robot with no season rating, exactly as in the
-            // match plan (compute-strategy.ts), so Home and Predict rate a robot the same way.
             opr: hasEpa ? null : (oprByTeam.get(key) ?? null),
           };
         }),
@@ -287,10 +295,6 @@ export async function loadDashboardSnapshot(
         briefing = card.briefing;
         cardRedWin = card.redWinProbability;
       }
-      const dated = await client.query<{ startDate: Date | string | null }>(
-        `SELECT start_date AS "startDate" FROM events_ref WHERE event_key = $1`,
-        [eventKey],
-      );
       const forecast = forecastActiveMatch({
         season: year,
         eventKey,
@@ -509,7 +513,7 @@ export async function loadDashboardSnapshot(
       widgets.scouting_coverage = stamp("setup_required", "scouting_coverage", undefined, "Set your active event.");
       return;
     }
-    const counts = await client.query<{
+    const countsP = client.query<{
       assignments: string;
       reports: string;
       openDisagreements: string;
@@ -520,11 +524,10 @@ export async function loadDashboardSnapshot(
          (SELECT count(*)::text FROM scout_disagreements d WHERE d.org_id = $1 AND d.event_key = $2 AND d.status = 'open') AS "openDisagreements"`,
       [input.orgId, eventKey],
     );
-    const c = counts.rows[0]!;
     // The same counts Scouting's home shows (lib/scouting/lead-summary.ts): pits of the OTHER
     // teams at the event, and robots scouted out of robots in quals that have been played.
     // Counting our own robot and unplayed matches made the two screens disagree.
-    const progress = await client.query<{ scheduledTeams: string; pitReports: string; matchSlots: string; matchReports: string }>(
+    const progressP = client.query<{ scheduledTeams: string; pitReports: string; matchSlots: string; matchReports: string }>(
       `WITH roster AS (
          SELECT DISTINCT jsonb_array_elements_text(COALESCE(red_alliance->'teamKeys','[]'::jsonb)) AS team FROM matches_ref WHERE event_key=$2
          UNION SELECT DISTINCT jsonb_array_elements_text(COALESCE(blue_alliance->'teamKeys','[]'::jsonb)) FROM matches_ref WHERE event_key=$2
@@ -545,6 +548,8 @@ export async function loadDashboardSnapshot(
          (SELECT count(DISTINCT (s.match_key,s.team_key))::text FROM match_scout_entries s JOIN slots r ON r.match_key=s.match_key AND r.team=s.team_key WHERE s.org_id=$1 AND s.event_key=$2) AS "matchReports"`,
       [input.orgId, eventKey, teamKey],
     );
+    const [counts, progress] = await Promise.all([countsP, progressP]);
+    const c = counts.rows[0]!;
     widgets.scouting_coverage = stamp("live", "scouting_coverage", {
       ...Object.fromEntries(Object.entries(progress.rows[0] ?? {}).map(([key,value]) => [key, Number(value)])),
       assignments: Number(c.assignments),
@@ -964,62 +969,42 @@ export async function loadDashboardSnapshot(
     });
   }
 
-  async function onboardingChecklist() {
+  async function onboardingChecklist(nextMatchDone: Promise<void> | null) {
     const orgQuery = `?orgId=${encodeURIComponent(input.orgId)}`;
     let joinedSubteam = false;
     let hasKnowledge = false;
     let hasLogistics = false;
     let kickoffReady = false;
     let openedCadBrief = false;
-
-    await withSavepoint(client, async () => {
-      const sub = await client.query<{ count: string }>(
-        `SELECT count(*)::text AS count FROM team_subteam_members
-         WHERE org_id = $1 AND user_id = $2`,
-        [input.orgId, input.userId],
-      );
-      joinedSubteam = Number(sub.rows[0]?.count ?? 0) > 0;
-    }, undefined);
-
-    await withSavepoint(client, async () => {
-      const knowledge = await client.query<{ chars: string }>(
-        `SELECT COALESCE(length(btrim(content)), 0)::text AS chars FROM team_knowledge WHERE org_id = $1`,
-        [input.orgId],
-      );
-      hasKnowledge = Number(knowledge.rows[0]?.chars ?? 0) > 100;
-    }, undefined);
-
-    await withSavepoint(client, async () => {
-      const logistics = await client.query<{ trips: string; hotels: string }>(
-        `SELECT
-           (SELECT count(*)::text FROM logistics_trips WHERE org_id = $1) AS trips,
-           (SELECT count(*)::text FROM logistics_hotels WHERE org_id = $1) AS hotels`,
-        [input.orgId],
-      );
-      hasLogistics =
-        Number(logistics.rows[0]?.trips ?? 0) > 0 || Number(logistics.rows[0]?.hotels ?? 0) > 0;
-    }, undefined);
-
-    await withSavepoint(client, async () => {
-      const year = new Date().getFullYear();
-      const kick = await client.query<{ actions: string; priorities: string }>(
-        `SELECT
-           (SELECT count(*)::text FROM game_scoring_actions WHERE org_id = $1 AND season_year = $2) AS actions,
-           (SELECT count(*)::text FROM design_priorities WHERE org_id = $1 AND season_year = $2) AS priorities`,
-        [input.orgId, year],
-      );
-      kickoffReady =
-        Number(kick.rows[0]?.actions ?? 0) > 0 || Number(kick.rows[0]?.priorities ?? 0) > 0;
-    }, undefined);
-
-    await withSavepoint(client, async () => {
-      const cad = await client.query<{ count: string }>(
-        `SELECT count(*)::text AS count FROM cad_jobs
-         WHERE org_id = $1 AND created_by = $2`,
-        [input.orgId, input.userId],
-      );
-      openedCadBrief = Number(cad.rows[0]?.count ?? 0) > 0;
-    }, undefined);
+    const year = new Date().getFullYear();
+    // One statement, started before next-match scoring returns, so it shares the widget wave.
+    const factsP = client.query<{
+      joined: number;
+      knowledgeChars: number;
+      trips: number;
+      hotels: number;
+      actions: number;
+      priorities: number;
+      cadJobs: number;
+    }>(
+      `SELECT
+         (SELECT count(*)::int FROM team_subteam_members WHERE org_id = $1 AND user_id = $2) AS joined,
+         (SELECT COALESCE(max(length(btrim(content))), 0) FROM team_knowledge WHERE org_id = $1) AS "knowledgeChars",
+         (SELECT count(*)::int FROM logistics_trips WHERE org_id = $1) AS trips,
+         (SELECT count(*)::int FROM logistics_hotels WHERE org_id = $1) AS hotels,
+         (SELECT count(*)::int FROM game_scoring_actions WHERE org_id = $1 AND season_year = $3) AS actions,
+         (SELECT count(*)::int FROM design_priorities WHERE org_id = $1 AND season_year = $3) AS priorities,
+         (SELECT count(*)::int FROM cad_jobs WHERE org_id = $1 AND created_by = $2) AS "cadJobs"`,
+      [input.orgId, input.userId, year],
+    ).then((facts) => facts.rows[0] ?? null).catch(() => null);
+    const [facts] = await Promise.all([factsP, nextMatchDone ?? Promise.resolve()]);
+    if (facts) {
+      joinedSubteam = Number(facts.joined ?? 0) > 0;
+      hasKnowledge = Number(facts.knowledgeChars ?? 0) > 100;
+      hasLogistics = Number(facts.trips ?? 0) > 0 || Number(facts.hotels ?? 0) > 0;
+      kickoffReady = Number(facts.actions ?? 0) > 0 || Number(facts.priorities ?? 0) > 0;
+      openedCadBrief = Number(facts.cadJobs ?? 0) > 0;
+    }
 
     const knowsNextMatch = widgets.next_match?.status === "live";
     const steps = [
@@ -1068,6 +1053,115 @@ export async function loadDashboardSnapshot(
     let mineOpenTodos = 0;
     let kickoffReady = false;
 
+    // One round trip for the strip. A missing table (a deploy that has not migrated yet)
+    // falls back to the per-query reads below, which each tolerate their own absence.
+    let combined = false;
+    try {
+      const year = new Date().getFullYear();
+      const packed = await client.query<{
+        needsAssignment: number;
+        lodgingGaps: number;
+        unsignedChecklists: number;
+        visitHostGaps: number;
+        nextPracticeTitle: string | null;
+        nextPracticeAt: string | null;
+        hotelName: string | null;
+        roomLabel: string | null;
+        nextTravelLabel: string | null;
+        nextTravelAt: string | null;
+        mineOpenTodos: number;
+        kickoffReady: boolean;
+      }>(
+        `SELECT
+           (SELECT count(*)::int FROM duty_assignments
+             WHERE org_id = $1 AND assigned_user_id IS NULL AND starts_at >= now()) AS "needsAssignment",
+           (SELECT count(*)::int FROM logistics_room_assignments
+             WHERE org_id = $1
+               AND occupant_user_id IS NULL
+               AND btrim(coalesce(occupant_name, '')) = '') AS "lodgingGaps",
+           (SELECT count(DISTINCT m.user_id)::int
+             FROM memberships m
+             CROSS JOIN logistics_checklist_items i
+             WHERE m.org_id = $1
+               AND i.org_id = $1
+               AND i.audience IN ('all', 'student', 'mentor')
+               AND NOT EXISTS (
+                 SELECT 1 FROM logistics_checklist_checks c
+                 WHERE c.item_id = i.id AND c.user_id = m.user_id
+               )) AS "unsignedChecklists",
+           (SELECT count(*)::int FROM visit_invites v
+             WHERE v.org_id = $1
+               AND v.status IN ('draft', 'scheduled')
+               AND NOT EXISTS (
+                 SELECT 1 FROM visit_invite_hosts h
+                 WHERE h.visit_id = v.id AND h.org_id = v.org_id
+               )) AS "visitHostGaps",
+           practice.title AS "nextPracticeTitle",
+           practice.starts_at::text AS "nextPracticeAt",
+           room.name AS "hotelName",
+           room.room_label AS "roomLabel",
+           travel.title AS "nextTravelLabel",
+           travel.starts_at::text AS "nextTravelAt",
+           (SELECT count(*)::int FROM team_todos
+             WHERE org_id = $1 AND assignee_user_id = $2 AND status <> 'done') AS "mineOpenTodos",
+           (
+             EXISTS (SELECT 1 FROM game_scoring_actions WHERE org_id = $1 AND season_year = $3)
+             OR EXISTS (SELECT 1 FROM design_priorities WHERE org_id = $1 AND season_year = $3)
+           ) AS "kickoffReady"
+         FROM (SELECT 1) AS one
+         LEFT JOIN LATERAL (
+           SELECT e.title, e.starts_at
+           FROM subteam_calendar_events e
+           WHERE e.org_id = $1
+             AND e.starts_at >= now()
+             AND e.kind IN ('practice', 'build', 'meeting')
+             AND (
+               e.subteam_id IS NULL
+               OR e.subteam_id IN (
+                 SELECT subteam_id FROM team_subteam_members
+                 WHERE org_id = $1 AND user_id = $2
+               )
+             )
+           ORDER BY e.starts_at ASC
+           LIMIT 1
+         ) practice ON true
+         LEFT JOIN LATERAL (
+           SELECT h.name, r.room_label
+           FROM logistics_room_assignments r
+           JOIN logistics_hotels h ON h.id = r.hotel_id
+           WHERE r.org_id = $1 AND r.occupant_user_id = $2
+           LIMIT 1
+         ) room ON true
+         LEFT JOIN LATERAL (
+           SELECT title, starts_at
+           FROM logistics_travel_legs
+           WHERE org_id = $1 AND starts_at >= now()
+           ORDER BY starts_at ASC
+           LIMIT 1
+         ) travel ON true`,
+        [orgId, input.userId, year],
+      );
+      const row = packed.rows[0];
+      if (row) {
+        needsAssignment = Number(row.needsAssignment ?? 0);
+        lodgingGaps = Number(row.lodgingGaps ?? 0);
+        unsignedChecklists = Number(row.unsignedChecklists ?? 0);
+        visitHostGaps = Number(row.visitHostGaps ?? 0);
+        nextPracticeTitle = row.nextPracticeTitle;
+        nextPracticeAt = row.nextPracticeAt;
+        hotelName = row.hotelName;
+        roomLabel = row.roomLabel;
+        nextTravelLabel = row.nextTravelLabel;
+        nextTravelAt = row.nextTravelAt;
+        mineOpenTodos = Number(row.mineOpenTodos ?? 0);
+        kickoffReady = Boolean(row.kickoffReady);
+        combined = true;
+      }
+    } catch {
+      combined = false;
+    }
+
+    if (!combined) {
     try {
       const duties = await client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM duty_assignments
@@ -1204,6 +1298,7 @@ export async function loadDashboardSnapshot(
     } catch {
       // stays 0
     }
+    }
 
     context.homeStrip = {
       audience,
@@ -1232,14 +1327,11 @@ export async function loadDashboardSnapshot(
 
   const jobs: Array<Promise<void>> = snapshotShouldLoadHomeStrip(input) ? [homeStrip()] : [];
 
-  // The setup checklist consumes next-match state, so resolve that dependency
-  // first only when the checklist was actually requested.
-  if (wants("onboarding_checklist")) {
-    await nextMatch();
-    jobs.push(onboardingChecklist());
-  } else if (wants("next_match")) {
-    jobs.push(nextMatch());
-  }
+  // The checklist reads next-match status after both have queried. Starting the
+  // match read here lets its first query share the widget wave.
+  const nextMatchJob = wants("next_match") || wants("onboarding_checklist") ? nextMatch() : null;
+  if (nextMatchJob && !wants("onboarding_checklist")) jobs.push(nextMatchJob);
+  if (wants("onboarding_checklist")) jobs.push(onboardingChecklist(nextMatchJob));
 
   const widgetLoaders: Array<[DashboardWidgetType, () => Promise<void>]> = [
     ["recent_result", recentResult],
@@ -1282,48 +1374,22 @@ export async function loadDashboardSnapshot(
     }
   }
   if (wants("ask_ai")) {
-    jobs.push(
-      (async () => {
-        // Only a definite "no billing row" means AI is off; an unreadable row keeps the box.
-        const allowance = await withSavepoint(client, () => readOrgAllowance(client, input.orgId), null);
-        widgets.ask_ai =
-          allowance && !allowance.configured
-            ? stamp(
-                "setup_required",
-                "ask_ai",
-                // Only owners and admins can add a key; the others are not sent to a page that
-                // tells them so.
-                { href: "/ai?tab=chat", aiOff: true, canAddKey: input.role === "owner" || input.role === "admin" },
-                input.role === "owner" || input.role === "admin"
-                  ? "Ask AI isn't turned on for your team yet."
-                  : "Ask AI isn't turned on yet. Ask an owner or mentor to add an AI key (a free one works).",
-              )
-            : stamp("live", "ask_ai", { href: "/ai?tab=chat" }, "Ask a question.");
-      })(),
-    );
+    const owner = input.role === "owner" || input.role === "admin";
+    // The org read already knows whether a key is saved. Probing the model here
+    // opened a savepoint after every other card and held the page.
+    widgets.ask_ai = hasAiProvider
+      ? stamp("live", "ask_ai", { href: "/ai?tab=chat" }, "Ask a question.")
+      : stamp(
+          "setup_required",
+          "ask_ai",
+          { href: "/ai?tab=chat", aiOff: true, canAddKey: owner },
+          owner
+            ? "Add your team's AI key (a free one works) and Ask AI turns on for everyone."
+            : "Ask AI isn't turned on yet. Ask an owner or mentor to add the team's key (a free one works).",
+        );
   }
 
   await Promise.all(jobs);
-
-  // Ask AI shows a question box only when a question would actually be answered. A billing
-  // row alone is not enough: with no key, no hosted AI and no paired Claude Code, the box
-  // took the question to a page that said AI was off. Probed after the other jobs because
-  // the probe uses its own savepoint on this client.
-  if (wants("ask_ai") && widgets.ask_ai?.status === "live") {
-    const probe = await probeChatModel(client, { orgId: input.orgId, userId: input.userId }).catch(() => null);
-    if (probe && !probe.ok && probe.reason === "no_model_provider") {
-      const owner = input.role === "owner" || input.role === "admin";
-      widgets.ask_ai = stamp(
-        "setup_required",
-        "ask_ai",
-        { href: "/ai?tab=chat", aiOff: true },
-        owner
-          ? "Add your team's AI key (a free one works) and Ask AI turns on for everyone."
-          : // Not "add your own key": that asked a 16-year-old to make and paste an API key on day one.
-            "Ask AI isn't turned on yet. Ask an owner or mentor to add the team's key (a free one works).",
-      );
-    }
-  }
 
   return { context, widgets };
 }

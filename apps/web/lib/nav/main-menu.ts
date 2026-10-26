@@ -67,6 +67,12 @@ export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (h
         return { href: DIRECT_ROUTES[section.id] ?? gate, gate, label: section.label, icon: DESTINATION_ICONS[section.id] ?? definition.icon };
       });
     if (hub.id === "competition") {
+      // Same permission as Match plan. A ninth section on the competition bar is capped at eight,
+      // so this sits in the menu directly under Match plan instead of on that bar.
+      const prediction = { href: "/match-sim", gate: "/competition?tab=strategy", label: "Match prediction", icon: "target" as const };
+      const planAt = items.findIndex((item) => item.gate === "/competition?tab=strategy");
+      if (planAt >= 0) items.splice(planAt + 1, 0, prediction);
+      else items.push(prediction);
       items.push({ href: "/competition?tab=my-day", gate: "/competition?tab=my-day", label: "My Day", icon: "calendar" });
       items.push({ href: DIRECT_ROUTES["pit-tv"]!, gate: "/competition?tab=pit-tv", label: "Pit TV", icon: "display" });
     }

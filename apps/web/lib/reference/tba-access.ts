@@ -12,9 +12,10 @@ export async function resolveTbaConfigured(
   cacheHasSync: boolean;
 }> {
   const platformEnvKey = platformTbaEnvConfigured();
-  let credentialAvailable = false;
-  try {
-    const credentials = await client.query<{ ok: boolean }>(
+  // Start both reads together so they share the request's round trip. The
+  // credential table is optional; a missing one leaves that flag false.
+  const credentialPromise = client
+    .query<{ ok: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM data_source_credentials
          WHERE source = 'tba'
@@ -22,17 +23,15 @@ export async function resolveTbaConfigured(
            AND (org_id IS NULL OR org_id IS NOT DISTINCT FROM $1::uuid)
        ) AS ok`,
       [orgId],
-    );
-    credentialAvailable = Boolean(credentials.rows[0]?.ok);
-  } catch {
-    // stays false
-  }
-
-  const cache = await client.query<{ ok: boolean }>(
+    )
+    .then((credentials) => Boolean(credentials.rows[0]?.ok))
+    .catch(() => false);
+  const cachePromise = client.query<{ ok: boolean }>(
     `SELECT EXISTS(SELECT 1 FROM matches_ref LIMIT 1)
             OR EXISTS(SELECT 1 FROM team_event_metrics LIMIT 1)
             OR EXISTS(SELECT 1 FROM events_ref LIMIT 1) AS ok`,
   );
+  const [credentialAvailable, cache] = await Promise.all([credentialPromise, cachePromise]);
   const cacheHasSync = Boolean(cache.rows[0]?.ok);
   return {
     platformEnvKey,

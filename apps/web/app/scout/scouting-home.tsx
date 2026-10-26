@@ -1,7 +1,6 @@
 "use client";
 import { ScoutingSharing } from "../scouting/scouting-sharing";
 
-import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Skeleton } from "../../components/ui";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
@@ -62,8 +61,15 @@ function formatDutyTime(iso: string): string {
  * the event, the queue from this device's IndexedDB, the storage figures from
  * the browser. Nothing is filled in when a source is missing.
  */
-export function ScoutingHome() {
-  const orgId = useSearchParams().get("orgId");
+export function ScoutingHome({
+  orgId = null,
+  initialBootstrap = null,
+  initialSummary = null,
+}: {
+  orgId?: string | null;
+  initialBootstrap?: DutyBootstrap | null;
+  initialSummary?: LeadSummaryView | null;
+} = {}) {
   const online = useOnline();
   const [roster, setRoster] = useState<Roster | null>(null);
   // "No event set" is an answer, so it waits for one. Before this the hero
@@ -73,16 +79,29 @@ export function ScoutingHome() {
   const [storage, setStorage] = useState<DeviceStorage | null>(null);
   const [preparing, setPreparing] = useState(false);
   const [readyNote, setReadyNote] = useState<string | null>(null);
-  const [duty, setDuty] = useState<NextDuty | null>(null);
-  const [savedEventName, setSavedEventName] = useState<string | null>(null);
-  const [savedEventKey, setSavedEventKey] = useState<string | null>(null);
-  const [scoutUserId, setScoutUserId] = useState<string | null>(null);
-  const [scheduleMatches, setScheduleMatches] = useState<ScheduleMatch[]>([]);
-  const [bootstrapState, setBootstrapState] = useState<"loading" | "ready" | "failed">("loading");
+  const [duty, setDuty] = useState<NextDuty | null>(() =>
+    initialBootstrap
+      ? nextScoutingDuty({
+          assignments: initialBootstrap.assignments ?? [],
+          matches: initialBootstrap.matches ?? [],
+          entries: initialBootstrap.scouted
+            ? initialBootstrap.scouted.map((row) => ({ type: "match", matchKey: row.matchKey, teamKey: row.teamKey }))
+            : (initialBootstrap.recentEntries ?? []),
+        })
+      : null,
+  );
+  const [savedEventName, setSavedEventName] = useState<string | null>(initialBootstrap?.eventName ?? initialBootstrap?.eventKey ?? null);
+  const [savedEventKey, setSavedEventKey] = useState<string | null>(initialBootstrap?.eventKey ?? null);
+  const [scoutUserId, setScoutUserId] = useState<string | null>(initialBootstrap?.scoutIdentity?.userId ?? null);
+  const [scheduleMatches, setScheduleMatches] = useState<ScheduleMatch[]>(() =>
+    (initialBootstrap?.matches ?? []).filter((match): match is ScheduleMatch => typeof match.matchNumber === "number"),
+  );
+  const [bootstrapState, setBootstrapState] = useState<"loading" | "ready" | "failed">(initialBootstrap ? "ready" : "loading");
   const [cachedSummary, setCachedSummary] = useState<LeadSummaryView | null>(null);
   // The sharing panel loads when it is opened, not with the page: it sits folded at the bottom.
   const [networkOpen, setNetworkOpen] = useState(false);
-  const summary = useScoutingSummary(orgId);
+  const summary = useScoutingSummary(orgId, initialSummary);
+  const seededBootstrap = useRef(initialBootstrap != null);
   // View only (0715): the coverage counts, without the Visit / Scout buttons.
   const viewOnly = useViewOnly(orgId);
   const activeOrg = useRef(orgId);
@@ -97,10 +116,14 @@ export function ScoutingHome() {
     if (!orgId) return;
     let cancelled = false;
     let live = false;
-    setDuty(null);
-    setSavedEventName(null);
-    setSavedEventKey(null);
-    setBootstrapState("loading");
+    // The server already named the event. Clearing it put the hero back on a skeleton.
+    if (!seededBootstrap.current) {
+      setDuty(null);
+      setSavedEventName(null);
+      setSavedEventKey(null);
+      setBootstrapState("loading");
+    }
+    seededBootstrap.current = false;
     const apply = (data: DutyBootstrap) => {
       setSavedEventName(data.eventName ?? data.eventKey ?? null);
       setSavedEventKey(data.eventKey ?? null);
@@ -478,7 +501,7 @@ export function ScoutingHome() {
           <span>Every team at the event, averages and a trend line for each stat you collect.</span>
         </a>
         <a href={withOrg("/scout/predict")}>
-          <strong>Predict</strong>
+          <strong>Match prediction</strong>
           <span>Put six robots on the field and see who is likely to win, and why.</span>
         </a>
         <a href={withOrg("/scout/picklist")}>

@@ -4,7 +4,6 @@ import { anySignal } from "../../lib/abort/any-signal";
 import { onTeamDataChanged } from "../../lib/team-data-changed";
 
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { scoutingQualityHref, type QualityQuery } from "../../lib/scouting/quality-navigation";
 import { qualityFieldsForSchema } from "../../lib/scouting/quality-evidence";
 import type { ScoutSchema, SyncEntry } from "@vantage/scouting";
@@ -36,12 +35,10 @@ import {
   queueEntry,
   retryQuarantined,
   stableClientId,
-  syncMediaOutbox,
-  syncOutbox,
   type QuarantinedItem,
 } from "../../lib/scout-offline";
 import { nextMatchKey } from "../../lib/scouting/form-builder";
-import { nextScoutTarget, robotStation, scoutContext, syncSummary, teamNumberOf } from "../../lib/scouting/scout-context";
+import { nextScoutTarget, robotStation, scoutContext, teamNumberOf } from "../../lib/scouting/scout-context";
 import { scheduleAnswers } from "../../lib/scouting/quick-scout";
 import {
   classifyScoutingShell,
@@ -71,16 +68,49 @@ import { useScoutConflicts } from "./use-scout-conflicts";
 import { useScoutTrust } from "./use-scout-trust";
 import { focusInvalidScoutField } from "./scouting-form-focus";
 import { ConfirmProvider, useConfirm } from "../../components/ui";
+import { useLocationQuery, useScoutingOutboxSync } from "./scouting-client-hooks";
 import "./scouting-qr.css";
 
-export default function ScoutingClient({ orgId, embedded = false }: { orgId: string; embedded?: boolean }) {
-  const requestedEventKey = useSearchParams().get("eventKey");
-  return <ConfirmProvider key={`${orgId}:${requestedEventKey ?? "active"}`}><ScopedScoutingClient orgId={orgId} embedded={embedded} requestedEventKey={requestedEventKey} /></ConfirmProvider>;
+export default function ScoutingClient({
+  orgId,
+  embedded = false,
+  initialSearch = "",
+  initialData = null,
+}: {
+  orgId: string;
+  embedded?: boolean;
+  initialSearch?: string;
+  initialData?: Bootstrap | null;
+}) {
+  const searchParams = useLocationQuery(initialSearch);
+  const requestedEventKey = searchParams.get("eventKey");
+  return (
+    <ConfirmProvider key={`${orgId}:${requestedEventKey ?? "active"}`}>
+      <ScopedScoutingClient
+        orgId={orgId}
+        embedded={embedded}
+        requestedEventKey={requestedEventKey}
+        searchParams={searchParams}
+        initialData={initialData}
+      />
+    </ConfirmProvider>
+  );
 }
 
-function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: string; embedded: boolean; requestedEventKey: string | null }) {
+function ScopedScoutingClient({
+  orgId,
+  embedded,
+  requestedEventKey,
+  searchParams,
+  initialData,
+}: {
+  orgId: string;
+  embedded: boolean;
+  requestedEventKey: string | null;
+  searchParams: URLSearchParams;
+  initialData: Bootstrap | null;
+}) {
   const confirm = useConfirm();
-  const searchParams = useSearchParams();
   const bootstrapUrl = scoutingBootstrapUrl(orgId, requestedEventKey);
   const bootstrapGeneration = useRef(0);
   const bootstrapAbort = useRef<AbortController | null>(null);
@@ -88,8 +118,9 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
   const bootstrapReading = useRef(false);
   const starterCreating = useRef(false);
   const [creatingStarterForms, setCreatingStarterForms] = useState(false);
-  const [data, setData] = useState<Bootstrap | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<Bootstrap | null>(initialData);
+  const [loading, setLoading] = useState(initialData == null);
+  const hadInitial = useRef(initialData != null);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [matchKey, setMatchKey] = useState("");
   const [teamKey, setTeamKey] = useState("");
@@ -230,55 +261,15 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     } finally { if (current()) { bootstrapReading.current = false; setLoading(false); setSettled(true); } }
   }, [orgId, bootstrapUrl, requestedEventKey, loadTrust]);
   useEffect(() => onTeamDataChanged(orgId, () => { void refreshLive(); }), [orgId, refreshLive]);
-  const sync = useCallback(async () => {
-    if (!orgId || !navigator.onLine) return;
-    setSyncState("syncing");
-    try {
-      const entries = await syncOutbox(orgId, {
-        onRetry: (n, delayMs) => {
-          setSyncState("degraded");
-          setMessage(`Couldn't reach the team yet. Trying again in ${Math.round(delayMs / 1000)}s; your entries are safe on this phone.`);
-        },
-      });
-      const media = await syncMediaOutbox(orgId);
-      if (entries.validations.length) setOfficialFlags(entries.validations);
-      const quarantinedNow = entries.quarantined + media.quarantined;
-      const uploaded = syncSummary({ entries: entries.count, media: media.synced });
-      const conflictCount = entries.validations.filter((flag) => flag.status === "conflict").length;
-      const problems = [
-        conflictCount
-          ? `${conflictCount} official-score disagreement${conflictCount === 1 ? "" : "s"} flagged`
-          : null,
-        quarantinedNow ? `${quarantinedNow} need${quarantinedNow === 1 ? "s" : ""} attention below` : null,
-      ].filter(Boolean);
-      if (problems.length) {
-        // Something to act on: this stays in the message line by the form.
-        setMessage([uploaded, ...problems].filter(Boolean).join(" · "));
-      } else if (uploaded) {
-        // Plain good news goes beside the queue count, not under Save in the
-        // colour the form uses for problems.
-        setSyncNote(uploaded);
-        // A retry notice from earlier in this sync is no longer true.
-        setMessage((current) => (current.startsWith("Couldn't reach the team yet") ? "" : current));
-      }
-      // A sync that "finished" can still have left entries on this phone: say why.
-      if (entries.failure === "signed-out") {
-        setMessage("You are signed out, so nothing more was sent. Sign in again; your entries stay on this phone until then.");
-      } else if (entries.failure) {
-        setMessage("Couldn't reach the team yet, so some entries were not sent. They stay on this phone and send themselves later.");
-      }
-      setSyncState(entries.failure ? "degraded" : "idle");
-      await refreshCounts();
-      if (entries.count > 0) void refreshLive();
-    } catch (error) {
-      setSyncState(navigator.onLine ? "degraded" : "idle");
-      setMessage(
-        error instanceof Error && error.message
-          ? error.message
-          : "Not sent yet. Your entries are saved on this phone and send when the signal is better.",
-      );
-    }
-  }, [orgId, refreshCounts, refreshLive]);
+  const sync = useScoutingOutboxSync({
+    orgId,
+    refreshCounts,
+    refreshLive,
+    setSyncState,
+    setMessage,
+    setSyncNote,
+    setOfficialFlags,
+  });
 
   const flagsByField = useMemo(() => {
     const map = new Map<string, OfficialFlag[]>();
@@ -303,7 +294,9 @@ function ScopedScoutingClient({ orgId, embedded, requestedEventKey }: { orgId: s
     const generation = ++bootstrapGeneration.current;
     const current = () => bootstrapMounted.current && generation === bootstrapGeneration.current;
     void (async () => {
-      setLoading(true); setFetchFailed(false); setBootstrapStatus(null);
+      if (!hadInitial.current) setLoading(true);
+      hadInitial.current = false;
+      setFetchFailed(false); setBootstrapStatus(null);
       const [cachedEvent, cachedSnap] = await Promise.all([
         getCachedEvent<Bootstrap>(orgId).catch(() => null),
         getFeatureSnapshot<Bootstrap>("scouting", orgId).catch(() => null),

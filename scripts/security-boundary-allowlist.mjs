@@ -1308,6 +1308,26 @@ export const sqlFragmentAllowlist = [
     "reason": "Internal constant or fragment helper (RELEASE_SELECT) spliced into SQL. It is not a request value. Swapping the expression fails this check."
   },
   {
+    "file": "packages/db/src/index.ts",
+    "expression": "pg.escapeLiteral(orgId)",
+    "reason": "Session team id escaped with pg.escapeLiteral before it is placed in the transaction prelude. The id is also checked against the UUID alphabet, and a bind parameter cannot sit inside that opening script."
+  },
+  {
+    "file": "packages/db/src/index.ts",
+    "expression": "pg.escapeLiteral(userId)",
+    "reason": "Session user id escaped with pg.escapeLiteral before it is placed in the transaction prelude. The id is also checked against the UUID alphabet, and a bind parameter cannot sit inside that opening script."
+  },
+  {
+    "file": "packages/db/src/query-waves.ts",
+    "expression": "isolate",
+    "reason": "SAVEPOINT identifier (isolate). Postgres does not accept a bind parameter in SAVEPOINT, so the name is an internal token."
+  },
+  {
+    "file": "packages/db/src/query-waves.ts",
+    "expression": "savepoint",
+    "reason": "SAVEPOINT identifier (savepoint). Postgres does not accept a bind parameter in SAVEPOINT, so the name is an internal token."
+  },
+  {
     "file": "packages/db/src/savepoint.ts",
     "expression": "name",
     "reason": "SAVEPOINT identifier (name). Postgres does not accept a bind parameter in SAVEPOINT, so the name is an internal token."

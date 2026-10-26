@@ -1,7 +1,8 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { createDrizzle } from "./drizzle-client";
 import { resolveAppDatabaseUrl } from "./postgres-url";
-import { serializeClientQueries } from "./serial-queries";
+import pg from "pg";
+import { installQueryWaves } from "./query-waves";
 import { explainWriteRefusal } from "./view-only";
 
 const connectionString = resolveAppDatabaseUrl();
@@ -46,24 +47,45 @@ function activationDue(context: RequestContext, now = Date.now()): boolean {
 /**
  * The only request-path transaction entry point. SET LOCAL ensures pooled
  * connections cannot leak identity between requests — including across teams.
- * Queries on the client run one at a time, in the order they are made (serial-queries.ts).
+ * Reads started together share one round trip (query-waves.ts). Statements that
+ * depend on an earlier answer still wait for it.
  */
 export async function withRls<T>(
   context: RequestContext,
-  work: (client: PoolClient) => Promise<T>
+  work: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
-  const client = await requestPool.connect();
-  const unserialize = serializeClientQueries(client as unknown as Parameters<typeof serializeClientQueries>[0]);
-  const beginRequest = async () => {
-    // One round trip for the two fixed statements (no parameters, so the simple protocol
-    // runs both); the identity settings stay parameterized.
-    await client.query("BEGIN; SET LOCAL ROLE vantage_app");
-    await client.query("SELECT set_config('app.user_id', $1, true), set_config('app.org_id', $2, true)", [context.userId, context.orgId ?? ""]);
-  };
+  return withRlsOnPool(requestPool, context, work);
+}
+
+/**
+ * Same transaction as `withRls`, on a caller-supplied pool.
+ * The route budget test uses this so it can talk to the local fixture without
+ * the process-wide pool, which is created from env at import time.
+ */
+export async function withRlsOnPool<T>(
+  pool: { connect: () => Promise<PoolClient> },
+  context: RequestContext,
+  work: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  const restoreWaves = installQueryWaves(client as unknown as Parameters<typeof installQueryWaves>[0]);
+  const userId = context.userId.trim();
+  const orgId = context.orgId?.trim() ?? "";
+  // Literals are escaped; the ids are also constrained to the UUID alphabet
+  // (or empty team) so a bad caller cannot change the script.
+  const preludeSql = () =>
+    `BEGIN; SET LOCAL ROLE vantage_app; SELECT set_config('app.user_id', ${pg.escapeLiteral(userId)}, true), set_config('app.org_id', ${pg.escapeLiteral(orgId)}, true)`;
   try {
-    // Even a misconfigured owner URL must never bypass tenant policies. Restricted
-    // logins are members of vantage_app; SET LOCAL also resets on commit/rollback.
-    await beginRequest();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+      throw new Error("Invalid user id");
+    }
+    if (orgId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orgId)) {
+      throw new Error("Invalid team id");
+    }
+    // The prelude rides on the first statement (query-waves), so opening the
+    // transaction is not a round trip of its own. Restricted logins are members
+    // of vantage_app; SET LOCAL also resets on commit/rollback.
+    restoreWaves.setPrelude(preludeSql());
     const activation = activationDue(context)
       ? await client.query<{ attempted: boolean }>("SELECT activate_scheduled_competition_events($1::uuid) AS attempted", [context.orgId?.trim() || null])
       : null;
@@ -71,26 +93,31 @@ export async function withRls<T>(
       // Release context row locks before any long feature/provider work. The
       // approved calendar plan is independent of that subsequent operation.
       await client.query("COMMIT");
-      await beginRequest();
+      restoreWaves.setPrelude(preludeSql());
     }
     const result = await work(client);
-    await client.query("COMMIT");
+    if (!restoreWaves.preludePending()) await client.query("COMMIT");
     return result;
   } catch (error) {
     if (error instanceof CommitAndThrowError) {
       await client.query("COMMIT");
       throw error.publicError;
     }
-    await client.query("ROLLBACK");
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // BEGIN never landed (bad id, or the connection dropped). Keep the original error.
+    }
     // A View only member's refused write (0715) leaves as ViewOnlyError: one
     // sentence and a 403, not a database error the route hides behind "failed".
     throw await explainWriteRefusal(client, context, error);
   } finally {
-    unserialize();
+    restoreWaves();
     client.release();
   }
 }
 
+export { countRoundTrips } from "./query-waves";
 export * from "./savepoint";
 export * from "./view-only";
 export * from "./schema";

@@ -232,22 +232,49 @@ export async function computeMatchSimView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null; activeRunId?: string | null },
 ): Promise<MatchSimView> {
-  const org = await resolveOrg(client, input.userId, input.requestedOrg);
+  const orgP = resolveOrg(client, input.userId, input.requestedOrg);
+  const knownOrg = input.requestedOrg;
+  const contextP = knownOrg
+    ? client.query<{ eventKey: string | null; eventName: string | null }>(
+        `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+         FROM org_active_context c
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+         WHERE c.org_id = $1::uuid`,
+        [knownOrg],
+      )
+    : null;
+  const runsP = knownOrg
+    ? client.query<RunRow>(
+        `SELECT id, label, event_key AS "eventKey", match_key AS "matchKey",
+                red_team_keys AS "redTeamKeys", blue_team_keys AS "blueTeamKeys",
+                result, created_at::text AS "createdAt"
+         FROM match_sim_runs
+         WHERE org_id = $1
+         ORDER BY created_at DESC
+         LIMIT 25`,
+        [knownOrg],
+      )
+    : null;
+  const org = await orgP;
   if (!org) {
-    return setupView("Choose your team to run the match simulator.", null);
+    return setupView("Choose your team to open match prediction.", null);
   }
 
-  const context = await client.query<{ eventKey: string | null; eventName: string | null }>(
-    `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
-     FROM org_active_context c
-     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
-     WHERE c.org_id = $1::uuid`,
-    [org.orgId],
-  );
+  const context = contextP
+    ? await contextP
+    : await client.query<{ eventKey: string | null; eventName: string | null }>(
+        `SELECT c.active_event_key AS "eventKey", e.name AS "eventName"
+         FROM org_active_context c
+         LEFT JOIN events_ref e ON e.event_key = c.active_event_key
+         WHERE c.org_id = $1::uuid`,
+        [org.orgId],
+      );
   const eventKey = context.rows[0]?.eventKey ?? null;
   const eventName = context.rows[0]?.eventName ?? null;
 
-  const runsResult = await client.query<RunRow>(
+  const runsResult = runsP
+    ? await runsP
+    : await client.query<RunRow>(
     `SELECT id, label, event_key AS "eventKey", match_key AS "matchKey",
             red_team_keys AS "redTeamKeys", blue_team_keys AS "blueTeamKeys",
             result, created_at::text AS "createdAt"

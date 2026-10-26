@@ -29,17 +29,25 @@ import {
 import { CommandReadyView } from "./command-ready-view";
 import "./command.css";
 
-export default function CommandClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function CommandClient({
+  embedded = false,
+  initialOrgId = "",
+  initialSnap = null,
+}: {
+  embedded?: boolean;
+  initialOrgId?: string;
+  initialSnap?: CommandSnapshot | null;
+} = {}) {
   const [me, setMe] = useState<Me>({});
-  const [orgId, setOrgId] = useState("");
+  const [orgId, setOrgId] = useState(initialOrgId);
   // False until the team lookup answers. An empty orgId before then means "not known yet",
   // never "no team" — painting setup in that gap is what showed "No event linked".
-  const [orgResolved, setOrgResolved] = useState(false);
+  const [orgResolved, setOrgResolved] = useState(Boolean(initialOrgId || initialSnap));
   const [recomputing, setRecomputing] = useState(false);
-  const [snap, setSnap] = useState<CommandSnapshot | null>(null);
+  const [snap, setSnap] = useState<CommandSnapshot | null>(initialSnap);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialSnap == null);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [fromCache, setFromCache] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
