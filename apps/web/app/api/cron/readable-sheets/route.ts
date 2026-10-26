@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const denied = assertCronAuthorized(request);
   if (denied) return denied;
-  let body: { orgId?: unknown } = {};
+  let body: { orgId?: unknown };
   try {
     body = (await request.json()) as { orgId?: unknown };
   } catch {
