@@ -4,13 +4,13 @@
     {
       "pr": 2413,
       "date": "2026-10-26",
-      "headline": "Next match shows a wide score range and a measured win chance",
+      "headline": "Next match uses earlier events, with the coverage each range actually had",
       "changes": [
-        "The next-match card predicts auto, teleop, endgame, fouls, and the total from matches already played at the event, and it shows each as a range instead of a single plus or minus",
-        "On matches that were not used to size those ranges, the real score landed inside about 88% of the time. The total range is about 375 points wide. The point in the middle is still typically about 95 points off on a 446-point average",
-        "The winner was right about 72% of the time on those matches. That is not 90%. A pick is marked high confidence only when the win chance is already at least 90%, and that smaller set was right on 63 of 66 matches",
+        "The next-match card now uses how those robots scored at earlier public events, when that event had already ended. On the matches held out of the choice, the winner was right 73.3% of the time and the typical total miss was 86 points. The previous card was 71.5% and 95 points on the same matches",
+        "Each score is a range. On those 570 held-out matches the real total landed inside the range 90.6% of the time. The range is about 371 points wide. Auto was inside 93.5% of the time, teleop 91.0%, endgame 95.4%, fouls 94.3%, and the margin 91.6%. None of these is labeled 90% unless that is the measured rate",
+        "A pick is marked high confidence only when its win chance is already at least 90%. That mark was right on 91 of 94 held-out picks (96.8%). The card states 91 of 94, not a flat 90%",
         "A season whose scoring manual is not published yet, including 2027, shows a total only",
-        "A later note can use whatever AI model the team has configured. Claude Haiku is one example of that setup, not a model this release picks. The note runs after the statistical card is already on screen and does not hold the page. The step is off, and it was not measured, because no model credential was configured"
+        "A later note can use whatever AI model the team has configured. Claude Haiku is one example of that setup, not a model this release picks. The note runs after the statistical card is already on screen and does not hold the page. That step is off. It was not measured, because no model credential was configured, so there is no accuracy, coverage, latency, or cost for it"
       ]
     },
     {

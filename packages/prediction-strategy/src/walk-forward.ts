@@ -11,8 +11,8 @@
 import { allianceWinProbability } from "./alliance-outcome";
 import { predictAllianceScores, isScorePredictionSkip } from "./calibrated-score";
 import { eventOpr, type AllianceResult } from "./event-opr";
-import { rangeHalfWidth, seasonPoints, seasonPriorsForStudy, type StrengthEvent, type StrengthRating, type TeamSeasonPrior } from "./match-factors";
-import { CARD_HIGH_CONFIDENCE_AT, CARD_RANGE_FITS, type FrozenRange } from "./range-display";
+import { normalWinProbability, rangeHalfWidth, seasonPoints, seasonPriorsForStudy, type StrengthEvent, type StrengthRating, type TeamSeasonPrior } from "./match-factors";
+import { CARD_MARGIN_SHARE, CARD_RANGE_FITS, highConfidenceSentence, type FrozenRange } from "./range-display";
 import { scoringForSeason } from "./season-scoring";
 
 export type CategoryName = "auto" | "teleop" | "endgame" | "foul";
@@ -1370,13 +1370,26 @@ export function forecastMatch(input: {
   blue: string[];
   played: readonly CategorySample[];
   spec?: ModelSpec;
+  /** Priors from events that ended before this one. Empty means the in-event path. */
+  seasonPrior?: ReadonlyMap<string, TeamSeasonPrior> | null;
+  /** Qualification or playoff, for a spec that shifts playoff scoring. */
+  level?: string;
+  /**
+   * When set, the win chance is a normal curve with this share of the
+   * scoreboard mean already played, instead of the logistic curve.
+   */
+  marginShare?: number;
 }): MatchForecast | MatchForecastSkip {
   const scoring = scoringForSeason(input.season);
   const spec = input.spec ?? SHIPPED_CATEGORY_MODEL;
+  const season = input.seasonPrior ?? null;
   const played = input.played.filter((sample) => sample.teams.length > 0 && Number.isFinite(sample.total));
   const redKnown = input.red.filter((team) => playedCount(played, team) > 0).length;
   const blueKnown = input.blue.filter((team) => playedCount(played, team) > 0).length;
-  if (!played.length || redKnown < 2 || blueKnown < 2) {
+  const seasonHits = (teams: readonly string[]) => teams.filter((team) => season?.has(team)).length;
+  const cardPath = spec.kind === "component-opr" && scoring.categoriesKnown && (season?.size ?? 0) > 0;
+  const priorReady = cardPath && (redKnown >= 2 || seasonHits(input.red) >= 2) && (blueKnown >= 2 || seasonHits(input.blue) >= 2);
+  if (!priorReady && (!played.length || redKnown < 2 || blueKnown < 2)) {
     return { skipReason: "Not enough of these robots have played yet to estimate this match." };
   }
   const complete = played.filter(
@@ -1386,10 +1399,12 @@ export function forecastMatch(input: {
   // of breakdowns must not invent a split the event did not record.
   const categoriesKnown = scoring.categoriesKnown && complete.length >= 8 && complete.length * 2 >= played.length;
   const history = categoriesKnown ? complete : played;
-  const effective: ModelSpec = categoriesKnown ? spec : { ...spec, kind: spec.kind === "mean" ? "mean" : "vantage", priorK: 0 };
+  const effective: ModelSpec = cardPath || categoriesKnown ? spec : { ...spec, kind: spec.kind === "mean" ? "mean" : "vantage", priorK: 0 };
   const upcomingKey = "upcoming";
   let predicted: StoredPrediction | null = null;
-  if (!categoriesKnown || effective.kind === "vantage" || effective.kind === "plain-opr") {
+  if (cardPath) {
+    predicted = asStored(componentPredict(history, new Map(), [], spec, input.red, input.blue, { season, level: input.level }));
+  } else if (!categoriesKnown || effective.kind === "vantage" || effective.kind === "plain-opr") {
     predicted = asStored(vantagePredict(played, { ...effective, kind: "vantage" }, input.red, input.blue, upcomingKey));
   } else if (effective.kind === "component-opr") {
     predicted = asStored(componentPredict(history, new Map(), [], effective, input.red, input.blue));
@@ -1424,10 +1439,13 @@ export function forecastMatch(input: {
   const red = clampSide(categoriesKnown ? predicted.red : { ...predicted.red, auto: null, teleop: null, endgame: null, foul: null });
   const blue = clampSide(categoriesKnown ? predicted.blue : { ...predicted.blue, auto: null, teleop: null, endgame: null, foul: null });
   const scale = winScale(played, categoriesKnown && effective.kind !== "vantage" ? effective.winShare : 0.3);
-  const pRed = categoriesKnown && effective.kind !== "vantage"
+  let pRed = categoriesKnown && effective.kind !== "vantage"
     ? allianceWinProbability(red.total, blue.total, scale)
     : predicted.pRed;
-  const meanTotal = played.reduce((sum, sample) => sum + sample.total, 0) / played.length;
+  const meanTotal = played.length ? played.reduce((sum, sample) => sum + sample.total, 0) / played.length : 0;
+  if (input.marginShare != null && input.marginShare > 0 && meanTotal > 0) {
+    pRed = normalWinProbability(red.total - blue.total, input.marginShare * meanTotal);
+  }
   const errorBand =
     played.length >= 8 && spec.relativeError != null && spec.relativeError > 0
       ? Math.max(1, Math.round(meanTotal * spec.relativeError))
@@ -1444,8 +1462,7 @@ export function forecastMatch(input: {
   const bandBit = totalRange ? "" : errorBand == null ? "" : ` Typical miss ±${errorBand}.`;
   const marginBit = marginLow == null || marginHigh == null ? "" : ` Margin ${marginLow} to ${marginHigh}.`;
   const categoryBit = categoriesKnown ? "" : " Scoring categories for this season are not published yet, so this is a total only.";
-  const confident =
-    CARD_HIGH_CONFIDENCE_AT != null && Math.max(shownP, 1 - shownP) >= CARD_HIGH_CONFIDENCE_AT ? " High confidence." : "";
+  const confident = input.marginShare === CARD_MARGIN_SHARE && cardPath ? highConfidenceSentence(shownP) : "";
   const confidence =
     margin === 0
       ? `Even match.${bandBit}${marginBit}${categoryBit}${confident}`
@@ -1535,4 +1552,19 @@ export const SHIPPED_CATEGORY_MODEL: ModelSpec = {
    * Display only. It was not an input to the model choice.
    */
   relativeError: 0.212,
+};
+
+/**
+ * The on-screen model. Chosen because, on the same 570 held-out matches, it
+ * beat the in-event card on winner accuracy and on Brier. The season file is
+ * passed in by the caller; this spec alone does not load it.
+ */
+export const CARD_SCORE_MODEL: ModelSpec = {
+  ...SHIPPED_CATEGORY_MODEL,
+  id: "season-d0.45-k6+defense-0.1+schedule",
+  relativeError: null,
+  seasonDecay: 0.45,
+  seasonPriorK: 6,
+  defense: 0.1,
+  scheduleStrength: true,
 };

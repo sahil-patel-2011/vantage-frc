@@ -17,7 +17,9 @@ import {
 import { countLodgingGaps } from "../logistics";
 import { snapshotShouldLoadHomeStrip } from "./refresh";
 import { isDemoPrediction } from "../strategy/prediction-display";
-import { forecastMatch, isMatchForecastSkip } from "@vantage/prediction-strategy";
+import { isMatchForecastSkip } from "@vantage/prediction-strategy";
+import { forecastActiveMatch } from "../strategy/card-forecast";
+import { eventStartIso } from "../strategy/card-strength";
 import { predictionAiRequested } from "../strategy/prediction-ai";
 import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
 import { nextMatchCategoryLine } from "./next-match-copy";
@@ -285,8 +287,15 @@ export async function loadDashboardSnapshot(
         briefing = card.briefing;
         cardRedWin = card.redWinProbability;
       }
-      const forecast = forecastMatch({
+      const dated = await client.query<{ startDate: Date | string | null }>(
+        `SELECT start_date AS "startDate" FROM events_ref WHERE event_key = $1`,
+        [eventKey],
+      );
+      const forecast = forecastActiveMatch({
         season: year,
+        eventKey,
+        startDate: eventStartIso(dated.rows[0]?.startDate),
+        level: row.compLevel,
         red: redKeys,
         blue: blueKeys,
         played: scoring.samples,

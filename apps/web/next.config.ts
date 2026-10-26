@@ -38,6 +38,12 @@ const config: NextConfig = {
     ...(process.env.BASE44_PUBLIC_HOST_SUFFIX ? [`3000-${process.env.BASE44_PUBLIC_HOST_SUFFIX}`] : []),
   ],
   serverExternalPackages: ["pg"],
+  // The match card reads this public ratings file on the server. It is not
+  // imported into the browser bundle.
+  outputFileTracingIncludes: {
+    "/api/dashboards": ["../../packages/prediction-strategy/test/fixtures/season-strength.json"],
+    "/api/strategy/prediction-note": ["../../packages/prediction-strategy/test/fixtures/season-strength.json"],
+  },
   transpilePackages: [
     "@vantage/agent",
     "@vantage/billing",

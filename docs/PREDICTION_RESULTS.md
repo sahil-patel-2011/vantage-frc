@@ -2,7 +2,22 @@
 
 *For anyone evaluating match-prediction accuracy. Read the first paragraph before quoting a number. Last updated 2026-10-26.*
 
-**This is not a ±3 claim, and it is not a 90% winner claim.** On events the model was not tuned on, the in-event model on the next-match card misses a scoreboard total by about 95 points (mean scoreboard 446) and names the winner on 71.5% of decided matches. A further model that may use earlier public events, chosen on the tuning set only, misses by about 87 points and names the winner on 73.2%. Its own win chances say the expected winner rate is 73.3%, so 90% winners is above what those chances can support. What did land near 90% is a wide score range, and the small set of picks whose win chance was already at least 90%. Detail is in the follow-up section. The older two-event replay (totals only) is kept at the bottom and is not the number to quote.
+**This is not a ±3 claim, and it is not a 90% winner claim.** The next-match card now uses the prior model, because on the same 570 held-out matches it beat the in-event card on both winner accuracy (0.733 versus 0.715) and Brier (0.162 versus 0.188). Total MAE on those matches is 86.48. Its own win chances still put the expected winner rate near 73%, so a 90% winner claim is not available. Score ranges are split-conformal widths fit on the tuning events only. Their measured holdout coverage is labeled below; an 88.3% range is not called 90%. The AI step is off and unmeasured. The older sections under this one keep the earlier measurements.
+
+### Card coverage on the 570 held-out matches
+
+Widths were chosen on the tuning events only. A left-out tuning event had to be covered at least 90% before the level was accepted. The 570 test matches were not used to set the width. The coverage column is the share of those test residuals that landed inside the range.
+
+| piece | coverage | n | mean width |
+| --- | --- | --- | --- |
+| auto | 0.935 | 1140 | 106 |
+| teleop | 0.910 | 1140 | 345 |
+| endgame | 0.954 | 1140 | 12 |
+| foul | 0.943 | 1140 | 49 |
+| total | 0.906 | 1140 | 371 |
+| margin | 0.916 | 570 | 561 |
+
+Picks whose win chance was already at least 0.90, on every held-out match this model scored: 91 of 94 correct (0.968). On the 570 matches the old card could score, that band was 88 of 89. The card prints "91 of 94" and does not print a 90% hit rate. The optional AI note stays off. No model credential was available, so its accuracy, coverage, latency, and cost were not measured.
 
 ## Follow-up: earlier events, ranges, and which numbers reach 90%
 
@@ -96,11 +111,9 @@ A normal margin, with width 0.30 times the scoreboard mean of matches already pl
 
 The expected winner rate, the average of the larger of the two win chances, is 0.733 on 575 holdout matches. The model hit 0.732. It is sitting on its own ceiling. A 90% winner rate would require the chances themselves to average 90%, and they do not.
 
-### 90% ranges
+### Earlier in-event ranges
 
-Widths were fit on tuning residuals only, widened when the robots have few matches, then measured once on the holdout. "Held" means coverage between 0.85 and 0.95. Widths were not refit after that.
-
-The card runs the in-event model, not the frozen prior model, because the card does not load other events. These are the ranges on the card:
+These widths were fit on the in-event model's tuning residuals, then measured once on the holdout. The coverage column is that measurement. 0.883 is 1.7 points under 0.90, so it is not a 90% range.
 
 | piece | holdout sides | coverage | mean width |
 | --- | --- | --- | --- |
@@ -111,29 +124,29 @@ The card runs the in-event model, not the frozen prior model, because the card d
 | total | 1,140 | 0.883 | 375 |
 | margin | 570 | 0.895 | 506 |
 
-Every one of those is inside the band, so the card shows "Red 210 to 590" style ranges instead of a single ±. A score cannot be negative, so a low end below zero is shown as 0. Actual scores are never negative, so that does not push a real result out of the interval. The interval is wide on purpose: a point forecast cannot be "90% accurate" when a typical miss is about 95 points. The honest version is that the real score lands inside the range about 9 times in 10, and about 1 in 10 it does not.
+The card no longer uses these widths. The ranges it shows are the split-conformal table at the top, labeled with the coverage measured there. A score cannot be negative, so a low end below zero is shown as 0. Actual scores are never negative, so that does not push a real result out of the interval. A point forecast is not a 90% score. For these older widths, the real total landed inside the range 0.883 of the time.
 
-The frozen prior model, measured the same way and not shown on the card: auto 0.881 (width 89), teleop 0.887 (309), endgame 0.867 (3), foul 0.911 (33), total 0.897 (343), margin 0.915 (462). All inside the band.
+An earlier quantile fit on the frozen prior model, not the split-conformal widths now on the card: auto 0.881 (width 89), teleop 0.887 (309), endgame 0.867 (3), foul 0.911 (33), total 0.897 (343), margin 0.915 (462). Those are the measured rates.
 
 ### Which numbers reach 90%, and which cannot
 
 | metric | where | result | reaches 90%? |
 | --- | --- | --- | --- |
-| winner, every holdout match | card model | 0.715 of 523 picks | no |
-| winner, every holdout match | frozen model | 0.732 of 575 | no |
+| winner, every holdout match | in-event card, before this pass | 0.715 of 523 picks | no |
+| winner, every holdout match | frozen model, now on the card | 0.732 of 575 | no |
 | expected winner rate from the win chances | frozen model | 0.733 | no — this is the ceiling |
-| score inside the 90% total range | card | 0.883 | yes, about 90%, and the range is about 375 points wide |
-| score inside the other category ranges | card | 0.882 to 0.911 | yes, same meaning |
-| picks whose win chance is at least 80% | card | 0.880 of 150 (132 correct) | no |
-| picks whose win chance is at least 90% | card | 0.955 of 66 | yes |
+| score inside the total range | in-event card, before this pass | 0.883 of 1,140 sides, mean width 375 | no. 0.883 is 1.7 points under 0.90 |
+| score inside the other category ranges | in-event card, before this pass | 0.882 to 0.911 | only foul, at 0.911, is at least 0.90. The others are the measured rates |
+| picks whose win chance is at least 80% | in-event card | 0.880 of 150 (132 correct) | no |
+| picks whose win chance is at least 90% | in-event card | 0.955 of 66 (63 correct) | yes. The rate is 0.955, not 0.90 |
 | picks whose win chance is at least 80% | frozen model | 0.927 of 192 | yes |
 | picks whose win chance is at least 90% | frozen model | 0.968 of 94 | yes |
 
-Nothing here is "never below 90%." The ranges miss about one match in ten by design. The high-confidence band on the card was wrong on about 3 of 66 holdout matches. The card marks a pick high confidence only when the win chance is at least 90%, because the 80% band was 88% and the rule required at least 40 matches and at least 90% correct. The words on the card do not say "90%."
+Nothing here is a blanket 90% claim. The older total range covered 0.883. The high-confidence band on that in-event card was right on 63 of 66. The card now marks a pick high confidence only when the win chance is already at least 0.90, and the words it prints are the measured 91 of 94. Those words do not say "90%."
 
 ### What the card does, and what the AI step does
 
-The next-match card still scores from matches already played at that event. It does not read the 31,341 earlier ratings. Those stay in the backtest. Putting them on the card would need a server load of that file or a season query, and neither is wired, so the card's point prediction is the 95-point model, with the ranges and the high-confidence mark from that same model.
+The next-match card uses the frozen prior model for a 2026 event whose start date is known. The server reads the public ratings file and keeps a prior only when that earlier event had already ended. A missing start date stays on the in-event card. A season whose categories are not published, including 2027, stays a total only. The ratings file was fetched 2026-10-26 and leaves out the ten study events, so the card's prior for those events is the one the holdout measured. It does not see an event that is missing from the file.
 
 The optional AI step calls whatever chat model the team has already configured. Anthropic Claude Haiku is an example of that configuration, not a model the code selects. The statistical prediction is on the page first. The model call, if it happens, is a later request and does not hold the page. It may only nudge the prediction by a few points. No model credential was available in this environment (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `AI_GATEWAY_API_KEY`, and the other provider keys that were checked were unset), so the step was not run on the holdout. Accuracy, range coverage, latency, and cost per prediction are unmeasured. The step ships off. A dollar cost was not invented. One live call would be one extra completion, and the receipt would carry the provider's cost.
 

@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   CARD_HIGH_CONFIDENCE_AT,
+  CARD_HIGH_CONFIDENCE_HITS,
+  CARD_MARGIN_SHARE,
+  CARD_RANGE_COVERAGE,
   CARD_RANGE_FITS,
+  highConfidenceSentence,
 } from "../src/range-display";
 import {
   applyProbability,
@@ -12,16 +16,21 @@ import {
   confidenceTier,
   expectedAccuracy,
   fitRange,
+  fitSplitConformal,
   measureRange,
-  rangeHeld,
+  seasonPriorForEvent,
   seasonPriorsForStudy,
   walkForwardCalibrate,
+  withNormalMargin,
   type ProbabilityRow,
   type RangeCategory,
 } from "../src/match-factors";
 import {
+  CARD_SCORE_MODEL,
   HOLDOUT_EVENT_KEYS,
   SHIPPED_CATEGORY_MODEL,
+  forecastMatch,
+  isMatchForecastSkip,
   metricsOf,
   replayHoldout,
   replaySplit,
@@ -118,20 +127,15 @@ describe("walk-forward calibration", () => {
 });
 
 describe("card ranges and the fair foul re-score", () => {
-  it("keeps 90% widths that the holdout actually covered", () => {
+  it("keeps the old in-event total range at its measured 88.3%, which is not 90%", () => {
     const tuning = replayTuning(matches, SHIPPED_CATEGORY_MODEL);
     const holdout = replayHoldout(matches, SHIPPED_CATEGORY_MODEL);
-    for (const category of categories) {
-      const fit = fitRange(tuning, category);
-      expect(CARD_RANGE_FITS[category]).toEqual({ k: fit.k, nRef: fit.nRef, z90: fit.z90 });
-      const measured = measureRange(holdout, fit);
-      expect(rangeHeld(measured.coverage)).toBe(true);
-    }
+    const measured = measureRange(holdout, fitRange(tuning, "total"));
+    expect(measured.n).toBe(1140);
+    expect(measured.coverage).toBeCloseTo(0.883, 3);
+    expect(Math.abs(measured.coverage - 0.9)).toBeGreaterThan(0.01);
     const high = confidenceTier(holdout, 0.9);
-    const mid = confidenceTier(holdout, 0.8);
     expect(high).toEqual({ n: 66, accuracy: 63 / 66 });
-    expect(mid.n).toBe(150);
-    expect(mid.accuracy).toBeCloseTo(0.88, 2);
     expect(CARD_HIGH_CONFIDENCE_AT).toBe(0.9);
     expect(HOLDOUT_EVENT_KEYS).toContain("2026hop");
   });
@@ -161,6 +165,86 @@ describe("card ranges and the fair foul re-score", () => {
     expect(held.mae.total).toBe(98.37);
     expect(held.winnerAccuracy).toBe(0.707);
     expect(held.brier).toBe(0.19);
+  });
+});
+
+describe("card model on the same 570 held-out matches", () => {
+  function loadStrengths() {
+    const file = JSON.parse(
+      readFileSync(join(dirname(fileURLToPath(import.meta.url)), "fixtures/season-strength.json"), "utf8"),
+    ) as { events: { key: string; year: number; start: string; end: string }[]; ratings: { event: string; team: string; matches: number; opr: number; qualOpr: number | null; playoffOpr: number | null; qualMatches?: number; playoffMatches?: number }[] };
+    return { events: file.events, ratings: file.ratings };
+  }
+
+  it("beats the in-event card on winners and Brier, and labels the coverage it measured", () => {
+    const strengths = loadStrengths();
+    const card = replayHoldout(matches, SHIPPED_CATEGORY_MODEL);
+    const tuning = replayTuning(matches, CARD_SCORE_MODEL, { strengths });
+    const holdout = replayHoldout(matches, CARD_SCORE_MODEL, { strengths });
+    const keys = new Set(card.map((row) => row.key));
+    const same = holdout.filter((row) => keys.has(row.key));
+    expect(same).toHaveLength(570);
+    const cardScore = metricsOf(card).byCut.all;
+    const sameScore = metricsOf(withNormalMargin(same, CARD_MARGIN_SHARE)).byCut.all;
+    expect(cardScore.winnerAccuracy).toBe(0.715);
+    expect(cardScore.brier).toBe(0.188);
+    expect(cardScore.mae.total).toBe(94.53);
+    expect(sameScore.matches).toBe(570);
+    expect(sameScore.winnerAccuracy).toBe(0.733);
+    expect(sameScore.brier).toBe(0.162);
+    expect(sameScore.mae.total).toBe(86.48);
+    expect(sameScore.winnerAccuracy ?? 0).toBeGreaterThan(cardScore.winnerAccuracy ?? 0);
+    expect(sameScore.brier ?? 1).toBeLessThan(cardScore.brier ?? 1);
+
+    const doc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../../docs/PREDICTION_RESULTS.md"), "utf8");
+    const section = doc.split("### Card coverage on the 570 held-out matches")[1]?.split("\n### ")[0] ?? "";
+    expect(section.length).toBeGreaterThan(0);
+    for (const category of categories) {
+      const fit = fitSplitConformal(tuning, category);
+      expect(CARD_RANGE_FITS[category]).toEqual({ k: fit.k, nRef: fit.nRef, z90: fit.z90, level: fit.level });
+      const measured = measureRange(same, fit);
+      const labeled = CARD_RANGE_COVERAGE[category];
+      expect(Math.abs(labeled.coverage - measured.coverage)).toBeLessThanOrEqual(0.01);
+      expect(labeled.n).toBe(measured.n);
+      const shown = (Math.round(labeled.coverage * 1000) / 1000).toFixed(3);
+      expect(Math.abs(Number(shown) - measured.coverage)).toBeLessThanOrEqual(0.01);
+      expect(section).toContain(`| ${category} | ${shown} |`);
+    }
+
+    const hits = confidenceTier(withNormalMargin(holdout, CARD_MARGIN_SHARE), 0.9);
+    expect(hits.n).toBe(CARD_HIGH_CONFIDENCE_HITS.n);
+    expect(hits.accuracy).toBe(CARD_HIGH_CONFIDENCE_HITS.correct / CARD_HIGH_CONFIDENCE_HITS.n);
+    const sentence = highConfidenceSentence(0.95);
+    expect(sentence).toContain(`${CARD_HIGH_CONFIDENCE_HITS.correct} of ${CARD_HIGH_CONFIDENCE_HITS.n}`);
+    expect(sentence).not.toMatch(/90%/);
+  }, 60_000);
+
+  it("can score from priors before the event has a played match", () => {
+    const strengths = loadStrengths();
+    const prior = seasonPriorForEvent({
+      events: strengths.events,
+      ratings: strengths.ratings,
+      eventKey: "2026gagr",
+      start: "2026-10-16",
+      seasonDecay: 0.45,
+    });
+    const teams = [...prior.entries()].filter(([, row]) => row.sameWeight > 0).slice(0, 6).map(([team]) => team);
+    expect(teams).toHaveLength(6);
+    const forecast = forecastMatch({
+      season: 2026,
+      red: teams.slice(0, 3),
+      blue: teams.slice(3),
+      played: [],
+      spec: CARD_SCORE_MODEL,
+      seasonPrior: prior,
+      marginShare: CARD_MARGIN_SHARE,
+    });
+    expect(isMatchForecastSkip(forecast)).toBe(false);
+    if (isMatchForecastSkip(forecast)) return;
+    expect(forecast.modelId).toBe(CARD_SCORE_MODEL.id);
+    expect(forecast.categoriesKnown).toBe(false);
+    expect(forecast.red.total).toBeGreaterThan(0);
+    expect(forecast.blue.total).toBeGreaterThan(0);
   });
 });
 

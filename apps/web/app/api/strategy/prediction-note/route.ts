@@ -1,6 +1,8 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
-import { forecastMatch, isMatchForecastSkip } from "@vantage/prediction-strategy";
+import { isMatchForecastSkip } from "@vantage/prediction-strategy";
+import { forecastActiveMatch } from "../../../../lib/strategy/card-forecast";
+import { eventStartIso } from "../../../../lib/strategy/card-strength";
 import { headers } from "next/headers";
 import { seasonYearFromEventKey } from "../../../../lib/dashboard/score-from-metrics";
 import { loadEventScoring } from "../../../../lib/opr/alliance-results";
@@ -37,17 +39,25 @@ export async function POST(request: Request) {
 
   try {
     const result = await withRls({ userId: session.user.id, orgId }, async (client) => {
-      const match = await client.query<{ eventKey: string; redAlliance: unknown; blueAlliance: unknown }>(
-        `SELECT event_key AS "eventKey", red_alliance AS "redAlliance", blue_alliance AS "blueAlliance"
-         FROM matches_ref WHERE match_key = $1 LIMIT 1`,
+      const match = await client.query<{ eventKey: string; compLevel: string; redAlliance: unknown; blueAlliance: unknown }>(
+        `SELECT m.event_key AS "eventKey", m.comp_level AS "compLevel",
+                m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance"
+         FROM matches_ref m WHERE m.match_key = $1 LIMIT 1`,
         [matchKey],
       );
       const row = match.rows[0];
       const year = row ? seasonYearFromEventKey(row.eventKey) : null;
       if (!row || !year) return { enabled: true, measured: false, aiUsed: false, note: null };
+      const dated = await client.query<{ startDate: Date | string | null }>(
+        `SELECT start_date AS "startDate" FROM events_ref WHERE event_key = $1`,
+        [row.eventKey],
+      );
       const scoring = await loadEventScoring(client, row.eventKey);
-      const forecast = forecastMatch({
+      const forecast = forecastActiveMatch({
         season: year,
+        eventKey: row.eventKey,
+        startDate: eventStartIso(dated.rows[0]?.startDate),
+        level: row.compLevel,
         red: teamKeys(row.redAlliance),
         blue: teamKeys(row.blueAlliance),
         played: scoring.samples,

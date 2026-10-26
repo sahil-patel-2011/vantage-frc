@@ -647,6 +647,7 @@ export {
   PRIOR_MEAN_SHRINK,
   SHIPPED_CATEGORY_MODEL,
   TUNING_EVENT_KEYS,
+  CARD_SCORE_MODEL,
   chooseCategoryModel,
   forecastMatch,
   isBetterTuning,
@@ -678,7 +679,11 @@ export type {
 
 export {
   CARD_HIGH_CONFIDENCE_AT,
+  CARD_HIGH_CONFIDENCE_HITS,
+  CARD_MARGIN_SHARE,
+  CARD_RANGE_COVERAGE,
   CARD_RANGE_FITS,
+  highConfidenceSentence,
 } from "./range-display";
 export type { FrozenRange } from "./range-display";
 
@@ -689,7 +694,9 @@ export {
   confidenceTier,
   expectedAccuracy,
   fitRange,
+  fitSplitConformal,
   measureRange,
+  seasonPriorForEvent,
   normalWinProbability,
   rangeHalfWidth,
   rangeHeld,

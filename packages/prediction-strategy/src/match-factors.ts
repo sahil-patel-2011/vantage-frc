@@ -89,20 +89,22 @@ export function yearScales(events: readonly StrengthEvent[], ratings: readonly S
  * 2026 ratings stay in points. Older seasons become z-scores against that year's robots.
  * `seasonDecay` weights a year by seasonDecay^(2026-year).
  */
-export function seasonPriorsForStudy(input: {
+/**
+ * One event's prior. A rating counts only when that event's last day is before
+ * `start`. The event being predicted is never a prior for itself.
+ */
+export function seasonPriorForEvent(input: {
   events: readonly StrengthEvent[];
   ratings: readonly StrengthRating[];
-  studyEvents?: readonly string[];
-  blockedEvents?: ReadonlySet<string>;
+  eventKey: string;
+  start: string;
   seasonDecay: number;
-}): Map<string, Map<string, TeamSeasonPrior>> {
+  blockedEvents?: ReadonlySet<string>;
+}): Map<string, TeamSeasonPrior> {
   const decay = input.seasonDecay > 0 ? input.seasonDecay : 1;
   const blocked = input.blockedEvents ?? new Set<string>();
   const eventByKey = new Map(input.events.map((event) => [event.key, event]));
   const scales = yearScales(input.events, input.ratings);
-  const study = input.studyEvents ?? Object.keys(STUDY_EVENT_START);
-  const out = new Map<string, Map<string, TeamSeasonPrior>>();
-
   type Acc = {
     sameWeight: number;
     sameSum: number;
@@ -112,54 +114,75 @@ export function seasonPriorsForStudy(input: {
     playoffSum: number;
   };
   const empty = (): Acc => ({ sameWeight: 0, sameSum: 0, zWeight: 0, zSum: 0, playoffWeight: 0, playoffSum: 0 });
+  const teams = new Map<string, Acc>();
+  for (const rating of input.ratings) {
+    const event = eventByKey.get(rating.event);
+    if (!event || event.key === input.eventKey || blocked.has(event.key)) continue;
+    if (!(event.end < input.start)) continue;
+    if (!(rating.matches > 0) || !Number.isFinite(rating.opr)) continue;
+    const yearGap = CURRENT_GAME_YEAR - event.year;
+    const weight = rating.matches * decay ** Math.max(0, yearGap);
+    if (!(weight > 0)) continue;
+    const acc = teams.get(rating.team) ?? empty();
+    if (event.year === CURRENT_GAME_YEAR) {
+      acc.sameWeight += weight;
+      acc.sameSum += weight * rating.opr;
+      const qual = rating.qualOpr;
+      const playoff = rating.playoffOpr;
+      const qualMatches = rating.qualMatches ?? 0;
+      const playoffMatches = rating.playoffMatches ?? 0;
+      if (qual != null && playoff != null && qualMatches >= 3 && playoffMatches >= 2) {
+        const playoffWeight = playoffMatches * decay ** Math.max(0, yearGap);
+        acc.playoffWeight += playoffWeight;
+        acc.playoffSum += playoffWeight * (playoff - qual);
+      }
+    } else {
+      const scale = scales.get(event.year);
+      if (scale && scale.sd > 1) {
+        acc.zWeight += weight;
+        acc.zSum += weight * ((rating.opr - scale.mean) / scale.sd);
+      }
+    }
+    teams.set(rating.team, acc);
+  }
+  const priors = new Map<string, TeamSeasonPrior>();
+  for (const [team, acc] of teams) {
+    if (!(acc.sameWeight > 0) && !(acc.zWeight > 0)) continue;
+    priors.set(team, {
+      sameWeight: acc.sameWeight,
+      samePoints: acc.sameWeight > 0 ? acc.sameSum / acc.sameWeight : 0,
+      zWeight: acc.zWeight,
+      z: acc.zWeight > 0 ? acc.zSum / acc.zWeight : 0,
+      playoffWeight: acc.playoffWeight,
+      playoffDelta: acc.playoffWeight > 0 ? acc.playoffSum / acc.playoffWeight : 0,
+    });
+  }
+  return priors;
+}
 
+export function seasonPriorsForStudy(input: {
+  events: readonly StrengthEvent[];
+  ratings: readonly StrengthRating[];
+  studyEvents?: readonly string[];
+  blockedEvents?: ReadonlySet<string>;
+  seasonDecay: number;
+}): Map<string, Map<string, TeamSeasonPrior>> {
+  const study = input.studyEvents ?? Object.keys(STUDY_EVENT_START);
+  const out = new Map<string, Map<string, TeamSeasonPrior>>();
   for (const studyEvent of study) {
     const start = STUDY_EVENT_START[studyEvent];
     if (!start) continue;
-    const teams = new Map<string, Acc>();
-    for (const rating of input.ratings) {
-      const event = eventByKey.get(rating.event);
-      if (!event || event.key === studyEvent || blocked.has(event.key)) continue;
-      if (!(event.end < start)) continue;
-      if (!(rating.matches > 0) || !Number.isFinite(rating.opr)) continue;
-      const yearGap = CURRENT_GAME_YEAR - event.year;
-      const weight = rating.matches * decay ** Math.max(0, yearGap);
-      if (!(weight > 0)) continue;
-      const acc = teams.get(rating.team) ?? empty();
-      if (event.year === CURRENT_GAME_YEAR) {
-        acc.sameWeight += weight;
-        acc.sameSum += weight * rating.opr;
-        const qual = rating.qualOpr;
-        const playoff = rating.playoffOpr;
-        const qualMatches = rating.qualMatches ?? 0;
-        const playoffMatches = rating.playoffMatches ?? 0;
-        if (qual != null && playoff != null && qualMatches >= 3 && playoffMatches >= 2) {
-          const playoffWeight = playoffMatches * decay ** Math.max(0, yearGap);
-          acc.playoffWeight += playoffWeight;
-          acc.playoffSum += playoffWeight * (playoff - qual);
-        }
-      } else {
-        const scale = scales.get(event.year);
-        if (scale && scale.sd > 1) {
-          acc.zWeight += weight;
-          acc.zSum += weight * ((rating.opr - scale.mean) / scale.sd);
-        }
-      }
-      teams.set(rating.team, acc);
-    }
-    const priors = new Map<string, TeamSeasonPrior>();
-    for (const [team, acc] of teams) {
-      if (!(acc.sameWeight > 0) && !(acc.zWeight > 0)) continue;
-      priors.set(team, {
-        sameWeight: acc.sameWeight,
-        samePoints: acc.sameWeight > 0 ? acc.sameSum / acc.sameWeight : 0,
-        zWeight: acc.zWeight,
-        z: acc.zWeight > 0 ? acc.zSum / acc.zWeight : 0,
-        playoffWeight: acc.playoffWeight,
-        playoffDelta: acc.playoffWeight > 0 ? acc.playoffSum / acc.playoffWeight : 0,
-      });
-    }
-    out.set(studyEvent, priors);
+    out.set(
+      studyEvent,
+      seasonPriorForEvent({
+        events: input.events,
+        ratings: input.ratings,
+        eventKey: studyEvent,
+        start,
+        seasonDecay: input.seasonDecay,
+        blockedEvents: input.blockedEvents,
+      }),
+    );
   }
   return out;
 }
@@ -405,6 +428,8 @@ export type RangeFit = {
   k: number;
   nRef: number;
   z90: number;
+  /** Split-conformal level. Absent on the older empirical-quantile fit. */
+  level?: number;
   tuningCoverage: number;
   tuningMeanWidth: number;
 };
@@ -434,7 +459,7 @@ function widen(n: number, nRef: number, k: number): number {
   return Math.sqrt((nRef + k) / (Math.max(0, n) + k));
 }
 
-type Residual = { abs: number; n: number };
+type Residual = { abs: number; n: number; event?: string };
 
 function residualsOf(rows: readonly RangeRow[], category: RangeCategory): Residual[] {
   const out: Residual[] = [];
@@ -468,6 +493,101 @@ function coverageOf(residuals: readonly Residual[], nRef: number, k: number, z90
     if (residual.abs <= half + 1e-6) inside += 1;
   }
   return { coverage: inside / residuals.length, meanWidth: width / residuals.length };
+}
+
+/**
+ * Split conformal quantile. Rank is ceil((n+1)*level), 1-based, so a finite
+ * sample is slightly wider than the raw 90th percentile. Returns null when
+ * that rank is past the last residual (the interval would be unbounded).
+ */
+function conformalQuantile(sorted: readonly number[], level: number): number | null {
+  const n = sorted.length;
+  if (!n) return null;
+  const rank = Math.ceil((n + 1) * level);
+  if (rank < 1 || rank > n) return null;
+  return sorted[rank - 1] ?? null;
+}
+
+function taggedResiduals(rows: readonly RangeRow[], category: RangeCategory): Residual[] {
+  const out: Residual[] = [];
+  for (const row of rows) {
+    if (category === "margin") {
+      const predicted = row.red.total - row.blue.total;
+      const actual = row.actualRed.total - row.actualBlue.total;
+      const n = ((row.redExperience ?? 0) + (row.blueExperience ?? 0)) / 2;
+      out.push({ abs: Math.abs(actual - predicted), n, event: row.event });
+      continue;
+    }
+    const sides = [
+      { predicted: row.red[category], actual: row.actualRed[category], n: row.redExperience ?? 0 },
+      { predicted: row.blue[category], actual: row.actualBlue[category], n: row.blueExperience ?? 0 },
+    ];
+    for (const side of sides) {
+      if (side.predicted == null || side.actual == null) continue;
+      out.push({ abs: Math.abs(side.actual - side.predicted), n: side.n, event: row.event });
+    }
+  }
+  return out;
+}
+
+/**
+ * Split conformal interval from calibration rows only.
+ *
+ * The level starts at 0.90. It rises by 0.01, up to 0.99, until every
+ * left-out calibration event is covered at least 90% of the time. k is then
+ * the widen setting with the narrowest of those intervals. The test rows are
+ * not an argument, so they cannot choose the width.
+ */
+export function fitSplitConformal(rows: readonly RangeRow[], category: RangeCategory): RangeFit {
+  const tagged = taggedResiduals(rows, category);
+  const nRef = median(tagged.map((residual) => residual.n));
+  const events = [...new Set(tagged.map((residual) => residual.event))];
+  let best: { k: number; level: number; width: number } | null = null;
+  for (const k of RANGE_KS) {
+    const scored = tagged.map((residual) => ({ ...residual, z: residual.abs / widen(residual.n, nRef, k) }));
+    for (let step = 0; step <= 9; step += 1) {
+      const level = Math.round((0.9 + step * 0.01) * 100) / 100;
+      let width = 0;
+      let count = 0;
+      let minCoverage = 1;
+      let scoredEvents = 0;
+      for (const event of events) {
+        const others = scored.filter((residual) => residual.event !== event).map((residual) => residual.z).sort((a, b) => a - b);
+        const left = scored.filter((residual) => residual.event === event);
+        const quantile = conformalQuantile(others, level);
+        if (quantile == null || !left.length) continue;
+        scoredEvents += 1;
+        let inside = 0;
+        for (const residual of left) {
+          count += 1;
+          const half = quantile * widen(residual.n, nRef, k);
+          width += half * 2;
+          if (residual.abs <= half + 1e-9) inside += 1;
+        }
+        const coverage = inside / left.length;
+        if (coverage < minCoverage) minCoverage = coverage;
+      }
+      if (!scoredEvents || minCoverage + 1e-12 < 0.9) continue;
+      const meanWidth = count ? width / count : Number.POSITIVE_INFINITY;
+      if (!best || level < best.level - 1e-9 || (Math.abs(level - best.level) < 1e-9 && meanWidth < best.width)) {
+        best = { k, level, width: meanWidth };
+      }
+      break;
+    }
+  }
+  const chosen = best ?? { k: 8, level: 0.9, width: 0 };
+  const scores = tagged.map((residual) => residual.abs / widen(residual.n, nRef, chosen.k)).sort((a, b) => a - b);
+  const z90 = conformalQuantile(scores, chosen.level) ?? 0;
+  const scored = coverageOf(tagged, nRef, chosen.k, z90);
+  return {
+    category,
+    k: chosen.k,
+    nRef,
+    z90,
+    level: chosen.level,
+    tuningCoverage: scored.coverage,
+    tuningMeanWidth: scored.meanWidth,
+  };
 }
 
 /** 90% residual quantile on these rows, widened when the robots have few matches. k is chosen here. */
