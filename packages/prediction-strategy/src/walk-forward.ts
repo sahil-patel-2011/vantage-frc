@@ -452,7 +452,7 @@ function componentPredict(
   spec: ModelSpec,
   red: readonly string[],
   blue: readonly string[],
-  extras?: { season?: Map<string, TeamSeasonPrior> | null; level?: string },
+  extras?: { season?: ReadonlyMap<string, TeamSeasonPrior> | null; level?: string },
 ): SidePrediction | null {
   const seasonK = spec.seasonPriorK ?? 0;
   const season = seasonK > 0 ? extras?.season : null;

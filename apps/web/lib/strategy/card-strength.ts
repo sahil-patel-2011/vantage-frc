@@ -1,40 +1,20 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { CARD_SCORE_MODEL, seasonPriorForEvent, type StrengthEvent, type StrengthRating, type TeamSeasonPrior } from "@vantage/prediction-strategy";
+import strengthJson from "../../../../packages/prediction-strategy/test/fixtures/season-strength.json";
 
 type StrengthFile = { events: StrengthEvent[]; ratings: StrengthRating[] };
 
-let cached: StrengthFile | null | undefined;
+const strengthFile = strengthJson as StrengthFile;
 
-function strengthFile(): StrengthFile | null {
-  if (cached !== undefined) return cached;
-  const here = dirname(fileURLToPath(import.meta.url));
-  const file = "packages/prediction-strategy/test/fixtures/season-strength.json";
-  const candidates = [
-    join(here, "../../../../", file),
-    join(here, "../../../", file),
-    join(process.cwd(), file),
-    join(process.cwd(), "../", file),
-    join(process.cwd(), "../../", file),
-  ];
-  for (const candidate of candidates) {
-    if (!existsSync(candidate)) continue;
-    cached = JSON.parse(readFileSync(candidate, "utf8")) as StrengthFile;
-    return cached;
-  }
-  cached = null;
-  return null;
-}
-
-/** Priors whose event ended before `start`. Null when the file or the date is missing. */
+/**
+ * Priors whose event ended before `start`. Null when the date is missing.
+ * The ratings file is imported here so the server bundle carries it. It is
+ * not re-exported from the prediction package, which the browser also imports.
+ */
 export function priorForEvent(eventKey: string, start: string | null): Map<string, TeamSeasonPrior> | null {
   if (!start) return null;
-  const file = strengthFile();
-  if (!file) return null;
   const prior = seasonPriorForEvent({
-    events: file.events,
-    ratings: file.ratings,
+    events: strengthFile.events,
+    ratings: strengthFile.ratings,
     eventKey,
     start,
     seasonDecay: CARD_SCORE_MODEL.seasonDecay ?? 0.45,
