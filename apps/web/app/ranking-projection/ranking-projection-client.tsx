@@ -3,7 +3,7 @@
 import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button, Skeleton, StatRowSkeleton, TableSkeleton } from "../../components/ui";
+import { EmptyState, PageHeader, PageToolbar, Panel, Button, Skeleton, StatRowSkeleton, TableSkeleton } from "../../components/ui";
 import {
   bestPath,
   describeBestPath,
@@ -235,6 +235,7 @@ function BestPathPlanner({
         </details>
 
         <div className="bp-actions">
+          <PageToolbar label="What if">
           <Button variant="primary" type="button" onClick={runBestPath}>
             Show best path
           </Button>
@@ -253,6 +254,7 @@ function BestPathPlanner({
               {onlyOurMatches ? `Show all ${whatIf.remaining.length}` : `Only our ${ourMatches.length}`}
             </Button>
           ) : null}
+          </PageToolbar>
         </div>
 
         {plan ? (

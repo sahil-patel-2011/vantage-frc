@@ -175,10 +175,11 @@ Every route must have **≥2** entry paths: (a) at least one contextual/hub link
 *Check:* validate the route/feature-map manifest; assert max depth 2.
 *Why:* NN/g — beyond 2 disclosure levels usability degrades.
 
-**R4 — Exactly one primary (brand-token) button per screen. [CI]**
-Zero is allowed (pure-read screens). Two is a bug. If ≥3 actions have equal priority, **all** render neutral/outline. Primary sits **above or left of** secondary actions.
-*Check:* lint rule — at most one `<Button appearance="primary">` (or brand-token equivalent) per page component tree; runtime `data-primary-action` counter assertion in E2E.
-*Why:* Fluent 2, stated verbatim.
+**R4 — Exactly one primary (brand-token) button per page or card toolbar. [CI]**
+Zero is allowed (pure-read screens). Two filled buttons in one header or card toolbar is a bug. Secondary actions are quiet (text or ghost), and a toolbar shows at most three of them. Everything else goes in one **More** menu. A destructive action never sits next to the primary. On a wide screen the toolbar sits on the right of the page title; on a phone it sits in a sheet above the tab bar. Targets are 44px. A button in this toolbar always shows its words; an icon, when there is one, sits before the words and is never the only label.
+*Check:* `apps/web/lib/ui/page-toolbar-model.test.ts` locks the counts. `apps/web/components/ui/page-header.test.ts` fails if a header renders two `data-primary-action` buttons. `apps/web/lib/ui/page-toolbar-lint.test.ts` fails if a migrated route's header or card toolbar bypasses `PageHeader` / `PageToolbar`.
+*Why:* Fluent 2, stated verbatim. The shared control is `PageToolbar` (used by `PageHeader`). The analytics banner's "Turn analytics on" is quiet for the same reason: it sits on top of whatever primary the page already has.
+*Build it with:* `PageToolbar` in `apps/web/components/ui/page-toolbar.tsx`. Do not add a second toolbar or a new component library.
 *How it is kept (September 2026 audit of 220 pages):*
 - **Row actions are secondary.** A button repeated once per list row ("Mark done", "Pair with …",
   "Save card") is never `variant="primary"`. A list of editable forms opens one at a time

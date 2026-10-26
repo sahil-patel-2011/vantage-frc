@@ -3,7 +3,7 @@
 import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Skeleton, ToolStrip, Button } from "../../components/ui";
+import { EmptyState, PageHeader, PageToolbar, Skeleton, ToolStrip, Button } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { listenInboxUpdates, ownInboxUpdate, publishInboxUpdate } from "../../lib/notifications/inbox-events";
 import {
@@ -477,11 +477,11 @@ export default function NotificationsClient({ orgId }: { orgId: string | null })
           ]}
         />
         {unreadCount >= 1 ? (
-          <div className="notif-toolbar-actions">
+          <PageToolbar label="Inbox">
             <Button variant="secondary" type="button" disabled={busy} onClick={() => void patch("read_all")}>
               Mark all as read
             </Button>
-          </div>
+          </PageToolbar>
         ) : null}
       </div>
 

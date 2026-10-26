@@ -31,6 +31,7 @@ import {
 } from "../../lib/dashboard/dashboard-related";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { Icon } from "../../components/icon";
+import { PageToolbar } from "../../components/ui";
 import { DataSourceDegradedBanner } from "../../components/data-source-degraded-banner";
 import { OfflineBanner } from "../../components/offline-banner";
 import type { DataSourceHealthView } from "../../lib/reference-health";
@@ -688,6 +689,7 @@ export function DashboardHomeView(props: {
               {/* One quiet control, the way a list says "Edit" in its own heading. Home refreshes
                   itself; the Refresh button lives on the "Synced" line under the cards. */}
               <div className="dash-board-tools">
+                <PageToolbar label="Home">
                 {/* With one board there is no switcher, and the switcher was the only place to bring
                     back the cards Home hides while they are empty. */}
                 {orgId && meLoaded && switcherBoards.length <= 1 && (props.quietWidgetCount ?? 0) > 0 ? (
@@ -701,6 +703,7 @@ export function DashboardHomeView(props: {
                   aria-label="Edit Home — rearrange, add, or remove widgets" onClick={startEditing}>
                   Edit
                 </button> : null}
+                </PageToolbar>
               </div>
             </header>
           ) : null}

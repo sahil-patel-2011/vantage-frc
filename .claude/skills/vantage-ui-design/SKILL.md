@@ -24,8 +24,11 @@ rules you check every change against.
 
 ## Actions
 
-- One primary (filled) button per view. Everything else is secondary, a text link, or in a
-  "More" menu. Steps that only make sense later (Recheck after a scan) appear later.
+- One primary (filled) button per page or card toolbar. Secondary actions are quiet text or
+  ghost buttons, at most three visible. Everything else is in one "More" menu (`PageToolbar`
+  / `PageHeader`). Destructive actions stay in More, never beside the primary. Wide screens
+  put the toolbar on the right of the title; phones pin it above the tab bar. 44px targets.
+  The words always show.
 - Never two buttons that do the same thing on one screen.
 - Disabled buttons look disabled (flat, muted). Prefer an enabled button that explains what is
   missing beside the field ("Give the task a title") over a silent disabled one.

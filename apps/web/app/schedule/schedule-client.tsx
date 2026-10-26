@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { AskAiButton } from "../../components/ask-ai-button";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ScheduleRelated } from "../../components/schedule-related";
-import { Button, EmptyState, Panel } from "../../components/ui";
+import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -736,23 +736,24 @@ export default function ScheduleClient() {
 
   return (
     <main className="module-page sched-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Competition / Schedule</span>
-          <h1>Match schedule</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Competition / Schedule"
+        title="Match schedule"
+        description={
+          <>
             {eventLabel}
             {view.context.teamNumber ? ` — Team ${view.context.teamNumber}` : ""} · {view.matches.length}{" "}
             {view.matches.length === 1 ? "match" : "matches"}
-          </p>
-        </div>
+          </>
+        }
+      >
         <div className="sched-header-actions">
           <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
           <Button type="button" variant="secondary" onClick={() => void load()}>
             Refresh
           </Button>
         </div>
-      </header>
+      </PageHeader>
 
       <OfflineBanner
         feature="Schedule"
