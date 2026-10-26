@@ -138,7 +138,7 @@ export function buildStandings(
 export type RatingMap = Record<string, number | null | undefined>;
 
 /**
- * Predicts a winner only when every robot on both alliances has a cached rating.
+ * Predicts a winner only when every robot on both alliances has a rating.
  * An exact tie in modelled strength is NOT called a tie result — it is no call.
  */
 export function predictedOutcomeFromRatings(

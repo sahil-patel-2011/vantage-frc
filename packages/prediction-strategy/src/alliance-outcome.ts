@@ -276,6 +276,24 @@ export function eventWinCurveScale(level: number | null | undefined): number | n
 }
 
 /**
+ * Win chance for an event whose alliances average `averageAllianceScore` points.
+ *
+ * The curve is wider in a high-scoring game. Unknown scoring keeps the fixed
+ * fallback curve. Which side is ahead does not depend on the width: a positive
+ * margin stays a favourite, and a zero margin stays a coin flip.
+ */
+export function allianceWinProbabilityForEvent(
+  ourRating: number,
+  theirRating: number,
+  averageAllianceScore: number | null | undefined,
+): number {
+  const scale = eventWinCurveScale(averageAllianceScore);
+  return scale == null
+    ? allianceWinProbability(ourRating, theirRating)
+    : allianceWinProbability(ourRating, theirRating, scale);
+}
+
+/**
  * Alliance-level (3v3) win probability with per-team contribution breakdown.
  * Contributions use leave-one-out Δp so each robot's impact on p(red) is explicit and MODEL-labeled.
  */

@@ -1,6 +1,6 @@
 # Match prediction results
 
-*For anyone evaluating match-prediction accuracy. Read the first paragraph before quoting a number. Last updated 2026-10-19.*
+*For anyone evaluating match-prediction accuracy. Read the first paragraph before quoting a number. Last updated 2026-10-25.*
 
 **This is not a ±3 claim.** These numbers come from replaying the two events in production's `matches_ref` (2025gagai and 2026gagr, 153 played matches) match by match. Each match is predicted only from what was known walking into it: every robot's event OPR over the matches already played. It is two events, both in Georgia, so treat the numbers as a check on the model, not a promise for every event.
 
@@ -49,3 +49,66 @@ The set it replaced was two made-up matches whose scores were half the robots' r
 - Model: calibrated linear blend (`calibrated-linear-v2`). Each robot gets a rating, the alliance scores the sum, minus a small opponent defense term.
 - A match with fewer than two rated robots on an alliance is skipped, never filled.
 - Fouls an alliance drew from the other side are removed from the score its robots are rated on.
+
+## Seed order at 2026gagr (2026-10-25)
+
+Rank projection used to read only a saved season rating (Statbotics EPA). This event has none in the match file, so every remaining qualification was a coin flip and the projected order was mostly "whoever is ahead now, plus noise." It now rates a robot from the points it has already scored at the event when no season rating is saved, and it widens the win curve to 0.3 × the event's average foul-free alliance score. A robot that has not played is still left unrated.
+
+This is one event (GRITS, 44 teams, 59 qualification matches). It is a check, not a promise for every event. The replay is `packages/prediction-strategy/test/seed-replay.test.ts`.
+
+### Assumptions
+
+- Cut the schedule after qualifications 20, 30, and 40, in the file's play order. Rate robots only from matches before the cut. Play the real remaining qualification schedule in `seedOdds` (10,000 runs).
+- A higher score wins. This file has no ties. A win is 3 ranking points and a tie would be 1, which is what the 2026 REBUILT manual says. The file has no fuel or tower breakdown, so the three bonus ranking points (Energized, Supercharged, Traversal) are not awarded. The app still labels that 3-point rule unconfirmed for 2026 and says so on the page.
+- "Derived final order" sorts by those win points per match played, then by average foul-free score (official score minus foul points drawn), then by team number. Foul-free average is the tiebreak because it matched the public "Avg Match" column to the hundredth for every team that played eight matches (1261 is 285.75).
+- The projected order is each team's median seed from `seedOdds`, which ranks each simulated finish by **total** ranking points (what the page does), not by points per match. Re-ranking those finishes by points per match was slightly worse on this event, so the page was left as it is.
+- "Before" is season rating only. The file has none, so every remaining match is a coin flip. "Frozen" keeps the derived order at the cutoff and does not simulate. "Fixed curve" uses the played-match ratings with the old 12-point curve. "After" is what the page now does.
+
+### Check against the public ranking
+
+The public ranking on The Blue Alliance event page for 2026gagr (read 2026-10-25, no API key) includes bonus ranking points. Against the derived win-point order: Spearman **0.974**, the same eight teams in the top eight, **32** of 44 teams on a different rank, mean absolute gap **2** ranks. Two teams (2974 and 1414) appear in nine qualifications in the file and eight on that ranking. Checked on 2026-10-26: the rows are not duplicates (no repeated alliance or score), and they match the public match list. The public page for qualification 16 marks both 2974 and 1414 as surrogates. Qualification 31 does not. Dropping qualification 16 is the only match that restores 1414's published 4-4 record and 133.12 average. Dropping either qualification 16 or 31 restores 2974's 199.50 average, because both are wins with the same foul-free 271 points; the surrogate label is what picks qualification 16. The file has no surrogate column, so the replay still counts that match. A surrogate match is real; official rankings leave it out for the surrogate teams only.
+
+The event page's insights count Energized on 67 of 118 alliance-matches, Supercharged on 2, and Traversal on 0. That is the bonus the file cannot show.
+
+### Results
+
+Spearman rank correlation of the projected order with the derived final order, and how many of the projected top eight are really in the top eight.
+
+| quals played | before (coin flip) | frozen standings | ratings, fixed 12-point curve | after: ratings and event curve |
+| --- | --- | --- | --- | --- |
+| 20 | 0.722 / 5 | 0.713 / 5 | 0.673 / 5 | **0.736 / 5** |
+| 30 | 0.830 / 3 | 0.841 / 3 | 0.860 / 5 | **0.862 / 5** |
+| 40 | 0.859 / 5 | 0.859 / 5 | 0.890 / 6 | **0.889 / 6** |
+
+Same projection against the published ranking:
+
+| quals played | before | frozen | fixed 12-point curve | after |
+| --- | --- | --- | --- | --- |
+| 20 | 0.673 / 5 | 0.669 / 5 | 0.597 / 5 | **0.684 / 5** |
+| 30 | 0.797 / 3 | 0.806 / 3 | 0.817 / 5 | **0.816 / 5** |
+| 40 | 0.831 / 5 | 0.830 / 5 | 0.850 / 6 | **0.864 / 6** |
+
+The event curve is ahead of both baselines at every cutoff. The fixed 12-point curve is not: after 20 quals it is worse than a coin flip (0.673 vs 0.722 on the derived order, 0.597 vs 0.673 on the published order). By 40 quals the two curves pick almost the same order, because the curve does not change who is favoured, only how sure the chance is. Both curves called the same winners: 27 of 39, 23 of 29, and 15 of 19.
+
+Brier score of those win chances (0.25 is a coin flip, lower is better). The frozen order makes no win chances.
+
+| quals played | coin flip | fixed 12-point curve | event curve |
+| --- | --- | --- | --- |
+| 20 | 0.250 | 0.257 | **0.218** |
+| 30 | 0.250 | 0.189 | **0.167** |
+| 40 | 0.250 | 0.171 | **0.141** |
+
+After 20 quals the fixed curve is more confident than a coin flip and less accurate. The event curve is not. Its width at the three cuts was 45.75, 42.57, and 42.12 points (0.3 × the foul-free average so far).
+
+### One rating scale per event (2026-10-26)
+
+A saved season rating and a rating from matches already played are both in points, but they are different estimates. The first version of this page filled a gap with the other and then added them in one alliance. A unit case where one robot's season rating is 500 and everyone else is rated from a 130–50 match flips the predicted winner; rating every robot from the played match does not.
+
+The rule now is: use the season rating only when every robot in the projection has one. Otherwise rate every robot from matches already played, and leave a robot with no played match unrated. This file has no season ratings, so the rule does not change the table above. Re-run on 2026-10-26: the same Spearman, top-8, and Brier numbers.
+
+A failed read of those played-match ratings no longer throws out of the planner. Zero played matches, an empty result, and a thrown read all leave the saved rank on the page and leave remaining matches without a win chance when no season rating covers every robot.
+
+### Not in this change
+
+- **Scouting.** Home already nudges a robot's rating with what this team scouted (form, cycles, climb, defense, breakdowns) and can rate a robot from scouting alone after three scouted matches. Rank projection does not. This replay has no scout sheets, so there is nothing here to measure. A team's own scouting would move close matches; it would not fill a robot nobody has played or scouted.
+- **Bonus ranking points.** The page still says they are not predicted. On this event they moved 32 teams by about two ranks on average and did not change which eight teams were captains. Predicting them needs the fuel and tower breakdown, which this file does not have.

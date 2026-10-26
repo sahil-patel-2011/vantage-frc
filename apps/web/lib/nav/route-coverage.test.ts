@@ -62,6 +62,9 @@ const INTENTIONALLY_UNLISTED = new Map<string, string>([
   // Never navigated to directly: the proxy rewrites a paused media tool's own
   // address to this page, so a menu entry would be a link to "this is paused".
   ["/media-paused", "shown in place of a paused media tool, by the proxy's rewrite"],
+  // Answers 404 in production and whenever the local auth fixture is off.
+  // It exists so a check can render each ranking-projection state without a database.
+  ["/ranking-projection/preview", "dev-only state preview, not a product page and not linked"],
   // Opened by scanning the QR on the door screen (/hours/door) with a phone camera.
   ["/hours/checkin", "opened by scanning the shop-door QR code"],
 ]);
