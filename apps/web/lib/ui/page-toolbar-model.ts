@@ -18,12 +18,12 @@ export const PAGE_TOOLBAR_MAX_SECONDARY = 3;
 export const TOOLBAR_ACTION_KEY = "vantage-toolbar-action";
 
 export function markToolbarAction<T extends object>(component: T): T {
-  (component as Record<string, unknown>)[TOOLBAR_ACTION_KEY] = "action";
+  (component as unknown as Record<string, unknown>)[TOOLBAR_ACTION_KEY] = "action";
   return component;
 }
 
 export function isMarkedToolbarAction(type: unknown): boolean {
-  return typeof type === "function" && (type as Record<string, unknown>)[TOOLBAR_ACTION_KEY] === "action";
+  return typeof type === "function" && (type as unknown as Record<string, unknown>)[TOOLBAR_ACTION_KEY] === "action";
 }
 
 export type PageActionIntent = "primary" | "secondary" | "destructive" | "chrome";
