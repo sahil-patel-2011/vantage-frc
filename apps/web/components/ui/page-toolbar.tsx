@@ -1,7 +1,7 @@
 "use client";
 
 import { Children, Fragment, cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
-import { layoutPageToolbar, type PageActionIntent } from "../../lib/ui/page-toolbar-model";
+import { isMarkedToolbarAction, layoutPageToolbar, type PageActionIntent } from "../../lib/ui/page-toolbar-model";
 import { Button } from "./button";
 import { PageOptions } from "./page-options";
 import "./page-toolbar.css";
@@ -189,7 +189,7 @@ function intentOf(element: ReactElement): PageActionIntent {
   if (tag === "a") {
     const className = String(props.className ?? "");
     if (!/app-button|is-primary|\bquick\b|primary-action/.test(className)) return "chrome";
-  } else if (tag !== "button" && element.type !== Button && !ACTION_NAME.test(name)) {
+  } else if (tag !== "button" && element.type !== Button && !isMarkedToolbarAction(element.type) && !ACTION_NAME.test(name)) {
     return "chrome";
   }
   const variant = props.variant;
@@ -208,7 +208,10 @@ function intentOf(element: ReactElement): PageActionIntent {
 }
 
 function acceptsVariant(element: ReactElement): boolean {
-  return ACTION_NAME.test(componentName(element.type)) || "variant" in readProps(element);
+  return element.type === Button
+    || isMarkedToolbarAction(element.type)
+    || ACTION_NAME.test(componentName(element.type))
+    || "variant" in readProps(element);
 }
 
 function componentName(type: unknown): string {

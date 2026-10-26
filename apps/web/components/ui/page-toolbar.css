@@ -51,10 +51,12 @@
   color: var(--muted);
 }
 
-/* Phone: the action cluster sits on a sheet above the tab bar. Related links
-   and layout switches stay in the header. */
+/* Phone: the page-header cluster sits on a sheet above the tab bar. Related
+   links and layout switches stay in the header. Card and channel toolbars
+   (Messages, Home, a planner) stay in place so they do not cover the composer
+   or the last widgets. */
 @media (max-width: 720px) {
-  .page-toolbar-actions[data-has-actions="true"] {
+  .app-page-actions .page-toolbar-actions[data-has-actions="true"] {
     position: fixed;
     z-index: 35;
     left: 12px;
@@ -68,12 +70,11 @@
     box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 12%, transparent);
   }
 
-  :is(main, section, div).module-page:has(.page-toolbar-actions[data-has-actions="true"]),
-  .workspace-page:has(.page-toolbar-actions[data-has-actions="true"]) {
+  :is(main, section, div).module-page:has(.app-page-actions .page-toolbar-actions[data-has-actions="true"]) {
     padding-bottom: calc(var(--island-clearance, 80px) + 88px + var(--safe-bottom, 0px));
   }
 
-  .page-toolbar-actions[data-has-actions="true"] .page-options-panel {
+  .app-page-actions .page-toolbar-actions[data-has-actions="true"] .page-options-panel {
     top: auto;
     bottom: calc(100% + 8px);
     right: 0;

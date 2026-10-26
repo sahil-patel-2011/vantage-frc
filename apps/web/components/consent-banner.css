@@ -6,7 +6,8 @@
  *     the html[data-theme] block in soft-ui.css. No hard-coded ink or paper.
  *   - Accept and decline are the SAME size and sit side by side. A decline that
  *     is smaller or greyer than the accept is a dark pattern, and this product
- *     is used by minors.
+ *     is used by minors. Neither is a filled brand button: a page already has
+ *     one filled action, and this banner must not add a second.
  *   - Every target is at least 44px tall.
  *   - Works at 360px: the actions stack full-width instead of squeezing.
  */
@@ -183,7 +184,9 @@ body:has(.consent-banner) .desktop-link-page .signin-submit {
   min-height: 44px;
   padding: 10px 16px;
   border-radius: var(--radius-sm, 12px);
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--ink) 24%, var(--line));
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 14px;
   font-weight: 650;
@@ -201,14 +204,9 @@ body:has(.consent-banner) .desktop-link-page .signin-submit {
   outline-offset: 2px;
 }
 
-.consent-banner-btn--accept {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink, #fff);
-}
-
-/* Same weight, same height, same prominence class of control — only the fill
-   differs, because "no" must be as easy to click as "yes". */
+/* Same weight, same height, same quiet chrome. "No" stays as easy to click
+   as "yes", and neither competes with the page's one filled action. */
+.consent-banner-btn--accept,
 .consent-banner-btn--decline {
   background: var(--surface);
   color: var(--ink);

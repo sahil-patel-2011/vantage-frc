@@ -1,6 +1,7 @@
 import { Fragment, createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { markToolbarAction } from "../../lib/ui/page-toolbar-model";
 import { Button } from "./button";
 import { PageHeader } from "./page-header";
 
@@ -73,6 +74,23 @@ describe("PageHeader", () => {
     expect(markup.indexOf("Export")).toBeGreaterThan(markup.indexOf("<details"));
     expect(markup.indexOf("Team data")).toBeGreaterThan(markup.indexOf("<details"));
     expect(markup.match(/data-primary-action="true"/g)).toHaveLength(1);
+  });
+
+  it("keeps a renamed share control inside the action cluster", () => {
+    function Share(props: { variant?: string }) {
+      return createElement("button", { type: "button", className: props.variant }, "Copy share link");
+    }
+    Object.defineProperty(Share, "name", { value: "t" });
+    markToolbarAction(Share);
+    const markup = renderToStaticMarkup(createElement(PageHeader, { title: "Strategy" },
+      createElement("div", { className: "strategy-header-actions" },
+        createElement(Share, null),
+        createElement(Button, { variant: "secondary" }, "Print"),
+      )));
+    const cluster = markup.slice(markup.indexOf('data-page-toolbar="actions"'), markup.lastIndexOf("</div>"));
+    expect(cluster).toContain("Copy share link");
+    expect(cluster).toContain("Print");
+    expect(cluster).toContain('class="ghost"');
   });
 
   it("does not render an empty action region", () => {

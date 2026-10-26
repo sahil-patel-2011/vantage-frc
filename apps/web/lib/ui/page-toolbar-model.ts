@@ -11,6 +11,21 @@
 
 export const PAGE_TOOLBAR_MAX_SECONDARY = 3;
 
+/**
+ * Stable marker for a custom toolbar control. Function `.name` is rewritten
+ * in a production build, so the toolbar must not recognize actions by name.
+ */
+export const TOOLBAR_ACTION_KEY = "vantage-toolbar-action";
+
+export function markToolbarAction<T extends object>(component: T): T {
+  (component as Record<string, unknown>)[TOOLBAR_ACTION_KEY] = "action";
+  return component;
+}
+
+export function isMarkedToolbarAction(type: unknown): boolean {
+  return typeof type === "function" && (type as Record<string, unknown>)[TOOLBAR_ACTION_KEY] === "action";
+}
+
 export type PageActionIntent = "primary" | "secondary" | "destructive" | "chrome";
 
 export type PageActionInput = {

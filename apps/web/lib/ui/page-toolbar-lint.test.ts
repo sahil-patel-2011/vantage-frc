@@ -66,6 +66,10 @@ describe("page toolbar lint", () => {
     expect(header).not.toContain("actions.slice(0, 2)");
     expect(toolbar).toContain("data-page-toolbar");
     expect(toolbar).toContain("layoutPageToolbar");
+    expect(toolbar).toContain("isMarkedToolbarAction");
+    const css = readFileSync(join(WEB, "components/ui/page-toolbar.css"), "utf8");
+    expect(css).toContain(".app-page-actions .page-toolbar-actions[data-has-actions=\"true\"]");
+    expect(css).not.toMatch(/^\s*\.page-toolbar-actions\[data-has-actions="true"\]\s*\{/m);
   });
 
   it("keeps migrated toolbar clusters inside the shared control", () => {
@@ -86,5 +90,14 @@ describe("page toolbar lint", () => {
       }
     }
     expect(problems, problems.join("\n")).toEqual([]);
+  });
+
+  it("keeps the analytics banner from drawing a filled brand button", () => {
+    const css = readFileSync(join(WEB, "components/consent-banner.css"), "utf8");
+    const start = css.indexOf(".consent-banner-btn--accept");
+    expect(start).toBeGreaterThan(-1);
+    const rule = css.slice(start, css.indexOf("}", start));
+    expect(rule).not.toMatch(/background:\s*var\(--accent\)/);
+    expect(rule).toMatch(/background:\s*var\(--surface\)/);
   });
 });

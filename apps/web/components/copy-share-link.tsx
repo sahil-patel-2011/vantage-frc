@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { markToolbarAction } from "../lib/ui/page-toolbar-model";
 import { Button } from "./ui";
 import { withOrgHref } from "../lib/nav/product-nav";
 
@@ -57,3 +58,5 @@ export function CopyShareLink({
     </Button>
   );
 }
+
+markToolbarAction(CopyShareLink);
