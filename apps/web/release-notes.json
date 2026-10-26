@@ -9,7 +9,10 @@
         "Opening Messages no longer keeps writing that you have read the conversation while nothing new has arrived",
         "Home loads its daily strip in one read",
         "Moving between pages no longer reloads who you are when you are still on the same team",
-        "The main pages warm in the background, and each one shows its title and card shapes while the real contents load",
+        "Pointing at a link warms that page. Opening one page does not load the others in the background",
+        "Each main page shows its title and card shapes while the real contents load",
+        "On a phone, the Files folders scroll sideways inside the page, and the last line stays above the bottom bar",
+        "Recognition award shortcuts are buttons",
         "Match prediction is in the Competition list under Match plan, and on Home, the schedule, Match plan, Ranking projection, and the scouting home. The label is the same in each place"
       ]
     },

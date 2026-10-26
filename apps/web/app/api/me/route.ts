@@ -1,5 +1,5 @@
 import { auth, listMemberHubAccess } from "@vantage/core";
-import { withRls, withSavepoint } from "@vantage/db";
+import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { isPayingOrgEntitlement } from "../../../lib/paid-plan";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
     const profile = await withRls({ userId: session.user.id }, async (client) => {
       // Read account metadata together. Count notifications after selecting the
       // active membership so the badge uses exactly the same scope as its inbox.
-      const self = await client.query<{
+      const selfQuery = client.query<{
         platformAdmin: boolean;
         createdAt: string | null;
         firstName: string | null;
@@ -47,8 +47,7 @@ export async function GET(request: Request) {
          LEFT JOIN profiles p ON p.user_id=$1::uuid`,
         [session.user.id],
       );
-      const selfRow = self.rows[0];
-      const memberships = await client.query<{
+      const membershipsQuery = client.query<{
         orgId: string;
         role: string;
         teamNumber: number | null;
@@ -61,116 +60,105 @@ export async function GET(request: Request) {
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number NULLS LAST, o.name`,
         [session.user.id],
       );
+      const [self, memberships] = await Promise.all([selfQuery, membershipsQuery]);
+      const selfRow = self.rows[0];
       const activeMembership =
         requestedOrg
           ? memberships.rows.find((row) => row.orgId === requestedOrg)
           : memberships.rows[0] ?? null;
-      // The same count, scope and live filter as the inbox itself (lib/notifications/inbox-store).
-      const unreadCount = await unreadNotificationCount(client, session.user.id, activeMembership?.orgId ?? null);
-      let unreadMessageCount = 0;
-      if (activeMembership?.orgId) {
-        // A savepoint, not a bare try/catch: a failed read here (chat tables
-        // missing on a fresh deploy) would otherwise abort the request's
-        // transaction and take every later read in /api/me down with it.
-        const orgId = activeMembership.orgId;
-        unreadMessageCount = await withSavepoint(client, async () => {
-          const unreadMessages = await client.query<{ count: string }>(
-            `WITH visible AS (
-               SELECT c.id
-               FROM org_conversations c
-               WHERE c.org_id = $1
-                 AND (
-                   c.kind = 'team'
-                   OR EXISTS (
-                     SELECT 1 FROM org_conversation_participants p
-                     WHERE p.conversation_id = c.id AND p.user_id = $2
+      // Profile and memberships were the previous wave. The badge, plan,
+      // and funding reads do not depend on each other, so they share the next
+      // round trip. A missing optional table fails only that read.
+      const orgId = activeMembership?.orgId ?? null;
+      const memberRole = activeMembership?.role ?? null;
+      const [unreadCount, unreadMessageCount, tba, entitlement, hubAccess, funding] = await Promise.all([
+        unreadNotificationCount(client, session.user.id, orgId),
+        (async () => {
+          if (!orgId) return 0;
+          try {
+            const unreadMessages = await client.query<{ count: string }>(
+              `WITH visible AS (
+                 SELECT c.id
+                 FROM org_conversations c
+                 WHERE c.org_id = $1
+                   AND (
+                     c.kind = 'team'
+                     OR EXISTS (
+                       SELECT 1 FROM org_conversation_participants p
+                       WHERE p.conversation_id = c.id AND p.user_id = $2
+                     )
                    )
-                 )
-             ),
-             reads AS (
-               SELECT conversation_id, last_read_at
-               FROM org_conversation_participants
-               WHERE user_id = $2
-             )
-             -- The badge reads "99+" past 99, so stop counting at 100: a member who never opened
-             -- the team channel made this count every message the team ever sent, on every page.
-             SELECT count(*)::text AS count FROM (
-               SELECT 1
-               FROM org_messages m
-               INNER JOIN visible v ON v.id = m.conversation_id
-               LEFT JOIN reads r ON r.conversation_id = m.conversation_id
-               WHERE m.deleted_at IS NULL
-                 AND m.author_user_id <> $2
-                 AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)
-               LIMIT 100
-             ) capped`,
-            [orgId, session.user.id],
-          );
-          return Number(unreadMessages.rows[0]?.count ?? 0);
-        }, 0);
-      }
-      const tba = await resolveTbaConfigured(client, activeMembership?.orgId ?? null);
-      let planCode: string | null = null;
-      let planStatus: string | null = null;
-      let hubAccess: Awaited<ReturnType<typeof listMemberHubAccess>> = [];
-      let teamAffiliation: string | null = null;
-      let schoolFunded: boolean | null = null;
-      let outsideGrants: boolean | null = null;
-      let sponsorsAllowed: boolean | null = null;
-      if (activeMembership?.orgId) {
-        // Three tolerant reads in a row, on one transaction. Whichever failed
-        // first used to abort it, so the two after it silently returned their
-        // fallbacks too: /api/me — the endpoint the whole shell reads — reported
-        // no plan, no hub access and no funding profile at once, from a 200,
-        // because one of the three was unavailable. Each takes a savepoint now.
-        const entitlement = await withSavepoint(
-          client,
-          () =>
-            client.query<{ planCode: string; status: string }>(
+               ),
+               reads AS (
+                 SELECT conversation_id, last_read_at
+                 FROM org_conversation_participants
+                 WHERE user_id = $2
+               )
+               SELECT count(*)::text AS count FROM (
+                 SELECT 1
+                 FROM org_messages m
+                 INNER JOIN visible v ON v.id = m.conversation_id
+                 LEFT JOIN reads r ON r.conversation_id = m.conversation_id
+                 WHERE m.deleted_at IS NULL
+                   AND m.author_user_id <> $2
+                   AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)
+                 LIMIT 100
+               ) capped`,
+              [orgId, session.user.id],
+            );
+            return Number(unreadMessages.rows[0]?.count ?? 0);
+          } catch {
+            return 0;
+          }
+        })(),
+        resolveTbaConfigured(client, orgId),
+        (async () => {
+          if (!orgId) return null;
+          try {
+            return await client.query<{ planCode: string; status: string }>(
               `SELECT e.plan_code AS "planCode", e.status
                FROM org_entitlements e
                WHERE e.org_id = $1::uuid
                LIMIT 1`,
-              [activeMembership.orgId],
+              [orgId],
+            );
+          } catch {
+            return null;
+          }
+        })(),
+        memberRole === "owner" || memberRole === "admin" || !orgId
+          ? Promise.resolve([] as Awaited<ReturnType<typeof listMemberHubAccess>>)
+          : listMemberHubAccess(client, orgId, session.user.id).catch(
+              () => [] as Awaited<ReturnType<typeof listMemberHubAccess>>,
             ),
-          null,
-        );
-        planCode = entitlement?.rows[0]?.planCode ?? null;
-        planStatus = entitlement?.rows[0]?.status ?? null;
-
-        hubAccess =
-          activeMembership.role === "owner" || activeMembership.role === "admin"
-            ? []
-            : await withSavepoint(
-                client,
-                () => listMemberHubAccess(client, activeMembership.orgId, session.user.id),
-                [],
-              );
-
-        const funding = await withSavepoint(
-          client,
-          () =>
-            client.query<{
+        (async () => {
+          if (!orgId) return null;
+          try {
+            return await client.query<{
               teamAffiliation: string | null;
               schoolFunded: boolean | null;
               outsideGrants: boolean | null;
               sponsorsAllowed: boolean | null;
             }>(
-            `SELECT team_affiliation AS "teamAffiliation",
-                    school_funded AS "schoolFunded",
-                    outside_grants AS "outsideGrants",
-                    sponsors_allowed AS "sponsorsAllowed"
-               FROM organizations WHERE id = $1::uuid`,
-              [activeMembership.orgId],
-            ),
-          null,
-        );
-        const row = funding?.rows[0];
-        teamAffiliation = row?.teamAffiliation ?? null;
-        schoolFunded = row?.schoolFunded ?? null;
-        outsideGrants = row?.outsideGrants ?? null;
-        sponsorsAllowed = row?.sponsorsAllowed ?? null;
-      }
+              `SELECT team_affiliation AS "teamAffiliation",
+                      school_funded AS "schoolFunded",
+                      outside_grants AS "outsideGrants",
+                      sponsors_allowed AS "sponsorsAllowed"
+                 FROM organizations WHERE id = $1::uuid`,
+              [orgId],
+            );
+          } catch {
+            return null;
+          }
+        })(),
+      ]);
+      const planCode = entitlement?.rows[0]?.planCode ?? null;
+      const planStatus = entitlement?.rows[0]?.status ?? null;
+      const fundingRow = funding?.rows[0];
+      const teamAffiliation = fundingRow?.teamAffiliation ?? null;
+      const schoolFunded = fundingRow?.schoolFunded ?? null;
+      const outsideGrants = fundingRow?.outsideGrants ?? null;
+      const sponsorsAllowed = fundingRow?.sponsorsAllowed ?? null;
       return {
         platformAdmin: Boolean(selfRow?.platformAdmin),
         membership: activeMembership,

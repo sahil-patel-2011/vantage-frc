@@ -1,6 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { pickHomeBoard } from "../../../lib/dashboard/boards";
 import { HOME_ALWAYS_LOADED } from "../../../lib/dashboard/refresh";
 import {
@@ -134,8 +135,15 @@ export async function GET(request: Request) {
     const mode = url.searchParams.get("mode") ?? "list";
     const boardId = url.searchParams.get("boardId");
     if (!orgId) throw new Error("orgId is required");
-    if (mode === "snapshot" || mode === "home") {
-      await hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId });
+    // Event refresh used to run in its own transaction before any card loaded.
+    // A fresh cache made that a wasted round trip on every Home open; a cold
+    // cache waited on TBA. Paint from what is stored, and refresh after.
+    if ((mode === "snapshot" || mode === "home") && orgId) {
+      try {
+        after(() => hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg: orgId }));
+      } catch {
+        // Called outside a request (a test). The board still reads stored matches.
+      }
     }
 
     const data = await withRls({ userId: session.user.id, orgId }, async (client) => {

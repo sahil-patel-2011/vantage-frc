@@ -802,17 +802,23 @@ async function requestTeamSetup(client: PoolClient, teamNumber: number, payload:
   }
 }
 
-/** Lightweight gate for proxy/middleware: profile complete + workspace membership. */
+/** Lightweight gate for proxy/middleware: profile complete + workspace membership. One round trip. */
 export async function getOnboardingGate(client: PoolClient, userId: string) {
-  const complete = await isOnboardingComplete(client, userId);
-  const membership = await client.query(
-    `SELECT 1 FROM memberships WHERE user_id=$1::uuid LIMIT 1`,
+  const result = await client.query<{ complete: boolean; hasWorkspace: boolean }>(
+    `SELECT
+       EXISTS (
+         SELECT 1 FROM profiles WHERE user_id = $1::uuid AND onboarding_completed_at IS NOT NULL
+       ) AS complete,
+       (
+         EXISTS (SELECT 1 FROM memberships WHERE user_id = $1::uuid)
+         OR EXISTS (SELECT 1 FROM platform_admins WHERE user_id = $1::uuid)
+       ) AS "hasWorkspace"`,
     [userId],
   );
-  const admin = await client.query(`SELECT 1 FROM platform_admins WHERE user_id=$1::uuid`, [userId]);
-  const hasWorkspace = Boolean(membership.rowCount) || Boolean(admin.rowCount);
+  const row = result.rows[0];
+  const hasWorkspace = Boolean(row?.hasWorkspace);
   return {
-    onboardingComplete: complete,
+    onboardingComplete: Boolean(row?.complete),
     workspaceApproved: hasWorkspace,
     accessStatus: hasWorkspace ? ("approved" as const) : ("none" as const),
   };

@@ -168,24 +168,6 @@ export async function loadDashboardSnapshot(
     );
     const opponentKeys = ourAlliance === "red" ? blueKeys : ourAlliance === "blue" ? redKeys : [];
     const strip = (key: string) => key.replace(/^frc/i, "");
-    const pred = await client.query<{
-      pRed: number;
-      pBlue: number;
-      confidenceLow: number;
-      confidenceHigh: number;
-      keyFactors: unknown;
-      modelVersion: string;
-    }>(
-      `SELECT p_red AS "pRed", p_blue AS "pBlue",
-              confidence_low AS "confidenceLow", confidence_high AS "confidenceHigh",
-              key_factors AS "keyFactors", model_version AS "modelVersion"
-       FROM predictions
-       WHERE org_id = $1::uuid AND match_key = $2
-       ORDER BY scored_at DESC
-       LIMIT 1`,
-      [input.orgId, row.matchKey],
-    );
-    const stored = pred.rows[0];
     const year = seasonYearFromEventKey(eventKey);
     let redPredicted: number | null = null;
     let bluePredicted: number | null = null;
@@ -198,27 +180,58 @@ export async function loadDashboardSnapshot(
     let scoreDrivers: string[] = [];
     let briefing: string | null = null;
     let cardRedWin: number | null = null;
-    if (year && (redKeys.length >= 2 || blueKeys.length >= 2)) {
-      type EpaRow = { teamKey: string; autoEpa: number | null; teleopEpa: number | null; endgameEpa: number | null };
+    type EpaRow = { teamKey: string; autoEpa: number | null; teleopEpa: number | null; endgameEpa: number | null };
+    type PredRow = {
+      pRed: number;
+      pBlue: number;
+      confidenceLow: number;
+      confidenceHigh: number;
+      keyFactors: unknown;
+      modelVersion: string;
+    };
+    const matchKeys = [...redKeys, ...blueKeys];
+    const canScore = Boolean(year && (redKeys.length >= 2 || blueKeys.length >= 2));
+    // The saved prediction, this event's ratings, and the score inputs do not
+    // depend on each other. One wave, not three trips.
+    const [pred, eventEpa, scoring, scouted] = await Promise.all([
+      client.query<PredRow>(
+        `SELECT p_red AS "pRed", p_blue AS "pBlue",
+                confidence_low AS "confidenceLow", confidence_high AS "confidenceHigh",
+                key_factors AS "keyFactors", model_version AS "modelVersion"
+         FROM predictions
+         WHERE org_id = $1::uuid AND match_key = $2
+         ORDER BY scored_at DESC
+         LIMIT 1`,
+        [input.orgId, row.matchKey],
+      ),
+      canScore
+        ? client.query<EpaRow>(
+            `SELECT DISTINCT ON (team_key)
+                team_key AS "teamKey",
+                epa_auto AS "autoEpa",
+                epa_teleop AS "teleopEpa",
+                epa_endgame AS "endgameEpa"
+             FROM team_event_metrics
+             WHERE team_key = ANY($1::text[]) AND event_key = $2
+               AND (epa_auto IS NOT NULL OR epa_teleop IS NOT NULL OR epa_endgame IS NOT NULL)
+             ORDER BY team_key,
+               CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
+               synced_at DESC NULLS LAST`,
+            [matchKeys, eventKey],
+          )
+        : Promise.resolve({ rows: [] as EpaRow[] }),
+      canScore ? loadEventScoring(client, eventKey) : Promise.resolve(null),
+      canScore
+        ? withSavepoint(client, () => loadScoutedRatingsForTeams(client, { orgId: input.orgId, eventKey, teamKeys: matchKeys }), new Map())
+        : Promise.resolve(new Map()),
+    ]);
+    const stored = pred.rows[0];
+    if (canScore && scoring) {
       // This event's ratings first (how each robot is playing here, and what the Schedule's
       // estimates use), then the season's for any robot with no event rating yet. Season-only
       // left Home with no score at all whenever season ratings weren't loaded.
-      const eventEpa = await client.query<EpaRow>(
-        `SELECT DISTINCT ON (team_key)
-            team_key AS "teamKey",
-            epa_auto AS "autoEpa",
-            epa_teleop AS "teleopEpa",
-            epa_endgame AS "endgameEpa"
-         FROM team_event_metrics
-         WHERE team_key = ANY($1::text[]) AND event_key = $2
-           AND (epa_auto IS NOT NULL OR epa_teleop IS NOT NULL OR epa_endgame IS NOT NULL)
-         ORDER BY team_key,
-           CASE source WHEN 'statbotics' THEN 0 WHEN 'tba' THEN 1 ELSE 2 END,
-           synced_at DESC NULLS LAST`,
-        [[...redKeys, ...blueKeys], eventKey],
-      );
       const haveEvent = new Set(eventEpa.rows.map((rating) => rating.teamKey));
-      const missing = [...redKeys, ...blueKeys].filter((key) => !haveEvent.has(key));
+      const missing = matchKeys.filter((key) => !haveEvent.has(key));
       const yearEpa = missing.length
         ? await client.query<EpaRow>(
             `SELECT DISTINCT ON (team_key)
@@ -234,14 +247,6 @@ export async function loadDashboardSnapshot(
             [missing, year],
           )
         : { rows: [] as EpaRow[] };
-      // What each robot has actually scored here (OPR over the played quals) and what the team's
-      // scouts saw it do. Without these the card rested on Statbotics alone and showed nothing at
-      // an event Statbotics had not rated — every event in production today.
-      const matchKeys = [...redKeys, ...blueKeys];
-      const [scoring, scouted] = await Promise.all([
-        loadEventScoring(client, eventKey),
-        withSavepoint(client, () => loadScoutedRatingsForTeams(client, { orgId: input.orgId, eventKey, teamKeys: matchKeys }), new Map()),
-      ]);
       const oprByTeam = new Map(scoring.opr.map((robot) => [robot.teamKey, robot.total]));
       const epaByTeam = new Map([...eventEpa.rows, ...yearEpa.rows].map((rating) => [rating.teamKey, rating]));
       const card = nextMatchScoreCard({

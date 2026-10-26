@@ -19,23 +19,6 @@ export type Place = {
   icon: ProductNavIcon;
 };
 
-/**
- * Warmed once the shell is idle, after the page the person is on. Hover still warms anything
- * else. Workspace stays out: it is a heavy page and not a place.
- */
-export const IDLE_PREFETCH_HREFS: readonly string[] = [
-  "/dashboard",
-  "/competition",
-  "/team",
-  "/build",
-  "/business",
-  "/schedule",
-  "/match-sim",
-  "/strategy",
-  "/ranking-projection",
-  "/scouting",
-];
-
 export const PLACES: readonly Place[] = [
   { id: "home", href: "/dashboard", label: "Home", shortLabel: "Home", icon: "home" },
   { id: "competition", href: "/competition", label: "Competition", shortLabel: "Compete", icon: "swords" },

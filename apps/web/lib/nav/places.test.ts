@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IDLE_PREFETCH_HREFS, PLACES, placeForPath, visiblePlaces } from "./places";
+import { PLACES, placeForPath, visiblePlaces } from "./places";
 
 describe("the five places", () => {
   it("are Home, Competition, Team, Build and Business, in that order", () => {
@@ -31,22 +31,6 @@ describe("the five places", () => {
   it("leave settings, account and help pages without a place", () => {
     expect(placeForPath("/account")).toBeNull();
     expect(placeForPath("/help")).toBeNull();
-  });
-
-  it("warms the five places and match day tools once, and never workspace", () => {
-    expect(IDLE_PREFETCH_HREFS).toEqual([
-      "/dashboard",
-      "/competition",
-      "/team",
-      "/build",
-      "/business",
-      "/schedule",
-      "/match-sim",
-      "/strategy",
-      "/ranking-projection",
-      "/scouting",
-    ]);
-    expect(IDLE_PREFETCH_HREFS).not.toContain("/workspace");
   });
 
   it("hide what this person may not open", () => {

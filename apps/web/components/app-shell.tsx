@@ -29,7 +29,7 @@ import { pushAppNavigation, softNavigationTarget } from "../lib/nav/soft-navigat
 import { fetchProductSession } from "../lib/nav/product-session";
 import { pathnameIsEntryScreen } from "../lib/nav/product-route";
 import { probeSessionUser } from "../lib/nav/session-probe";
-import { IDLE_PREFETCH_HREFS, placeForPath, visiblePlaces } from "../lib/nav/places";
+import { placeForPath, visiblePlaces } from "../lib/nav/places";
 import { Icon, type IconName } from "./icon";
 import { signOutAndRedirect } from "../lib/sign-out";
 import { NOTIFICATIONS_CHANGED, type NotificationCountUpdate } from "../lib/notifications/events";
@@ -208,19 +208,11 @@ export default function AppShell() {
     window.addEventListener("popstate", onPop);
     // A hub switching tabs in place rewrites the address without navigating.
     window.addEventListener(URL_CHANGE_EVENT, onPop);
+    // Hover and focus warm a page. Idle time does not: prefetching ten routes
+    // after one visit ran each of their server renders and multiplied database
+    // load for a person who never opened them.
     const readyTimer = window.setTimeout(() => {
       routerReady = true;
-      const warmIdle = () => {
-        const here = window.location.pathname;
-        for (const path of IDLE_PREFETCH_HREFS) {
-          if (warmed.size >= 12) break;
-          if (path === here || warmed.has(path)) continue;
-          warmed.add(path);
-          router.prefetch(path);
-        }
-      };
-      if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(warmIdle, { timeout: 1500 });
-      else window.setTimeout(warmIdle, 400);
     }, 300);
     return () => {
       window.clearTimeout(readyTimer);

@@ -113,44 +113,87 @@ async function signIn(context) {
 
 const CONTENT_PROBE = `(() => {
   const main = document.querySelector("main, #main-content, [role='main']");
-  if (!main) return { ready: false, skeleton: false, text: 0 };
+  if (!main) return { ready: false, loose: false, skeleton: false, text: 0 };
   const text = (main.innerText || "").replace(/\\s+/g, " ").trim();
-  const skeleton = Boolean(main.querySelector("[aria-busy='true'], .hub-panel-skeleton, .route-loading"));
-  const ready = text.length >= 20 && !(skeleton && text.length < 80);
-  return { ready, skeleton, text: text.length };
+  const skeleton = main.getAttribute("aria-busy") === "true"
+    || main.classList.contains("route-loading")
+    || Boolean(main.querySelector("[aria-busy='true'], .hub-panel-skeleton, .route-loading"));
+  // The old probe treated a long skeleton as the page. Strict content is real text
+  // with no skeleton still on screen.
+  const loose = text.length >= 20 && !(skeleton && text.length < 80);
+  const ready = text.length >= 40 && !skeleton;
+  return { ready, loose, skeleton, text: text.length };
 })()`;
+
+async function proxyRoundTrips(reset) {
+  const url = process.env.PG_PROXY_STATS_URL;
+  if (!url) return null;
+  try {
+    const response = await fetch(reset ? `${url}/reset` : url);
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+async function readJs(page) {
+  return page.evaluate(() => {
+    const nav = performance.getEntriesByType("navigation")[0];
+    const resources = performance.getEntriesByType("resource");
+    let decoded = 0;
+    let transfer = 0;
+    const top = [];
+    for (const entry of resources) {
+      const name = entry.name || "";
+      const script = name.includes(".js") || entry.initiatorType === "script";
+      if (!script || entry.initiatorType === "link") continue;
+      const size = entry.decodedBodySize || 0;
+      const moved = entry.transferSize || entry.encodedBodySize || 0;
+      decoded += size;
+      transfer += moved;
+      top.push({ name: name.split("/").pop(), decoded: size, transfer: moved });
+    }
+    top.sort((a, b) => b.decoded - a.decoded);
+    return {
+      ttfb: nav ? nav.responseStart - nav.requestStart : null,
+      js: decoded,
+      jsTransfer: transfer,
+      top: top.slice(0, 6),
+    };
+  });
+}
 
 async function measureDocument(page, db, route) {
   await resetStatements(db);
+  await proxyRoundTrips(true);
   const started = Date.now();
-  const response = await page.goto(`${BASE}${route}`, { waitUntil: "commit", timeout: 30_000 });
+  const response = await page.goto(`${BASE}${route}`, { waitUntil: "commit", timeout: 45_000 });
   const status = response?.status() ?? 0;
-  const timing = await page.evaluate(() => {
+  const early = await page.evaluate(() => {
     const nav = performance.getEntriesByType("navigation")[0];
-    if (!nav) return { ttfb: null, js: 0 };
-    const resources = performance.getEntriesByType("resource");
-    let js = 0;
-    for (const entry of resources) {
-      const name = entry.name || "";
-      if (name.includes(".js") || entry.initiatorType === "script") js += entry.transferSize || entry.encodedBodySize || 0;
-    }
-    return { ttfb: nav.responseStart - nav.requestStart, js };
+    return { ttfb: nav ? nav.responseStart - nav.requestStart : null };
   });
   let contentMs = null;
+  let looseMs = null;
   let skeletonMs = null;
   let atContent = null;
-  const deadline = started + 12_000;
+  let tripsAtContent = null;
+  const deadline = started + 30_000;
   while (Date.now() < deadline) {
     const probe = await page.evaluate(CONTENT_PROBE);
     const elapsed = Date.now() - started;
     if (probe.skeleton && skeletonMs == null) skeletonMs = elapsed;
+    if (probe.loose && looseMs == null) looseMs = elapsed;
     if (probe.ready) {
       contentMs = elapsed;
       atContent = await readStatements(db);
+      tripsAtContent = await proxyRoundTrips(false);
       break;
     }
     await page.waitForTimeout(40);
   }
+  const timing = await readJs(page);
+  timing.ttfb = early.ttfb;
   // Later queries include idle prefetch and any long poll still open. The count at
   // content-ready is the page itself.
   await page.waitForLoadState("networkidle", { timeout: 4_000 }).catch(() => undefined);
@@ -159,9 +202,14 @@ async function measureDocument(page, db, route) {
     status,
     ttfbMs: round(timing.ttfb),
     contentMs,
+    looseMs,
     skeletonMs,
     jsBytes: timing.js,
+    jsTransfer: timing.jsTransfer,
+    jsTop: timing.top,
     queriesAtContent: atContent?.queries ?? null,
+    roundTrips: tripsAtContent?.total ?? null,
+    maxConnectionTrips: tripsAtContent?.maxConnection ?? null,
     ...sql,
   };
 }
@@ -226,7 +274,10 @@ function summarize(samples) {
     ttfbP95: round(percentile(pick("ttfbMs"), 95)),
     contentP50: round(percentile(pick("contentMs"), 50)),
     contentP95: round(percentile(pick("contentMs"), 95)),
+    looseP50: round(percentile(pick("looseMs"), 50)),
     skeletonP50: round(percentile(pick("skeletonMs"), 50)),
+    roundTripsP50: round(percentile(pick("roundTrips"), 50)),
+    maxConnectionTripsP50: round(percentile(pick("maxConnectionTrips"), 50)),
     jsBytesP50: round(percentile(pick("jsBytes"), 50)),
     queriesAtContentP50: round(percentile(pick("queriesAtContent"), 50)),
     queriesP50: round(percentile(pick("queries"), 50)),
@@ -238,7 +289,7 @@ function summarize(samples) {
 
 function printTable(title, rows) {
   console.log(`\n${title}`);
-  console.log("route | ttfb p50 | ttfb p95 | content p50 | content p95 | skeleton p50 | js bytes | queries at content | queries with prefetch | slowest ms");
+  console.log("route | ttfb p50 | ttfb p95 | content p50 | content p95 | loose p50 | skeleton p50 | js decoded | round trips | max conn trips | queries at content | queries after | slowest ms");
   for (const row of rows) {
     const s = row.summary;
     console.log(
@@ -248,8 +299,11 @@ function printTable(title, rows) {
         s.ttfbP95,
         s.contentP50,
         s.contentP95,
+        s.looseP50,
         s.skeletonP50,
         s.jsBytesP50,
+        s.roundTripsP50,
+        s.maxConnectionTripsP50,
         s.queriesAtContentP50,
         s.queriesP50,
         s.slowestMs,
@@ -295,7 +349,10 @@ async function main() {
   }
 
   const clicks = [];
-  for (const route of NAV_ROUTES) {
+  if (process.env.ROUTE_SPEED_SKIP_NAV === "1") {
+    console.log("skipping client-nav samples");
+  }
+  for (const route of process.env.ROUTE_SPEED_SKIP_NAV === "1" ? [] : NAV_ROUTES) {
     const samples = [];
     for (let i = 0; i < Math.min(SAMPLES, 3); i += 1) {
       try {
