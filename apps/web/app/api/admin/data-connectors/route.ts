@@ -4,11 +4,7 @@ import { createKms, decryptSecret, encryptSecret, type EncryptedSecret } from "@
 import { withRls } from "@vantage/db";
 import { TbaClient } from "@vantage/reference";
 import { headers } from "next/headers";
-import {
-  runTbaEventDaySync,
-  runTbaSeasonSync,
-  runTeamYearHistorySync,
-} from "../../../../lib/reference/run-ingest";
+import { dispatchCron } from "../../../../lib/reference/dispatch-cron";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 /** Loading ten past seasons is ~30 paced Statbotics reads plus their upserts. */
@@ -98,7 +94,7 @@ export async function POST(request: Request) {
         );
       }
       if (orgId) {
-        const summary = await withRls({ userId: session.user.id, orgId }, async (client) => {
+        const eventKey = await withRls({ userId: session.user.id, orgId }, async (client) => {
           await authorize(client, session.user.id, orgId);
           const active = await client.query<{ eventKey: string | null; credentialId: string | null }>(
             `SELECT c.active_event_key AS "eventKey",
@@ -123,9 +119,15 @@ export async function POST(request: Request) {
                updated_at = now()`,
             [orgId, active.rows[0]?.credentialId ?? null, session.user.id],
           );
-          return runTbaEventDaySync({ eventKeys: [eventKey] }, { preferOrgIds: [orgId] });
+          return eventKey;
         });
-        return Response.json({ success: true, summary });
+        const dispatched = await dispatchCron<{ summary: Record<string, unknown> }>("/api/cron/reference-refresh", {
+          kind: "event-day",
+          eventKeys: [eventKey],
+          preferOrgIds: [orgId],
+        });
+        if (!dispatched.ok) return Response.json({ success: true, pending: true });
+        return Response.json({ success: true, summary: dispatched.body.summary });
       }
       await withRls({ userId: session.user.id }, async (client) => {
         await authorize(client, session.user.id, null);
@@ -134,6 +136,12 @@ export async function POST(request: Request) {
           sessionId: session.session.id,
         });
       });
+      // Platform admin only, and only after the checks above. Team sync dispatches the cron.
+      const {
+        runTbaEventDaySync,
+        runTbaSeasonSync,
+        runTeamYearHistorySync,
+      } = await import("../../../../lib/reference/worker-ingest");
       // Past seasons: team ratings for the last ten seasons (Statbotics only, no TBA calls).
       if (body.syncMode === "history") {
         const history = await runTeamYearHistorySync(body.year);

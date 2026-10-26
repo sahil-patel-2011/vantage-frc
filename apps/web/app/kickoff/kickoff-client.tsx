@@ -42,10 +42,13 @@ async function persistKickoffSnapshot(orgHint: string, data: KickoffView): Promi
 
 type KickoffSection = "overview" | "scoring" | "priorities" | "rules" | "next";
 
-export default function KickoffClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function KickoffClient({
+  embedded = false,
+  initialView = null,
+}: { embedded?: boolean; initialView?: KickoffView | null } = {}) {
   const embed = useHubEmbed();
   const Root = embedded || embed === "build" ? "section" : "main";
-  const [view, setView] = useState<KickoffView | null>(null);
+  const [view, setView] = useState<KickoffView | null>(initialView);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.

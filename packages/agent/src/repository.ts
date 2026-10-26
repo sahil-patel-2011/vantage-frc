@@ -127,7 +127,7 @@ export class AgentRepository {
   }
 
   async getMemorySettings(userId: string, orgId?: string) {
-    const privateSettings = await this.client.query<{
+    const privateSettingsP = this.client.query<{
       enabled: boolean;
       tokenBudget: number;
     }>(
@@ -135,17 +135,21 @@ export class AgentRepository {
        FROM user_memory_settings WHERE user_id=$1`,
       [userId],
     );
+    const teamSettingsP = orgId
+      ? this.client.query<{
+          enabled: boolean;
+          tokenBudget: number;
+          retentionDays: number;
+        }>(
+          `SELECT enabled, token_budget AS "tokenBudget", retention_days AS "retentionDays"
+           FROM team_memory_settings WHERE org_id=$1`,
+          [orgId],
+        )
+      : null;
+    const privateSettings = await privateSettingsP;
     let team: { enabled: boolean; tokenBudget: number; retentionDays: number } | null = null;
-    if (orgId) {
-      const teamSettings = await this.client.query<{
-        enabled: boolean;
-        tokenBudget: number;
-        retentionDays: number;
-      }>(
-        `SELECT enabled, token_budget AS "tokenBudget", retention_days AS "retentionDays"
-         FROM team_memory_settings WHERE org_id=$1`,
-        [orgId],
-      );
+    if (teamSettingsP) {
+      const teamSettings = await teamSettingsP;
       team = teamSettings.rows[0] ?? { enabled: false, tokenBudget: 1600, retentionDays: 365 };
     }
     return {

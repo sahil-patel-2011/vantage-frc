@@ -2,12 +2,13 @@
 
 import dynamic from "next/dynamic";
 import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
+import KickoffClient from "../kickoff/kickoff-client";
+import type { KickoffView } from "../../lib/kickoff";
 import "../product-hub.css";
 import "../code/code.css";
 import "../kickoff/kickoff.css";
 import "../robot/robot.css";
 
-const KickoffClient = dynamic(() => import("../kickoff/kickoff-client"), { ssr: false, loading: HubPanelSkeleton });
 const CadWorkspace = dynamic(() => import("../cad/cad-client"), { ssr: false, loading: HubPanelSkeleton });
 const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false, loading: HubPanelSkeleton });
 const FmeaClient = dynamic(() => import("../fmea/fmea-client"), { ssr: false, loading: HubPanelSkeleton });
@@ -21,14 +22,22 @@ const RobotClient = dynamic(() => import("../robot/robot-client"), { ssr: false,
 /** Tab ids rendered inline below. Anything else opens its own route directly. */
 const EMBEDDED_TABS = ["kickoff", "fmea", "prototype", "batteries", "code", "bugbot", "cad", "robot"] as const;
 
-export default function BuildHub({ initialTab }: { initialTab?: string | null }) {
+export default function BuildHub({
+  initialTab,
+  initialOrgId = null,
+  initialKickoff = null,
+}: {
+  initialTab?: string | null;
+  initialOrgId?: string | null;
+  initialKickoff?: KickoffView | null;
+}) {
   return (
-    <ProductHubShell hubId="build" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab}>
+    <ProductHubShell hubId="build" embeddedTabs={EMBEDDED_TABS} initialTab={initialTab} initialOrgId={initialOrgId}>
       {({ tab, orgId }) => {
         if (tab === "kickoff") {
           return (
             <HubOrgGate orgId={orgId} label="Kickoff">
-              {() => <KickoffClient embedded />}
+              {() => <KickoffClient embedded initialView={initialKickoff} />}
             </HubOrgGate>
           );
         }

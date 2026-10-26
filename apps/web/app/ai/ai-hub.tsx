@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentProps } from "react";
+import ChatClient from "../chat/chat-client";
 import { AiSponsorBranding } from "../../components/ai-sponsor-branding";
 import { HubLegacyRedirect, HubOrgGate, HubPanelSkeleton, ProductHubShell } from "../../components/product-hub";
 import { PageMain } from "../../components/ui";
@@ -16,7 +17,6 @@ import "../product-hub.css";
 import "../chat/chat.css";
 import "../code/code.css";
 
-const ChatClient = dynamic(() => import("../chat/chat-client"), { ssr: false, loading: HubPanelSkeleton });
 const BudgetClient = dynamic(() => import("../team/budgets/budget-client"), { ssr: false, loading: HubPanelSkeleton });
 const WriterClient = dynamic(() => import("../writer/writer-client"), { ssr: false, loading: HubPanelSkeleton });
 const CodeClient = dynamic(() => import("../code/code-client").then((m) => m.CodeClient), { ssr: false, loading: HubPanelSkeleton });
@@ -54,10 +54,20 @@ const EMBEDDED_TABS = [
  * Ask AI is the page: no tab row of tools, one primary action (Send). It resolves the team the
  * same way a hub does — `?orgId=` first, then the remembered team.
  */
-function AssistantPage({ ask, surface = "chat" }: { ask: AskAiParams; surface?: "chat" | "budgets" }) {
+function AssistantPage({
+  ask,
+  surface = "chat",
+  initialOrgId = null,
+  initialHome = null,
+}: {
+  ask: AskAiParams;
+  surface?: "chat" | "budgets";
+  initialOrgId?: string | null;
+  initialHome?: ComponentProps<typeof ChatClient>["initialHome"];
+}) {
   const label = surface === "budgets" ? "AI limits" : "Ask AI";
-  const [orgId, setOrgId] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(initialOrgId);
+  const [ready, setReady] = useState(Boolean(initialOrgId));
   useEffect(() => {
     let cancelled = false;
     const fromUrl = readOrgIdFromSearch(window.location.search);
@@ -114,6 +124,7 @@ function AssistantPage({ ask, surface = "chat" }: { ask: AskAiParams; surface?: 
       contextId={ask.contextId}
       initialSkill={ask.skill}
       initialMode={ask.mode}
+      initialHome={initialHome}
       page={{ from: ask.from, about: ask.about, sponsorId: ask.sponsorId, teamKey: ask.teamKey, matchKey: ask.matchKey }}
     />
   );
@@ -141,9 +152,21 @@ function AiLimitsPage({ ask }: { ask: AskAiParams }) {
   </SettingsLayout>;
 }
 
-export default function AiHub({ initialTab, ask }: { initialTab?: string | null; ask: AskAiParams }) {
+export default function AiHub({
+  initialTab,
+  ask,
+  initialOrgId = null,
+  initialHome = null,
+}: {
+  initialTab?: string | null;
+  ask: AskAiParams;
+  initialOrgId?: string | null;
+  initialHome?: ComponentProps<typeof ChatClient>["initialHome"];
+}) {
   // The chat, and the former Agent tab (now "Work on this in the background"), are one page.
-  if (!initialTab || initialTab === "chat" || initialTab === "agent") return <AssistantPage ask={ask} />;
+  if (!initialTab || initialTab === "chat" || initialTab === "agent") {
+    return <AssistantPage ask={ask} initialOrgId={initialOrgId} initialHome={initialHome} />;
+  }
   if (initialTab === "budgets") return <AiLimitsPage ask={ask} />;
   // The former Writer tab: saved drafts and templates. Drafting with AI happens in Ask AI.
   if (initialTab === "writer") return <WriterClient />;

@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { randomBytes } from "node:crypto";
 import { auth } from "@vantage/core";
 import { canManageScouting } from "@vantage/scouting/permissions";
-import { withRls, withSavepoint } from "@vantage/db";
+import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { buildCalendar, type CalendarIcsEvent } from "../../../../lib/calendar-ics";
 import { describeRRule, RecurrenceError } from "../../../../lib/calendar/recurrence";
@@ -132,39 +132,6 @@ async function loadGitHubCalendarOverlay(
   }
 }
 
-/** This team's matches at the active event. Empty if TBA cache has no time — never invent DEMO matches. */
-async function loadTbaMatchCalendar(client: PoolClient, orgId: string, teamNumber: number | null): Promise<CalendarEvent[]> {
-  if (teamNumber == null || !Number.isFinite(teamNumber)) return [];
-  const teamKey = `frc${teamNumber}`;
-  try {
-    const result = await client.query<{
-      matchKey: string;
-      compLevel: string;
-      matchNumber: number;
-      scheduledTime: string | null;
-      redAlliance: unknown;
-      blueAlliance: unknown;
-      eventName: string | null;
-    }>(
-      `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
-              COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "scheduledTime",
-              m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
-              ev.name AS "eventName"
-       FROM org_active_context ctx
-       JOIN matches_ref m ON m.event_key = ctx.active_event_key
-       LEFT JOIN events_ref ev ON ev.event_key = ctx.active_event_key
-       WHERE ctx.org_id = $1::uuid
-         AND COALESCE(m.actual_time, m.predicted_time, m.event_time) IS NOT NULL
-       ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time) ASC
-       LIMIT 120`,
-      [orgId],
-    );
-    return tbaMatchesToCalendarEvents(result.rows, teamKey);
-  } catch {
-    return [];
-  }
-}
-
 function fail(error: unknown) {
   const viewOnly = viewOnlyResponse(error);
   if (viewOnly) return viewOnly;
@@ -250,16 +217,16 @@ async function loadStoredEventRows(
        ${EVENT_JOINS}
        WHERE e.org_id = $1
          AND (
-           e.starts_at > now() - interval '${OCCURRENCE_LOOKBACK_DAYS} days'
+           e.starts_at > now() - ($2::int * interval '1 day')
            OR (
              e.rrule IS NOT NULL
              AND (e.recurrence_end IS NULL
-                  OR e.recurrence_end > CURRENT_DATE - ${OCCURRENCE_LOOKBACK_DAYS})
+                  OR e.recurrence_end > CURRENT_DATE - $2::int)
            )
          )
        ORDER BY e.starts_at ASC
        LIMIT 800`,
-      [orgId],
+      [orgId, OCCURRENCE_LOOKBACK_DAYS],
     );
     return { rows: result.rows, recurrenceReady: true };
   } catch (error) {
@@ -271,10 +238,10 @@ async function loadStoredEventRows(
       `SELECT ${BASE_EVENT_COLUMNS}
        ${EVENT_JOINS}
        WHERE e.org_id = $1
-         AND e.starts_at > now() - interval '${OCCURRENCE_LOOKBACK_DAYS} days'
+         AND e.starts_at > now() - ($2::int * interval '1 day')
        ORDER BY e.starts_at ASC
        LIMIT 800`,
-      [orgId],
+      [orgId, OCCURRENCE_LOOKBACK_DAYS],
     );
     return { rows: result.rows, recurrenceReady: false };
   }
@@ -363,7 +330,7 @@ function materializeCalendarRows(
   return out;
 }
 
-async function loadView(
+export async function loadTeamCalendarView(
   client: PoolClient,
   orgId: string,
   userId: string,
@@ -371,14 +338,124 @@ async function loadView(
   feedScope: CalendarFeedScope = "personal",
   feedSubteamId: string | null = null,
 ): Promise<SubteamCalendarView> {
-  const org = await client.query<{ orgName: string; teamNumber: number | null }>(
+  const orgP = client.query<{ orgName: string; teamNumber: number | null }>(
     `SELECT name AS "orgName", team_number AS "teamNumber" FROM organizations WHERE id = $1`,
     [orgId],
   );
-  const orgRow = org.rows[0];
-  if (!orgRow) throw new HttpError(404, "Organization not found");
+  const rsvpsP = client.query<{
+    eventId: string;
+    userId: string;
+    response: RsvpResponse;
+  }>(
+    `SELECT event_id AS "eventId", user_id AS "userId", response
+     FROM subteam_calendar_rsvps
+     WHERE org_id = $1`,
+    [orgId],
+  ).catch(() => ({ rows: [] as Array<{ eventId: string; userId: string; response: RsvpResponse }> }));
+  const exceptionsP = loadSeriesExceptions(client, orgId);
+  const attendanceP = client.query<LinkableAttendance>(
+    `SELECT id, title, occurred_on::text AS "occurredOn", kind
+     FROM attendance_events
+     WHERE org_id = $1
+     ORDER BY occurred_on DESC
+     LIMIT 100`,
+    [orgId],
+  ).then((result) => result.rows, () => [] as LinkableAttendance[]);
+  const practiceP = client.query<LinkablePractice>(
+    `SELECT id, title, session_date::text AS "sessionDate"
+     FROM driver_sessions
+     WHERE org_id = $1
+     ORDER BY session_date DESC
+     LIMIT 100`,
+    [orgId],
+  ).then((result) => result.rows, () => [] as LinkablePractice[]);
+  const feedP = loadCalendarFeed(client, orgId, userId, feedScope, feedSubteamId);
+  const dutiesP = listDutiesForOrg(client, orgId, userId).then(
+    (roster) => roster.map((duty) => ({
+      id: duty.id,
+      title: duty.title,
+      kind: duty.kind,
+      startsAt: duty.startsAt,
+      endsAt: duty.endsAt,
+      subteamId: duty.subteamId,
+      subteamName: duty.subteamName,
+      subteamColor: duty.subteamColor,
+      assignedUserId: duty.assignedUserId,
+      assignedUserName: duty.assignedUserName,
+      calendarEventId: duty.calendarEventId,
+      notes: duty.notes,
+      createdByName: duty.createdByName,
+      mine: duty.mine,
+    })),
+    () => [] as DutyOnCalendar[],
+  );
+  const travelP = client.query<TravelLegOnCalendar>(
+    `SELECT l.id, l.trip_id AS "tripId", t.title AS "tripTitle", l.kind, l.title,
+            l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
+            l.location, l.meeting_point AS "meetingPoint", l.notes,
+            l.subteam_id AS "subteamId", st.name AS "subteamName", st.color AS "subteamColor",
+            l.calendar_event_id AS "calendarEventId"
+     FROM logistics_travel_legs l
+     JOIN logistics_trips t ON t.id = l.trip_id
+     LEFT JOIN team_subteams st ON st.id = l.subteam_id
+     WHERE l.org_id = $1
+     ORDER BY l.starts_at, l.sort_order
+     LIMIT 200`,
+    [orgId],
+  ).then((result) => result.rows, () => [] as TravelLegOnCalendar[]);
+  const githubP = loadGitHubCalendarOverlay(client, orgId);
+  const tasksP = client.query<TaskOnCalendar>(
+    `SELECT t.id, t.title, t.status,
+            t.due_on::text AS "dueOn",
+            t.assignee_user_id AS "assigneeUserId",
+            au.name AS "assigneeName",
+            t.subteam_id AS "subteamId",
+            st.name AS "subteamName",
+            st.color AS "subteamColor"
+       FROM team_todos t
+       LEFT JOIN users au ON au.id = t.assignee_user_id
+       LEFT JOIN team_subteams st ON st.id = t.subteam_id
+      WHERE t.org_id = $1::uuid
+        AND t.due_on IS NOT NULL
+        AND t.status <> 'done'
+      ORDER BY t.due_on, t.title
+      LIMIT 400`,
+    [orgId],
+  ).then((result) => result.rows, () => [] as TaskOnCalendar[]);
+  const manageP = canManageScouting(client, orgId).catch(() => false);
+  const tbaP = client.query<{
+    matchKey: string;
+    compLevel: string;
+    matchNumber: number;
+    scheduledTime: string | null;
+    redAlliance: unknown;
+    blueAlliance: unknown;
+    eventName: string | null;
+  }>(
+    `SELECT m.match_key AS "matchKey", m.comp_level AS "compLevel", m.match_number AS "matchNumber",
+            COALESCE(m.actual_time, m.predicted_time, m.event_time)::text AS "scheduledTime",
+            m.red_alliance AS "redAlliance", m.blue_alliance AS "blueAlliance",
+            ev.name AS "eventName"
+     FROM org_active_context ctx
+     JOIN matches_ref m ON m.event_key = ctx.active_event_key
+     LEFT JOIN events_ref ev ON ev.event_key = ctx.active_event_key
+     WHERE ctx.org_id = $1::uuid
+       AND COALESCE(m.actual_time, m.predicted_time, m.event_time) IS NOT NULL
+     ORDER BY COALESCE(m.actual_time, m.predicted_time, m.event_time) ASC
+     LIMIT 120`,
+    [orgId],
+  ).catch(() => ({ rows: [] as Array<{
+    matchKey: string;
+    compLevel: string;
+    matchNumber: number;
+    scheduledTime: string | null;
+    redAlliance: unknown;
+    blueAlliance: unknown;
+    eventName: string | null;
+  }> }));
 
-  const [subteams, members, events, subteamMembers] = await Promise.all([
+  const [org, subteams, members, events, subteamMembers, tbaRows] = await Promise.all([
+    orgP,
     client.query<Omit<Subteam, "memberCount"> & { memberCount: number }>(
       `SELECT s.id, s.name, s.color, s.description, s.sort_order AS "sortOrder",
               (SELECT count(*)::int FROM team_subteam_members sm WHERE sm.subteam_id = s.id) AS "memberCount"
@@ -402,7 +479,16 @@ async function loadView(
        FROM team_subteam_members WHERE org_id = $1`,
       [orgId],
     ),
+    tbaP,
   ]);
+  const orgRow = org.rows[0];
+  if (!orgRow) throw new HttpError(404, "Organization not found");
+  const [rsvps, exceptions, attendanceEvents, practiceSessions, calendarFeed, duties, travelLegs, githubCalendar, tasks, canManageCompetition] = await Promise.all([
+    rsvpsP, exceptionsP, attendanceP, practiceP, feedP, dutiesP, travelP, githubP, tasksP, manageP,
+  ]);
+  const tbaMatches = orgRow.teamNumber == null
+    ? []
+    : tbaMatchesToCalendarEvents(tbaRows.rows, `frc${orgRow.teamNumber}`);
 
   const membershipsByUser = new Map<string, string[]>();
   for (const row of subteamMembers.rows) {
@@ -420,35 +506,20 @@ async function loadView(
     string,
     { myRsvp: RsvpResponse | null; rsvpGoing: number; rsvpMaybe: number; rsvpNo: number }
   >();
-  try {
-    const rsvps = await client.query<{
-      eventId: string;
-      userId: string;
-      response: RsvpResponse;
-    }>(
-      `SELECT event_id AS "eventId", user_id AS "userId", response
-       FROM subteam_calendar_rsvps
-       WHERE org_id = $1`,
-      [orgId],
-    );
-    for (const row of rsvps.rows) {
-      const bucket = rsvpByEvent.get(row.eventId) ?? {
-        myRsvp: null,
-        rsvpGoing: 0,
-        rsvpMaybe: 0,
-        rsvpNo: 0,
-      };
-      if (row.response === "going") bucket.rsvpGoing += 1;
-      else if (row.response === "maybe") bucket.rsvpMaybe += 1;
-      else bucket.rsvpNo += 1;
-      if (row.userId === userId) bucket.myRsvp = row.response;
-      rsvpByEvent.set(row.eventId, bucket);
-    }
-  } catch {
-    // Migration 0141 may not be applied yet — calendar still works without RSVPs.
+  for (const row of rsvps.rows) {
+    const bucket = rsvpByEvent.get(row.eventId) ?? {
+      myRsvp: null,
+      rsvpGoing: 0,
+      rsvpMaybe: 0,
+      rsvpNo: 0,
+    };
+    if (row.response === "going") bucket.rsvpGoing += 1;
+    else if (row.response === "maybe") bucket.rsvpMaybe += 1;
+    else bucket.rsvpNo += 1;
+    if (row.userId === userId) bucket.myRsvp = row.response;
+    rsvpByEvent.set(row.eventId, bucket);
   }
 
-  const exceptions = events.recurrenceReady ? await loadSeriesExceptions(client, orgId) : [];
   const materialized = events.recurrenceReady
     ? materializeCalendarRows(events.rows, exceptions, new Date())
     : events.rows;
@@ -468,129 +539,6 @@ async function loadView(
     };
   });
 
-  // Four "Table absent: stays []" reads run in a row here on one transaction.
-  // Whichever failed first aborted it, so every later section — the other three,
-  // the calendar feed, the GitHub overlay — came back empty as well, and the
-  // calendar looked like a team with nothing scheduled. Each takes a savepoint.
-  const attendanceEvents = await withSavepoint(
-    client,
-    async () =>
-      (
-        await client.query<LinkableAttendance>(
-          `SELECT id, title, occurred_on::text AS "occurredOn", kind
-           FROM attendance_events
-           WHERE org_id = $1
-           ORDER BY occurred_on DESC
-           LIMIT 100`,
-          [orgId],
-        )
-      ).rows,
-    [] as LinkableAttendance[],
-  );
-
-  const practiceSessions = await withSavepoint(
-    client,
-    async () =>
-      (
-        await client.query<LinkablePractice>(
-          `SELECT id, title, session_date::text AS "sessionDate"
-           FROM driver_sessions
-           WHERE org_id = $1
-           ORDER BY session_date DESC
-           LIMIT 100`,
-          [orgId],
-        )
-      ).rows,
-    [] as LinkablePractice[],
-  );
-
-  const calendarFeed = await loadCalendarFeed(client, orgId, userId, feedScope, feedSubteamId);
-
-  const duties = await withSavepoint(
-    client,
-    async () => {
-      const roster = await listDutiesForOrg(client, orgId, userId);
-      return roster.map((duty) => ({
-        id: duty.id,
-        title: duty.title,
-        kind: duty.kind,
-        startsAt: duty.startsAt,
-        endsAt: duty.endsAt,
-        subteamId: duty.subteamId,
-        subteamName: duty.subteamName,
-        subteamColor: duty.subteamColor,
-        assignedUserId: duty.assignedUserId,
-        assignedUserName: duty.assignedUserName,
-        calendarEventId: duty.calendarEventId,
-        notes: duty.notes,
-        createdByName: duty.createdByName,
-        mine: duty.mine,
-      }));
-    },
-    [] as DutyOnCalendar[],
-  );
-
-
-  const travelLegs = await withSavepoint(
-    client,
-    async () =>
-      (
-        await client.query<TravelLegOnCalendar>(
-          `SELECT l.id, l.trip_id AS "tripId", t.title AS "tripTitle", l.kind, l.title,
-                  l.starts_at::text AS "startsAt", l.ends_at::text AS "endsAt",
-                  l.location, l.meeting_point AS "meetingPoint", l.notes,
-                  l.subteam_id AS "subteamId", st.name AS "subteamName", st.color AS "subteamColor",
-                  l.calendar_event_id AS "calendarEventId"
-           FROM logistics_travel_legs l
-           JOIN logistics_trips t ON t.id = l.trip_id
-           LEFT JOIN team_subteams st ON st.id = l.subteam_id
-           WHERE l.org_id = $1
-           ORDER BY l.starts_at, l.sort_order
-           LIMIT 200`,
-          [orgId],
-        )
-      ).rows,
-    [] as TravelLegOnCalendar[],
-  );
-
-  const githubCalendar = await loadGitHubCalendarOverlay(client, orgId);
-  const tbaMatches = await loadTbaMatchCalendar(client, orgId, orgRow.teamNumber);
-
-  // Open team tasks that have a due date, so "what is due" and "what is
-  // happening" stop being two different pages. `due_on` is a DATE, so ::text
-  // gives the YYYY-MM-DD day key directly — no zone conversion, and none of the
-  // timestamptz ::text trap where the output is not ISO 8601.
-  //
-  // Done rows are excluded in SQL as well as in tasksByDay(): a team that has
-  // ticked off a season's work should not pay to ship it over the wire. Soonest
-  // first, so if a team ever did cross the 400 cap the rows that fall off are
-  // the furthest out, never this week's.
-  const tasks = await withSavepoint(
-    client,
-    async () =>
-      (
-        await client.query<TaskOnCalendar>(
-          `SELECT t.id, t.title, t.status,
-                  t.due_on::text AS "dueOn",
-                  t.assignee_user_id AS "assigneeUserId",
-                  au.name AS "assigneeName",
-                  t.subteam_id AS "subteamId",
-                  st.name AS "subteamName",
-                  st.color AS "subteamColor"
-             FROM team_todos t
-             LEFT JOIN users au ON au.id = t.assignee_user_id
-             LEFT JOIN team_subteams st ON st.id = t.subteam_id
-            WHERE t.org_id = $1::uuid
-              AND t.due_on IS NOT NULL
-              AND t.status <> 'done'
-            ORDER BY t.due_on, t.title
-            LIMIT 400`,
-          [orgId],
-        )
-      ).rows,
-    [] as TaskOnCalendar[],
-  );
-
   return {
     status: "ready",
     context: {
@@ -600,7 +548,7 @@ async function loadView(
       role,
       userId,
       canManage: isAdmin(role),
-      canManageCompetition: await canManageScouting(client, orgId),
+      canManageCompetition,
     },
     subteams: subteams.rows,
     members: memberRows,
@@ -721,7 +669,7 @@ export async function GET(request: Request) {
         );
         if (!st.rowCount) throw new HttpError(400, "Subteam not found");
       }
-      return loadView(
+      return loadTeamCalendarView(
         client,
         row.orgId,
         session.user.id,

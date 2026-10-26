@@ -340,11 +340,11 @@ function LinkedDeadlinesPanel({ items, orgId }: { items: LinkedDeadline[]; orgId
   );
 }
 
-export default function CalendarClient() {
+export default function CalendarClient({ initial = null }: { initial?: CalendarView | null } = {}) {
   const online = useOnline();
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
-  const [view, setView] = useState<CalendarView | null>(null);
+  const [view, setView] = useState<CalendarView | null>(initial);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.

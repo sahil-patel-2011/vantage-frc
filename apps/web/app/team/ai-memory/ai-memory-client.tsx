@@ -264,10 +264,13 @@ export default function AiMemoryClient({ orgId }: { orgId: string }) {
       });
       const data = (await response.json()) as {
         error?: string;
+        pending?: boolean;
         summary?: { ok: number; noActivity: number; fallback: number; errors: number };
       };
       if (!response.ok) {
         setRunMessage(data.error ?? "The dream run failed.");
+      } else if (data.pending) {
+        setRunMessage("Nothing is written yet. Refresh the journal in a minute.");
       } else if (data.summary?.errors) {
         setRunMessage("The run finished with an error — see the newest journal entry.");
       } else if (data.summary?.noActivity) {

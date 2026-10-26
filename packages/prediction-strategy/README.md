@@ -34,6 +34,13 @@ if (isScorePredictionSkip(result)) {
 `"mixed"` — and the error band widens when it leans on scouting. A screen that
 shows the number should show where it came from.
 
+`forecastMatch` is the category path (auto, teleop, endgame, total) used when
+an event's played breakdowns add up. The season config decides which pieces
+exist: 2026 REBUILT has them, 2027 BIOCORE does not until a manual is added, and
+a missing manual returns a total only. The numbers and the split are in
+`docs/PREDICTION_RESULTS.md`. An AI reply may only nudge those numbers inside
+fixed caps; that path ships off.
+
 ## Ratings from a team's own scouting
 
 This is what makes predictions work at an off-season event, a week-0

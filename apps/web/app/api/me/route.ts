@@ -8,17 +8,11 @@ import { deferOutageWork } from "../../../lib/outage/defer";
 import { noteDatabaseFailure } from "../../../lib/outage/note";
 import { refreshRecipientSnapshotIfStale } from "../../../lib/outage/recipient-refresh";
 
-export async function GET(request: Request) {
-  try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return Response.json({ authenticated: false }, { status: 401 });
-
-    const requestedOrg = new URL(request.url).searchParams.get("orgId");
-    if (requestedOrg && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedOrg)) {
-      return Response.json({ error: "Invalid team." }, { status: 400 });
-    }
-
-    const profile = await withRls({ userId: session.user.id }, async (client) => {
+export async function loadMeProfile(
+  client: import("@neondatabase/serverless").PoolClient,
+  userId: string,
+  requestedOrg: string | null,
+) {
       // Read account metadata together. Count notifications after selecting the
       // active membership so the badge uses exactly the same scope as its inbox.
       const selfQuery = client.query<{
@@ -45,7 +39,7 @@ export async function GET(request: Request) {
                 (p.user_id IS NOT NULL) AS "hasProfile"
          FROM (SELECT 1) AS one
          LEFT JOIN profiles p ON p.user_id=$1::uuid`,
-        [session.user.id],
+        [userId],
       );
       const membershipsQuery = client.query<{
         orgId: string;
@@ -58,7 +52,7 @@ export async function GET(request: Request) {
          JOIN organizations o ON o.id = m.org_id
          WHERE m.user_id=$1
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number NULLS LAST, o.name`,
-        [session.user.id],
+        [userId],
       );
       const [self, memberships] = await Promise.all([selfQuery, membershipsQuery]);
       const selfRow = self.rows[0];
@@ -72,7 +66,7 @@ export async function GET(request: Request) {
       const orgId = activeMembership?.orgId ?? null;
       const memberRole = activeMembership?.role ?? null;
       const [unreadCount, unreadMessageCount, tba, entitlement, hubAccess, funding] = await Promise.all([
-        unreadNotificationCount(client, session.user.id, orgId),
+        unreadNotificationCount(client, userId, orgId),
         (async () => {
           if (!orgId) return 0;
           try {
@@ -104,7 +98,7 @@ export async function GET(request: Request) {
                    AND (r.last_read_at IS NULL OR m.created_at > r.last_read_at)
                  LIMIT 100
                ) capped`,
-              [orgId, session.user.id],
+              [orgId, userId],
             );
             return Number(unreadMessages.rows[0]?.count ?? 0);
           } catch {
@@ -128,7 +122,7 @@ export async function GET(request: Request) {
         })(),
         memberRole === "owner" || memberRole === "admin" || !orgId
           ? Promise.resolve([] as Awaited<ReturnType<typeof listMemberHubAccess>>)
-          : listMemberHubAccess(client, orgId, session.user.id).catch(
+          : listMemberHubAccess(client, orgId, userId).catch(
               () => [] as Awaited<ReturnType<typeof listMemberHubAccess>>,
             ),
         (async () => {
@@ -193,7 +187,19 @@ export async function GET(request: Request) {
         outsideGrants,
         sponsorsAllowed,
       };
-    });
+}
+
+export async function GET(request: Request) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return Response.json({ authenticated: false }, { status: 401 });
+
+    const requestedOrg = new URL(request.url).searchParams.get("orgId");
+    if (requestedOrg && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedOrg)) {
+      return Response.json({ error: "Invalid team." }, { status: 400 });
+    }
+
+    const profile = await withRls({ userId: session.user.id }, (client) => loadMeProfile(client, session.user.id, requestedOrg));
 
     if (requestedOrg && !profile.membership) {
       // Says which kind of "no" this is, and which teams the person is on, so a client can offer

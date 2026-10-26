@@ -8,7 +8,6 @@ import {
 } from "./my-day";
 import type { ScheduleMatch } from "./schedule-board";
 import { matchLabelFromKey } from "./matches/no-next-match";
-import { withSavepoint } from "@vantage/db";
 
 export type MyDayLodging = {
   hotelName: string;
@@ -258,7 +257,7 @@ export async function loadMyDayView(
   }
 
   const teamKey = `frc${row.teamNumber}`;
-  const matchesRes = await client.query<{
+  const matchesP = client.query<{
     matchKey: string;
     compLevel: string;
     matchNumber: number;
@@ -288,6 +287,38 @@ export async function loadMyDayView(
               END, m.match_number`,
     [row.eventKey],
   );
+  // The feed check, lodging, and the next scout duties do not depend on the match rows.
+  // A missing health row says the feed is unknown; it does not fail the page.
+  const feedP = client
+    .query<{ lastSuccessAt: string | null }>(
+      `SELECT last_success_at::text AS "lastSuccessAt" FROM data_source_health WHERE source = 'tba' LIMIT 1`,
+    )
+    .then((health) => ({ known: health.rows.length > 0, checkedAt: health.rows[0]?.lastSuccessAt ?? null }))
+    .catch(() => ({ known: false, checkedAt: null as string | null }));
+  const logisticsP = loadMyDayLogistics(client, {
+    orgId: row.orgId,
+    userId: input.userId,
+    teamRole: row.teamRole,
+    eventKey: row.eventKey,
+  });
+  const dutiesP = client.query<{ matchKey: string; teamKey: string; scheduledTime: string | null }>(
+    `SELECT /* my-day:scouting */ a.match_key AS "matchKey", a.team_key AS "teamKey",
+            coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at)::text AS "scheduledTime"
+       FROM scout_assignments a
+       JOIN matches_ref m ON m.match_key = a.match_key
+      WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid AND a.event_key = $3::text
+        AND lower(coalesce(a.role, '')) <> 'backup'
+        AND coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at, now())
+            > now() - interval '15 minutes'
+        AND NOT EXISTS (
+          SELECT 1 FROM match_scout_entries e
+           WHERE e.org_id = a.org_id AND e.match_key = a.match_key AND e.team_key = a.team_key
+        )
+      ORDER BY coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at) NULLS LAST, m.match_number
+      LIMIT 4`,
+    [row.orgId, input.userId, row.eventKey],
+  );
+  const [matchesRes, feed, logistics, duties] = await Promise.all([matchesP, feedP, logisticsP, dutiesP]);
 
   const schedule: ScheduleMatch[] = matchesRes.rows.map((entry) => ({
     matchKey: entry.matchKey,
@@ -310,16 +341,6 @@ export async function loadMyDayView(
   // The feed's last good check counts as a sync: an unchanged schedule answers "not modified"
   // and its rows keep their old synced_at.
   // No health to read means: say how old the rows are, never that they are out of date.
-  const feed = await withSavepoint(
-    client,
-    async () => {
-      const health = await client.query<{ lastSuccessAt: string | null }>(
-        `SELECT last_success_at::text AS "lastSuccessAt" FROM data_source_health WHERE source = 'tba' LIMIT 1`,
-      );
-      return { known: health.rows.length > 0, checkedAt: health.rows[0]?.lastSuccessAt ?? null };
-    },
-    { known: false, checkedAt: null as string | null },
-  );
   const feedKnown = feed.known;
   const feedCheckedAt = feed.checkedAt;
   const syncedAt =
@@ -330,32 +351,8 @@ export async function loadMyDayView(
       .sort((a, b) => a.at - b.at)
       .at(-1)?.value ?? null;
 
-  const logistics = await loadMyDayLogistics(client, {
-    orgId: row.orgId,
-    userId: input.userId,
-    teamRole: row.teamRole,
-    eventKey: row.eventKey,
-  });
-
   // The robots this person scouts next: primary duties, not filed yet, not long past. The
   // same rules as Home's "what to do now" card (lib/dashboard/home-widget-loaders.ts).
-  const duties = await client.query<{ matchKey: string; teamKey: string; scheduledTime: string | null }>(
-    `SELECT /* my-day:scouting */ a.match_key AS "matchKey", a.team_key AS "teamKey",
-            coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at)::text AS "scheduledTime"
-       FROM scout_assignments a
-       JOIN matches_ref m ON m.match_key = a.match_key
-      WHERE a.org_id = $1::uuid AND a.user_id = $2::uuid AND a.event_key = $3::text
-        AND lower(coalesce(a.role, '')) <> 'backup'
-        AND coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at, now())
-            > now() - interval '15 minutes'
-        AND NOT EXISTS (
-          SELECT 1 FROM match_scout_entries e
-           WHERE e.org_id = a.org_id AND e.match_key = a.match_key AND e.team_key = a.team_key
-        )
-      ORDER BY coalesce(m.actual_time, m.predicted_time, m.event_time, a.starts_at) NULLS LAST, m.match_number
-      LIMIT 4`,
-    [row.orgId, input.userId, row.eventKey],
-  );
   const byKey = new Map(schedule.map((match) => [match.matchKey, match]));
   const scouting = duties.rows.map((duty) => {
     const match = byKey.get(duty.matchKey);

@@ -115,7 +115,7 @@ async function resolveMembershipOrgId(
 }
 
 /** Org-scoped connector proof — requires withRls({ userId, orgId }). Never invents Connected. */
-async function loadOrgConnectorSnapshot(
+export async function loadOrgConnectorSnapshot(
   client: import("@neondatabase/serverless").PoolClient,
   orgId: string,
   userId: string,
@@ -350,11 +350,9 @@ function slackIntegration(
   };
 }
 
-export async function GET() {
-  const session = await currentSession();
-  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
-
-  try {
+export async function loadAccountView(session: {
+  user: { id: string; email: string; name?: string | null; image?: string | null };
+}) {
     const profile = await withRls({ userId: session.user.id }, async (client) => {
       const profileP = client.query<{
         displayName: string | null;
@@ -429,7 +427,7 @@ export async function GET() {
     const github = githubIntegration(orgId, orgConnectors.githubConnected);
     const slack = slackIntegration(orgId, orgConnectors);
 
-    return Response.json({
+    return {
       name: session.user.name,
       email: session.user.email,
       image: session.user.image,
@@ -442,7 +440,7 @@ export async function GET() {
       phoneE164: profile.row?.phoneE164 ?? null,
       phoneVerified: Boolean(profile.row?.phoneVerifiedAt),
       phoneOtp: studentPhoneOtp(phoneOtpSetupStatus()),
-      themePreference: profile.row?.themePreference === "dark" ? "dark" : "light",
+      themePreference: (profile.row?.themePreference === "dark" ? "dark" : "light") as "dark" | "light",
       notificationPrefs: mergePrefs(profile.row?.notificationPrefs),
       emailPrefs: profile.emailPrefs,
       emailDelivery: studentEmailDelivery(emailNotificationsSetupStatus()),
@@ -467,7 +465,14 @@ export async function GET() {
         github,
         slack,
       },
-    });
+    };
+}
+
+export async function GET() {
+  const session = await currentSession();
+  if (!session) return Response.json({ error: "Your session ended. Sign in again." }, { status: 401 });
+  try {
+    return Response.json(await loadAccountView(session));
   } catch {
     return Response.json({ error: "Could not load account settings." }, { status: 500 });
   }

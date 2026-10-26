@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { AskAiButton } from "../../components/ask-ai-button";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ScheduleRelated } from "../../components/schedule-related";
-import { Button, EmptyState, Panel } from "../../components/ui";
+import { Button, EmptyState, PageHeader, Panel } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
@@ -298,7 +298,7 @@ function MatchRow({
           ) : null}
           {!played ? (
             <Button as="a" variant="ghost" size="sm" href={predictHref} className="sched-predict">
-              Match prediction
+              Predict
             </Button>
           ) : null}
         </div>
@@ -487,9 +487,6 @@ function ScheduleShell({
           <p>{description}</p>
         </div>
         <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
-        <Button as="a" variant="secondary" href={withOrgHref("/match-sim", orgId)}>
-          Match prediction
-        </Button>
       </header>
       <OfflineBanner
         feature="Schedule"
@@ -546,9 +543,9 @@ const FILTER_LABELS: Record<TimelineFilter, string> = {
   mine: "My assignments",
 };
 
-export default function ScheduleClient() {
+export default function ScheduleClient({ initial = null }: { initial?: ScheduleView | null } = {}) {
   const cockpit = useCockpitPrefs();
-  const [view, setView] = useState<ScheduleView | null>(null);
+  const [view, setView] = useState<ScheduleView | null>(initial);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
@@ -739,23 +736,24 @@ export default function ScheduleClient() {
 
   return (
     <main className="module-page sched-page">
-      <header className="app-page-header">
-        <div>
-          <span className="breadcrumbs">Competition / Schedule</span>
-          <h1>Match schedule</h1>
-          <p>
+      <PageHeader
+        breadcrumbs="Competition / Schedule"
+        title="Match schedule"
+        description={
+          <>
             {eventLabel}
             {view.context.teamNumber ? ` — Team ${view.context.teamNumber}` : ""} · {view.matches.length}{" "}
             {view.matches.length === 1 ? "match" : "matches"}
-          </p>
-        </div>
+          </>
+        }
+      >
         <div className="sched-header-actions">
           <ScheduleRelated orgId={orgId} include={[...SCHEDULE_RELATED_INCLUDE]} />
           <Button type="button" variant="secondary" onClick={() => void load()}>
             Refresh
           </Button>
         </div>
-      </header>
+      </PageHeader>
 
       <OfflineBanner
         feature="Schedule"

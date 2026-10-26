@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Button, CardGridSkeleton, EmptyState, ErrorState, PageHeader, StatRowSkeleton } from "../../components/ui";
+import { Button, CardGridSkeleton, EmptyState, ErrorState, PageHeader, PageToolbar, StatRowSkeleton } from "../../components/ui";
 import { CopyShareLink } from "../../components/copy-share-link";
 import {
   EVENT_DAY_RELATED_INCLUDE,
@@ -195,6 +195,7 @@ export function CommandReadyHeader({
   const eventLabel = scoutEventLabel({ eventName, eventKey });
   const [actionsOpen, setActionsOpen] = useState(false);
   const actions = headerActions ?? (
+    <PageToolbar label="Event day">
     <div className="edc-header-actions">
       {/* The board refreshes itself, so "Refresh" is the timestamp rather than a third
           button beside it: it says how fresh the data is and, pressed, makes it fresher. */}
@@ -217,6 +218,7 @@ export function CommandReadyHeader({
         </div>
       </details>
     </div>
+    </PageToolbar>
   );
 
   if (embedded) {

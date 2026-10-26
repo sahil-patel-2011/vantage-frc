@@ -28,6 +28,7 @@ export { StatTile } from "./stat-tile";
 export { Badge, type BadgeTone } from "./badge";
 export { Button } from "./button";
 export { Toolbar } from "./toolbar";
+export { PageToolbar } from "./page-toolbar";
 
 // State primitives
 export {

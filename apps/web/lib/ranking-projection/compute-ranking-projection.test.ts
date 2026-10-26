@@ -17,9 +17,11 @@ function routeProjection(
     remaining: unknown[];
   },
 ): { rows: unknown[] } {
-  if (sql.includes("memberships")) return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
-  if (sql.includes("org_active_context")) return { rows: [{ eventKey: "2026gagr" }] };
-  if (sql.includes("events_ref")) return { rows: [{ name: "GRITS", year: 2026 }] };
+  if (sql.includes("FROM memberships")) {
+    return {
+      rows: [{ orgId: "org-1", teamNumber: 254, eventKey: "2026gagr", eventName: "GRITS", eventYear: 2026 }],
+    };
+  }
   if (sql.includes("GROUP BY team_key")) {
     return {
       rows: input.teams.map((teamKey, index) => ({
@@ -47,8 +49,9 @@ describe("ranking projection", () => {
   it("stays setup_required without an active event", async () => {
     const view = await computeRankingProjectionView(
       client((sql) => {
-        if (sql.includes("memberships")) return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
-        if (sql.includes("org_active_context")) return { rows: [{ eventKey: null }] };
+        if (sql.includes("FROM memberships")) {
+          return { rows: [{ orgId: "org-1", teamNumber: 254, eventKey: null, eventName: null, eventYear: null }] };
+        }
         return { rows: [] };
       }),
       { userId: "u1", requestedOrg: "org-1" },
@@ -59,9 +62,9 @@ describe("ranking projection", () => {
   it("returns live rank and remaining quals from cache only", async () => {
     const view = await computeRankingProjectionView(
       client((sql) => {
-        if (sql.includes("memberships")) return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
-        if (sql.includes("org_active_context")) return { rows: [{ eventKey: "2026cmp" }] };
-        if (sql.includes("events_ref")) return { rows: [{ name: "Einstein" }] };
+        if (sql.includes("FROM memberships")) {
+          return { rows: [{ orgId: "org-1", teamNumber: 254, eventKey: "2026cmp", eventName: "Einstein", eventYear: 2026 }] };
+        }
         if (sql.includes("team_event_metrics")) {
           return { rows: [{ rank: 4, wins: 8, losses: 2, ties: 0, epaTotal: 62.1 }] };
         }
@@ -82,9 +85,9 @@ describe("ranking projection", () => {
   it("serves the what-if planner from cached standings and the unplayed schedule", async () => {
     const view = await computeRankingProjectionView(
       client((sql) => {
-        if (sql.includes("memberships")) return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
-        if (sql.includes("org_active_context")) return { rows: [{ eventKey: "2025casj" }] };
-        if (sql.includes("events_ref")) return { rows: [{ name: "San Jose", year: 2025 }] };
+        if (sql.includes("FROM memberships")) {
+          return { rows: [{ orgId: "org-1", teamNumber: 254, eventKey: "2025casj", eventName: "San Jose", eventYear: 2025 }] };
+        }
         if (sql.includes("GROUP BY team_key")) {
           return {
             rows: [
@@ -136,9 +139,9 @@ describe("ranking projection", () => {
   it("says so instead of projecting when the event has no cached ranking rows", async () => {
     const view = await computeRankingProjectionView(
       client((sql) => {
-        if (sql.includes("memberships")) return { rows: [{ orgId: "org-1", teamNumber: 254 }] };
-        if (sql.includes("org_active_context")) return { rows: [{ eventKey: "2025casj" }] };
-        if (sql.includes("events_ref")) return { rows: [{ name: "San Jose", year: 2025 }] };
+        if (sql.includes("FROM memberships")) {
+          return { rows: [{ orgId: "org-1", teamNumber: 254, eventKey: "2025casj", eventName: "San Jose", eventYear: 2025 }] };
+        }
         if (sql.includes("GROUP BY team_key")) return { rows: [] };
         if (sql.includes("team_event_metrics")) {
           return { rows: [{ rank: 2, wins: 3, losses: 1, ties: 0, epaTotal: 70 }] };

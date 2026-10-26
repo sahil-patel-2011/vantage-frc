@@ -76,13 +76,11 @@ function fail(error: unknown) {
   return Response.json({ error: publicErrorMessage(error, "Hours request failed") }, { status });
 }
 
-export async function GET(request: Request) {
-  try {
-    const session = await requireSession();
-    const url = new URL(request.url);
-    const requestedOrg = url.searchParams.get("orgId");
-
-    const view = await withRls({ userId: session.user.id }, async (client) => {
+export async function loadHoursBoard(
+  client: PoolClient,
+  userId: string,
+  requestedOrg: string | null,
+): Promise<BuildHoursView> {
       const membership = await client.query<{
         orgId: string;
         orgName: string;
@@ -95,7 +93,7 @@ export async function GET(request: Request) {
          WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
          LIMIT 1`,
-        [session.user.id, requestedOrg],
+          [userId, requestedOrg],
       );
 
       const row = membership.rows[0];
@@ -103,7 +101,7 @@ export async function GET(request: Request) {
         return {
           status: "setup_required",
           message: "Choose your team to track build hours.",
-          context: { orgId: null, orgName: null, teamNumber: null, role: null, userId: session.user.id },
+          context: { orgId: null, orgName: null, teamNumber: null, role: null, userId },
         } satisfies BuildHoursView;
       }
 
@@ -153,14 +151,22 @@ export async function GET(request: Request) {
           orgName: row.orgName,
           teamNumber: row.teamNumber,
           role: row.role,
-          userId: session.user.id,
+          userId,
         },
         records: records.rows,
         policy: policyRows.rows[0] ?? { seasonGoalHours: 0, seasonStart: null },
         members: members.rows,
       } satisfies BuildHoursView;
-    });
+}
 
+export async function GET(request: Request) {
+  try {
+    const session = await requireSession();
+    const url = new URL(request.url);
+    const requestedOrg = url.searchParams.get("orgId");
+    const view = await withRls({ userId: session.user.id }, (client) =>
+      loadHoursBoard(client, session.user.id, requestedOrg),
+    );
     return Response.json(view);
   } catch (error) {
     return fail(error);

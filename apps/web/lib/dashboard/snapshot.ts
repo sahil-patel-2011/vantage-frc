@@ -15,7 +15,12 @@ import {
 import { countLodgingGaps } from "../logistics";
 import { snapshotShouldLoadHomeStrip } from "./refresh";
 import { isDemoPrediction } from "../strategy/prediction-display";
+import { isMatchForecastSkip } from "@vantage/prediction-strategy";
+import { forecastActiveMatch } from "../strategy/card-forecast";
+import { eventStartIso } from "../strategy/card-strength";
+import { predictionAiRequested } from "../strategy/prediction-ai";
 import { isNextMatchScoreSkip, nextMatchScoreCard, seasonYearFromEventKey } from "./score-from-metrics";
+import { nextMatchCategoryLine } from "./next-match-copy";
 import { readEventScoring } from "../opr/alliance-results";
 import { loadScoutedRatingsForTeams } from "../scouting/team-profiles";
 import { HOME_WIDGET_TYPES, loadHomeWidget } from "./home-widget-loaders";
@@ -123,6 +128,9 @@ export async function loadDashboardSnapshot(
       );
       return;
     }
+    // The "why is there no next match" summary shares this upcoming-match wave.
+    // My Day and the schedule card join the same in-flight promise.
+    const summaryP = loadOurMatchSummary(client, eventKey, teamKey);
     const match = await client.query<{
       matchKey: string;
       compLevel: string;
@@ -147,15 +155,11 @@ export async function loadDashboardSnapshot(
     );
     if (!match.rows[0]) {
       // Say why: schedule not out, every match played (with the last result), or no time yet.
-      let summary = null;
-      try {
-        summary = await loadOurMatchSummary(client, eventKey, teamKey);
-      } catch {
-        summary = null;
-      }
+      const summary = await summaryP.catch(() => null);
       widgets.next_match = stamp("empty", "next_match", undefined, noNextMatchMessage(summary));
       return;
     }
+    summaryP.catch(() => null);
     const row = match.rows[0];
     // The match after this one, for "After · Qual 52" under the card.
     const afterRow = match.rows[1] ?? null;
@@ -179,10 +183,16 @@ export async function loadDashboardSnapshot(
     // score-uncertainty.ts.
     let redBand: number | null = null;
     let blueBand: number | null = null;
+    let redLow: number | null = null;
+    let redHigh: number | null = null;
+    let blueLow: number | null = null;
+    let blueHigh: number | null = null;
     let confidence: string | null = null;
     let scoreDrivers: string[] = [];
     let briefing: string | null = null;
     let cardRedWin: number | null = null;
+    let categoryLine: string | null = null;
+    let useForecastWin = false;
     type EpaRow = { teamKey: string; autoEpa: number | null; teleopEpa: number | null; endgameEpa: number | null };
     type PredRow = {
       pRed: number;
@@ -194,9 +204,9 @@ export async function loadDashboardSnapshot(
     };
     const matchKeys = [...redKeys, ...blueKeys];
     const canScore = Boolean(year && (redKeys.length >= 2 || blueKeys.length >= 2));
-    // Prediction, event ratings, season ratings, scoring, and scout notes do not
-    // depend on each other. One wave. Season rows fill robots that have no event rating.
-    const [pred, eventEpa, yearEpa, scoring, scouted] = await Promise.all([
+    // Prediction, ratings, scoring, scout notes, and the event date do not depend
+    // on each other. One wave. Season rows fill robots that have no event rating.
+    const [pred, eventEpa, yearEpa, scoring, scouted, dated] = await Promise.all([
       client.query<PredRow>(
         `SELECT p_red AS "pRed", p_blue AS "pBlue",
                 confidence_low AS "confidenceLow", confidence_high AS "confidenceHigh",
@@ -242,11 +252,13 @@ export async function loadDashboardSnapshot(
       canScore
         ? loadScoutedRatingsForTeams(client, { orgId: input.orgId, eventKey, teamKeys: matchKeys }).catch(() => new Map())
         : Promise.resolve(new Map()),
+      client.query<{ startDate: Date | string | null }>(
+        `SELECT start_date AS "startDate" FROM events_ref WHERE event_key = $1`,
+        [eventKey],
+      ),
     ]);
     const stored = pred.rows[0];
-    if (canScore && scoring) {
-      // This event's ratings first (how each robot is playing here, and what the Schedule's
-      // estimates use), then the season's for any robot with no event rating yet.
+    if (canScore && scoring && year != null) {
       const haveEvent = new Set(eventEpa.rows.map((rating) => rating.teamKey));
       const oprByTeam = new Map(scoring.opr.map((robot) => [robot.teamKey, robot.total]));
       const epaByTeam = new Map([
@@ -266,8 +278,6 @@ export async function loadDashboardSnapshot(
             autoEpa: epa?.autoEpa ?? null,
             teleopEpa: epa?.teleopEpa ?? null,
             endgameEpa: epa?.endgameEpa ?? null,
-            // The event OPR stands in only for a robot with no season rating, exactly as in the
-            // match plan (compute-strategy.ts), so Home and Predict rate a robot the same way.
             opr: hasEpa ? null : (oprByTeam.get(key) ?? null),
           };
         }),
@@ -284,6 +294,42 @@ export async function loadDashboardSnapshot(
         scoreDrivers = card.drivers;
         briefing = card.briefing;
         cardRedWin = card.redWinProbability;
+      }
+      const forecast = forecastActiveMatch({
+        season: year,
+        eventKey,
+        startDate: eventStartIso(dated.rows[0]?.startDate),
+        level: row.compLevel,
+        red: redKeys,
+        blue: blueKeys,
+        played: scoring.samples,
+      });
+      if (!isMatchForecastSkip(forecast)) {
+        redPredicted = forecast.red.total;
+        bluePredicted = forecast.blue.total;
+        errorBand = forecast.errorBand;
+        redBand = forecast.redBand;
+        blueBand = forecast.blueBand;
+        confidence = forecast.confidence;
+        scoreDrivers = [];
+        briefing = null;
+        cardRedWin = forecast.redWinProbability;
+        useForecastWin = true;
+        redLow = forecast.redLow ?? null;
+        redHigh = forecast.redHigh ?? null;
+        blueLow = forecast.blueLow ?? null;
+        blueHigh = forecast.blueHigh ?? null;
+        categoryLine = forecast.categoriesKnown
+          ? nextMatchCategoryLine({
+              redAuto: forecast.red.auto,
+              redTeleop: forecast.red.teleop,
+              redEndgame: forecast.red.endgame,
+              blueAuto: forecast.blue.auto,
+              blueTeleop: forecast.blue.teleop,
+              blueEndgame: forecast.blue.endgame,
+              ranges: forecast.categoryRanges,
+            })
+          : null;
       }
     }
     widgets.next_match = stamp("live", "next_match", {
@@ -303,17 +349,27 @@ export async function loadDashboardSnapshot(
       href: `/briefing?orgId=${encodeURIComponent(input.orgId)}&matchKey=${encodeURIComponent(row.matchKey)}`,
       // The match plan's saved chance when Predict has run; otherwise the score card's own, from
       // the same robots, so Home is never blank just because nobody pressed Predict yet.
-      pRed: stored?.pRed ?? cardRedWin,
-      pBlue: stored?.pBlue ?? (cardRedWin == null ? null : Math.round((1 - cardRedWin) * 1000) / 1000),
-      confidenceLow: stored?.confidenceLow ?? null,
-      confidenceHigh: stored?.confidenceHigh ?? null,
-      keyFactors: stored?.keyFactors ?? null,
-      modelVersion: stored?.modelVersion ?? null,
+      pRed: useForecastWin ? cardRedWin : (stored?.pRed ?? cardRedWin),
+      pBlue: useForecastWin
+        ? cardRedWin == null
+          ? null
+          : Math.round((1 - cardRedWin) * 1000) / 1000
+        : (stored?.pBlue ?? (cardRedWin == null ? null : Math.round((1 - cardRedWin) * 1000) / 1000)),
+      confidenceLow: useForecastWin ? null : (stored?.confidenceLow ?? null),
+      confidenceHigh: useForecastWin ? null : (stored?.confidenceHigh ?? null),
+      keyFactors: useForecastWin ? null : (stored?.keyFactors ?? null),
+      modelVersion: useForecastWin ? null : (stored?.modelVersion ?? null),
+      categoryLine,
+      predictionAi: predictionAiRequested(),
       redPredicted,
       bluePredicted,
       errorBand,
       redBand,
       blueBand,
+      redLow,
+      redHigh,
+      blueLow,
+      blueHigh,
       confidence,
       scoreDrivers,
       briefing,

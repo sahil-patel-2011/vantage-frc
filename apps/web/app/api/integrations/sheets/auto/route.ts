@@ -7,8 +7,7 @@ import { failJson, json, readOrgIdFromRequest, requireUser } from "../../../../.
 import { syncMirror } from "../../../../../lib/mirror/mirror-sync";
 import { connectedTargetDefs, readCopyStates } from "../../../../../lib/mirror/mirror-targets";
 import { createRateLimiter } from "../../../../../lib/rate-limit";
-import { queueReadableHubSync } from "../../../../../lib/google-sheets/hub-jobs";
-import { dispatchRecoveryJournal } from "../../../../../lib/recovery/dispatch";
+import { dispatchCron } from "../../../../../lib/reference/dispatch-cron";
 
 export const maxDuration = 120;
 
@@ -71,11 +70,16 @@ export async function POST(request: Request) {
     if (!isUuid(orgId)) throw new HttpError(400, "A valid orgId is required.", "invalid_team");
     const runnerId = await syncRunner(orgId, user.id);
     if (!(await autoLimiter.allow(orgId))) return json({ queued: false, reason: "recent" }, 202);
-    const hubQueued = process.env.VANTAGE_SHEETS_HUB_SECRET ? await queueReadableHubSync(orgId) : false;
+    const hub = process.env.VANTAGE_SHEETS_HUB_SECRET
+      ? await dispatchCron<{ queued?: boolean }>("/api/cron/readable-sheets", { orgId })
+      : null;
+    const hubQueued = hub?.ok === true && hub.body.queued === true;
     after(() => runAutoSync(orgId, runnerId, runnerId === user.id));
     // The recovery copy follows use too: this ping arrives shortly after a save, which is when
     // there is something new to export. It used to be a cron that ran every minute regardless.
-    after(() => dispatchRecoveryJournal().catch(() => undefined));
+    after(() => {
+      void dispatchCron("/api/cron/recovery-journal", {}).catch(() => undefined);
+    });
     return json({ queued: true, hubQueued }, 202);
   } catch (error) {
     return failJson(error);

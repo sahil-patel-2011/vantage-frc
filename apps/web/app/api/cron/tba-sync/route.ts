@@ -1,11 +1,11 @@
 import { runSeasonCronPiggybacks } from "../../../../lib/reference/season-cron-piggybacks";
 import { notifyMatchScheduleAfterSync } from "../../../../lib/reference/notify-schedule";
+import { assertCronAuthorized } from "../../../../lib/reference/run-ingest";
 import {
-  assertCronAuthorized,
   runNexusEventSync,
   runTbaEventDaySync,
   runTbaSeasonSync,
-} from "../../../../lib/reference/run-ingest";
+} from "../../../../lib/reference/worker-ingest";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const runtime = "nodejs";

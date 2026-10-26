@@ -62,8 +62,8 @@ function useScrollToHash(pathname: string, search: string) {
 }
 
 /** Who is looking and on which team, from the shared /api/me read (no extra request). */
-function useSettingsViewer(orgId: string) {
-  const [session, setSession] = useState<ProductSession | null>(null);
+function useSettingsViewer(orgId: string, initial: ProductSession | null = null) {
+  const [session, setSession] = useState<ProductSession | null>(initial);
   // A read that never answered left "This team" as a bare heading for good. It is asked once
   // more after a pause, then says so with a way to ask again.
   const [failed, setFailed] = useState(false);
@@ -259,13 +259,13 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
 }
 
 /** /settings: the list itself, with a line under each row. */
-export function SettingsHome() {
+export function SettingsHome({ initialSession = null }: { initialSession?: ProductSession | null } = {}) {
   const [query, setQuery] = useState("");
   const searchId = useId();
   const searchRef = useRef<HTMLInputElement>(null);
   const search = useLocationSearch();
   const orgId = new URLSearchParams(search).get("orgId") ?? "";
-  const viewer = useSettingsViewer(orgId);
+  const viewer = useSettingsViewer(orgId, initialSession);
   const items = visibleSettingsNav(viewer.role);
   const matches = items.filter(item => matchesSettingsSearch(item, query));
   const platformMatches = viewer.platformAdmin ? PLATFORM_ROWS.filter(item => matchesSettingsSearch(item, query)).length : 0;

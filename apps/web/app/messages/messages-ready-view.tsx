@@ -11,7 +11,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from "react";
-import { EmptyState, PageHeader, PageMain, Button } from "../../components/ui";
+import { EmptyState, PageHeader, PageMain, PageToolbar, Button } from "../../components/ui";
 import { OfflineBanner } from "../../components/offline-banner";
 import { ViewOnlyNote } from "../../components/view-only-note";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -561,7 +561,7 @@ export function MessagesReadyView({
                     <div className="messages-channel-actions">
                       <strong className="shared-warning">Everyone on the team can see this</strong>
                       {canManageChannels && !active.isDefaultChannel && !channelDraft ? (
-                        <>
+                        <PageToolbar label="Channel">
                           <button
                             type="button"
                             onClick={() => setChannelDraft({ mode: "rename", value: labelFor(active) })}
@@ -572,13 +572,14 @@ export function MessagesReadyView({
                           {channelArchiveSupported ? (
                             <button
                               type="button"
+                              data-action-intent={activeChannelArchived ? "secondary" : "destructive"}
                               onClick={() => void setChannelArchived(!activeChannelArchived)}
                               disabled={sending}
                             >
                               {activeChannelArchived ? "Reopen" : "Archive"}
                             </button>
                           ) : null}
-                        </>
+                        </PageToolbar>
                       ) : null}
                     </div>
                   ) : null}

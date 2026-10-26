@@ -259,15 +259,18 @@ function MyDayShell({
   );
 }
 
-export default function MyDayClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function MyDayClient({
+  embedded = false,
+  initial = null,
+}: { embedded?: boolean; initial?: MyDayView | null } = {}) {
   const Root = embedded ? "section" : "main";
   const cockpit = useCockpitPrefs();
-  const [view, setView] = useState<MyDayView | null>(null);
+  const [view, setView] = useState<MyDayView | null>(initial);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initial == null);
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const viewRef = useRef<MyDayView | null>(null);

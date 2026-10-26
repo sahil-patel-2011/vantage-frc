@@ -27,7 +27,7 @@ import { prioritizeHomeStrip, type HomeStripItem } from "../../lib/home-workflow
 import { useVenueShortcuts } from "../../hooks/use-venue-shortcuts";
 import { useDashboardPointerDrag } from "./use-dashboard-pointer-drag";
 import { useDashboardBoardOps } from "./use-dashboard-board-ops";
-import { useDashboardHomeState } from "./use-dashboard-home-state";
+import { useDashboardHomeState, type DashboardHomeSeed } from "./use-dashboard-home-state";
 import { useDashboardEditHistory } from "./use-dashboard-edit-history";
 import {
   dashboardBoardLists,
@@ -42,9 +42,15 @@ import "./dashboard-dnd.css";
 import "./dash-layout.css";
 import "./dashboard-workspace.css";
 
-export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: string }) {
+export default function DashboardClient({
+  initialOrgId = "",
+  initialHome = null,
+}: {
+  initialOrgId?: string;
+  initialHome?: DashboardHomeSeed | null;
+}) {
   const { setNode: setCanvasNode, node: canvasNode, width, mounted, measured } = useMeasuredCanvas();
-  const home = useDashboardHomeState(initialOrgId);
+  const home = useDashboardHomeState(initialOrgId, initialHome);
   const quietScope = `${home.userId}:${home.orgId}:${home.board?.id ?? "default"}`;
   const [quietView, setQuietView] = useState({ scope: "", expanded: false });
   const showQuietWidgets = quietView.scope === quietScope && quietView.expanded;
@@ -424,9 +430,9 @@ export default function DashboardClient({ initialOrgId = "" }: { initialOrgId?: 
       onRetryHome={() => {
         if (home.orgId) void home.loadHome(home.orgId);
       }}
-      // Whether the widgets (and the onboarding steps) have arrived, so the "what to do
-      // now" card waits as a blank shape rather than saying there is nothing.
-      widgetsLoaded={home.widgetsLoaded && firstWeek.loaded}
+      // Widget data is already in the first response. The first-week steps fill in
+      // beside that; they do not hold the board on a busy placeholder.
+      widgetsLoaded={home.widgetsLoaded}
       paletteEntries={paletteEntries}
       hiddenOnHome={hiddenOnHomeIds}
       hasScoutingSchemas={hasScoutingSchemas}

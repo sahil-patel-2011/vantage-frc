@@ -1,5 +1,10 @@
 /**
- * Concurrent full-content load against a local production server.
+ * LOCAL ONLY. One Node process, one signed-in session, many browser tabs.
+ *
+ * This is not a pass bar for "feels instant under load." A single process keeps
+ * a handful of database connections, so 25 or 100 tabs queue behind each other
+ * and miss any one-second target even when one tab is fast. Use it to see how
+ * this machine behaves. Do not treat a miss here as a failed page.
  *
  * The database sits behind scripts/pg-latency-proxy.mjs. Set that proxy to 40ms
  * before running. Each sample is a real browser navigation, and "content" is the

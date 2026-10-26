@@ -16,8 +16,18 @@ import { HISTORY_PAGE_SIZE, trimHistoryPage } from "../../../lib/messages/histor
 import { attachRemovalNotices } from "../../../lib/messages/moderation";
 import { cachedSchemaSupport } from "../../../lib/schema-probe";
 import {
+  messageMentionsCached,
+  messageObjectLinksCached,
+  messagePinsCached,
+  primeChatSchema,
+  rememberMessageMentions,
+  rememberMessagePins,
+  rememberObjectLinks,
+} from "../../../lib/messages/chat-schema";
+import {
   assertChannelWritable,
   canManageChannels,
+  channelArchiveCached,
   channelNotificationTitle,
   createChannel,
   isDefaultChannelName,
@@ -38,6 +48,8 @@ import {
   readDmMode,
   readTeamChatEnabled,
   supportsYouthProtection,
+  teamChatFlagCached,
+  youthProtectionSupportCached,
   type SupervisorRef,
 } from "../../../lib/messages/supervision";
 import { supervisionBadge, type DmMode } from "../../../lib/messages/youth-protection";
@@ -85,23 +97,17 @@ type MessageRow = {
 
 type MemberRow = { id: string; name: string; email: string; role: string };
 
-let pinsSupportedCache: boolean | null = null;
-let mentionsSupportedCache: boolean | null = null;
-let objectLinksSupportedCache: boolean | null = null;
-
 // The savepoint-protected, never-caches-a-failure probe these three share now
 // lives in lib/schema-probe.ts, alongside the identical caches in channels.ts,
 // supervision.ts and hours/sweep.ts. Its header explains what the old
-// `catch { cache = false }` cost.
+// `catch { cache = false }` cost. primeChatSchema fills all of them in one read.
 
 async function supportsObjectLinks(client: PoolClient): Promise<boolean> {
   return cachedSchemaSupport(
     client,
     {
-      read: () => objectLinksSupportedCache,
-      write: (value) => {
-        objectLinksSupportedCache = value;
-      },
+      read: () => messageObjectLinksCached(),
+      write: (value) => rememberObjectLinks(value),
     },
     `SELECT 1
        FROM information_schema.tables
@@ -248,8 +254,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; status: string }[] }));
     return rows.rows.map((row) => ({
@@ -270,8 +276,8 @@ async function listLinkTargets(
          WHERE c.org_id = $1::uuid
            AND lower(COALESCE(j.title, c.id::text)) LIKE lower($2)
          ORDER BY c.created_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string }[] }));
     return rows.rows.map((row) => ({
@@ -291,8 +297,8 @@ async function listLinkTargets(
            AND archived = false
            AND lower(name) LIKE lower($2)
          ORDER BY updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; name: string; category: string | null }[] }));
     return rows.rows.map((row) => ({
@@ -312,8 +318,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY starts_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; kind: string }[] }));
     return rows.rows.map((row) => ({
@@ -333,8 +339,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY created_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string }[] }));
     return rows.rows.map((row) => ({
@@ -353,8 +359,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; category: string }[] }));
     return rows.rows.map((row) => ({
@@ -374,8 +380,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; status: string }[] }));
     return rows.rows.map((row) => ({
@@ -395,8 +401,8 @@ async function listLinkTargets(
          WHERE org_id = $1::uuid
            AND lower(title) LIKE lower($2)
          ORDER BY pinned DESC, updated_at DESC
-         LIMIT ${limit}`,
-        [orgId, like],
+         LIMIT $3`,
+        [orgId, like, limit],
       )
       .catch(() => ({ rows: [] as { id: string; title: string; templateKind: string }[] }));
     return rows.rows.map((row) => ({
@@ -415,10 +421,8 @@ async function supportsMessageMentions(client: PoolClient): Promise<boolean> {
   return cachedSchemaSupport(
     client,
     {
-      read: () => mentionsSupportedCache,
-      write: (value) => {
-        mentionsSupportedCache = value;
-      },
+      read: () => messageMentionsCached(),
+      write: (value) => rememberMessageMentions(value),
     },
     `SELECT 1
        FROM information_schema.tables
@@ -432,10 +436,8 @@ async function supportsMessagePins(client: PoolClient): Promise<boolean> {
   return cachedSchemaSupport(
     client,
     {
-      read: () => pinsSupportedCache,
-      write: (value) => {
-        pinsSupportedCache = value;
-      },
+      read: () => messagePinsCached(),
+      write: (value) => rememberMessagePins(value),
     },
     `SELECT 1
        FROM information_schema.columns
@@ -604,7 +606,8 @@ async function listInbox(
   await ensureTeamChannel(client, orgId, userId);
 
   // Archived channels keep their history and stay exportable; they just leave the working inbox.
-  const archiveSupported = await supportsChannelArchive(client);
+  const archiveKnown = channelArchiveCached();
+  const archiveSupported = archiveKnown != null ? archiveKnown : await supportsChannelArchive(client);
   const archivedSelect = archiveSupported ? "c.archived_at" : "NULL::timestamptz";
   const archivedFilter =
     archiveSupported && !options.includeArchived ? "AND (c.kind <> 'team' OR c.archived_at IS NULL)" : "";
@@ -612,7 +615,8 @@ async function listInbox(
   // A supervised DM has three participants, so the peer label has to aggregate rather than join
   // row-per-participant (that would duplicate the conversation in the inbox). Supervisors are
   // excluded from the label: the thread is still "you and Sam", with a supervision banner inside.
-  const supervisionSupported = await supportsYouthProtection(client);
+  const youthKnown = youthProtectionSupportCached();
+  const supervisionSupported = youthKnown != null ? youthKnown : await supportsYouthProtection(client);
   const peersCte = supervisionSupported
     ? `peers AS (
        SELECT p.conversation_id,
@@ -1328,7 +1332,10 @@ async function youthProtectionState(
   orgId: string,
   userId: string,
 ): Promise<YouthProtectionState> {
-  const supported = await supportsYouthProtection(client);
+  if (youthProtectionSupportCached() == null || teamChatFlagCached() == null) {
+    await primeChatSchema(client);
+  }
+  const supported = youthProtectionSupportCached() === true;
   if (!supported) {
     return {
       supported: false,

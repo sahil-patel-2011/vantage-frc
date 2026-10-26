@@ -34,18 +34,11 @@ function fail(error: unknown) {
   return Response.json({ error: publicErrorMessage(error, "Schedule request failed") }, { status });
 }
 
-export async function GET(request: Request) {
-  try {
-    const session = await requireSession();
-    const url = new URL(request.url);
-    const requestedOrg = url.searchParams.get("orgId");
-    try {
-      after(() => hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg }));
-    } catch {
-      // Called outside a request. The schedule still reads the stored matches.
-    }
-
-    const view = await withRls({ userId: session.user.id }, async (client) => {
+export async function loadSchedulePaint(
+  client: import("@neondatabase/serverless").PoolClient,
+  userId: string,
+  requestedOrg: string | null,
+) {
       const membership = await client.query<ScheduleContext>(
         `SELECT m.org_id AS "orgId", o.name AS "orgName", o.team_number AS "teamNumber", m.role,
                 c.active_event_key AS "eventKey", e.name AS "eventName"
@@ -56,7 +49,7 @@ export async function GET(request: Request) {
          WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, o.team_number
          LIMIT 1`,
-        [session.user.id, requestedOrg],
+        [userId, requestedOrg],
       );
 
       const row = membership.rows[0];
@@ -69,7 +62,7 @@ export async function GET(request: Request) {
 
       if (!row.eventKey) {
         return buildScheduleView({
-          context: { ...row, viewerUserId: session.user.id },
+          context: { ...row, viewerUserId: userId },
           setupMessage: "Set your active event on Your team.",
         });
       }
@@ -163,7 +156,7 @@ export async function GET(request: Request) {
       }
 
       return buildScheduleView({
-        context: { ...row, viewerUserId: session.user.id },
+        context: { ...row, viewerUserId: userId },
         rows: matches.rows,
         teamRatings,
         fieldStd: fieldStdFromRatings(teamRatings.values()),
@@ -175,7 +168,20 @@ export async function GET(request: Request) {
           videos: videos.rows,
         },
       });
-    });
+}
+
+export async function GET(request: Request) {
+  try {
+    const session = await requireSession();
+    const url = new URL(request.url);
+    const requestedOrg = url.searchParams.get("orgId");
+    try {
+      after(() => hydrateOrgActiveEvent({ userId: session.user.id, requestedOrg }));
+    } catch {
+      // Called outside a request. The schedule still reads the stored matches.
+    }
+
+    const view = await withRls({ userId: session.user.id }, (client) => loadSchedulePaint(client, session.user.id, requestedOrg));
 
     return Response.json(view);
   } catch (error) {

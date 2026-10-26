@@ -49,8 +49,8 @@ async function persistHoursSnapshot(orgHint: string, data: BuildHoursView): Prom
   }
 }
 
-export default function HoursClient() {
-  const [view, setView] = useState<BuildHoursView | null>(null);
+export default function HoursClient({ initial = null }: { initial?: BuildHoursView | null } = {}) {
+  const [view, setView] = useState<BuildHoursView | null>(initial);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);

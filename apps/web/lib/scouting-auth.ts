@@ -16,9 +16,16 @@ export async function withScoutingRequest<T>(
       "SELECT 1 FROM memberships WHERE org_id = $1 AND user_id = $2",
       [orgId, session.user.id],
     );
-    const authP = assertOrgAuthentication(client, { userId: session.user.id, orgId, sessionId: session.session.id,
-      authMethod: String((session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown"),
-      rememberedDeviceToken: device }).then(() => null, (error: unknown) => error);
+    // Start the policy check in this turn so its reads share the membership wave.
+    // A test double may return undefined; Promise.resolve still lets that settle.
+    let authP: Promise<unknown>;
+    try {
+      authP = Promise.resolve(assertOrgAuthentication(client, { userId: session.user.id, orgId, sessionId: session.session.id,
+        authMethod: String((session.session as typeof session.session & { authMethod?: string }).authMethod ?? "unknown"),
+        rememberedDeviceToken: device })).then(() => null, (error: unknown) => error);
+    } catch (error) {
+      authP = Promise.resolve(error);
+    }
     const [membership, authError] = await Promise.all([membershipP, authP]);
     if (isWrongOrgDenied(membership.rowCount ?? 0)) {
       throw new ScoutingHttpError(403, "Organization access denied");

@@ -46,6 +46,8 @@ type ProductHubShellProps = {
    * the default tab ("Calendar" on /team?tab=todos) and switch after hydration.
    */
   initialTab?: string | null;
+  /** Team already resolved on the server, so the panel is not a skeleton while /api/me answers. */
+  initialOrgId?: string | null;
 };
 
 function readOrgId(): string | null {
@@ -154,6 +156,7 @@ export function ProductHubShell({
   children,
   headerActions,
   initialTab,
+  initialOrgId = null,
 }: ProductHubShellProps) {
   const hub = hubById(hubId);
   const access = useClientAccessProfile();
@@ -164,8 +167,8 @@ export function ProductHubShell({
   );
   const hubDenied = access.ready && !clientCanAccessHub(access.hubAccess, accessHubId);
   const [tab, setTab] = useState(() => hubInitialTab(hubId, initialTab));
-  const [orgId, setOrgId] = useState<string | null>(null);
-  const [orgReady, setOrgReady] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(initialOrgId);
+  const [orgReady, setOrgReady] = useState(Boolean(initialOrgId));
   const [canManageTeam, setCanManageTeam] = useState(false);
   const [manageReady, setManageReady] = useState(false);
   const workbenchId = hubWorkbenchId(hub, tab);
@@ -181,6 +184,14 @@ export function ProductHubShell({
         cancelled = true;
       };
     }
+    if (initialOrgId) {
+      setOrgId(initialOrgId);
+      setOrgReady(true);
+      persistOrgIdInUrl(initialOrgId);
+      return () => {
+        cancelled = true;
+      };
+    }
     setOrgReady(false);
     void fetchActiveOrgId().then((fromMe) => {
       if (cancelled) return;
@@ -191,7 +202,7 @@ export function ProductHubShell({
     return () => {
       cancelled = true;
     };
-  }, [hub]);
+  }, [hub, initialOrgId]);
 
   // A link to this hub with another ?tab= (Money's "Open purchase orders") changes the address
   // without remounting the hub, which read the tab only once: the address said Orders while the

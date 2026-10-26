@@ -112,7 +112,13 @@ export function CompetitionEventPlanner({ orgId, initialEventKey, onChanged, onA
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Published events couldn't be refreshed.");
       if (epoch !== directoryEpoch.current) return;
-      setDirectoryMessage(data.count === 0 ? `No ${year} events have been published yet. You can still add your own event.` : "Published events are up to date. Saved events are kept.");
+      setDirectoryMessage(
+        data.pending
+          ? "Finding published events. You can keep browsing or add your own."
+          : data.count === 0
+            ? `No ${year} events have been published yet. You can still add your own event.`
+            : "Published events are up to date. Saved events are kept.",
+      );
       // A team write has its own post-save refresh and generation guard.
       if (!saving.current) setRetry(n => n + 1);
     } catch (error) {

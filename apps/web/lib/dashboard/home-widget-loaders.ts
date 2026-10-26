@@ -1,5 +1,4 @@
 import { matchStillAheadSql } from "../matches/match-ahead-sql";
-import { withSavepoint } from "@vantage/db";
 import type { PoolClient } from "@neondatabase/serverless";
 import { allLessonIds } from "../cad-learn/track";
 import { matchKeyLabel } from "../scouting/scout-breakdown";
@@ -56,6 +55,9 @@ async function query<T extends Record<string, unknown>>(
 
 async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
   const teamKey = teamKeyOf(ctx.teamNumber);
+  // Started before the other reads so it shares their wave, and Home's next-match
+  // card's in-flight summary, when the board is empty.
+  const summaryP = ctx.eventKey && teamKey ? loadOurMatchSummary(client, ctx.eventKey, teamKey) : null;
   // Match, calendar, duties, the next scout robot, and sign-offs do not depend on
   // each other. One wave. A missing sign-off table leaves that count at zero.
   const matchP = ctx.eventKey && teamKey
@@ -175,8 +177,10 @@ async function myDay(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded
     };
   }
   if (!matchLabel && events.length === 0 && duties.length === 0 && !scoutDuty && signoffsWaiting === 0) {
-    return empty(await myDayEmptyReason(client, ctx.eventKey, teamKey));
+    const summary = summaryP ? await summaryP.catch(() => null) : null;
+    return empty(summary ? noNextMatchMessage(summary) : await myDayEmptyReason(client, ctx.eventKey, teamKey));
   }
+  summaryP?.catch(() => null);
   return live({
     href: "/my-day",
     matchLabel,
@@ -586,6 +590,7 @@ async function allianceDesk(client: PoolClient, ctx: HomeWidgetContext): Promise
 async function matchSchedule(client: PoolClient, ctx: HomeWidgetContext): Promise<Loaded> {
   if (!ctx.eventKey) return empty("Pick the event you're at to see its schedule.");
   const teamKey = teamKeyOf(ctx.teamNumber);
+  const summaryP = teamKey ? loadOurMatchSummary(client, ctx.eventKey, teamKey) : null;
   const items = await query<{
     matchKey: string;
     compLevel: string;
@@ -610,11 +615,10 @@ async function matchSchedule(client: PoolClient, ctx: HomeWidgetContext): Promis
   if (items.length === 0) {
     // Nothing ahead: say why, the same way Home's Next match and Event day do ("All 16 of our
     // matches here are played"), not that the schedule never synced.
-    const summary = teamKey
-      ? await withSavepoint(client, () => loadOurMatchSummary(client, ctx.eventKey!, teamKey), null)
-      : null;
+    const summary = summaryP ? await summaryP.catch(() => null) : null;
     return empty(noNextMatchMessage(summary));
   }
+  summaryP?.catch(() => null);
   return live({ items, href: "/schedule" });
 }
 

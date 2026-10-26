@@ -27,16 +27,15 @@ export type SkillAccessFacts = {
 };
 
 export async function loadSkillAccessFacts(client: PoolClient, orgId: string, userId: string): Promise<SkillAccessFacts> {
-  const role =
-    (
-      await client.query<{ role: string }>(
-        `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
-        [orgId, userId],
-      )
-    ).rows[0]?.role ?? null;
-  const hubAccess = await withSavepoint(client, () => listMemberHubAccess(client, orgId, userId), [] as MemberHubAccessRow[]);
-  const policy = await withSavepoint(client, () => loadOrgAiPolicy(client, orgId), null);
-  return { role, hubAccess, policy };
+  const [roleRow, hubAccess, policy] = await Promise.all([
+    client.query<{ role: string }>(
+      `SELECT role::text AS role FROM memberships WHERE org_id = $1::uuid AND user_id = $2::uuid`,
+      [orgId, userId],
+    ),
+    listMemberHubAccess(client, orgId, userId).catch(() => [] as MemberHubAccessRow[]),
+    loadOrgAiPolicy(client, orgId).catch(() => null),
+  ]);
+  return { role: roleRow.rows[0]?.role ?? null, hubAccess, policy };
 }
 
 export type SkillAvailability = { id: string; available: boolean; reason: string | null };

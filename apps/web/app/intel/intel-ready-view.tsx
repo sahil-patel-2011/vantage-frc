@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent } from "react";
-import { FormRow, Panel, Button } from "../../components/ui";
+import { FormRow, PageToolbar, Panel, Button } from "../../components/ui";
 import {
   intelSourceTypeLabel,
   type IntelActiveEvent,
@@ -264,12 +264,14 @@ export function IntelReadyView({
             </p>
           </div>
           <div className="intel-primary-actions">
-            <Button variant="primary" type="button" onClick={onWriteBrief}>
-              Write a brief
-            </Button>
-            <Button variant="secondary" type="button" onClick={onFindNotes}>
-              Find public notes
-            </Button>
+            <PageToolbar label="Team">
+              <Button variant="primary" type="button" onClick={onWriteBrief}>
+                Write a brief
+              </Button>
+              <Button variant="secondary" type="button" onClick={onFindNotes}>
+                Find public notes
+              </Button>
+            </PageToolbar>
           </div>
         </header>
         {actionNote ? (

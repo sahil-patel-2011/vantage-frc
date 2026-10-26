@@ -91,18 +91,20 @@ export function inlinePlaceholders(text: string, values: unknown[] | undefined):
 
 let waveSeq = 0;
 
-const roundTripCount = new AsyncLocalStorage<{ n: number }>();
+const roundTripCount = new AsyncLocalStorage<{ n: number; scripts: string[] }>();
 
 /** Counts scripts actually sent to Postgres while `work` runs (one batched wave is one). */
-export async function countRoundTrips<T>(work: () => Promise<T>): Promise<{ result: T; roundTrips: number }> {
-  const box = { n: 0 };
+export async function countRoundTrips<T>(work: () => Promise<T>): Promise<{ result: T; roundTrips: number; scripts: string[] }> {
+  const box = { n: 0, scripts: [] as string[] };
   const result = await roundTripCount.run(box, work);
-  return { result, roundTrips: box.n };
+  return { result, roundTrips: box.n, scripts: box.scripts };
 }
 
-function noteRoundTrip(): void {
+function noteRoundTrip(text?: string): void {
   const box = roundTripCount.getStore();
-  if (box) box.n += 1;
+  if (!box) return;
+  box.n += 1;
+  if (text) box.scripts.push(text.replace(/\s+/g, " ").slice(0, 220));
 }
 
 function resultList(result: unknown): unknown[] {
@@ -161,7 +163,8 @@ export function installQueryWaves(client: { query: (...args: QueryArgs) => unkno
   const previous = client.query;
   const bound = previous.bind(client) as OriginalQuery;
   const original: OriginalQuery = (...args) => {
-    noteRoundTrip();
+    const text = args.map((part) => (typeof part === "string" ? part : "")).join(" ");
+    noteRoundTrip(text);
     return bound(...args);
   };
   let queue: Queued[] = [];

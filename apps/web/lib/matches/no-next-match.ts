@@ -68,66 +68,101 @@ export function noNextMatchMessage(summary: OurMatchSummary | null): string {
 // a result", so a late event's unplayed match is not counted as played.
 const OVER = `(NOT ${matchStillAheadSql()})`;
 
+/**
+ * Counts and the last result are one statement. Home, My Day, and Event day all ask
+ * for this when nothing is ahead; sharing the in-flight promise keeps those callers
+ * on a single round trip. The promise is dropped when it settles so a pooled
+ * connection cannot reuse another request's answer.
+ */
+const summaryInflight = new WeakMap<PoolClient, Map<string, Promise<OurMatchSummary>>>();
+
 /** One read for the summary above, from the shared reference tables. */
-export async function loadOurMatchSummary(client: PoolClient, eventKey: string, teamKey: string): Promise<OurMatchSummary> {
-  const counts = (
-    await client.query<{ total: string; played: string; behind: string }>(
-      `SELECT count(*)::text AS total,
-              count(*) FILTER (WHERE ${OVER})::text AS played,
-              count(*) FILTER (WHERE NOT (${OVER}) AND COALESCE(predicted_time, event_time) <= now())::text AS behind
-         FROM matches_ref
-        WHERE event_key = $1::text
-          AND NOT placeholder
-          AND (red_alliance->'teamKeys' ? $2::text OR blue_alliance->'teamKeys' ? $2::text)`,
+export function loadOurMatchSummary(client: PoolClient, eventKey: string, teamKey: string): Promise<OurMatchSummary> {
+  let bucket = summaryInflight.get(client);
+  if (!bucket) {
+    bucket = new Map();
+    summaryInflight.set(client, bucket);
+  }
+  const key = `${eventKey}\0${teamKey}`;
+  const existing = bucket.get(key);
+  if (existing) return existing;
+  const pending = queryOurMatchSummary(client, eventKey, teamKey).finally(() => {
+    const current = summaryInflight.get(client);
+    if (current?.get(key) === pending) current.delete(key);
+  });
+  bucket.set(key, pending);
+  return pending;
+}
+
+async function queryOurMatchSummary(client: PoolClient, eventKey: string, teamKey: string): Promise<OurMatchSummary> {
+  const row = (
+    await client.query<{
+      total: string;
+      played: string;
+      behind: string;
+      eventMatches: string;
+      compLevel: string | null;
+      matchNumber: number | null;
+      setNumber: number | null;
+      red: string | null;
+      blue: string | null;
+      onRed: boolean | null;
+      winner: string | null;
+    }>(
+      `SELECT counts.total, counts.played, counts.behind, events.n AS "eventMatches",
+              last_row.comp_level AS "compLevel", last_row.match_number AS "matchNumber",
+              last_row.set_number AS "setNumber", last_row.red, last_row.blue,
+              last_row.on_red AS "onRed", last_row.winner
+         FROM (
+           SELECT count(*)::text AS total,
+                  count(*) FILTER (WHERE ${OVER})::text AS played,
+                  count(*) FILTER (WHERE NOT (${OVER}) AND COALESCE(predicted_time, event_time) <= now())::text AS behind
+             FROM matches_ref
+            WHERE event_key = $1::text
+              AND NOT placeholder
+              AND (red_alliance->'teamKeys' ? $2::text OR blue_alliance->'teamKeys' ? $2::text)
+         ) counts
+         CROSS JOIN (
+           SELECT count(*)::text AS n
+             FROM matches_ref
+            WHERE event_key = $1::text AND NOT placeholder
+         ) events
+         LEFT JOIN LATERAL (
+           SELECT comp_level, match_number, set_number,
+                  red_alliance->>'score' AS red, blue_alliance->>'score' AS blue,
+                  (red_alliance->'teamKeys' ? $2::text) AS on_red, winning_alliance AS winner
+             FROM matches_ref
+            WHERE event_key = $1::text
+              AND NOT placeholder
+              AND (red_alliance->'teamKeys' ? $2::text OR blue_alliance->'teamKeys' ? $2::text)
+              AND ${OVER}
+            ORDER BY COALESCE(actual_time, predicted_time, event_time) DESC NULLS LAST, match_number DESC
+            LIMIT 1
+         ) last_row ON true`,
       [eventKey, teamKey],
     )
   ).rows[0];
-  // None of ours: is the schedule out at all? (Then the team is simply not in this event.)
-  const eventMatches =
-    Number(counts?.total ?? 0) === 0
-      ? Number(
-          (
-            await client.query<{ n: string }>(
-              `SELECT count(*)::text AS n FROM matches_ref WHERE event_key = $1::text AND NOT placeholder`,
-              [eventKey],
-            )
-          ).rows[0]?.n ?? 0,
-        )
-      : undefined;
-  const last = (
-    await client.query<{ compLevel: string; matchNumber: number; setNumber: number; red: string | null; blue: string | null; onRed: boolean; winner: string | null }>(
-      `SELECT comp_level AS "compLevel", match_number AS "matchNumber", set_number AS "setNumber",
-              red_alliance->>'score' AS red, blue_alliance->>'score' AS blue,
-              (red_alliance->'teamKeys' ? $2::text) AS "onRed", winning_alliance AS winner
-         FROM matches_ref
-        WHERE event_key = $1::text
-          AND NOT placeholder
-          AND (red_alliance->'teamKeys' ? $2::text OR blue_alliance->'teamKeys' ? $2::text)
-          AND ${OVER}
-        ORDER BY COALESCE(actual_time, predicted_time, event_time) DESC NULLS LAST, match_number DESC
-        LIMIT 1`,
-      [eventKey, teamKey],
-    )
-  ).rows[0];
+  const total = Number(row?.total ?? 0);
   const num = (value: string | null) => {
     const n = value == null ? NaN : Number(value);
     return Number.isFinite(n) && n >= 0 ? n : null;
   };
+  const last = row?.compLevel
+    ? {
+        label: matchShortLabel(row.compLevel, row.matchNumber ?? 0, row.setNumber),
+        ours: num(row.onRed ? row.red : row.blue),
+        theirs: num(row.onRed ? row.blue : row.red),
+        // TBA marks a tie with an empty winning_alliance.
+        won: row.winner === "red" || row.winner === "blue" ? (row.winner === "red") === Boolean(row.onRed) : null,
+      }
+    : null;
   return {
-    eventMatches,
+    eventMatches: total === 0 ? Number(row?.eventMatches ?? 0) : undefined,
     teamNumber: teamKey.replace(/^frc/i, ""),
-    total: Number(counts?.total ?? 0),
-    played: Number(counts?.played ?? 0),
-    behind: Number(counts?.behind ?? 0),
-    last: last
-      ? {
-          label: matchShortLabel(last.compLevel, last.matchNumber, last.setNumber),
-          ours: num(last.onRed ? last.red : last.blue),
-          theirs: num(last.onRed ? last.blue : last.red),
-          // TBA marks a tie with an empty winning_alliance.
-          won: last.winner === "red" || last.winner === "blue" ? (last.winner === "red") === last.onRed : null,
-        }
-      : null,
+    total,
+    played: Number(row?.played ?? 0),
+    behind: Number(row?.behind ?? 0),
+    last,
   };
 }
 

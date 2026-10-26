@@ -1,5 +1,4 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { withSavepoint } from "@vantage/db";
 import { allianceWinProbabilityForEvent, seedOdds, type TeamSeedOdds } from "@vantage/prediction-strategy";
 import {
   allianceTeamKeys,
@@ -13,7 +12,7 @@ import {
   type RatingMap,
   type StandingTeam,
 } from "../best-path";
-import { loadEventScoring, type EventScoring } from "../opr/alliance-results";
+import { readEventScoring, type EventScoring } from "../opr/alliance-results";
 
 export type RankingProjectionSetupStep = {
   id: string;
@@ -180,7 +179,7 @@ const EMPTY_EVENT_SCORING: EventScoring = { opr: [], averageAllianceScore: null,
  */
 async function eventScoringOrEmpty(client: PoolClient, eventKey: string): Promise<EventScoring> {
   try {
-    return await loadEventScoring(client, eventKey);
+    return await readEventScoring(client, eventKey);
   } catch {
     return EMPTY_EVENT_SCORING;
   }
@@ -355,9 +354,21 @@ export async function computeRankingProjectionView(
   client: PoolClient,
   input: { userId: string; requestedOrg: string | null },
 ): Promise<RankingProjectionView> {
-  const membership = await client.query<{ orgId: string; teamNumber: number | null }>(
-    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber"
-     FROM memberships m JOIN organizations o ON o.id = m.org_id
+  const membership = await client.query<{
+    orgId: string;
+    teamNumber: number | null;
+    eventKey: string | null;
+    eventName: string | null;
+    eventYear: number | null;
+  }>(
+    `SELECT m.org_id AS "orgId", o.team_number AS "teamNumber",
+            c.active_event_key AS "eventKey",
+            COALESCE(e.short_name, e.name) AS "eventName",
+            e.year AS "eventYear"
+     FROM memberships m
+     JOIN organizations o ON o.id = m.org_id
+     LEFT JOIN org_active_context c ON c.org_id = m.org_id
+     LEFT JOIN events_ref e ON e.event_key = c.active_event_key
      WHERE m.user_id = $1 AND ($2::uuid IS NULL OR m.org_id = $2::uuid)
      ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END
      LIMIT 1`,
@@ -367,21 +378,16 @@ export async function computeRankingProjectionView(
   if (!org) return setup("Choose your team to project rankings.", null, "team");
   if (!org.teamNumber) return setup("Set your team number so rankings can find your team.", org.orgId, "team");
 
-  const context = await client.query<{ eventKey: string | null }>(
-    `SELECT active_event_key AS "eventKey" FROM org_active_context WHERE org_id = $1`,
-    [org.orgId],
-  );
-  const eventKey = context.rows[0]?.eventKey ?? null;
+  const eventKey = org.eventKey;
   if (!eventKey) return setup("Connect an active event before projecting remaining qualification matches.", org.orgId, "event");
-
-  const event = await client.query<{ name: string; year: number | null }>(
-    `SELECT COALESCE(short_name, name) AS name, year FROM events_ref WHERE event_key = $1`,
-    [eventKey],
-  );
-  if (!event.rows[0]) return setup("This event is not in the saved schedule yet. Set the active event again after it syncs.", org.orgId, "event");
-  const eventYear = Number.isFinite(Number(event.rows[0].year)) ? Number(event.rows[0].year) : null;
+  if (!org.eventName) return setup("This event is not in the saved schedule yet. Set the active event again after it syncs.", org.orgId, "event");
+  const eventYear = Number.isFinite(Number(org.eventYear)) ? Number(org.eventYear) : null;
 
   const teamKey = `frc${org.teamNumber}`;
+  const plannerP = loadWhatIf(client, eventKey, eventYear).catch(() => ({
+    whatIf: null,
+    message: "The remaining schedule could not be loaded. The rank above is still the saved one.",
+  }));
   const [metrics, remaining, played] = await Promise.all([
     client.query<{ rank: number | null; wins: number | null; losses: number | null; ties: number | null; epaTotal: number | null }>(
       `SELECT rank, wins, losses, ties, epa_total AS "epaTotal"
@@ -405,20 +411,14 @@ export async function computeRankingProjectionView(
 
   const row = metrics.rows[0];
   if (!row || row.rank == null) {
+    await plannerP;
     return setup("No ranking is saved yet for your team at this event.", org.orgId, "rankings");
   }
 
   const record =
     row.wins == null ? null : `${row.wins}-${row.losses ?? 0}-${row.ties ?? 0}`;
 
-  // The planner is additive: a failure here must never take the rank card down.
-  // `.catch()` alone did not achieve that — the failed statement left the shared
-  // transaction aborted, so the rank card's own reads were already done but the
-  // request's COMMIT could not land whatever else it was going to write.
-  const planner = await withSavepoint(client, () => loadWhatIf(client, eventKey, eventYear), {
-    whatIf: null,
-    message: "The remaining schedule could not be loaded. The rank above is still the saved one.",
-  });
+  const planner = await plannerP;
 
   return {
     status: "live",
@@ -426,7 +426,7 @@ export async function computeRankingProjectionView(
     teamNumber: org.teamNumber,
     teamKey,
     eventKey,
-    eventName: event.rows[0].name,
+    eventName: org.eventName,
     currentRank: row.rank,
     record,
     remainingQuals: Number(remaining.rows[0]?.count ?? 0),

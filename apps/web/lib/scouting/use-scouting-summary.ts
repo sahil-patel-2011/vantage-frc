@@ -20,9 +20,9 @@ export type ScoutingSummaryState = {
  * load, else this phone's last copy. Pit reports still waiting in this phone's outbox count
  * as visited right away, so a scout never walks back to a pit they just saved.
  */
-export function useScoutingSummary(orgId: string | null): ScoutingSummaryState {
-  const [view, setView] = useState<LeadSummaryView | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
+export function useScoutingSummary(orgId: string | null, initial: LeadSummaryView | null = null): ScoutingSummaryState {
+  const [view, setView] = useState<LeadSummaryView | null>(initial);
+  const [status, setStatus] = useState<"loading" | "ready" | "failed">(initial ? "ready" : "loading");
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [pendingPits, setPendingPits] = useState<string[]>([]);
   const [attempt, setAttempt] = useState(0);

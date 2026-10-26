@@ -30,11 +30,15 @@ import { URL_CHANGE_EVENT } from "../../lib/nav/url-change";
 import "./strategy.css";
 import { StrategyMatchPicker } from "./strategy-match-picker";
 
-export default function StrategyClient({ embedded = false }: { embedded?: boolean } = {}) {
-  const [view, setView] = useState<StrategyView | null>(null);
+export default function StrategyClient({
+  embedded = false,
+  initialView = null,
+}: { embedded?: boolean; initialView?: StrategyView | null } = {}) {
+  const [view, setView] = useState<StrategyView | null>(initialView);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // A seeded plan is the page. `loading` would swap it for the skeleton even while the view is here.
+  const [loading, setLoading] = useState(initialView == null);
   const [tab, setTab] = useState<StrategyTab>("matchup");
   // Inside Competition the pick list has its own menu entry, so this page is only the matchup.
   const shownTab: StrategyTab = embedded ? "matchup" : tab;

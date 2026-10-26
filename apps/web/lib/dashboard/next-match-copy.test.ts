@@ -1,6 +1,6 @@
 import { FIXTURE_ERROR_BAND } from "@vantage/prediction-strategy";
 import { describe, expect, it } from "vitest";
-import { nextMatchDriverLines, nextMatchScoreLine } from "./next-match-copy";
+import { nextMatchCategoryLine, nextMatchDriverLines, nextMatchScoreLine } from "./next-match-copy";
 
 describe("nextMatchScoreLine", () => {
   it("prints two alliance totals, not a dash range", () => {
@@ -34,6 +34,22 @@ describe("nextMatchScoreLine", () => {
     ).toBe("Red 94 · Blue 81 · typical error ±4 (last measured set)");
   });
 
+  it("prints a measured interval as two ranges, not a dash between alliances", () => {
+    expect(
+      nextMatchScoreLine({
+        redPredicted: 400,
+        bluePredicted: 380,
+        errorBand: 90,
+        redBand: 90,
+        blueBand: 90,
+        redLow: 210,
+        redHigh: 590,
+        blueLow: 190,
+        blueHigh: 570,
+      }),
+    ).toBe("Red 210 to 590 · Blue 190 to 570");
+  });
+
   it("does not print a zero band as if it were a measurement", () => {
     expect(nextMatchScoreLine({ redPredicted: 50, bluePredicted: 50, redBand: 0, blueBand: 0 })).toBe(
       "Red 50 · Blue 50",
@@ -60,5 +76,47 @@ describe("nextMatchDriverLines", () => {
         ],
       }),
     ).toEqual(["Climb — 1323 hangs most matches", "numeric-only"]);
+  });
+});
+
+describe("nextMatchCategoryLine", () => {
+  it("prints red then blue for each piece and leaves fouls off the line", () => {
+    expect(
+      nextMatchCategoryLine({
+        redAuto: 41.6,
+        redTeleop: 210.2,
+        redEndgame: 0,
+        blueAuto: 30.4,
+        blueTeleop: 188.4,
+        blueEndgame: 10,
+      }),
+    ).toBe("Red / blue · Auto 42 / 30 · Teleop 210 / 188 · Endgame 0 / 10");
+  });
+
+  it("uses a measured piece range when that piece has one", () => {
+    expect(
+      nextMatchCategoryLine({
+        redAuto: 42,
+        redTeleop: 210,
+        redEndgame: 0,
+        blueAuto: 30,
+        blueTeleop: 188,
+        blueEndgame: 10,
+        ranges: { auto: { redLow: 20, redHigh: 60, blueLow: 10, blueHigh: 50 } },
+      }),
+    ).toBe("Red / blue · Auto 20 to 60 / 10 to 50 · Teleop 210 / 188 · Endgame 0 / 10");
+  });
+
+  it("says nothing when a piece is missing", () => {
+    expect(
+      nextMatchCategoryLine({
+        redAuto: null,
+        redTeleop: null,
+        redEndgame: null,
+        blueAuto: null,
+        blueTeleop: null,
+        blueEndgame: null,
+      }),
+    ).toBeNull();
   });
 });

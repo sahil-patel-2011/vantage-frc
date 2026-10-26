@@ -1,24 +1,43 @@
 "use client";
 import { useEffect } from "react";
+import { Button, PageToolbar } from "../../components/ui";
+
+const ACTIONS = [
+  { key: "S", title: "Scout now", copy: "Open offline form", path: "/scouting", intent: "primary" as const },
+  { key: "P", title: "Pit command", copy: "Release robot + log battery", path: "/pit", intent: "secondary" as const },
+  { key: "I", title: "Team intel", copy: "Lookup or compare", path: "/intel", intent: "secondary" as const },
+  { key: "D", title: "Team dossier", copy: "Season fact cards", path: "/dossier", intent: "secondary" as const },
+  { key: "A", title: "Ask AI", copy: "Plan with context", path: "/chat", intent: "secondary" as const },
+  { key: "C", title: "CAD agent", copy: "Bind Onshape, then sketch live", path: "/cad", intent: "secondary" as const },
+];
+
 export default function QuickActions({ orgId }: { orgId: string }) {
-  const actions: Array<[string, string, string, string]> = [
-    ["S","Scout now","Open offline form",`/scouting?orgId=${orgId}`],
-    ["P","Pit command","Release robot + log battery",`/pit?orgId=${orgId}`],
-    ["I","Team intel","Lookup or compare",`/intel?orgId=${orgId}`],
-    ["D","Team dossier","Season fact cards",`/dossier?orgId=${orgId}`],
-    ["A","Ask AI","Plan with context",`/chat?orgId=${orgId}`],
-    ["C","CAD agent","Bind Onshape, then sketch live",`/cad?orgId=${orgId}`],
-  ];
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
       if (event.metaKey || event.ctrlKey || event.altKey) return;
-      const action = actions.find(([key]) => key.toLowerCase() === event.key.toLowerCase());
-      if (action) window.location.assign(action[3]);
+      const action = ACTIONS.find((entry) => entry.key.toLowerCase() === event.key.toLowerCase());
+      if (action) window.location.assign(`${action.path}?orgId=${orgId}`);
     };
-    addEventListener("keydown", onKey); return () => removeEventListener("keydown", onKey);
-  });
-  return <section className="quick-actions" aria-label="Competition quick actions">
-    {actions.map(([key,title,copy,href], index) => <a className={`quick ${index === 0 ? "primary" : ""}`} href={href} key={key}><span>{title}</span><strong>{copy}</strong><kbd>{key}</kbd></a>)}
-  </section>;
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, [orgId]);
+  return (
+    <section className="quick-actions" aria-label="Competition quick actions">
+      <PageToolbar label="Competition quick actions">
+        {ACTIONS.map((action) => (
+          <Button
+            key={action.key}
+            as="a"
+            variant={action.intent === "primary" ? "primary" : "secondary"}
+            href={`${action.path}?orgId=${orgId}`}
+            title={action.copy}
+          >
+            {action.title}
+            <kbd>{action.key}</kbd>
+          </Button>
+        ))}
+      </PageToolbar>
+    </section>
+  );
 }

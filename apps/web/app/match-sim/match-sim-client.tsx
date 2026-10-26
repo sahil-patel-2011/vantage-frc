@@ -66,8 +66,8 @@ function pct(value: number): string {
 
 type LiveView = Extract<MatchSimView, { status: "live" }>;
 
-export default function MatchSimClient() {
-  const [view, setView] = useState<MatchSimView | null>(null);
+export default function MatchSimClient({ initial = null }: { initial?: MatchSimView | null } = {}) {
+  const [view, setView] = useState<MatchSimView | null>(initial);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);
   // Kept so an expired session offers sign-in instead of a Retry that cannot work.

@@ -146,12 +146,15 @@ function UnifiedWorkSummary({ view }: { view: LiveWorkView | null }) {
   );
 }
 
-export default function TodosClient({ embedded = false }: { embedded?: boolean } = {}) {
+export default function TodosClient({
+  embedded = false,
+  initial = null,
+}: { embedded?: boolean; initial?: TodosView | null } = {}) {
   const Root = embedded ? "section" : "main";
   const online = useOnline();
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
-  const [view, setView] = useState<TodosView | null>(null);
+  const [view, setView] = useState<TodosView | null>(initial);
   const [workView, setWorkView] = useState<LiveWorkView | null>(null);
   const [error, setError] = useState("");
   const [fetchFailed, setFetchFailed] = useState(false);

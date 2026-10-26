@@ -110,9 +110,13 @@ async function persistIntelSnapshot(orgHint: string, data: IntelBoardView): Prom
  * `variant="scouting"` is Scouting's Teams tab: titled "Teams", what our scouts saw first, and the
  * data-source controls folded under the team card instead of between the search and the team.
  */
-export default function IntelClient({ variant = "vantage", embedded = false }: { variant?: "vantage" | "scouting"; embedded?: boolean } = {}) {
-  const [orgId, setOrgId] = useState("");
-  const [orgReady, setOrgReady] = useState(false);
+export default function IntelClient({
+  variant = "vantage",
+  embedded = false,
+  initialOrgId = null,
+}: { variant?: "vantage" | "scouting"; embedded?: boolean; initialOrgId?: string | null } = {}) {
+  const [orgId, setOrgId] = useState(initialOrgId ?? "");
+  const [orgReady, setOrgReady] = useState(Boolean(initialOrgId));
 
   useEffect(() => {
     const fromUrl = readOrgIdFromSearch(window.location.search);

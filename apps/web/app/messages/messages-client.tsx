@@ -78,20 +78,28 @@ export default function MessagesClient({
   embedded = false,
   initialConversationId = null,
   initialObjectLink = null,
+  initialInbox = null,
 }: {
   orgId: string;
   /** When true (Team hub tab), hide PageHeader / related strips — hub chrome already covers them. */
   embedded?: boolean;
   initialConversationId?: string | null;
   initialObjectLink?: MessageObjectLink | null;
+  initialInbox?: {
+    conversations: Conversation[];
+    pinsSupported?: boolean;
+    canManageChannels?: boolean;
+    channelArchiveSupported?: boolean;
+    youthProtection?: { teamChatEnabled?: boolean };
+  } | null;
 }) {
   // View only (0715) members read chat; posting is a team write the database refuses.
   const viewOnly = useViewOnly(orgId);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(initialInbox?.conversations ?? []);
   const [activeId, setActiveId] = useState<string | null>(initialConversationId);
   const [messages, setMessages] = useState<Message[]>([]);
   const [pinned, setPinned] = useState<Message[]>([]);
-  const [pinsSupported, setPinsSupported] = useState(false);
+  const [pinsSupported, setPinsSupported] = useState(initialInbox?.pinsSupported ?? false);
   const [members, setMembers] = useState<Member[]>([]);
   const [text, setText] = useState("");
   const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([]);
@@ -108,7 +116,7 @@ export default function MessagesClient({
   );
   const [linkQuery, setLinkQuery] = useState("");
   const [linkTargets, setLinkTargets] = useState<LinkTarget[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialInbox == null);
   const [hasEarlier, setHasEarlier] = useState(false);
   const [loadingEarlier, setLoadingEarlier] = useState(false);
   const [fromCache, setFromCache] = useState(false);
@@ -124,12 +132,13 @@ export default function MessagesClient({
   // both parties must be able to see the second adult for the whole time the room exists.
   const [supervisionNotice, setSupervisionNotice] = useState("");
   const [safetyOpen, setSafetyOpen] = useState(false);
-  const [teamChatEnabled, setTeamChatEnabled] = useState(true);
-  const [canManageChannels, setCanManageChannels] = useState(false);
-  const [channelArchiveSupported, setChannelArchiveSupported] = useState(false);
+  const [teamChatEnabled, setTeamChatEnabled] = useState(initialInbox?.youthProtection?.teamChatEnabled ?? true);
+  const [canManageChannels, setCanManageChannels] = useState(initialInbox?.canManageChannels ?? false);
+  const [channelArchiveSupported, setChannelArchiveSupported] = useState(initialInbox?.channelArchiveSupported ?? false);
   const [showArchivedChannels, setShowArchivedChannels] = useState(false);
   const [channelDraft, setChannelDraft] = useState<{ mode: "create" | "rename"; value: string } | null>(null);
   const [live, setLive] = useState(true);
+  const seededInbox = useRef(initialInbox != null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   // Set just before an older page is prepended so the scroll position can be
@@ -404,7 +413,9 @@ export default function MessagesClient({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(true);
+      // A seeded inbox is already on screen. Setting loading here replaced it with "Loading…".
+      if (!seededInbox.current) setLoading(true);
+      seededInbox.current = false;
       const list = await loadInbox();
       if (cancelled) return;
       const preferred =

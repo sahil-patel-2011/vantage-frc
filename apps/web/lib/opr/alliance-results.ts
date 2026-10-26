@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
-import { eventOpr, type AllianceResult, type TeamOpr } from "@vantage/prediction-strategy";
+import { additiveParts, eventOpr, type AllianceResult, type CategorySample, type TeamOpr } from "@vantage/prediction-strategy";
 
 /** matches_ref as the reference worker writes it. */
 export type PlayedMatchRow = {
@@ -73,6 +73,35 @@ export async function loadEventOpr(client: PoolClient, eventKey: string): Promis
   return withSavepoint(client, async () => eventOpr(await readPlayedResults(client, eventKey)), []);
 }
 
+/**
+ * One alliance side, with the scoreboard total and the additive split when the
+ * breakdown supports it. A row that does not add up keeps the total and leaves
+ * the categories empty.
+ */
+export function categorySamplesFromMatches(rows: readonly PlayedMatchRow[]): CategorySample[] {
+  const out: CategorySample[] = [];
+  for (const row of rows) {
+    for (const side of ["red", "blue"] as const) {
+      const alliance = allianceOf(side === "red" ? row.redAlliance : row.blueAlliance);
+      if (alliance.teamKeys.length === 0 || alliance.score == null || alliance.score < 0) continue;
+      const part = row.scoreBreakdown?.[side];
+      const breakdown = part && typeof part === "object" ? (part as Record<string, unknown>) : null;
+      const parts = additiveParts(alliance.score, breakdown);
+      out.push({
+        teams: alliance.teamKeys,
+        auto: parts.additive ? parts.auto : null,
+        teleop: parts.additive ? parts.teleop : null,
+        endgame: parts.additive ? parts.endgame : null,
+        foul: parts.additive ? parts.foul : null,
+        total: alliance.score,
+        order: row.matchNumber,
+        matchKey: row.matchKey,
+      });
+    }
+  }
+  return out;
+}
+
 /** What a match prediction needs from the event's played quals. */
 export type EventScoring = {
   /** Every robot that has played, rated by OPR; the ridge pulls a one-match robot toward the field. */
@@ -91,12 +120,18 @@ export type EventScoring = {
  * eventOpr already keeps a one-match robot near the event average. Recent matches are not
  * weighted up (decay 1): on the same replay, decay picked fewer winners.
  */
-export async function loadEventScoring(client: PoolClient, eventKey: string): Promise<EventScoring> {
-  return withSavepoint(client, async () => eventScoringFrom(await readPlayedResults(client, eventKey)), {
-    opr: [],
-    averageAllianceScore: null,
-    alliances: 0,
-  });
+export async function loadEventScoring(
+  client: PoolClient,
+  eventKey: string,
+): Promise<EventScoring & { samples: CategorySample[] }> {
+  return withSavepoint(
+    client,
+    async () => {
+      const rows = await readPlayedRows(client, eventKey);
+      return { ...eventScoringFrom(allianceResultsFromMatches(rows)), samples: categorySamplesFromMatches(rows) };
+    },
+    { opr: [], averageAllianceScore: null, alliances: 0, samples: [] },
+  );
 }
 
 /**
@@ -104,11 +139,15 @@ export async function loadEventScoring(client: PoolClient, eventKey: string): Pr
  * Call it inside a wave of other reads. A failed statement is isolated by that
  * wave; a savepoint here would split the wave into its own round trips.
  */
-export async function readEventScoring(client: PoolClient, eventKey: string): Promise<EventScoring> {
+export async function readEventScoring(
+  client: PoolClient,
+  eventKey: string,
+): Promise<EventScoring & { samples: CategorySample[] }> {
   try {
-    return eventScoringFrom(await readPlayedResults(client, eventKey));
+    const rows = await readPlayedRows(client, eventKey);
+    return { ...eventScoringFrom(allianceResultsFromMatches(rows)), samples: categorySamplesFromMatches(rows) };
   } catch {
-    return { opr: [], averageAllianceScore: null, alliances: 0 };
+    return { opr: [], averageAllianceScore: null, alliances: 0, samples: [] };
   }
 }
 
@@ -121,7 +160,7 @@ export function eventScoringFrom(results: readonly AllianceResult[]): EventScori
   };
 }
 
-async function readPlayedResults(client: PoolClient, eventKey: string): Promise<AllianceResult[]> {
+async function readPlayedRows(client: PoolClient, eventKey: string): Promise<PlayedMatchRow[]> {
   const played = await client.query<PlayedMatchRow>(
     `SELECT match_key AS "matchKey", match_number AS "matchNumber",
             red_alliance AS "redAlliance", blue_alliance AS "blueAlliance",
@@ -130,5 +169,9 @@ async function readPlayedResults(client: PoolClient, eventKey: string): Promise<
       WHERE event_key = $1::text AND comp_level = 'qm' AND winning_alliance IS NOT NULL`,
     [eventKey],
   );
-  return allianceResultsFromMatches(played.rows);
+  return played.rows;
+}
+
+async function readPlayedResults(client: PoolClient, eventKey: string): Promise<AllianceResult[]> {
+  return allianceResultsFromMatches(await readPlayedRows(client, eventKey));
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { allianceResultsFromMatches, eventScoringFrom } from "./alliance-results";
+import { allianceResultsFromMatches, categorySamplesFromMatches, eventScoringFrom } from "./alliance-results";
 
 describe("allianceResultsFromMatches", () => {
   it("takes fouls handed over out of the score and reads the phase split when it is there", () => {
@@ -18,6 +18,23 @@ describe("allianceResultsFromMatches", () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({ total: 98, auto: 20, teleop: 60, endgame: 18, order: 1 });
     expect(rows[1]).toMatchObject({ total: 90, auto: null, endgame: null });
+  });
+
+  it("keeps 2026 teleop fuel separate from the tower when the scoreboard adds up", () => {
+    const rows = categorySamplesFromMatches([
+      {
+        matchKey: "2026arc_qm13",
+        matchNumber: 13,
+        redAlliance: { score: 302, teamKeys: ["frc1", "frc2", "frc3"] },
+        blueAlliance: { score: 90, teamKeys: ["frc4", "frc5", "frc6"] },
+        scoreBreakdown: {
+          red: { foulPoints: 15, autoPoints: 29, teleopFuelPoints: 238, totalTeleop: 258, endGameTowerPoints: 20 },
+          blue: { foulPoints: 0 },
+        },
+      },
+    ]);
+    expect(rows[0]).toMatchObject({ auto: 29, teleop: 238, endgame: 20, foul: 15, total: 302, matchKey: "2026arc_qm13" });
+    expect(rows[1]).toMatchObject({ auto: null, teleop: null, endgame: null, foul: null, total: 90 });
   });
 
   it("skips unplayed (-1) and malformed alliances", () => {

@@ -14,7 +14,7 @@ import type { StrategyView } from "../../../lib/strategy/types";
 
 export type { StrategyView };
 
-async function loadStrategyView(input: {
+export async function loadStrategyView(input: {
   userId: string;
   requestedOrg: string | null;
   matchKey: string | null;
