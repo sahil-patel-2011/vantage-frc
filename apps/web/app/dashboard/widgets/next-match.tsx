@@ -110,6 +110,9 @@ export function NextMatchLive({ data, orgId }: { data: Record<string, unknown>; 
           })}
         </p>
       ) : null}
+      {typeof data.categoryLine === "string" && data.categoryLine.trim() ? (
+        <p className="app-muted">{data.categoryLine.trim()}</p>
+      ) : null}
       {/* Where the doubt is coming from, in one sentence — usually a named
           robot that has been breaking down, which is the thing a drive team
           can actually do something about before the match starts. */}

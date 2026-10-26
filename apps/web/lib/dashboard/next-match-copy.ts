@@ -40,6 +40,30 @@ export function nextMatchScoreLine(input: {
   return `Red ${red} · Blue ${blue}${band}`;
 }
 
+/**
+ * Red / blue pieces under the total. Fouls stay off this line: they are noisy
+ * and the total already includes the foul estimate.
+ */
+export function nextMatchCategoryLine(input: {
+  redAuto: number | null;
+  redTeleop: number | null;
+  redEndgame: number | null;
+  blueAuto: number | null;
+  blueTeleop: number | null;
+  blueEndgame: number | null;
+}): string | null {
+  const parts: string[] = [];
+  const add = (label: string, red: number | null, blue: number | null) => {
+    if (red == null || blue == null || !Number.isFinite(red) || !Number.isFinite(blue)) return;
+    parts.push(`${label} ${Math.round(red)} / ${Math.round(blue)}`);
+  };
+  add("Auto", input.redAuto, input.blueAuto);
+  add("Teleop", input.redTeleop, input.blueTeleop);
+  add("Endgame", input.redEndgame, input.blueEndgame);
+  if (!parts.length) return null;
+  return `Red / blue · ${parts.join(" · ")}`;
+}
+
 function asDriverList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value

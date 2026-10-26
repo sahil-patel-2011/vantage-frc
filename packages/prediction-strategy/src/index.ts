@@ -628,3 +628,47 @@ export {
 
 export * from "./event-opr";
 export * from "./seed-odds";
+
+export {
+  MAX_CATEGORY_DELTA_POINTS,
+  MAX_CATEGORY_DELTA_SHARE,
+  MAX_WIN_PROBABILITY_SHIFT,
+  PREDICTION_AI_ENABLED,
+  applyBoundedAdjustment,
+} from "./prediction-adjustment";
+export type { AdjustmentResult, CategoryDeltas } from "./prediction-adjustment";
+
+export { additiveParts, scoringForSeason } from "./season-scoring";
+export type { AdditiveParts, ScoringCategoryId, SeasonScoring } from "./season-scoring";
+
+export {
+  CATEGORY_NAMES,
+  HOLDOUT_EVENT_KEYS,
+  PRIOR_MEAN_SHRINK,
+  SHIPPED_CATEGORY_MODEL,
+  TUNING_EVENT_KEYS,
+  chooseCategoryModel,
+  forecastMatch,
+  isMatchForecastSkip,
+  metricsOf,
+  phaseForEvent,
+  replayHoldout,
+  replaySplit,
+  replayTuning,
+} from "./walk-forward";
+export type {
+  CalibrationBin,
+  CategoryName,
+  CategorySample,
+  CategoryScores,
+  CutMetrics,
+  CutName,
+  ForecastRow,
+  MatchForecast,
+  MatchForecastSkip,
+  MetricsBundle,
+  ModelCandidate,
+  ModelKind,
+  ModelSpec,
+  ReplayMatch,
+} from "./walk-forward";

@@ -1,8 +1,130 @@
 # Match prediction results
 
-*For anyone evaluating match-prediction accuracy. Read the first paragraph before quoting a number. Last updated 2026-10-25.*
+*For anyone evaluating match-prediction accuracy. Read the first paragraph before quoting a number. Last updated 2026-10-26.*
 
-**This is not a ±3 claim.** These numbers come from replaying the two events in production's `matches_ref` (2025gagai and 2026gagr, 153 played matches) match by match. Each match is predicted only from what was known walking into it: every robot's event OPR over the matches already played. It is two events, both in Georgia, so treat the numbers as a check on the model, not a promise for every event.
+**This is not a ±3 claim.** On 1,209 already-played 2026 matches, the model shipped below misses a scoreboard total by about 95 points on events it was not tuned on (mean scoreboard 446). It names the winner on 71.5% of decided holdout matches. A coin flip scores 0.25 on Brier; this model scores 0.188. The older two-event replay (totals only, different comparison) is kept further down and is not the number to quote for categories.
+
+## 2026 category backtest (2026-10-26)
+
+### Where the rows came from
+
+FACT. Fetched 2026-10-26 from public The Blue Alliance match pages (`https://www.thebluealliance.com/event/{key}` and `/match/{key}`). No API key was in the environment. Statbotics `https://api.statbotics.io/v3/matches` returned HTTP 500/503 that day, so it was not used. The file is `packages/prediction-strategy/test/fixtures/2026-played-matches.json`.
+
+FACT. GRITS 2026 is TBA event `2026gagr` (Gainesville, 16–17 October 2026, 74 matches). There is no second GRITS key. The 2026 championship divisions and Einstein:
+
+| event | dates | matches |
+| --- | --- | --- |
+| 2026gagr GRITS | 2026-10-16 – 2026-10-17 | 74 |
+| 2026arc Archimedes | 2026-04-29 – 2026-05-02 | 141 |
+| 2026cur Curie | 2026-04-29 – 2026-05-02 | 139 |
+| 2026dal Daly | 2026-04-29 – 2026-05-02 | 140 |
+| 2026gal Galileo | 2026-04-29 – 2026-05-02 | 140 |
+| 2026hop Hopper | 2026-04-29 – 2026-05-02 | 140 |
+| 2026joh Johnson | 2026-04-29 – 2026-05-02 | 140 |
+| 2026mil Milstein | 2026-04-29 – 2026-05-02 | 139 |
+| 2026new Newton | 2026-04-29 – 2026-05-02 | 140 |
+| 2026cmptx Einstein | 2026-05-02 | 16 |
+
+1,209 matches, 2,418 alliance sides. Identity misses 0: scoreboard = auto + teleop fuel + endgame tower + foul points + adjustments. TBA's "Total Teleop" already includes the tower, so teleop in this file is teleop fuel only. Fuel overlaps auto and teleop and is not added. 104 sides had a nonzero tower. 1 side had a nonzero adjustment (predicted as 0, so it sits inside total error).
+
+INFERENCE. Each event is one field, so the order on the public results page is the play order. Divisions run on the same days and do not see each other. Einstein (phase 1) may use division matches. GRITS (phase 2, October) may use the championship. The championship does not use GRITS. Two playoff matches listed one after another could have overlapped; that would be a small leak and is not corrected here.
+
+### Split, fixed before any accuracy number
+
+Tuning: `2026gagr`, `2026arc`, `2026cur`, `2026dal`, `2026gal` (634 matches). Holdout, scored once after the choice: `2026hop`, `2026joh`, `2026mil`, `2026new`, `2026cmptx` (575 matches). The first match of an event is not scored when the model has no earlier sample, so the tables have 629 tuning predictions and 570 holdout predictions (the coin-flip model can score GRITS match 1 and Einstein match 1 from earlier events' averages: 630 and 571).
+
+Choice rule, tuning only: lowest total MAE (2 decimals, within 0.005 counts as a tie), then higher winner accuracy, then lower Brier. Win-curve width was chosen after the score model, by tuning Brier only. The holdout did not change the model. `relativeError` 0.212 is holdout total MAE 94.53 / mean scoreboard 445.7, and it is only the ± on screen.
+
+### What was compared
+
+- Coin flip: both alliances get the historical category mean, win chance 0.5, no side picked. Expected winner rate is 50%. The accuracy cell stays empty on purpose.
+- Current Vantage card: event OPR (ridge 0.5, no decay) summed through `predictAllianceScores`. That number is the foul-free robot total, scored here against the scoreboard (fouls included), which is what the card is compared with. It does not predict categories.
+- Plain OPR: same sum with ridge 0.001 and a logistic win curve.
+- Component OPR, default: one rating per category, ridge 0.5, no cross-event prior, fouls as their own rating.
+- EPA-style: online update per category, prior strength 4, no cross-event prior.
+- Tuned component OPR (shipped): decay 1, ridge 2, no cross-event prior, both alliances get the historical foul average, win curve 0.2 × the average scoreboard.
+- Tuned EPA: prior strength 2, foul average, no cross-event prior. Tuning total MAE 91.75.
+- Ensemble of those two, weight 0.65 on component OPR. Tuning total MAE 89.57, just behind the shipped model (89.44), so it was not shipped. On the holdout its total MAE is 94.58 and its winner rate is 72.3% (Brier 0.191), against the shipped 94.53 / 71.5% / 0.188. The holdout was not used to switch.
+
+Cross-event priors (strength 0, 4, or 10) were in the tuning search. The winner uses 0. Divisions do not see each other anyway. Home therefore rates the event in front of it and does not scan the rest of the season.
+
+### Tuning (the events the choice was allowed to see)
+
+| model | matches | auto MAE | teleop MAE | endgame MAE | foul MAE | total MAE | total RMSE | winners | Brier | log loss |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| coin flip / mean | 630 | 32.35 | 114.16 | 0.94 | 8.89 | 137.50 | 173.34 | — | 0.250 | 0.693 |
+| current Vantage card | 629 | — | — | — | — | 92.38 | 117.94 | 75.2% | 0.178 | 0.530 |
+| plain OPR | 629 | — | — | — | — | 116.93 | 167.03 | 72.9% | 0.195 | 0.590 |
+| component OPR, default | 629 | 23.38 | 83.79 | 1.38 | 10.90 | 92.56 | 118.20 | 75.0% | 0.177 | 0.528 |
+| EPA, default | 629 | 22.94 | 81.46 | 0.97 | 9.34 | 92.01 | 118.23 | 74.0% | 0.183 | 0.545 |
+| tuned EPA | 629 | 23.11 | 81.84 | 1.12 | 8.73 | 91.75 | 118.16 | 74.4% | 0.181 | 0.537 |
+| ensemble | 629 | 22.76 | 80.21 | 1.09 | 8.73 | 89.57 | 115.31 | 74.4% | 0.178 | 0.532 |
+| **shipped component OPR** | **629** | **22.81** | **80.10** | **1.09** | **8.73** | **89.44** | **115.06** | **75.2%** | **0.173** | **0.516** |
+
+Shipped, by when in the event (qualifications split in thirds; playoffs count as late):
+
+| cut | matches | total MAE | winners | Brier |
+| --- | --- | --- | --- | --- |
+| early | 183 | 108.74 | 69.5% | 0.208 |
+| mid | 187 | 86.35 | 75.9% | 0.170 |
+| late | 259 | 78.04 | 77.6% | 0.152 |
+
+Tuning calibration (predicted red-win chance vs how often red won):
+
+| bin | n | predicted | actual |
+| --- | --- | --- | --- |
+| 0–20% | 95 | 0.106 | 0.084 |
+| 20–40% | 105 | 0.300 | 0.371 |
+| 40–60% | 183 | 0.507 | 0.508 |
+| 60–80% | 123 | 0.702 | 0.732 |
+| 80–100% | 121 | 0.897 | 0.934 |
+
+### Holdout (not used to choose)
+
+| model | matches | auto MAE | teleop MAE | endgame MAE | foul MAE | total MAE | total RMSE | winners | Brier | log loss |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| coin flip / mean | 571 | 30.73 | 102.77 | 1.27 | 8.27 | 121.76 | 151.87 | — | 0.250 | 0.693 |
+| current Vantage card | 570 | — | — | — | — | 99.14 | 124.21 | 70.7% | 0.190 | 0.558 |
+| plain OPR | 570 | — | — | — | — | 126.71 | 172.54 | 68.6% | 0.211 | 0.635 |
+| component OPR, default | 570 | 25.80 | 90.09 | 1.56 | 10.47 | 98.44 | 123.37 | 70.9% | 0.188 | 0.552 |
+| EPA, default | 570 | 24.55 | 85.40 | 1.20 | 8.92 | 95.25 | 119.78 | 71.7% | 0.194 | 0.570 |
+| tuned EPA | 570 | 24.76 | 87.79 | 1.33 | 8.27 | 96.94 | 121.50 | 70.2% | 0.193 | 0.564 |
+| ensemble | 570 | 24.46 | 85.48 | 1.28 | 8.27 | 94.58 | 118.65 | 72.3% | 0.191 | 0.563 |
+| **shipped component OPR** | **570** | **24.52** | **85.26** | **1.28** | **8.27** | **94.53** | **118.48** | **71.5%** | **0.188** | **0.552** |
+
+Shipped holdout by cutoff:
+
+| cut | matches | total MAE | winners | Brier |
+| --- | --- | --- | --- | --- |
+| early | 164 | 110.14 | 75.8% | 0.195 |
+| mid | 166 | 88.47 | 69.3% | 0.193 |
+| late | 240 | 88.05 | 70.9% | 0.180 |
+
+Holdout calibration:
+
+| bin | n | predicted | actual |
+| --- | --- | --- | --- |
+| 0–20% | 68 | 0.113 | 0.162 |
+| 20–40% | 113 | 0.304 | 0.257 |
+| 40–60% | 167 | 0.501 | 0.539 |
+| 60–80% | 140 | 0.698 | 0.664 |
+| 80–100% | 82 | 0.890 | 0.915 |
+
+Endgame MAE looks small because the tower is usually zero (104 of 2,418 sides scored one). Teleop fuel is most of the miss. Fouls are predicted as the event's average for both alliances, not as a robot skill; that beat rating fouls per robot on the tuning set.
+
+The replay is `packages/prediction-strategy/test/category-backtest.test.ts`. It reruns these numbers, including the tuning search that has to land on the same spec.
+
+### What the screen does
+
+Home's next match uses this model when at least two robots on each alliance have already played and the breakdowns add up. It shows auto, teleop, endgame, the total, a win chance, and a ± from the holdout miss (0.212 × the event's average scoreboard, widened when the robots have played fewer than four matches). The ± is hidden until eight alliance rows exist. Categories are clamped at 0 for display and the total is added back up. 2027 BIOCORE (kickoff 9 January 2027) has no category list until the manual is published, so that season is a total only.
+
+### AI
+
+An org's configured chat model can be asked for a small point delta on top of this forecast. Deltas are clamped (at most 8% of a category or 6 points, whichever is tighter), a reply that looks like a full score is ignored, and the total is recomputed from the pieces. Win chance may move by at most 0.03. The statistical forecast is what remains when the call is off, slow, or fails. The path is off (`PREDICTION_AI_ENABLED` is false, and `VANTAGE_PREDICTION_AI` is not set). It was not measured: there is no credential-free model in this run, so there is no held-out number that says it helps, and no dollar cost to report. One prediction would be one extra completion. Home does not call it.
+
+## Earlier total-only replay (2025gagai and 2026gagr)
+
+**Still not a ±3 claim.** These numbers come from replaying the two events in production's `matches_ref` (2025gagai and 2026gagr, 153 played matches) match by match. Each match is predicted only from what was known walking into it: every robot's event OPR over the matches already played. It is two events, both in Georgia, so treat the numbers as a check on the model, not a promise for every event.
 
 The replay is a test, so it reruns on every change: `packages/prediction-strategy/test/measured-replay.test.ts`, on the public results in `packages/prediction-strategy/test/fixtures/gagai-gagr-played-matches.csv`.
 
