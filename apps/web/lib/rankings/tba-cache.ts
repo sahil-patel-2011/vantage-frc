@@ -15,7 +15,7 @@ import {
   type RankedTeam,
   type RankingsContext,
   type RankingsView,
-} from "../rankings";
+} from "./index";
 import {
   allianceScore,
   allianceTeamKeys,

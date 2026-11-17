@@ -8,7 +8,7 @@ import {
   defaultDutyTitle,
   groupDutiesByDay,
   type DutyKind,
-} from "../../../lib/duty-roster-shared";
+} from "../../../lib/duty-roster/shared";
 import {
   SUBTEAM_COLOR_SUGGESTIONS,
   type DutyOnCalendar,

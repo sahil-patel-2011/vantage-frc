@@ -683,17 +683,17 @@ export const sqlFragmentAllowlist = [
     "reason": "Internal constant or fragment helper (TEAM_USAGE_SQL) spliced into SQL. It is not a request value. Swapping the expression fails this check."
   },
   {
-    "file": "apps/web/lib/display.ts",
+    "file": "apps/web/lib/display/index.ts",
     "expression": "matchStillAheadSql(\"fm\")",
     "reason": "Identifier or SQL fragment (matchStillAheadSql(\"fm\")) from a fixed helper or internal constant. Replacing this expression text fails until the allowlist names the new text."
   },
   {
-    "file": "apps/web/lib/display.ts",
+    "file": "apps/web/lib/display/index.ts",
     "expression": "matchStillAheadSql(\"m\")",
     "reason": "Identifier or SQL fragment (matchStillAheadSql(\"m\")) from a fixed helper or internal constant. Replacing this expression text fails until the allowlist names the new text."
   },
   {
-    "file": "apps/web/lib/display.ts",
+    "file": "apps/web/lib/display/index.ts",
     "expression": "matchStillAheadSql(\"m2\")",
     "reason": "Identifier or SQL fragment (matchStillAheadSql(\"m2\")) from a fixed helper or internal constant. Replacing this expression text fails until the allowlist names the new text."
   },

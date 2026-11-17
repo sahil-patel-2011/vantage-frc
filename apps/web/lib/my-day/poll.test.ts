@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MyDayMatch, MyDayView } from "../my-day";
+import type { MyDayMatch, MyDayView } from "./index";
 import {
   MY_DAY_POLL_MS,
   MY_DAY_POLL_WIDGETS,

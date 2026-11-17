@@ -140,7 +140,7 @@ export default tseslint.config(
       "apps/web/lib/bugbot/**/*.{ts,tsx}",
       "apps/web/lib/business/**/*.{ts,tsx}",
       "apps/web/lib/cad-vault/**/*.{ts,tsx}",
-      "apps/web/lib/packing.ts",
+      "apps/web/lib/packing/**/*.{ts,tsx}",
       "apps/web/lib/season-calendar.ts",
     ],
     rules: {

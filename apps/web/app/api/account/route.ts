@@ -23,7 +23,7 @@ import {
   studentPhoneOtp,
 } from "../../../lib/account/account-api-related";
 import type { ConnectionConnectorStatus } from "../../../lib/account/connections-related";
-import { canPostViaDiscord } from "../../../lib/discord-related";
+import { canPostViaDiscord } from "../../../lib/discord/related";
 import { discordSetupStatus, isValidDiscordWebhook } from "../../../lib/discord";
 import { githubSetupStatus, loadGitHubConnection } from "../../../lib/github";
 import { resolveTbaConfigured } from "../../../lib/reference/tba-access";

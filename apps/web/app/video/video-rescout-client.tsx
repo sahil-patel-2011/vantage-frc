@@ -31,7 +31,7 @@ import {
   videoRescoutShellCopy,
   type VideoRescoutNextAction,
   type VideoRescoutShellKind,
-} from "../../lib/video-rescout-related";
+} from "../../lib/video-rescout/related";
 import {
   fmtTimestamp,
   NOTE_TAGS,

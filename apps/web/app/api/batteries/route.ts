@@ -12,7 +12,7 @@ import {
   type BatteryStatus,
   type HealthStatus,
 } from "../../../lib/battery";
-import { ensureBatteryRetireFailure } from "../../../lib/battery-fmea";
+import { ensureBatteryRetireFailure } from "../../../lib/battery/fmea";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {

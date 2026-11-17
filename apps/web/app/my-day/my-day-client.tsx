@@ -16,7 +16,7 @@ import {
   myDayShellCopy,
   type MyDayNextAction,
   type MyDayShellKind,
-} from "../../lib/my-day-related";
+} from "../../lib/my-day/related";
 import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";

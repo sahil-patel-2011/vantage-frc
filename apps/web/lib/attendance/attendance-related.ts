@@ -4,7 +4,7 @@ import {
   type AttendanceEvent,
   type AttendanceKind,
   type AttendanceMember,
-} from "../attendance";
+} from "./index";
 
 export type AttendanceListFilter = "all" | "unmarked" | "empty" | AttendanceKind;
 

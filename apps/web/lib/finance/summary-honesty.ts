@@ -9,7 +9,7 @@
  * not a DEMO fill.
  */
 
-import { summarizeMonthlyBudget } from "../finance";
+import { summarizeMonthlyBudget } from "./index";
 import { isRealCashAmount } from "./honesty";
 
 export type FinanceSummaryLedgerTxn = {

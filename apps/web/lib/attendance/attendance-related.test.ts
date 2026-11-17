@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AttendanceEvent, AttendanceMember } from "../attendance";
+import type { AttendanceEvent, AttendanceMember } from "./index";
 import {
   ATTENDANCE_LIST_FILTERS,
   attendanceCalendarHref,

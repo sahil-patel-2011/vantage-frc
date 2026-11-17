@@ -12,7 +12,7 @@ import {
   videoAnalysisRelatedLinks,
   videoAnalysisShellCopy,
 } from "../video-analysis/video-analysis-related";
-import { VIDEO_RESCOUT_RELATED_INCLUDE, videoRescoutShellCopy } from "../video-rescout-related";
+import { VIDEO_RESCOUT_RELATED_INCLUDE, videoRescoutShellCopy } from "../video-rescout/related";
 import { matchStrategyCardsShellCopy } from "../match-strategy-cards/match-strategy-cards-related";
 import { allianceSelectionDeskShellCopy } from "../alliance-selection-desk/alliance-selection-desk-related";
 import { expectPlainCopy } from "./copy-assertions";
@@ -45,7 +45,7 @@ const FILES = [
   "lib/strategy/pick-clock.ts",
   "lib/strategy/pick-assist.ts",
   "lib/video-analysis/video-analysis-related.ts",
-  "lib/video-rescout-related.ts",
+  "lib/video-rescout/related.ts",
   "app/video/video-rescout-client.tsx",
   "lib/ai-chat/ai-chat-related.ts",
   "app/chat/chat-client.tsx",

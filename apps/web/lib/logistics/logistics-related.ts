@@ -1,6 +1,6 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
-import { TRAVEL_LEG_LABELS, type TravelLegKind } from "../logistics";
+import { TRAVEL_LEG_LABELS, type TravelLegKind } from "./index";
 
 /** Soft-UI related Event Day / Team surfaces for logistics travel. */
 export const LOGISTICS_RELATED_LINKS = [

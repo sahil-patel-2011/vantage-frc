@@ -5,7 +5,7 @@
 // win percentage. These helpers decide inclusion from stored rows only: present → include;
 // otherwise the UI shows the honest empty + setup step.
 
-import { winProbabilityFor, type BriefingPrediction } from "../briefing";
+import { winProbabilityFor, type BriefingPrediction } from "./index";
 import { isDemoPrediction } from "../strategy/prediction-display";
 import type { BriefingCard, BriefingCounterBook, BriefingDefensePlan, BriefingWatchNote } from "./types";
 

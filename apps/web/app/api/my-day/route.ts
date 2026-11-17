@@ -1,7 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { loadMyDayView } from "../../../lib/my-day-load";
+import { loadMyDayView } from "../../../lib/my-day/load";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {

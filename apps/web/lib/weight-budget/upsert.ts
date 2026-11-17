@@ -13,7 +13,7 @@ import {
   validateComponent,
   type ComponentInput,
   type WeightAction,
-} from "../weight-budget";
+} from "./index";
 
 export type PlannedLineIdentity = {
   orgId: string;

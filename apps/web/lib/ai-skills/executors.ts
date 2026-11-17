@@ -10,7 +10,7 @@
 import type { PoolClient } from "@neondatabase/serverless";
 import { createVantageToolRegistry, type SkillToolOutput } from "@vantage/agent";
 import { withSavepoint } from "@vantage/db";
-import { loadInsight } from "../ai-insights-load";
+import { loadInsight } from "../ai-insights/load";
 import type { InsightKind } from "../ai-insights";
 import { currentBusinessSeason, loadBusinessView } from "../business-data";
 import { computeDecisionSearchView } from "../decision-search/compute-decision-search";

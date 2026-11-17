@@ -12,7 +12,7 @@ import {
   awardCatalogEntry,
   awardStatusLabel,
   type AwardStatus,
-} from "../awards";
+} from "./index";
 import {
   AWARD_NOTEBOOK_TEXT_ONLY_REFUSAL,
   selectAwardNotebookPhotoEvidence,

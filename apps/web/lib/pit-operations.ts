@@ -1,4 +1,4 @@
-import { classifyMatchReady, type PitBatteryStatus } from "./battery-reliability";
+import { classifyMatchReady, type PitBatteryStatus } from "./battery/reliability";
 
 export const PIT_SEVERITIES = ["minor", "degraded", "disabled", "safety"] as const;
 export const BATTERY_STATUSES = ["active", "service", "retired"] as const;

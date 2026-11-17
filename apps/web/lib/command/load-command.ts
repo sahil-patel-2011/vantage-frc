@@ -3,7 +3,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { deriveReliability } from "@vantage/intel-research";
 import { nexusAttributionHref, parseNexusEvent, parseNexusLive } from "@vantage/reference";
 import { bumperCue, formatMyDayWhen } from "../my-day";
-import { loadMyDayLogistics } from "../my-day-load";
+import { loadMyDayLogistics } from "../my-day/load";
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import { computeStrategyView, resolveTbaAccess } from "../strategy/compute-strategy";

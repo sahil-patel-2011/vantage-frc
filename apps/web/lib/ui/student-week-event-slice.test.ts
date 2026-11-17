@@ -7,7 +7,7 @@ import { hoursSelfViewNextActions, hoursSelfViewShellCopy } from "../hours-self-
 import { hoursShellCopy } from "../hours/hours-related";
 import { inspectionCopilotShellCopy } from "../inspection-copilot/inspection-copilot-related";
 import { hubById, hubFeaturedMoreTabs } from "../nav/hubs";
-import { myDayNextActions } from "../my-day-related";
+import { myDayNextActions } from "../my-day/related";
 import { pickDeskNextActions, pickDeskShellCopy } from "../strategy/pick-desk-related";
 import { expectPlainCopy } from "./copy-assertions";
 

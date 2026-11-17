@@ -9,7 +9,7 @@ import {
   isValidDiscordWebhook,
   postTeamDiscordMessage,
 } from "../../../../lib/discord";
-import { canPostViaDiscord } from "../../../../lib/discord-related";
+import { canPostViaDiscord } from "../../../../lib/discord/related";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {

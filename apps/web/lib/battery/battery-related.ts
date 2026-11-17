@@ -2,7 +2,7 @@ import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 import type { BuildRelatedId } from "../build/build-related";
 import type { TeamHubRelatedId } from "../team/team-related";
-import type { BatteryStatus, HealthStatus } from "../battery";
+import type { BatteryStatus, HealthStatus } from "./index";
 
 /** Focused Soft-UI Team strip when Batteries is open (never DEMO placeholders). */
 export const BATTERIES_TEAM_RELATED_INCLUDE: TeamHubRelatedId[] = [

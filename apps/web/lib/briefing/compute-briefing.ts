@@ -37,7 +37,7 @@ import {
   type BriefingPrediction,
   type BriefingView,
   type OpponentIntel,
-} from "../briefing";
+} from "./index";
 import type { DriverCycle, DriverSession } from "../driver-practice";
 import { scoutEventLabel } from "../scouting/scouting-related";
 import { loadOurMatchSummary, noNextMatchMessage } from "../matches/no-next-match";
