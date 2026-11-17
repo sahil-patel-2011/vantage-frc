@@ -11,7 +11,8 @@ describe("leftover Attendance and Video rescout empty cards", () => {
     expect(src).toMatch(/id="att-add-attendee"/);
     // The add form sits right above the empty card; a button that only jumped to it was a duplicate.
     expect(src).not.toMatch(/Add an attendee/);
-    expect(src).toMatch(/New attendance event/);
+    expect(src).toMatch(/New roll call/);
+    expect(src).not.toMatch(/New attendance event/);
     expect(src).not.toMatch(/att-empty-actions/);
   });
 

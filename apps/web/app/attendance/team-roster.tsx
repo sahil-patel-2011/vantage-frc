@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { roleLabel } from "@vantage/core/role-words";
-import { Button } from "../../components/ui";
+import { Button, TextBlockSkeleton } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { SuggestInvite } from "../team/suggest-invite";
 
@@ -52,7 +52,9 @@ export function TeamRoster({ orgId }: { orgId: string }) {
       {error ? (
         <p className="app-muted">{error}</p>
       ) : !members ? (
-        <p className="app-muted">Loading the team…</p>
+        <div role="status" aria-busy="true" aria-label="Loading the team">
+          <TextBlockSkeleton lines={2} />
+        </div>
       ) : (
         <ul className="team-roster-list">
           {members.map((member) => (

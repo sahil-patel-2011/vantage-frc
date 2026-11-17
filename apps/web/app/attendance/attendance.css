@@ -50,6 +50,7 @@
 .att-chip:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line));color:var(--accent)}
 .att-chip:disabled{opacity:.5;cursor:not-allowed}
 .att-one-tap{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:color-mix(in srgb,var(--surface-2) 70%,var(--surface))}
+.att-detail :is(.att-one-tap,.att-add){border:0;padding:0;background:none}
 .att-one-tap>header p{margin:0;color:var(--muted);font-size:12px;line-height:1.35}
 .att-one-tap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
 .att-tap{display:grid;gap:2px;min-height:64px;padding:10px 12px;text-align:left;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--surface);color:inherit;font:inherit;cursor:pointer}

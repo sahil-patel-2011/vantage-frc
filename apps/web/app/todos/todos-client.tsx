@@ -493,7 +493,7 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             aria-describedby="todo-title-count"
           />
         </FormRow>
-        <Button variant="primary" type="submit" disabled={busy}>Add</Button>
+        <Button variant="primary" type="submit" disabled={busy}>Add task</Button>
       </div>
       <TitleCount id="todo-title-count" length={form.title.length} />
       <details>
@@ -556,7 +556,7 @@ function Board({
       <EmptyState
         soft
         title="No team tasks yet"
-        description="Type the first one in the box above and press Add. A short title is enough; assign it and set a due date under Details."
+        description="Type the first one in the box above and press Add task. A short title is enough; assign it and set a due date under Details."
       />
     );
   }
@@ -784,7 +784,7 @@ function TodoCard({
             ) : null}
           </div>
         </details>
-        {/* Secondary: the page's one primary is Add, and every card used to carry its own. */}
+        {/* Secondary: the page's one primary is Add task, and every card used to carry its own. */}
         {todo.status !== "done" ? (
           <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "update-todo", todoId: todo.id, status: "done" })}>
             Mark done

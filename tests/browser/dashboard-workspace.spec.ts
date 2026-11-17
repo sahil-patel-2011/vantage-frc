@@ -42,10 +42,10 @@ test("quick task creation posts to the existing API and refreshes the board", as
   await signInFixture(context);
   const writes = await workspace(page);
   await page.goto("/dashboard?orgId=ui-team");
-  await page.getByTestId("dash-workspace-actions").getByRole("button", { name: "Add a task" }).click();
-  const dialog = page.getByRole("dialog", { name: "Create team task" });
+  await page.getByTestId("dash-workspace-actions").getByRole("button", { name: "Add task" }).click();
+  const dialog = page.getByRole("dialog", { name: "Add task" });
   await dialog.getByRole("textbox", { name: "Task title" }).fill("Prepare spare battery");
-  await dialog.getByRole("button", { name: "Create task", exact: true }).click();
+  await dialog.getByRole("button", { name: "Add task", exact: true }).click();
   await expect(dialog).toContainText("Team task created.");
   await expect(page.getByTestId("home-tasks")).toContainText("Prepare spare battery");
   expect(writes).toEqual([{ orgId: "ui-team", action: "create-todo", title: "Prepare spare battery", notes: "", dueOn: null }]);
@@ -57,7 +57,7 @@ test("viewers get a task destination instead of a creation button", async ({ pag
   await page.goto("/dashboard?orgId=ui-team");
   const actions = page.getByTestId("dash-workspace-actions");
   await expect(actions.getByRole("link", { name: "Tasks" })).toHaveAttribute("href", "/todos?orgId=ui-team");
-  await expect(actions.getByRole("button", { name: "Add a task" })).toHaveCount(0);
+  await expect(actions.getByRole("button", { name: "Add task" })).toHaveCount(0);
   await expect(actions.getByRole("link", { name: "Explore teams" })).toHaveAttribute("href", "/competition?tab=teams&orgId=ui-team");
 });
 

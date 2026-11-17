@@ -103,15 +103,16 @@ function NotebookRelated({ orgId }: { orgId?: string | null }) {
   );
 }
 
-function NotebookNextActions({ orgId }: { orgId: string }) {
+function NotebookNextActions({ orgId, canWrite }: { orgId: string; canWrite: boolean }) {
+  // Viewers have no entry form, so "Add an entry" would link to nothing.
   const actions = [
-    {
+    ...(canWrite ? [{
       id: "entry",
       label: "Add an entry",
       detail: "Date, phase, and a real photo or video — text alone is not award evidence.",
       href: "#notebook-entry",
       primary: true,
-    },
+    }] : []),
     {
       id: "media",
       label: "Open Media library",
@@ -698,7 +699,7 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
         )}
       </Panel>
 
-      <NotebookNextActions orgId={view.context.orgId} />
+      <NotebookNextActions orgId={view.context.orgId} canWrite={view.context.role !== "viewer"} />
     </main>
   );
 }

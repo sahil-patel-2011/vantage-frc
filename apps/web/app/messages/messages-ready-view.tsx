@@ -494,11 +494,15 @@ export function MessagesReadyView({
             ) : !teamChatEnabled ? (
               <EmptyState
                 title="Team chat is off"
-                description="Mentors turned chat off for this team. Ask a mentor if you need it back."
+                description={
+                  canManageChannels
+                    ? "Chat is off for this team. Turn it back on in chat settings."
+                    : "Mentors turned chat off for this team. Ask a mentor if you need it back."
+                }
               >
                 {canManageChannels ? (
                   <Button variant="primary" type="button" onClick={() => setSafetyOpen(true)}>
-                    Settings
+                    Open chat settings
                   </Button>
                 ) : null}
               </EmptyState>

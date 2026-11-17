@@ -36,7 +36,7 @@ export function DashboardActionsProvider({ orgId, role, refresh, children }: {
     <ActionsContext.Provider value={{ orgId, role, open: setAction, refresh }}>
       {children}
       <Modal open={action !== null} onClose={close}
-        title={action === "task" ? "Create team task" : "Log scouting report"}
+        title={action === "task" ? "Add task" : "Log scouting report"}
         description="Work here without leaving your dashboard."
         className="dash-action-dialog">
         {action === "task" ? <QuickTaskForm key={orgId} orgId={orgId} onSaved={() => refresh("team_todos")} /> : null}
@@ -59,7 +59,7 @@ export function DashboardCardActions({ type, label }: { type: DashboardWidgetTyp
   const menu = useRef<HTMLDetailsElement>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  // View only (0715): no "Add a task" / "Log a scouting report" menu on Home cards.
+  // View only (0715): no "Add task" / "Log a scouting report" menu on Home cards.
   const canWrite = actions?.role !== "viewer";
   const offerTask = canWrite && TASK_CARDS.has(type);
   const offerScout = canWrite && SCOUT_CARDS.has(type);
@@ -96,7 +96,7 @@ export function DashboardCardActions({ type, label }: { type: DashboardWidgetTyp
       }}>
         <summary aria-label={`Quick actions for ${label}`}>•••</summary>
         <div className="dash-card-action-options">
-          {offerTask ? <button type="button" disabled={!actions.orgId} onClick={() => open("task")}>Add a task</button> : null}
+          {offerTask ? <button type="button" disabled={!actions.orgId} onClick={() => open("task")}>Add task</button> : null}
           {offerScout ? <button type="button" disabled={!actions.orgId} onClick={() => open("scouting")}>Log a scouting report</button> : null}
           <button type="button" disabled={!actions.orgId || busy} onClick={() => void refresh()}>Refresh</button>
         </div>
@@ -143,7 +143,7 @@ function QuickTaskForm({ orgId, onSaved }: { orgId: string; onSaved: () => Promi
       {error ? <p role="alert">{error}</p> : null}
       {error ? <a href={`/todos?orgId=${encodeURIComponent(orgId)}`}>All tasks</a> : null}
       {message ? <p role="status">{message}</p> : null}
-      <Button type="submit" variant="primary" disabled={busy || !orgId}>{busy ? "Creating…" : "Create task"}</Button>
+      <Button type="submit" variant="primary" disabled={busy || !orgId}>{busy ? "Adding…" : "Add task"}</Button>
     </form>
   );
 }

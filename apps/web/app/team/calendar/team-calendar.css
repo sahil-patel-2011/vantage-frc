@@ -139,8 +139,6 @@
 .tc-day h2 {
   margin: 8px 0 0;
   font-size:var(--text-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 .tc-day-count {
@@ -339,8 +337,6 @@
 }
 .tc-roster th {
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--muted);
   font-weight: 700;
 }
@@ -598,8 +594,6 @@
   font-weight: 700;
   color: var(--muted);
   text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 .tc-month-grid {
   display: grid;

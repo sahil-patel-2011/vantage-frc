@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "../../../../components/ui";
+import { Button, EmptyState } from "../../../../components/ui";
 
 import { useEffect, useState } from "react";
 import "../knowledge.css";
@@ -77,7 +77,7 @@ export default function KnowledgeHistoryClient({ orgId }: { orgId: string }) {
           {message}
         </p>
       ) : null}
-      {loading ? <p className="app-muted">Loading history…</p> : null}
+      {loading ? <EmptyState soft title="Loading history…" aria-busy /> : null}
 
       {!loading && !denied ? (
         <section className="soft-card">

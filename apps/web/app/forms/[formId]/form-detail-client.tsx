@@ -432,7 +432,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Form" />
         <OfflineBanner feature="Form" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState soft badge="Not available" badgeTone="setup" title="This form could not be opened" description={error}>
+        <EmptyState soft badge="Unavailable" title="This form could not be opened" description={error}>
           <Button as="a" variant="primary" href={`/forms${orgParam().replace("&", "?")}`}>Back to forms</Button>
         </EmptyState>
       </main>
@@ -444,7 +444,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
       <main className="module-page forms-page">
         <PageHeader breadcrumbs="Team / Forms" title="Form" />
         <OfflineBanner feature="Form" fromCache={fromCache} cachedAt={cachedAt} />
-        <Panel><p className="app-muted">Loading…</p></Panel>
+        <EmptyState soft title="Loading form…" aria-busy />
       </main>
     );
   }

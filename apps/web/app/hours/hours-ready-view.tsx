@@ -100,9 +100,9 @@ export function HoursReadyView({
               onClick={async () => {
                 if (
                   await askConfirm({
-                    title: `Sign out all ${summary.hereNow} clocked-in member(s)?`,
+                    title: `Sign everyone out (${summary.hereNow} clocked in)?`,
                     body: "Sessions left open from an earlier day are capped at your team's auto-close credit instead of being signed out now.",
-                    confirmLabel: "Sign out all",
+                    confirmLabel: "Sign everyone out",
                     tone: "neutral",
                   })
                 ) {
@@ -110,7 +110,7 @@ export function HoursReadyView({
                 }
               }}
             >
-              End meeting (sign all out)
+              Sign everyone out
             </Button>
           ) : null}
         </div>

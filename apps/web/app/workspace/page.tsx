@@ -19,6 +19,7 @@ import SyncIndicator from "./sync-indicator";
 import QuickActions from "./quick-actions";
 import { VantageLogo } from "../../components/brand";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { matchLabelFromKey } from "../../lib/matches/no-next-match";
 import "../invite/invite-flow.css";
 import "./workspace-chooser.css";
 
@@ -270,9 +271,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
           data.next.map((match: Record<string, unknown>, index) => (
             <article key={String(match.matchKey)}>
               <span>{index === 0 ? "Next" : "After"}</span>
-              <strong>
-                {String(match.compLevel).toUpperCase()} {String(match.matchNumber)}
-              </strong>
+              <strong>{matchLabelFromKey(String(match.matchKey))}</strong>
               <time>
                 {match.eventTime
                   ? new Date(String(match.eventTime)).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })

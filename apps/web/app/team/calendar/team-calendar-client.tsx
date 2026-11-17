@@ -550,7 +550,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             setScopeEventId(event.id);
             return;
           }
-          if (await askConfirm({ title: `Remove “${event.title}” from the calendar?`, body: null, confirmLabel: "Remove event", tone: "destructive" })) {
+          if (await askConfirm({ title: `Remove “${event.title}” from the calendar?`, body: "It comes off the team calendar for everyone. This can't be undone.", confirmLabel: "Remove event", tone: "destructive" })) {
             void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
           }
         }}
@@ -617,7 +617,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         <>
           {view.subteams.length > 0 ? (
             <label className="tc-filter-select">
-              Calendar
+              Show
               <select
                 value={filterSubteamId ?? ""}
                 aria-label="Filter by subteam"

@@ -234,7 +234,7 @@ export default function FormsClient() {
         <OfflineBanner feature="Forms" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
-          badge={copy ? "Not available" : undefined}
+          badge={copy?.badge}
           badgeTone={copy ? "setup" : undefined}
           title={copy ? copy.title : "Loading forms…"}
           description={copy ? copy.description : "Checking your team."}
@@ -270,11 +270,15 @@ export default function FormsClient() {
       ) : null}
 
       {view.forms.length === 0 ? (
-        <EmptyState
-          soft
-          title="Start with what your season needs next"
-          description="Pick a purpose and Vantage writes the questions a team would normally write by hand. You can change every one of them."
-        />
+        view.canManage ? (
+          <EmptyState
+            soft
+            title="Start with what your season needs next"
+            description="Pick a purpose and Vantage writes the questions a team would normally write by hand. You can change every one of them."
+          />
+        ) : (
+          <EmptyState soft title="No forms yet" description="When a lead shares a form, it shows up here." />
+        )
       ) : (
         <Panel className="forms-list-panel">
           <h2>Your forms</h2>
