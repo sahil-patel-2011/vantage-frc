@@ -1,5 +1,6 @@
 import { requestPool } from "@vantage/db";
 import { PARENT_TOKEN_PATTERN } from "../../../../../lib/parent-comms/tokens";
+import { escapeHtml } from "../../../../../lib/security/escape-html";
 
 /**
  * One-click parent digest unsubscribe. Parents have no Vantage account, so the
@@ -35,14 +36,6 @@ function page(body: string, status: number): Response {
       headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
     },
   );
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 
 function notFound(): Response {

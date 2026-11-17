@@ -13,7 +13,7 @@ import {
   summarizeNotebookEvidence,
   type NotebookImageAttachment,
 } from "../../../lib/notebook/attachments";
-import { promoteNotebookEntry } from "../../../lib/notebook-wiki";
+import { promoteNotebookEntry } from "../../../lib/notebook/wiki";
 import { publicErrorMessage, viewOnlyResponse } from "../../../lib/security/public-error";
 
 class HttpError extends Error {

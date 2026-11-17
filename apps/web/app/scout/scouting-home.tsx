@@ -356,7 +356,7 @@ export function ScoutingHome() {
         {shownSummary?.status === "no_event" && shownSummary.canLead && orgId ? (
           <div className="scout-home-actions">
             <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
-              Set the event
+              Set active event
             </Button>
           </div>
         ) : null}
@@ -461,14 +461,18 @@ export function ScoutingHome() {
                 ? "Saved scouting stays on this device until it syncs. Before the venue, save the pages and this event too."
                 : "Before you lose signal at the venue, save the Scouting pages and this event on this phone, and keep the browser from clearing them.")}
           </p>
-          <Button
-            variant="secondary"
-            type="button"
-            disabled={preparing || !online || !orgId}
-            onClick={() => void getReady()}
-          >
-            {preparing ? "Saving for offline…" : readyNote ? "Save again" : "Get this phone ready"}
-          </Button>
+          {online ? (
+            <Button
+              variant="secondary"
+              type="button"
+              disabled={preparing || !orgId}
+              onClick={() => void getReady()}
+            >
+              {preparing ? "Saving for offline…" : readyNote ? "Save again" : "Get this phone ready"}
+            </Button>
+          ) : (
+            <p className="scout-card-note">Connect to the internet to get this phone ready.</p>
+          )}
         </div>
       </section>
 

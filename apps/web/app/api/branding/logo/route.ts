@@ -9,7 +9,7 @@ import {
   MAX_LOGO_STORED_BYTES,
   MAX_LOGO_UPLOAD_BYTES,
 } from "../../../../lib/branding/branding";
-import { sponsorImageKind } from "../../../../lib/sponsor-assets";
+import { sponsorImageKind } from "../../../../lib/sponsors/assets";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 export const dynamic = "force-dynamic";

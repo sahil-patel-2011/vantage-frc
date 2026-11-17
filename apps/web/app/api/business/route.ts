@@ -9,7 +9,7 @@ import {
   syncGrantAwardMoney,
   syncSponsorContributionMoney,
 } from "../../../lib/finance/source-mirrors";
-import { loadBusinessView, parseBusinessViewSections, validSeason } from "../../../lib/business-data";
+import { loadBusinessView, parseBusinessViewSections, validSeason } from "../../../lib/business/data";
 import {
   DRAFT_TYPES,
   GRANT_STATUSES,
@@ -23,13 +23,13 @@ import {
   type PurchaseStatus,
   type SponsorPipelineStage,
   type SponsorStatus,
-} from "../../../lib/business-portal";
+} from "../../../lib/business/portal";
 import {
   defaultRenewalDueOn,
   defaultThankYouDueOn,
   isPipelineStage,
   statusForPipelineStage,
-} from "../../../lib/sponsor-pipeline";
+} from "../../../lib/sponsors/pipeline";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 import {
   FINANCE_MANAGER_REQUIRED,

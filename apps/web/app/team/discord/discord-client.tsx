@@ -4,7 +4,7 @@ import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, PageHeader, Button, askConfirm } from "../../../components/ui";
-import { formatBridgePostCount } from "../../../lib/discord-related";
+import { formatBridgePostCount } from "../../../lib/discord/related";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import { withOrgHref } from "../../../lib/nav/product-nav";

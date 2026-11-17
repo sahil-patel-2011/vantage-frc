@@ -11,6 +11,6 @@ describe("Sponsor Suite last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"sponsor-suite"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Sponsor Suite"/);
+    expect(src).toMatch(/feature="Sponsor suite"/);
   });
 });

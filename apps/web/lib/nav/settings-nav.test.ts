@@ -3,9 +3,22 @@ import {
   activeSettingsId,
   isSettingsPath,
   SETTINGS_NAV,
+  SETTINGS_SEARCH_ONLY_IDS,
+  settingsNavGroups,
   settingsRoleTier,
   visibleSettingsNav,
 } from "./settings-nav";
+
+describe("settings list groups", () => {
+  it("lists every visible row once, except parts of a page that search alone opens", () => {
+    for (const role of ["scout", "admin", "owner"]) {
+      const items = visibleSettingsNav(role);
+      const listed = settingsNavGroups(items).flatMap((group) => group.items.map((item) => item.id));
+      expect(new Set(listed).size).toBe(listed.length);
+      expect(listed.sort()).toEqual(items.map((item) => item.id).filter((id) => !SETTINGS_SEARCH_ONLY_IDS.includes(id)).sort());
+    }
+  });
+});
 
 describe("settings nav model", () => {
   it("every href starts with / and ids are unique", () => {
@@ -66,7 +79,7 @@ describe("visibleSettingsNav", () => {
     expect(items.at(-1)?.danger).toBe(true);
   });
 
-  it("owners see You, then This team in the Settings order, ending with Delete team", () => {
+  it("owners see You, then This team in the Settings order, ending with Team profile", () => {
     const items = visibleSettingsNav("owner");
     const team = items.filter((i) => i.scope === "team").map((i) => i.label);
     expect(team).toEqual([
@@ -80,7 +93,7 @@ describe("visibleSettingsNav", () => {
       "Team security",
       "Chat safety",
       "Team data and export",
-      "Delete team",
+      "Team profile",
     ]);
     // Your key and the team's keys are both rows. They are the same page, two sections.
     expect(items.map((i) => i.id)).toContain("my-ai-keys");
@@ -90,10 +103,11 @@ describe("visibleSettingsNav", () => {
     expect(items.slice(firstTeam).every((i) => i.scope === "team")).toBe(true);
   });
 
-  it("mentors and coaches see the team's settings but not Delete team", () => {
+  it("mentors and coaches see the team's settings, Team profile included", () => {
     const ids = visibleSettingsNav("admin").map((i) => i.id);
     expect(ids).toContain("team-admin");
     expect(ids).toContain("join-code");
+    expect(ids).toContain("team-profile");
     expect(ids).not.toContain("delete-team");
   });
 
@@ -148,7 +162,7 @@ describe("activeSettingsId", () => {
   it("never marks a jump within a page (#join-code, #delete-account) as the section", () => {
     expect(activeSettingsId(owner, "/team/admin")).toBe("team-admin");
     expect(activeSettingsId(member, "/account")).toBe("profile");
-    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-admin");
+    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-profile");
   });
 
   it("pages that belong to a section mark it", () => {
@@ -172,7 +186,8 @@ describe("activeSettingsId", () => {
 
   it("longest path prefix wins and non-settings paths return null", () => {
     expect(activeSettingsId(owner, "/team/admin/anything")).toBe("team-admin");
-    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-admin");
+    expect(activeSettingsId(owner, "/team/admin/profile")).toBe("team-profile");
+    expect(isSettingsPath("/team/admin/profile")).toBe(true);
     expect(activeSettingsId(owner, "/dashboard")).toBeNull();
   });
 });

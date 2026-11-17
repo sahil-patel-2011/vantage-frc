@@ -11,7 +11,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import { INSIGHT_CAPABILITY, parseInsightRequest, type BuiltInsight } from "../../../lib/ai-insights";
 import { failMeteredAi } from "../../../lib/metered-ai-fail";
-import { loadInsight } from "../../../lib/ai-insights-load";
+import { loadInsight } from "../../../lib/ai-insights/load";
 
 /**
  * mode "ai" can reach a real upstream model. A bridged turn (a paired device with

@@ -42,13 +42,10 @@ export function EventDayNextActionsPanel({ actions }: { actions: EventDayShellNe
       <ol>
         {actions.slice(0, 5).map((action) => (
           <li key={action.id} className={action.primary ? "primary" : undefined}>
-            <div>
+            <a className="edc-next-action" href={action.href}>
               <strong>{action.label}</strong>
               <span>{action.detail}</span>
-            </div>
-            <Button as="a" variant={action.primary ? "primary" : "secondary"} href={action.href}>
-              Open
-            </Button>
+            </a>
           </li>
         ))}
       </ol>
@@ -87,7 +84,7 @@ export function EventDayShell({
     return (
       <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
         {embedded ? null : (
-          <PageHeader breadcrumbs="Competition / Event Day" title="Event day" description="Next match and pit cues.">
+          <PageHeader breadcrumbs="Competition / Event day" title="Event day" description="Next match and pit cues.">
             {related}
           </PageHeader>
         )}
@@ -104,7 +101,7 @@ export function EventDayShell({
     return (
       <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
         {embedded ? null : (
-          <PageHeader breadcrumbs="Competition / Event Day" title="Event day" description="Next match and pit cues.">
+          <PageHeader breadcrumbs="Competition / Event day" title="Event day" description="Next match and pit cues.">
             {related}
           </PageHeader>
         )}
@@ -118,7 +115,7 @@ export function EventDayShell({
   const primarySetupCta =
     orgId && onSelectEvent ? (
       <Button variant="primary" type="button" onClick={onSelectEvent}>
-        Choose or plan an event
+        Set active event
       </Button>
     ) : (
       <Button as="a" variant="primary" href={orgId ? scoutingHref : workspaceHref}>
@@ -130,7 +127,7 @@ export function EventDayShell({
     <EdcRoot embedded={embedded} className={`edc-page${embedded ? " is-embedded" : ""} soft-gate`}>
       {embedded ? null : (
         <PageHeader
-          breadcrumbs="Competition / Event Day"
+          breadcrumbs="Competition / Event day"
           title="Event day"
           description="Set the event you’re at so match times can show."
         >
@@ -151,7 +148,7 @@ export function EventDayShell({
         {shell === "setup" ? primarySetupCta : null}
         {shell === "empty" && notOnSchedule && onSelectEvent ? (
           <Button variant="primary" type="button" onClick={onSelectEvent}>
-            Choose or plan an event
+            Set active event
           </Button>
         ) : null}
         {shell === "empty" ? (
@@ -209,7 +206,7 @@ export function CommandReadyHeader({
       >
         {loading ? "Loading…" : `Updated ${computedAt ? new Date(computedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"} · Refresh`}
       </button>
-      <Button variant="secondary" type="button" onClick={onSelectEvent}>Plan events</Button>
+      <Button variant="secondary" type="button" onClick={onSelectEvent}>Set active event</Button>
       <details className="edc-page-actions" open={actionsOpen} onToggle={event => setActionsOpen(event.currentTarget.open)}>
         <summary data-disclosure>Share</summary>
         <div className="edc-page-actions-body">
@@ -240,7 +237,7 @@ export function CommandReadyHeader({
 
   return (
     <PageHeader
-      breadcrumbs="Competition / Event Day"
+      breadcrumbs="Competition / Event day"
       title={title}
       description={
         <>

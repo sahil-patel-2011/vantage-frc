@@ -203,11 +203,12 @@ describe("laterSync", () => {
 });
 
 describe("rankingsCacheRequiredCopy", () => {
-  it("says ranks stay blank until cache rows — never invented", () => {
+  it("says when rankings appear and who can refresh them — never invented", () => {
     const copy = rankingsCacheRequiredCopy();
-    expect(copy.description).toMatch(/cache/i);
-    expect(copy.description).toMatch(/blank/i);
-    expect(copy.description).toMatch(/Sync Team Data under Team/);
+    expect(copy.title).toBe("No rankings for this event yet");
+    expect(copy.description).toMatch(/once the event posts results/);
+    expect(copy.description).toMatch(/refresh event data in Team → Data/);
+    expect(copy.description).not.toMatch(/cache|sync/i);
     expect(`${copy.title} ${copy.description}`).not.toMatch(/\bDEMO\b/);
   });
 });

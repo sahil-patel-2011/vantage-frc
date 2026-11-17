@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { askConfirm } from "../../../components/ui";
 
 type Credential = {
   id: string;
@@ -253,11 +254,9 @@ export default function DataConnectorClient({ orgId }: { orgId?: string }) {
                 Test connection
               </button>
               <button
-                onClick={() =>
-                  confirm(
-                    `Disable credential ${item.opaqueKeyId}? Scheduled tests and reads will stop.`,
-                  ) && void act("disable", item.id)
-                }
+                onClick={async () => {
+                  if (await askConfirm({ title: `Disable credential ${item.opaqueKeyId}?`, body: "Scheduled tests and reads will stop.", confirmLabel: "Disable credential", tone: "destructive" })) void act("disable", item.id);
+                }}
               >
                 Disable
               </button>

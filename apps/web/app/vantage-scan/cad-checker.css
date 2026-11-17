@@ -6,8 +6,6 @@
    Empty stays empty. No demo metrics.
    ========================================================================== */
 
-.product-hub--cad-checker,
-.scan-hub--cad-checker,
 .cad-checker-page {
   --scan-group-a: "CAD";
   --scan-group-b: "CODE";

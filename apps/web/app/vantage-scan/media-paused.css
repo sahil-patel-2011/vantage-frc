@@ -4,7 +4,6 @@
    Empty stays empty. No demo metrics.
    ========================================================================== */
 
-.scan-hub--media-paused,
 .media-paused-page {
   display: grid;
   gap: var(--scan-stack, 18px);

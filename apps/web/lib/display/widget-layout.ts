@@ -21,7 +21,7 @@ import {
   PRESET_WIDGETS,
   type DisplayWidget,
   type DisplayWidgetType,
-} from "../display";
+} from "./index";
 
 /** Columns in the board grid. Two panels across is what reads at pit distance. */
 export const BOARD_COLUMNS = 12;

@@ -15,7 +15,7 @@ import { MIN_SUMMARY_MATCHES, sharedFieldTeams, summarizeTeamMatches } from "../
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { apiErrorMessage, classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { Button } from "../../components/ui";
+import { Button, TableSkeleton } from "../../components/ui";
 import "./scouting-team-match-log.css";
 
 function num(teamKey: string): string {
@@ -97,7 +97,14 @@ export function ScoutingTeamMatchLog({
         : copy.showRetry ? <Button onClick={() => setRetry(current => current + 1)}>Retry matches</Button> : null}
     </div>;
   }
-  if (!view) return <p className="stml-empty" aria-busy="true">Loading matches…</p>;
+  if (!view) {
+    return (
+      <div className="stml" aria-busy="true">
+        <span className="sr-only" role="status">Loading matches…</span>
+        <TableSkeleton rows={4} cols={6} />
+      </div>
+    );
+  }
   if (view.status !== "ready") return <p className="stml-empty">{view.message}</p>;
 
   const notEnough = "not enough matches";

@@ -3,7 +3,8 @@
 import { staleCopyNotice } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState, PageHeader, Panel, askConfirm } from "../../components/ui";
+import { Button, EmptyState, PageHeader, Panel, SoftBlockSkeleton, askConfirm } from "../../components/ui";
+import { useInSettingsLayout } from "../../components/settings-layout";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { safeAppPath } from "../../lib/security/safe-navigation";
@@ -44,10 +45,12 @@ async function persistSecuritySnapshot(data: SecurityView): Promise<void> {
 }
 
 function SecurityRelated({ orgId }: { orgId?: string }) {
+  // Inside Settings these are rows of the Settings list already.
+  if (useInSettingsLayout()) return null;
   return (
     <nav className="product-hub-related" aria-label="Related settings">
       <a href="/account">Account</a>
-      <a href="/notifications/preferences">Notification prefs</a>
+      <a href="/notifications/preferences">Notifications</a>
       {orgId ? (
         <a href={`/team/security?orgId=${encodeURIComponent(orgId)}`}>Team security</a>
       ) : null}
@@ -177,19 +180,30 @@ export default function SecurityClient({
   async function revoke(body: Record<string, unknown>) {
     if (
       !(await askConfirm({
-        title: body.revokeAll ? "Disable 2FA and revoke remembered devices?" : "Revoke this remembered device?",
-        body: null,
-        confirmLabel: body.revokeAll ? "Disable 2FA" : "Revoke device",
+        title: body.revokeAll ? "Turn off two-step sign-in?" : "Revoke this remembered device?",
+        body: body.revokeAll
+          ? "Signing in will only need your email code. Every remembered device is forgotten. Your recovery codes stop working."
+          : "That device will need a code next time.",
+        confirmLabel: body.revokeAll ? "Turn off two-step sign-in" : "Revoke device",
         tone: "destructive",
       }))
     ) {
       return;
     }
-    await fetch("/api/security/mfa", {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    try {
+      const response = await fetch("/api/security/mfa", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        setMessage(responseError(await response.json().catch(() => null)) || "Nothing changed. Try again.");
+        return;
+      }
+    } catch {
+      setMessage("Nothing changed. Try again.");
+      return;
+    }
     await load();
   }
 
@@ -222,23 +236,22 @@ export default function SecurityClient({
           <SecurityRelated orgId={orgId} />
         </PageHeader>
         <OfflineBanner feature="Security" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState
-          soft
-          title={failure ? failure.title : "Loading security…"}
-          description={failure ? failure.description : "Checking authenticator enrollment and remembered devices."}
-          aria-busy={!fetchFailed}
-        >
-          {failure?.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
-            </Button>
-          ) : null}
-          {failure?.showRetry ? (
-            <Button variant="secondary" type="button" onClick={() => void load()}>
-              Retry
-            </Button>
-          ) : null}
-        </EmptyState>
+        {failure ? (
+          <EmptyState soft title={failure.title} description={failure.description}>
+            {failure.primary ? (
+              <Button as="a" variant="primary" href={failure.primary.href}>
+                {failure.primary.label}
+              </Button>
+            ) : null}
+            {failure.showRetry ? (
+              <Button variant="secondary" type="button" onClick={() => void load()}>
+                Retry
+              </Button>
+            ) : null}
+          </EmptyState>
+        ) : (
+          <div aria-busy="true"><SoftBlockSkeleton lines={3} /></div>
+        )}
       </main>
     );
   }
@@ -363,8 +376,8 @@ export default function SecurityClient({
                   <Button variant="secondary" type="button" onClick={() => void action("regenerate")}>
                     Regenerate recovery codes
                   </Button>
-                  <Button variant="secondary" type="button" onClick={() => void revoke({ revokeAll: true })}>
-                    Disable 2FA
+                  <Button variant="secondary" tone="danger" type="button" onClick={() => void revoke({ revokeAll: true })}>
+                    Turn off two-step sign-in
                   </Button>
                 </>
               ) : null}
@@ -384,7 +397,7 @@ export default function SecurityClient({
                       <strong>{device.label}</strong>
                       <small>Expires {new Date(device.expiresAt).toLocaleDateString()}</small>
                     </div>
-                    <Button variant="secondary" type="button" onClick={() => void revoke({ deviceId: device.id })}>
+                    <Button variant="secondary" tone="danger" type="button" onClick={() => void revoke({ deviceId: device.id })}>
                       Revoke
                     </Button>
                   </div>

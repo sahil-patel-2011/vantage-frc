@@ -11,6 +11,6 @@ describe("Sponsor Renewal ROI last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"sponsor-renewal-roi"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Sponsor Renewal ROI"/);
+    expect(src).toMatch(/feature="Sponsor renewals"/);
   });
 });

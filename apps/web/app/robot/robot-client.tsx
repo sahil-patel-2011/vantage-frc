@@ -181,7 +181,7 @@ function SubsystemCard({
                 Open {provider ?? "CAD"}
               </a>
               <button type="button" className="robot-link" disabled={busy} onClick={() => void patch({ cadUrl: null })}>
-                unlink
+                Unlink
               </button>
             </span>
           ) : (subsystem.vaultDocumentCount ?? 0) > 0 ? (
@@ -201,7 +201,7 @@ function SubsystemCard({
             <span className="robot-domain-value">
               <code className="robot-code">{subsystem.codeRef}</code>
               <button type="button" className="robot-link" disabled={busy} onClick={() => void patch({ codeRef: "" })}>
-                clear
+                Clear
               </button>
             </span>
           ) : codeSuggestion ? (
@@ -446,7 +446,7 @@ export default function RobotClient({ embedded = false }: { embedded?: boolean }
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs"><a href={withOrgHref("/build", null)}>Build</a> / Robot</span>
-            <h1>Robot Blueprint</h1>
+            <h1>Robot blueprint</h1>
           </div>
         </header>
         <OfflineBanner feature="Robot" fromCache={fromCache} cachedAt={cachedAt} />
@@ -478,7 +478,7 @@ export default function RobotClient({ embedded = false }: { embedded?: boolean }
         <header className="app-page-header">
           <div>
             <span className="breadcrumbs"><a href={withOrgHref("/build", view?.context?.orgId ?? null)}>Build</a> / Robot</span>
-            <h1>Robot Blueprint</h1>
+            <h1>Robot blueprint</h1>
             <p>Every subsystem linked to its CAD, code, strategy priority, and live ops data.</p>
           </div>
         </header>
@@ -501,7 +501,7 @@ export default function RobotClient({ embedded = false }: { embedded?: boolean }
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs"><a href={withOrgHref("/build", view?.context?.orgId ?? null)}>Build</a> / Robot</span>
-          <h1>Robot Blueprint</h1>
+          <h1>Robot blueprint</h1>
           <p>
             Every part of the robot for {teamProseLabel(view.context.teamNumber, view.context.orgName) ?? "your team"} — CAD, code, strategy, and ops per
             subsystem, {view.context.seasonYear} season.
@@ -528,6 +528,7 @@ export default function RobotClient({ embedded = false }: { embedded?: boolean }
         </p>
       ) : null}
 
+      {robotSubsystems.length > 0 ? (
       <section className="robot-rollup app-card">
         <div className="robot-rollup-main">
           <strong>{rollup.percent}%</strong>
@@ -545,6 +546,7 @@ export default function RobotClient({ embedded = false }: { embedded?: boolean }
           <li className={rollup.untested ? "gap" : undefined}>No practice reps: {rollup.untested}</li>
         </ul>
       </section>
+      ) : null}
 
       {robotSubsystems.length === 0 ? (
         <EmptyState

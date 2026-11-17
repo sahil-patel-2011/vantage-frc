@@ -124,7 +124,7 @@ export function draftEmptyAction(input: {
 }): { label: string; href: string } {
   if (input.canEdit === false) {
     return {
-      label: "Open Scouting",
+      label: "Open scouting",
       href: hubHref("/competition", "scouting", input.orgId),
     };
   }
@@ -264,7 +264,7 @@ export function draftNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Scout rows stay available while the board reloads.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -295,7 +295,7 @@ export function draftNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Add match notes so pick assist lands once metrics sync.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -321,7 +321,7 @@ export function draftNextActions(input: {
     },
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Deepen pick assist with your team’s scout notes.",
       href: hubHref("/competition", "scouting", orgId),
     },

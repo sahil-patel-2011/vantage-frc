@@ -1,4 +1,5 @@
 import { teamProseLabel } from "../../components/app-shell-model";
+import { escapeHtml } from "../security/escape-html";
 /**
  * Weekly parent digest builder. Pure and honest: when the period holds no real
  * events and no logistics note, it returns null and NOTHING is sent — an empty
@@ -52,14 +53,6 @@ export function digestPeriod(now: Date): ParentDigestPeriod {
 }
 
 const MAX_EVENTS = 40;
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
 
 function safeZone(timeZone: string | undefined): string {
   if (!timeZone) return "UTC";

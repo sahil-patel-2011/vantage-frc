@@ -66,8 +66,8 @@ working.
 The free chain, in order (`packages/free-relay/src/adapter.ts`):
 
 1. **`FREE_RELAY_*`** — an OpenAI-compatible proxy you run yourself, typically Ollama or
-   LM Studio on a shop machine or a Raspberry Pi. Free, private, and as good as the
-   hardware.
+   LM Studio on a shop machine. Free, private, and as good as the hardware. (Never a proxy in
+   front of Freebuff — see [FREEBUFF.md](FREEBUFF.md).)
 2. **Groq free tier** — fast, small open models.
 3. **OpenRouter free tier** — rotating free open-weight models.
 4. **Petals** — opt-in, as above.
@@ -99,5 +99,5 @@ the feature unusable in a pit. Keep the data at home and the inference on a key.
 ## Related
 
 - [LOCAL_AI.md](LOCAL_AI.md) — pointing Vantage at Ollama or LM Studio
-- [LOCAL_RELAY.md](LOCAL_RELAY.md) — the Raspberry Pi relay
+- [LOCAL_RELAY.md](LOCAL_RELAY.md) — how a hosted deployment reaches a model on your LAN
 - [AI_BRIDGE.md](AI_BRIDGE.md) — how requests are routed and metered

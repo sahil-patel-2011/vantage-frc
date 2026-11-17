@@ -51,19 +51,19 @@ describe("leftover money and ops empty cards", () => {
     expect(day).toMatch(/Add a contact/);
   });
 
-  it("Playbook leftover Choose a page has one New page primary", () => {
+  it("Playbook leftover Choose a page points at the list; New page lives once, in the side pane", () => {
     const knowledge = src("app/team/knowledge/knowledge-client.tsx");
-    expect(knowledge).toMatch(/title="Choose a page"/);
-    expect(knowledge).toMatch(/New page/);
+    expect(knowledge).toMatch(/title="Choose a page" description="Pick a page on the left\."/);
+    expect(knowledge.match(/>\s*New page\s*<\/Button>/g)?.length).toBe(1);
     expect(knowledge).toMatch(/onClick=\{beginCreate\}/);
   });
 
   it("Scouted vs official leftover empty opens Scouting", () => {
     const recon = src("app/scouting/scouting-reconciliation-panel.tsx");
-    expect(recon).toMatch(/Open Scouting/);
-    // Scouting opens on the event being reconciled; with no event yet the action is Choose event.
+    expect(recon).toMatch(/Open scouting/);
+    // Scouting opens on the event being reconciled; with no event yet the action is Set active event.
     expect(recon).toMatch(/withOrgHref\(view\.eventKey \? `\/scouting\?eventKey=\$\{encodeURIComponent\(view\.eventKey\)\}`/);
-    expect(recon).toMatch(/view\.eventKey \? "Open Scouting" : "Choose event"/);
+    expect(recon).toMatch(/view\.eventKey \? "Open scouting" : "Set active event"/);
     expect(recon).not.toMatch(/badge="Needs setup"/);
   });
 

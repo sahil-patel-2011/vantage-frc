@@ -24,6 +24,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./media-kit.css";
+import { pct } from "../../lib/format/percent";
 
 function isMediaKitView(value: unknown): value is MediaKitView {
   if (!value || typeof value !== "object") return false;
@@ -58,10 +59,6 @@ function tierTone(tier: MediaKitReadinessTier): string {
   if (tier === "ready") return "good";
   if (tier === "partial") return "setup";
   return "setup";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<MediaKitView, { status: "live" }>;

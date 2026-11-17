@@ -4,8 +4,6 @@
    owns the look). This overlay only keeps the page inside its column.
    ========================================================================== */
 
-.product-hub--settings,
-.scan-hub--settings,
 .settings-home {
   min-width: 0;
 }

@@ -10,9 +10,13 @@ import {
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import { statusBadgeClass } from "../../../components/ui/empty-state";
+import { useInSettingsLayout } from "../../../components/settings-layout";
 
 export function RelatedStrip({ orgId }: { orgId: string }) {
+  const inSettings = useInSettingsLayout();
   const links = aiKeysRelatedLinks(orgId, { include: [...AI_KEYS_RELATED_INCLUDE] });
+  // Inside Settings the frame's back link is the way out; this row repeated other pages.
+  if (inSettings) return null;
   return (
     <nav className="product-hub-related ai-keys-related" aria-label="Related AI settings">
       {links.map((link) => (
@@ -91,7 +95,6 @@ export function LoadFailurePanel({
   return (
     <section className="app-card soft-panel ai-keys-shell" role="status">
       <span className={statusBadgeClass(badge)}>{badge}</span>
-      <span className="eyebrow">{badge.toUpperCase()}</span>
       <h2>{copy.title}</h2>
       <p className="app-muted">{copy.description}</p>
       {copy.primary ? (

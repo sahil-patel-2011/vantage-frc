@@ -47,7 +47,7 @@ async function persistGrantReportSnapshot(
     await putFeatureSnapshot("grant-report", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("grant-report", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Grant Report already painted; IndexedDB is best-effort.
+    // Live Grant report already painted; IndexedDB is best-effort.
   }
 }
 
@@ -116,10 +116,10 @@ function GrantReportShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Grant Report"}
+            {" / Grant report"}
           </>
         }
-        title="Grant Report"
+        title="Grant report"
         description={description}
       >
         <GrantReportRelatedStrip orgId={orgId} />
@@ -211,7 +211,7 @@ export default function GrantReportClient() {
         if (!response.ok || !isGrantReportView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError(staleCopyNotice("Grant Report"));
+            setError(staleCopyNotice("Grant report"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -226,7 +226,7 @@ export default function GrantReportClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError(staleCopyNotice("Grant Report"));
+          setError(staleCopyNotice("Grant report"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -296,7 +296,7 @@ export default function GrantReportClient() {
   if (shell === "loading") {
     return (
       <GrantReportShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Grant report" fromCache={fromCache} cachedAt={cachedAt} />
       </GrantReportShell>
     );
   }
@@ -310,7 +310,7 @@ export default function GrantReportClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Grant report" fromCache={fromCache} cachedAt={cachedAt} />
       </GrantReportShell>
     );
   }
@@ -322,7 +322,7 @@ export default function GrantReportClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Grant report" fromCache={fromCache} cachedAt={cachedAt} />
       </GrantReportShell>
     );
   }
@@ -330,7 +330,7 @@ export default function GrantReportClient() {
   if (view?.status !== "live") {
     return (
       <GrantReportShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Grant report" fromCache={fromCache} cachedAt={cachedAt} />
       </GrantReportShell>
     );
   }
@@ -341,10 +341,10 @@ export default function GrantReportClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Grant Report"}
+            {" / Grant report"}
           </>
         }
-        title="Grant Report"
+        title="Grant report"
         description="Post-grant impact reports generated from your team's own logged outreach and finance records."
       >
         {/* One way into AI: Ask AI opens on this page's skill with its records. */}
@@ -376,7 +376,7 @@ export default function GrantReportClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Grant Report" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Grant report" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p {...staleCopyProps(error)}>
@@ -462,7 +462,7 @@ function EligibleGrants({
                 {grant.decisionAt ? ` · decided ${new Date(grant.decisionAt).toLocaleDateString()}` : ""}
               </small>
             </div>
-            <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-report", grantApplicationId: grant.id })}>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-report", grantApplicationId: grant.id })}>
               {grant.hasReport ? "Regenerate report" : "Generate report"}
             </Button>
           </li>
@@ -506,18 +506,19 @@ function Reports({
                   {report.outreachCount} outreach message(s)
                 </small>
               </div>
-              <button
-                type="button"
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
+                tone="danger"
                 disabled={busy}
                 onClick={async () => {
-                  if (await askConfirm({ title: "Delete this report?", body: null, confirmLabel: "Delete report", tone: "destructive" })) {
+                  if (await askConfirm({ title: "Delete this report?", body: "The generated report text is removed. The grant itself stays.", confirmLabel: "Delete report", tone: "destructive" })) {
                     mutate({ action: "delete-report", reportId: report.id });
                   }
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </header>
             {report.outreachByKind.length > 0 ? (
               <small className="app-muted">

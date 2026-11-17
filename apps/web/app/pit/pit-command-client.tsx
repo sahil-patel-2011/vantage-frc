@@ -122,6 +122,8 @@ const due = (value: string | null) => {
   })}`;
 };
 
+const sentenceCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+
 const matchLabel = (value: Data["nextMatch"]) =>
   !value
     ? "No upcoming match"
@@ -542,7 +544,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
       <section className={`pit-gate ${data.gate.state}`}>
         <div className="pit-gate-state">
           <span>Release gate</span>
-          <strong>{data.gate.state === "empty" ? "—" : data.gate.state.toUpperCase()}</strong>
+          <strong>{data.gate.state === "empty" ? "—" : sentenceCase(data.gate.state)}</strong>
           <small>
             {data.gate.state === "go"
                 ? "Evidence clear"
@@ -609,7 +611,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
               <span>Season pattern</span>
               <h2>Repeat failures</h2>
             </div>
-            <a href={fmeaHref}>Open failure log log</a>
+            <a href={fmeaHref}>Open failure log</a>
           </header>
           <ul>
             {data.repeatAlerts.map((alert) => (
@@ -822,6 +824,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
                 >
                   <button
                     type="button"
+                    aria-label={`Mark "${i.task}" done`}
                     disabled={busy === i.id}
                     onClick={() =>
                       void mutate({ action: "complete_maintenance", id: i.id }, "Maintenance completed.", i.id)
@@ -879,7 +882,7 @@ export default function PitCommandClient({ orgId }: { orgId: string }) {
                     </small>
                   </div>
                   <div>
-                    <b>{b.gate.toUpperCase()}</b>
+                    <b>{sentenceCase(b.gate)}</b>
                     <small>{ago(b.measuredAt)}</small>
                   </div>
                   <button

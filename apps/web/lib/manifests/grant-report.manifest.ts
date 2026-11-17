@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "grant-report",
-  title: "Grant Report",
+  title: "Grant report",
   route: "/grant-report",
   apiRoute: "/api/grant-report",
   hub: "Business",

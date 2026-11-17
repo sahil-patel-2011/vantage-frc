@@ -8,7 +8,7 @@ import FormsClient from "./forms-client";
 import "./forms.css";
 
 export const metadata = {
-  title: "Scouting form builder",
+  title: "Scouting forms",
   description:
     "Build and publish custom match and pit forms. Scouts and Coverage stay blank until a real version exists.",
 };
@@ -27,8 +27,8 @@ export default async function ScoutingFormsPage({
     return (
       <main className="module-page sfb-page soft-gate">
         <PageHeader
-          breadcrumbs="Competition / Form builder"
-          title="Scouting form builder"
+          breadcrumbs="Competition / Scouting forms"
+          title="Scouting forms"
           description="Publish match or pit forms. Scouts and Coverage stay blank until a real version exists."
         >
           <nav className="product-hub-related sfb-related" aria-label="Related competition tools">

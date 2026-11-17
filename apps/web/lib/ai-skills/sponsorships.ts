@@ -6,9 +6,9 @@
  * Nothing is invented: a reason quotes a recorded stage or date, an amount appears only when the
  * team recorded one, and with no records the list is empty.
  */
-import type { Sponsor, SponsorProspect } from "../business-portal";
-import type { SponsorReminder } from "../sponsor-pipeline";
-import { pipelineStageLabel } from "../sponsor-pipeline";
+import type { Sponsor, SponsorProspect } from "../business/portal";
+import type { SponsorReminder } from "../sponsors/pipeline";
+import { pipelineStageLabel } from "../sponsors/pipeline";
 import { dollarsOrNull } from "./bound";
 import type { AiSkillDraftKind } from "./catalog";
 

@@ -697,7 +697,7 @@ export default function MessagesClient({
   }
 
   async function softDelete(messageId: string) {
-    if (!(await askConfirm({ title: "Delete this message for everyone in the conversation?", body: null, confirmLabel: "Delete message", tone: "destructive" }))) return;
+    if (!(await askConfirm({ title: "Delete this message for everyone in the conversation?", body: "Its text is removed for everyone, and it comes off the pinned list if it was pinned.", confirmLabel: "Delete message", tone: "destructive" }))) return;
     const response = await fetch("/api/messages", {
       method: "POST",
       headers: { "content-type": "application/json" },

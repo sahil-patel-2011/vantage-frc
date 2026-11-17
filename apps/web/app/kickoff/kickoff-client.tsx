@@ -170,7 +170,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
       : null;
     return (
       <Root className="module-page kick-page">
-        <PageHeader breadcrumbs={crumbs} title="Kickoff & Game Analysis" />
+        <PageHeader breadcrumbs={crumbs} title="Kickoff" />
         <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
@@ -198,7 +198,7 @@ export default function KickoffClient({ embedded = false }: { embedded?: boolean
       <Root className="module-page kick-page">
         <PageHeader
           breadcrumbs={crumbs}
-          title="Kickoff & Game Analysis"
+          title="Kickoff"
           description="Break the new game into scoring actions, rank them by value, and lock the design priorities."
         />
         <OfflineBanner feature="Kickoff" fromCache={fromCache} cachedAt={cachedAt} />

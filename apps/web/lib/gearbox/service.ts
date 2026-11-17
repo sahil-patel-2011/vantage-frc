@@ -1,5 +1,5 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import type { Stage } from "../gearbox";
+import type { Stage } from "./index";
 import {
   gearboxWriteFromUniqueViolation,
   resolveGearboxWrite,

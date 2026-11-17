@@ -9,7 +9,7 @@ import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 
 export const metadata = {
-  title: "Team admin",
+  title: "Members and invites",
   description: "Invite people and choose what each person can open.",
 };
 
@@ -65,7 +65,7 @@ export default async function TeamAdminPage({
         description={
           access?.member
             ? "Your access doesn't include inviting people or changing what they can do. You can ask the owner and mentors to invite someone below."
-            : "Team admin opens for the owner and mentors of a team you're on."
+            : "Members and invites opens for the owner and mentors of a team you're on."
         }
       >
         <Button as="a" variant="secondary" href={`/dashboard?orgId=${encodeURIComponent(orgId)}`}>Back to Home</Button>

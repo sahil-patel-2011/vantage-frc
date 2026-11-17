@@ -328,7 +328,7 @@ export default function InventoryClient() {
       {/* One way into AI from every page: Ask AI on this page's skill (was an "Analyze" panel). */}
       <div className="ask-ai-row">
         <AskAiButton orgId={readyOrgId} skill="spares" prompt="What are we low on?" />
-        <p>What to reorder before build hours are lost, from low-stock levels and BOM shortfalls.</p>
+        <p>What to reorder before build hours are lost, from low-stock levels and parts-list shortfalls.</p>
       </div>
     </main>
   );

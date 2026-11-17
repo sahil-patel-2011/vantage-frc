@@ -122,7 +122,7 @@ test("a part can be marked as a spare from the page that owns it, and Spare Fore
   // the board underneath it. The failure then landed on the Add button and
   // read as the button having been renamed.
   await gotoAsTeam(owner.page, "/inventory");
-  await expect(owner.page.getByRole("heading", { level: 1, name: "Inventory & BOM" })).toBeVisible();
+  await expect(owner.page.getByRole("heading", { level: 1, name: "Inventory", exact: true })).toBeVisible();
   /*
     The empty state and the populated state both call this "Add a part" now.
     They did not always: the toolbar said "Add item" and only appeared once the

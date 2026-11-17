@@ -94,7 +94,7 @@ export function strategyShellSetupSteps(orgId?: string | null): StrategyShellSet
     },
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Match and pit entries deepen explainability once synced.",
       href: hubHref("/competition", "scouting", orgId),
     },
@@ -221,7 +221,7 @@ export function strategyNextActions(input: {
         },
         {
           id: "scouting",
-          label: "Open Scouting",
+          label: "Open scouting",
           detail: "Scout notes stay empty until someone on your team enters them.",
           href: hubHref("/competition", "scouting", null),
         },
@@ -250,7 +250,7 @@ export function strategyNextActions(input: {
         },
         {
           id: "scouting",
-          label: "Open Scouting",
+          label: "Open scouting",
           detail: "Scout notes wait until an event is set.",
           href: hubHref("/competition", "scouting", orgId),
         },
@@ -278,7 +278,7 @@ export function strategyNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Add match notes so explainability lands once metrics sync.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -308,7 +308,7 @@ export function strategyNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Scout coverage stays available while strategy reloads.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -351,7 +351,7 @@ export function strategyNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Add match notes so factors deepen once a matchup loads.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -378,7 +378,7 @@ export function strategyNextActions(input: {
     },
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Deepen matchup explainability with this team’s scout notes.",
       href: hubHref("/competition", "scouting", orgId),
     },

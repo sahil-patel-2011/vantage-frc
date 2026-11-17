@@ -6,12 +6,13 @@
  * catalog prompts stay out, and impact hours are never invented or attached.
  */
 
+import { escapeHtml } from "../security/escape-html";
 import {
   AWARD_STATUSES,
   awardCatalogEntry,
   awardStatusLabel,
   type AwardStatus,
-} from "../awards";
+} from "./index";
 import {
   AWARD_NOTEBOOK_TEXT_ONLY_REFUSAL,
   selectAwardNotebookPhotoEvidence,
@@ -105,15 +106,6 @@ export function awardExportFileStem(input: {
     .slice(0, 48);
   const idTail = input.submissionId.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 8);
   return `${slug || "award"}-${input.seasonYear}${idTail ? `-${idTail}` : ""}`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 }
 
 function realItems(items: readonly AwardExportItemInput[]): AwardExportItem[] {

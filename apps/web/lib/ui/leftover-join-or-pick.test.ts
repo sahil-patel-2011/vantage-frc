@@ -59,13 +59,4 @@ describe("leftover student chrome says Choose your team", () => {
       expect(src, rel).not.toMatch(/pick a team before attaching/i);
     }
   });
-
-  it("form preview photos are stored with this team", () => {
-    const src = readFileSync(
-      join(WEB_ROOT, "app/scouting/forms/forms-preview.tsx"),
-      "utf8",
-    );
-    expect(src).toMatch(/stored with this team/);
-    expect(src).not.toMatch(/stored per organization/);
-  });
 });

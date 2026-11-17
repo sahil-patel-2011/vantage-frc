@@ -50,11 +50,27 @@ const EVERYDAY: PinDefinition[] = [
 
 /** Places that are not a workspace section but people still want one tap away. */
 const EXTRAS: Record<string, PinDefinition[]> = {
-  competition: [{ href: "/rankings", label: "Stats", icon: "stats" }],
+  // Sections and tools that left the section rows for More tools keep the hrefs the old menu
+  // used, so a pin saved from it still resolves.
+  competition: [
+    { href: "/competition?tab=teams", label: "Teams", icon: "stats" },
+    { href: "/competition?tab=picks", label: "Pick list", icon: "rank" },
+    { href: "/competition?tab=match-checklist", label: "Our robot", icon: "clipboard" },
+    { href: "/rankings", label: "Stats", icon: "stats" },
+    { href: "/competition?tab=forms", label: "Scouting forms", icon: "form" },
+    { href: "/scout-coverage-live", label: "Assignments", icon: "assignment" },
+    { href: "/display", label: "Pit TV", icon: "display" },
+  ],
   team: [
+    { href: "/team?tab=knowledge", label: "Playbook", icon: "grid" },
     TEAM_RESOURCES_PIN,
     { href: "/files", label: "Files", icon: "grid" },
     { href: "/logistics", label: "Logistics", icon: "pin" },
+  ],
+  business: [
+    { href: "/business?tab=grants", label: "Grants", icon: "clipboard" },
+    { href: "/business?tab=evidence", label: "Outreach", icon: "grid" },
+    { href: "/business?tab=achievements", label: "Awards", icon: "clipboard" },
   ],
 };
 

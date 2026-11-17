@@ -8,7 +8,7 @@ const ACTIONS = [
   { key: "I", title: "Team intel", copy: "Lookup or compare", path: "/intel", intent: "secondary" as const },
   { key: "D", title: "Team dossier", copy: "Season fact cards", path: "/dossier", intent: "secondary" as const },
   { key: "A", title: "Ask AI", copy: "Plan with context", path: "/chat", intent: "secondary" as const },
-  { key: "C", title: "CAD agent", copy: "Bind Onshape, then sketch live", path: "/cad", intent: "secondary" as const },
+  { key: "C", title: "CAD agent", copy: "Connect Onshape, then sketch live", path: "/cad", intent: "secondary" as const },
 ];
 
 export default function QuickActions({ orgId }: { orgId: string }) {

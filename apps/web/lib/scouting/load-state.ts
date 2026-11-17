@@ -77,7 +77,7 @@ export function loadFailedCopy(failure: ScoutLoadFailure): { description: string
   switch (failure) {
     case "offline":
       return {
-        description: "This phone has no saved copy of your event yet. Open Scouting once with a signal, then it works offline.",
+        description: "This phone has no saved copy of your event yet. Open scouting once with a signal, then it works offline.",
         action: "retry",
       };
     case "signed-out":

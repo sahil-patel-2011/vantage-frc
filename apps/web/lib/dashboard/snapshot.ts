@@ -732,8 +732,8 @@ export async function loadDashboardSnapshot(
   }
 
   async function robotReadiness() {
-    const { loadBatteryFleet } = await import("../load-battery-fleet");
-    const { batteryReadinessChecklist } = await import("../battery-reliability");
+    const { loadBatteryFleet } = await import("../battery/load-fleet");
+    const { batteryReadinessChecklist } = await import("../battery/reliability");
     const [due, fleet, failures] = await Promise.all([
       client.query<{ count: string }>(
         `SELECT count(*)::text AS count FROM maintenance_items

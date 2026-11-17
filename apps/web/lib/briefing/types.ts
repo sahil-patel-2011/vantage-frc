@@ -1,14 +1,14 @@
 // One Pre-Match Briefing — consolidated domain types. Pure data shapes only.
 //
 // The briefing is THE pre-match surface: it fuses everything real the org has
-// for one match. These types extend the original BriefingView (lib/briefing.ts)
+// for one match. These types extend the original BriefingView (lib/briefing/index.ts)
 // with the sections that previously lived on /match-copilot (EPA, FMEA risks,
 // battery health, callouts) and the other pre-match tools (strategy cards,
 // opponent watchlist, defense planner, pit-repair triage). Every section is
 // nullable/empty — the UI renders honest per-section empty states, never demo
 // numbers.
 
-import type { BriefingView } from "../briefing";
+import type { BriefingView } from "./index";
 import type { CounterBookFailureTrigger, CounterBookTendency } from "../counter-book/types";
 import type {
   MatchCopilotBattery,

@@ -100,8 +100,8 @@ export function FormBuilderShell({
   return (
     <Root className="module-page sfb-page soft-gate">
       {!embedded ? <PageHeader
-        breadcrumbs="Competition / Form builder"
-        title="Scouting form builder"
+        breadcrumbs="Competition / Scouting forms"
+        title="Scouting forms"
         description="Publish match or pit forms. Scouts and Coverage stay blank until a real version exists."
       >
         <FormBuilderRelatedStrip orgId={orgId} />
@@ -136,7 +136,7 @@ export function FormBuilderShell({
           <Button as="a" variant="primary" href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={scoutingHref}>Open Scouting</Button>
+          <Button as="a" variant="primary" href={scoutingHref}>Open scouting</Button>
         ) : null}
         
       </EmptyState>

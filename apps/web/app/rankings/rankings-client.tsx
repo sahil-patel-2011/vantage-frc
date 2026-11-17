@@ -3,7 +3,7 @@
 import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState } from "../../components/ui";
+import { Button, EmptyState, TableSkeleton } from "../../components/ui";
 import { ExportButton, type CsvColumn } from "../../components/ui/export-button";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import {
@@ -294,7 +294,9 @@ export default function RankingsClient() {
               );
             })()
           ) : (
-            <p className="app-muted">Loading event rankings…</p>
+            <div aria-busy="true" aria-label="Loading event rankings">
+              <TableSkeleton rows={8} cols={3} />
+            </div>
           )}
         </div>
       </main>
@@ -354,7 +356,7 @@ export default function RankingsClient() {
           <p>
             {view.context.eventName ?? view.context.eventKey}
             {view.context.teamNumber != null ? ` — Team ${view.context.teamNumber}` : ""}
-            {syncedLabel ? ` · Data synced ${syncedLabel}` : ""}
+            {syncedLabel ? ` · Updated ${syncedLabel}` : ""}
           </p>
         </div>
         <div className="rank-header-actions">
@@ -392,7 +394,7 @@ export default function RankingsClient() {
             badge="Needs setup"
             badgeTone="setup"
             soft
-            title="Reference metrics not synced yet"
+            title="No rankings for this event yet"
             description={emptyAction.description}
           >
             <Button as="a" variant="primary" href={emptyAction.href}>
@@ -429,7 +431,7 @@ export default function RankingsClient() {
         )
       ) : groups.length === 0 ? (
         <div className="app-card rank-empty">
-          <strong>No elimination matches synced yet</strong>
+          <strong>No playoff matches yet</strong>
           <p className="app-muted">The bracket fills in once playoff results are posted for this event.</p>
         </div>
       ) : (

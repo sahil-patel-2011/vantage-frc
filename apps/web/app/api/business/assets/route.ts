@@ -4,7 +4,7 @@ import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
 import sharp from "sharp";
-import { MAX_SPONSOR_NORMALIZED_BYTES, MAX_SPONSOR_UPLOAD_BYTES, safeSponsorFilename, sponsorImageKind } from "../../../../lib/sponsor-assets";
+import { MAX_SPONSOR_NORMALIZED_BYTES, MAX_SPONSOR_UPLOAD_BYTES, safeSponsorFilename, sponsorImageKind } from "../../../../lib/sponsors/assets";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function value(form: FormData, name: string) {

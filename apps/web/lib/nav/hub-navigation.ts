@@ -1,12 +1,25 @@
 import { hubPrimaryTabs, hubWorkbenchId, type HubTabDef, type ProductHubDef } from "./hubs";
+/**
+ * A place shows the few sections people open every day; everything else is in its More tools
+ * (components/hub-sections.tsx), grouped under the section it belongs to, and in search.
+ *
+ * Competition is the three things a team does at an event: scout, plan the match, run the day.
+ * Teams and the pick list are part of planning (Match plan has its own Pick lists tab); Our
+ * robot, My Day and Pit TV are part of the day.
+ */
 const COMPETITION_SECTIONS = [
-  { id: "scouting", label: "Scout" }, { id: "forms", label: "Forms" },
-  { id: "scout-coverage-live", label: "Assignments" }, { id: "teams", label: "Teams" },
-  // Pick list is its own place at an event (alliance selection), with its own menu entry; the
-  // menu used to light up Match plan while the page said Pick list. Match plan no longer
-  // carries a second way to the same list when it sits inside Competition.
-  { id: "strategy", label: "Match plan" }, { id: "picks", label: "Pick list" },
-  { id: "command", label: "Event day" }, { id: "match-checklist", label: "Our robot" },
+  { id: "scouting", label: "Scout" },
+  { id: "strategy", label: "Match plan" },
+  { id: "command", label: "Event day" },
+];
+/** Playbook and the team's resources are in More tools; these four are the weekly routine. */
+const TEAM_SECTIONS = [
+  { id: "calendar", label: "Calendar" }, { id: "messages", label: "Chat" },
+  { id: "attendance", label: "People" }, { id: "todos", label: "Tasks" },
+];
+/** Grants, Outreach and Awards are seasonal and live in More tools. */
+const BUSINESS_SECTIONS = [
+  { id: "overview", label: "Overview" }, { id: "finance", label: "Money" }, { id: "sponsors", label: "Sponsors" },
 ];
 /**
  * "Robot" opens the robot: the blueprint, with its subsystems and its links to failures,
@@ -20,7 +33,12 @@ const BUILD_SECTIONS = [
 /** Each event task has one home. Permission roots are unchanged. */
 export function hubNavigationSections(hub: ProductHubDef, permitted: readonly HubTabDef[]) {
   const allowed = new Set(permitted.map(entry => entry.id));
-  const sections = hub.id === "competition" ? COMPETITION_SECTIONS : hub.id === "build" ? BUILD_SECTIONS : hubPrimaryTabs(hub);
+  const sections =
+    hub.id === "competition" ? COMPETITION_SECTIONS
+    : hub.id === "build" ? BUILD_SECTIONS
+    : hub.id === "team" ? TEAM_SECTIONS
+    : hub.id === "business" ? BUSINESS_SECTIONS
+    : hubPrimaryTabs(hub);
   return sections.filter(entry => allowed.has(entry.id) && allowed.has(hubWorkbenchId(hub, entry.id)));
 }
 /** A page says what it does; destination selection belongs to the main menu. */
@@ -35,35 +53,3 @@ export function hubPageTitle(hub: ProductHubDef, tab: string): string {
   if (buildSection) return buildSection.label;
   return hub.tabs.find(section => section.id === tab)?.label ?? hub.title;
 }
-/**
- * Follow-ups that are not already a button on this page's bar. Forms is on the Scout bar,
- * so "Edit forms" is not offered again underneath it.
- */
-export function visibleContextActions(hub: ProductHubDef, tab: string, permitted: readonly HubTabDef[]) {
-  const onBar = new Set(hubNavigationSections(hub, permitted).map((section) => section.id));
-  return (CONTEXT_ACTIONS[`${hub.id}:${tab}`] ?? []).filter(
-    (action) => permitted.some((entry) => entry.id === action.id) && !onBar.has(action.id),
-  );
-}
-
-/** Common follow-up actions instead of a second navigation catalog. */
-export const CONTEXT_ACTIONS: Record<string, readonly { id: string; label: string }[]> = {
-  "competition:command": [{ id: "schedule", label: "Full schedule" }, { id: "event-day-plan", label: "Plan travel and duties" }],
-  "competition:scouting": [{ id: "forms", label: "Edit forms" }, { id: "scout-coverage-live", label: "Assign scouts" }, { id: "scout-training-mode", label: "Practice scouting" }],
-  "competition:strategy": [{ id: "briefing", label: "Open match briefing" }, { id: "alliance-sim", label: "Try an alliance" }],
-  "competition:picks": [{ id: "alliance-selection-desk", label: "Run alliance selection" }],
-  "competition:match-checklist": [{ id: "pit", label: "Robot status" }, { id: "pit-repair-triage", label: "Log a repair" }, { id: "battery-rotation", label: "Charge plan" }],
-  "team:calendar": [{ id: "logistics", label: "Plan travel" }, { id: "duties", label: "Assign duties" }],
-  "team:messages": [{ id: "announcements", label: "Post an announcement" }],
-  "team:attendance": [{ id: "hours-self-view", label: "My hours" }, { id: "learning", label: "Learning" }],
-  "team:todos": [{ id: "season-planning-workspace", label: "Plan the season" }, { id: "practice", label: "Plan practice" }],
-  "team:knowledge": [{ id: "writer", label: "Write a draft" }, { id: "decisions", label: "Team decisions" }],
-  "business:finance": [{ id: "season-budget", label: "Season budget" }, { id: "orders", label: "Purchase orders" }, { id: "reimbursements", label: "Reimbursements" }],
-  "business:sponsors": [{ id: "sponsorship", label: "Sponsorship packages" }, { id: "sponsor-wall", label: "Sponsor wall" }],
-  "business:grants": [{ id: "grant-calendar", label: "Grant deadlines" }, { id: "grant-report", label: "Grant reports" }],
-  "business:evidence": [{ id: "fundraisers", label: "Fundraisers" }, { id: "awards-workbench", label: "Prepare awards" }],
-  "build:cad": [{ id: "cad-vault", label: "CAD files" }, { id: "cad-learn", label: "Learn CAD" }],
-  "build:code": [{ id: "troubleshoot", label: "Troubleshoot the robot" }, { id: "code-deploy-log", label: "Deployment history" }],
-  "build:fmea": [{ id: "robot", label: "Robot blueprint" }, { id: "manufacturing", label: "Manufacturing" }, { id: "batteries", label: "Batteries" }],
-  "ai:budgets": [{ id: "connections", label: "Connect AI" }, { id: "governance", label: "AI policy" }, { id: "usage", label: "Usage" }],
-};

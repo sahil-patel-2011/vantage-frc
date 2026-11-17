@@ -7,7 +7,7 @@ import { cadNextActions } from "../cad/cad-related";
 import { eventDayShellCopy } from "../command/event-day-related";
 import { hoursSelfViewShellCopy } from "../hours-self-view/hours-self-view-related";
 import { cadVaultShellCopy } from "../cad-vault/cad-vault-related";
-import { myDayNextActions, myDayShellCopy } from "../my-day-related";
+import { myDayNextActions, myDayShellCopy } from "../my-day/related";
 import { hubById, hubFeaturedMoreTabs } from "../nav/hubs";
 import { scoutingShellCopy } from "../scouting/scouting-related";
 import { expectPlainCopy } from "./copy-assertions";
@@ -16,7 +16,7 @@ const WEB = join(__dirname, "..", "..");
 
 const THIS_WEEK = [
   "app/dashboard/dashboard-home-model.ts",
-  "lib/my-day-related.ts",
+  "lib/my-day/related.ts",
   "app/my-day/my-day-client.tsx",
   "lib/scouting/scouting-related.ts",
   "app/scouting/scouting-client.tsx",

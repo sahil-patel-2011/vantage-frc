@@ -350,8 +350,9 @@ export default function ConnectorsClient() {
               ) : null}
 
               <div className="connector-actions">
-                {connector.canConnect && connectorConnectEndpoint(connector.id) ? (
-                  <Button variant="primary" type="button" disabled={busy || !orgId || managedByOthers} title={!orgId ? "Choose your team. This link is saved per team." : managedByOthers ? "Only an owner or admin can change this team's link." : undefined} onClick={() => void connect(connector, orgId)}>
+                {/* A team link someone else manages: no dead buttons, the scope note above says who. */}
+                {connector.canConnect && connectorConnectEndpoint(connector.id) && !managedByOthers ? (
+                  <Button variant="secondary" type="button" disabled={busy || !orgId} title={!orgId ? "Choose your team. This link is saved per team." : undefined} onClick={() => void connect(connector, orgId)}>
                     {connector.state === "token_expired" ? "Reconnect" : "Connect"}
                   </Button>
                 ) : null}
@@ -363,8 +364,8 @@ export default function ConnectorsClient() {
                 ) : null}
 
                 {/* Last, red, and asks first: it used to sit between Connect and Manage. */}
-                {connector.canDisconnect && connectorDisconnectEndpoint(connector.id) ? (
-                  <Button variant="ghost" tone="danger" type="button" className="connector-disconnect" disabled={busy || !orgId || managedByOthers} title={managedByOthers ? "Only an owner or admin can change this team's link." : undefined} onClick={() => void disconnect(connector, orgId)}>
+                {connector.canDisconnect && connectorDisconnectEndpoint(connector.id) && !managedByOthers ? (
+                  <Button variant="ghost" tone="danger" type="button" className="connector-disconnect" disabled={busy || !orgId} onClick={() => void disconnect(connector, orgId)}>
                     Disconnect
                   </Button>
                 ) : null}

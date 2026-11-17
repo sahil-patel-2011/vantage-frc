@@ -305,3 +305,99 @@ body.has-app-shell .workspace-hub-sections a:focus-visible {
     min-height: 44px;
   }
 }
+
+/* The section row and More tools sit side by side. More tools lives outside the row because
+   the row scrolls sideways, which would clip its panel. */
+body.has-app-shell .workspace-hub-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 24px;
+}
+body.has-app-shell .workspace-hub-bar > .workspace-hub-sections {
+  margin: 0;
+}
+body.has-app-shell .workspace-hub-more {
+  position: relative;
+}
+body.has-app-shell .workspace-hub-more > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font: 550 13px/1 var(--font-sans);
+  list-style: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+body.has-app-shell .workspace-hub-more > summary::-webkit-details-marker {
+  display: none;
+}
+body.has-app-shell .workspace-hub-more > summary > svg {
+  width: 16px;
+  height: 16px;
+}
+body.has-app-shell .workspace-hub-more > summary:hover,
+body.has-app-shell .workspace-hub-more[open] > summary {
+  color: var(--ink);
+}
+body.has-app-shell .workspace-hub-more > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+body.has-app-shell .workspace-hub-more-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(70dvh, 560px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  columns: 2 200px;
+  column-gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 12px 40px color-mix(in srgb, var(--ink) 14%, transparent);
+}
+body.has-app-shell .workspace-hub-more-panel ul {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  break-inside: avoid;
+}
+body.has-app-shell .workspace-hub-more-label {
+  padding: 0 8px 6px;
+  color: var(--muted);
+  font: 600 12px/1.3 var(--font-sans);
+}
+body.has-app-shell .workspace-hub-more-panel a {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 8px;
+  color: var(--ink);
+  font: 500 14px/1.3 var(--font-sans);
+  text-decoration: none;
+}
+body.has-app-shell .workspace-hub-more-panel a:hover {
+  background: var(--surface-2);
+}
+body.has-app-shell .workspace-hub-more-panel a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+@media (pointer: coarse) {
+  body.has-app-shell .workspace-hub-more > summary,
+  body.has-app-shell .workspace-hub-more-panel a {
+    min-height: 44px;
+  }
+}

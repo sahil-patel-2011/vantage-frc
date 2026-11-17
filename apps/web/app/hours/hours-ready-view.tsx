@@ -100,9 +100,9 @@ export function HoursReadyView({
               onClick={async () => {
                 if (
                   await askConfirm({
-                    title: `Sign out all ${summary.hereNow} clocked-in member(s)?`,
+                    title: `Sign everyone out (${summary.hereNow} clocked in)?`,
                     body: "Sessions left open from an earlier day are capped at your team's auto-close credit instead of being signed out now.",
-                    confirmLabel: "Sign out all",
+                    confirmLabel: "Sign everyone out",
                     tone: "neutral",
                   })
                 ) {
@@ -110,7 +110,7 @@ export function HoursReadyView({
                 }
               }}
             >
-              End meeting (sign all out)
+              Sign everyone out
             </Button>
           ) : null}
         </div>
@@ -155,10 +155,9 @@ export function HoursReadyView({
                   </option>
                 ))}
               </select>
-              {/* Secondary: scanning a card is this card's main action and its fallback is this
-                  button (the hint says so). Two filled buttons in one card was two "next steps". */}
+              {/* The page's one filled action; Scan in the card below is secondary. */}
               <Button
-                variant="secondary"
+                variant="primary"
                 type="button"
                 className="hours-big-btn"
                 disabled={busy}
@@ -187,7 +186,6 @@ export function HoursReadyView({
         <ScanClockForm
           orgId={orgId}
           kind={kind}
-          setKind={setKind}
           busy={busy}
           onBusy={(next) => setBusyKey(next ? "scan" : null)}
           onMessage={(message) => {
@@ -235,7 +233,7 @@ export function HoursReadyView({
                 <span className="rank">{index + 1}</span>
                 <span className="who">
                   <strong>{row.name ?? "Member"}</strong>
-                  {row.openRecordId ? <em>● IN</em> : null}
+                  {row.openRecordId ? <em>● In</em> : null}
                 </span>
                 <span className="total">
                   {fmtHours(row.totalHours)}
@@ -286,9 +284,14 @@ export function HoursReadyView({
           <div className="hours-forms">
             <ManualEntryForm orgId={orgId} members={members} canAdmin={canAdmin} selfId={selfId} busy={busyKey === "manual"} run={run} />
             {canAdmin ? (
-              <EnrollScanForm orgId={orgId} members={members} busy={busyKey === "enroll"} run={run} />
+              <details>
+                <summary data-disclosure>Scan cards and season settings</summary>
+                <div className="hours-forms">
+                  <EnrollScanForm orgId={orgId} members={members} busy={busyKey === "enroll"} run={run} />
+                  <PolicyForm orgId={orgId} policy={policy} busy={busyKey === "policy"} run={run} />
+                </div>
+              </details>
             ) : null}
-            {canAdmin ? <PolicyForm orgId={orgId} policy={policy} busy={busyKey === "policy"} run={run} /> : null}
           </div>
           <h2>
             {showMyLog ? "My entries" : "Recent entries"}{" "}

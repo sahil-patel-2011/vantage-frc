@@ -22,13 +22,13 @@
 .sched-setup-waitlist{min-height:44px;display:inline-flex;align-items:center}
 .sched-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:18px 20px;background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius-sm);box-shadow:0 0 0 1px var(--accent)}
 .sched-hero-main{display:grid;gap:2px}
-.sched-hero-kicker{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.sched-hero-kicker{color:var(--muted);font-size:11px;font-weight:700}
 .sched-hero-match{font-size:28px;line-height:1.1;color:var(--ink)}
 .sched-hero-sub{color:var(--muted);font-size:13px}
 .sched-hero-detail{display:grid;gap:8px;justify-items:end}
 .sched-hero-teams{color:var(--ink);font-size:13px;font-weight:600}
 .sched-hero-teams em{color:var(--muted);font-style:normal;font-weight:500}
-.sched-alliance-chip{padding:3px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:transparent}
+.sched-alliance-chip{padding:3px 10px;border-radius:var(--radius-pill);font-size:11px;font-weight:700;background:transparent}
 .sched-alliance-chip.red{color:var(--critical);border:1px solid var(--critical)}
 .sched-alliance-chip.blue{color:var(--accent);border:1px solid var(--accent)}
 .sched-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -39,7 +39,7 @@
 .sched-check{display:inline-flex;align-items:center;gap:8px;color:var(--ink);font-size:13px;cursor:pointer}
 .sched-check input{width:16px;height:16px;accent-color:var(--accent)}
 .sched-group{display:grid;gap:8px}
-.sched-group h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:var(--title-4);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.sched-group h2{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0;font-size:var(--title-4);color:var(--muted)}
 .sched-group h2 span{font-size:11px;font-variant-numeric:tabular-nums}
 .sched-group ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .sched-row{display:flex;align-items:center;gap:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm)}
@@ -58,7 +58,7 @@
 .sched-us{padding:1px 6px;border-radius:var(--radius-pill);font-size:11px;font-weight:800;font-style:normal;letter-spacing:.06em}
 .sched-us.red{color:var(--critical);border:1px solid var(--critical)}
 .sched-us.blue{color:var(--accent);border:1px solid var(--accent)}
-.sched-vs{color:var(--muted);font-size:11px;text-transform:uppercase}
+.sched-vs{color:var(--muted);font-size:11px}
 .sched-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .sched-score{display:inline-flex;align-items:baseline;gap:4px;color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums}
 .sched-score b{font-weight:600}

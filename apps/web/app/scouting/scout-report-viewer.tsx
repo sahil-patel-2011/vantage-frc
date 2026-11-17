@@ -97,6 +97,7 @@ export function ScoutReportViewer({
                 {canDelete ? (
                   <Button
                     variant="ghost"
+                    tone="danger"
                     size="sm"
                     disabled={busy}
                     onClick={async () => {

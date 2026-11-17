@@ -25,6 +25,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sponsor-suite.css";
+import { pct } from "../../lib/format/percent";
 
 function isSponsorSuiteView(value: unknown): value is SponsorSuiteView {
   if (!value || typeof value !== "object") return false;
@@ -49,16 +50,12 @@ async function persistSponsorSuiteSnapshot(
     await putFeatureSnapshot("sponsor-suite", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("sponsor-suite", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Sponsor Suite already painted; IndexedDB is best-effort.
+    // Live Sponsor suite already painted; IndexedDB is best-effort.
   }
 }
 
 const DECK_KINDS: SponsorSuiteDeckKind[] = ["pitch", "renewal"];
 const REMINDER_KINDS: SponsorSuiteReminderKind[] = ["thank_you", "renewal"];
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<SponsorSuiteView, { status: "live" }>;
 
@@ -125,10 +122,10 @@ function SponsorSuiteShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Suite"}
+            {" / Sponsor suite"}
           </>
         }
-        title="Sponsor Suite"
+        title="Sponsor suite"
         description={description}
       >
         <SponsorSuiteRelatedStrip orgId={orgId} />
@@ -159,7 +156,7 @@ function SponsorSuiteShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
+          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open sponsors</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <SponsorSuiteNextActionsPanel actions={actions} /> : null}
@@ -221,7 +218,7 @@ export default function SponsorSuiteClient() {
         if (!response.ok || !isSponsorSuiteView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError(staleCopyNotice("Sponsor Suite"));
+            setError(staleCopyNotice("Sponsor suite"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -236,7 +233,7 @@ export default function SponsorSuiteClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError(staleCopyNotice("Sponsor Suite"));
+          setError(staleCopyNotice("Sponsor suite"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -318,7 +315,7 @@ export default function SponsorSuiteClient() {
   if (shell === "loading") {
     return (
       <SponsorSuiteShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -332,7 +329,7 @@ export default function SponsorSuiteClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -344,7 +341,7 @@ export default function SponsorSuiteClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -352,7 +349,7 @@ export default function SponsorSuiteClient() {
   if (view?.status !== "live") {
     return (
       <SponsorSuiteShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -363,10 +360,10 @@ export default function SponsorSuiteClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Suite"}
+            {" / Sponsor suite"}
           </>
         }
-        title="Sponsor Suite"
+        title="Sponsor suite"
         description="Generate pitch/renewal decks, an end-of-season ROI report, and thank-you/renewal reminders — grounded in your recorded sponsors and contributions. Deck and ROI generation are metered."
       >
         {/* One way into AI: Ask AI opens on this page's skill with its records. */}
@@ -398,7 +395,7 @@ export default function SponsorSuiteClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -455,7 +452,7 @@ export default function SponsorSuiteClient() {
           description={shellCopy.description}
         >
           <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>
-            Open Sponsor CRM
+            Open sponsors
           </Button>
         </EmptyState>
       ) : null}
@@ -585,7 +582,7 @@ function RemindersPanel({
           badge="No reminders"
           badgeTone="setup"
           title="No pending reminders"
-          description="Create a thank-you or renewal reminder for a real CRM sponsor."
+          description="Create a thank-you or renewal reminder for one of your sponsors."
         />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>
@@ -766,18 +763,19 @@ function DeckPanel({
                 }}
               >
                 <strong>{deck.title}</strong>
-                <button
-                  type="button"
-                  className="text-button"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  tone="danger"
                   disabled={busy}
                   onClick={async () => {
-                    if (await askConfirm({ title: `Delete “${deck.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
+                    if (await askConfirm({ title: `Delete “${deck.title}”?`, body: "The generated deck and all its sections are deleted.", confirmLabel: "Delete", tone: "destructive" })) {
                       mutate({ action: "delete-deck", deckId: deck.id });
                     }
                   }}
                 >
                   Delete
-                </button>
+                </Button>
               </div>
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {deck.sections.map((section) => (

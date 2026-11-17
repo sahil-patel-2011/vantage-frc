@@ -99,7 +99,7 @@ test("student this week can walk Home → My Day/Scout → Video paste → CAD l
   const views = page.getByRole("tablist", { name: "Scouting task", exact: true });
   const denied = page.getByRole("heading", { name: /You don't have access to this/i });
   const setup = page.getByRole("link", {
-    name: /Choose your team|Set active event|Open Form builder/i,
+    name: /Choose your team|Set active event|Open scouting forms/i,
   });
   await expect(views.or(denied).or(setup.first())).toBeVisible({ timeout: 15_000 });
   if (await views.count()) {

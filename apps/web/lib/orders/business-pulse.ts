@@ -1,4 +1,4 @@
-import type { OrdersPulse, PurchaseRequest } from "../business-portal";
+import type { OrdersPulse, PurchaseRequest } from "../business/portal";
 import { summarizeOpenOrders } from "./evaluate";
 import type { OrderRequest, OrderStatus } from "./types";
 

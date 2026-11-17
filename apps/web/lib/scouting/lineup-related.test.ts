@@ -251,7 +251,7 @@ describe("lineupNextActions", () => {
       totalSlots: 0,
       canAssign: false,
     });
-    expect(actions[0]?.label).toBe("Open Scouting");
+    expect(actions[0]?.label).toBe("Open scouting");
     expect(actions[0]?.href).toBe("/competition?tab=scouting&orgId=org-1");
     expect(actions.some((action) => action.label === "Sync Team Data")).toBe(false);
     const description = lineupEmptyDescription({

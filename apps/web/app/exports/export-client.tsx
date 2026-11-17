@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "../../components/ui";
+import { useInSettingsLayout } from "../../components/settings-layout";
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchProductSession } from "../../lib/nav/product-session";
@@ -36,6 +37,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   strategy: "Strategy & research",
   ai: "AI artifacts",
   ops: "Ops & billing",
+};
+
+const JOB_STATUS_LABELS: Record<string, string> = {
+  queued: "Waiting",
+  running: "Preparing",
+  completed: "Ready",
 };
 
 const EXCLUSIONS = [
@@ -119,6 +126,7 @@ async function downloadBlob(response: Response, fallbackName: string) {
 }
 
 export default function ExportCenter({ orgId }: { orgId: string }) {
+  const inSettings = useInSettingsLayout();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -215,38 +223,6 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
     setBusy(false);
   }
 
-  async function downloadCsv() {
-    if (selected.length !== 1) {
-      setOk(false);
-      setMessage("Select exactly one domain for instant CSV download.");
-      return;
-    }
-    setBusy(true);
-    const response = await fetch("/api/exports", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        action: "csv",
-        orgId,
-        scope: exportScope,
-        domain: selected[0],
-        domains: selected,
-        filters: { eventKey: eventKey || undefined, excelBom },
-      }),
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      setOk(false);
-      setMessage(data.error ?? "CSV export failed");
-      setBusy(false);
-      return;
-    }
-    await downloadBlob(response, `${selected[0]}.csv`);
-    setOk(true);
-    setMessage("CSV downloaded.");
-    setBusy(false);
-  }
-
   async function downloadPdf() {
     setBusy(true);
     const response = await fetch("/api/exports", {
@@ -301,7 +277,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Settings › Team data and export</span>
-          <h1>Exports</h1>
+          <h1>Export</h1>
           <p>
             Download your team&apos;s data, including AI chats, as spreadsheets (CSV) or one ZIP. Only your
             team&apos;s rows are included, and never passwords or keys.
@@ -319,13 +295,16 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
         </div>
       </header>
 
-      <nav className="export-cross-nav" aria-label="Related team data">
-        <a href={`/scouting?orgId=${encodeURIComponent(orgId)}`}>Scouting</a>
-        <a href={`/strategy?orgId=${encodeURIComponent(orgId)}`}>Strategy</a>
-        <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
-        <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
-        {canSync ? <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Event data</a> : null}
-      </nav>
+      {/* Inside Settings the frame's back link is the way out; these five links led elsewhere. */}
+      {inSettings ? null : (
+        <nav className="export-cross-nav" aria-label="Related team data">
+          <a href={`/scouting?orgId=${encodeURIComponent(orgId)}`}>Scouting</a>
+          <a href={`/strategy?orgId=${encodeURIComponent(orgId)}`}>Strategy</a>
+          <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
+          <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
+          {canSync ? <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Event data</a> : null}
+        </nav>
+      )}
 
       {message ? (
         <p className={`telemetry-status${ok ? " success" : ""}`} role="status">
@@ -427,9 +406,6 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
             <Button variant="primary" type="button" disabled={busy || !selected.length} onClick={() => void createZip()}>
               ZIP selected
             </Button>
-            <Button variant="secondary" type="button" disabled={busy || selected.length !== 1} onClick={() => void downloadCsv()}>
-              Instant CSV
-            </Button>
             <Button variant="secondary" type="button" disabled={busy} onClick={() => void createZip(true)}>
               ZIP all {exportScope === "team" ? "team" : "private"} data
             </Button>
@@ -455,7 +431,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
           </section>
 
           <section className="app-card soft-panel export-panel">
-            <h2>Recent jobs</h2>
+            <h2>Your downloads</h2>
             {jobs.length === 0 ? (
               <div className="export-empty">
                 <span className="app-badge setup">No exports yet</span>
@@ -473,7 +449,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
                   <progress value={job.progress} max={100} aria-label={`${job.progress}% complete`} />
                   <div className="export-job-meta">
                     <span>
-                      {job.status} · {job.progress}%
+                      {JOB_STATUS_LABELS[job.status] ?? job.status} · {job.progress}%
                       {job.sizeBytes ? ` · ${(job.sizeBytes / 1024).toFixed(1)} KB` : ""}
                     </span>
                     {job.status === "completed" ? (

@@ -7,7 +7,8 @@ const DIR = __dirname;
 describe("Team security last snapshot stays on the phone", () => {
   it("points to Team admin Access instead of repeating the member list", () => {
     const src = readFileSync(join(DIR, "policy-client.tsx"), "utf8");
-    expect(src).toMatch(/Who can open what/);
+    // One pointer, in the header; a second "Who can open what" card repeated it.
+    expect(src).not.toMatch(/Who can open what/);
     expect(src).toMatch(/#people/);
     const page = readFileSync(join(DIR, "page.tsx"), "utf8");
     expect(page).not.toMatch(/HubAccessClient|CapabilitiesClient/);

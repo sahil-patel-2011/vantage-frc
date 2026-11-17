@@ -159,7 +159,7 @@ test("failed preference loads cannot overwrite saved choices", async ({ page, co
     });
   }
   await page.goto(`/account?tab=appearance&orgId=${orgId}`);
-  await page.getByText("More display settings", { exact: true }).click();
+  await page.getByText("This device and Home", { exact: true }).click();
   await expect(page.getByText("Your code preferences could not load.")).toBeVisible();
   await expect(page.getByRole("checkbox", { name: "Confirm before Bugbot opens a pull request", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Reset shortcuts", exact: true })).toBeDisabled();

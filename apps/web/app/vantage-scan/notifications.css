@@ -6,8 +6,6 @@
    Empty stays empty. No demo metrics.
    ========================================================================== */
 
-.product-hub--notifications,
-.scan-hub--notifications,
 .notif-page,
 .notif-prefs-page {
   --scan-group-a: "YOU";
@@ -18,141 +16,27 @@
   min-width: 0;
 }
 
-.product-hub--notifications .app-page-header,
-.product-hub--notifications .notif-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px 18px;
-  margin: 0 0 4px;
-}
-
-.product-hub--notifications .app-page-header h1,
-.product-hub--notifications > header h1 {
-  margin: 0;
-  font-size: var(--scan-title, clamp(22px, 2.6vw, 30px));
-  letter-spacing: -0.03em;
-  color: var(--scan-navy, var(--ink));
-  line-height: 1.12;
-}
-
-.product-hub--notifications .app-page-header p,
-.product-hub--notifications .app-muted {
-  max-width: 62ch;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.product-hub--notifications .notif-list,
-.product-hub--notifications .account-panel {
-  background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--scan-navy, var(--ink)) 10%, var(--line));
-  border-radius: var(--scan-radius, 16px);
-  box-shadow: var(--scan-shadow, 0 10px 28px rgba(13, 53, 96, 0.06));
-}
-
-.product-hub--notifications .notif-related,
-.product-hub--notifications .notif-toolbar,
-.product-hub--notifications .product-hub-related,
-.product-hub--notifications .notif-header-actions,
-.product-hub--notifications .notif-toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.product-hub--notifications .app-badge.setup,
-.product-hub--notifications .app-badge[data-tone='setup'] {
-  color: var(--scan-gold-ink, var(--ink));
-  background: var(--scan-gold, #e8b923);
-  border-color: transparent;
-}
-
-.product-hub--notifications table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.product-hub--notifications th {
-  color: var(--scan-navy, var(--ink));
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.product-hub--notifications input {
-  min-height: 44px;
-}
-
-.product-hub--notifications .product-hub-related,
-.product-hub--notifications [class*='-related'] {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.product-hub--notifications [class*='-next-actions'] {
-  display: grid;
-  gap: 8px;
-}
-
-.product-hub--notifications [class*='-next-actions'] li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 48px;
-  padding: 10px 0;
-  border-top: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
-}
-
 /* Group kickers for notifications: three scannable bands. */
-.product-hub--notifications .scan-group[data-band='a']::before { content: var(--scan-group-a); }
-.product-hub--notifications .scan-group[data-band='b']::before { content: var(--scan-group-b); }
-.product-hub--notifications .scan-group[data-band='c']::before { content: var(--scan-group-c); }
 
 @media (max-width: 720px) {
-  .product-hub--notifications,
-.scan-hub--notifications,
-.notif-page,
+  .notif-page,
 .notif-prefs-page {
     gap: 14px;
     padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
   }
-  .product-hub--notifications .app-page-header,
-  .product-hub--notifications .notif-header-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .product-hub--notifications table {
-    display: block;
-    overflow-x: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .product-hub--notifications,
-.scan-hub--notifications,
-.notif-page,
-.notif-prefs-page *, .product-hub--notifications,
-.scan-hub--notifications,
-.notif-page,
-.notif-prefs-page *::before, .product-hub--notifications,
-.scan-hub--notifications,
-.notif-page,
+  .notif-page,
+.notif-prefs-page *,
+.notif-prefs-page *::before,
 .notif-prefs-page *::after {
     animation: none !important;
     transition: none !important;
   }
 }
 
-:root[data-theme='dark'] .product-hub--notifications,
-.scan-hub--notifications,
 .notif-page,
 .notif-prefs-page {
   --scan-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
-

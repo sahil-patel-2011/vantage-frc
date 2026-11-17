@@ -192,7 +192,7 @@ export function QuickScoutClient({ orgId }: { orgId: string }) {
         >
           {data.canManageSchemas ? (
             <Button as="a" variant="primary" href={hubHref("/competition", "command", orgId)}>
-              Set the event
+              Set active event
             </Button>
           ) : null}
         </EmptyState>

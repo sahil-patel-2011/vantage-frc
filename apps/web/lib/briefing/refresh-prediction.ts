@@ -7,7 +7,7 @@
 
 import type { PoolClient } from "@neondatabase/serverless";
 import { withSavepoint } from "@vantage/db";
-import { normalizePlan, type BriefingPlan, type BriefingPrediction } from "../briefing";
+import { normalizePlan, type BriefingPlan, type BriefingPrediction } from "./index";
 import {
   finalizeStrategyRecompute,
   isEmptyEpaCoinFlip,

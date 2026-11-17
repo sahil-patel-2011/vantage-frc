@@ -15,15 +15,12 @@ import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { pct } from "../../lib/format/percent";
 
 function scoreTone(score: number): string {
   if (score >= 4) return "good";
   if (score >= 2.8) return "setup";
   return "demo";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<MockJudgingView, { status: "live" }>;

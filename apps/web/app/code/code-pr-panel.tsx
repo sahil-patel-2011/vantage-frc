@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, TextBlockSkeleton } from "../../components/ui";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import type { CodeMap } from "../../lib/github/code-map";
 import { duplicateCanIds } from "../../lib/github/code-map";
@@ -233,7 +233,19 @@ export function CodePullRequests({ orgId }: { orgId: string }) {
     return (
       <section className="cpr app-card soft-panel" aria-label="Pull requests" aria-busy={!error}>
         <h2>Pull requests</h2>
-        <p className="app-muted" role={error ? "alert" : "status"}>{error || "Loading pull requests…"}</p>
+        {error ? (
+          <>
+            <p className="cpr-error" role="alert">{error}</p>
+            <Button variant="secondary" type="button" onClick={() => { setError(""); void load(); }}>
+              Retry
+            </Button>
+          </>
+        ) : (
+          <div role="status">
+            <span className="sr-only">Loading pull requests</span>
+            <TextBlockSkeleton lines={3} />
+          </div>
+        )}
       </section>
     );
   }

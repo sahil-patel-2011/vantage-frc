@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader, PageMain, Button, EmptyState, StatRowSkeleton, TextBlockSkeleton } from "../../../components/ui";
+import { PageHeader, PageMain, Button, EmptyState, StatRowSkeleton, TextBlockSkeleton, askConfirm } from "../../../components/ui";
 import {
   aiBudgetsNextActions,
   aiBudgetsShellCopy,
@@ -12,6 +12,9 @@ import {
   type AiBudgetsShellKind,
 } from "../../../lib/billing/ai-budgets-related";
 import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
+import { settingsBreadcrumb } from "../../../lib/nav/settings-nav";
+import { useUnsavedWarning } from "../../../hooks/use-unsaved-warning";
 import "./ai-budgets.css";
 
 const blank = {
@@ -20,6 +23,18 @@ const blank = {
   dailyTokenLimit: "",
   monthlyTokenLimit: "",
 };
+
+const defaultPolicy = {
+  ...blank,
+  warningThresholds: "50,75,90",
+  enforceByoTokenLimits: true,
+  modelAllowlistEnabled: false,
+  providerAllowlistEnabled: false,
+  killSwitch: false,
+  promptCachingEnabled: true,
+};
+
+type SaveMessage = { form: "org" | "layer"; text: string } | null;
 
 const fieldLabel: Record<keyof typeof blank, string> = {
   dailySpendLimitUsd: "Daily limit ($)",
@@ -87,15 +102,9 @@ function ShellPrimary({
 }
 
 export default function BudgetClient({ orgId }: { orgId: string }) {
-  const [policy, setPolicy] = useState({
-    ...blank,
-    warningThresholds: "50,75,90",
-    enforceByoTokenLimits: true,
-    modelAllowlistEnabled: false,
-    providerAllowlistEnabled: false,
-    killSwitch: false,
-    promptCachingEnabled: true,
-  });
+  const [policy, setPolicy] = useState<typeof defaultPolicy>({ ...defaultPolicy });
+  /** The policy as last read, so Save stays off (and leaving doesn't warn) until something changes. */
+  const [loadedPolicy, setLoadedPolicy] = useState(() => JSON.stringify(defaultPolicy));
   const [usage, setUsage] = useState<Record<string, string>>({});
   const [layer, setLayer] = useState({
     scope: "feature",
@@ -107,13 +116,14 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     ...blank,
   });
   const [members, setMembers] = useState<BudgetMember[]>([]);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<SaveMessage>(null);
   const [loading, setLoading] = useState(true);
   const [httpStatus, setHttpStatus] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   /** Fail closed until the budget read says this account can manage keys. */
   const [canManage, setCanManage] = useState(false);
   const [noKey, setNoKey] = useState(false);
+  const [savedKillSwitch, setSavedKillSwitch] = useState(false);
 
   const chatHref = hubHref("/ai", "chat", orgId);
   async function load() {
@@ -144,53 +154,44 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     if (!response.ok) {
       setLoadError(data.error ?? "Couldn't load AI limits");
       setCanManage(false);
-      setMessage("");
       setLoading(false);
       return;
     }
     setLoadError(null);
     setCanManage(data.canManage === true);
     setNoKey(data.aiKeyConfigured === false);
-    if (data.policy) {
-      const policy = data.policy;
-      setPolicy((prev) => ({
-        ...prev,
-        ...policy,
-        dailySpendLimitUsd:
-          policy.dailySpendLimitUsd == null ? "" : String(policy.dailySpendLimitUsd),
-        monthlySpendLimitUsd:
-          policy.monthlySpendLimitUsd == null ? "" : String(policy.monthlySpendLimitUsd),
-        dailyTokenLimit:
-          policy.dailyTokenLimit == null ? "" : String(policy.dailyTokenLimit),
-        monthlyTokenLimit:
-          policy.monthlyTokenLimit == null ? "" : String(policy.monthlyTokenLimit),
-        warningThresholds: ((policy.warningThresholds as number[] | undefined) ?? [50, 75, 90]).join(
-          ",",
-        ),
-      }));
-    } else {
-      setPolicy((prev) => ({
-        ...prev,
-        ...blank,
-        warningThresholds: "50,75,90",
-        enforceByoTokenLimits: true,
-        modelAllowlistEnabled: false,
-        providerAllowlistEnabled: false,
-        killSwitch: false,
-        promptCachingEnabled: true,
-      }));
-    }
+    setSavedKillSwitch(data.policy?.killSwitch === true);
+    const stored = data.policy;
+    const next: typeof defaultPolicy = stored
+      ? {
+          ...defaultPolicy,
+          ...stored,
+          dailySpendLimitUsd:
+            stored.dailySpendLimitUsd == null ? "" : String(stored.dailySpendLimitUsd),
+          monthlySpendLimitUsd:
+            stored.monthlySpendLimitUsd == null ? "" : String(stored.monthlySpendLimitUsd),
+          dailyTokenLimit:
+            stored.dailyTokenLimit == null ? "" : String(stored.dailyTokenLimit),
+          monthlyTokenLimit:
+            stored.monthlyTokenLimit == null ? "" : String(stored.monthlyTokenLimit),
+          warningThresholds: ((stored.warningThresholds as number[] | undefined) ?? [50, 75, 90]).join(
+            ",",
+          ),
+        }
+      : { ...defaultPolicy };
+    setPolicy(next);
+    setLoadedPolicy(JSON.stringify(next));
     setUsage(data.usage ?? {});
     setMembers(data.members ?? []);
-    setMessage("");
     setLoading(false);
   }
 
   useEffect(() => {
+    setMessage(null);
     void load();
   }, [orgId]);
 
-  async function save(body: Record<string, unknown>) {
+  async function save(body: Record<string, unknown>, form: "org" | "layer") {
     const normalized = {
       ...body,
       orgId,
@@ -205,7 +206,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
       body: JSON.stringify(normalized),
     });
     const data = (await response.json()) as { error?: string };
-    setMessage(response.ok ? "Saved." : (data.error ?? "Couldn't save. Try again."));
+    setMessage({ form, text: response.ok ? "Saved." : (data.error ?? "Couldn't save. Try again.") });
     if (response.ok) await load();
   }
 
@@ -219,23 +220,34 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   const shellCopy = aiBudgetsShellCopy(shell);
   const blocked = shell === "forbidden" || shell === "auth_required" || shell === "error";
   const metricsLoaded = !loading && !blocked;
-  const saveOrgPolicy = () =>
-    void save({ scope: "org", ...policy, warningThresholds: policy.warningThresholds.split(",").map(Number) });
+  const policyDirty = canManage && !loading && JSON.stringify(policy) !== loadedPolicy;
+  useUnsavedWarning(policyDirty);
+  async function saveOrgPolicy() {
+    if (policy.killSwitch && !savedKillSwitch) {
+      const ok = await askConfirm({
+        title: "Pause AI for everyone?",
+        body: "Nobody on the team can use Ask AI or any AI feature until you turn this off.",
+        confirmLabel: "Pause AI",
+        tone: "destructive",
+      });
+      if (!ok) return;
+    }
+    await save({ scope: "org", ...policy, warningThresholds: policy.warningThresholds.split(",").map(Number) }, "org");
+  }
+  const messageFor = (form: "org" | "layer") =>
+    message?.form === form ? (
+      <p className="telemetry-status" role="status">
+        {message.text}
+      </p>
+    ) : null;
 
   return (
     <PageMain className="module-page budget-page ai-budgets-page">
       <PageHeader
-        breadcrumbs="AI / Limits"
+        breadcrumbs={settingsBreadcrumb("AI limits")}
         title="AI limits"
         description="Vantage's AI runs on your team's own key, so your provider bills your team directly. Set a monthly limit so it can't run up a surprise bill, or pause it for everyone."
       />
-
-
-      {message ? (
-        <p className="telemetry-status" role="status">
-          {message}
-        </p>
-      ) : null}
 
       {loading ? (
         <section className="ai-budgets-loading" role="status" aria-busy="true">
@@ -299,7 +311,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               className="intel-panel ai-budgets-policy"
               onSubmit={(e) => {
                 e.preventDefault();
-                saveOrgPolicy();
+                void saveOrgPolicy();
               }}
             >
               <h2 style={{ margin: 0, fontSize: 18 }}>Team AI limits</h2>
@@ -362,22 +374,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   />
                   Count the word limits on personal keys too
                 </label>
-                <label className="check-field">
-                  <input
-                    type="checkbox"
-                    checked={policy.modelAllowlistEnabled}
-                    onChange={(e) => setPolicy({ ...policy, modelAllowlistEnabled: e.target.checked })}
-                  />
-                  Only allow the models I pick
-                </label>
-                <label className="check-field">
-                  <input
-                    type="checkbox"
-                    checked={policy.providerAllowlistEnabled}
-                    onChange={(e) => setPolicy({ ...policy, providerAllowlistEnabled: e.target.checked })}
-                  />
-                  Only allow the providers I pick
-                </label>
+                <p className="app-muted">
+                  Which models people can use is set on <a href={withOrgHref("/team/ai-keys", orgId)}>Team AI keys</a>.
+                </p>
                 <label className="check-field">
                   <input
                     type="checkbox"
@@ -387,9 +386,12 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   Reuse the team&rsquo;s standing instructions between questions (cheaper)
                 </label>
               </details>
-              <Button variant="primary" type="submit">
-                Save limits
-              </Button>
+              <div className="ai-budgets-save">
+                <Button variant="primary" type="submit" disabled={!policyDirty}>
+                  Save limits
+                </Button>
+                {messageFor("org")}
+              </div>
             </form>
           )}
 
@@ -405,7 +407,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                       : layer.scope === "feature"
                         ? { feature: layer.identifier }
                         : { provider: layer.provider, model: layer.model, allowed: layer.allowed };
-                  void save({ ...layer, ...identity });
+                  void save({ ...layer, ...identity }, "layer");
                 }}
               >
                 <label>
@@ -485,9 +487,12 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                     </label>
                   ))}
                 </div>
-                <Button variant="secondary" type="submit">
-                  Save this limit
-                </Button>
+                <div className="ai-budgets-save">
+                  <Button variant="secondary" type="submit">
+                    Save this limit
+                  </Button>
+                  {messageFor("layer")}
+                </div>
               </form>
             </details>
           ) : null}

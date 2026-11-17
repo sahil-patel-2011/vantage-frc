@@ -11,6 +11,6 @@ describe("Sponsor Tier Calculator last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"sponsor-tier-calculator"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Sponsor Tier Calculator"/);
+    expect(src).toMatch(/feature="Sponsor tier calculator"/);
   });
 });

@@ -125,6 +125,7 @@ export default function PartRequestsClient() {
     if (u && /^https:\/\//.test(u)) setItemUrl(u.slice(0, 500));
   }, []);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [askError, setAskError] = useState("");
 
   const [decide, setDecide] = useState<{ id: string; kind: "approve" | "reject" } | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
@@ -314,9 +315,10 @@ export default function PartRequestsClient() {
           onSubmit={(event) => {
             event.preventDefault();
             if (!title.trim() || !justification.trim()) {
-              setError("Say what you need and why before sending the request.");
+              setAskError("Say what you need and why before sending the request.");
               return;
             }
+            setAskError("");
             if (!confirmSubmit) {
               setConfirmSubmit(true);
               return;
@@ -327,7 +329,9 @@ export default function PartRequestsClient() {
                 title,
                 justification,
                 quantity,
-                estimateUsd: estimate === "" ? 0 : estimate,
+                // The field is the cost of one; the API takes the line total. Blank stays
+                // unpriced rather than becoming a $0 part.
+                estimateUsd: estimate === "" ? undefined : Math.round(totalPreview * 100) / 100,
                 vendor,
                 itemUrl,
                 neededBy: neededBy || undefined,
@@ -428,6 +432,7 @@ export default function PartRequestsClient() {
               onChange={(event) => setItemUrl(event.target.value)}
             />
           </label>
+          {askError ? <p className="pr-error" role="alert">{askError}</p> : null}
           {confirmSubmit ? (
             <p className="pr-confirm">
               Send this request for about {money(totalPreview)}?{" "}
@@ -491,14 +496,14 @@ export default function PartRequestsClient() {
                           <Button variant="ghost" type="button" onClick={() => { setDecide(null); setReviewNotes(""); }}>
                             Cancel
                           </Button>{" "}
-                          <Button variant="primary" type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
+                          <Button variant={decide?.kind === "approve" ? "primary" : "danger"} type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
                             Yes, {decide?.kind === "approve" ? "approve" : "reject"}
                           </Button>
                         </p>
                       </div>
                     ) : (
                       <div className="pr-actions">
-                        <Button variant="primary" type="button" disabled={busy} onClick={() => setDecide({ id: request.id, kind: "approve" })}>
+                        <Button variant="secondary" type="button" disabled={busy} onClick={() => setDecide({ id: request.id, kind: "approve" })}>
                           Approve
                         </Button>
                         <Button variant="ghost" type="button" disabled={busy} onClick={() => setDecide({ id: request.id, kind: "reject" })}>

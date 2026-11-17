@@ -56,7 +56,7 @@ test.describe("offline student people and remaining form leaves", () => {
     await context.setOffline(false);
   });
 
-  test("Scout forms still renders after the tab goes offline", async ({ page, context }) => {
+  test("Scouting forms still renders after the tab goes offline", async ({ page, context }) => {
     await page.goto("/scouting/forms");
     await page.waitForLoadState("domcontentloaded");
     await context.setOffline(true);

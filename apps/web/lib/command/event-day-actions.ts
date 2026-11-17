@@ -69,7 +69,7 @@ export function eventDayNextActions(
           }
         : {
             id: "tba",
-            label: "Open Scouting",
+            label: "Open scouting",
             detail: "An owner or admin syncs the schedule. You can still scout.",
             href: snap.links.scouting ?? hubHref("/competition", "scouting", orgId),
             primary: Boolean(snap.eventKey),

@@ -149,12 +149,8 @@
   .product-hub--team,
 .scan-hub--team,
 .team-data-page,
-.team-admin-page *, .product-hub--team,
-.scan-hub--team,
-.team-data-page,
-.team-admin-page *::before, .product-hub--team,
-.scan-hub--team,
-.team-data-page,
+.team-admin-page *,
+.team-admin-page *::before,
 .team-admin-page *::after {
     animation: none !important;
     transition: none !important;
@@ -171,4 +167,3 @@
 :root[data-theme='dark'] .product-hub--team .team-access-empty {
   background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }
-

@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { plainStrategyText, readablePlanChip } from "../../lib/briefing/plain-text";
 import { ourSideRange } from "../../lib/strategy/our-side-range";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState } from "../../components/ui";
+import { Button, EmptyState, TextBlockSkeleton } from "../../components/ui";
 import { briefingChecklist, matchLabel, type BriefingPrediction } from "../../lib/briefing";
 import { buildOpponentCards } from "../../lib/briefing/opponent-cards";
 import { briefingPartnerSyncHref, briefingSetupAction } from "../../lib/briefing/setup-action";
@@ -27,6 +27,7 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { AddMoreLine, EmptyHint, OpponentCards, Section, withOrg } from "./briefing-parts";
 import { LiveCountdown } from "../dashboard/widgets/live-countdown";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
+import { pct } from "../../lib/format/percent";
 
 function isFullBriefingView(value: unknown): value is FullBriefingView {
   if (!value || typeof value !== "object") return false;
@@ -52,10 +53,6 @@ async function persistBriefingSnapshot(
   } catch {
     // Live briefing already painted; IndexedDB is best-effort.
   }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 /** Honest win-% input for the hero tile. DEMO / missing prediction → null (blank). */
@@ -224,7 +221,9 @@ export default function BriefingClient() {
               );
             })()
           ) : (
-            <p className="app-muted">Loading pre-match briefing…</p>
+            <div aria-busy="true" aria-label="Loading pre-match briefing">
+              <TextBlockSkeleton lines={4} />
+            </div>
           )}
         </div>
       </main>
@@ -326,6 +325,7 @@ export default function BriefingClient() {
     counterBooks: [],
     defensePlans: [],
   }).map((card) => (teamKey && card.team === stripFrc(teamKey) ? { ...card, nickname: "Us" } : card));
+  const hasAllyData = allyCards.some((card) => card.lines.length > 0 || card.standing);
   const factors = view.prediction?.keyFactors.slice(0, 3) ?? [];
   // The engine's provenance labels read as empty once put in plain words; drop those.
   const caveats = (view.prediction?.caveats ?? []).map(plainStrategyText).filter(Boolean);
@@ -363,7 +363,7 @@ export default function BriefingClient() {
               </select>
             </label>
             <details className="brief-more">
-              <summary aria-label="More briefing actions">⋯</summary>
+              <summary aria-label="More briefing actions">More</summary>
               <div className="brief-more-menu">
                 <button type="button" onClick={() => void load(selectedRef.current)}>
                   Refresh now
@@ -451,11 +451,8 @@ export default function BriefingClient() {
           </div>
         ) : (
           <div className="brief-prob none">
-            <span className="brief-prob-label">No grounded prediction yet</span>
+            <span className="brief-prob-label">No win chance yet</span>
             <a href={withOrg("/strategy", orgId)}>Run Strategy</a>
-            <Button variant="secondary" type="button" onClick={() => void load(selectedRef.current, { refresh: true })}>
-              Recompute prediction
-            </Button>
           </div>
         )}
       </section>
@@ -622,8 +619,8 @@ export default function BriefingClient() {
           )}
         </Section>
 
-        <Section title="Our alliance">
-          {allyCards.some((card) => card.lines.length > 0 || card.standing) ? (
+        <Section title="Our alliance" open={hasAllyData}>
+          {hasAllyData ? (
             <OpponentCards cards={allyCards} orgId={orgId} />
           ) : (
             <EmptyHint>
@@ -738,6 +735,7 @@ export default function BriefingClient() {
 
         <Section
           title="Our robot"
+          open={hasRobotHealth}
           badge={
             view.pitReports.length > 0
               ? `${view.pitReports.length} open ${view.pitReports.length === 1 ? "repair" : "repairs"}`
@@ -771,7 +769,7 @@ export default function BriefingClient() {
                   <ul className="brief-notes">
                     {view.openRisks.slice(0, 4).map((risk) => (
                       <li key={risk.id}>
-                        <i className="brief-tag">risk {risk.rpn}</i>
+                        <i className="brief-tag">Risk score {risk.rpn}</i>
                         <span className="brief-note-body">
                           <b>{risk.subsystemName}</b> — {risk.title}
                         </span>

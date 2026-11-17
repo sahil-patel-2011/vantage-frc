@@ -21,7 +21,7 @@ const FEATURE_DIRS = [
   "invite",
   "help",
   "season-calendar.ts",
-  "packing.ts",
+  "packing",
   "bugbot",
   "business",
   "cad-vault",

@@ -2,7 +2,7 @@
 
 import { staleCopyNotice, staleCopyProps } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button, Modal, askConfirm } from "../../../components/ui";
+import { Button, EmptyState, Modal, askConfirm } from "../../../components/ui";
 import { competitionCalendarLabel } from "../../../lib/events/event-planning";
 import { OfflineBanner } from "../../../components/offline-banner";
 import { ViewOnlyNote } from "../../../components/view-only-note";
@@ -379,9 +379,9 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
           </header>
         ) : null}
         <OfflineBanner feature="Calendar" fromCache={Boolean(view) && fromCache} cachedAt={cachedAt} />
-        <div className="app-card tc-empty">
-          {fetchFailed ? (
-            (() => {
+        {fetchFailed ? (
+          <div className="app-card tc-empty">
+            {(() => {
               const kind = classifyLoadFailure({ status: errorStatus, message: error, online });
               const copy = loadFailureCopy(kind, {
                 nextPath:
@@ -409,11 +409,11 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                   </div>
                 </>
               );
-            })()
-          ) : (
-            <p className="app-muted">Loading team calendar…</p>
-          )}
-        </div>
+            })()}
+          </div>
+        ) : (
+          <EmptyState soft title="Loading calendar" aria-busy />
+        )}
       </Root>
     );
   }
@@ -550,7 +550,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
             setScopeEventId(event.id);
             return;
           }
-          if (await askConfirm({ title: `Remove “${event.title}” from the calendar?`, body: null, confirmLabel: "Remove event", tone: "destructive" })) {
+          if (await askConfirm({ title: `Remove “${event.title}” from the calendar?`, body: "It comes off the team calendar for everyone. This can't be undone.", confirmLabel: "Remove event", tone: "destructive" })) {
             void run({ action: "delete_event", orgId, id: event.id }, `del:${event.id}`);
           }
         }}
@@ -617,7 +617,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
         <>
           {view.subteams.length > 0 ? (
             <label className="tc-filter-select">
-              Calendar
+              Show
               <select
                 value={filterSubteamId ?? ""}
                 aria-label="Filter by subteam"
@@ -722,7 +722,7 @@ export default function TeamCalendarClient({ embedded = false }: { embedded?: bo
                       <>
                         <p className="tc-muted">Add your first event, or choose a time in Week view.</p>
                         <div className="tc-guide-actions">
-                          <Button variant="primary" type="button" onClick={() => setCreateOpen(true)}>
+                          <Button variant="secondary" type="button" onClick={() => setCreateOpen(true)}>
                             Add event
                           </Button>
                         </div>

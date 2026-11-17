@@ -7,7 +7,7 @@ import { hoursSelfViewNextActions, hoursSelfViewShellCopy } from "../hours-self-
 import { hoursShellCopy } from "../hours/hours-related";
 import { inspectionCopilotShellCopy } from "../inspection-copilot/inspection-copilot-related";
 import { hubById, hubFeaturedMoreTabs } from "../nav/hubs";
-import { myDayNextActions } from "../my-day-related";
+import { myDayNextActions } from "../my-day/related";
 import { pickDeskNextActions, pickDeskShellCopy } from "../strategy/pick-desk-related";
 import { expectPlainCopy } from "./copy-assertions";
 
@@ -90,7 +90,7 @@ describe("student-week Event day / Hours / Pick desk slice", () => {
     expect(pickDeskShellCopy("ready").title).toBe("Pick list");
     expectPlainCopy(pickDeskShellCopy("empty").description);
     const empty = pickDeskNextActions({ orgId: "org-1", shell: "empty", candidateCount: 0 });
-    expect(empty[0]?.label).toBe("Open Scouting");
+    expect(empty[0]?.label).toBe("Open scouting");
     expect(JSON.stringify(empty)).not.toMatch(/Blue Alliance|TBA|EPA/);
     const workbench = readFileSync(join(WEB, "app/strategy/pick-list-workbench.tsx"), "utf8");
     expect(workbench).toMatch(/putFeatureSnapshot\("pick-desk"/);

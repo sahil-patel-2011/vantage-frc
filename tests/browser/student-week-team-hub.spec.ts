@@ -47,8 +47,8 @@ test("student this week can walk Team hub People → Invites → Season roles", 
   */
   const peoplePrimary = page
     .getByRole("link", { name: /Choose your team|Sign in again/i })
-    .or(page.getByRole("button", { name: /New attendance event|Create the first roll call|Retry/i }))
-    .or(page.getByRole("link", { name: /New attendance event|Create the first roll call/i }))
+    .or(page.getByRole("button", { name: /New roll call|Create the first roll call|Retry/i }))
+    .or(page.getByRole("link", { name: /New roll call|Create the first roll call/i }))
     .locator("visible=true");
   await expect(peoplePrimary.first()).toBeVisible({ timeout: 15_000 });
 

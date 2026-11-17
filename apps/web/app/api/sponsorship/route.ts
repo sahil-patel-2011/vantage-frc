@@ -15,7 +15,7 @@ import {
   type SponsorshipContext,
   type SponsorshipOnePager,
   type SponsorshipView,
-} from "../../../lib/sponsorship-value-prop";
+} from "../../../lib/sponsors/value-prop";
 import { coerceAchievementList } from "../../../lib/team-background";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 

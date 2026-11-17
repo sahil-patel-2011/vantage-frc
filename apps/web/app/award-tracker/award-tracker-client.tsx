@@ -54,7 +54,7 @@ async function persistAwardTrackerSnapshot(
     await putFeatureSnapshot("award-tracker", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("award-tracker", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Award Tracker already painted; IndexedDB is best-effort.
+    // Live Award tracker already painted; IndexedDB is best-effort.
   }
 }
 
@@ -141,10 +141,10 @@ function AwardTrackerShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Award Tracker"}
+            {" / Award tracker"}
           </>
         }
-        title="Award Tracker"
+        title="Award tracker"
         description={description}
       >
         <AwardTrackerRelatedStrip orgId={orgId} />
@@ -235,7 +235,7 @@ export default function AwardTrackerClient() {
         if (!response.ok || !isAwardTrackerView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError(staleCopyNotice("Award Tracker"));
+            setError(staleCopyNotice("Award tracker"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -250,7 +250,7 @@ export default function AwardTrackerClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError(staleCopyNotice("Award Tracker"));
+          setError(staleCopyNotice("Award tracker"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -322,7 +322,7 @@ export default function AwardTrackerClient() {
   if (shell === "loading") {
     return (
       <AwardTrackerShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
       </AwardTrackerShell>
     );
   }
@@ -336,7 +336,7 @@ export default function AwardTrackerClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
       </AwardTrackerShell>
     );
   }
@@ -348,7 +348,7 @@ export default function AwardTrackerClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
       </AwardTrackerShell>
     );
   }
@@ -356,7 +356,7 @@ export default function AwardTrackerClient() {
   if (view?.status !== "live") {
     return (
       <AwardTrackerShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
       </AwardTrackerShell>
     );
   }
@@ -367,10 +367,10 @@ export default function AwardTrackerClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Award Tracker"}
+            {" / Award tracker"}
           </>
         }
-        title="Award Tracker"
+        title="Award tracker"
         description="Track award submissions across events with deadlines."
       >
         <div className="award-tracker-header-actions">
@@ -400,7 +400,7 @@ export default function AwardTrackerClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Award Tracker" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Award tracker" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p {...staleCopyProps(error)}>
@@ -552,18 +552,19 @@ function SubmissionsList({
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
+                tone="danger"
                 disabled={busy}
                 onClick={async () => {
-                  if (await askConfirm({ title: `Delete “${submission.awardName}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
+                  if (await askConfirm({ title: `Delete “${submission.awardName}”?`, body: "This award submission and its status are deleted.", confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-submission", submissionId: submission.id });
                   }
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </li>
         ))}

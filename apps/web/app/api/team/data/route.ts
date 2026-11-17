@@ -1,7 +1,7 @@
 import { assertOrgCapability, auth } from "@vantage/core";
 import { withRls, withSavepoint } from "@vantage/db";
 import { headers } from "next/headers";
-import { notifyNextMatchReady } from "../../../../lib/notify-match";
+import { notifyNextMatchReady } from "../../../../lib/notifications/match";
 import { loadDataSourceHealth } from "../../../../lib/reference-health";
 import { dispatchCron } from "../../../../lib/reference/dispatch-cron";
 import { publicErrorMessage } from "../../../../lib/security/public-error";

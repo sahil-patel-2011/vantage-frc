@@ -604,7 +604,6 @@ function OrderCard({
         {canProgressOrdered ? (
           <button
             type="button"
-            className="primary"
             disabled={busy}
             onClick={() => mutate({ action: "mark-ordered", orderId: order.id })}
           >
@@ -614,7 +613,6 @@ function OrderCard({
         {canProgressReceived ? (
           <button
             type="button"
-            className="primary"
             disabled={busy}
             onClick={() => mutate({ action: "mark-received", orderId: order.id })}
           >
@@ -724,7 +722,6 @@ function AdminReview({
         />
         <button
           type="button"
-          className="primary"
           disabled={busy}
           onClick={() =>
             mutate({

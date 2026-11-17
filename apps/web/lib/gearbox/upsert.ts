@@ -1,4 +1,4 @@
-import { parseGearboxAction, type GearboxAction, type GearboxInput } from "../gearbox";
+import { parseGearboxAction, type GearboxAction, type GearboxInput } from "./index";
 
 export type GearboxIdentity = {
   orgId: string;

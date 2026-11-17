@@ -10,11 +10,10 @@ const WEB = join(__dirname, "..", "..");
  * #33 still say membership-bound until that PR lands its own copy pass.
  */
 const FILES = [
-  "app/scout-accuracy/scout-accuracy-client.tsx",
   "app/scout-data-impact/scout-data-impact-client.tsx",
   "app/scouting/lineup/lineup-client.tsx",
   "lib/scouting/lineup-related.ts",
-  "lib/video-rescout-related.ts",
+  "lib/video-rescout/related.ts",
 ] as const;
 
 describe("leftover student membership-bound chrome", () => {

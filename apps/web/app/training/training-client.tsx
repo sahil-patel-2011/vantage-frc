@@ -15,6 +15,7 @@ import {
 import type { CertificationStatus, TrainingCategory } from "../../lib/training/types";
 import { TabBar } from "../../components/ui/tab-bar";
 import { SkillTreePanel } from "./skill-tree-panel";
+import { pct } from "../../lib/format/percent";
 
 const STATUS_LABEL: Record<CertificationStatus, string> = {
   active: "Active",
@@ -48,10 +49,6 @@ function statusTone(status: CertificationStatus): string {
   if (status === "active") return "good";
   if (status === "expiring_soon") return "setup";
   return "demo";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<TrainingView, { status: "live" }>;

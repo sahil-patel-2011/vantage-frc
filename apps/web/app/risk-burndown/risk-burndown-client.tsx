@@ -27,16 +27,13 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./risk-burndown.css";
+import { pct } from "../../lib/format/percent";
 
 function severityTone(band: RiskSeverityBand): string {
   if (band === "critical") return "danger";
   if (band === "high") return "setup";
   if (band === "medium") return "setup";
   return "good";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<RiskBurndownView, { status: "live" }>;

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const business = vi.hoisted(() => ({ view: null as unknown }));
 
-vi.mock("../business-data", () => ({
+vi.mock("../business/data", () => ({
   currentBusinessSeason: () => 2026,
   loadBusinessView: vi.fn(async () => business.view),
 }));

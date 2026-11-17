@@ -27,7 +27,7 @@ Start with the section that matches you. Each document says who it is for in its
 | [AI_COMPUTE.md](AI_COMPUTE.md) | Which model runs where, and why — including what we measured about Petals |
 | [LOCAL_AI.md](LOCAL_AI.md) | Running every AI feature on a local or free model endpoint |
 | [LOCAL_RELAY.md](LOCAL_RELAY.md) | How a hosted deployment reaches a model on your LAN (the relay contract) |
-| [FREEBUFF.md](FREEBUFF.md) | The Raspberry Pi relay fleet, and what Vantage will not do with Freebuff's hosted product |
+| [FREEBUFF.md](FREEBUFF.md) | Why the Raspberry Pi relay was removed, and what Vantage will not do with Freebuff |
 | [AI_BRIDGE.md](AI_BRIDGE.md) | Running the team's chats through a member's own Claude Code subscription |
 | [AGENT_CONFIG.md](AGENT_CONFIG.md) | Agent configuration bundles |
 | [DREAMING.md](DREAMING.md) | Overnight team memory ("dreams") — what it reads and never reads |

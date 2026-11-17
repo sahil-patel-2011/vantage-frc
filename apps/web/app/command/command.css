@@ -135,7 +135,7 @@
 /* ===== Event day, redone (2026-09-25): the same team chips and win bar as Home ===== */
 .edc-sides { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 4px 0 0; }
 .edc-sides .nm-side { display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
-.edc-sides .nm-side > span { color: var(--muted); font: 700 11px/1 var(--font-source-sans, system-ui); letter-spacing: .06em; text-transform: uppercase; }
+.edc-sides .nm-side > span { color: var(--muted); font: 700 11px/1 var(--font-source-sans, system-ui); }
 .edc-sides .nm-teams { display: flex; flex-wrap: wrap; gap: 6px; }
 .edc-sides .nm-teams b {
   display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 8px;

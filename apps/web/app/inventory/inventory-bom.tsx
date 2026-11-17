@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, askConfirm } from "../../components/ui";
 import { bomCoverage } from "../../lib/inventory";
 import { fmtQty, type ReadyView, type RunFn } from "./inventory-model";
 
@@ -44,11 +44,18 @@ export function BomPanel({
                 <button
                   type="button"
                   className="inventory-link danger"
-                  aria-label="Remove BOM line"
+                  aria-label={`Remove ${line.itemName} from ${sub.subsystem}`}
                   disabled={busy}
-                  onClick={() => {
+                  onClick={async () => {
                     const entry = view.bom.find((b) => b.subsystem === sub.subsystem && b.itemId === line.itemId);
-                    if (entry) void run({ action: "delete_bom", orgId, id: entry.id }, "bom");
+                    if (!entry) return;
+                    const ok = await askConfirm({
+                      title: `Remove ${line.itemName} from ${sub.subsystem}?`,
+                      body: "This part comes off the subsystem's parts list.",
+                      confirmLabel: "Remove",
+                      tone: "destructive",
+                    });
+                    if (ok) void run({ action: "delete_bom", orgId, id: entry.id }, "bom");
                   }}
                 >
                   ✕
@@ -59,7 +66,7 @@ export function BomPanel({
         </article>
       ))}
       {coverage.length === 0 ? (
-        <p className="app-muted">No BOM lines yet. Map each subsystem to the parts it needs to check buildability.</p>
+        <p className="app-muted">No parts lists yet. Add the parts each subsystem needs to see whether you have enough to build it.</p>
       ) : null}
       <form
         className="inventory-bom-add"
@@ -73,12 +80,13 @@ export function BomPanel({
         }}
       >
         <input
+          aria-label="Subsystem"
           placeholder="Subsystem (e.g. Arm)"
           value={subsystem}
           disabled={busy}
           onChange={(e) => setSubsystem(e.target.value)}
         />
-        <select value={itemId} disabled={busy} onChange={(e) => setItemId(e.target.value)}>
+        <select aria-label="Part" value={itemId} disabled={busy} onChange={(e) => setItemId(e.target.value)}>
           <option value="">Select part…</option>
           {activeItems.map((item) => (
             <option key={item.id} value={item.id}>
@@ -90,13 +98,14 @@ export function BomPanel({
           type="number"
           step="any"
           min={0}
+          aria-label="Quantity needed"
           placeholder="Qty needed"
           value={qty}
           disabled={busy}
           onChange={(e) => setQty(e.target.value)}
         />
         <Button variant="secondary" type="submit" disabled={busy || !subsystem.trim() || !itemId || !qty}>
-          Add to BOM
+          Add to parts list
         </Button>
       </form>
     </div>

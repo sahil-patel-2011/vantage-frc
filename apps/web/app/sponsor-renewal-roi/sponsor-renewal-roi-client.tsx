@@ -33,6 +33,7 @@ import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./sponsor-renewal-roi.css";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<SponsorRenewalRoiView, { status: "live" }>;
 type SponsorSummary = LiveView["sponsors"][number];
@@ -60,7 +61,7 @@ async function persistSponsorRenewalRoiSnapshot(
     await putFeatureSnapshot("sponsor-renewal-roi", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("sponsor-renewal-roi", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Sponsor Renewal ROI already painted; IndexedDB is best-effort.
+    // Live Sponsor renewals already painted; IndexedDB is best-effort.
   }
 }
 
@@ -68,10 +69,6 @@ function tierTone(tier: SponsorRenewalRiskTier): BadgeTone {
   if (tier === "low") return "good";
   if (tier === "moderate") return "setup";
   return "demo";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 const COMPONENT_LABEL: Record<string, string> = {
@@ -144,10 +141,10 @@ function RoiShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Renewal ROI"}
+            {" / Sponsor renewals"}
           </>
         }
-        title="Sponsor Renewal-Risk Score & ROI Report"
+        title="Sponsor renewals"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -236,7 +233,7 @@ export default function SponsorRenewalRoiClient() {
         if (!response.ok || !isSponsorRenewalRoiView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError(staleCopyNotice("Sponsor Renewal ROI"));
+            setError(staleCopyNotice("Sponsor renewals"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -251,7 +248,7 @@ export default function SponsorRenewalRoiClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError(staleCopyNotice("Sponsor Renewal ROI"));
+          setError(staleCopyNotice("Sponsor renewals"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -328,7 +325,7 @@ export default function SponsorRenewalRoiClient() {
   if (shell === "loading") {
     return (
       <RoiShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
@@ -342,7 +339,7 @@ export default function SponsorRenewalRoiClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
@@ -354,7 +351,7 @@ export default function SponsorRenewalRoiClient() {
         orgId={orgId}
         shell={shell === "empty" ? "empty" : "setup"}
       >
-        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
@@ -362,7 +359,7 @@ export default function SponsorRenewalRoiClient() {
   if (view?.status !== "live") {
     return (
       <RoiShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
@@ -373,11 +370,11 @@ export default function SponsorRenewalRoiClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Renewal ROI"}
+            {" / Sponsor renewals"}
           </>
         }
-        title="Sponsor Renewal-Risk Score & ROI Report"
-        description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions."
+        title="Sponsor renewals"
+        description="Which sponsors may not renew, and a report showing each one what their support did."
       >
         {/* One way into AI: Ask AI opens on this page's skill with its records. */}
         <AskAiButton orgId={orgId} />
@@ -409,7 +406,7 @@ export default function SponsorRenewalRoiClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p {...staleCopyProps(error, "app-muted")}>
@@ -494,7 +491,7 @@ function SponsorRiskCard({
       )}
 
       <div>
-        <Button variant="primary" type="button" disabled={busy !== null} onClick={() => mutate({ action: "generate-report", sponsorId: sponsor.sponsorId }, busyKey)}>
+        <Button variant="secondary" type="button" disabled={busy !== null} onClick={() => mutate({ action: "generate-report", sponsorId: sponsor.sponsorId }, busyKey)}>
           {busy === busyKey ? "Generating…" : sponsor.latestReport ? "Regenerate ROI report" : "Generate ROI report"}
         </Button>
       </div>
@@ -510,18 +507,19 @@ function SponsorRiskCard({
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            className="text-button"
+          <Button
+            variant="ghost"
+            size="sm"
+            tone="danger"
             disabled={busy !== null}
             onClick={async () => {
-              if (await askConfirm({ title: "Delete this report?", body: null, confirmLabel: "Delete report", tone: "destructive" })) {
+              if (await askConfirm({ title: "Delete this report?", body: "The generated ROI report is removed. The sponsor and its history stay.", confirmLabel: "Delete report", tone: "destructive" })) {
                 mutate({ action: "delete-report", reportId: sponsor.latestReport!.id }, busyKey);
               }
             }}
           >
             Delete report
-          </button>
+          </Button>
         </Panel>
       ) : null}
     </section>

@@ -11,6 +11,6 @@ describe("Grant Report last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"grant-report"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Grant Report"/);
+    expect(src).toMatch(/feature="Grant report"/);
   });
 });

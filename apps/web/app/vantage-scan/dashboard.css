@@ -141,10 +141,8 @@
 @media (prefers-reduced-motion: reduce) {
   .product-hub--dashboard,
 .scan-hub--dashboard,
-.dash-home *, .product-hub--dashboard,
-.scan-hub--dashboard,
-.dash-home *::before, .product-hub--dashboard,
-.scan-hub--dashboard,
+.dash-home *,
+.dash-home *::before,
 .dash-home *::after {
     animation: none !important;
     transition: none !important;
@@ -160,4 +158,3 @@
 :root[data-theme='dark'] .product-hub--dashboard .dash-empty {
   background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }
-

@@ -13,12 +13,9 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { pct } from "../../lib/format/percent";
 
 const WINNER_OPTIONS: TrainingWinner[] = ["red", "blue", "tie"];
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 function accuracyTone(score: number): string {
   if (score >= 0.75) return "good";

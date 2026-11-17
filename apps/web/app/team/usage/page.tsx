@@ -4,10 +4,11 @@ import {
   aiBudgetsRelatedLinks,
 } from "../../../lib/billing/ai-budgets-related";
 import { hubHref } from "../../../lib/nav/hubs";
+import { settingsBreadcrumb } from "../../../lib/nav/settings-nav";
 import UsageClient from "./usage-client";
 
 export const metadata = {
-  title: "Usage",
+  title: "AI usage",
 };
 
 export default async function TeamUsagePage({
@@ -21,8 +22,8 @@ export default async function TeamUsagePage({
     return (
       <main className="module-page ai-budgets-page">
         <PageHeader
-          breadcrumbs="Ask AI / Usage"
-          title="Usage"
+          breadcrumbs={settingsBreadcrumb("AI usage")}
+          title="AI usage"
           description="Each team has its own AI usage log. Choose your team, then return from Ask AI."
         />
         <nav className="product-hub-related ai-budgets-related" aria-label="Related AI usage tools">

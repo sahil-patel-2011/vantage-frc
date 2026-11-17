@@ -92,7 +92,7 @@ describe("product-nav", () => {
     expect(breadcrumbForPath("/visit-invites")).toBe("Team / Visit invites");
     expect(breadcrumbForPath("/strategy")).toBe("Competition / Match plan");
     expect(breadcrumbForPath("/scouting")).toBe("Competition / Scout");
-    expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Forms");
+    expect(breadcrumbForPath("/scouting/forms")).toBe("Competition / Scouting forms");
     expect(breadcrumbForPath("/competition")).toBe("Competition");
     expect(breadcrumbForPath("/alliance-selection-desk")).toBe("Competition / Alliance desk");
     expect(breadcrumbForPath("/season-planning-workspace")).toBe("Team / Season plan");

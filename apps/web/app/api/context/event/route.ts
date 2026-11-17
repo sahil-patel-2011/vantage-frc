@@ -9,7 +9,7 @@ import {
 } from "../../../../lib/events/custom-event";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 import { organizerEvent, organizerEvents, parseCompetitionSchedule, parseEventYear, type PlannedCompetition } from "../../../../lib/events/event-planning";
-import { notifyCalendarEvent } from "../../../../lib/notify-calendar";
+import { notifyCalendarEvent } from "../../../../lib/notifications/calendar";
 
 async function requireSession() {
   const session = await auth.api.getSession({ headers: await headers() });

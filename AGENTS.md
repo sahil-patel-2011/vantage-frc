@@ -65,10 +65,10 @@ Verify: `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` → 200.
   routing, scouting media queues and photo controls. Set it to true and redeploy
   to restore the feature; no stored media or schemas were deleted. Existing
   financial receipts and branding may still be viewed, but not newly uploaded.
-- Home uses `DashboardHomeView` and the existing saved board API again. Do not
-  rewire it to `dashboard-redesign.tsx`: that older mock uses invented metrics,
-  and `scouting-filter.tsx` scales totals rather than filtering real records.
-  Card task/scouting actions reuse `/api/todos` and the real `ScoutingClient`.
+- Home uses `DashboardHomeView` and the existing saved board API. The older
+  `dashboard-redesign.tsx` mock (invented metrics, and a scouting filter that
+  scaled totals instead of filtering real records) was deleted; do not bring it
+  back. Card task/scouting actions reuse `/api/todos` and the real `ScoutingClient`.
 - PostgreSQL remains the app's database. No Base44 database migration has been
   performed: native Base44 database provisioning/access is unavailable in this
   imported-app environment. A second PostgreSQL connection is not configured.

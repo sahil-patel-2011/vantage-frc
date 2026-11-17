@@ -1,6 +1,6 @@
 import { withSavepoint } from "@vantage/db";
 import { IntelResearchRepository } from "@vantage/intel-research/repository";
-import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth";
+import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel/auth";
 import { recordPickListInfluence } from "../../../../lib/scouting/pick-feedback";
 import { assertScoutingLead } from "@vantage/scouting/permissions";
 import { ensurePickList, listPickList, PickListSaveConflict, saveRankedPickList, upsertEntryFromTier } from "../../../../lib/picklist";

@@ -9,20 +9,28 @@ handling the ways providers fail.
 `resolveChatAdapter` / `resolveOrgChatAdapter` walk the team's options in
 order and return the first that can actually serve the call:
 
-1. **The team's own key** (BYOK) — OpenAI, Anthropic, Google, OpenRouter, or
+1. **A paired subscription bridge** — a member's own Claude Code or Codex plan
+   (`subscription-bridge-adapter.ts`), when its device is online. Chat-class
+   features use it by default; other features only when the device covers
+   everything. On failure it falls through to the rest of this list.
+2. **The team's own key** (BYOK) — OpenAI, Anthropic, Google, OpenRouter, or
    any OpenAI-compatible base URL, which is how Ollama and LM Studio work.
-2. **Hosted platform keys** for paid tiers.
-3. **The sponsored / OpenRouter free pool** when configured.
-4. **The public Petals volunteer swarm** — only if the operator explicitly set
-   `PETALS_PUBLIC_POOL=1`.
+3. **A Vantage credit gift**, when an admin granted one.
+4. **Hosted platform keys** for paid tiers.
+5. **The OpenRouter free pool**, then the sponsored promo pool, for free teams
+   when configured.
+6. **The AI Horde volunteer swarm** (`AI_HORDE_POOL`), then **Petals**
+   (`PETALS_PUBLIC_POOL=1`) — both off unless the operator turns them on. Horde
+   comes first because the public Petals swarm was measured empty on
+   2026-09-19.
 
 If none of those exist it raises `ChatProviderResolutionError` naming what to
 configure. It does not fall through to something that will half-work.
 
-### Why Petals is off by default
+### Why the volunteer swarms are off by default
 
 Petals' own documentation says not to send confidential data to the public
-swarm: the peers serving the model layers can read the prompt, read the reply,
+swarm (the Horde adapter also drops `private_memory` context for the same reason): the peers serving the model layers can read the prompt, read the reply,
 and alter the reply on the way back, and they see the caller's IP. This
 workspace holds student names, pick lists and sponsor contacts. A team can
 still choose it — free AI for questions about public match data is a reasonable
@@ -56,7 +64,7 @@ of credits" are different sentences to a student.
 | --- | --- |
 | `resolve-chat-adapter.ts` | The provider ladder above |
 | `http-chat-adapter.ts` | The OpenAI-compatible transport and its error shapes |
-| `petals-public-pool.ts` | The opt-in volunteer swarm |
+| `ai-horde-pool.ts` / `petals-public-pool.ts` | The opt-in volunteer swarms |
 | `byok-model-routing.ts` / `model-policy.ts` / `model-tier.ts` | Which model a feature gets |
 | `chat-system-prompt.ts` | The product's own instructions to the model |
 | `context-compact.ts` / `prompt-caching.ts` | Fitting and reusing context |

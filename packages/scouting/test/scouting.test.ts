@@ -98,11 +98,22 @@ describe("interoperable scouting fallback", () => {
     });
     expect(record).toMatchObject({
       eventKey: "2026test",
-      matchKey: "qm1",
+      matchKey: "2026test_qm1",
       teamKey: "frc254",
       payload: { auto: "3", notes: "clean, fast" },
       provenance: { format: "csv", source: "scoutingpass", sourceFile: "export.csv" },
     });
+  });
+
+  it("gives a bare match number the event key, and leaves full match keys alone", () => {
+    const records = importScoutData({
+      content: "event,match,team\n2026casj,12,254\n2026casj,SF3M1,1678\n2026casj,2026casj_f1m2,971\n",
+      format: "csv",
+      source: "scoutingpass",
+      sourceFile: "export.csv",
+      now: new Date("2026-07-15T00:00:00Z"),
+    });
+    expect(records.map((record) => record.matchKey)).toEqual(["2026casj_qm12", "2026casj_sf3m1", "2026casj_f1m2"]);
   });
 
   it("round-trips a QR-safe JSON payload", () => {

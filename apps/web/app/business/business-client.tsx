@@ -12,7 +12,7 @@ import { MoneyAddMenu } from "./money-add-menu";
 import { OfflineBanner } from "../../components/offline-banner";
 import { HubSections } from "../../components/hub-sections";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-import { isBusinessPortalView, type BusinessPortalView } from "../../lib/business-portal";
+import { isBusinessPortalView, type BusinessPortalView } from "../../lib/business/portal";
 import { FEATURE_API_TIMEOUT_MS, persistOrgIdInUrl } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { HUB_SECTION_DENIED_COPY, SoftAccessDenied } from "../../components/hub-access-gate";

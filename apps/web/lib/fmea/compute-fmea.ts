@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery-reliability";
-import { loadBatteryFleet } from "../load-battery-fleet";
+import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery/reliability";
+import { loadBatteryFleet } from "../battery/load-fleet";
 import { canDeleteFmeaFailure, evaluateFailure, summarizeFailures } from ".";
 import type {
   FmeaContext,

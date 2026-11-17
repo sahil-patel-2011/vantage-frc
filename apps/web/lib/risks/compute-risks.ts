@@ -1,6 +1,6 @@
 import type { PoolClient } from "@neondatabase/serverless";
-import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery-reliability";
-import { loadBatteryFleet } from "../load-battery-fleet";
+import { batteryFmeaSignals, type BatteryFmeaSignal } from "../battery/reliability";
+import { loadBatteryFleet } from "../battery/load-fleet";
 import { evaluateRisk, riskMatrix, summarizeRisks } from ".";
 import type { MatrixCell, RiskCategory, RiskEvaluation, RiskStatus, RiskSummary, TeamRisk } from "./types";
 import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";

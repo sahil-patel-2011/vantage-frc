@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "sponsor-suite",
-  title: "Sponsor Suite",
+  title: "Sponsor suite",
   route: "/sponsor-suite",
   apiRoute: "/api/sponsor-suite",
   hub: "Business",

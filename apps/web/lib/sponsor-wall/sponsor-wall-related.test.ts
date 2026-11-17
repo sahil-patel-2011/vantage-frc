@@ -101,7 +101,7 @@ describe("sponsorWallNextActions", () => {
       canManage: false,
     });
     expect(ready.some((action) => action.id === "add-more")).toBe(false);
-    expect(ready[0]?.label).toBe("Open Sponsor CRM");
+    expect(ready[0]?.label).toBe("Open sponsors");
   });
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { askConfirm, EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import "../admin-flow.css";
 import "../partners/partners.css";
 
@@ -106,7 +106,7 @@ export default function AdminOutreachClient() {
   }
 
   async function remove(id: string, name: string) {
-    if (!confirm(`Remove outreach for ${name}?`)) return;
+    if (!(await askConfirm({ title: `Remove outreach for ${name}?`, body: null, confirmLabel: "Remove outreach", tone: "destructive" }))) return;
     setBusy(true);
     try {
       const response = await fetch("/api/admin/outreach", {

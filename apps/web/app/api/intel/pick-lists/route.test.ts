@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { POST } from "./route";
 
 const fake = vi.hoisted(() => ({ request: vi.fn(), lead: vi.fn(), query: vi.fn(), save: vi.fn(), read: vi.fn(), ensure: vi.fn(), add: vi.fn(), influence: vi.fn() }));
-vi.mock("../../../../lib/intel-auth", () => ({ withIntelRequest: fake.request, intelErrorResponse: () => Response.json({ error: "Request failed" }, { status: 503 }) }));
+vi.mock("../../../../lib/intel/auth", () => ({ withIntelRequest: fake.request, intelErrorResponse: () => Response.json({ error: "Request failed" }, { status: 503 }) }));
 vi.mock("@vantage/intel-research/repository", () => ({ IntelResearchRepository: vi.fn() }));
 vi.mock("@vantage/scouting/permissions", () => ({ assertScoutingLead: fake.lead }));
 vi.mock("../../../../lib/scouting/pick-feedback", () => ({ recordPickListInfluence: fake.influence }));

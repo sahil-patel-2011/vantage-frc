@@ -251,7 +251,10 @@ export default function ManufacturingClient() {
       ) : null}
 
       <RiskStrip view={view} />
-      <AddPartForm view={view} busy={busy} mutate={mutate} />
+      <details open={view.parts.length === 0 || undefined}>
+        <summary className="app-button secondary">Add a part</summary>
+        <AddPartForm view={view} busy={busy} mutate={mutate} />
+      </details>
       <Board view={view} busy={busy} mutate={mutate} />
       <SeedFromBomPanel view={view} busy={busy} mutate={mutate} />
       <CycleTimePanel view={view} />
@@ -421,12 +424,13 @@ function PartCard({
           <Button
             variant="ghost"
             size="sm"
+            tone="danger"
             disabled={busy}
             aria-label={`Scrap ${part.partName}`}
             onClick={async () => {
               const reason = await askText({
                 title: `Scrap “${part.partName}”?`,
-                body: null,
+                body: "Its progress through the shop is lost. Remake starts it again from Needs design.",
                 confirmLabel: "Scrap part",
                 tone: "destructive",
                 input: { label: "Why (optional)" },
@@ -511,7 +515,6 @@ function AddPartForm({
         setForm(empty);
       }}
     >
-      <h2>Add a part</h2>
       <p className="app-muted mfg-tip">New parts start in Needs design.</p>
       <FormGrid min={150}>
         <FormRow label="Part name">
@@ -559,7 +562,7 @@ function AddPartForm({
         <textarea value={form.stockNote} onChange={set("stockNote")} rows={2} placeholder="Stock on the raw-stock shelf, bay 2" />
       </FormRow>
       <div>
-        <Button type="submit" variant="primary" disabled={busy || !form.partName.trim()}>
+        <Button type="submit" variant="primary" disabled={busy}>
           Add a part
         </Button>
       </div>
@@ -584,22 +587,7 @@ function SeedFromBomPanel({
   const [robotSubsystemId, setRobotSubsystemId] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  if (view.bomOptions.length === 0) {
-    return (
-      <Panel className="mfg-panel" aria-label="Seed from BOM">
-        <h2>Seed from BOM</h2>
-        <p className="app-muted mfg-tip">
-          No BOM entries yet. Add entries in Inventory &amp; BOM first, then seed manufacturing cards from them here — one
-          tap per batch, never automatic.
-        </p>
-        <div>
-          <Button as="a" variant="secondary" href="/inventory">
-            Open Inventory &amp; BOM
-          </Button>
-        </div>
-      </Panel>
-    );
-  }
+  if (view.bomOptions.length === 0) return null;
 
   const entries = view.bomOptions.filter((option) => !bomSubsystem || option.subsystem === bomSubsystem);
   const toggle = (id: string) => {

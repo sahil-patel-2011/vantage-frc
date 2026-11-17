@@ -26,7 +26,7 @@ vi.mock("@vantage/db", () => ({
     }),
   withSavepoint: async (_client: unknown, work: () => Promise<unknown>) => work(),
 }));
-vi.mock("../../../../lib/notify-match", () => ({
+vi.mock("../../../../lib/notifications/match", () => ({
   notifyNextMatchReady: async () => {
     state.notified = true;
     return { status: "sent" };

@@ -49,6 +49,7 @@ import {
 } from "../../../../lib/storage-routing/store";
 import type { StorageRouteDecision, StorageUploadTicket } from "../../../../lib/storage-routing/types";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
+import { isPausedMediaFile, MEDIA_ENABLED, MEDIA_PAUSED_MESSAGE } from "../../../../lib/media-availability";
 
 export type StorageGrantResponse =
   | { destination: "cloud"; fallback: boolean; reason: string }
@@ -112,6 +113,11 @@ export async function POST(request: Request) {
     if (!mediaKind) return Response.json({ error: "Unsupported media format." }, { status: 400 });
   } else {
     contentType = normalizeContentType(body.contentType);
+  }
+  // The same pause the library and Drive upload grants apply; this route minted node upload
+  // tickets for photos and videos while uploads were switched off.
+  if ((purpose === "media" && !MEDIA_ENABLED) || isPausedMediaFile(fileName, contentType)) {
+    return Response.json({ error: MEDIA_PAUSED_MESSAGE }, { status: 403 });
   }
   const title = trimmedOrNull(body.title, 200) ?? titleFromFileName(fileName);
   if (!title) return Response.json({ error: "A title is required." }, { status: 400 });

@@ -133,7 +133,7 @@ export function ScoutingShell({
       <PageHeader
         breadcrumbs="Competition / Scouting"
         title="Scouting"
-        description="Match and pit forms stay on this device until you sync."
+        description="Reports save on this phone first and send themselves when you have signal."
       >
         <ScoutingRelatedStrip orgId={orgId} />
       </PageHeader>
@@ -165,10 +165,10 @@ export function ScoutingShell({
         ) : null}
         {shell === "setup" && orgId ? <Button as="a" variant="primary" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Practice scouting</Button> : null}
         {shell === "setup" ? (
-          <Button as="a" variant={orgId ? "secondary" : "primary"} href={orgId ? commandHref : workspaceHref}>{orgId ? "Set event" : "Choose your team"}</Button>
+          <Button as="a" variant={orgId ? "secondary" : "primary"} href={orgId ? commandHref : workspaceHref}>{orgId ? "Set active event" : "Choose your team"}</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={formsHref}>Open Form builder</Button>
+          <Button as="a" variant="primary" href={formsHref}>Open scouting forms</Button>
         ) : null}
       </EmptyState>
       )}

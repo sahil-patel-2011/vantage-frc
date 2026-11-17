@@ -3,7 +3,7 @@
 import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -15,7 +15,7 @@ import {
   STATUS_LABEL,
   type SponsorshipOnePager,
   type SponsorshipView,
-} from "../../lib/sponsorship-value-prop";
+} from "../../lib/sponsors/value-prop";
 
 type DraftFields = {
   title: string;
@@ -415,16 +415,18 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                 Sponsor pipeline
               </Button>
               <Button as="a" variant="secondary" href={`/sponsor-suite?orgId=${encodeURIComponent(context.orgId)}`}>
-                Sponsor Suite
+                Sponsor suite
               </Button>
               <Button as="a" variant="secondary" href={`/media-kit?orgId=${encodeURIComponent(context.orgId)}`}>
                 Media kit
               </Button>
             </>
           ) : null}
-          <Button variant={onePagers.length ? "primary" : "secondary"} type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
-            New one-pager
-          </Button>
+          {onePagers.length ? (
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
+              New one-pager
+            </Button>
+          ) : null}
         </div>
       </PageHeader>
       ) : (
@@ -448,9 +450,11 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
               ))}
             </select>
           </label>
-          <Button variant={onePagers.length ? "primary" : "secondary"} type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
-            New one-pager
-          </Button>
+          {onePagers.length ? (
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
+              New one-pager
+            </Button>
+          ) : null}
         </div>
       )}
 
@@ -644,17 +648,28 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                     <Button variant="secondary" type="button" disabled={busy || !selected || !completeness?.complete} onClick={() => selected && void mutate( { action: "update", id: selected.id, title: draft.title, whoWeAre: draft.whoWeAre, whatWeDo: draft.whatWeDo, askCashUsd: draft.askCashUsd === "" ? null : Number(draft.askCashUsd), askParts: draft.askParts, askMentorship: draft.askMentorship, sponsorGets: draft.sponsorGets, inviteEnabled: draft.inviteEnabled, inviteDetails: draft.inviteDetails, status: "ready", }, "Marked ready to share.", ) }>
                       Mark ready
                     </Button>
-                    <Button variant="secondary" type="button" disabled={busy || !selected} onClick={() => selected && void mutate({ action: "pdf", id: selected.id })}>
-                      Export PDF
-                    </Button>
-                    <Button variant="secondary" type="button" disabled={!previewPage} onClick={() => void copyText()}>
-                      Copy text
-                    </Button>
-                    {selected ? (
-                      <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Delete this one-pager?", body: "The sponsorship one-pager is deleted.", confirmLabel: "Delete one-pager", tone: "destructive" })) void mutate({ action: "delete", id: selected.id }, "Deleted."); }}>
-                        Delete
-                      </Button>
-                    ) : null}
+                    <ActionMenu
+                      label="One-pager"
+                      overflowOnly
+                      actions={[
+                        { id: "pdf", label: "Export PDF", disabled: busy || !selected, onClick: () => selected && void mutate({ action: "pdf", id: selected.id }) },
+                        { id: "copy", label: "Copy text", disabled: !previewPage, onClick: () => void copyText() },
+                        ...(selected
+                          ? [
+                              {
+                                id: "delete",
+                                label: "Delete",
+                                intent: "destructive" as const,
+                                confirmsItself: true,
+                                disabled: busy,
+                                onClick: async () => {
+                                  if (await askConfirm({ title: "Delete this one-pager?", body: "The sponsorship one-pager is deleted.", confirmLabel: "Delete one-pager", tone: "destructive" })) void mutate({ action: "delete", id: selected.id }, "Deleted.");
+                                },
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
                   </div>
                 </form>
               </Panel>

@@ -1305,7 +1305,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "What changes in Vantage",
         body: [
-          "When Sponsors allowed is off, Business hub tabs and drawer links for Sponsor Wall, Suite, Matching Gift Finder, and related tools stay hidden.",
+          "When Sponsors allowed is off, Business hub tabs and drawer links for Sponsor wall, Suite, Matching Gift Finder, and related tools stay hidden.",
           "Grants, budget, awards, and Media stay available when those funding paths apply.",
         ],
       },
@@ -1633,7 +1633,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
       {
         heading: "Where connections live",
         body: [
-          "Settings → Connectors lists Google, GitHub, Team Data, Onshape, Discord, Slack, email, Stripe, storage, Fusion, and the shop Pi. “Connected” appears only when a working credential row exists.",
+          "Settings → Connectors lists Google, GitHub, Team Data, Onshape, Discord, Slack, email, Stripe, storage, Fusion, and Claude Code. “Connected” appears only when a working credential row exists.",
           "Team Data is configured under Team → Data (/team/data); schedules, rankings, and match cards stay empty until it is connected and an active event is picked.",
         ],
       },

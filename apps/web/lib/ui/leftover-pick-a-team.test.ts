@@ -23,7 +23,6 @@ const FILES = [
   "lib/schedule/schedule-related.ts",
   "lib/scout-accuracy/scout-accuracy-related.ts",
   "lib/scout-coverage-live/scout-coverage-live-related.ts",
-  "lib/scout-crossval/scout-crossval-related.ts",
   "lib/scout-data-impact/scout-data-impact-related.ts",
   "lib/scout-disagreements/scout-disagreements-related.ts",
   "lib/scouting/qr-handoff-related.ts",

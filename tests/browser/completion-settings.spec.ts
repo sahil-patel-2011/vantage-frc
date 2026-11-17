@@ -23,9 +23,8 @@ for (const width of [390, 1440]) {
       await page.getByRole("radio", { name: "Comfortable", exact: true }).focus();
       await page.keyboard.press("ArrowRight");
       await expect(page.getByRole("radio", { name: "Compact", exact: true })).toBeChecked();
-      const save = page.getByRole("button", { name: "Save appearance", exact: true });
-      await expect(save).toBeVisible();
-      await save.click();
+      // Each choice saves on change, like the theme; there is no separate save button.
+      await expect(page.getByRole("button", { name: "Save appearance", exact: true })).toHaveCount(0);
       await expect(page.getByText("Saved to your profile — it follows you to every device.")).toBeVisible();
       await page.reload();
       await expect(page.getByRole("radio", { name: "Compact", exact: true })).toBeChecked();
@@ -41,7 +40,7 @@ for (const width of [390, 1440]) {
         if (value === "full") await expect(page.locator("html")).not.toHaveAttribute("data-motion");
         else await expect(page.locator("html")).toHaveAttribute("data-motion", value);
       }
-      await save.click();
+      await expect(page.getByText("Saved to your profile — it follows you to every device.")).toBeVisible();
       await page.reload();
       await extras.locator("summary").press("Enter");
       await expect(page.getByRole("radio", { name: "Solid", exact: true })).toBeChecked();
@@ -66,7 +65,7 @@ test("every code preference persists and a failed save offers a retry", async ({
   const original = await (await context.request.get("/api/account/cockpit")).json();
   try {
     await page.goto(`/account?tab=appearance&orgId=${orgId}`);
-    await page.getByText("More display settings", { exact: true }).click();
+    await page.getByText("This device and Home", { exact: true }).click();
     for (const name of ["Confirm before Bugbot opens a pull request", "Pause live boards (My Day, schedule, rankings) when this tab is hidden", "Include our own tests when Bugbot scans a repo"]) {
       const field = page.getByRole("checkbox", { name, exact: true });
       await field.setChecked(!await field.isChecked());
@@ -82,7 +81,7 @@ test("every code preference persists and a failed save offers a retry", async ({
     await page.getByRole("button", { name: "Save code preferences", exact: true }).click();
     await expect(page.getByText("Saved. Bugbot and live boards will use these next time they load.")).toBeVisible();
     await page.reload();
-    await page.getByText("More display settings", { exact: true }).click();
+    await page.getByText("This device and Home", { exact: true }).click();
     await expect(page.getByLabel("Default Bugbot mode")).toHaveValue("ultra");
     await expect(page.getByLabel("Bugbot instructions")).toHaveValue("Check the team's real robot code.");
     const stored = await (await context.request.get("/api/account/cockpit")).json();
@@ -94,7 +93,6 @@ test("Appearance shows your apps and opens the one editor; order persists and re
   const original = await (await context.request.get("/api/navigation/preferences")).json();
   try {
     await page.goto(`/account?tab=appearance&orgId=${orgId}`);
-    await page.getByText("More display settings", { exact: true }).click();
     const pins = page.locator(".appearance-pins > li");
     await expect(pins.first()).toBeVisible();
     // No second editor here: the button opens the same sheet as the sidebar and search.
@@ -113,7 +111,6 @@ test("Appearance shows your apps and opens the one editor; order persists and re
     // The page follows what the editor saved, and so does a reload.
     await expect(pins).toHaveText(labels);
     await page.reload();
-    await page.getByText("More display settings", { exact: true }).click();
     await expect(pins).toHaveText(labels);
     await page.getByRole("button", { name: "Edit pins", exact: true }).click();
     await editor.getByRole("button", { name: "Reset to default", exact: true }).click();
@@ -134,7 +131,7 @@ test("appearance loading failure preserves saved settings until retry", async ({
   await page.goto(`/account?tab=appearance&orgId=${orgId}`);
   await expect(page.getByRole("button", { name: "Retry appearance", exact: true })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("radio", { name: "Compact", exact: true })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Save appearance", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Reset to defaults", exact: true })).toBeDisabled();
   await page.unrouteAll({ behavior: "wait" });
   await page.getByRole("button", { name: "Retry appearance", exact: true }).click();
   await expect(page.getByRole("radio", { name: "Compact", exact: true })).toBeEnabled();

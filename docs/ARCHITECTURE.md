@@ -12,7 +12,7 @@ workspace packages, plus small worker programs that run on hardware a team owns.
 apps/web            the only shipping deployment — marketing site, sign-in, every product page and API route
 apps/desktop        Electron shell around the hosted web app (Windows MSI/NSIS/portable, macOS DMG)
 packages/*          domain logic shared by the web app and the workers (see the table below)
-scripts/            migrations runner, deploy preflight, RLS proof, backtests, Pi install
+scripts/            migrations runner, deploy preflight, RLS proof, backtests
 ```
 
 There is no separate API server, no message broker and no cache layer. PostgreSQL is the only
@@ -63,29 +63,31 @@ Request code is lint-blocked from importing the worker database client. Only wor
 
 ## The AI path
 
-Every AI call goes through one of two doors:
+Every AI call goes through `meteredAI` in `@vantage/billing`: it takes a per-team advisory lock,
+sums the usage ledger, enforces caps, calls the provider and appends usage. There is no cached credit
+counter.
 
-- **Request path:** `meteredAI` in `@vantage/billing` — locks the team's billing row, sums the usage
-  ledger, enforces caps, calls the provider, appends usage. There is no cached credit counter.
-- **Worker path:** the free-relay adapter on a paired Raspberry Pi, for chat streams and long jobs.
-
-Provider order is **paired relay → the team's own keys → hosted key**, and the product tells the
-person which one answered. Keys are envelope-encrypted per team (AWS KMS in production, a local
+Provider order is **a member's paired Claude Code or Codex plan (`packages/ai-bridge`) → the team's
+own keys → hosted key**, and the product tells the person which one answered. There is no Raspberry
+Pi relay: it served Freebuff's free inference through a local proxy, which Freebuff's terms forbid
+(`docs/FREEBUFF.md`). Keys are envelope-encrypted per team (AWS KMS in production, a local
 substitute in development that refuses to start in production). Chats are compacted automatically:
 older turns fold into a summary so the context stays inside the model window, and the original turns
 remain expandable.
 
 ## Background work
 
-- **Scheduled:** Vercel Hobby allows two crons, both in the root `vercel.json` (`/api/cron/tba-sync`
-  in `event-day` and `season` modes). Everything else that must run daily is a *piggyback* on the
-  season cron (`apps/web/lib/reference/season-cron-piggybacks.ts`). Do not add a third cron.
-- **Queued:** `free_relay_jobs`, `assembly_manual_runs` and `video_analysis_jobs` are lease-based
-  queues in Postgres (owner, lease expiry, heartbeat, checkpoint, cancel flag). A worker that dies
-  loses its lease and another picks the job up from the checkpoint.
-- **Where workers run:** `packages/free-relay` on a Pi with a role — `chat`, `agent` or `video` — one
-  systemd instance per role (`scripts/pi/vantage-relay@.service`). Pis pair with a human code and a
-  hashed device token, and report liveness by heartbeat; the app never trusts a stored status column.
+- **Nothing runs on a timer.** The root `vercel.json` has `"crons": []`, and
+  `apps/web/lib/reference/vercel-crons.test.ts` keeps it that way (see `AGENTS.md`, "Hosting and
+  compute policy"). The routes under `apps/web/app/api/cron/` (`tba-sync`, `assembly-manual`,
+  reminders, digests, …) stay deployed and answer only a caller with the `CRON_SECRET` bearer; the
+  season `tba-sync` call also runs the daily *piggybacks* in
+  `apps/web/lib/reference/season-cron-piggybacks.ts`.
+- **Work follows use.** Opening the schedule re-syncs an event whose cached data is stale
+  (`hydrateOrgActiveEvent`), and the recovery export runs after a save (`lib/recovery/dispatch.ts`).
+- **Queued:** `assembly_manual_runs` and `video_analysis_jobs` are lease-based queues in Postgres
+  (owner, lease expiry, heartbeat, checkpoint, cancel flag), advanced by the web app's cron routes. A
+  worker that dies loses its lease and the next tick picks the job up from the checkpoint.
 
 ## Offline
 
@@ -103,9 +105,8 @@ Competition venues have bad networks, so the web app is built to keep working wi
 - `apps/desktop` wraps the hosted app in Electron, checks for a newer release on launch (see
   `docs/DESKTOP.md`), and hosts the Fusion 360 relay locally.
 - Optional devices pair with a team using the same pattern (code → hashed token → heartbeat): the
-  **storage node** (large file bytes on a machine the team owns), the **Pi relay** (AI), and the
-  **Fusion relay** (CAD). None is reachable from the internet; the app talks to them on the LAN or via
-  queued jobs.
+  **storage node** (large file bytes on a machine the team owns) and the **Fusion relay** (CAD). Neither
+  is reachable from the internet; the app talks to them on the LAN or via queued jobs.
 
 ## Packages
 
@@ -120,7 +121,7 @@ Competition venues have bad networks, so the web app is built to keep working wi
 | `game-year` | Year-specific game packs |
 | `cad` | Onshape OAuth and API, Fusion relay protocol, mass properties, CAD tool catalog |
 | `agent` | Chat adapters, system prompts, tools, context compaction, Bugbot |
-| `free-relay` | The Pi worker: job leasing, chat streaming, assembly manual, video analysis |
+| `free-relay` | Lease-based job queues (assembly manual, video analysis) and the free-tier writer the assembly manual uses; no device install |
 | `connector` | Shared core of the downloadable connector (pairing, device identity, capabilities) |
 | `storage-node` | The self-hosted file node |
 | `intel-research` | Scheduled and on-demand research jobs |

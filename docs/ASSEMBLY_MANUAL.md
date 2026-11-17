@@ -41,9 +41,9 @@ whole robot is hours. So:
 * A worker **leases** the run (`lease_owner`, `lease_expires_at`) and advances it
   for one bounded slice — four minutes by default — then hands it back.
 * Every slice writes a `checkpoint`: the stage, the distilled CAD facts, the
-  plan, and a cursor. A relay that is unplugged mid-render resumes at the step it
+  plan, and a cursor. A worker that dies mid-render resumes at the step it
   reached, not from the first Onshape call.
-* Two relays cannot advance the same run: a run is claimable only when its lease
+* Two workers cannot advance the same run: a run is claimable only when its lease
   has expired, and every checkpoint renews the lease.
 
 Stages, in order: `ingest → graph → order → fabrication → render → write → pdf`.
@@ -52,17 +52,13 @@ order before the (slow) renders start.
 
 ### Running the worker
 
-Either:
+`POST /api/cron/assembly-manual` with the `CRON_SECRET` bearer. The web app is
+where the engine, the Onshape tokens and the KMS all live, so this is the only
+supported worker; there is no Pi relay (see `docs/FREEBUFF.md`).
 
-* the free-relay sweep (`npm run sweep --workspace=@vantage/free-relay`), which
-  now also advances assembly-manual runs — but only when an engine has been
-  registered, which the Pi relay alone cannot do; or
-* `POST /api/cron/assembly-manual` with the `CRON_SECRET` bearer, from whatever
-  ticker the deployment uses. This is the path that works out of the box, because
-  the web app is where the engine, the Onshape tokens and the KMS all live.
-
-One tick advances one run by one slice. Call it on a timer; a long job simply
-takes many ticks.
+One tick advances one run by one slice; a long job simply takes many ticks. The
+repository schedules no crons (`vercel.json` has `"crons": []`), so a run moves
+only when something calls this route on purpose.
 
 ---
 

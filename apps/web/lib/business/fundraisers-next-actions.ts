@@ -87,7 +87,7 @@ export function fundraisersNextActions(ctx: FundraisersNextActionContext): Fundr
 
   actions.push({
     id: "sponsors",
-    label: "Open Sponsors",
+    label: "Open sponsors",
     detail: "Season goal vs actual blends recorded sponsor cash with grant awards.",
     href: hubHref("/business", "sponsors", orgId),
     primary: actions.length === 0,

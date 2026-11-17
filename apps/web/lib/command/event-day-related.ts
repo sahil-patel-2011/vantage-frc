@@ -127,7 +127,7 @@ export function eventDaySetupSteps(
         }
       : {
           id: "scouting",
-          label: "Open Scouting",
+          label: "Open scouting",
           detail: "An owner or admin syncs the schedule. You can still scout.",
           href: hubHref("/competition", "scouting", orgId),
         },
@@ -308,7 +308,7 @@ function eventDayShellNextActionCandidates(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Coverage queues build from real upcoming alliances only.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -318,7 +318,7 @@ function eventDayShellNextActionCandidates(input: {
   return [
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Close coverage gaps for upcoming alliances from the scout queue.",
       href: hubHref("/competition", "scouting", orgId),
       primary: true,

@@ -281,7 +281,7 @@ export default function StrategyClient({ embedded = false }: { embedded?: boolea
           <Button variant="secondary" type="button" onClick={() => window.print()}>
             Print
           </Button>
-          <Button variant="primary" type="button" disabled={recomputing || loading} onClick={() => void recomputePrediction()}>
+          <Button variant="secondary" type="button" disabled={recomputing || loading} onClick={() => void recomputePrediction()}>
             {recomputing ? "Recomputing…" : "Recompute prediction"}
           </Button>
           {orgId ? (

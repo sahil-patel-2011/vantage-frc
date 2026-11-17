@@ -5,7 +5,7 @@ import {
   includeStoredBriefingSections,
 } from "./stored-sections";
 import type { BriefingCard, BriefingCounterBook, BriefingDefensePlan, BriefingWatchNote } from "./types";
-import type { BriefingPrediction } from "../briefing";
+import type { BriefingPrediction } from "./index";
 
 function card(overrides: Partial<BriefingCard> = {}): BriefingCard {
   return {

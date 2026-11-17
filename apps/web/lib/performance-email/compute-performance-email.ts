@@ -12,6 +12,8 @@
  *   history snapshot, so movement is never claimed).
  */
 
+import { escapeHtml } from "../security/escape-html";
+
 export type AllianceRef = {
   teamKeys?: string[];
   score?: number | string | null;
@@ -352,14 +354,6 @@ function toUpcomingLine(row: PerformanceMatchRow, teamKey: string): string {
     .join(", ");
   const when = row.scheduledAt ? ` — ${row.scheduledAt.slice(11, 16)} UTC` : "";
   return `${matchLabel(row)}${when}: with ${partners || "TBD"} vs ${opponents || "TBD"}`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 
 /** Plain-text body. `aiParagraph` (already grounded + reviewed) slots in verbatim when present. */

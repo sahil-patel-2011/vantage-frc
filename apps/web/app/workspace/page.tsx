@@ -19,6 +19,7 @@ import SyncIndicator from "./sync-indicator";
 import QuickActions from "./quick-actions";
 import { VantageLogo } from "../../components/brand";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
+import { matchLabelFromKey } from "../../lib/matches/no-next-match";
 import "../invite/invite-flow.css";
 import "./workspace-chooser.css";
 
@@ -222,7 +223,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         </a>
         <SyncIndicator />
         <span>
-          {session.user.name} · {data.role}
+          {session.user.name} · {accessRoleLabel(data.role)}
         </span>
       </header>
       <section className={`active-event ${data.context.eventKey ? "" : "inactive"}`}>
@@ -245,7 +246,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
           ) : null}
           {isOwnerAdmin ? (
             <>
-              <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>TBA data</a>
+              <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Event data</a>
               <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team</a>
             </>
           ) : null}
@@ -254,7 +255,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
       <QuickActions orgId={orgId} />
       <DataSourceDegradedBanner health={data.dataSourceHealth} canOpenTeamData={isOwnerAdmin} />
       <aside className="freshness-marker" role="status">
-        <strong>TBA cache</strong>
+        <strong>Event data</strong>
         <span>
           {data.freshness.syncedAt
             ? `Updated ${new Date(data.freshness.syncedAt).toLocaleString()}`
@@ -270,9 +271,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
           data.next.map((match: Record<string, unknown>, index) => (
             <article key={String(match.matchKey)}>
               <span>{index === 0 ? "Next" : "After"}</span>
-              <strong>
-                {String(match.compLevel).toUpperCase()} {String(match.matchNumber)}
-              </strong>
+              <strong>{matchLabelFromKey(String(match.matchKey))}</strong>
               <time>
                 {match.eventTime
                   ? new Date(String(match.eventTime)).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })

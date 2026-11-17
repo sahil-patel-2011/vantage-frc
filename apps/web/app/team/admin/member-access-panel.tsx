@@ -251,7 +251,7 @@ export function MemberAccessPanel({
       body: JSON.stringify({ orgId, action: "apply", key: preset, userId: member.userId }),
     });
     const data = (await response.json().catch(() => ({}))) as { error?: string };
-    return response.ok ? null : (data.error ?? "That preset didn't apply. Try again.");
+    return response.ok ? null : (data.error ?? "That custom role didn't apply. Try again.");
   }
 
   async function save() {
@@ -402,7 +402,7 @@ export function MemberAccessPanel({
             {presets.length > 0 ? (
               <div className="member-access-preset">
                 <label>
-                  <span>Fill in from a job (Drive coach, Scout…)</span>
+                  <span>Fill in from a custom role (Drive coach, Scout…)</span>
                   <select value={preset} onChange={(event) => {
                     const key = event.target.value; setPreset(key);
                     const profile = presets.find((entry) => entry.key === key);
@@ -411,7 +411,7 @@ export function MemberAccessPanel({
                       setHubs(hubDraftFromRows(Object.entries(profile.hubAccess).map(([hubId, allowedTabIds]) => ({ hubId, allowedTabIds }))));
                     }
                   }} disabled={busy}>
-                    <option value="">Choose a preset…</option>
+                    <option value="">Choose a custom role…</option>
                     {presets.map((entry) => (
                       <option key={entry.key} value={entry.key}>
                         {entry.name}
@@ -425,7 +425,7 @@ export function MemberAccessPanel({
                     {presets.find((entry) => entry.key === preset)?.description}{" "}
                     {presets.find((entry) => entry.key === preset)?.baseRole === "admin"
                       ? "Saving gives them a mentor's access, including team settings."
-                      : "Saving replaces the sections and powers below with this preset's."}
+                      : "Saving replaces the sections and powers below with this custom role's."}
                   </p>
                 ) : null}
               </div>
@@ -509,8 +509,8 @@ export function MemberAccessPanel({
             </section>
 
             <p className="app-muted member-access-note">
-              Custom roles like &ldquo;Scouting lead&rdquo; live on{" "}
-              <a href={withOrgHref("/team/admin/presets", orgId)}>Custom roles</a>.
+              Custom roles like &ldquo;Scouting lead&rdquo; are made in{" "}
+              <a href={withOrgHref("/team/admin/presets", orgId)}>Access and roles</a>.
             </p>
           </details>
         ) : !isOwnerRow ? (

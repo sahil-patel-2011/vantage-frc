@@ -147,18 +147,22 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
     [pins, access.hubAccess, access.sponsorsAllowed],
   );
 
-  const dirty = !appearanceEquals(prefs, saved);
-
-  /** Preview immediately; the save call only makes it stick across devices. */
-  function preview(next: AppearancePrefs) {
+  /** Preview immediately, then save so it follows you to every device — like the theme. */
+  function choose(next: AppearancePrefs) {
     setPrefs(next);
     applyBranding({ org, appearance: next });
     broadcastAppearance({ org, appearance: next });
+    void savePrefs(next);
   }
 
   async function savePrefs(next: AppearancePrefs) {
     setBusy(true);
     setStatus(null);
+    const revert = () => {
+      setPrefs(saved);
+      applyBranding({ org, appearance: saved });
+      broadcastAppearance({ org, appearance: saved });
+    };
     try {
       const response = await fetch("/api/branding/appearance", {
         signal: AbortSignal.timeout(8_000),
@@ -168,6 +172,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       });
       const data = (await response.json()) as { appearance?: unknown; error?: string };
       if (!response.ok) {
+        revert();
         setStatus({ tone: "error", text: data.error ?? "Could not save appearance settings." });
         return;
       }
@@ -178,6 +183,7 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
       broadcastAppearance({ org, appearance: stored });
       setStatus({ tone: "ok", text: "Saved to your profile — it follows you to every device." });
     } catch {
+      revert();
       setStatus({ tone: "error", text: "Could not save appearance settings." });
     } finally {
       setBusy(false);
@@ -228,60 +234,8 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
         </p>
         <ChoiceField<DensityPreference> label="Interface density" value={prefs.density} disabled={busy || !loaded}
           choices={[{ value: "comfortable", label: "Comfortable", hint: "Default spacing" }, { value: "compact", label: "Compact", hint: "Less space between items" }]}
-          onChange={value => preview({ ...prefs, density: value })} />
+          onChange={value => choose({ ...prefs, density: value })} />
       </section>
-
-      {/* Theme and density are what most people change. Glass, motion, the
-          cockpit options and the bottom island made this tab about 5,000px tall. */}
-      <details className="appearance-more">
-        <summary data-disclosure>More display settings</summary>
-      <section className="appearance-group" aria-labelledby="appearance-clarity-title">
-        <h3 id="appearance-clarity-title">Glass</h3>
-        <p>
-          Set the transparency of navigation bars.
-        </p>
-        <ChoiceField<ClarityPreference> label="Glass" value={prefs.clarity} disabled={busy || !loaded}
-          choices={[{ value: "clear", label: "Clear", hint: "More of the page shows through" }, { value: "regular", label: "Regular", hint: "Default" }, { value: "solid", label: "Solid", hint: "Best in sunlight" }]}
-          onChange={value => preview({ ...prefs, clarity: value })} />
-      </section>
-
-      <section className="appearance-group" aria-labelledby="appearance-motion-title">
-        <h3 id="appearance-motion-title">Motion</h3>
-        <p>
-          Reduce animations for calmer transitions.
-        </p>
-        <ChoiceField<MotionPreference> label="Motion" value={prefs.motion} disabled={busy || !loaded}
-          choices={[{ value: "full", label: "Full motion", hint: "Animated transitions" }, { value: "reduced", label: "Reduced motion", hint: "Calmer transitions" }]}
-          onChange={value => preview({ ...prefs, motion: value })} />
-
-      </section>
-
-      {/* Code scan settings live on the Code page now (Scan settings); only the live-board switch,
-          which is about this device, stays here. Saves on change like the theme does. */}
-      {cockpitLoaded && !cockpitProblem ? (
-        <section className="appearance-group" aria-labelledby="appearance-live-title">
-          <h3 id="appearance-live-title">Match day</h3>
-          <label className="appearance-check">
-            <input
-              type="checkbox"
-              checked={cockpit.pauseLiveWhenHidden}
-              disabled={cockpitBusy}
-              onChange={(event) => void saveCockpit({ ...cockpit, pauseLiveWhenHidden: event.target.checked })}
-            />
-            Pause My Day, schedule and rankings while this tab is hidden
-          </label>
-          <label className="appearance-check">
-            <input
-              type="checkbox"
-              checked={cockpit.autoMatchBriefs}
-              disabled={cockpitBusy}
-              onChange={(event) => void saveCockpit({ ...cockpit, autoMatchBriefs: event.target.checked })}
-            />
-            Write the match plan automatically when I open a match and it&apos;s out of date
-          </label>
-          {cockpitNote?.tone === "error" ? <p className="brand-notice error" role="alert">{cockpitNote.text}</p> : null}
-        </section>
-      ) : null}
 
       <section className="appearance-group" aria-labelledby="appearance-island-title">
         <h3 id="appearance-island-title">Pinned</h3>
@@ -311,33 +265,78 @@ export default function AppearancePanel({ orgId }: { orgId: string | null }) {
           </Button>
         </div>
       </section>
+
+      {/* Theme, density and pins are what most people change. Glass, motion, the
+          cockpit options and the bottom island made this tab about 5,000px tall. */}
+      <details className="appearance-more">
+        <summary data-disclosure>More display settings</summary>
+      <section className="appearance-group" aria-labelledby="appearance-clarity-title">
+        <h3 id="appearance-clarity-title">Glass</h3>
+        <p>
+          Set the transparency of navigation bars.
+        </p>
+        <ChoiceField<ClarityPreference> label="Glass" value={prefs.clarity} disabled={busy || !loaded}
+          choices={[{ value: "clear", label: "Clear", hint: "More of the page shows through" }, { value: "regular", label: "Regular", hint: "Default" }, { value: "solid", label: "Solid", hint: "Best in sunlight" }]}
+          onChange={value => choose({ ...prefs, clarity: value })} />
+      </section>
+
+      <section className="appearance-group" aria-labelledby="appearance-motion-title">
+        <h3 id="appearance-motion-title">Motion</h3>
+        <p>
+          Reduce animations for calmer transitions.
+        </p>
+        <ChoiceField<MotionPreference> label="Motion" value={prefs.motion} disabled={busy || !loaded}
+          choices={[{ value: "full", label: "Full motion", hint: "Animated transitions" }, { value: "reduced", label: "Reduced motion", hint: "Calmer transitions" }]}
+          onChange={value => choose({ ...prefs, motion: value })} />
+
+      </section>
       </details>
-      <div className="appearance-save">
-        <div className="appearance-actions">
-          <Button
-            type="button"
-            variant="primary"
-            disabled={busy || !loaded || !dirty}
-            onClick={() => void savePrefs(prefs)}
-          >
-            {busy ? "Saving…" : !loaded ? "Loading…" : dirty ? "Save appearance" : "Saved"}
-          </Button>
-          <Button
-            type="button"
-            disabled={busy || !loaded || appearanceEquals(prefs, DEFAULT_APPEARANCE_PREFS)}
-            onClick={() => void savePrefs({ ...DEFAULT_APPEARANCE_PREFS })}
-          >
-            Reset to defaults
-          </Button>
-        </div>
-        {status ? (
-          <p className={`brand-notice ${status.tone === "ok" ? "ok" : "error"}`} role="status">
-            {status.text}
-          </p>
-        ) : null}
+      <div className="appearance-actions">
+        <Button
+          type="button"
+          disabled={busy || !loaded || appearanceEquals(prefs, DEFAULT_APPEARANCE_PREFS)}
+          onClick={() => choose({ ...DEFAULT_APPEARANCE_PREFS })}
+        >
+          Reset to defaults
+        </Button>
       </div>
+      {status ? (
+        <p className={`brand-notice ${status.tone === "ok" ? "ok" : "error"}`} role="status">
+          {status.text}
+        </p>
+      ) : null}
+
+      <details className="appearance-more">
+        <summary data-disclosure>This device and Home</summary>
+      {/* Code scan settings live on the Code page now (Scan settings); only the live-board switch,
+          which is about this device, stays here. Saves on change like the theme does. */}
+      {cockpitLoaded && !cockpitProblem ? (
+        <section className="appearance-group" aria-labelledby="appearance-live-title">
+          <h3 id="appearance-live-title">Match day</h3>
+          <label className="appearance-check">
+            <input
+              type="checkbox"
+              checked={cockpit.pauseLiveWhenHidden}
+              disabled={cockpitBusy}
+              onChange={(event) => void saveCockpit({ ...cockpit, pauseLiveWhenHidden: event.target.checked })}
+            />
+            Pause My Day, schedule and rankings while this tab is hidden
+          </label>
+          <label className="appearance-check">
+            <input
+              type="checkbox"
+              checked={cockpit.autoMatchBriefs}
+              disabled={cockpitBusy}
+              onChange={(event) => void saveCockpit({ ...cockpit, autoMatchBriefs: event.target.checked })}
+            />
+            Write the match plan automatically when I open a match and it&apos;s out of date
+          </label>
+          {cockpitNote?.tone === "error" ? <p className="brand-notice error" role="alert">{cockpitNote.text}</p> : null}
+        </section>
+      ) : null}
       <HomeDefaultsPanel orgId={orgId} />
       <OfflineStoragePanel />
+      </details>
     </div>
   );
 }

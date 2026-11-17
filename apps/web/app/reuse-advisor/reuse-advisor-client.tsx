@@ -16,6 +16,7 @@ import {
   type ReuseCandidate,
   type ReuseRecommendation,
 } from "../../lib/reuse-advisor/types";
+import { pct } from "../../lib/format/percent";
 
 const RECOMMENDATION_TONE: Record<ReuseRecommendation, string> = {
   reuse: "good",
@@ -28,10 +29,6 @@ const STATUS_LABEL: Record<ReuseAssessmentStatus, string> = {
   accepted: "Accepted",
   dismissed: "Dismissed",
 };
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<ReuseAdvisorView, { status: "live" }>;
 

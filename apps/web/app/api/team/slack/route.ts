@@ -8,7 +8,7 @@ import {
   postToSlackWebhook,
   slackSetupStatus,
 } from "../../../../lib/slack";
-import { formatSlackBridgePostCount } from "../../../../lib/slack-related";
+import { formatSlackBridgePostCount } from "../../../../lib/slack/related";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 async function session() {

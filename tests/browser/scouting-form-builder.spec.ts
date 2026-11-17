@@ -15,7 +15,7 @@ test("ordinary scouts can preview published forms without admin controls or misl
   expect((await schemas.json()).canManageSchemas).toBe(false);
   await expect(builder.getByLabel("Form title", { exact: true })).toBeDisabled();
   await expect(builder.getByRole("button", { name: "Add question", exact: true })).toBeDisabled();
-  await expect(page.getByRole("heading", { name: "Forms", exact: true })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Scouting forms", exact: true })).toHaveCount(1);
   await expect(builder.getByRole("heading", { name: "Scouting forms", exact: true })).toHaveCount(0);
   await expect(builder.getByRole("heading", { name: "Choose your team", exact: true })).toHaveCount(0);
   await builder.getByRole("navigation", { name: "Form workspace" }).getByRole("button", { name: "Preview", exact: true }).click();

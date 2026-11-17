@@ -521,7 +521,7 @@ export default function AiKeysClient({ orgId }: { orgId: string | null }) {
       <PageHeader
         breadcrumbs={teamSettingsBreadcrumb("ai")}
         navPath="/team/ai-keys"
-        title="AI keys"
+        title="Team AI keys"
         description={PAGE_DESCRIPTION}
       >
       </PageHeader>

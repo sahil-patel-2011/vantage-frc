@@ -305,13 +305,9 @@ html[data-motion="reduced"] {
   }
   a.dash-empty-cta,
   a.dash-first-week-all,
-  a.dash-widget-link,
   .team-admin-settings-links a,
   .settings-inline-links a,
-  a.soft-topbar-product,
-  a.edc-link,
-  .dash-home a.dash-now-link,
-  .myday-strip a {
+  a.edc-link {
     display: inline-flex;
     align-items: center;
     min-height: 44px !important;
@@ -593,7 +589,6 @@ html[data-motion="reduced"] {
    tool strip, the settings bar, the help category filter, the dashboard hub
    rail, the cross-link strip, and the TeamOps strip. They are one control with
    one shape and one density rule — compact for a mouse, 44px for a thumb. */
-.hub-tool-chip,
 .help-cat-chip,
 .product-hub-related .app-button {
   display: inline-flex;
@@ -609,12 +604,10 @@ html[data-motion="reduced"] {
   text-decoration: none;
   white-space: nowrap;
 }
-.hub-tool-chip.is-active,
 .help-cat-chip[aria-pressed="true"] {
   font-weight: 700;
 }
 @media (pointer: coarse) {
-  .hub-tool-chip,
   .help-cat-chip,
   .product-hub-related .app-button {
     min-height: var(--control-h);

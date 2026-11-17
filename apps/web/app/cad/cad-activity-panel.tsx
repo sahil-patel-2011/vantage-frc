@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "../../components/ui";
+import { Button, TextBlockSkeleton } from "../../components/ui";
 import { activityRelativeTime } from "./cad-model";
 
 type ActivityRow = {
@@ -139,7 +139,10 @@ export function CadActivityPanel({ orgId }: { orgId: string }) {
       {failed ? (
         <p className="cad-activity-error">Could not load CAD activity right now. Refresh to retry.</p>
       ) : rows === null ? (
-        <p className="cad-activity-empty">Loading activity…</p>
+        <div role="status" aria-busy="true">
+          <span className="sr-only">Loading activity</span>
+          <TextBlockSkeleton lines={3} />
+        </div>
       ) : rows.length === 0 ? (
         <p className="cad-activity-empty">
           {filtered ? (
@@ -189,7 +192,10 @@ export function CadActivityPanel({ orgId }: { orgId: string }) {
                 {open ? (
                   <div className="cad-activity-detail">
                     {detail === "loading" || detail === undefined ? (
-                      <p className="cad-activity-empty">Loading session…</p>
+                      <div role="status" aria-busy="true">
+                        <span className="sr-only">Loading session</span>
+                        <TextBlockSkeleton lines={2} />
+                      </div>
                     ) : detail === "failed" ? (
                       <p className="cad-activity-error">
                         Could not load this session. Collapse and reopen to retry.

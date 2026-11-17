@@ -1,8 +1,8 @@
 // My Day live poll — same TBA cache spine as Event Day Command.
 // Framework-free so the client and unit tests share pause / widget / merge rules.
 
-import type { MyDayView } from "../my-day";
-import type { MyDayShellKind } from "../my-day-related";
+import type { MyDayView } from "./index";
+import type { MyDayShellKind } from "./related";
 
 /** Event Day Command cadence — next match / bumpers from `matches_ref`. */
 export const MY_DAY_POLL_MS = 20_000;

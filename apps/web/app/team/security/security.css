@@ -64,9 +64,6 @@
   width: 100%;
   max-width: none;
 }
-.team-security-access-pointer {
-  margin-top: 16px;
-}
 .team-security-page .auth-policy-form > button,
 .team-security-page .auth-policy-form > a {
   justify-self: start;

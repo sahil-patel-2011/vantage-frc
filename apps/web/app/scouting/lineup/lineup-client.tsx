@@ -300,8 +300,8 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
             {refreshing ? "Refreshing…" : "Refresh"}
           </Button>
           <CopyShareLink orgId={orgId} pathWithSearch={assignmentWorkspaceHref({ orgId, eventKey: view.eventKey, matchKey: view.live.focusMatchKeys[0], qualsOnly: view.qualsOnly })} />
-          {view.canAssign ? (
-            <Button variant="primary" type="button" disabled={controlsDisabled || !view.slots.some(slot => slot.status === "unscouted" && !view.playedMatchKeys.includes(slot.matchKey))} onClick={() => void mutate({ action: "auto-assign" })}>
+          {view.canAssign && view.slots.some(slot => slot.status === "unscouted" && !view.playedMatchKeys.includes(slot.matchKey)) ? (
+            <Button variant="primary" type="button" disabled={controlsDisabled} onClick={() => void mutate({ action: "auto-assign" })}>
               {busy ? "Saving…" : "Assign available scouts"}
             </Button>
           ) : null}
@@ -375,7 +375,7 @@ export default function LineupClient({ orgId, eventKey, initialMatchKey = "", in
         </details>
       ) : null}
 
-      {view.schemaRoles.warnings.length ? (
+      {view.canAssign && view.schemaRoles.warnings.length ? (
         <details className="lineup-disclosure">
           <summary>Form mapping · {view.schemaRoles.warnings.length} items to review</summary>
           <p className="app-muted">Unmapped observations stay missing in analysis.</p>

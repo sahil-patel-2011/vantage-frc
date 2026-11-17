@@ -2,7 +2,7 @@ import { createSearchProvider, type SearchResult } from "@vantage/intel-research
 import { assertHubTabAccess, assertSponsorsAllowed, auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { rankSponsorFit } from "../../../../lib/business-portal";
+import { rankSponsorFit } from "../../../../lib/business/portal";
 import { publicErrorMessage } from "../../../../lib/security/public-error";
 
 function cleanName(result: SearchResult): string {

@@ -13,7 +13,7 @@ import {
   type PipelineSponsor,
   type SponsorReminder,
   type SponsorReminderKind,
-} from "./sponsor-pipeline";
+} from "./sponsors/pipeline";
 
 export type SponsorReminderRunSummary = {
   orgsScanned: number;

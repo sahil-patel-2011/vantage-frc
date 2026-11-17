@@ -138,12 +138,6 @@
 @media (prefers-reduced-motion: reduce) {
   .product-hub--business,
 .scan-hub--business,
-.business-page,
-.product-hub--business,
-.scan-hub--business,
-.business-page,
-.product-hub--business,
-.scan-hub--business,
 .business-page {
     animation: none !important;
     transition: none !important;
@@ -159,4 +153,3 @@
 :root[data-theme='dark'] .product-hub--business .empty {
   background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }
-

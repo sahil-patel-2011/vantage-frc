@@ -11,6 +11,6 @@ describe("Award Tracker last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"award-tracker"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Award Tracker"/);
+    expect(src).toMatch(/feature="Award tracker"/);
   });
 });

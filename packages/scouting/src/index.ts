@@ -1212,7 +1212,12 @@ export function importScoutData(input: {
     const pick=(...aliases:string[])=>aliases.map((key)=>normalized.get(key.toLowerCase().replace(/[^a-z0-9]/g,""))).find((value)=>value!=null&&value!=="");
     const eventKey = String(pick("eventKey","event","eventCode","competition") ?? "").trim();
     const matchRaw=String(pick("matchKey","match","matchNumber","matchNum")??"").trim();
-    const matchKey = matchRaw ? (/^\d+$/.test(matchRaw)?`qm${matchRaw}`:matchRaw) : undefined;
+    // matches_ref keys carry the event ("2026casj_qm12"); a bare number or TBA match code from a
+    // spreadsheet would otherwise miss the reference row and fail the foreign key on save.
+    const matchKey = !matchRaw ? undefined
+      : /^\d+$/.test(matchRaw) ? `${eventKey}_qm${matchRaw}`
+      : /^(qm|ef|qf|sf|f)\d+(m\d+)?$/i.test(matchRaw) ? `${eventKey}_${matchRaw.toLowerCase()}`
+      : matchRaw;
     const teamValue = String(pick("teamKey","team","teamNumber","teamNum","robot") ?? "").trim();
     const teamKey = /^frc\d+$/i.test(teamValue) ? teamValue.toLowerCase() : `frc${teamValue}`;
     if (!eventKey || !/^frc\d+$/.test(teamKey)) throw new Error(`Import row ${index + 1} lacks event/team identity`);

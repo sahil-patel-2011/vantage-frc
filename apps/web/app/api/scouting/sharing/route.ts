@@ -3,7 +3,7 @@ import {
   IntelHttpError,
   intelSession,
   withIntelRequest,
-} from "../../../../lib/intel-auth";
+} from "../../../../lib/intel/auth";
 import { requestOrigin } from "../../../../lib/products/products";
 const isUuid = (value: unknown): value is string =>
   typeof value === "string" &&

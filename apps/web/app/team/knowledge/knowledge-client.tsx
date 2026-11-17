@@ -530,7 +530,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                   });
                 }}
               >
-                <span className="kb-badge handoff">{tpl.kind.replace("_", " ")}</span>
+                <span className="kb-badge handoff">{`${tpl.kind.charAt(0).toUpperCase()}${tpl.kind.slice(1).replace("_", " ")}`}</span>
                 <strong>{tpl.title}</strong>
                 <span>{tpl.blurb}</span>
               </button>
@@ -941,11 +941,7 @@ export default function KnowledgeClient({ embedded = false }: { embedded?: boole
                   </Button>
                 </EmptyState>
               ) : (
-                <EmptyState soft title="Choose a page">
-                  <Button type="button" variant="primary" disabled={busy} onClick={beginCreate}>
-                    New page
-                  </Button>
-                </EmptyState>
+                <EmptyState soft title="Choose a page" description="Pick a page on the left." />
               )
             ) : null}
           </div>

@@ -171,17 +171,6 @@ export function CommandReadyView({
       {error ? <p className="edc-banner error">{error}</p> : null}
       {eventMessage ? <p className="edc-banner ok">{eventMessage}</p> : null}
       <DataSourceDegradedBanner health={snap?.dataSourceHealth} canOpenTeamData={snap.canSetEvent === true} />
-      {snap?.nexus ? (
-        <p className="edc-freshness" role="status">
-          Nexus queue: {snap.nexus.nowQueuing ?? "none posted"}
-          {snap.nexus.pitCount ? ` · ${snap.nexus.pitCount} pit addresses cached` : ""}
-          {" · "}
-          <a href={snap.nexus.attributionHref} rel="noreferrer" target="_blank">
-            frc.nexus
-          </a>
-        </p>
-      ) : null}
-
       <NexusQueuePanel nexus={snap?.nexus ?? null} eventKey={snap?.eventKey ?? null} />
 
       <EventDayNextActionsPanel actions={liveActions} />
@@ -208,7 +197,7 @@ export function CommandReadyView({
                 <span className={`edc-bumper-cue ${next.ourAlliance ?? ""}`}>
                   {snap?.myDay?.bumperCue ??
                     (next.ourAlliance
-                      ? `Switch to ${next.ourAlliance.toUpperCase()} bumpers`
+                      ? `Switch to ${next.ourAlliance} bumpers`
                       : "Alliance TBD — confirm bumpers")}
                 </span>
               </div>
@@ -312,7 +301,7 @@ export function CommandReadyView({
                 ) : null}
                 {snap.eventOver && !snap.playoffsAhead && snap.canSetEvent ? (
                   <button type="button" className="dash-empty-cta" onClick={onSelectEvent}>
-                    Pick your next event
+                    Set active event
                   </button>
                 ) : null}
                 {snap.eventOver ? (
@@ -321,7 +310,7 @@ export function CommandReadyView({
                   </a>
                 ) : (
                   <a className="dash-empty-cta" href={scoutingHref}>
-                    Open Scouting
+                    Open scouting
                   </a>
                 )}
               </div>
@@ -387,7 +376,7 @@ export function CommandReadyView({
                   : "Set your active event to build the scout queue from schedule gaps."}
               </p>
               <a className="dash-empty-cta" href={scoutingHref}>
-                Open Scouting
+                Open scouting
               </a>
             </div>
           )}
@@ -523,7 +512,7 @@ export function CommandReadyView({
                 <p className="edc-muted">{snap.coverage.coordinatorNudge.message}</p>
               ) : null}
               <a className="edc-link" href={scoutingHref}>
-                Open Scouting →
+                Open scouting →
               </a>
             </>
           ) : (
@@ -533,7 +522,7 @@ export function CommandReadyView({
                 When the next matches are posted, this shows which robots still need a scout.
               </p>
               <a className="dash-empty-cta" href={scoutingHref}>
-                Open Scouting
+                Open scouting
               </a>
             </div>
           )}
@@ -541,19 +530,19 @@ export function CommandReadyView({
       </section>
 
       <section className="edc-secondary" aria-label="Briefs and flags">
-        <article className="edc-card">
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#0f766e", ["--tone-bg" as string]: "#ccfbf1" }}>
-                <Icon name="target" />
-              </span>
-              <div>
-                <h2>Drive coach briefs</h2>
-                <p>What our opponents tend to do, from scouting</p>
+        {snap?.briefs.length ? (
+          <article className="edc-card">
+            <header>
+              <div className="edc-card-title">
+                <span className="edc-icon" style={{ ["--tone" as string]: "#0f766e", ["--tone-bg" as string]: "#ccfbf1" }}>
+                  <Icon name="target" />
+                </span>
+                <div>
+                  <h2>Drive coach briefs</h2>
+                  <p>What our opponents tend to do, from scouting</p>
+                </div>
               </div>
-            </div>
-          </header>
-          {snap?.briefs.length ? (
+            </header>
             <ul className="edc-briefs">
               {snap.briefs.map((brief) => (
                 <li key={brief.teamKey}>
@@ -581,27 +570,22 @@ export function CommandReadyView({
                 </li>
               ))}
             </ul>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>No opponent briefs</strong>
-              <p>Briefs appear once your next match is known and reference metrics or scout notes exist.</p>
-            </div>
-          )}
-        </article>
+          </article>
+        ) : null}
 
-        <article className="edc-card">
-          <header>
-            <div className="edc-card-title">
-              <span className="edc-icon" style={{ ["--tone" as string]: "#b91c1c", ["--tone-bg" as string]: "#fee2e2" }}>
-                <Icon name="bell" />
-              </span>
-              <div>
-                <h2>Pit flags · this match</h2>
-                <p>Mechanical / reliability signals that matter now</p>
+        {snap?.pitFlags.length ? (
+          <article className="edc-card">
+            <header>
+              <div className="edc-card-title">
+                <span className="edc-icon" style={{ ["--tone" as string]: "#b91c1c", ["--tone-bg" as string]: "#fee2e2" }}>
+                  <Icon name="bell" />
+                </span>
+                <div>
+                  <h2>Pit flags · this match</h2>
+                  <p>Mechanical / reliability signals that matter now</p>
+                </div>
               </div>
-            </div>
-          </header>
-          {snap?.pitFlags.length ? (
+            </header>
             <ul className="edc-flags">
               {snap.pitFlags.map((flag) => (
                 <li key={`${flag.teamKey}-${flag.title}`} data-severity={flag.severity}>
@@ -613,13 +597,8 @@ export function CommandReadyView({
                 </li>
               ))}
             </ul>
-          ) : (
-            <div className="dash-empty calm">
-              <strong>No pit flags</strong>
-              <p>Pit and match scout reliability notes for the next alliance appear here when logged.</p>
-            </div>
-          )}
-        </article>
+          </article>
+        ) : null}
 
         {seasonPulse}
       </section>

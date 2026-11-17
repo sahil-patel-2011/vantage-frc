@@ -7,7 +7,7 @@ import { MatchActivityRecorder } from "./match-activity-recorder";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
-import { ActionMenu, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Panel, Button, TextBlockSkeleton, askConfirm } from "../../components/ui";
 import { ScoutingSharing } from "./scouting-sharing";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -60,7 +60,11 @@ import "./scouting-workspace.css";
 // Tabs most scouts never open load on first visit: team profiles, the trust checks (zod schemas)
 // and the QR handoff (jsQR + qrcode) were most of the scouting page's first-load JavaScript.
 // The handoff is still fetched right after load (useWarmHandoffPanel) so it works offline.
-const tabLoading = () => <p className="app-muted" role="status">Loading…</p>;
+const tabLoading = () => (
+  <div aria-busy="true">
+    <TextBlockSkeleton lines={4} />
+  </div>
+);
 const ScoutingTeamProfiles = dynamic(
   () => import("./scouting-team-profiles").then((mod) => mod.ScoutingTeamProfiles),
   { loading: tabLoading },
@@ -363,7 +367,7 @@ return (
     <PageHeader
       breadcrumbs="Competition / Scouting"
       title="Scouting"
-      description="Match and pit forms stay on this device until you sync."
+      description="Reports save on this phone first and send themselves when you have signal."
     >
       <div className="scout-header-meta">
         <ScoutingRelatedStrip orgId={orgId} />
@@ -388,7 +392,7 @@ return (
       queue count says the same thing and says it with a number.
     */}
     <div className="scout-status-bar">
-      <a className="scout-free-link" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Scout without an event</a>
+      <a className="scout-free-link" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Practice scouting</a>
       {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey }) ? (
         <strong className="scout-status-event">
           {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey })}
@@ -404,6 +408,11 @@ return (
         <Button variant="secondary" type="button" onClick={() => void sync()}>
           Sync now
         </Button>
+      ) : null}
+      {/* No signal here, a teammate has some: hand the entries over by QR. It lives beside the
+          queue count because it answers the same question, not as a tab of its own. */}
+      {tab !== "handoff" ? (
+        <button type="button" className="scout-task-link" onClick={() => onTabChange("handoff")}>QR handoff</button>
       ) : null}
       {syncNote ? (
         <span className="scout-sync-note" role="status">
@@ -560,7 +569,7 @@ return (
                         <p className="app-muted">Entry candidates load after refresh.</p>
                       ) : null}
                       <div className="scout-conflict-actions">
-                        <Button variant="primary" type="button" disabled={!selected} onClick={() => void reviewConflict(id, "resolved")}>
+                        <Button variant="secondary" type="button" disabled={!selected} onClick={() => void reviewConflict(id, "resolved")}>
                           {selectedCandidate
                             ? `${conflictScoutName(selectedCandidate.scoutName)} was right`
                             : "Pick a scout"}
@@ -796,11 +805,11 @@ return (
                     data-status={flag.status}
                     data-soft={flag.soft ? "true" : "false"}
                   >
-                    <b>{flag.fieldKey}</b>
+                    <b>{conflictFieldLabel(flag.fieldKey, formFields)}</b>
                     <span>{flag.detail}</span>
                     {flag.status === "conflict" ? (
                       <small>
-                        Scout {JSON.stringify(flag.scoutValue)} · Official {JSON.stringify(flag.officialValue)}
+                        Scout {conflictValueLabel(flag.scoutValue)} · Official {conflictValueLabel(flag.officialValue)}
                       </small>
                     ) : null}
                   </li>

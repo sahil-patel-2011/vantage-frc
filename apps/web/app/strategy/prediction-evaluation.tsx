@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { TextBlockSkeleton } from "../../components/ui";
 type Evaluation = { modelVersion: string; matches: number; accuracy: number; logLoss: number; brier: number };
 export function PredictionEvaluation({ orgId }: { orgId: string | null }) {
   const [models, setModels] = useState<Evaluation[] | null>(null);
@@ -15,7 +16,7 @@ export function PredictionEvaluation({ orgId }: { orgId: string | null }) {
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not evaluate predictions."); }
     finally { setBusy(false); }
   }}><summary>Model performance</summary><p>Measured against official results, using predictions saved before each match started. Ties and later recomputations are excluded.</p>
-    {busy ? <p role="status">Loading results…</p> : error ? <p role="alert">{error}</p> : models?.length ? <dl>{models.map(model => <div key={model.modelVersion}><dt>{model.modelVersion} · {model.matches} matches</dt><dd>{(model.accuracy*100).toFixed(1)}% correct · Log loss {model.logLoss.toFixed(3)} · Brier {model.brier.toFixed(3)}</dd></div>)}</dl> : models ? <p>No completed matches with a saved pre-match prediction yet.</p> : null}
+    {busy ? <div aria-busy="true"><span className="sr-only" role="status">Loading results…</span><TextBlockSkeleton lines={3} /></div> : error ? <p role="alert">{error}</p> : models?.length ? <dl>{models.map(model => <div key={model.modelVersion}><dt>{model.modelVersion} · {model.matches} matches</dt><dd>{(model.accuracy*100).toFixed(1)}% correct · Log loss {model.logLoss.toFixed(3)} · Brier {model.brier.toFixed(3)}</dd></div>)}</dl> : models ? <p>No completed matches with a saved pre-match prediction yet.</p> : null}
     <small>Lower log loss and Brier scores indicate better confidence. Accuracy alone does not measure calibration.</small>
   </details>;
 }

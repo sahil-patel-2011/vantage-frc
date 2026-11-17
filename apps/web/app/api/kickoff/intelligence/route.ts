@@ -19,7 +19,7 @@ import {
   type GameIntelligenceSummary,
   type KickoffIntelligenceRecord,
   type StrategyAdviceBundle,
-} from "../../../../lib/kickoff-intelligence";
+} from "../../../../lib/kickoff/intelligence";
 import { failMeteredAi } from "../../../../lib/metered-ai-fail";
 
 class HttpError extends Error {

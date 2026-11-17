@@ -14,12 +14,12 @@ test("a rejected task keeps the draft and permits a successful retry", async ({ 
       await route.fulfill({ status: 403, json: { error: "Ask a team admin for task access." } });
     } else await route.continue();
   });
-  await form.getByRole("button", { name: "Add", exact: true }).click();
+  await form.getByRole("button", { name: "Add task", exact: true }).click();
   await expect(page.locator(".todos-page").getByRole("alert")).toContainText("Ask a team admin");
   await expect(form.getByLabel("Title", { exact: true })).toHaveValue(title);
   await page.unroute("**/api/todos");
   try {
-    await form.getByRole("button", { name: "Add", exact: true }).click();
+    await form.getByRole("button", { name: "Add task", exact: true }).click();
     await expect(form.getByLabel("Title", { exact: true })).toHaveValue("");
     await expect(page.locator(".todos-card").filter({ hasText: title })).toBeVisible();
   } finally {
@@ -42,7 +42,7 @@ test("offline storage failure retains the task without claiming it was saved", a
   await page.evaluate(() => Object.defineProperty(window, "indexedDB", { configurable: true, value: undefined }));
   await context.setOffline(true);
   try {
-    await form.getByRole("button", { name: "Add", exact: true }).click();
+    await form.getByRole("button", { name: "Add task", exact: true }).click();
     await expect(page.locator(".todos-page").getByRole("alert")).toContainText("cannot save work offline");
     await expect(form.getByLabel("Title", { exact: true })).toHaveValue("Keep this offline draft");
     await expect(page.locator(".todos-page").getByRole("alert")).not.toContainText("Saved on this device");
@@ -65,8 +65,8 @@ test("typing the next task during a save retains the new draft", async ({ page, 
     await route.continue();
   });
   try {
-    await form.getByRole("button", { name: "Add", exact: true }).click();
-    await expect(form.getByRole("button", { name: "Add", exact: true })).toBeDisabled();
+    await form.getByRole("button", { name: "Add task", exact: true }).click();
+    await expect(form.getByRole("button", { name: "Add task", exact: true })).toBeDisabled();
     await form.getByLabel("Title", { exact: true }).fill("The next task");
     release();
     await expect(page.locator(".todos-card").filter({ hasText: title })).toBeVisible();
@@ -111,7 +111,7 @@ for (const width of [320, 1440]) {
       const currentUserId = (await read()).currentUserId;
       await form.getByRole("combobox", { name: "Assignee", exact: true }).selectOption(currentUserId);
       await form.getByLabel("Due", { exact: true }).fill("2000-01-01");
-      await form.getByRole("button", { name: "Add", exact: true }).click();
+      await form.getByRole("button", { name: "Add task", exact: true }).click();
       await expect.poll(async () => (await read()).todos.some(todo => todo.title === `${prefix} todo`)).toBe(true);
       const view = await read();
       const created = view.todos.find(todo => todo.title === `${prefix} todo`)!;

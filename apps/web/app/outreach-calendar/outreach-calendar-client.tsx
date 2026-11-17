@@ -30,6 +30,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./outreach-calendar.css";
+import { pct } from "../../lib/format/percent";
 
 function isOutreachCalendarView(value: unknown): value is OutreachCalendarView {
   if (!value || typeof value !== "object") return false;
@@ -54,7 +55,7 @@ async function persistOutreachCalendarSnapshot(
     await putFeatureSnapshot("outreach-calendar", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("outreach-calendar", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Outreach Calendar already painted; IndexedDB is best-effort.
+    // Live Outreach calendar already painted; IndexedDB is best-effort.
   }
 }
 
@@ -82,10 +83,6 @@ function statusTone(status: OutreachStatus): string {
   if (status === "confirmed") return "setup";
   if (status === "canceled") return "setup";
   return "setup";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<OutreachCalendarView, { status: "live" }>;
@@ -155,10 +152,10 @@ function OutreachShell({
         breadcrumbs={
           <>
             <a href={orgId ? withOrgHref("/media", orgId) : "/media"}>Media</a>
-            {" / Outreach Calendar"}
+            {" / Outreach calendar"}
           </>
         }
-        title="Outreach Calendar"
+        title="Outreach calendar"
         description={description}
       >
         <OutreachRelatedStrip orgId={orgId} />
@@ -250,7 +247,7 @@ export default function OutreachCalendarClient() {
         if (!response.ok || !isOutreachCalendarView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError(staleCopyNotice("Outreach Calendar"));
+            setError(staleCopyNotice("Outreach calendar"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -265,7 +262,7 @@ export default function OutreachCalendarClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError(staleCopyNotice("Outreach Calendar"));
+          setError(staleCopyNotice("Outreach calendar"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -326,7 +323,7 @@ export default function OutreachCalendarClient() {
   if (shell === "loading") {
     return (
       <OutreachShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Outreach Calendar" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Outreach calendar" fromCache={fromCache} cachedAt={cachedAt} />
       </OutreachShell>
     );
   }
@@ -340,7 +337,7 @@ export default function OutreachCalendarClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Outreach Calendar" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Outreach calendar" fromCache={fromCache} cachedAt={cachedAt} />
       </OutreachShell>
     );
   }
@@ -352,7 +349,7 @@ export default function OutreachCalendarClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Outreach Calendar" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Outreach calendar" fromCache={fromCache} cachedAt={cachedAt} />
       </OutreachShell>
     );
   }
@@ -360,7 +357,7 @@ export default function OutreachCalendarClient() {
   if (view?.status !== "live") {
     return (
       <OutreachShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Outreach Calendar" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Outreach calendar" fromCache={fromCache} cachedAt={cachedAt} />
       </OutreachShell>
     );
   }
@@ -371,10 +368,10 @@ export default function OutreachCalendarClient() {
         breadcrumbs={
           <>
             <a href={withOrgHref("/media", orgId)}>Media</a>
-            {" / Outreach Calendar"}
+            {" / Outreach calendar"}
           </>
         }
-        title="Outreach Calendar"
+        title="Outreach calendar"
         description="Plan outreach events with projected hours and reach. Completing an event writes it to Community Impact; planned events stay empty until then."
       >
         <div className="outreach-calendar-header-actions">
@@ -404,7 +401,7 @@ export default function OutreachCalendarClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Outreach Calendar" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Outreach calendar" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p {...staleCopyProps(error)}>
@@ -604,18 +601,19 @@ function AllEvents({
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
+                tone="danger"
                 disabled={busy}
                 onClick={async () => {
-                  if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
+                  if (await askConfirm({ title: `Delete “${item.title}”?`, body: "The event comes off the outreach calendar.", confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-event", eventId: item.id });
                   }
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </li>
         ))}

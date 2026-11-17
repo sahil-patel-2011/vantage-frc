@@ -34,10 +34,14 @@ describe("one filled button per view", () => {
     expect(bugbot).toMatch(/variant=\{githubConnected \? "primary" : "secondary"\}[^>]*className="cdc-scan-repo"/);
   });
 
-  it("Hours' Clock in is the fallback to scanning, so secondary", () => {
+  it("Hours' Clock in is the filled action and Scan is secondary", () => {
     const view = read("app/hours/hours-ready-view.tsx");
     const clockIn = view.slice(view.lastIndexOf("<Button", view.indexOf('action: "clock_in"')), view.indexOf('action: "clock_in"'));
-    expect(clockIn).toMatch(/variant="secondary"/);
+    expect(clockIn).toMatch(/variant="primary"/);
+    const forms = read("app/hours/hours-forms.tsx");
+    const scan = forms.search(/>\s*Scan\s*<\/Button>/);
+    expect(scan).toBeGreaterThan(0);
+    expect(forms.slice(forms.lastIndexOf("<Button", scan), scan)).toMatch(/variant="secondary"/);
   });
 
   it("a selected segment and Money's Add are not filled with the accent", () => {

@@ -107,7 +107,7 @@ function CreateEventForm({
         ).then(() => setTitle(""));
       }}
     >
-      <h3>New attendance event</h3>
+      <h3>New roll call</h3>
       <div className="att-form-grid">
         <label className="att-field wide">
           <span>Title</span>
@@ -141,7 +141,7 @@ function CreateEventForm({
         </label>
       </div>
       <Button variant="primary" type="submit" disabled={busy || !title.trim() || !occurredOn}>
-        Create event
+        Create roll call
       </Button>
     </form>
   );
@@ -407,7 +407,7 @@ function SessionDetail({
 
       {event.entries.length === 0 ? (
         <EmptyState
-          soft
+          compact
           title="No attendees marked yet"
           description={
             canManage
@@ -415,15 +415,11 @@ function SessionDetail({
               : "An owner or admin marks who showed up. Totals stay empty until they do."
           }
         >
-          {canManage ? (
-            <Button as="a" variant="secondary" href="#att-add-attendee">
-              Add an attendee
-            </Button>
-          ) : (
+          {!canManage ? (
             <Button as="a" variant="primary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
               Ask in Messages
             </Button>
-          )}
+          ) : null}
         </EmptyState>
       ) : (
         <ul className="att-entries">
@@ -714,7 +710,8 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
           </Button>
         </>
       ) : null}
-      {canManage ? (
+      {/* With no roll calls yet, the empty card carries "New roll call"; the header only offers Cancel. */}
+      {canManage && (events.length > 0 || showCreate) ? (
         <Button variant={events.length === 0 ? "secondary" : "primary"} type="button" onClick={() => setShowCreate((v) => !v)}>
           {/* "New" beside the season picker read as "new season"; it starts a roll call. */}
           {showCreate ? "Cancel" : "New roll call"}
@@ -765,16 +762,16 @@ export default function AttendanceClient({ embedded = false }: { embedded?: bool
       {events.length === 0 ? (
         <EmptyState
           soft
-          title="No attendance events this season"
+          title="No roll calls this season"
           description={
             canManage
-              ? "Create a practice or meeting event, then one-tap who was present. Nothing is invented until you log it."
-              : "An owner or admin will create the first roll-call event."
+              ? "Start a roll call for a practice or meeting, then one-tap who was present. Nothing is invented until you log it."
+              : "An owner or admin will start the first roll call."
           }
         >
           {canManage ? (
             <Button variant="primary" type="button" onClick={() => setShowCreate(true)}>
-              New attendance event
+              New roll call
             </Button>
           ) : (
             <Button as="a" variant="primary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>

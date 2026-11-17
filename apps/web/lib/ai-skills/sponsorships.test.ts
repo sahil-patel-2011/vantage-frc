@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Sponsor, SponsorProspect } from "../business-portal";
-import type { SponsorReminder } from "../sponsor-pipeline";
+import type { Sponsor, SponsorProspect } from "../business/portal";
+import type { SponsorReminder } from "../sponsors/pipeline";
 import { boundForModel, dollarsOrNull, viewHighlights, viewIsEmpty } from "./bound";
 import {
   rankSponsorAsks,

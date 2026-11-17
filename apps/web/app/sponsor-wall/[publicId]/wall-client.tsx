@@ -4,6 +4,7 @@
 // storefront pattern: fetch the tokenized public API, render published data only, and show an
 // honest unavailable state when the wall is unpublished or the token is wrong.
 import { useEffect, useState } from "react";
+import { TextBlockSkeleton } from "../../../components/ui";
 import { sponsorWallTierLabel } from "../../../lib/sponsor-wall";
 import type { SponsorWallTier } from "../../../lib/sponsor-wall/types";
 
@@ -56,8 +57,9 @@ export default function WallClient({ publicId }: { publicId: string }) {
   if (!wall) {
     return (
       <main className="public-wall public-wall-light">
-        <section className="public-wall-state">
-          <p>Loading sponsor wall…</p>
+        <section className="public-wall-state" role="status" aria-busy="true">
+          <span className="sr-only">Loading sponsor wall</span>
+          <TextBlockSkeleton lines={3} />
         </section>
       </main>
     );

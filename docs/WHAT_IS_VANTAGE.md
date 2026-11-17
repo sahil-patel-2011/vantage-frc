@@ -86,8 +86,8 @@ do about it. There are no placeholder statistics anywhere, and tests enforce tha
 row-level security), not just by the app. Everything can be exported.
 
 **AI is a helper, not the product.** Ask AI answers from your team's own data and public event data,
-shows what it read, and says when it does not know. It runs, in order of preference, on hardware the
-team owns (a paired Raspberry Pi relay), then on the team's own model keys, then on a hosted key —
+shows what it read, and says when it does not know. It runs, in order of preference, on a member's own
+Claude Code plan (paired once), then on the team's own model keys, then on a hosted key —
 and it always tells you which one answered. AI usage is metered and capped so a team is never
 surprised.
 
@@ -107,7 +107,7 @@ those services.
 | Discord, Slack | Announcements and a team-chat bridge |
 | Email (Resend) | Sign-in codes, invitations, reminders |
 | Stripe | Billing, when a deployment enables paid plans |
-| Team storage node, Pi relay, Fusion relay | Optional hardware the team owns, paired with a code |
+| Team storage node, Fusion relay | Optional hardware the team owns, paired with a code |
 
 Every integration works in a reduced form without credentials — for example, Onshape documents can
 be added by link before an account is connected — and the app says exactly what to set up to unlock

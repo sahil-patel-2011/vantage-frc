@@ -19,6 +19,7 @@ import { OfflineBanner } from "../../components/offline-banner";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { SaveEventDayPanel } from "./save-event-day-panel";
 import "./offline-shell.css";
+import { pct } from "../../lib/format/percent";
 
 const COMPONENT_LABEL: Record<string, string> = {
   routeCoverage: "Shell route coverage",
@@ -26,10 +27,6 @@ const COMPONENT_LABEL: Record<string, string> = {
   recency: "Sync recency",
   offlineVerified: "Verified offline",
 };
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 function formatBytes(bytes: number): string {
   if (bytes <= 0) return "0 KB";

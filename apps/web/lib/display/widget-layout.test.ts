@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DISPLAY_WIDGET_TYPES, PRESET_WIDGETS, type DisplayWidgetType } from "../display";
+import { DISPLAY_WIDGET_TYPES, PRESET_WIDGETS, type DisplayWidgetType } from "./index";
 import {
   MAX_WIDGETS,
   MIN_WIDGETS,

@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { notifyCalendarEvent } from "../../../lib/notify-calendar";
+import { notifyCalendarEvent } from "../../../lib/notifications/calendar";
 import {
   calendarTitleForVisit,
   canDeleteVisitRow,

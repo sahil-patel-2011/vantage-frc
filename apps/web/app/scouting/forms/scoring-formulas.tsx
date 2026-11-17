@@ -3,7 +3,7 @@
 import { anySignal } from "../../../lib/abort/any-signal";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { evaluateObservedFormula, isFormulaExpression, isFormulaDraftExpression, isUnseenFormulaAnswer, formulaFields, type FormulaExpression, type FieldDefinition, type ScoutSchema } from "@vantage/scouting";
-import { Button, FormRow, Modal } from "../../../components/ui";
+import { Button, FormRow, Modal, TextBlockSkeleton } from "../../../components/ui";
 import { apiErrorMessage } from "../../../lib/ui/load-failure";
 import { defaultFormulaTerm, formulaDraftKey, formulaInputError, formulaOptions, latestFormulaDraft, formulaForRole, SCORING_ROLE_NAMES, NUMERIC_FORMULA_TYPES, CHOICE_FORMULA_TYPES, type SavedFormula } from "../../../lib/scouting/formula-editor";
 import { scoutOptionLabel } from "../../../lib/scouting/option-label";
@@ -179,7 +179,7 @@ export function ScoringFormulas({ open, onClose, orgId, userId, schema, canManag
       {!schema ? <p role="status">Publish a match form before configuring its scoring. Your form draft does not change live scoring.</p> : <p className="app-muted">Published {schema.definition.title}, version {schema.version}. Formula changes apply to your team’s reports with these question keys.</p>}
       {!canManage ? <p className="app-muted">You can view scoring. A scouting lead or team admin can change it.</p> : null}
       {loadError ? <div role="alert"><p>{loadError}</p><Button type="button" variant="secondary" onClick={() => setRetry(value => value + 1)}>Reload formulas</Button></div> : null}
-      {loading ? <p role="status">Loading saved formulas…</p> : null}
+      {loading ? <div aria-busy="true"><span className="sr-only" role="status">Loading saved formulas…</span><TextBlockSkeleton lines={2} /></div> : null}
       <FormRow label="Formula"><select value={name} disabled={loading || saving || Boolean(draftError && dirty)} onChange={event => loadFormula(event.target.value)}>
         {activeOptions.map(option => <option key={option.role} value={option.name}>{option.role}{option.name !== option.role ? ` · saved as ${option.name}` : ""}</option>)}
         {formulas.filter(formula => !activeOptions.some(option => option.name === formula.name)).map(formula => <option key={formula.id} value={formula.name}>{formula.name} · retained, inactive</option>)}

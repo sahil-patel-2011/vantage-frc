@@ -881,7 +881,8 @@ export async function meteredAI<T>(input: MeteredAIInput<T>): Promise<T> {
     const totals = await input.client.query<{ used: string; grants: string }>(
       `SELECT
          COALESCE((SELECT SUM(cost_usd) FROM ai_usage_events
-           WHERE org_id = $1 AND created_at >= $2 AND created_at < $3 AND ${TEAM_USAGE_SQL}), 0)::text AS used,
+           WHERE org_id = $1 AND created_at >= $2 AND created_at < $3 AND key_source = 'platform'
+             AND ${TEAM_USAGE_SQL}), 0)::text AS used,
          COALESCE((SELECT SUM(amount_usd) FROM ai_credit_grants WHERE org_id = $1), 0)::text AS grants`,
       [input.orgId, account.period_start, account.period_end]
     );
@@ -1407,6 +1408,9 @@ export async function createPlanCheckout(
     cancel_url: input.cancelUrl,
     client_reference_id: input.orgId,
     metadata: { orgId: input.orgId, planCode: input.planCode },
+    // Session metadata is not copied to the Subscription Stripe creates; the
+    // customer.subscription.* events read orgId and planCode from here.
+    subscription_data: { metadata: { orgId: input.orgId, planCode: input.planCode } },
   });
 }
 
@@ -1494,10 +1498,23 @@ export async function processStripeEvent(client: PoolClient, event: Stripe.Event
   );
   if (!claimed.rowCount) return { duplicate: true };
   try {
-    if (event.type === "checkout.session.completed") {
+    if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
       const session = event.data.object as Stripe.Checkout.Session;
       const orgId = session.metadata?.orgId;
-      if (session.metadata?.kind === "credit_pack" && orgId && session.metadata.packCode) {
+      // The first checkout creates the Stripe customer. Link it once, so subscription status
+      // updates (applyStripeEvent) and the customer portal can find this team.
+      const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
+      const linkedOrg = session.client_reference_id ?? orgId;
+      if (customerId && linkedOrg) {
+        await client.query(
+          `UPDATE org_billing SET stripe_customer_id = $2 WHERE org_id = $1::uuid AND stripe_customer_id IS NULL`,
+          [linkedOrg, customerId],
+        );
+      }
+      // Delayed methods (ACH) complete the session before the money arrives; their credits are
+      // granted on checkout.session.async_payment_succeeded instead.
+      const paid = session.payment_status === "paid" || session.payment_status === "no_payment_required";
+      if (session.metadata?.kind === "credit_pack" && paid && orgId && session.metadata.packCode) {
         await client.query(
           `INSERT INTO wallet_ledger(org_id,amount_usd,kind,stripe_event_id,reference_id,reason)
            SELECT $1,credit_amount_usd,'purchase',$2,$3,'Vantage Usage Credits purchase'

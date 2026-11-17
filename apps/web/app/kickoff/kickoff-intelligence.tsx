@@ -8,7 +8,7 @@ import { MeteredAiCutoffBanner } from "../../components/metered-ai-cutoff-banner
 import { EmptyState, Button, askConfirm } from "../../components/ui";
 import { resolveCutoffErrorCode } from "../../components/usage-cutoff-banner";
 import { canDeleteKickoffRow } from "../../lib/kickoff";
-import type { KickoffIntelligenceRecord } from "../../lib/kickoff-intelligence";
+import type { KickoffIntelligenceRecord } from "../../lib/kickoff/intelligence";
 import { hubHref } from "../../lib/nav/hubs";
 import type { ProviderSetupStep } from "./kickoff-model";
 
@@ -248,8 +248,7 @@ export function IntelligenceSection({
             <Button as="a" variant="primary" href={aiConnectionHref(orgId)}>Connect AI</Button>
           ) : null}
         </EmptyState>
-      ) : null}
-
+      ) : (
       <form
         className="kick-intel-form"
         onSubmit={(event) => {
@@ -328,6 +327,7 @@ export function IntelligenceSection({
           </span>
         </div>
       </form>
+      )}
 
       {intelStatus === "loading" && !selected ? (
         <EmptyState soft title="Loading intelligence…" description="Checking for a saved release summary." aria-busy />

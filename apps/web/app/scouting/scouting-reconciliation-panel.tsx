@@ -184,7 +184,7 @@ export default function ScoutingReconciliationPanel({
         <h2>Scouted vs official</h2>
         <EmptyState title="Nothing to reconcile yet" description={view.message}>
           <Button as="a" variant="primary" href={withOrgHref(view.eventKey ? `/scouting?eventKey=${encodeURIComponent(view.eventKey)}` : "/competition?tab=command", orgId)}>
-            {view.eventKey ? "Open Scouting" : "Choose event"}
+            {view.eventKey ? "Open scouting" : "Set active event"}
           </Button>
           <Button variant="secondary" type="button" disabled={loading} onClick={() => void load()}>{loading ? "Refreshing…" : "Refresh"}</Button>
         </EmptyState>

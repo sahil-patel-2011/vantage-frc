@@ -3,13 +3,12 @@
 import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, SoftBlockSkeleton } from "../../../components/ui";
 import { withOrgHref } from "../../../lib/nav/product-nav";
-import { fetchProductSession } from "../../../lib/nav/product-session";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
-import { strategyCanSync } from "../../../lib/strategy/strategy-related";
 import { teamSettingsBreadcrumb } from "../../../lib/nav/team-settings-nav";
+import { useUnsavedWarning } from "../../../hooks/use-unsaved-warning";
 
 type AuthPolicy = {
   allowPassword: boolean;
@@ -33,6 +32,16 @@ function isAuthPolicy(value: unknown): value is AuthPolicy {
   return typeof row.allowEmailOtp === "boolean" && typeof row.mfaPolicy === "string";
 }
 
+function samePolicy(a: AuthPolicy, b: AuthPolicy): boolean {
+  return (
+    a.allowPassword === b.allowPassword &&
+    a.allowGoogle === b.allowGoogle &&
+    a.allowEmailOtp === b.allowEmailOtp &&
+    a.mfaPolicy === b.mfaPolicy &&
+    a.rememberedDeviceDays === b.rememberedDeviceDays
+  );
+}
+
 async function persistAuthPolicySnapshot(orgId: string, data: AuthPolicy): Promise<void> {
   if (!orgId.trim()) return;
   try {
@@ -44,6 +53,7 @@ async function persistAuthPolicySnapshot(orgId: string, data: AuthPolicy): Promi
 
 export default function AuthPolicyClient({ orgId }: { orgId: string }) {
   const [policy, setPolicy] = useState<AuthPolicy>(DEFAULT_POLICY);
+  const [savedPolicy, setSavedPolicy] = useState<AuthPolicy>(DEFAULT_POLICY);
   const [message, setMessage] = useState("");
   // The save result, shown beside Save: at the top of the page it was above the screen
   // (y = -225), so an error looked like nothing happening.
@@ -51,8 +61,6 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
   const [fromCache, setFromCache] = useState(false);
   const [cachedAt, setCachedAt] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
-  /** Fail closed until /api/me confirms owner or admin. */
-  const [canManage, setCanManage] = useState(false);
   /** Fail closed until the policy read says this account can change team settings. */
   const [canEditPolicy, setCanEditPolicy] = useState(false);
   const loadedRef = useRef(false);
@@ -65,6 +73,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       if (cached?.data && isAuthPolicy(cached.data)) {
         if (!loadedRef.current) {
           setPolicy(cached.data);
+          setSavedPolicy(cached.data);
           setFromCache(true);
           setCachedAt(cached.cachedAt);
           setLoaded(true);
@@ -107,6 +116,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         return;
       }
       setPolicy(next);
+      setSavedPolicy(next);
       setCanEditPolicy(record?.canManage === true);
       setFromCache(false);
       setCachedAt(null);
@@ -126,21 +136,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    let cancelled = false;
-    void fetchProductSession(orgId).then((session) => {
-      if (cancelled) return;
-      if (!session) {
-        setCanManage(false);
-        return;
-      }
-      const membership = session.memberships?.find((entry) => entry.orgId === orgId);
-      setCanManage(strategyCanSync(membership?.role ?? session.role));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [orgId]);
+  useUnsavedWarning(canEditPolicy && !samePolicy(policy, savedPolicy));
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -157,7 +153,10 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
     });
     const data = (await response.json()) as { error?: string };
     setSaveNote(response.ok ? { ok: true, text: "Saved." } : { ok: false, text: data.error ?? "Could not save." });
-    if (response.ok) await persistAuthPolicySnapshot(orgId, policy);
+    if (response.ok) {
+      setSavedPolicy(policy);
+      await persistAuthPolicySnapshot(orgId, policy);
+    }
   }
 
   return (
@@ -165,7 +164,10 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       <PageHeader
         breadcrumbs={teamSettingsBreadcrumb("security")}
         title="Team security"
-        description="Choose how people sign in to your team. What each person can open is set on Team admin."
+        description={<>
+          Choose how people sign in to your team. What each person can open is set with their Access button in{" "}
+          <a href={`${withOrgHref("/team/admin", orgId)}#people`}>Members and invites</a>.
+        </>}
       >
         <p className="app-muted" style={{ margin: 0 }}>
           Your own sign-in is under <a href="/security">Account → Security</a>.
@@ -180,7 +182,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {!loaded ? (
-        <EmptyState soft title="Loading sign-in policy…" description="Checking which methods this team allows." aria-busy />
+        <div aria-busy="true"><SoftBlockSkeleton lines={3} /></div>
       ) : canEditPolicy ? (
       <Panel as="form" className="auth-policy-form" onSubmit={save}>
         <h2>Ways to sign in</h2>
@@ -229,6 +231,9 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
             <option value="optional">Optional</option>
             <option value="required">Required for everyone</option>
           </select>
+          {policy.mfaPolicy === "required" ? (
+            <small>Anyone without an authenticator app is asked to set one up before they can open the team.</small>
+          ) : null}
         </label>
         <label>
           Don&apos;t ask again on the same device for
@@ -241,7 +246,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
           />
           <small>days (0 means ask every time)</small>
         </label>
-        <Button variant="primary" type="submit">
+        <Button variant="primary" type="submit" disabled={samePolicy(policy, savedPolicy)}>
           Save sign-in rules
         </Button>
         {saveNote ? (
@@ -264,18 +269,6 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         </EmptyState>
       )}
 
-      {canManage ? (
-        <Panel className="auth-policy-form team-security-access-pointer">
-          <h2>Who can open what</h2>
-          <p>
-            Each person&apos;s role, the sections they can open, extra powers and who manages money are set in one place:
-            their <strong>Access</strong> button on Team admin.
-          </p>
-          <Button as="a" variant="secondary" href={`${withOrgHref("/team/admin", orgId)}#people`}>
-            Open Team admin
-          </Button>
-        </Panel>
-      ) : null}
     </main>
   );
 }

@@ -6,7 +6,7 @@ export const COMPETITION_RELATED_LINKS = [
   { id: "my-day", label: "My Day", tab: "my-day" },
   { id: "strategy", label: "Strategy", tab: "strategy" },
   { id: "scouting", label: "Scouting", tab: "scouting" },
-  { id: "forms", label: "Forms", tab: "forms" },
+  { id: "forms", label: "Scouting forms", tab: "forms" },
   { id: "match-checklist", label: "Robot check", tab: "match-checklist" },
   { id: "pick-clock", label: "Pick clock", tab: "pick-clock" },
   { id: "chemistry", label: "Chemistry", tab: "chemistry" },

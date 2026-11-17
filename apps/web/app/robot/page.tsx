@@ -2,7 +2,7 @@ import RobotClient from "./robot-client";
 import "./robot.css";
 
 export const metadata = {
-  title: "Robot Blueprint",
+  title: "Robot blueprint",
   description: "Every part of the robot, each linked to its CAD, code, strategy priority, and live shop data.",
 };
 

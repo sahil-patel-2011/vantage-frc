@@ -18,7 +18,7 @@ Where it lives:
 | Import preview / apply (reads, writes, run record) | `apps/web/lib/microsoft/run-import.ts` |
 | Signed OAuth state + PKCE | `apps/web/lib/microsoft/oauth-state.ts` |
 | Routes | `apps/web/app/api/integrations/microsoft/{connect,callback,status,sync,disconnect,import/preview,import/apply}` |
-| Settings card | `apps/web/app/connectors/microsoft-excel-card.tsx` (on **Settings → Connectors**) |
+| Settings card | `apps/web/app/connectors/spreadsheet-mirror-card.tsx` (on **Settings → Connectors**; Excel shows once this deployment offers it) |
 
 ---
 

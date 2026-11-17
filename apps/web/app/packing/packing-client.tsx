@@ -24,7 +24,7 @@ import {
   type PackingView,
 } from "../../lib/packing";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
-import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing-related";
+import { PACKING_RELATED_INCLUDE, packingRelatedLinks } from "../../lib/packing/related";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { teamProseLabel } from "../../components/app-shell-model";
 import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";

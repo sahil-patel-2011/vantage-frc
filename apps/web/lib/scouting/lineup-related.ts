@@ -8,7 +8,7 @@ import { scoutEventLabel } from "./scouting-related";
 export const LINEUP_RELATED_LINKS = [
   { id: "scouting", label: "Scouting", kind: "hub" as const, tab: "scouting" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
-  { id: "forms", label: "Form builder", kind: "hub" as const, tab: "forms" },
+  { id: "forms", label: "Scouting forms", kind: "hub" as const, tab: "forms" },
   { id: "coverage-live", label: "Scout Coverage Live", kind: "path" as const, path: "/scout-coverage-live" },
   { id: "command", label: "Event Day", kind: "hub" as const, tab: "command" },
 ] as const;
@@ -369,7 +369,7 @@ export function lineupNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Scout rows stay available while the board reloads.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -381,7 +381,7 @@ export function lineupNextActions(input: {
       },
       {
         id: "forms",
-        label: "Open Form builder",
+        label: "Open scouting forms",
         detail: "Form schemas stay available while coverage reloads.",
         href: hubHref("/competition", "forms", orgId),
       },
@@ -394,7 +394,7 @@ export function lineupNextActions(input: {
       scoutPrimary
         ? {
             id: "scouting",
-            label: "Open Scouting",
+            label: "Open scouting",
             detail: "Match slots stay blank until an owner or admin syncs the schedule. You can still scout.",
             href: hubHref("/competition", "scouting", orgId),
             primary: true,
@@ -411,14 +411,14 @@ export function lineupNextActions(input: {
         : [
             {
               id: "scouting",
-              label: "Open Scouting",
+              label: "Open scouting",
               detail: "Start assignments once the schedule lands — rates stay blank until then.",
               href: hubHref("/competition", "scouting", orgId),
             },
           ]),
       {
         id: "forms",
-        label: "Open Form builder",
+        label: "Open scouting forms",
         detail: "Confirm the published schema before scouts enter rows.",
         href: hubHref("/competition", "forms", orgId),
       },
@@ -444,7 +444,7 @@ export function lineupNextActions(input: {
     },
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Fill match rows from signed-in scouts — never typed names.",
       href: hubHref("/competition", "scouting", orgId),
     },
@@ -456,7 +456,7 @@ export function lineupNextActions(input: {
     },
     {
       id: "forms",
-      label: "Open Form builder",
+      label: "Open scouting forms",
       detail: "Adjust the published schema if scouts need different fields.",
       href: hubHref("/competition", "forms", orgId),
     },

@@ -8,7 +8,7 @@ import {
   defaultDutyTitle,
   groupDutiesByDay,
   type DutyKind,
-} from "../../../lib/duty-roster-shared";
+} from "../../../lib/duty-roster/shared";
 import {
   SUBTEAM_COLOR_SUGGESTIONS,
   type DutyOnCalendar,
@@ -463,7 +463,7 @@ export function DutiesPanel({
                   canDelete={canManage}
                   busy={busy}
                   onDelete={async () => {
-                    if (await askConfirm({ title: `Remove duty “${duty.title}”?`, body: null, confirmLabel: "Remove duty", tone: "destructive" })) {
+                    if (await askConfirm({ title: `Remove duty “${duty.title}”?`, body: "Whoever it's assigned to stops seeing it. This can't be undone.", confirmLabel: "Remove duty", tone: "destructive" })) {
                       void onMutate({ action: "delete_duty", orgId, id: duty.id }, `duty-del:${duty.id}`);
                     }
                   }}

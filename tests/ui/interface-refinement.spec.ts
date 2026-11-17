@@ -7,8 +7,8 @@ for (const width of [390, 768, 1440]) {
     await isolateUi(page, context);
     await page.goto(`/settings?orgId=${orgId}`);
     await expect(page.getByRole("heading", { name: "Preferences", exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Team · AI", exact: true })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Settings sections" }).getByRole("link", { name: /^Team profile/ })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Team AI", exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Settings sections" }).getByRole("link", { name: /^Team profile/ })).toHaveCount(1);
     await page.keyboard.press("Control+k");
     const dialog = page.getByRole("dialog", { name: "Search Vantage" });
     await expect(dialog).toBeVisible();

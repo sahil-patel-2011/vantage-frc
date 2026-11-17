@@ -108,7 +108,7 @@ export function InventoryShell({
             {" / Inventory"}
           </>
         }
-        title="Inventory & BOM"
+        title="Inventory"
         description={offerWaitlist ? withWaitlistLink(description) : description}
       >
         <InventoryRelatedStrip orgId={orgId} />
@@ -253,7 +253,7 @@ export function InventoryReadyHeader({
           {" / Inventory"}
         </>
       }
-      title="Inventory & BOM"
+      title="Inventory"
       /*
         Two things were wrong with this line.
 

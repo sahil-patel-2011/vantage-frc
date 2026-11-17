@@ -28,6 +28,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import "./prototype-tracker.css";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<PrototypeTrackerView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => Promise<void>;
@@ -66,10 +67,6 @@ function useHubEmbed(): "build" | null {
     else setEmbed(null);
   }, []);
   return embed;
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 function badgeClass(tone: string): string {

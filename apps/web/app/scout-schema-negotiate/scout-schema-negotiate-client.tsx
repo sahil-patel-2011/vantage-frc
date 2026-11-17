@@ -10,12 +10,9 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { submissionStatusLabel } from "../../lib/scout-schema-negotiate";
 import type { ScoutSchemaNegotiateView } from "../../lib/scout-schema-negotiate/compute-scout-schema-negotiate";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<ScoutSchemaNegotiateView, { status: "live" }>;
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 function isScoutSchemaNegotiateView(value: unknown): value is ScoutSchemaNegotiateView {
   if (!value || typeof value !== "object") return false;

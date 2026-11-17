@@ -97,7 +97,7 @@ describe("eventDayNextActions", () => {
   it("sends a scout to Scouting when the schedule is not connected", () => {
     const scout = eventDayNextActions(baseSnap({ tbaConfigured: false, canSetEvent: false }));
     const tba = scout.find((action) => action.id === "tba");
-    expect(tba?.label).toBe("Open Scouting");
+    expect(tba?.label).toBe("Open scouting");
     expect(tba?.href).toContain("tab=scouting");
     expect(tba?.href).not.toContain("/team/data");
     const omitted = eventDayNextActions(baseSnap({ tbaConfigured: false, canSetEvent: undefined }));

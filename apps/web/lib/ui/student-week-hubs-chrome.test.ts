@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { scoutingShellCopy } from "../scouting/scouting-related";
 import { strategyShellCopy } from "../strategy/strategy-related";
-import { videoRescoutShellCopy } from "../video-rescout-related";
+import { videoRescoutShellCopy } from "../video-rescout/related";
 import { aiChatShellCopy } from "../ai-chat/ai-chat-related";
 import { pickDeskShellCopy } from "../strategy/pick-desk-related";
 import { expectPlainCopy } from "./copy-assertions";
@@ -29,7 +29,7 @@ const FILES = [
   "app/strategy/pick-desk-chrome.tsx",
   "lib/strategy/pick-clock-related.ts",
   "app/pick-clock/pick-clock-client.tsx",
-  "lib/video-rescout-related.ts",
+  "lib/video-rescout/related.ts",
   "app/video/video-rescout-client.tsx",
   "app/business/business-client.tsx",
   "app/orders/orders-client.tsx",

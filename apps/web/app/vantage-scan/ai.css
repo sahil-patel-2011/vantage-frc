@@ -144,10 +144,8 @@
 @media (prefers-reduced-motion: reduce) {
   .product-hub--ai,
 .scan-hub--ai,
-.aa-page *, .product-hub--ai,
-.scan-hub--ai,
-.aa-page *::before, .product-hub--ai,
-.scan-hub--ai,
+.aa-page *,
+.aa-page *::before,
 .aa-page *::after {
     animation: none !important;
     transition: none !important;
@@ -163,4 +161,3 @@
 :root[data-theme='dark'] .product-hub--ai .aa-empty {
   background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }
-

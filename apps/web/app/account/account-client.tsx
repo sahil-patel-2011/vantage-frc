@@ -107,19 +107,26 @@ export default function AccountClient() {
       window.location.replace(org ? `/connectors?orgId=${encodeURIComponent(org)}` : "/connectors");
       return;
     }
-    if (
-      requested === "profile" ||
-      requested === "appearance" ||
-      requested === "notifications"
-    ) {
+    if (requested === "notifications") {
+      const org = params.get("orgId");
+      window.location.replace(org ? `/notifications/preferences?orgId=${encodeURIComponent(org)}` : "/notifications/preferences");
+      return;
+    }
+    if (requested === "profile" || requested === "appearance") {
       setTab(requested);
     }
   }, []);
 
   // Account's own related links ("Notification settings") point at its other tabs.
   useFollowUrl(() => {
-    const requested = new URLSearchParams(window.location.search).get("tab");
-    if (requested === "profile" || requested === "appearance" || requested === "notifications") setTab(requested);
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get("tab");
+    if (requested === "notifications") {
+      const org = params.get("orgId");
+      window.location.replace(org ? `/notifications/preferences?orgId=${encodeURIComponent(org)}` : "/notifications/preferences");
+      return;
+    }
+    if (requested === "profile" || requested === "appearance") setTab(requested);
   });
 
 

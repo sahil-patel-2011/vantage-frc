@@ -6,7 +6,7 @@
  * showing numbers that belong to another match.
  */
 
-import { matchLabel, stripFrc, type DisplayNextMatch, type DisplaySnapshot } from "../display";
+import { matchLabel, stripFrc, type DisplayNextMatch, type DisplaySnapshot } from "./index";
 import { predictionWinDisplay } from "../strategy/prediction-display";
 import { intelWords, type DisplayMatchIntel } from "./match-intel";
 

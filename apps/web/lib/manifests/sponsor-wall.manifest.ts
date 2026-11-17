@@ -1,6 +1,6 @@
 export const manifest = {
   slug: "sponsor-wall",
-  title: "Sponsor Wall",
+  title: "Sponsor wall",
   route: "/sponsor-wall",
   apiRoute: "/api/sponsor-wall",
   hub: "Business",

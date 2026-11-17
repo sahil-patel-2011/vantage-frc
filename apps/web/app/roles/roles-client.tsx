@@ -12,6 +12,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { clearFeatureSnapshot, getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<RolesView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -45,10 +46,6 @@ async function persistRolesSnapshot(orgHint: string, seasonHint: string, data: R
   } catch {
     // Live Season roles already painted; IndexedDB is best-effort.
   }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 export default function RolesClient() {

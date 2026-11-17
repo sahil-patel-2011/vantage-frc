@@ -58,7 +58,7 @@ export function BatteriesForms({
           >
             <h3>Add a battery</h3>
             <p className="app-muted batt-form-hint">
-              Optional initial IR/voltage become the first log entries. Leave them blank if you have not measured yet.
+              Optional starting resistance and voltage become the first log entries. Leave them blank if you have not measured yet.
             </p>
             <div className="batt-form-grid">
               <label className="batt-field">
@@ -134,7 +134,7 @@ export function BatteriesForms({
                 />
               </label>
             </div>
-            <Button variant="primary" type="submit" disabled={busy || !packForm.label.trim()}>
+            <Button variant="primary" type="submit" disabled={busy}>
               Add battery
             </Button>
           </form>
@@ -170,7 +170,7 @@ export function BatteriesForms({
           >
             <h3>Log an event</h3>
             {view.packs.length === 0 ? (
-              <EmptyState soft title="Add a pack first" description="Events attach to a labeled pack on this team.">
+              <EmptyState soft title="Add a battery first" description="Events attach to a labeled battery on this team.">
                 <Button as="a" variant="secondary" href="#batt-add-pack">
                   Add a battery
                 </Button>

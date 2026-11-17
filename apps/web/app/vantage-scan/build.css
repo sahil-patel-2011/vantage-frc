@@ -134,8 +134,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .product-hub--build,
-.scan-hub--build *, .product-hub--build,
-.scan-hub--build *::before, .product-hub--build,
+.scan-hub--build *,
+.scan-hub--build *::before,
 .scan-hub--build *::after {
     animation: none !important;
     transition: none !important;
@@ -150,4 +150,3 @@
 :root[data-theme='dark'] .product-hub--build .soft-empty {
   background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }
-

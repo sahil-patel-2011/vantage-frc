@@ -303,13 +303,6 @@
   color: inherit;
 }
 
-.orders-actions button.primary,
-.orders-admin-row button.primary {
-  background: var(--orders-accent-fill);
-  border-color: var(--orders-accent-fill);
-  color: #fff;
-}
-
 .orders-actions button.danger,
 .orders-admin-row button.danger {
   color: var(--critical);

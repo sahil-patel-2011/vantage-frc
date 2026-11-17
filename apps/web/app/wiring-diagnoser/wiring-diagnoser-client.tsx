@@ -16,16 +16,13 @@ import {
   type WireGauge,
   type WiringMapDevice,
 } from "../../lib/wiring-diagnoser/types";
+import { pct } from "../../lib/format/percent";
 
 const SEVERITY_TONE: Record<DiagnosticSeverity, string> = {
   critical: "demo",
   warning: "setup",
   info: "good",
 };
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<WiringDiagnoserView, { status: "live" }>;
 

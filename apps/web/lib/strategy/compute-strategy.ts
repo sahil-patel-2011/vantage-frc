@@ -737,7 +737,11 @@ export async function computeStrategyView(
     yearMetrics: yearMetricRows,
   });
 
-  if (seasons.length < Math.min(4, allTeams.length)) {
+  // `seasons` holds one signal per team per year, so a count says nothing about coverage: two
+  // veterans with two seasons each would pass while four robots with no rating are scored as 0.
+  // Every robot in the match needs a rating before a win chance is shown.
+  const ratedTeams = new Set(seasons.map((signal) => signal.teamKey));
+  if (allTeams.some((key) => !ratedTeams.has(key))) {
     const hasAnyReference =
       access.tbaConfigured || access.cacheHasSync || access.statbotics.cacheHasMetrics;
     return setupPayload(access, {
@@ -759,7 +763,7 @@ export async function computeStrategyView(
 
   const ourAlliance: Alliance = red.includes(teamKey) ? "red" : "blue";
   const opponentKeys = ourAlliance === "red" ? blue : red;
-  const { operations, opponentFoulRisk, provenance: scoutProvenance } = await loadScoutOperations(
+  const { operations, provenance: scoutProvenance } = await loadScoutOperations(
     client,
     row.orgId,
     row.eventKey,
@@ -767,9 +771,11 @@ export async function computeStrategyView(
   );
 
   const opponentOps = operations.filter((op) => opponentKeys.includes(op.teamKey));
-  let foulForPlaybook = opponentFoulRisk;
-  if (opponentOps.length) {
-    const rates = opponentOps.map((op) => op.foulRate ?? 0);
+  // Opponents only (loadScoutOperations' worst case also covers our own partners), and only
+  // measured rates: an unscouted robot is not a robot that never fouls.
+  const rates = opponentOps.flatMap((op) => (op.foulRate == null ? [] : [op.foulRate]));
+  let foulForPlaybook: "low" | "medium" | "high" | "unknown" = "unknown";
+  if (rates.length) {
     const avg = rates.reduce((a, b) => a + b, 0) / rates.length;
     foulForPlaybook =
       avg >= 1.5 ? "high" : avg >= 0.5 ? "medium" : rates.some((r) => r > 0) ? "low" : "unknown";
