@@ -2,8 +2,7 @@
  * Section help — how / why / when for every workbench and major tool.
  *
  * This is the in-app answer to "what is this screen for and when do I use it",
- * rendered inline by `components/help-tip.tsx` beside the hub tab bar and in full
- * on /docs. It is deliberately NOT prose: one sentence of what, one sentence of
+ * rendered on /docs. It is deliberately NOT prose: one sentence of what, one sentence of
  * why, the season moment, and at most five numbered steps.
  *
  * Rules for entries:
