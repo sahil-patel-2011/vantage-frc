@@ -221,7 +221,7 @@ export function pickDeskNextActions(input: {
     return [
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Scout a few matches so you have notes to rank from.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
@@ -242,7 +242,7 @@ export function pickDeskNextActions(input: {
     },
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Add match notes so picks have a why.",
       href: hubHref("/competition", "scouting", orgId),
     },

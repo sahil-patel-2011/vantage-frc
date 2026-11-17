@@ -202,7 +202,7 @@ function PracticeScout({ orgId, userId }: { orgId: string; userId: string }) {
     <section className="free-scout" aria-label="Practice scouting">
       <header className="free-scout-heading">
         <div><h2>Practice scouting</h2><p>Choose a robot. Record what you learn.</p></div>
-        <Button as="a" variant="secondary" href={withOrgHref("/competition?tab=command", orgId)}>Set event</Button>
+        <Button as="a" variant="secondary" href={withOrgHref("/competition?tab=command", orgId)}>Set active event</Button>
       </header>
       {!online || pending.length > 0 || uploading ? <div className="free-scout-status" role="status">
         <span>{online ? "Online" : "Offline"} · {waiting} waiting to upload{needsAttention ? ` · ${needsAttention} need attention` : ""}</span>

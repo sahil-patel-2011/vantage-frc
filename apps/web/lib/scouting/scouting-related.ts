@@ -3,7 +3,7 @@ import { withOrgHref } from "../nav/product-nav";
 
 /** Soft-UI related surfaces for main Scouting Hub (never DEMO entries). */
 export const SCOUTING_RELATED_LINKS = [
-  { id: "forms", label: "Form builder", kind: "hub" as const, tab: "forms" },
+  { id: "forms", label: "Scouting forms", kind: "hub" as const, tab: "forms" },
   { id: "coverage", label: "Coverage", kind: "path" as const, path: "/scouting/lineup" },
   { id: "strategy", label: "Strategy", kind: "hub" as const, tab: "strategy" },
   { id: "offline", label: "Offline", kind: "path" as const, path: "/offline" },
@@ -94,7 +94,7 @@ export function scoutingSetupSteps(orgId?: string | null): ScoutingSetupStep[] {
     },
     {
       id: "forms",
-      label: "Open Form builder",
+      label: "Open scouting forms",
       detail: "Publish a match or pit form.",
       href: hubHref("/competition", "forms", orgId),
     },
@@ -250,7 +250,7 @@ export function scoutingShellCopy(
       return {
         kind: "ready",
         title: "Scouting",
-        description: "Match and pit forms stay on this device until you sync.",
+        description: "Reports save on this phone first and send themselves when you have signal.",
       };
   }
 }
@@ -282,7 +282,7 @@ export function scoutingNextActions(input: {
         },
         {
           id: "forms",
-          label: "Open Form builder",
+          label: "Open scouting forms",
           detail: "Forms stay empty until you publish one.",
           href: hubHref("/competition", "forms", null),
         },
@@ -317,7 +317,7 @@ export function scoutingNextActions(input: {
         },
         {
           id: "forms",
-          label: "Open Form builder",
+          label: "Open scouting forms",
           detail: "Publish a form so scouts can fill real rows once the event is set.",
           href: hubHref("/competition", "forms", orgId),
         },
@@ -354,7 +354,7 @@ export function scoutingNextActions(input: {
       },
       {
         id: "forms",
-        label: "Open Form builder",
+        label: "Open scouting forms",
         detail: "Published forms stay available while scouting reloads.",
         href: hubHref("/competition", "forms", orgId),
       },
@@ -383,7 +383,7 @@ export function scoutingNextActions(input: {
     return [
       {
         id: "forms",
-        label: input.canManageSchemas ? "Open Form builder" : "Ask for Form builder",
+        label: input.canManageSchemas ? "Open scouting forms" : "Ask for scouting forms",
         detail: input.canManageSchemas
           ? `Publish a ${typeLabel} form, or create starter forms.`
           : `Ask a scouting lead or team admin to publish the ${typeLabel} form.`,
@@ -414,7 +414,7 @@ export function scoutingNextActions(input: {
   return [
     {
       id: "forms",
-      label: "Open Form builder",
+      label: "Open scouting forms",
       detail: "Adjust the published form if scouts need different fields.",
       href: hubHref("/competition", "forms", orgId),
       primary: true,

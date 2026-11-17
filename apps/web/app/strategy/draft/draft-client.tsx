@@ -877,9 +877,11 @@ export default function DraftClient() {
                   {token.revokedAt ? " · revoked" : ""}
                 </span>
                 {!token.revokedAt && data.canEdit ? (
-                  <button
+                  <Button
+                    variant="ghost"
+                    tone="danger"
+                    size="sm"
                     type="button"
-                    className="text-button"
                     onClick={async () => {
                       const ok = await askConfirm({
                         title: "Revoke this share link?",
@@ -901,7 +903,7 @@ export default function DraftClient() {
                     }}
                   >
                     Revoke
-                  </button>
+                  </Button>
                 ) : null}
               </li>
             ))}

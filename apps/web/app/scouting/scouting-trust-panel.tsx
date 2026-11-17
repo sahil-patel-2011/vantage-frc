@@ -124,7 +124,7 @@ export default function ScoutingTrustPanel({ orgId, eventKey, initialSection = "
     {failure.primary ? <Button as="a" variant="primary" href={failure.primary.href}>{failure.primary.label}</Button> : null}
     {failure.showRetry ? <Button type="button" variant="secondary" onClick={() => void load()}>Refresh</Button> : null}
   </EmptyState>}</Panel>;
-  if (!view.eventKey) return <EmptyState title="Choose an event" description="Official checks, scout consistency and alliance review use one event's reports."><Button as="a" variant="primary" href={withOrgHref("/competition?tab=command", orgId)}>Choose event</Button></EmptyState>;
+  if (!view.eventKey) return <EmptyState title="Choose an event" description="Official checks, scout consistency and alliance review use one event's reports."><Button as="a" variant="primary" href={withOrgHref("/competition?tab=command", orgId)}>Set active event</Button></EmptyState>;
   const active = section === "rules" && !view.canManage ? "checks" : section;
   const tabs = [{ id: "checks", label: "Official checks" }, { id: "scouts", label: "Scouts" }, { id: "alliance", label: "Alliance review" }, { id: "impact", label: "Your impact" }, ...(view.canManage ? [{ id: "rules", label: "Form checks" }] : [])];
   // Same rule as everywhere else (lib/reference-health): only degraded, unavailable or failed is a

@@ -2,7 +2,7 @@
 import { anySignal } from "../../../lib/abort/any-signal";
 import { useEffect, useState } from "react";
 import { isLayoutOnlyField } from "@vantage/scouting";
-import { Button, relativeTime, StatTile, ToolStrip } from "../../../components/ui";
+import { Button, relativeTime, StatTile, TableSkeleton, ToolStrip } from "../../../components/ui";
 import { matchLabelFromKey } from "../../../lib/matches/no-next-match";
 import {
   responseOverview, responsesByScout, responseSummary, responseValue, responsesCsv,
@@ -54,7 +54,7 @@ function ScopedFormResponses({ orgId, schemaId }: { orgId: string; schemaId?: st
     return () => { lifecycle.abort(); document.removeEventListener("visibilitychange", resume); };
   }, [orgId, schemaId, scope, attempt]);
   if (!schemaId) return <p>Publish this form to collect and review responses.</p>;
-  if (!data) return <div className="sfb-response-loading"><p role={error ? "alert" : "status"}>{error || "Loading responses…"}</p>
+  if (!data) return <div className="sfb-response-loading" aria-busy={error ? undefined : true}>{error ? <p role="alert">{error}</p> : <><span className="sr-only" role="status">Loading responses…</span><TableSkeleton rows={4} cols={4} /></>}
     {errorStatus === 401 ? <Button as="a" variant="primary" href={signInHref(`${window.location.pathname}${window.location.search}`)}>Sign in again</Button> : error ? <Button type="button" variant="secondary" disabled={refreshing} onClick={() => setAttempt(current => current + 1)}>Retry responses</Button> : null}</div>;
   const fields = data.definition.fields.filter(field => !isLayoutOnlyField(field));
   const scouts = data.scouts;

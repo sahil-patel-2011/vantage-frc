@@ -390,7 +390,7 @@ function StartRunForm({
         <h2>{next ? `Check the robot for ${next.label}` : "Start a pre-match checklist"}</h2>
         {next ? (
           <p className={`mcl-bumper-cue ${next.bumperColor}`} role="status">
-            Hang <strong>{next.bumperColor.toUpperCase()} bumpers</strong>.
+            Hang <strong>{next.bumperColor} bumpers</strong>.
           </p>
         ) : (
           <p className="mcl-start-hint">
@@ -525,7 +525,7 @@ function RunCard({
             </span>
             {run.bumperColor ? (
               <span className={`mcl-badge bumper ${run.bumperColor}`}>
-                {run.bumperColor.toUpperCase()} bumpers
+                {run.bumperColor === "red" ? "Red" : "Blue"} bumpers
               </span>
             ) : null}
             <span className="mcl-badge progress">{progress}</span>

@@ -1,5 +1,5 @@
 "use client";
-import { Button, askConfirm } from "../../components/ui";
+import { Button, TextBlockSkeleton, askConfirm } from "../../components/ui";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { UsageCutoffBanner, isCutoffError } from "../../components/usage-cutoff-banner";
@@ -350,9 +350,10 @@ export default function ScoutVoiceNotesPanel({
 
   if (!view) {
     return (
-      <div className="scout-voice" id="scout-voice">
+      <div className="scout-voice" id="scout-voice" aria-busy="true">
         <strong>Voice notes</strong>
-        <small className="app-muted">Loading opt-in and STT status…</small>
+        <span className="sr-only" role="status">Loading voice notes…</span>
+        <TextBlockSkeleton lines={1} />
       </div>
     );
   }
@@ -495,7 +496,8 @@ export default function ScoutVoiceNotesPanel({
                 ) : null}
                 {canDeleteScoutVoiceNote({ role: view.role, userId: view.userId, authorId: note.createdBy }) ? (
                   <Button
-                    variant="secondary"
+                    variant="ghost"
+                    tone="danger"
                     type="button"
                     disabled={busy}
                     aria-label={`Delete ${note.transcript}`}

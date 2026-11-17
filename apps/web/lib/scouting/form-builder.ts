@@ -1012,7 +1012,7 @@ export function formBuilderSetupSteps(orgId?: string | null): FormBuilderSetupSt
     },
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Live entry uses the published form after sync.",
       href: hubHref("/competition", "scouting", orgId),
     },
@@ -1084,7 +1084,7 @@ export function formBuilderShellCopy(
     default:
       return {
         kind: "ready",
-        title: "Scouting form builder",
+        title: "Scouting forms",
         description:
           "Edit required fields, preview, and publish match or pit forms.",
       };
@@ -1117,7 +1117,7 @@ export function formBuilderNextActions(input: {
         },
         {
           id: "scouting",
-          label: "Open Scouting",
+          label: "Open scouting",
           detail: "Live entry stays blank until a real form publishes.",
           href: hubHref("/competition", "scouting", null),
         },
@@ -1145,7 +1145,7 @@ export function formBuilderNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Confirm entry stays honest when the event is unset.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -1175,7 +1175,7 @@ export function formBuilderNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Scouting stays available while the form builder reloads.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -1201,7 +1201,7 @@ export function formBuilderNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Live entry stays blank until a published version exists.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -1217,7 +1217,7 @@ export function formBuilderNextActions(input: {
   return [
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Scouts pick up the published version on next sync.",
       href: hubHref("/competition", "scouting", orgId),
       primary: true,

@@ -197,7 +197,7 @@ export function CommandReadyView({
                 <span className={`edc-bumper-cue ${next.ourAlliance ?? ""}`}>
                   {snap?.myDay?.bumperCue ??
                     (next.ourAlliance
-                      ? `Switch to ${next.ourAlliance.toUpperCase()} bumpers`
+                      ? `Switch to ${next.ourAlliance} bumpers`
                       : "Alliance TBD — confirm bumpers")}
                 </span>
               </div>
@@ -301,7 +301,7 @@ export function CommandReadyView({
                 ) : null}
                 {snap.eventOver && !snap.playoffsAhead && snap.canSetEvent ? (
                   <button type="button" className="dash-empty-cta" onClick={onSelectEvent}>
-                    Pick your next event
+                    Set active event
                   </button>
                 ) : null}
                 {snap.eventOver ? (
@@ -310,7 +310,7 @@ export function CommandReadyView({
                   </a>
                 ) : (
                   <a className="dash-empty-cta" href={scoutingHref}>
-                    Open Scouting
+                    Open scouting
                   </a>
                 )}
               </div>
@@ -376,7 +376,7 @@ export function CommandReadyView({
                   : "Set your active event to build the scout queue from schedule gaps."}
               </p>
               <a className="dash-empty-cta" href={scoutingHref}>
-                Open Scouting
+                Open scouting
               </a>
             </div>
           )}
@@ -512,7 +512,7 @@ export function CommandReadyView({
                 <p className="edc-muted">{snap.coverage.coordinatorNudge.message}</p>
               ) : null}
               <a className="edc-link" href={scoutingHref}>
-                Open Scouting →
+                Open scouting →
               </a>
             </>
           ) : (
@@ -522,7 +522,7 @@ export function CommandReadyView({
                 When the next matches are posted, this shows which robots still need a scout.
               </p>
               <a className="dash-empty-cta" href={scoutingHref}>
-                Open Scouting
+                Open scouting
               </a>
             </div>
           )}

@@ -60,10 +60,10 @@ describe("leftover money and ops empty cards", () => {
 
   it("Scouted vs official leftover empty opens Scouting", () => {
     const recon = src("app/scouting/scouting-reconciliation-panel.tsx");
-    expect(recon).toMatch(/Open Scouting/);
-    // Scouting opens on the event being reconciled; with no event yet the action is Choose event.
+    expect(recon).toMatch(/Open scouting/);
+    // Scouting opens on the event being reconciled; with no event yet the action is Set active event.
     expect(recon).toMatch(/withOrgHref\(view\.eventKey \? `\/scouting\?eventKey=\$\{encodeURIComponent\(view\.eventKey\)\}`/);
-    expect(recon).toMatch(/view\.eventKey \? "Open Scouting" : "Choose event"/);
+    expect(recon).toMatch(/view\.eventKey \? "Open scouting" : "Set active event"/);
     expect(recon).not.toMatch(/badge="Needs setup"/);
   });
 

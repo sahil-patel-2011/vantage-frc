@@ -44,9 +44,19 @@ export function EmptyHint({ children }: { children: ReactNode }) {
 }
 
 /** Collapsible section — one scrollable card the coach reads top-to-bottom. */
-export function Section({ title, badge, children }: { title: string; badge?: string | null; children: ReactNode }) {
+export function Section({
+  title,
+  badge,
+  open = true,
+  children,
+}: {
+  title: string;
+  badge?: string | null;
+  open?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <details className="app-card brief-section" open>
+    <details className="app-card brief-section" open={open}>
       <summary>
         <h2>{title}</h2>
         {badge ? <span className="brief-chip">{badge}</span> : null}

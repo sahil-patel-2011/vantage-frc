@@ -275,7 +275,7 @@ export function ScoutingTeamProfiles({ orgId, eventKey }: { orgId: string; event
             Open scouting formulas
           </Button>
         ) : <Button as="a" variant="primary" href={`/competition?tab=${needsEvent ? "command" : "scouting"}&orgId=${encodeURIComponent(orgId)}`}>
-          {needsEvent ? "Choose event" : "Scout a match"}
+          {needsEvent ? "Set active event" : "Scout a match"}
         </Button>}
       </EmptyState>
     );

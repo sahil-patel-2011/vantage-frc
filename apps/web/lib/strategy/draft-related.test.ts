@@ -139,7 +139,7 @@ describe("draftEmptyAction", () => {
     expect(editor.href).toContain("/team/data");
     expect(editor.href).toContain("orgId=org-1");
     const scout = draftEmptyAction({ orgId: "org-1", canEdit: false });
-    expect(scout.label).toBe("Open Scouting");
+    expect(scout.label).toBe("Open scouting");
     expect(scout.href).toContain("tab=scouting");
     expect(scout.href).not.toContain("/team/data");
     expect(draftWaitingCopy("Pacific Practice")).toMatch(/^Pacific Practice has no synced team list yet\./);

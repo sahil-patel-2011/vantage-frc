@@ -325,6 +325,7 @@ export default function BriefingClient() {
     counterBooks: [],
     defensePlans: [],
   }).map((card) => (teamKey && card.team === stripFrc(teamKey) ? { ...card, nickname: "Us" } : card));
+  const hasAllyData = allyCards.some((card) => card.lines.length > 0 || card.standing);
   const factors = view.prediction?.keyFactors.slice(0, 3) ?? [];
   // The engine's provenance labels read as empty once put in plain words; drop those.
   const caveats = (view.prediction?.caveats ?? []).map(plainStrategyText).filter(Boolean);
@@ -618,8 +619,8 @@ export default function BriefingClient() {
           )}
         </Section>
 
-        <Section title="Our alliance">
-          {allyCards.some((card) => card.lines.length > 0 || card.standing) ? (
+        <Section title="Our alliance" open={hasAllyData}>
+          {hasAllyData ? (
             <OpponentCards cards={allyCards} orgId={orgId} />
           ) : (
             <EmptyHint>
@@ -734,6 +735,7 @@ export default function BriefingClient() {
 
         <Section
           title="Our robot"
+          open={hasRobotHealth}
           badge={
             view.pitReports.length > 0
               ? `${view.pitReports.length} open ${view.pitReports.length === 1 ? "repair" : "repairs"}`
@@ -767,7 +769,7 @@ export default function BriefingClient() {
                   <ul className="brief-notes">
                     {view.openRisks.slice(0, 4).map((risk) => (
                       <li key={risk.id}>
-                        <i className="brief-tag">risk {risk.rpn}</i>
+                        <i className="brief-tag">Risk score {risk.rpn}</i>
                         <span className="brief-note-body">
                           <b>{risk.subsystemName}</b> — {risk.title}
                         </span>

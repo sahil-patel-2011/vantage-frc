@@ -128,7 +128,7 @@ export function pickClockEmptyAction(input: {
 }): { label: string; href: string } {
   if (input.canEdit === false) {
     return {
-      label: "Open Scouting",
+      label: "Open scouting",
       href: hubHref("/competition", "scouting", input.orgId),
     };
   }

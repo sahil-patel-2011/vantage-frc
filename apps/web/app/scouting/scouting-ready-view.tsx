@@ -367,7 +367,7 @@ return (
     <PageHeader
       breadcrumbs="Competition / Scouting"
       title="Scouting"
-      description="Match and pit forms stay on this device until you sync."
+      description="Reports save on this phone first and send themselves when you have signal."
     >
       <div className="scout-header-meta">
         <ScoutingRelatedStrip orgId={orgId} />
@@ -392,7 +392,7 @@ return (
       queue count says the same thing and says it with a number.
     */}
     <div className="scout-status-bar">
-      <a className="scout-free-link" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Scout without an event</a>
+      <a className="scout-free-link" href={`${hubHref("/competition", "scouting", orgId)}&mode=free`}>Practice scouting</a>
       {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey }) ? (
         <strong className="scout-status-event">
           {scoutEventLabel({ eventName: data?.eventName, eventKey: data?.eventKey })}

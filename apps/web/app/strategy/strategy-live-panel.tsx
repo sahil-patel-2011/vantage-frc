@@ -274,7 +274,7 @@ export function LivePanel({ view }: { view: Extract<StrategyView, { status: "liv
             75%, which a coach read as bad news. The range is flipped to our side too. */}
         <div className="strategy-probability">
           <strong>{ourWinDisplay?.label ?? "—"}</strong>
-          <span>Our chance to win · we are {view.ourAlliance.toUpperCase()}</span>
+          <span>Our chance to win · we are {view.ourAlliance}</span>
           {ourWinDisplay ? (
             <small>
               Likely between{" "}

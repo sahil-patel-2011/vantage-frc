@@ -120,7 +120,7 @@ export function PickDeskShell({
         ) : null}
         {shell === "empty" ? (
           <Button as="a" variant="primary" href={scoutingHref}>
-            Open Scouting
+            Open scouting
           </Button>
         ) : null}
       </EmptyState>

@@ -570,8 +570,8 @@ function EventPickListWorkbench({
       setStatusKind(response.ok ? "success" : "error");
       setStatus(
         response.ok
-          ? `Strategy meeting seats updated · ${data.strategySeats?.length ?? 0} current seat${(data.strategySeats?.length ?? 0) === 1 ? "" : "s"}.`
-          : data.error ?? "Could not seat scouts",
+          ? `Pick meeting updated · ${data.strategySeats?.length ?? 0} scout${(data.strategySeats?.length ?? 0) === 1 ? "" : "s"} invited.`
+          : data.error ?? "Could not invite scouts",
       );
       refresh = response.ok;
     } catch {
@@ -867,15 +867,13 @@ function EventPickListWorkbench({
         )}
       </article>
 
-      <article className="app-card strategy-pick-seats" aria-label="Strategy meeting seats">
+      <details className="app-card strategy-pick-seats strategy-more">
+        <summary data-disclosure>Invite scouts to the pick meeting</summary>
         <header>
-          <h3>Strategy meeting seats</h3>
-          <small>
-            Top calibrated scouts rotate into this pick-desk conversation so they see their product used.
-          </small>
+          <small>Invite your most accurate scouts to the pick meeting.</small>
           {desk.canEdit ? (
             <Button variant="secondary" type="button" onClick={() => void seatTopScouts()} disabled={seating || saving}>
-              {seating ? "Seating…" : "Seat top scouts"}
+              {seating ? "Inviting…" : "Invite top scouts"}
             </Button>
           ) : null}
         </header>
@@ -895,11 +893,11 @@ function EventPickListWorkbench({
           </ul>
         ) : (
           <p className="app-muted">
-            No seats yet
-            {desk.canEdit ? " — use Seat top scouts after validations exist." : "."}
+            No scouts invited yet
+            {desk.canEdit ? " — use Invite top scouts once scout accuracy has been checked." : "."}
           </p>
         )}
-      </article>
+      </details>
 
       <Modal
         open={confirmAction !== null}

@@ -87,7 +87,7 @@ export function qrHandoffSetupSteps(orgId?: string | null): QrHandoffSetupStep[]
     },
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Publish a match or pit form, then save offline entries before sharing a QR.",
       href: hubHref("/competition", "scouting", orgId),
     },
@@ -100,7 +100,7 @@ export function qrHandoffSetupSteps(orgId?: string | null): QrHandoffSetupStep[]
     {
       id: "offline-shell",
       label: "Open this phone",
-      detail: "Open Scouting once while you have signal so a no-signal load still works.",
+      detail: "Open scouting once while you have signal so a no-signal load still works.",
       href: withOrgHref("/offline-shell", orgId),
     },
   ];
@@ -268,7 +268,7 @@ export function qrHandoffNextActions(input: {
         },
         {
           id: "scouting",
-          label: "Open Scouting",
+          label: "Open scouting",
           detail: "Handing off works once your team publishes a scouting form.",
           href: hubHref("/competition", "scouting", null),
         },
@@ -283,7 +283,7 @@ export function qrHandoffNextActions(input: {
     return [
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Publish a match or pit form so QR merges have a schema.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
@@ -314,7 +314,7 @@ export function qrHandoffNextActions(input: {
       },
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Match and pit forms keep working meanwhile.",
         href: hubHref("/competition", "scouting", orgId),
       },
@@ -361,7 +361,7 @@ export function qrHandoffNextActions(input: {
     return [
       {
         id: "scouting",
-        label: "Open Scouting",
+        label: "Open scouting",
         detail: "Everything is sent. Keep scouting; new matches save here until they send.",
         href: hubHref("/competition", "scouting", orgId),
         primary: true,
@@ -394,7 +394,7 @@ export function qrHandoffNextActions(input: {
     },
     {
       id: "scouting",
-      label: "Open Scouting",
+      label: "Open scouting",
       detail: "Keep logging match or pit rows while peers scan.",
       href: hubHref("/competition", "scouting", orgId),
     },
