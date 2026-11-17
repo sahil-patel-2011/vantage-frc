@@ -1,10 +1,10 @@
 import { hubHref } from "../nav/hubs";
 import { withOrgHref } from "../nav/product-nav";
 
-/** Soft-UI related surfaces for Grant Eligibility Matcher (never DEMO grant dollars). */
+/** Soft-UI related surfaces for Grant eligibility matcher (never DEMO grant dollars). */
 export const GRANT_ELIGIBILITY_MATCHER_RELATED_LINKS = [
   { id: "grants", label: "Business · Grants", kind: "business" as const, tab: "grants" },
-  { id: "grant-report", label: "Grant Report", kind: "business" as const, tab: "grant-report" },
+  { id: "grant-report", label: "Grant report", kind: "business" as const, tab: "grant-report" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
   { id: "writer", label: "Writer", kind: "ai" as const, tab: "writer" },
 ] as const;
@@ -18,7 +18,7 @@ export type GrantEligibilityMatcherRelatedLink = {
   href: string;
 };
 
-/** Focused Soft-UI strip — Grants / Grant Report / Impact. */
+/** Focused Soft-UI strip — Grants / Grant report / Impact. */
 export const GRANT_ELIGIBILITY_MATCHER_RELATED_INCLUDE: GrantEligibilityMatcherRelatedId[] = [
   "grants",
   "grant-report",
@@ -26,7 +26,7 @@ export const GRANT_ELIGIBILITY_MATCHER_RELATED_INCLUDE: GrantEligibilityMatcherR
 ];
 
 /**
- * Soft-UI cross-links from Grant Eligibility Matcher → Grants / Report / Impact.
+ * Soft-UI cross-links from Grant eligibility matcher → Grants / Report / Impact.
  * Build with hubHref — never broken JSX href templates.
  */
 export function grantEligibilityMatcherRelatedLinks(
@@ -91,7 +91,7 @@ export function grantEligibilityMatcherSetupSteps(
     },
     {
       id: "grant-report",
-      label: "Open Grant Report",
+      label: "Open Grant report",
       detail: "Post-award compliance stays separate from eligibility matching.",
       href: hubHref("/business", "grant-report", orgId),
     },
@@ -120,7 +120,7 @@ export function shouldShowGrantEligibilityMatcherSummaryTiles(
   return eligibleCount > 0 || catalogSize > 0;
 }
 
-/** Classify Grant Eligibility Matcher Soft-UI shell — never invents DEMO grant dollars. */
+/** Classify Grant eligibility matcher Soft-UI shell — never invents DEMO grant dollars. */
 export function classifyGrantEligibilityMatcherShell(input: {
   loading?: boolean;
   fetchFailed?: boolean;
@@ -145,14 +145,14 @@ export function grantEligibilityMatcherShellCopy(
     case "loading":
       return {
         kind,
-        title: "Loading Grant Eligibility Matcher…",
+        title: "Loading Grant eligibility matcher…",
         description: "Checking which team you are on and team profile.",
       };
     case "error":
       return {
         kind,
         badge: "Unavailable",
-        title: "Could not load Grant Eligibility Matcher",
+        title: "Could not load Grant eligibility matcher",
         description:
           "A network or server issue blocked matching. Retry, or open Grants while it reloads.",
       };
@@ -183,7 +183,7 @@ export function grantEligibilityMatcherShellCopy(
 }
 
 /**
- * Soft-UI next actions for Grant Eligibility Matcher empty/setup shells.
+ * Soft-UI next actions for Grant eligibility matcher empty/setup shells.
  * Points at Grants / Report / Impact — never invents DEMO grant dollars.
  */
 export function grantEligibilityMatcherNextActions(input: {
@@ -236,7 +236,7 @@ export function grantEligibilityMatcherNextActions(input: {
       },
       {
         id: "grant-report",
-        label: "Open Grant Report",
+        label: "Open Grant report",
         detail: "Post-award compliance stays separate from eligibility.",
         href: hubHref("/business", "grant-report", orgId),
       },
@@ -247,7 +247,7 @@ export function grantEligibilityMatcherNextActions(input: {
     return [
       {
         id: "retry",
-        label: "Retry Grant Eligibility Matcher",
+        label: "Retry Grant eligibility matcher",
         detail: "Reload real eligibility matches.",
         href: withOrgHref("/grant-eligibility-matcher", orgId),
         primary: true,
@@ -260,8 +260,8 @@ export function grantEligibilityMatcherNextActions(input: {
       },
       {
         id: "grant-report",
-        label: "Open Grant Report",
-        detail: "Grant Report stays available while matching reloads.",
+        label: "Open Grant report",
+        detail: "Grant report stays available while matching reloads.",
         href: hubHref("/business", "grant-report", orgId),
       },
     ];
@@ -304,7 +304,7 @@ export function grantEligibilityMatcherNextActions(input: {
     },
     {
       id: "grant-report",
-      label: "Open Grant Report",
+      label: "Open Grant report",
       detail: "Track post-award compliance once awards land.",
       href: hubHref("/business", "grant-report", orgId),
     },

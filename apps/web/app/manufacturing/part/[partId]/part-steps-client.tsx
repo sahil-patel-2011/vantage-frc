@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ActionMenu, Badge, Button, EmptyState, PageHeader, Panel } from "../../../../components/ui";
+import { ActionMenu, Badge, Button, EmptyState, PageHeader, Panel, TextBlockSkeleton } from "../../../../components/ui";
 import { methodLabel, stateLabel } from "../../../../lib/manufacturing";
 import {
   currentStep,
@@ -25,7 +25,12 @@ export default function PartStepsClient({ partId }: { partId: string }) {
     return (
       <main className="module-page shop-page">
         <PageHeader title="Part steps" />
-        {problem ? <p className="telemetry-status" role="alert">{problem}</p> : <p className="app-muted" role="status">Loading…</p>}
+        {problem ? <p className="telemetry-status" role="alert">{problem}</p> : (
+          <div role="status" aria-busy="true">
+            <span className="sr-only">Loading part steps</span>
+            <TextBlockSkeleton lines={4} />
+          </div>
+        )}
       </main>
     );
   }

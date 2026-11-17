@@ -50,7 +50,7 @@ async function persistSponsorSuiteSnapshot(
     await putFeatureSnapshot("sponsor-suite", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("sponsor-suite", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Sponsor Suite already painted; IndexedDB is best-effort.
+    // Live Sponsor suite already painted; IndexedDB is best-effort.
   }
 }
 
@@ -122,10 +122,10 @@ function SponsorSuiteShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Suite"}
+            {" / Sponsor suite"}
           </>
         }
-        title="Sponsor Suite"
+        title="Sponsor suite"
         description={description}
       >
         <SponsorSuiteRelatedStrip orgId={orgId} />
@@ -156,7 +156,7 @@ function SponsorSuiteShell({
           <Button as="a" variant="primary" href={orgId ? withOrgHref("/workspace", orgId) : "/workspace"}>Choose your team</Button>
         ) : null}
         {shell === "empty" ? (
-          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open Sponsor CRM</Button>
+          <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>Open sponsors</Button>
         ) : null}
       </EmptyState>
       {shell === "ready" ? <SponsorSuiteNextActionsPanel actions={actions} /> : null}
@@ -218,7 +218,7 @@ export default function SponsorSuiteClient() {
         if (!response.ok || !isSponsorSuiteView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError(staleCopyNotice("Sponsor Suite"));
+            setError(staleCopyNotice("Sponsor suite"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -233,7 +233,7 @@ export default function SponsorSuiteClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError(staleCopyNotice("Sponsor Suite"));
+          setError(staleCopyNotice("Sponsor suite"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -315,7 +315,7 @@ export default function SponsorSuiteClient() {
   if (shell === "loading") {
     return (
       <SponsorSuiteShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -329,7 +329,7 @@ export default function SponsorSuiteClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -341,7 +341,7 @@ export default function SponsorSuiteClient() {
         orgId={orgId}
         shell="setup"
       >
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -349,7 +349,7 @@ export default function SponsorSuiteClient() {
   if (view?.status !== "live") {
     return (
       <SponsorSuiteShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
       </SponsorSuiteShell>
     );
   }
@@ -360,10 +360,10 @@ export default function SponsorSuiteClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Suite"}
+            {" / Sponsor suite"}
           </>
         }
-        title="Sponsor Suite"
+        title="Sponsor suite"
         description="Generate pitch/renewal decks, an end-of-season ROI report, and thank-you/renewal reminders — grounded in your recorded sponsors and contributions. Deck and ROI generation are metered."
       >
         {/* One way into AI: Ask AI opens on this page's skill with its records. */}
@@ -395,7 +395,7 @@ export default function SponsorSuiteClient() {
           ))}
         </div>
       </PageHeader>
-      <OfflineBanner feature="Sponsor Suite" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Sponsor suite" fromCache={fromCache} cachedAt={cachedAt} />
 
       {orgId && cutoffCode ? <UsageCutoffBanner orgId={orgId} errorCode={cutoffCode} compact /> : null}
 
@@ -452,7 +452,7 @@ export default function SponsorSuiteClient() {
           description={shellCopy.description}
         >
           <Button as="a" variant="primary" href={hubHref("/business", "sponsors", orgId)}>
-            Open Sponsor CRM
+            Open sponsors
           </Button>
         </EmptyState>
       ) : null}
@@ -582,7 +582,7 @@ function RemindersPanel({
           badge="No reminders"
           badgeTone="setup"
           title="No pending reminders"
-          description="Create a thank-you or renewal reminder for a real CRM sponsor."
+          description="Create a thank-you or renewal reminder for one of your sponsors."
         />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 10 }}>

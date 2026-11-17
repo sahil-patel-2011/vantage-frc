@@ -11,6 +11,6 @@ describe("Grant Eligibility Matcher last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"grant-eligibility-matcher"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Grant Eligibility Matcher"/);
+    expect(src).toMatch(/feature="Grant eligibility matcher"/);
   });
 });

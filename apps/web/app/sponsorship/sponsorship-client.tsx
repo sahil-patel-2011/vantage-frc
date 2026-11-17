@@ -415,16 +415,18 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                 Sponsor pipeline
               </Button>
               <Button as="a" variant="secondary" href={`/sponsor-suite?orgId=${encodeURIComponent(context.orgId)}`}>
-                Sponsor Suite
+                Sponsor suite
               </Button>
               <Button as="a" variant="secondary" href={`/media-kit?orgId=${encodeURIComponent(context.orgId)}`}>
                 Media kit
               </Button>
             </>
           ) : null}
-          <Button variant={onePagers.length ? "primary" : "secondary"} type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
-            New one-pager
-          </Button>
+          {onePagers.length ? (
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
+              New one-pager
+            </Button>
+          ) : null}
         </div>
       </PageHeader>
       ) : (
@@ -448,9 +450,11 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
               ))}
             </select>
           </label>
-          <Button variant={onePagers.length ? "primary" : "secondary"} type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
-            New one-pager
-          </Button>
+          {onePagers.length ? (
+            <Button variant="primary" type="button" disabled={busy} onClick={() => void mutate( { action: "create", title: defaultTitle(context.teamNumber, season ?? seasonYear), whoWeAre: context.seedWhoWeAre ?? "", whatWeDo: context.seedFundingNeed ?? "", }, "One-pager created.", ) }>
+              New one-pager
+            </Button>
+          ) : null}
         </div>
       )}
 

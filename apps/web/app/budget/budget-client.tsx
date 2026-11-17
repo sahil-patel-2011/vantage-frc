@@ -107,6 +107,7 @@ export default function BudgetClient() {
   const [feeKind, setFeeKind] = useState<"registration" | "event_fee">("event_fee");
   const [feePaid, setFeePaid] = useState(false);
   const [confirmFee, setConfirmFee] = useState(false);
+  const [feeError, setFeeError] = useState("");
 
   const [fetchFailed, setFetchFailed] = useState(false);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
@@ -519,9 +520,10 @@ export default function BudgetClient() {
           onSubmit={(event) => {
             event.preventDefault();
             if (!feeLabel.trim() || !feeAmount.trim() || !feeDate.trim()) {
-              setError("Name the event, the amount, and the date before saving a fee.");
+              setFeeError("Name the event, the amount, and the date before saving a fee.");
               return;
             }
+            setFeeError("");
             if (!confirmFee) {
               setConfirmFee(true);
               return;
@@ -610,6 +612,7 @@ export default function BudgetClient() {
             />
             <span>Already paid (counts as spend now)</span>
           </label>
+          {feeError ? <p className="budget-error" role="alert">{feeError}</p> : null}
           {confirmFee ? (
             <p className="budget-confirm">
               Record {money(Number(feeAmount) || 0)} for &ldquo;{feeLabel}&rdquo;

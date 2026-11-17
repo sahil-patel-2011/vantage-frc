@@ -24,13 +24,13 @@
 .kick-tile{display:grid;gap:4px;align-content:start;padding:16px}
 .kick-tile-value{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kick-tile-best{font-size:15px;line-height:1.9}
-.kick-tile-label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.kick-tile-label{color:var(--muted);font-size:11px}
 .kick-section{display:grid;gap:12px;margin-bottom:16px}
 .kick-section h2{margin:0;font-size:var(--title-3)}
 .kick-section>p{margin:-6px 0 0;font-size:12px}
 .kick-table{display:grid;gap:6px}
 .kick-row{display:grid;grid-template-columns:minmax(0,1fr) 92px 84px 84px 64px 44px;gap:10px;align-items:center;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius-xs)}
-.kick-row-head{padding:0 10px;background:none;border:0;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.kick-row-head{padding:0 10px;background:none;border:0;color:var(--muted);font-size:11px}
 .kick-label{display:grid;min-width:0;font-size:13px;font-weight:600}
 .kick-label small{font-weight:400;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kick-chip{justify-self:start;padding:2px 9px;background:var(--surface-2);border-radius:var(--radius-pill);color:var(--muted);font-size:11px;font-weight:700;text-transform:capitalize;white-space:nowrap}
@@ -74,7 +74,7 @@
 .kick-intel-result-head p{margin:4px 0 0}
 .kick-intel-result-actions{display:grid;gap:10px;justify-items:end}
 .kick-intel-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.kick-intel-grid h4{margin:0 0 6px;font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.kick-intel-grid h4{margin:0 0 6px;font-size:var(--text-xs);color:var(--muted)}
 .kick-intel-grid .kick-list li{padding:4px 0;font-size:13px}
 .kick-intel-advice{margin:0;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-xs);font-size:13px;line-height:1.45}
 .kick-intel-disclaimer{margin:0;font-size:11px}
@@ -83,7 +83,7 @@
 .kick-brief header h2{margin:6px 0 4px}
 .kick-brief header p{margin:0;color:var(--muted)}
 .kick-brief-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.kick-brief-grid h3,.kick-brief-prior h3{margin:0 0 8px;font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.kick-brief-grid h3,.kick-brief-prior h3{margin:0 0 8px;font-size:var(--text-xs);color:var(--muted)}
 .kick-brief-grid ul,.kick-brief-prior ul{margin:0;padding-left:1.1rem;display:grid;gap:6px}
 .kick-brief-prior{display:grid;gap:12px;padding-top:8px;border-top:1px solid var(--line)}
 .kick-brief-actions{display:flex;flex-wrap:wrap;gap:8px}

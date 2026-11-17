@@ -1,7 +1,7 @@
 import OutreachCalendarClient from "./outreach-calendar-client";
 
 export const metadata = {
-  title: "Outreach Calendar",
+  title: "Outreach calendar",
 };
 
 export default function OutreachCalendarPage() {

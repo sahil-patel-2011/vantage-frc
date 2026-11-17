@@ -94,7 +94,7 @@ function NextActions({
     <section className="fmea-next-actions app-card soft-panel" aria-label="Next actions">
       <header>
         <h2>Next actions</h2>
-        <p>Sorted by risk score. A score stays blank until you rate how often it happens, how bad it is and how hard it is to spot.</p>
+        <p>Sorted by risk score: how often it happens × how bad it is × how hard it is to spot.</p>
       </header>
       <ol>
         {actions.map((action) => (
@@ -760,7 +760,7 @@ function FailureList({
   return (
     <Panel className="fmea-panel">
       <h2>Season log</h2>
-      <p>Ranked by risk score (how often × how bad × how hard to spot). Empty ratings stay blank.</p>
+      <p>Ranked by risk score (how often × how bad × how hard to spot).</p>
       <div className="fmea-risk-list">
         {view.evaluations.map((evaluation) => (
           <FailureCard
@@ -859,12 +859,13 @@ function FailureCard({
         </label>
         {canDeleteFmeaFailure({ role, userId, authorId: f.recordedBy }) ? (
           <Button
-            variant="secondary"
+            variant="ghost"
+            tone="danger"
             type="button"
             disabled={busy}
             aria-label={`Delete ${f.title}`}
             onClick={async () => {
-              if (await askConfirm({ title: "Delete this failure entry?", body: null, confirmLabel: "Delete failure entry", tone: "destructive" })) mutate({ action: "delete-failure", failureId: f.id });
+              if (await askConfirm({ title: "Delete this failure entry?", body: `"${f.title}" and its ratings, root cause and fix notes will be removed.`, confirmLabel: "Delete failure entry", tone: "destructive" })) mutate({ action: "delete-failure", failureId: f.id });
             }}
           >
             Delete

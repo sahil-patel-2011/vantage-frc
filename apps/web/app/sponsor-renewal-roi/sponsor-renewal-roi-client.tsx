@@ -61,7 +61,7 @@ async function persistSponsorRenewalRoiSnapshot(
     await putFeatureSnapshot("sponsor-renewal-roi", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("sponsor-renewal-roi", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Sponsor Renewal ROI already painted; IndexedDB is best-effort.
+    // Live Sponsor renewals already painted; IndexedDB is best-effort.
   }
 }
 
@@ -141,10 +141,10 @@ function RoiShell({
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Renewal ROI"}
+            {" / Sponsor renewals"}
           </>
         }
-        title="Sponsor Renewal-Risk Score & ROI Report"
+        title="Sponsor renewals"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -233,7 +233,7 @@ export default function SponsorRenewalRoiClient() {
         if (!response.ok || !isSponsorRenewalRoiView(data)) {
           if (hadCache || viewRef.current) {
             setFromCache(true);
-            setError(staleCopyNotice("Sponsor Renewal ROI"));
+            setError(staleCopyNotice("Sponsor renewals"));
             setFetchFailed(false);
           } else {
             setFetchFailed(true);
@@ -248,7 +248,7 @@ export default function SponsorRenewalRoiClient() {
       } catch {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError(staleCopyNotice("Sponsor Renewal ROI"));
+          setError(staleCopyNotice("Sponsor renewals"));
           setFetchFailed(false);
         } else {
           setFetchFailed(true);
@@ -325,7 +325,7 @@ export default function SponsorRenewalRoiClient() {
   if (shell === "loading") {
     return (
       <RoiShell description={shellCopy.description} orgId={null} shell="loading">
-        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
@@ -339,7 +339,7 @@ export default function SponsorRenewalRoiClient() {
         error={error || shellCopy.description}
         onRetry={() => load()}
       >
-        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
@@ -351,7 +351,7 @@ export default function SponsorRenewalRoiClient() {
         orgId={orgId}
         shell={shell === "empty" ? "empty" : "setup"}
       >
-        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
@@ -359,7 +359,7 @@ export default function SponsorRenewalRoiClient() {
   if (view?.status !== "live") {
     return (
       <RoiShell description={shellCopy.description} orgId={orgId} shell="setup">
-        <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
       </RoiShell>
     );
   }
@@ -370,11 +370,11 @@ export default function SponsorRenewalRoiClient() {
         breadcrumbs={
           <>
             <a href={businessHref}>Business</a>
-            {" / Sponsor Renewal ROI"}
+            {" / Sponsor renewals"}
           </>
         }
-        title="Sponsor Renewal-Risk Score & ROI Report"
-        description="Churn-risk scoring and sponsor-branded ROI reports built only from logged interactions, contributions, and community-impact mentions."
+        title="Sponsor renewals"
+        description="Which sponsors may not renew, and a report showing each one what their support did."
       >
         {/* One way into AI: Ask AI opens on this page's skill with its records. */}
         <AskAiButton orgId={orgId} />
@@ -406,7 +406,7 @@ export default function SponsorRenewalRoiClient() {
         </div>
       </PageHeader>
 
-      <OfflineBanner feature="Sponsor Renewal ROI" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Sponsor renewals" fromCache={fromCache} cachedAt={cachedAt} />
 
       {error ? (
         <p {...staleCopyProps(error, "app-muted")}>

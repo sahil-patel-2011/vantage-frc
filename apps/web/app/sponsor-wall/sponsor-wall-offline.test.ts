@@ -11,6 +11,6 @@ describe("Sponsor Wall last snapshot stays on the phone", () => {
     expect(src).toMatch(/putFeatureSnapshot/);
     expect(src).toMatch(/"sponsor-wall"/);
     expect(src).toMatch(/FEATURE_API_TIMEOUT_MS/);
-    expect(src).toMatch(/feature="Sponsor Wall"/);
+    expect(src).toMatch(/feature="Sponsor wall"/);
   });
 });

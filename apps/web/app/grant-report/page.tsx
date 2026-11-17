@@ -1,7 +1,7 @@
 import GrantReportClient from "./grant-report-client";
 
 export const metadata = {
-  title: "Grant Report",
+  title: "Grant report",
 };
 
 export default function GrantReportPage() {

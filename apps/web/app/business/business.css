@@ -621,7 +621,8 @@
   cursor: pointer;
 }
 
-.biz-row-actions button.danger {
+.biz-row-actions button.danger,
+.placement-actions button.danger {
   color: var(--critical);
   background: color-mix(in srgb, var(--critical) 10%, var(--surface));
   border-color: color-mix(in srgb, var(--critical) 38%, var(--line));

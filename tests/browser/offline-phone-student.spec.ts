@@ -163,7 +163,7 @@ test.describe("offline phone student boards keep the last copy", () => {
       feature: "batteries",
       body: BATTERIES_READY,
       heading: "Add a battery",
-      keep: /Active packs/,
+      keep: /Active batteries/,
     });
   });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button, EmptyState } from "../../../components/ui";
+import { Button, EmptyState, TextBlockSkeleton } from "../../../components/ui";
 import { methodLabel, stateLabel } from "../../../lib/manufacturing";
 import { currentStep, partIdFromScan, partStepsPath, stepProgress, type ShopPart } from "../../../lib/manufacturing/steps-model";
 import { useShopSteps } from "../use-shop-steps";
@@ -38,7 +38,12 @@ export default function ShopKioskClient() {
     return (
       <main className="shop-kiosk">
         <h1>Shop</h1>
-        {problem ? <p className="telemetry-status" role="alert">{problem}</p> : <p className="app-muted" role="status">Loading…</p>}
+        {problem ? <p className="telemetry-status" role="alert">{problem}</p> : (
+          <div role="status" aria-busy="true">
+            <span className="sr-only">Loading the shop floor</span>
+            <TextBlockSkeleton lines={4} />
+          </div>
+        )}
       </main>
     );
   }

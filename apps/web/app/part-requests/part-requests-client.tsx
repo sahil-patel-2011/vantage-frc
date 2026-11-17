@@ -125,6 +125,7 @@ export default function PartRequestsClient() {
     if (u && /^https:\/\//.test(u)) setItemUrl(u.slice(0, 500));
   }, []);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [askError, setAskError] = useState("");
 
   const [decide, setDecide] = useState<{ id: string; kind: "approve" | "reject" } | null>(null);
   const [reviewNotes, setReviewNotes] = useState("");
@@ -314,9 +315,10 @@ export default function PartRequestsClient() {
           onSubmit={(event) => {
             event.preventDefault();
             if (!title.trim() || !justification.trim()) {
-              setError("Say what you need and why before sending the request.");
+              setAskError("Say what you need and why before sending the request.");
               return;
             }
+            setAskError("");
             if (!confirmSubmit) {
               setConfirmSubmit(true);
               return;
@@ -430,6 +432,7 @@ export default function PartRequestsClient() {
               onChange={(event) => setItemUrl(event.target.value)}
             />
           </label>
+          {askError ? <p className="pr-error" role="alert">{askError}</p> : null}
           {confirmSubmit ? (
             <p className="pr-confirm">
               Send this request for about {money(totalPreview)}?{" "}

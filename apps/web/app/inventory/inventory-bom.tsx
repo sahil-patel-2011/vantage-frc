@@ -66,7 +66,7 @@ export function BomPanel({
         </article>
       ))}
       {coverage.length === 0 ? (
-        <p className="app-muted">No BOM lines yet. Map each subsystem to the parts it needs to check buildability.</p>
+        <p className="app-muted">No parts lists yet. Add the parts each subsystem needs to see whether you have enough to build it.</p>
       ) : null}
       <form
         className="inventory-bom-add"
@@ -105,7 +105,7 @@ export function BomPanel({
           onChange={(e) => setQty(e.target.value)}
         />
         <Button variant="secondary" type="submit" disabled={busy || !subsystem.trim() || !itemId || !qty}>
-          Add to BOM
+          Add to parts list
         </Button>
       </form>
     </div>

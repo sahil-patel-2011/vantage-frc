@@ -571,8 +571,9 @@ export function PartnerPlacementsPanel({
                       ) : (
                         <button
                           type="button"
+                          className="danger"
                           onClick={async () => {
-                            if (await askConfirm({ title: "Delete this archived artwork permanently?", body: null, confirmLabel: "Delete archived artwork", tone: "destructive" })) {
+                            if (await askConfirm({ title: "Delete this archived artwork permanently?", body: `${asset.filename} is removed for good and cannot be restored.`, confirmLabel: "Delete archived artwork", tone: "destructive" })) {
                               void mutate({ action: "delete-asset", assetId: asset.id });
                             }
                           }}

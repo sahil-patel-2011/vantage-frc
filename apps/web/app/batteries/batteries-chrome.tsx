@@ -173,7 +173,7 @@ export function BatteriesSummary({ view }: { view: ReadyView }) {
     <section className="batt-summary" aria-label="Fleet summary">
       <article className="batt-summary-tile">
         <strong>{view.summary.active}</strong>
-        <span>Active packs</span>
+        <span>Active batteries</span>
       </article>
       <article className="batt-summary-tile ready">
         <strong>{view.summary.competitionReady}</strong>

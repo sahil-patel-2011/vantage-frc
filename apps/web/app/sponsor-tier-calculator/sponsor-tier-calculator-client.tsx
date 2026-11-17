@@ -58,7 +58,7 @@ async function persistSponsorTierSnapshot(
     await putFeatureSnapshot("sponsor-tier-calculator", cacheOrg, data, seasonHint || seasonKey);
     if (!orgHint) await putFeatureSnapshot("sponsor-tier-calculator", "_", data, seasonHint || seasonKey);
   } catch {
-    // Live Sponsor Tier Calculator already painted; IndexedDB is best-effort.
+    // Live Sponsor tier calculator already painted; IndexedDB is best-effort.
   }
 }
 
@@ -77,7 +77,7 @@ function SponsorTierNextActions({ orgId }: { orgId: string }) {
   const actions = [
     {
       id: "sponsors",
-      label: "Open Sponsors",
+      label: "Open sponsors",
       detail: "Record gifts so this calculator can match a giving level.",
       href: hubHref("/business", "sponsors", orgId),
       primary: true,
@@ -178,7 +178,7 @@ export default function SponsorTierCalculatorClient() {
       if (!response.ok || !isSponsorTierView(data)) {
         if (hadCache || viewRef.current) {
           setFromCache(true);
-          setError(staleCopyNotice("Sponsor Tier Calculator"));
+          setError(staleCopyNotice("Sponsor tier calculator"));
           setFetchFailed(false);
           return;
         }
@@ -195,7 +195,7 @@ export default function SponsorTierCalculatorClient() {
     } catch {
       if (hadCache || viewRef.current) {
         setFromCache(true);
-        setError(staleCopyNotice("Sponsor Tier Calculator"));
+        setError(staleCopyNotice("Sponsor tier calculator"));
         setFetchFailed(false);
         return;
       }
@@ -240,10 +240,10 @@ export default function SponsorTierCalculatorClient() {
       breadcrumbs={
         <>
           <a href={orgId ? `/business?orgId=${encodeURIComponent(orgId)}` : "/business"}>Business</a>
-          {" / Sponsor Tier Calculator"}
+          {" / Sponsor tier calculator"}
         </>
       }
-      title="Sponsor Tier Calculator"
+      title="Sponsor tier calculator"
       description="Define giving-level tiers and recognition benefits, then see which sponsors qualify and what benefits are still owed — computed from recorded contributions only."
     >
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -291,7 +291,7 @@ export default function SponsorTierCalculatorClient() {
     return (
       <main className="module-page">
         {header}
-        <OfflineBanner feature="Sponsor Tier Calculator" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Sponsor tier calculator" fromCache={fromCache} cachedAt={cachedAt} />
         <EmptyState
           soft
           title={failure ? failure.title : "Loading…"}
@@ -318,7 +318,7 @@ export default function SponsorTierCalculatorClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Sponsor Tier Calculator" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Sponsor tier calculator" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p {...staleCopyProps(error)}>
               {error}
@@ -337,7 +337,7 @@ export default function SponsorTierCalculatorClient() {
       return (
         <main className="module-page">
           {header}
-          <OfflineBanner feature="Sponsor Tier Calculator" fromCache={fromCache} cachedAt={cachedAt} />
+          <OfflineBanner feature="Sponsor tier calculator" fromCache={fromCache} cachedAt={cachedAt} />
           {error ? (
             <p {...staleCopyProps(error)}>
               {error}
@@ -510,7 +510,7 @@ function SponsorRowsPanel({
                 description="Add sponsors and record contributions in Business · Sponsors to see tier matches here."
               >
                 <Button as="a" variant="primary" href={hubHref("/business", "sponsors", view.orgId)}>
-                  Open Sponsors
+                  Open sponsors
                 </Button>
               </EmptyState>
     );
