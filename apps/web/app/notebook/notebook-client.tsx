@@ -466,85 +466,89 @@ export default function NotebookClient({ orgId }: { orgId: string | null }) {
         <StatTile label="Season" value={seasonYear} />
       </div>
 
-      <Panel as="form" id="notebook-entry" onSubmit={addEntry}>
-        <h2>New notebook entry</h2>
-        <FormRow label="Title" wide>
-          <input
-            required
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            placeholder="Intake roller prototype #2"
-          />
-        </FormRow>
-        <FormGrid min={160}>
-          <FormRow label="Date">
-            <input
-              type="date"
-              value={form.entryDate}
-              onChange={(e) => setForm({ ...form, entryDate: e.target.value })}
-            />
-          </FormRow>
-          <FormRow label="Phase">
-            <select
-              value={form.phase}
-              onChange={(e) => setForm({ ...form, phase: e.target.value as BuildPhase })}
-            >
-              {BUILD_PHASES.map((p) => (
-                <option key={p} value={p}>
-                  {BUILD_PHASE_LABEL[p]}
-                </option>
-              ))}
-            </select>
-          </FormRow>
-          <FormRow label="Subsystem">
-            <input
-              value={form.subsystem}
-              onChange={(e) => setForm({ ...form, subsystem: e.target.value })}
-              placeholder="Intake"
-            />
-          </FormRow>
-          <FormRow label="Tags (comma-separated)">
-            <input
-              value={form.tags}
-              onChange={(e) => setForm({ ...form, tags: e.target.value })}
-              placeholder="cad, test"
-            />
-          </FormRow>
-        </FormGrid>
-        <FormRow label="What did you decide / learn?" wide>
-          <textarea rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
-        </FormRow>
-        <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-          <legend>Photos &amp; video</legend>
-          {view.imageLibrary.length === 0 ? (
-            <p className="app-muted">
-              No photos or videos in the media library or pit scouting yet — a text write-up is not award
-              evidence.{" "}
-              <a href={mediaHref}>Add a real photo or video in Media library</a>
-              {" "}or <a href={scoutingHref}>pit scouting</a>.
-            </p>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
-              {view.imageLibrary.map((asset) => (
-                <label key={asset.assetId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <CiteMedia asset={asset} compact />
-                  <span>
-                    <input
-                      type="checkbox"
-                      checked={form.attachmentIds.includes(asset.assetId)}
-                      onChange={() => toggleFormPhoto(asset.assetId)}
-                    />{" "}
-                    {asset.title}
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </fieldset>
-        <Button variant="primary" type="submit">
-          Add entry
-        </Button>
-      </Panel>
+      {view.context.role !== "viewer" ? (
+        <details id="notebook-entry" open={view.entries.length === 0}>
+          <summary data-disclosure>New notebook entry</summary>
+          <Panel as="form" onSubmit={addEntry}>
+            <FormRow label="Title" wide>
+              <input
+                required
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                placeholder="Intake roller prototype #2"
+              />
+            </FormRow>
+            <FormGrid min={160}>
+              <FormRow label="Date">
+                <input
+                  type="date"
+                  value={form.entryDate}
+                  onChange={(e) => setForm({ ...form, entryDate: e.target.value })}
+                />
+              </FormRow>
+              <FormRow label="Phase">
+                <select
+                  value={form.phase}
+                  onChange={(e) => setForm({ ...form, phase: e.target.value as BuildPhase })}
+                >
+                  {BUILD_PHASES.map((p) => (
+                    <option key={p} value={p}>
+                      {BUILD_PHASE_LABEL[p]}
+                    </option>
+                  ))}
+                </select>
+              </FormRow>
+              <FormRow label="Subsystem">
+                <input
+                  value={form.subsystem}
+                  onChange={(e) => setForm({ ...form, subsystem: e.target.value })}
+                  placeholder="Intake"
+                />
+              </FormRow>
+              <FormRow label="Tags (comma-separated)">
+                <input
+                  value={form.tags}
+                  onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                  placeholder="cad, test"
+                />
+              </FormRow>
+            </FormGrid>
+            <FormRow label="What did you decide / learn?" wide>
+              <textarea rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
+            </FormRow>
+            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend>Photos &amp; video</legend>
+              {view.imageLibrary.length === 0 ? (
+                <p className="app-muted">
+                  No photos or videos in the media library or pit scouting yet — a text write-up is not award
+                  evidence.{" "}
+                  <a href={mediaHref}>Add a real photo or video in Media library</a>
+                  {" "}or <a href={scoutingHref}>pit scouting</a>.
+                </p>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
+                  {view.imageLibrary.map((asset) => (
+                    <label key={asset.assetId} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      <CiteMedia asset={asset} compact />
+                      <span>
+                        <input
+                          type="checkbox"
+                          checked={form.attachmentIds.includes(asset.assetId)}
+                          onChange={() => toggleFormPhoto(asset.assetId)}
+                        />{" "}
+                        {asset.title}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </fieldset>
+            <Button variant="primary" type="submit">
+              Add entry
+            </Button>
+          </Panel>
+        </details>
+      ) : null}
 
       <Panel>
         <h2>Subsystems</h2>

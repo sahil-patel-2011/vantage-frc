@@ -229,7 +229,7 @@ export default function AnnouncementsClient() {
       <main className="module-page announcements-page">
         <PageHeader breadcrumbs="Team / Announcements" title="Announcements" />
         <OfflineBanner feature="Announcements" fromCache={fromCache} cachedAt={cachedAt} />
-        <Panel><p className="app-muted">Loading…</p></Panel>
+        <EmptyState title="Loading announcements" aria-busy />
       </main>
     );
   }
@@ -275,6 +275,7 @@ export default function AnnouncementsClient() {
               <input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
+                required
                 maxLength={200}
                 placeholder="Bus leaves at 6:15, not 6:45"
               />
@@ -306,10 +307,9 @@ export default function AnnouncementsClient() {
                 ? "Everyone gets this in their inbox, and it is also emailed to members who have urgent announcements switched on."
                 : "Everyone gets this in their inbox. Mark it urgent, or require confirmation, to email it as well."}
             </p>
-            <Button variant="primary" type="submit" disabled={busy || !title.trim()}>
+            <Button variant="primary" type="submit" disabled={busy}>
               Post to {view.orgName}
             </Button>
-            {error ? <p {...staleCopyProps(error, "ann-error")}>{error}</p> : null}
             {notice ? <p role="status" className="app-muted ann-delivery-note">{notice}</p> : null}
           </form>
         </Panel>
@@ -318,8 +318,6 @@ export default function AnnouncementsClient() {
       {view.announcements.length === 0 ? (
         <EmptyState
           soft
-          badge="Nothing posted"
-          badgeTone="setup"
           title="No announcements yet"
           description={
             view.canPost
@@ -359,7 +357,7 @@ export default function AnnouncementsClient() {
                       {item.acknowledged ? (
                         <span className="ann-ack-done">You confirmed this</span>
                       ) : (
-                        <Button variant="primary" type="button" disabled={busy} onClick={() => void act({ action: "acknowledge", announcementId: item.id })}>
+                        <Button variant="secondary" type="button" disabled={busy} onClick={() => void act({ action: "acknowledge", announcementId: item.id })}>
                           I have read this
                         </Button>
                       )}
@@ -399,18 +397,26 @@ export default function AnnouncementsClient() {
                       >
                         {item.pinned ? "Unpin" : "Pin"}
                       </button>
-                      <button
-                        type="button"
-                        className="text-button"
+                      <Button
+                        variant="ghost"
+                        tone="danger"
+                        size="sm"
                         disabled={busy}
                         onClick={async () => {
-                          if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
+                          if (
+                            await askConfirm({
+                              title: `Delete “${item.title}”?`,
+                              body: "The announcement is deleted for everyone, along with who has confirmed reading it.",
+                              confirmLabel: "Delete",
+                              tone: "destructive",
+                            })
+                          ) {
                             void act({ action: "delete", announcementId: item.id });
                           }
                         }}
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   ) : null}
                 </li>

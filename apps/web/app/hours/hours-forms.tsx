@@ -236,7 +236,7 @@ export function EnrollScanForm({
         });
       }}
     >
-      <h3>Enroll a scan card (owner/admin)</h3>
+      <h3>Enroll a scan card</h3>
       <p className="hours-kiosk-hint app-muted">
         Attach a barcode, student ID, or RFID fob to a member so they can scan in at the shop kiosk. Use
         whatever the reader types — never an email address.
@@ -326,7 +326,7 @@ export function PolicyForm({
         );
       }}
     >
-      <h3>Season settings (owner/admin)</h3>
+      <h3>Season settings</h3>
       <div className="hours-form-grid">
         <label className="hours-field">
           <span>Season hour goal</span>
@@ -347,7 +347,6 @@ export function PolicyForm({
 export function ScanClockForm({
   orgId,
   kind,
-  setKind,
   busy,
   onBusy,
   onMessage,
@@ -355,7 +354,6 @@ export function ScanClockForm({
 }: {
   orgId: string;
   kind: HourKind;
-  setKind: (kind: HourKind) => void;
   busy: boolean;
   onBusy: (busy: boolean) => void;
   onMessage: (message: string) => void;
@@ -485,18 +483,8 @@ export function ScanClockForm({
             onChange={(event) => setCode(event.target.value)}
           />
         </label>
-        <label className="hours-field">
-          <span>Kind</span>
-          <select value={kind} disabled={busy} onChange={(event) => setKind(event.target.value as HourKind)}>
-            {HOUR_KINDS.map((value) => (
-              <option key={value} value={value}>
-                {HOUR_KIND_LABELS[value]}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
-      <Button variant="primary" type="submit" className="hours-big-btn" disabled={busy || !code.trim()}>
+      <Button variant="secondary" type="submit" disabled={busy || !code.trim()}>
         Scan
       </Button>
     </form>

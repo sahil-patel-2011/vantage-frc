@@ -222,7 +222,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
         </a>
         <SyncIndicator />
         <span>
-          {session.user.name} · {data.role}
+          {session.user.name} · {accessRoleLabel(data.role)}
         </span>
       </header>
       <section className={`active-event ${data.context.eventKey ? "" : "inactive"}`}>
@@ -245,7 +245,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
           ) : null}
           {isOwnerAdmin ? (
             <>
-              <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>TBA data</a>
+              <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Event data</a>
               <a href={`/team?orgId=${encodeURIComponent(orgId)}`}>Team</a>
             </>
           ) : null}
@@ -254,7 +254,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
       <QuickActions orgId={orgId} />
       <DataSourceDegradedBanner health={data.dataSourceHealth} canOpenTeamData={isOwnerAdmin} />
       <aside className="freshness-marker" role="status">
-        <strong>TBA cache</strong>
+        <strong>Event data</strong>
         <span>
           {data.freshness.syncedAt
             ? `Updated ${new Date(data.freshness.syncedAt).toLocaleString()}`

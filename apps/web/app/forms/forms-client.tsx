@@ -272,8 +272,6 @@ export default function FormsClient() {
       {view.forms.length === 0 ? (
         <EmptyState
           soft
-          badge="No forms yet"
-          badgeTone="setup"
           title="Start with what your season needs next"
           description="Pick a purpose and Vantage writes the questions a team would normally write by hand. You can change every one of them."
         />

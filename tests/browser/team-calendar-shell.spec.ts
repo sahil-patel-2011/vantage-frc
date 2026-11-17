@@ -10,7 +10,7 @@ test("Team calendar hub still loads after the panel split", async ({ page }) => 
   await page.goto("/team?tab=calendar");
   await expect(page.getByRole("tab", { name: "Calendar" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
-  await expect(page.getByText("Loading team calendar…")).toBeHidden({ timeout: 20_000 });
+  await expect(page.locator(".tc-page > section.is-loading")).toHaveCount(0, { timeout: 20_000 });
 
   const viewGroup = page.getByRole("group", { name: "Calendar view" });
   const recoveryTitle = page.locator(".tc-empty strong");

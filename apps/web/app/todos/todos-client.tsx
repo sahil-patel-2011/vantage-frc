@@ -493,7 +493,7 @@ function CreateTodoForm({ view, busy, mutate }: { view: LiveView; busy: boolean;
             aria-describedby="todo-title-count"
           />
         </FormRow>
-        <Button variant="primary" type="submit" disabled={busy || !form.title.trim()}>Add</Button>
+        <Button variant="primary" type="submit" disabled={busy}>Add</Button>
       </div>
       <TitleCount id="todo-title-count" length={form.title.length} />
       <details>
@@ -555,8 +555,6 @@ function Board({
     return (
       <EmptyState
         soft
-        badge="Empty"
-        badgeTone="setup"
         title="No team tasks yet"
         description="Type the first one in the box above and press Add. A short title is enough; assign it and set a due date under Details."
       />

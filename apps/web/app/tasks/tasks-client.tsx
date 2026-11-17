@@ -239,13 +239,20 @@ export default function TasksClient() {
         </EmptyState>
       ) : (
         <div style={{ display: "grid", gap: 16 }}>
-          <MetricsTiles view={view} />
-          <MeetingOutput view={view} />
-          <NormsBenchmark view={view} busy={busy} mutate={mutate} />
-          <AvailableNow view={view} />
+          {view.board.metrics.total > 0 ? (
+            <>
+              <MetricsTiles view={view} />
+              <MeetingOutput view={view} />
+              <AvailableNow view={view} />
+            </>
+          ) : null}
           {view.board.focus.length > 0 ? <FocusList view={view} /> : null}
           {viewOnly ? <ViewOnlyNote /> : <CreateTaskForm view={view} busy={busy} mutate={mutate} />}
           <Board view={view} busy={busy} mutate={mutate} />
+          <details>
+            <summary data-disclosure>Team norms</summary>
+            <NormsBenchmark view={view} busy={busy} mutate={mutate} />
+          </details>
         </div>
       )}
     </main>
@@ -407,8 +414,6 @@ function Board({ view, busy, mutate }: { view: LiveView; busy: boolean; mutate: 
   if (view.board.metrics.total === 0) {
     return (
       <EmptyState
-        badge="Empty board"
-        badgeTone="setup"
         title="No tasks yet"
         description="Add your first build task above to start the board."
       />
@@ -500,17 +505,26 @@ function TaskCard({ task, busy, mutate }: { task: TaskWithFlags; busy: boolean; 
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          className="text-button"
+        <Button
+          variant="ghost"
+          tone="danger"
+          size="sm"
           disabled={busy}
           onClick={async () => {
-            if (await askConfirm({ title: `Delete “${task.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) mutate({ action: "delete-task", taskId: task.id });
+            if (
+              await askConfirm({
+                title: `Delete “${task.title}”?`,
+                body: "The task is deleted for the whole team, with its collaborators, estimate and due date.",
+                confirmLabel: "Delete",
+                tone: "destructive",
+              })
+            )
+              mutate({ action: "delete-task", taskId: task.id });
           }}
-          style={{ marginLeft: "auto", fontSize: "0.8rem" }}
+          style={{ marginLeft: "auto" }}
         >
           Delete
-        </button>
+        </Button>
       </div>
     </article>
   );

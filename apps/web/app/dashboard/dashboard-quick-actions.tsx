@@ -143,7 +143,7 @@ function QuickTaskForm({ orgId, onSaved }: { orgId: string; onSaved: () => Promi
       {error ? <p role="alert">{error}</p> : null}
       {error ? <a href={`/todos?orgId=${encodeURIComponent(orgId)}`}>All tasks</a> : null}
       {message ? <p role="status">{message}</p> : null}
-      <Button type="submit" variant="primary" disabled={busy || !orgId || !title.trim()}>{busy ? "Creating…" : "Create task"}</Button>
+      <Button type="submit" variant="primary" disabled={busy || !orgId}>{busy ? "Creating…" : "Create task"}</Button>
     </form>
   );
 }

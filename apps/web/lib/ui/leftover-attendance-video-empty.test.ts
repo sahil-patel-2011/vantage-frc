@@ -8,7 +8,9 @@ describe("leftover Attendance and Video rescout empty cards", () => {
   it("keeps one EmptyState primary on Attendance leftover cards", () => {
     const src = readFileSync(join(WEB, "app/attendance/attendance-client.tsx"), "utf8");
     expect(src).toMatch(/#att-session-list/);
-    expect(src).toMatch(/#att-add-attendee/);
+    expect(src).toMatch(/id="att-add-attendee"/);
+    // The add form sits right above the empty card; a button that only jumped to it was a duplicate.
+    expect(src).not.toMatch(/Add an attendee/);
     expect(src).toMatch(/New attendance event/);
     expect(src).not.toMatch(/att-empty-actions/);
   });

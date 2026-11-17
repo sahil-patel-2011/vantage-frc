@@ -415,15 +415,11 @@ function SessionDetail({
               : "An owner or admin marks who showed up. Totals stay empty until they do."
           }
         >
-          {canManage ? (
-            <Button as="a" variant="secondary" href="#att-add-attendee">
-              Add an attendee
-            </Button>
-          ) : (
+          {!canManage ? (
             <Button as="a" variant="primary" href={`/team?tab=messages&orgId=${encodeURIComponent(orgId)}`}>
               Ask in Messages
             </Button>
-          )}
+          ) : null}
         </EmptyState>
       ) : (
         <ul className="att-entries">

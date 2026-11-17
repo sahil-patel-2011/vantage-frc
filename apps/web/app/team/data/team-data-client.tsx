@@ -7,6 +7,7 @@ import { OfflineBanner } from "../../../components/offline-banner";
 import { EmptyState, Button } from "../../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
 import { withOrgHref } from "../../../lib/nav/product-nav";
+import { hubHref } from "../../../lib/nav/hubs";
 import { loadFailureCopy } from "../../../lib/ui/load-failure";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../../lib/offline/feature-cache";
 import type { DataSourceHealthView } from "../../../lib/reference-health";
@@ -238,7 +239,7 @@ function TeamDataShell({
             : shell === "error"
               ? "Unavailable"
               : shell === "empty"
-                ? "No cache yet"
+                ? "Not synced yet"
                 : undefined)
         }
         badgeTone={shell === "setup" || shell === "empty" ? "setup" : ""}
@@ -260,7 +261,7 @@ function TeamDataShell({
             Retry
           </Button>
         ) : null}
-        {shell === "setup" ? (
+        {shell === "setup" && !orgId ? (
           <Button as="a" variant="primary" href={workspaceHref}>Choose your team</Button>
         ) : null}
       </EmptyState>
@@ -564,13 +565,14 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         title={needsTba ? "Connect Team Data" : needsEvent ? "Set active event" : "Finish Team Data setup"}
         description={
           needsTba
-            ? `Save a Blue Alliance Read API key below, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
+            ? `Save a Blue Alliance Read API key above, or ask whoever set up this site to add one in deployment settings. Create a key at thebluealliance.com → Account → Read API Keys.${needsEvent ? " You will also need to pick an active event before anything syncs." : ""}`
             : needsEvent
               ? "Team Data syncs only for a real team event — Schedule, Event Day, and Strategy stay empty until then."
               : "Finish team setup so Team Data sync can load this team."
         }
         orgId={orgId}
         shell="setup"
+        primary={needsEvent ? { label: "Set active event", href: hubHref("/competition", "command", orgId) } : undefined}
       >
         <OfflineBanner feature="Team Data" fromCache={fromCache} cachedAt={cachedAt} />
         {needsTba ? (
@@ -626,7 +628,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
         <>
           <EmptyState
             soft
-            badge="No cache yet"
+            badge="Not synced yet"
             badgeTone="setup"
             title="Sync the active event"
             description={`${activeEventLabel} is selected, but there are no match or ranking rows yet. Sync pulls the official event numbers.`}
@@ -683,9 +685,11 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
                   ? `Matches, teams and rankings for ${activeEventLabel}.`
                   : "Pick your event on Event day first."}
             </p>
-            <Button variant="primary" type="button" disabled={busy || !hasActiveEvent} onClick={() => void syncActiveEvent()}>
-              {busy ? "Refreshing…" : "Refresh now"}
-            </Button>
+            {shell !== "empty" ? (
+              <Button variant="primary" type="button" disabled={busy || !hasActiveEvent} onClick={() => void syncActiveEvent()}>
+                {busy ? "Refreshing…" : "Refresh now"}
+              </Button>
+            ) : null}
           </section>
 
           <TbaKeyPanel

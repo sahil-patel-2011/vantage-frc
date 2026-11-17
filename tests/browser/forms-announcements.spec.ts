@@ -252,7 +252,7 @@ test.describe("with real sessions", () => {
     if (list.length > 0) {
       await member.page.goto(withOrg(`/forms/${list[0]!.id}`));
       await expect(member.page.locator(".forms-answer-panel")).toBeVisible();
-      await expect(member.page.getByRole("button", { name: "Questions", includeHidden: true })).toHaveCount(0);
+      await expect(member.page.getByRole("tab", { name: "Questions", includeHidden: true })).toHaveCount(0);
       await expect(member.page.getByRole("button", { name: "Open for answers" })).toHaveCount(0);
       await expect(member.page.getByRole("button", { name: "Add question" })).toHaveCount(0);
 

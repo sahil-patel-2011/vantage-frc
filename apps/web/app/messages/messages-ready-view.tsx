@@ -508,7 +508,7 @@ export function MessagesReadyView({
                 title="Team messages"
                 description="The team channel, or a private message."
               >
-                <Button variant="primary" type="button" onClick={() => void openMemberPicker()}>
+                <Button variant="secondary" type="button" onClick={() => void openMemberPicker()}>
                   Message a teammate
                 </Button>
               </EmptyState>

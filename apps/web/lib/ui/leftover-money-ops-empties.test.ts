@@ -51,10 +51,10 @@ describe("leftover money and ops empty cards", () => {
     expect(day).toMatch(/Add a contact/);
   });
 
-  it("Playbook leftover Choose a page has one New page primary", () => {
+  it("Playbook leftover Choose a page points at the list; New page lives once, in the side pane", () => {
     const knowledge = src("app/team/knowledge/knowledge-client.tsx");
-    expect(knowledge).toMatch(/title="Choose a page"/);
-    expect(knowledge).toMatch(/New page/);
+    expect(knowledge).toMatch(/title="Choose a page" description="Pick a page on the left\."/);
+    expect(knowledge.match(/>\s*New page\s*<\/Button>/g)?.length).toBe(1);
     expect(knowledge).toMatch(/onClick=\{beginCreate\}/);
   });
 

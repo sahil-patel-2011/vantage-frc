@@ -3,7 +3,7 @@
 import { staleCopyNotice, staleCopyProps } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { Badge, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../../components/ui";
+import { Badge, EmptyState, PageHeader, Panel, Button, TabBar, askConfirm } from "../../../components/ui";
 import type { FormInsight, QuestionSummary } from "../../../lib/forms/results";
 import {
   optionsFor,
@@ -495,6 +495,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
   // session-gated, so handing it to a prospective student or a parent sends
   // them to a sign-in screen for an account they will never have.
   const shareUrl = form.shareToken ? `${window.location.origin}/f/${form.shareToken}` : null;
+  const errorInPanel = active === "answer" || (active === "build" && canManage);
 
   return (
     <main className="module-page forms-page">
@@ -503,24 +504,23 @@ export default function FormDetailClient({ formId }: { formId: string }) {
         title={form.title}
         description={`${PURPOSE_LABELS[form.purpose]} · ${form.questions.length} ${form.questions.length === 1 ? "question" : "questions"}`}
       >
-        <nav className="forms-modes" aria-label="Form views">
-          {(canManage ? (["build", "answer", "results"] as Mode[]) : (["answer"] as Mode[])).map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={`app-button${active === option ? "" : " secondary"}`}
-              aria-pressed={active === option}
-              onClick={() => setMode(option)}
-            >
-              {option === "build" ? "Questions" : option === "answer" ? "Preview & answer" : `Responses (${results?.totalResponses ?? 0})`}
-            </button>
-          ))}
-        </nav>
+        {canManage ? (
+          <TabBar
+            aria-label="Form views"
+            value={active}
+            onChange={(id) => setMode(id as Mode)}
+            tabs={[
+              { id: "build", label: "Questions" },
+              { id: "answer", label: "Preview & answer" },
+              { id: "results", label: `Responses (${results?.totalResponses ?? 0})` },
+            ]}
+          />
+        ) : null}
       </PageHeader>
 
       <OfflineBanner feature="Form" fromCache={fromCache} cachedAt={cachedAt} />
 
-      {error ? (
+      {error && !errorInPanel ? (
         <p {...staleCopyProps(error)}>
           {error}
         </p>
@@ -681,7 +681,7 @@ export default function FormDetailClient({ formId }: { formId: string }) {
                 ))}
               </select>
             </label>
-            <Button variant="primary" type="submit" disabled={busy || !newLabel.trim()}>Add question</Button>
+            <Button variant={form.questions.length > 0 ? "secondary" : "primary"} type="submit" disabled={busy || !newLabel.trim()}>Add question</Button>
           </form>
           {error ? <p role="alert" className="forms-error">{error}</p> : null}
         </Panel>
@@ -815,8 +815,6 @@ export default function FormDetailClient({ formId }: { formId: string }) {
           {results.totalResponses === 0 ? (
             <EmptyState
               soft
-              badge="No responses"
-              badgeTone="setup"
               title="Nothing to read yet"
               description="Charts and readings appear here as soon as people answer. Nothing is estimated or filled in."
             />

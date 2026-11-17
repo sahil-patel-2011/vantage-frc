@@ -131,10 +131,10 @@ function HoursShell({
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / My Hours"}
+            {" / My hours"}
           </>
         }
-        title="My Hours"
+        title="My hours"
         description={description}
       >
         <RelatedStrip orgId={orgId} />
@@ -352,10 +352,10 @@ export default function HoursSelfViewClient() {
           breadcrumbs={
             <>
               <a href={teamHref}>Team</a>
-              {" / My Hours"}
+              {" / My hours"}
             </>
           }
-          title="My Hours"
+          title="My hours"
           description={shellCopy.description}
         >
           <RelatedStrip orgId={orgId} />
@@ -392,10 +392,10 @@ export default function HoursSelfViewClient() {
         breadcrumbs={
           <>
             <a href={teamHref}>Team</a>
-            {" / My Hours"}
+            {" / My hours"}
           </>
         }
-        title="My Hours"
+        title="My hours"
         description="Your own logged shop, meeting, and outreach time — plus who’s in the shop right now from open clock-ins."
       >
         <RelatedStrip orgId={orgId} />
@@ -464,17 +464,7 @@ export default function HoursSelfViewClient() {
 }
 
 function PresencePanel({ view }: { view: LiveView }) {
-  if (view.presentNow.length === 0) {
-    return (
-      <EmptyState
-        soft
-        badge="Shop floor"
-        badgeTone="setup"
-        title="Nobody clocked in"
-        description="People who are in the shop show up here after they clock in."
-      />
-    );
-  }
+  if (view.presentNow.length === 0) return null;
   return (
     <Panel id="hours-self-present" className="hsv-panel">
       <SectionHeading title="In the shop now" />
