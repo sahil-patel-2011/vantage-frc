@@ -8,6 +8,7 @@ import {
 } from "../discord";
 import { buildMyDayMatches, matchAlertBody, matchAlertTitle, type MyDayMatch } from "../my-day";
 import type { ScheduleMatch } from "../schedule-board";
+import { allianceScore } from "../schedule/tba-cache";
 
 const COOLDOWN_MINUTES = 120;
 
@@ -27,11 +28,6 @@ function teamKeys(alliance: AllianceJson): string[] {
   const keys = alliance?.teamKeys;
   if (!Array.isArray(keys)) return [];
   return keys.map((key) => String(key));
-}
-
-function allianceScore(alliance: AllianceJson): number | null {
-  const score = alliance?.score;
-  return score == null ? null : Number(score);
 }
 
 export async function loadScheduleMatchesForEvent(

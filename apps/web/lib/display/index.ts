@@ -677,11 +677,21 @@ export function sponsorScrollText(sponsors: DisplaySponsorRow[] | null | undefin
 }
 
 /** Playoff rows grouped into bracket rounds, preserving the synced order. */
+const PLAYOFF_ROUND_ORDER: Record<string, number> = { ef: 0, qf: 1, sf: 2, f: 3 };
+
 export function bracketRounds(
   matches: DisplayPlayoffRow[] | null | undefined,
 ): Array<{ compLevel: string; matches: DisplayPlayoffRow[] }> {
+  // Sorted here, not trusted from SQL: comp_level sorts as text ('f' < 'qf' < 'sf'), which put
+  // the Finals ahead of the bracket on the pit TV.
+  const ordered = [...(matches ?? [])].sort(
+    (a, b) =>
+      (PLAYOFF_ROUND_ORDER[a.compLevel] ?? 4) - (PLAYOFF_ROUND_ORDER[b.compLevel] ?? 4) ||
+      a.setNumber - b.setNumber ||
+      a.matchNumber - b.matchNumber,
+  );
   const rounds: Array<{ compLevel: string; matches: DisplayPlayoffRow[] }> = [];
-  for (const match of matches ?? []) {
+  for (const match of ordered) {
     const last = rounds[rounds.length - 1];
     if (last && last.compLevel === match.compLevel) last.matches.push(match);
     else rounds.push({ compLevel: match.compLevel, matches: [match] });
@@ -745,11 +755,11 @@ SELECT jsonb_build_object(
   'progress', (
     SELECT jsonb_build_object(
       'qualsTotal', count(*) FILTER (WHERE m.comp_level = 'qm')::int,
-      'qualsPlayed', count(*) FILTER (WHERE m.comp_level = 'qm' AND m.actual_time IS NOT NULL)::int,
+      'qualsPlayed', count(*) FILTER (WHERE m.comp_level = 'qm' AND (m.actual_time IS NOT NULL OR m.post_result_time IS NOT NULL OR m.winning_alliance IS NOT NULL))::int,
       'playoffTotal', count(*) FILTER (WHERE m.comp_level <> 'qm')::int,
-      'playoffPlayed', count(*) FILTER (WHERE m.comp_level <> 'qm' AND m.actual_time IS NOT NULL)::int
+      'playoffPlayed', count(*) FILTER (WHERE m.comp_level <> 'qm' AND (m.actual_time IS NOT NULL OR m.post_result_time IS NOT NULL OR m.winning_alliance IS NOT NULL))::int
     )
-    FROM matches_ref m WHERE m.event_key = c.active_event_key
+    FROM matches_ref m WHERE m.event_key = c.active_event_key AND NOT m.placeholder
   ),
   'schedule', (
     SELECT COALESCE(jsonb_agg(to_jsonb(s) ORDER BY s."scheduledTime"), '[]'::jsonb)
@@ -800,8 +810,9 @@ SELECT jsonb_build_object(
              m.blue_alliance AS "blueAlliance", m.winning_alliance AS "winningAlliance",
              COALESCE(m.predicted_time, m.event_time) AS "scheduledTime"
       FROM matches_ref m
-      WHERE m.event_key = c.active_event_key AND m.comp_level <> 'qm'
-      ORDER BY m.comp_level, m.set_number, m.match_number
+      WHERE m.event_key = c.active_event_key AND m.comp_level <> 'qm' AND NOT m.placeholder
+      ORDER BY CASE m.comp_level WHEN 'ef' THEN 0 WHEN 'qf' THEN 1 WHEN 'sf' THEN 2 WHEN 'f' THEN 3 ELSE 4 END,
+        m.set_number, m.match_number
       LIMIT 32
     ) p
   ),

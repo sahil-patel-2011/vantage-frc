@@ -1,5 +1,6 @@
 ﻿import { describe, expect, it } from "vitest";
 import {
+  bracketRounds,
   bumperBanner,
   countdownState,
   displayKioskHref,
@@ -25,6 +26,23 @@ import {
 } from "./index";
 
 describe("display helpers", () => {
+  it("orders the bracket by round, not by comp_level as text", () => {
+    const row = (compLevel: string, setNumber: number, matchNumber = 1) => ({
+      matchKey: `2026x_${compLevel}${setNumber}m${matchNumber}`,
+      compLevel,
+      setNumber,
+      matchNumber,
+      scheduledTime: null,
+      redAlliance: { teamKeys: [] },
+      blueAlliance: { teamKeys: [] },
+      winningAlliance: null,
+    });
+    const rounds = bracketRounds([row("f", 1, 2), row("sf", 2), row("f", 1, 1), row("sf", 1), row("qf", 1)]);
+    expect(rounds.map((round) => round.compLevel)).toEqual(["qf", "sf", "f"]);
+    expect(rounds[1]!.matches.map((match) => match.setNumber)).toEqual([1, 2]);
+    expect(rounds[2]!.matches.map((match) => match.matchNumber)).toEqual([1, 2]);
+  });
+
   it("strips frc prefixes and formats alliances", () => {
     expect(stripFrc("frc1678")).toBe("1678");
     expect(formatAlliance(["frc254", "frc1678"])).toBe("254 · 1678");

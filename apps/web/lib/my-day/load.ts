@@ -8,6 +8,7 @@ import {
 } from "./index";
 import type { ScheduleMatch } from "../schedule-board";
 import { matchLabelFromKey } from "../matches/no-next-match";
+import { allianceScore } from "../schedule/tba-cache";
 import { withSavepoint } from "@vantage/db";
 
 export type MyDayLodging = {
@@ -49,11 +50,6 @@ function teamKeys(alliance: AllianceJson): string[] {
   const keys = alliance?.teamKeys;
   if (!Array.isArray(keys)) return [];
   return keys.map((key) => String(key));
-}
-
-function allianceScore(alliance: AllianceJson): number | null {
-  const score = alliance?.score;
-  return score == null ? null : Number(score);
 }
 
 function pickNextTravel(stops: MyDayTravelStop[], now = new Date()): MyDayTravelStop | null {

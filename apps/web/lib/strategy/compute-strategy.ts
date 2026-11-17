@@ -737,7 +737,11 @@ export async function computeStrategyView(
     yearMetrics: yearMetricRows,
   });
 
-  if (seasons.length < Math.min(4, allTeams.length)) {
+  // `seasons` holds one signal per team per year, so a count says nothing about coverage: two
+  // veterans with two seasons each would pass while four robots with no rating are scored as 0.
+  // Every robot in the match needs a rating before a win chance is shown.
+  const ratedTeams = new Set(seasons.map((signal) => signal.teamKey));
+  if (allTeams.some((key) => !ratedTeams.has(key))) {
     const hasAnyReference =
       access.tbaConfigured || access.cacheHasSync || access.statbotics.cacheHasMetrics;
     return setupPayload(access, {

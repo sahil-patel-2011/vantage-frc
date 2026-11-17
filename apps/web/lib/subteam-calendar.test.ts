@@ -303,6 +303,13 @@ describe("week / month grids", () => {
     expect(day[0]!.items.map((item) => item.id)).toEqual(["1"]);
     expect(localDayKey(shiftAnchor(anchor, "day", 1))).toBe(localDayKey(new Date(2026, 2, 12)));
   });
+
+  it("moves month by month from the 29th–31st without skipping or sticking", () => {
+    expect(localDayKey(shiftAnchor(new Date(2026, 0, 31), "month", 1))).toBe(localDayKey(new Date(2026, 1, 28)));
+    expect(localDayKey(shiftAnchor(new Date(2026, 2, 31), "month", -1))).toBe(localDayKey(new Date(2026, 1, 28)));
+    expect(localDayKey(shiftAnchor(new Date(2028, 0, 30), "month", 1))).toBe(localDayKey(new Date(2028, 1, 29)));
+    expect(localDayKey(shiftAnchor(new Date(2026, 11, 15), "month", 1))).toBe(localDayKey(new Date(2027, 0, 15)));
+  });
 });
 
 describe("timed grid + GitHub overlay", () => {

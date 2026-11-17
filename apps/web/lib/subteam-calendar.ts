@@ -448,11 +448,15 @@ export function buildMonthCells(anchor: Date, events: CalendarEvent[], today: Da
 }
 
 export function shiftAnchor(anchor: Date, mode: CalendarViewMode, delta: number): Date {
-  const next = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
   if (mode === "month") {
-    next.setMonth(next.getMonth() + delta);
-    return next;
+    // setMonth on the 29th–31st rolls into the month after (Jan 31 + 1 → Mar 3), so clamp the
+    // day to the target month's length instead.
+    const target = new Date(anchor.getFullYear(), anchor.getMonth() + delta, 1);
+    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    target.setDate(Math.min(anchor.getDate(), lastDay));
+    return target;
   }
+  const next = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
   if (mode === "day") {
     next.setDate(next.getDate() + delta);
     return next;
