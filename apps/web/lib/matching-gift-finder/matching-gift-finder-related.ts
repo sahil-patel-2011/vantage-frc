@@ -4,7 +4,7 @@ import { withOrgHref } from "../nav/product-nav";
 /** Soft-UI related surfaces for Matching Gift Finder (never DEMO matches or pledges). */
 export const MATCHING_GIFT_FINDER_RELATED_LINKS = [
   { id: "sponsors", label: "Sponsor CRM", kind: "business" as const, tab: "sponsors" },
-  { id: "sponsor-renewal-roi", label: "Sponsor Renewal ROI", kind: "business" as const, tab: "sponsor-renewal-roi" },
+  { id: "sponsor-renewal-roi", label: "Sponsor renewals", kind: "business" as const, tab: "sponsor-renewal-roi" },
   { id: "impact", label: "Community Impact", kind: "business" as const, tab: "impact" },
   { id: "fundraisers", label: "Fundraisers", kind: "business" as const, tab: "fundraisers" },
 ] as const;
@@ -84,7 +84,7 @@ export function matchingGiftFinderSetupSteps(orgId?: string | null): MatchingGif
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open sponsors",
       detail: "Sponsor relationships stay separate from household employer matches.",
       href: hubHref("/business", "sponsors", orgId),
     },
@@ -194,7 +194,7 @@ export function matchingGiftFinderNextActions(input: {
         },
         {
           id: "sponsors",
-          label: "Open Sponsor CRM",
+          label: "Open sponsors",
           detail: "Sponsor rows stay blank until your team logs them.",
           href: hubHref("/business", "sponsors", null),
         },
@@ -216,13 +216,13 @@ export function matchingGiftFinderNextActions(input: {
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open sponsors",
         detail: "Corporate sponsors stay separate from household matching gifts.",
         href: hubHref("/business", "sponsors", orgId),
       },
       {
         id: "sponsor-renewal-roi",
-        label: "Open Sponsor Renewal ROI",
+        label: "Open sponsor renewals",
         detail: "Renewal risk stays blank until CRM activity exists.",
         href: hubHref("/business", "sponsor-renewal-roi", orgId),
       },
@@ -240,7 +240,7 @@ export function matchingGiftFinderNextActions(input: {
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open sponsors",
         detail: "CRM stays available while matching reloads.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -264,7 +264,7 @@ export function matchingGiftFinderNextActions(input: {
       },
       {
         id: "sponsors",
-        label: "Open Sponsor CRM",
+        label: "Open sponsors",
         detail: "Corporate sponsors remain separate from household matching gifts.",
         href: hubHref("/business", "sponsors", orgId),
       },
@@ -290,13 +290,13 @@ export function matchingGiftFinderNextActions(input: {
     },
     {
       id: "sponsors",
-      label: "Open Sponsor CRM",
+      label: "Open sponsors",
       detail: "Pair household matches with corporate sponsor renewals.",
       href: hubHref("/business", "sponsors", orgId),
     },
     {
       id: "sponsor-renewal-roi",
-      label: "Open Sponsor Renewal ROI",
+      label: "Open sponsor renewals",
       detail: "Renewal scores stay grounded in CRM activity only.",
       href: hubHref("/business", "sponsor-renewal-roi", orgId),
     },

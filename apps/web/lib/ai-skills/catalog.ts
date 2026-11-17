@@ -68,7 +68,7 @@ export type AiSkill = {
     /** A member whose hub access hides this hub doesn't get the skill. */
     hub: AiSkillHub | null;
   };
-  /** Where the work behind this skill lives: "Open Sponsors". */
+  /** Where the work behind this skill lives: "Open sponsors". */
   home: { label: string; path: string };
   /** Pages that open Ask AI pre-set to this skill (path prefixes; `?tab=` for hub tabs). */
   pages: readonly string[];
@@ -99,7 +99,7 @@ export const AI_SKILLS: readonly AiSkill[] = [
     keywords:
       /\b(sponsor(?:s|ship|ships|ed|ing)?|donors?|donat(?:e|ion|ions)|fundrais\w*|pledges?|who (?:should|do|can) we ask|ask next|outreach email|renewal (?:email|letter|ask)|thank[- ]you (?:note|email|letter))\b/i,
     access: { minRole: "viewer", hub: "business" },
-    home: { label: "Open Sponsors", path: "/business?tab=sponsors" },
+    home: { label: "Open sponsors", path: "/business?tab=sponsors" },
     pages: ["/business?tab=sponsors", "/business?tab=sponsorship", "/business?tab=placements", "/business?tab=fundraisers", "/business?tab=sponsor-suite", "/business?tab=sponsor-wall", "/business?tab=sponsor-tier-calculator", "/business?tab=overview", "/sponsor-suite", "/sponsor-wall", "/sponsor-tier-calculator", "/sponsorship", "/fundraisers", "/team/sponsors"],
     saveDraft: "sponsorship_ask",
     guidance: [

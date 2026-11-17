@@ -102,7 +102,7 @@ export function seasonFinanceNextActions(ctx: SeasonFinanceNextActionContext): S
 
   actions.push({
     id: "sponsors",
-    label: "Open Sponsors",
+    label: "Open sponsors",
     detail: "Cash already logged as sponsor contributions rolls into this desk — do not re-enter those deposits.",
     href: hubHref("/business", "sponsors", orgId),
   });

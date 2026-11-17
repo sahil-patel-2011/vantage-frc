@@ -238,7 +238,7 @@ export const WIDGET_EMPTY_COPY: Record<string, EmptyHint> = {
   },
   sponsor_followups: {
     title: "No sponsor follow-ups",
-    body: "Open Sponsors to log the next step.",
+    body: "Open sponsors to log the next step.",
     ctaHref: "/business?tab=sponsors",
     ctaLabel: "Open sponsors",
   },
