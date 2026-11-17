@@ -104,6 +104,7 @@ export async function readOrgAllowance(client: PoolClient, orgId: string): Promi
       WHERE org_id = $1::uuid
         AND created_at >= $2::timestamptz
         AND created_at < $3::timestamptz
+        AND key_source = 'platform'
         AND ${TEAM_USAGE_SQL}
       GROUP BY feature
       ORDER BY 3 DESC, feature`,

@@ -327,7 +327,9 @@ export default function PartRequestsClient() {
                 title,
                 justification,
                 quantity,
-                estimateUsd: estimate === "" ? 0 : estimate,
+                // The field is the cost of one; the API takes the line total. Blank stays
+                // unpriced rather than becoming a $0 part.
+                estimateUsd: estimate === "" ? undefined : Math.round(totalPreview * 100) / 100,
                 vendor,
                 itemUrl,
                 neededBy: neededBy || undefined,

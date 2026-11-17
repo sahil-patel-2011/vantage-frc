@@ -274,7 +274,7 @@ export async function loadBusinessView(
     full ? client.query<{ month: string; amountUsd: string }>(
       `SELECT TO_CHAR(occurred_at, 'YYYY-MM') AS month, SUM(amount_usd)::text AS "amountUsd"
        FROM finance_transactions
-       WHERE org_id = $1 AND season_year = $2 AND type = 'expense'
+       WHERE org_id = $1 AND season_year = $2 AND type = 'expense' AND counts_in_balance
        GROUP BY TO_CHAR(occurred_at, 'YYYY-MM') ORDER BY month`,
       [orgId, seasonYear],
     ) : none,

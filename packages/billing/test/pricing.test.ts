@@ -337,6 +337,36 @@ describe("Stripe and trial ledgers", () => {
     expect(result).toEqual({ duplicate: true });
   });
 
+  it("links the Stripe customer, and grants a credit pack only once payment has cleared", async () => {
+    const run = async (type: string, paymentStatus: string) => {
+      const calls: Array<{ sql: string; params: unknown[] }> = [];
+      const client = {
+        query: async (sql: string, params: unknown[] = []) => {
+          calls.push({ sql, params });
+          return { rowCount: 1, rows: [] };
+        },
+      } as unknown as PoolClient;
+      await processStripeEvent(client, {
+        id: `evt_${type}_${paymentStatus}`,
+        type,
+        data: {
+          object: {
+            customer: "cus_1",
+            client_reference_id: "org-1",
+            payment_status: paymentStatus,
+            metadata: { kind: "credit_pack", orgId: "org-1", packCode: "pack_25" },
+          },
+        },
+      } as unknown as Stripe.Event);
+      return calls;
+    };
+    const ach = await run("checkout.session.completed", "unpaid");
+    expect(ach.some(({ sql, params }) => sql.includes("SET stripe_customer_id") && params[1] === "cus_1")).toBe(true);
+    expect(ach.some(({ sql }) => sql.includes("INSERT INTO wallet_ledger"))).toBe(false);
+    const cleared = await run("checkout.session.async_payment_succeeded", "paid");
+    expect(cleared.some(({ sql }) => sql.includes("INSERT INTO wallet_ledger"))).toBe(true);
+  });
+
   it("expires trials against an injected deterministic clock", async () => {
     const calls: unknown[][] = [];
     const client = {
