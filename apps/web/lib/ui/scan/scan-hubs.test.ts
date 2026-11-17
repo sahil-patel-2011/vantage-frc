@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { PRODUCT_HUBS } from "../../nav/hubs";
 
 const APP = join(__dirname, "../../../app");
 const SCAN = join(APP, "vantage-scan");
@@ -40,7 +41,22 @@ describe("vantage scan hub overlays", () => {
     expect(dashboard).not.toContain("Choose tools");
     const scouting = readFileSync(join(SCAN, "scouting.css"), "utf8");
     expect(scouting).toContain("THIS MATCH");
-    expect(scouting).toContain(".product-hub--scouting");
+    const team = readFileSync(join(SCAN, "team.css"), "utf8");
+    expect(team).toContain(".product-hub--team");
+  });
+
+  it("only targets hub classes a page actually renders", () => {
+    // ProductHubShell renders product-hub--<id> / scan-hub--<id> for PRODUCT_HUBS; the
+    // dashboard and onboarding pages set scan-hub--dashboard / scan-hub--onboarding.
+    const rendered = new Set([...PRODUCT_HUBS.map((hub) => hub.id), "dashboard", "onboarding"]);
+    const stray: string[] = [];
+    for (const name of readdirSync(SCAN).filter((file) => file.endsWith(".css"))) {
+      const css = readFileSync(join(SCAN, name), "utf8");
+      for (const match of css.matchAll(/\.(?:product-hub|scan-hub)--([a-z0-9-]+)/g)) {
+        if (!rendered.has(match[1])) stray.push(`${name}: ${match[0]}`);
+      }
+    }
+    expect(stray, stray.slice(0, 10).join("\n")).toEqual([]);
   });
 
   it("barrels every overlay from hubs.css without leftover kits", () => {

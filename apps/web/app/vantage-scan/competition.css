@@ -141,8 +141,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .product-hub--competition,
-.scan-hub--competition *, .product-hub--competition,
-.scan-hub--competition *::before, .product-hub--competition,
+.scan-hub--competition *,
+.scan-hub--competition *::before,
 .scan-hub--competition *::after {
     animation: none !important;
     transition: none !important;
@@ -157,4 +157,3 @@
 :root[data-theme='dark'] .product-hub--competition .soft-empty {
   background: color-mix(in srgb, var(--scan-navy, #7aa2d6) 8%, var(--surface));
 }
-

@@ -8,7 +8,4 @@
 .page-options:not([open]) > .page-options-panel { display: none; }
 .page-options-panel > div { max-width: 100%; flex-wrap: wrap; }
 .page-options-panel :is(button, a, select, summary) { min-height: 44px; }
-.page-options-panel .help-tip { display: flex; flex-direction: column; align-items: stretch; }
-.page-options-panel .help-tip-panel { position: static; width: 100%; max-width: 100%; max-height: none; box-shadow: none; }
-.page-options-panel .help-tip-scrim { display: none; }
 @media (max-width: 640px) { .app-page-actions:has(> .page-options) { margin-left: auto; } }

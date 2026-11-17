@@ -1,41 +1,6 @@
-.product-hub-tabs { margin: 0 0 8px; }
-.product-hub .product-hub-tabs.soft-tab-bar {
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  padding: 0;
-  gap: 2px 4px;
-  width: 100%;
-  max-width: 100%;
-  margin: 0 0 18px;
-}
-.product-hub .product-hub-tabs.soft-tab-bar button {
-  min-height: 42px;
-  padding: 8px 12px 10px;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  color: var(--muted);
-  font: 600 15px/1.2 var(--font-source-sans), ui-sans-serif;
-}
-.product-hub .product-hub-tabs.soft-tab-bar button.active,
-.product-hub .product-hub-tabs.soft-tab-bar button[aria-selected="true"] {
-  color: var(--ink);
-  background: transparent;
-  box-shadow: inset 0 -2px 0 var(--accent);
-}
 /* Visible tool switcher for a workbench — replaces a <select> whose options
    could not be discovered without opening it. Chips wrap instead of scrolling
    off-screen so a thumb on a phone can reach every tool. */
-.hub-tool-strip {
-  margin: 0 0 14px;
-}
-.hub-tool-strip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
 /* One chip, whether the tool switches in place (<button>) or lives on its own
    route (<a>). Without the flex box and `text-decoration:none` the link chips
    rendered underlined and sat a few pixels higher than the button chips, so a
@@ -44,28 +9,8 @@
    — the same rule the settings bar, the help filter, the dashboard rail, the
    cross-link strip and the TeamOps strip use. Only the border, the surface and
    the cursor are local. */
-.hub-tool-chip {
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--muted);
-  cursor: pointer;
-}
-.hub-tool-chip:hover {
-  color: var(--ink);
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-}
-.hub-tool-chip.is-active {
-  background: var(--accent-soft);
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  color: var(--accent);
-  font-weight: 700;
-}
 /* Same shape as its siblings — a dashed chip read as a disabled/placeholder
    control rather than "there are more tools". The muted fill carries it. */
-.hub-tool-more {
-  background: var(--surface-2);
-  color: var(--muted);
-}
 /* The overflow is a named block with its own scroll, not twenty more chips
    shoved into the row above the page's content. */
 .hub-tool-overflow {
@@ -78,53 +23,8 @@
   border-radius:var(--radius-sm);
   background: color-mix(in srgb, var(--surface) 60%, transparent);
 }
-.hub-tool-strip--compact .hub-tool-more {
-  color: var(--ink);
-  gap: 8px;
-  min-height: 44px;
-}
-.hub-current-tool {
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-left: 8px;
-  border-left: 1px solid var(--line);
-  color: var(--accent);
-}
-.hub-tool-search { display: block; margin-bottom: 8px; }
-.hub-tool-search input {
-  width: 100%;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font: inherit;
-}
-.hub-tool-search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.hub-tool-empty { margin: 12px 0; color: var(--muted); font-size: var(--text-sm); }
-.hub-tool-strip--compact .hub-tool-list :is(a, button) { min-height: 48px; }
-.hub-tool-overflow-head {
-  margin: 0 0 8px;
-  color: var(--muted);
-  font: 700 11px/1 var(--font-source-sans), ui-sans-serif;
-  letter-spacing: 0;
-}
 /* Touch devices get the 44px minimum target; a mouse does not need it, and the
    compact row keeps more tools on screen on a shop laptop. */
-@media (pointer: coarse) {
-  /* min-height / padding for coarse pointers: system.css, same chip rule. */
-  .hub-tool-strip-row {
-    gap: 8px;
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .hub-tool-chip {
-    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
-  }
-}
 .product-hub-panel > main.module-page,
 .product-hub-panel > main.intel-app,
 .product-hub-panel > main.workspace-page,
@@ -174,7 +74,6 @@
 .product-hub-panel .edc-next-actions,
 .product-hub-panel .myday-next-actions,
 .product-hub-panel .strategy-setup-steps,
-.product-hub-panel .att-next-actions,
 .product-hub-panel .todos-next-actions,
 .product-hub-panel .todos-metrics,
 .product-hub-panel .todos-filter-note,
@@ -395,21 +294,6 @@
   .product-hub .app-page-header p {
     display: none;
   }
-  .product-hub-tabs.soft-tab-bar {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    width: 100%;
-    max-width: 100%;
-    overscroll-behavior-x: contain;
-  }
-  .product-hub-tabs.soft-tab-bar::-webkit-scrollbar { display: none; }
-  .product-hub-tabs.soft-tab-bar button {
-    flex: 0 0 auto;
-    min-height: 44px;
-    white-space: nowrap;
-  }
   .product-hub-panel .practice-hero {
     grid-template-columns: 1fr;
   }
@@ -432,51 +316,6 @@
 /* "More tools" is a list you can read, not a second wall of chips: each row
    is the tool's name and what it is for, so the choice is made from the
    description rather than from opening five pages to find out. */
-.hub-tool-list {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.hub-tool-list a,
-.hub-tool-list button {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 3px;
-  align-items: start;
-  width: 100%;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: var(--radius-xs);
-  background: none;
-  color: var(--ink);
-  font: inherit;
-  font-size: 13px;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-.hub-tool-list a:hover,
-.hub-tool-list button:hover {
-  background: var(--accent-soft);
-}
-.hub-tool-list .is-active {
-  color: var(--accent);
-  font-weight: 700;
-}
-.hub-tool-list small {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.35;
-}
-@media (max-width: 640px) {
-  .hub-tool-list a,
-  .hub-tool-list button {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-}
 
 /* ===========================================================================
    The hub bar — one row where there used to be four.
@@ -529,49 +368,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.hub-bar-end {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  /* Never wraps. A "?" and a page action on a line of their own is a fourth
-     bar growing back, so the tool strip absorbs the squeeze instead — it is
-     the one part of this row that can scroll. `margin-left` still right-aligns
-     these when a hub has no tools and there is free space to take up. */
-  flex: 0 0 auto;
-  margin-left: auto;
-}
 
 /* The bar owns the rule underneath and the spacing between its parts, so the
    pieces that used to be stacked blocks give up their own margins. */
-.product-hub .hub-bar .product-hub-tabs.soft-tab-bar {
-  width: auto;
-  max-width: 100%;
-  flex: 0 1 auto;
-  min-width: 0;
-  margin: 0;
-  border-bottom: 0;
-}
-.hub-bar .hub-tool-strip {
-  /* The elastic item: it takes whatever the title, the tabs and the actions
-     leave, and scrolls the chips inside that rather than pushing a neighbour
-     onto a second line. */
-  flex: 1 1 0;
-  min-width: 0;
-  margin: 0;
-  /* A rule, not a gap: it is what says the chips after it live inside the tab
-     before it, rather than being five more sections. */
-  padding-left: 14px;
-  border-left: 1px solid var(--line);
-}
-.hub-bar .hub-tool-strip-row {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-}
-.hub-bar .hub-tool-strip-row::-webkit-scrollbar {
-  display: none;
-}
 /* Floating over the page, so it needs its own surface — the old translucent
    fill was readable only because content never sat behind it. */
 .hub-bar .hub-tool-overflow {
@@ -609,24 +408,12 @@
 
      `order` only matters for the tools: in source order they come before the
      actions, which would put the "?" under them on a line of its own. */
-  .hub-bar-end {
-    order: 1;
-  }
   /* `flex-basis: 0`, not `auto`. A flex line is packed at each item's basis
      before anything shrinks, so at `auto` the tab row's ~320px of labels
      measured wider than the space left beside the title and wrapped to a line
      of its own — taking the "?" with it and costing the third line this rule
      exists to remove. At 0 it is placed first and then grows into whatever is
      left, scrolling its labels inside that. */
-  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar {
-    flex: 1 1 0;
-  }
-  .hub-bar .hub-tool-strip {
-    order: 2;
-    flex-basis: 100%;
-    padding: 0 0 8px;
-    border-left: 0;
-  }
   /* The hub's name beside its sections left the sections ~210px, so "Strategy" read "Stra"
      and "Pit" sat off-screen with nothing saying the row scrolls. The name repeats the tab
      bar below and the page itself, so on a phone it stays for screen readers only and the
@@ -641,62 +428,15 @@
   }
   /* Five sections (Team, AI) fit a 375px line with slightly tighter tabs; the underline and
      the 44px height are what make them tabs, not the side padding. */
-  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(a, button) {
-    padding-left: 8px;
-    padding-right: 8px;
-    font-size: 14.5px;
-  }
   /* The tool chips still scroll; the last one fades out so it reads as "more this way". */
-  .hub-bar .hub-tool-strip-row {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
-    padding-right: 24px;
-  }
-  .hub-bar .hub-tool-strip--compact .hub-tool-strip-row {
-    mask-image: none;
-    -webkit-mask-image: none;
-    padding-right: 0;
-  }
 }
 
 /* "More tools" grouped by job (Strategy: Before a match / Alliance selection / Research). */
-.hub-tool-group + .hub-tool-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-.hub-tool-group-head {
-  margin: 0 0 4px;
-  padding: 0 10px;
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 700;
-}
 
 /* Business keeps its own header, but its section tabs get the same phone fit as the hubs.
    Its "?" still pushes the last tab to the edge, so that edge fades to say "scrolls". */
-@media (max-width: 720px) {
-  .product-hub--business .product-hub-tabs.soft-tab-bar > :is(a, button) {
-    padding-left: 8px;
-    padding-right: 8px;
-    font-size: 14.5px;
-  }
-  .product-hub--business .product-hub-tabs.soft-tab-bar {
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-  }
-}
 
 /* Secondary destinations have one disclosure, separate from primary tabs. */
-.hub-bar .hub-tool-strip[data-compact] {
-  flex: 0 1 auto;
-  margin-left: auto;
-  border-left: 0;
-  padding-left: 0;
-}
-.hub-tool-strip[data-compact] .hub-tool-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 100%;
-}
-.hub-tool-strip[data-compact] .hub-tool-more > span { margin-left: auto; }
 /* Desktop workspace hierarchy: title and utilities, then the primary sections. */
 @media (min-width: 721px) {
   .product-hub .hub-bar {
@@ -709,71 +449,13 @@
   }
   .product-hub .hub-bar-id { grid-row: 1; grid-column: 1; }
   .product-hub .hub-bar-id h1 { font: 650 28px/1.2 var(--font-sans); letter-spacing: -.04em; }
-  .product-hub .hub-bar > .hub-tool-strip { grid-row: 1; grid-column: 2; margin: 0; padding: 0; border: 0; }
-  .product-hub .hub-bar > .hub-bar-end { grid-row: 1; grid-column: 3; }
-  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar {
-    grid-row: 2; grid-column: 1 / -1; justify-self: start;
-    display: flex; flex-wrap: wrap; gap: 4px; padding: 4px;
-    border: 1px solid var(--line-soft); border-radius: 14px;
-    background: color-mix(in srgb, var(--ink) 3%, var(--bg));
-  }
-  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(a, button) {
-    border-radius: 10px; padding: 10px 16px; min-height: 44px; font-size: 14px;
-    box-shadow: none; border: 0; background: transparent;
-  }
-  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(.active, [aria-selected="true"]) {
-    color: var(--accent); background: var(--surface); box-shadow: 0 1px 4px color-mix(in srgb, var(--ink) 9%, transparent);
-  }
-}
-
-@media (min-width: 721px) {
-  .product-hub .hub-bar .product-hub-tabs.soft-tab-bar > :is(.active, [aria-selected="true"])::after { display: none; }
 }
 
 /* Phones: the compact "More tools" selector goes on its own line under the tabs. The rule above
    (margin-left: auto, no basis) put it on the tab row, where it hid "Strategy" and "Pit". */
-@media (max-width: 720px) {
-  .hub-bar .hub-tool-strip[data-compact] {
-    flex: 1 1 100%;
-    margin-left: 0;
-    padding: 0 0 8px;
-  }
-  .hub-bar .hub-tool-strip[data-compact] .hub-tool-more {
-    width: 100%;
-    justify-content: space-between;
-  }
-}
 
 /* "More tools" is a quiet text control with a chevron on the same line as the words (it was a boxed button
    beside the title, next to a second boxed help button). It rotates open. */
-.hub-tool-more::after {
-  content: "";
-  flex: none;
-  box-sizing: border-box;
-  width: 7px;
-  height: 7px;
-  margin: -3px 0 0 8px;
-  border-right: 1.75px solid currentColor;
-  border-bottom: 1.75px solid currentColor;
-  transform: rotate(45deg);
-  opacity: .6;
-  transition: transform .16s ease;
-}
-.hub-tool-more[aria-expanded="true"]::after { margin-top: 3px; transform: rotate(-135deg); }
-.hub-tool-more > .hub-current-tool { order: 2; }
-@media (min-width: 721px) {
-  .product-hub .hub-bar > .hub-tool-strip .hub-tool-more {
-    background: transparent;
-    border-color: transparent;
-    color: var(--muted);
-  }
-  .product-hub .hub-bar > .hub-tool-strip .hub-tool-more:hover,
-  .product-hub .hub-bar > .hub-tool-strip .hub-tool-more[aria-expanded="true"] {
-    background: var(--surface-2);
-    color: var(--ink);
-  }
-}
-@media (prefers-reduced-motion: reduce) { .hub-tool-more::after { transition: none; } }
 .hub-panel-skeleton { display: grid; gap: 20px; padding: 20px 0; }
 .workspace-hub-header {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;

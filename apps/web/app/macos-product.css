@@ -38,11 +38,6 @@ body.has-app-shell ::selection { background: color-mix(in srgb, var(--accent) 22
 .app-sidebar { display: none; }
 body.has-app-shell .soft-topbar { height: 64px; padding: 0 26px; background: var(--product-glass); backdrop-filter: var(--product-filter); border-bottom: 1px solid var(--line-soft); box-shadow: var(--product-reflection); }
 body.has-app-shell .soft-topbar-title { font-size: 13px; font-weight: 550; color: var(--ink); }
-.soft-team-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; max-width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
-.soft-team-switch > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.soft-team-switch > svg { width: 11px; height: 11px; transform: rotate(90deg); color: var(--muted); flex: none; }
-.soft-team-switch:hover { color: var(--accent); }
-.soft-team-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 .app-topbar-search { display: flex; align-items: center; gap: 9px; min-height: 36px; width: 244px; padding: 0 12px; margin-right: 14px; border: 1px solid var(--line-soft); border-radius: 10px; background: color-mix(in srgb, var(--surface-2) 64%, transparent); color: var(--muted); font: 400 12px var(--font-sans); cursor: pointer; }
 .app-topbar-search > svg { width: 15px; height: 15px; }
 .app-topbar-search > kbd { margin-left: auto; font: 11px var(--font-sans); color: var(--muted); }
@@ -57,44 +52,18 @@ body.has-app-shell .soft-island a { border-radius: 999px; }
 body.has-app-shell .soft-island a.active, body.has-app-shell .soft-island a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
 body.has-app-shell .soft-drawer { margin: 10px; height: calc(100dvh - 20px); width: min(380px, calc(100vw - 20px)); padding: calc(16px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px)); border: 1px solid var(--line-soft); border-radius: 24px; background: var(--product-glass); backdrop-filter: var(--product-filter); box-sizing: border-box; overflow: hidden; }
 body.has-app-shell .soft-drawer.open { box-shadow: 0 18px 80px #08163126; }
-body.has-app-shell .soft-drawer-head { align-items: center; margin-bottom: 10px; }
-body.has-app-shell .soft-drawer-head .soft-icon-btn > svg { width: 24px; height: 24px; }
 body.has-app-shell .soft-drawer .soft-panel-search > svg { width: 24px; height: 24px; flex: none; }
 body.has-app-shell .soft-nav-results [role="option"] > svg { width: 26px; height: 26px; flex: none; }
 body.has-app-shell .soft-nav-results [role="option"] { min-height: 52px; }
 body.has-app-shell .soft-drawer { will-change: auto; }
-body.has-app-shell .soft-scrim { background: #10152126; backdrop-filter: none; }
 body.has-app-shell .soft-drawer > :not(.soft-drawer-flat):not(.soft-nav-results) { flex-shrink: 0; }
-body.has-app-shell .soft-drawer .soft-drawer-flat { display: block; overflow: auto; flex: 1; min-height: 0; overscroll-behavior: contain; scrollbar-width: thin; padding: 4px 2px; }
-body.has-app-shell .soft-drawer .soft-profile-compact .soft-org-chip { padding: 8px 12px; background: color-mix(in srgb, var(--surface-2) 55%, transparent); border: 1px solid var(--line-soft); }
-body.has-app-shell .soft-drawer a.soft-org-chip { display: flex; align-items: center; gap: 12px; color: inherit; text-decoration: none; }
-body.has-app-shell .soft-drawer a.soft-org-chip > div { flex: 1; min-width: 0; }
-body.has-app-shell .soft-drawer a.soft-org-chip strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-body.has-app-shell .soft-drawer a.soft-org-chip > svg { width: 24px; height: 24px; flex: none; }
-body.has-app-shell .soft-drawer a.soft-org-chip > svg:last-child { width: 18px; height: 18px; color: var(--muted); }
-body.has-app-shell .soft-drawer a.soft-org-chip:hover { border-color: var(--accent); }
-body.has-app-shell .soft-drawer a.soft-org-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-body.has-app-shell .soft-drawer .soft-drawer-settings { margin: 10px 0 0; padding: 8px 0 0; border-top: 1px solid var(--line-soft); }
-body.has-app-shell .soft-drawer .soft-drawer-settings :is(a, .soft-drawer-shortcut-edit) { display: flex; align-items: center; gap: 14px; min-height: 44px; padding: 8px 12px; box-sizing: border-box; border-radius: 12px; background: transparent; border: 0; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
-body.has-app-shell .soft-drawer .soft-drawer-settings :is(a, .soft-drawer-shortcut-edit):hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
-body.has-app-shell .soft-drawer .soft-drawer-settings svg { width: 24px; height: 24px; flex: none; color: var(--muted); }
-body.has-app-shell .soft-drawer .soft-drawer-settings strong { font-size: 14px; font-weight: 500; }
-body.has-app-shell .soft-drawer .soft-drawer-settings :is(a, .soft-drawer-shortcut-edit):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-body.has-app-shell .soft-drawer .soft-drawer-foot { margin: 8px 0 0; padding: 8px 12px 0; border-top: 1px solid var(--line-soft); }
-body.has-app-shell .soft-drawer .soft-drawer-foot button { display: inline-flex; align-items: center; gap: 14px; min-height: 44px; width: 100%; font-size: 14px; font-weight: 500; }
-body.has-app-shell .soft-drawer .soft-drawer-foot svg { width: 24px; height: 24px; }
 body.has-app-shell .soft-panel-search { border-radius: 12px; background: var(--surface-2); box-shadow: none; }
 body.has-app-shell .soft-panel-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
-body.has-app-shell .soft-panel-search-button { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border: 1px solid var(--line-soft); color: var(--muted); font: 400 16px var(--font-sans); text-align: left; cursor: pointer; }
-body.has-app-shell .soft-panel-search-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-body.has-app-shell .main-menu-app { border-radius: 12px; }
 body.has-app-shell .soft-drawer :is(.main-menu-app, .main-menu-section > nav > a)[aria-current="page"] { color: var(--accent); background: var(--accent-soft); box-shadow: none; }
 @supports not (backdrop-filter: blur(1px)) { body.has-app-shell .soft-drawer { background: var(--surface); } }
 @media (prefers-reduced-transparency: reduce) { body.has-app-shell .soft-drawer { background: var(--surface); backdrop-filter: none; } }
-@media (prefers-reduced-motion: reduce) { body.has-app-shell .soft-navigation-scrim { transition: none; } }
 @media (max-height: 540px) {
   body.has-app-shell .soft-drawer:not([data-searching="true"]) { overflow: auto; }
-  body.has-app-shell .soft-drawer .soft-drawer-flat { flex: none; overflow: visible; }
 }
 body.has-app-shell .soft-account-pop { padding: 8px; border-radius: 18px; background: var(--product-glass); backdrop-filter: var(--product-filter); border: 1px solid var(--line-soft); box-shadow: var(--product-reflection), 0 16px 50px #101b3026; }
 
@@ -129,9 +98,6 @@ body.has-app-shell .acct-hero { display: grid; grid-template-columns: 64px 1fr; 
 body.has-app-shell .acct-avatar { grid-row: 1 / 4; width: 64px; height: 64px; font-size: 26px; margin: 0; border-radius: 20px; }
 body.has-app-shell .acct-name { font-size: 23px; margin: 2px 0 3px; font-weight: 550; letter-spacing: -.03em; }
 body.has-app-shell .acct-email { margin: 0; font-size: 13px; }
-body.has-app-shell .acct-facts { grid-column: 2; margin: 12px 0 0; justify-content: flex-start; gap: 22px; }
-body.has-app-shell .acct-facts dt { font-weight: 500; }
-body.has-app-shell .acct-facts dd { font-weight: 550; font-size: 14px; }
 body.has-app-shell .account-form label { text-transform: none; letter-spacing: 0; font-size: 12px; font-weight: 500; color: var(--ink); }
 body.has-app-shell .account-directory .kit-eyebrow { margin: 8px 4px -6px; }
 body.has-app-shell .account-directory .kit-row { padding: 13px 16px; }
@@ -148,9 +114,6 @@ body.has-app-shell :is(.soft-tab-bar, .form-view-segments, .workspace-hub-tabs) 
 body.has-app-shell :is(.soft-tab-bar, .form-view-segments, .workspace-hub-tabs) > :is(a,button) { min-height: 44px; padding: 9px 16px; border: 0; border-radius: 10px; color: var(--muted); background: transparent; box-shadow: none; font: 500 13px/1.3 var(--font-sans); white-space: nowrap; flex-shrink: 0; }
 body.has-app-shell :is(.soft-tab-bar, .form-view-segments, .workspace-hub-tabs) > :is(.active,[aria-selected="true"],[aria-pressed="true"]) { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px #0000000a, 0 0 0 1px var(--line-soft); }
 body.has-app-shell :is(.soft-tab-bar, .workspace-hub-tabs) > :is(a,button)::after { display: none; }
-body.has-app-shell .workspace-hub-tabs { margin: -4px 0 24px; width: fit-content; flex-wrap: nowrap; }
-body.has-app-shell .hub-tool-chip { border-radius: 10px; font-weight: 500; background: var(--surface); border-color: var(--line-soft); }
-body.has-app-shell .hub-tool-chip.is-active { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
 
 /* Forms read like native controls, with explicit labels and useful focus. */
 body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { font-weight: 550; font-size: 13px; min-height: var(--control-h); min-width: 44px; border-radius: var(--radius-control); padding: 9px 16px; letter-spacing: -.01em; box-shadow: var(--product-reflection), 0 1px 3px #00000005; transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
@@ -167,7 +130,7 @@ body.has-app-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([
 @media (max-width: 720px) {
   body.has-app-shell :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),select,textarea) { font-size: 16px; }
 }
-body.has-app-shell .soft-form-row > span, body.has-app-shell .soft-field label { color: var(--ink); font-weight: 500; font-size: 12px; }
+body.has-app-shell .soft-form-row > span { color: var(--ink); font-weight: 500; font-size: 12px; }
 body.has-app-shell input::placeholder,body.has-app-shell textarea::placeholder { color: var(--muted); }
 body.has-app-shell :where(input[type="checkbox"],input[type="radio"],input[type="range"]) { accent-color: var(--accent); }
 body.has-app-shell :is(.page-options-panel,.action-menu-panel,.hub-tool-overflow) { background: var(--product-glass); backdrop-filter: var(--product-filter); border: 1px solid var(--line-soft); border-radius: 18px; box-shadow: 0 14px 50px #101b3020; }
@@ -208,10 +171,6 @@ body.has-app-shell :is(.app-card,.soft-panel,.module-page) tbody tr:hover td { b
   .app-sidebar nav a > span { min-width: 0; overflow-wrap: anywhere; }
   .app-sidebar nav a:hover { color: var(--ink); background: var(--line-soft); }
   .app-sidebar .app-sidebar-main a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 550; }
-  .app-sidebar .app-sidebar-section { margin-top: 28px; }
-  .app-sidebar .app-sidebar-section a { min-height: 48px; font-size: 14px; }
-  .app-sidebar .app-sidebar-section a[aria-current="page"] { color: var(--ink); background: color-mix(in srgb,var(--surface) 70%,transparent); border-color: var(--line-soft); font-weight: 550; box-shadow: 0 1px 2px #00000003; }
-  .app-sidebar .app-sidebar-footer { margin-top: auto; padding-top: 28px; }
   .app-sidebar a:focus-visible,.app-sidebar button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .app-sidebar[data-collapsed="true"] { padding-inline: 12px; }
   .app-sidebar[data-collapsed="true"] .app-sidebar-brand { flex-direction: column; gap: 14px; margin-bottom: 18px; }
@@ -223,7 +182,6 @@ body.has-app-shell :is(.app-card,.soft-panel,.module-page) tbody tr:hover td { b
      sidebar. It used to start at the screen's left edge, half under the sidebar, and the
      64px padding above wins over the bar's own, so it covered the top of every page. */
   body.has-app-shell .soft-focus-rail { top: 64px; left: var(--sidebar-w); }
-  body.has-app-shell.has-event-focus:not(.shell-onboarding):not(.shell-bare) { padding-top: 120px !important; }
 }
 @media (prefers-reduced-motion: reduce) { .app-sidebar nav a { transition: none; } }
 html[data-motion="reduced"] .app-sidebar nav a { transition: none; }
@@ -242,6 +200,5 @@ html[data-motion="reduced"] .app-sidebar nav a { transition: none; }
   body.has-app-shell :is(.app-page-header,.workspace-hub-header) { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
   body.has-app-shell .app-page-actions { justify-content: flex-start; margin-left: 0; }
   body.has-app-shell :is(.app-button,.soft-btn,.primary-action) { min-height: var(--control-h); }
-  body.has-app-shell .workspace-hub-tabs { width: 100%; margin-bottom: 20px; }
   body.has-app-shell :is(.soft-tab-bar,.form-view-segments,.workspace-hub-tabs) > :is(a,button) { min-height: 44px; padding-inline: 13px; }
 }
