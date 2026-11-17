@@ -27,7 +27,7 @@ export function MoneyAddMenu({
   const all = [
     { id: "bought", label: "We bought something", detail: "Log the receipt", href: "/business?tab=finance#log-receipt", manager: true },
     { id: "need", label: "We need something bought", detail: "Add it to the buy sheet for a mentor to approve", href: "/business?tab=orders#log-purchase", manager: false },
-    { id: "in", label: "Money came in", detail: "A sponsor, grant, fundraiser or dues", href: "/business?tab=finance#add-funding", manager: true },
+    { id: "in", label: "Money came in", detail: "School funds, dues or other income — sponsors and grants have their own tabs", href: "/business?tab=finance#add-funding", manager: true },
     { id: "fee", label: "An event or registration fee", detail: "Record it in the season budget", href: "/budget#fees", manager: true },
   ];
   const choices = all.filter((choice) => canManageFinances || !choice.manager);

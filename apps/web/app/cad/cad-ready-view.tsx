@@ -385,7 +385,7 @@ export function CadReadyView({
             <div className="cad-agent-composer-bar">
               <span>{pendingProposal ? "Answer the mode question above first" : composerHint}</span>
               <Button
-                variant="primary"
+                variant={mode === "plan" && plan ? "secondary" : "primary"}
                 type="button"
                 disabled={!prompt.trim() || busy !== null || pendingProposal !== null}
                 onClick={() => void send()}

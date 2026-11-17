@@ -601,18 +601,19 @@ function AllEvents({
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
+                tone="danger"
                 disabled={busy}
                 onClick={async () => {
-                  if (await askConfirm({ title: `Delete “${item.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
+                  if (await askConfirm({ title: `Delete “${item.title}”?`, body: "The event comes off the outreach calendar.", confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-event", eventId: item.id });
                   }
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </li>
         ))}

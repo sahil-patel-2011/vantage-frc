@@ -763,18 +763,19 @@ function DeckPanel({
                 }}
               >
                 <strong>{deck.title}</strong>
-                <button
-                  type="button"
-                  className="text-button"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  tone="danger"
                   disabled={busy}
                   onClick={async () => {
-                    if (await askConfirm({ title: `Delete “${deck.title}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
+                    if (await askConfirm({ title: `Delete “${deck.title}”?`, body: "The generated deck and all its sections are deleted.", confirmLabel: "Delete", tone: "destructive" })) {
                       mutate({ action: "delete-deck", deckId: deck.id });
                     }
                   }}
                 >
                   Delete
-                </button>
+                </Button>
               </div>
               <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                 {deck.sections.map((section) => (

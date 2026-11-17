@@ -493,14 +493,14 @@ export default function PartRequestsClient() {
                           <Button variant="ghost" type="button" onClick={() => { setDecide(null); setReviewNotes(""); }}>
                             Cancel
                           </Button>{" "}
-                          <Button variant="primary" type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
+                          <Button variant={decide?.kind === "approve" ? "primary" : "danger"} type="button" disabled={busy} onClick={() => { void act( { action: decide?.kind === "approve" ? "approve" : "reject", requestId: request.id, reviewNotes, }, decide?.kind === "approve" ? "Approved. The cost now counts against the budget." : "Rejected. Nothing was charged.", ).then(() => { setDecide(null); setReviewNotes(""); }); }}>
                             Yes, {decide?.kind === "approve" ? "approve" : "reject"}
                           </Button>
                         </p>
                       </div>
                     ) : (
                       <div className="pr-actions">
-                        <Button variant="primary" type="button" disabled={busy} onClick={() => setDecide({ id: request.id, kind: "approve" })}>
+                        <Button variant="secondary" type="button" disabled={busy} onClick={() => setDecide({ id: request.id, kind: "approve" })}>
                           Approve
                         </Button>
                         <Button variant="ghost" type="button" disabled={busy} onClick={() => setDecide({ id: request.id, kind: "reject" })}>

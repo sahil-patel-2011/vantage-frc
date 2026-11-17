@@ -99,11 +99,7 @@
   display: inline-flex;
   align-items: center;
 }
-.rb-claim-actions button.primary {
-  border-color: transparent;
-  background: var(--accent);
-  color: #fff;
-}
+.rb-claim-actions button.danger { color: var(--critical); }
 .rb-claim-actions button:disabled { opacity: 0.55; cursor: default; }
 
 .rb-chip {
@@ -113,8 +109,8 @@
   padding: 4px 10px;
   border-radius:var(--radius-pill);
   font: 700 11px/1 inherit;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--muted);
   background: color-mix(in srgb, var(--muted) 14%, transparent);
   width: fit-content;

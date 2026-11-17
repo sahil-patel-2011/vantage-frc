@@ -88,7 +88,7 @@ export function GameBriefSection({ orgId, seasonYear }: { orgId: string; seasonY
       ) : null}
 
       <div className="kick-brief-actions">
-        <Button as="a" variant="primary" href={askHref}>
+        <Button as="a" variant="secondary" href={askHref}>
           Ask about this game
         </Button>
       </div>

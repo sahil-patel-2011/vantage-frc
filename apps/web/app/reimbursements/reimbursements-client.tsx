@@ -67,9 +67,6 @@ const ACTION_DONE: Record<ReimbursementAction, string> = {
   reopen: "Reopened as a draft. The denial note stays on it so you can see what to fix.",
 };
 
-/** Actions that read as the obvious next step get the filled treatment. */
-const PRIMARY_ACTIONS = new Set<ReimbursementAction>(["submit", "approve", "mark_paid"]);
-
 const money = formatUsd;
 
 function shortDate(value: string | null): string | null {
@@ -231,6 +228,11 @@ export default function ReimbursementsClient() {
 
   const fileClaim = useCallback(async () => {
     if (!orgId || busy) return;
+    if (amount.trim() === "" || description.trim() === "") {
+      setNotice(null);
+      setError("Enter the amount and what it was for.");
+      return;
+    }
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -360,8 +362,6 @@ export default function ReimbursementsClient() {
   );
 
   const ready = view && view.status === "ready" ? view : null;
-  const canFile = Boolean(orgId) && amount.trim() !== "" && description.trim() !== "" && !busy;
-
   const budgetLines = useMemo<BudgetLine[]>(
     () => (budget && budget.status === "ready" ? budget.lines : []),
     [budget],
@@ -429,15 +429,9 @@ export default function ReimbursementsClient() {
               onChange={(event) => pickReceipt(event.target.files?.[0] ?? null)}
             />
           </label>
-          <button
-            type="button"
-            className="rb-receipt-pick"
-            style={{ borderStyle: "solid" }}
-            disabled={!canFile}
-            onClick={() => void fileClaim()}
-          >
+          <Button variant="primary" disabled={busy} onClick={() => void fileClaim()}>
             {busy ? "Saving…" : "Save draft"}
-          </button>
+          </Button>
         </div>
         <p className="rb-meta">
           {`Attach the receipt as a PDF, up to ${formatBytes(MAX_RECEIPT_BYTES)}, to submit. Without one the claim stays a draft.`}
@@ -744,7 +738,7 @@ function ClaimRow({
           <button
             key={action}
             type="button"
-            className={PRIMARY_ACTIONS.has(action) ? "primary" : undefined}
+            className={action === "deny" ? "danger" : undefined}
             disabled={busy}
             onClick={() => void onAct(request.id, action)}
           >

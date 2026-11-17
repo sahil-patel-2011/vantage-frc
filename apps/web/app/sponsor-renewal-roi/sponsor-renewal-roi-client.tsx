@@ -491,7 +491,7 @@ function SponsorRiskCard({
       )}
 
       <div>
-        <Button variant="primary" type="button" disabled={busy !== null} onClick={() => mutate({ action: "generate-report", sponsorId: sponsor.sponsorId }, busyKey)}>
+        <Button variant="secondary" type="button" disabled={busy !== null} onClick={() => mutate({ action: "generate-report", sponsorId: sponsor.sponsorId }, busyKey)}>
           {busy === busyKey ? "Generating…" : sponsor.latestReport ? "Regenerate ROI report" : "Generate ROI report"}
         </Button>
       </div>
@@ -507,18 +507,19 @@ function SponsorRiskCard({
               </div>
             ))}
           </div>
-          <button
-            type="button"
-            className="text-button"
+          <Button
+            variant="ghost"
+            size="sm"
+            tone="danger"
             disabled={busy !== null}
             onClick={async () => {
-              if (await askConfirm({ title: "Delete this report?", body: null, confirmLabel: "Delete report", tone: "destructive" })) {
+              if (await askConfirm({ title: "Delete this report?", body: "The generated ROI report is removed. The sponsor and its history stay.", confirmLabel: "Delete report", tone: "destructive" })) {
                 mutate({ action: "delete-report", reportId: sponsor.latestReport!.id }, busyKey);
               }
             }}
           >
             Delete report
-          </button>
+          </Button>
         </Panel>
       ) : null}
     </section>

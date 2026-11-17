@@ -10,7 +10,7 @@ export const INVENTORY_ADD_HREF = "#inventory-add-item";
 export const INVENTORY_SECTION_ITEMS: { id: InventoryTab; label: string }[] = [
   { id: "stock", label: "Stock" },
   { id: "locations", label: "Locations" },
-  { id: "bom", label: "BOM" },
+  { id: "bom", label: "Parts lists" },
 ];
 
 export function fmtQty(value: number): string {

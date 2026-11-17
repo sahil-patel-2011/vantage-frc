@@ -98,7 +98,7 @@ test.describe("one control per destination", () => {
 
   test("inventory offers each related destination once", async ({ page }) => {
     await gotoAsTeam(page, "/inventory");
-    await expect(page.getByRole("heading", { level: 1, name: "Inventory & BOM" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Inventory", exact: true })).toBeVisible();
     const main = page.locator("main");
     for (const label of ["Vendors", "Orders", "Spare Forecast"]) {
       await expect(main.getByRole("link", { name: label, exact: true })).toHaveCount(1);

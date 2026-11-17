@@ -644,18 +644,19 @@ function WallPreview({
               >
                 {item.published ? "Hide" : "Show"}
               </button>
-              <button
-                type="button"
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
+                tone="danger"
                 disabled={busy}
                 onClick={async () => {
-                  if (await askConfirm({ title: `Remove “${item.sponsorName}” from the wall?`, body: null, confirmLabel: "Remove", tone: "destructive" })) {
+                  if (await askConfirm({ title: `Remove “${item.sponsorName}” from the wall?`, body: "Their wall entry and message are deleted. Use Hide to keep it off the wall without losing it.", confirmLabel: "Remove", tone: "destructive" })) {
                     mutate({ action: "delete-entry", entryId: item.id });
                   }
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </div>
             ) : null}
           </li>

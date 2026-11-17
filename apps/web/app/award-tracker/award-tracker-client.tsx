@@ -552,18 +552,19 @@ function SubmissionsList({
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
+                tone="danger"
                 disabled={busy}
                 onClick={async () => {
-                  if (await askConfirm({ title: `Delete “${submission.awardName}”?`, body: null, confirmLabel: "Delete", tone: "destructive" })) {
+                  if (await askConfirm({ title: `Delete “${submission.awardName}”?`, body: "This award submission and its status are deleted.", confirmLabel: "Delete", tone: "destructive" })) {
                     mutate({ action: "delete-submission", submissionId: submission.id });
                   }
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </li>
         ))}

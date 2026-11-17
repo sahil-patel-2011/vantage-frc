@@ -3,7 +3,7 @@
 import { staleCopyNotice, staleCopyProps } from "../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OfflineBanner } from "../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
@@ -644,17 +644,28 @@ export default function SponsorshipClient({ embedded = false }: { embedded?: boo
                     <Button variant="secondary" type="button" disabled={busy || !selected || !completeness?.complete} onClick={() => selected && void mutate( { action: "update", id: selected.id, title: draft.title, whoWeAre: draft.whoWeAre, whatWeDo: draft.whatWeDo, askCashUsd: draft.askCashUsd === "" ? null : Number(draft.askCashUsd), askParts: draft.askParts, askMentorship: draft.askMentorship, sponsorGets: draft.sponsorGets, inviteEnabled: draft.inviteEnabled, inviteDetails: draft.inviteDetails, status: "ready", }, "Marked ready to share.", ) }>
                       Mark ready
                     </Button>
-                    <Button variant="secondary" type="button" disabled={busy || !selected} onClick={() => selected && void mutate({ action: "pdf", id: selected.id })}>
-                      Export PDF
-                    </Button>
-                    <Button variant="secondary" type="button" disabled={!previewPage} onClick={() => void copyText()}>
-                      Copy text
-                    </Button>
-                    {selected ? (
-                      <Button variant="secondary" type="button" disabled={busy} onClick={async () => { if (await askConfirm({ title: "Delete this one-pager?", body: "The sponsorship one-pager is deleted.", confirmLabel: "Delete one-pager", tone: "destructive" })) void mutate({ action: "delete", id: selected.id }, "Deleted."); }}>
-                        Delete
-                      </Button>
-                    ) : null}
+                    <ActionMenu
+                      label="One-pager"
+                      overflowOnly
+                      actions={[
+                        { id: "pdf", label: "Export PDF", disabled: busy || !selected, onClick: () => selected && void mutate({ action: "pdf", id: selected.id }) },
+                        { id: "copy", label: "Copy text", disabled: !previewPage, onClick: () => void copyText() },
+                        ...(selected
+                          ? [
+                              {
+                                id: "delete",
+                                label: "Delete",
+                                intent: "destructive" as const,
+                                confirmsItself: true,
+                                disabled: busy,
+                                onClick: async () => {
+                                  if (await askConfirm({ title: "Delete this one-pager?", body: "The sponsorship one-pager is deleted.", confirmLabel: "Delete one-pager", tone: "destructive" })) void mutate({ action: "delete", id: selected.id }, "Deleted.");
+                                },
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
                   </div>
                 </form>
               </Panel>

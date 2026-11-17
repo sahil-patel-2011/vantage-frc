@@ -383,7 +383,7 @@ export function PartnerPlacementsPanel({
           </p>
         </div>
         {program.settings?.publicId ? (
-          <Button as="a" variant="primary" href={`/support/${program.settings.publicId}`} target="_blank" rel="noreferrer">
+          <Button as="a" variant="secondary" href={`/support/${program.settings.publicId}`} target="_blank" rel="noreferrer">
             Open storefront →
           </Button>
         ) : null}
@@ -444,7 +444,7 @@ export function PartnerPlacementsPanel({
                 <input name="storefrontEnabled" type="checkbox" defaultChecked={program.settings?.storefrontEnabled ?? false} />{" "}
                 Allow public sponsor inquiries
               </label>
-              <Button type="submit" variant="primary" disabled={busy}>
+              <Button type="submit" variant="secondary" disabled={busy}>
                 Save storefront
               </Button>
             </form>
@@ -454,7 +454,18 @@ export function PartnerPlacementsPanel({
                   Share:{" "}
                   <code>{`${typeof window === "undefined" ? "" : window.location.origin}/support/${program.settings.publicId}`}</code>
                 </span>
-                <button type="button" onClick={() => void mutate({ action: "rotate-storefront" })}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const ok = await askConfirm({
+                      title: "Make a new storefront link?",
+                      body: "The current link stops working for anyone you already sent it to.",
+                      confirmLabel: "Make new link",
+                      tone: "destructive",
+                    });
+                    if (ok) void mutate({ action: "rotate-storefront" });
+                  }}
+                >
                   Rotate link
                 </button>
               </div>
@@ -489,7 +500,7 @@ export function PartnerPlacementsPanel({
                 <textarea name="benefits" rows={2} placeholder="Thank-you post, logo placement, season recap…" />
               </label>
               <SurfaceChecks />
-              <Button type="submit" variant="primary" disabled={busy}>
+              <Button type="submit" variant="secondary" disabled={busy}>
                 Add package
               </Button>
             </form>

@@ -25,6 +25,7 @@ import {
   type SponsorLifetimeRow,
 } from "../../lib/sponsors/totals";
 import { FINANCE_MANAGER_REQUIRED } from "../../lib/finance/finance-managers";
+import "./season-finance.css";
 
 type Mutate = (body: Record<string, unknown>) => Promise<void>;
 type Submit = (event: FormEvent<HTMLFormElement>, action: string, moneyFields?: string[]) => Promise<void>;
@@ -318,7 +319,12 @@ export function SponsorPipelinePanel({
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => document.getElementById("biz-log-touch")?.scrollIntoView({ behavior: "smooth" })}
+                    onClick={() => {
+                      const section = document.getElementById("biz-log-touch");
+                      const details = section?.querySelector("details");
+                      if (details) details.open = true;
+                      section?.scrollIntoView({ behavior: "smooth" });
+                    }}
                   >
                     Log touch
                   </button>
@@ -372,12 +378,13 @@ export function SponsorPipelinePanel({
             </div>
             {view.canManageFinance ? <ToneBadge tone="blue">Lead controls</ToneBadge> : <ToneBadge>Team view</ToneBadge>}
           </header>
+          {view.canManageFinance ? (
           <form className="biz-form-grid" onSubmit={(event) => void submitAndRefresh(event, "add-sponsor", ["ask", "pledged"])}>
             <Field label="Organization">
-              <input name="name" required placeholder="Acme Manufacturing" disabled={!view.canManageFinance} />
+              <input name="name" required placeholder="Acme Manufacturing" />
             </Field>
             <Field label="Pipeline stage">
-              <select name="pipelineStage" defaultValue="prospect" disabled={!view.canManageFinance}>
+              <select name="pipelineStage" defaultValue="prospect">
                 {SPONSOR_PIPELINE_STAGES.map((stage) => (
                   <option key={stage} value={stage}>
                     {pipelineStageLabel(stage)}
@@ -386,41 +393,39 @@ export function SponsorPipelinePanel({
               </select>
             </Field>
             <Field label="Ask amount ($)">
-              <input name="askDollars" type="number" min="0" step="0.01" placeholder="2500" disabled={!view.canManageFinance} />
+              <input name="askDollars" type="number" min="0" step="0.01" placeholder="2500" />
             </Field>
             <Field label="Pledged amount ($)">
-              <input name="pledgedDollars" type="number" min="0" step="0.01" placeholder="0" disabled={!view.canManageFinance} />
+              <input name="pledgedDollars" type="number" min="0" step="0.01" placeholder="0" />
             </Field>
             <Field label="Website">
-              <input name="website" type="url" placeholder="https://…" disabled={!view.canManageFinance} />
+              <input name="website" type="url" placeholder="https://…" />
             </Field>
             <Field label="Industry">
-              <input name="industry" placeholder="Manufacturing" disabled={!view.canManageFinance} />
+              <input name="industry" placeholder="Manufacturing" />
             </Field>
             <Field label="Contact">
-              <input name="contactName" placeholder="Name" disabled={!view.canManageFinance} />
+              <input name="contactName" placeholder="Name" />
             </Field>
             <Field label="Contact email">
-              <input name="contactEmail" type="email" placeholder="name@company.com" disabled={!view.canManageFinance} />
+              <input name="contactEmail" type="email" placeholder="name@company.com" />
             </Field>
             <Field label="Relationship owner">
-              <input name="relationshipOwner" placeholder="Student / mentor owner" disabled={!view.canManageFinance} />
+              <input name="relationshipOwner" placeholder="Student / mentor owner" />
             </Field>
             <Field label="Next follow-up">
-              <input name="nextFollowUpOn" type="date" disabled={!view.canManageFinance} />
+              <input name="nextFollowUpOn" type="date" />
             </Field>
             <Field label="Relationship notes" wide>
-              <textarea
-                name="notes"
-                rows={3}
-                placeholder="Why they care, history, recognition preferences…"
-                disabled={!view.canManageFinance}
-              />
+              <textarea name="notes" rows={3} placeholder="Why they care, history, recognition preferences…" />
             </Field>
-            <Button type="submit" variant="primary" disabled={busy || !view.canManageFinance}>
+            <Button type="submit" variant="primary" disabled={busy}>
               Add to pipeline
             </Button>
           </form>
+          ) : (
+            <p className="app-muted">{FINANCE_MANAGER_REQUIRED}</p>
+          )}
         </article>
         <article className="app-card biz-research-card">
           <span className="biz-overline">Source-linked discovery</span>
@@ -468,6 +473,8 @@ export function SponsorPipelinePanel({
           <article className="app-card">
             <span className="biz-overline">Log a touchpoint</span>
             <h2>Capture what happened and what happens next.</h2>
+            <details className="season-finance-add">
+              <summary>Log a touchpoint</summary>
             <form className="biz-form-grid" onSubmit={(event) => void submitAndRefresh(event, "log-interaction")}>
               <Field label="Sponsor">
                 <select name="sponsorId" required>
@@ -500,16 +507,19 @@ export function SponsorPipelinePanel({
               <Field label="Next step" wide>
                 <input name="nextStep" placeholder="Send impact update and invite to shop tour" />
               </Field>
-              <Button type="submit" variant="primary" disabled={busy}>
+              <Button type="submit" variant="secondary" disabled={busy}>
                 Log interaction
               </Button>
             </form>
+            </details>
           </article>
           <article className="app-card">
             <span className="biz-overline">Sponsor contributions</span>
             <h2>Add cash and in-kind support to the season.</h2>
             {/* Recording what a sponsor gave is a money write: finance managers only (0714). */}
             {view.canManageFinances ? (
+            <details className="season-finance-add">
+              <summary>Record contribution</summary>
             <form className="biz-form-grid" onSubmit={(event) => void submitAndRefresh(event, "add-contribution", ["amount"])}>
               <Field label="Sponsor">
                 <select name="sponsorId" required>
@@ -535,10 +545,11 @@ export function SponsorPipelinePanel({
               <Field label="Description" wide>
                 <input name="description" placeholder="Check, machining time, materials…" />
               </Field>
-              <Button type="submit" variant="primary" disabled={busy}>
+              <Button type="submit" variant="secondary" disabled={busy}>
                 Record contribution
               </Button>
             </form>
+            </details>
             ) : (
               <p className="app-muted">{FINANCE_MANAGER_REQUIRED}</p>
             )}

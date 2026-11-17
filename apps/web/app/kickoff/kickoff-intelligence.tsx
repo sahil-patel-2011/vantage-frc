@@ -248,8 +248,7 @@ export function IntelligenceSection({
             <Button as="a" variant="primary" href={aiConnectionHref(orgId)}>Connect AI</Button>
           ) : null}
         </EmptyState>
-      ) : null}
-
+      ) : (
       <form
         className="kick-intel-form"
         onSubmit={(event) => {
@@ -328,6 +327,7 @@ export function IntelligenceSection({
           </span>
         </div>
       </form>
+      )}
 
       {intelStatus === "loading" && !selected ? (
         <EmptyState soft title="Loading intelligence…" description="Checking for a saved release summary." aria-busy />

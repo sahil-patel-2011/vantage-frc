@@ -17,6 +17,7 @@ import { FundraisingGlance } from "./fundraising-glance";
 import { dollars, money, moneyWhenRecorded, percent, statusLabel, type Tab } from "./business-helpers";
 import { Field, ToneBadge } from "./business-ui";
 import { FINANCE_MANAGER_REQUIRED } from "../../lib/finance/finance-managers";
+import "./season-finance.css";
 
 /** True while this season has nothing recorded at all, so Overview shows one first step instead of a wall of dashes. */
 export function businessOverviewIsEmpty(view: BusinessView): boolean {
@@ -214,7 +215,7 @@ export function Overview({ view, setTab }: { view: BusinessView; setTab: (tab: T
             actions={[
               { id: "finance", label: "Open Money", intent: "primary", onClick: () => setTab("finance") },
               { id: "budget", label: "Season budget", href: budgetHref },
-              { id: "orders", label: "Purchase orders", hint: "Approve, order, receive", href: businessOrdersHref },
+              { id: "orders", label: "Orders", hint: "Approve, order, receive", href: businessOrdersHref },
             ]}
           />
         </article>
@@ -513,6 +514,8 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
             </Button>
           </form>
         </article>
+        <details className="season-finance-add">
+          <summary>Write a draft from a template</summary>
         <article className="app-card biz-writer">
           <span className="biz-overline">Template writing studio</span>
           <h2>Draft faster without inventing a single metric.</h2>
@@ -542,11 +545,12 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
             <Field label="Goal" wide>
               <textarea name="goal" rows={3} required placeholder="Fund student tool certifications and safety equipment…" />
             </Field>
-            <Button type="submit" variant="primary" disabled={busy}>
+            <Button type="submit" variant="secondary" disabled={busy}>
               Create sourced draft
             </Button>
           </form>
         </article>
+        </details>
       </section>
 
       <section className="app-card">
@@ -627,7 +631,7 @@ export function Grants({ view, busy, submit, mutate }: { view: BusinessView; bus
             title="No sourced drafts yet"
             description="Generate a template draft above, or open Grant writing for guided fields."
           >
-            <Button as="a" variant="primary" href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>
+            <Button as="a" variant="secondary" href={`/team/grants?orgId=${encodeURIComponent(view.orgId)}`}>
               Open grant writing
             </Button>
           </EmptyState>
@@ -641,7 +645,7 @@ function GrantCard({ grant, canManage, busy, mutate }: { grant: GrantApplication
   const index = GRANT_STATUSES.indexOf(grant.status);
   const next = GRANT_STATUSES[Math.min(index + 1, GRANT_STATUSES.length - 1)] ?? grant.status;
   const canAdvance = !["awarded", "declined"].includes(grant.status) && next !== grant.status;
-  return <article><strong>{grant.title}</strong><span>{grant.funder}</span><small>{grant.deadline ? `Due ${grant.deadline}` : "No deadline"} · {money(grant.requestedCents)}</small><p>{grant.purpose}</p>{grant.sourceUrl ? <a href={grant.sourceUrl} target="_blank" rel="noreferrer">Opportunity source ↗</a> : null}{canAdvance && (next !== "awarded" || canManage) ? <button disabled={busy} onClick={() => void mutate({ action: "set-grant-status", grantId: grant.id, status: next, awardedCents: next === "awarded" ? grant.requestedCents : 0 })}>Move to {statusLabel(next)}</button> : canAdvance ? <small className="app-muted">A finance manager records the award.</small> : null}</article>;
+  return <article><strong>{grant.title}</strong><span>{grant.funder}</span><small>{grant.deadline ? `Due ${grant.deadline}` : "No deadline"} · {moneyWhenRecorded(grant.requestedCents)}</small><p>{grant.purpose}</p>{grant.sourceUrl ? <a href={grant.sourceUrl} target="_blank" rel="noreferrer">Opportunity source ↗</a> : null}{canAdvance && (next !== "awarded" || canManage) ? <button disabled={busy} onClick={() => void mutate({ action: "set-grant-status", grantId: grant.id, status: next, awardedCents: next === "awarded" ? grant.requestedCents : 0 })}>Move to {statusLabel(next)}</button> : canAdvance ? <small className="app-muted">A finance manager records the award.</small> : null}</article>;
 }
 
 export function AwardHistory({ view, busy, submit }: { view: BusinessView; busy: boolean; submit: Submit }) {

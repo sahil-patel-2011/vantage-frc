@@ -462,7 +462,7 @@ function EligibleGrants({
                 {grant.decisionAt ? ` · decided ${new Date(grant.decisionAt).toLocaleDateString()}` : ""}
               </small>
             </div>
-            <Button variant="primary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-report", grantApplicationId: grant.id })}>
+            <Button variant="secondary" type="button" disabled={busy} onClick={() => mutate({ action: "generate-report", grantApplicationId: grant.id })}>
               {grant.hasReport ? "Regenerate report" : "Generate report"}
             </Button>
           </li>
@@ -506,18 +506,19 @@ function Reports({
                   {report.outreachCount} outreach message(s)
                 </small>
               </div>
-              <button
-                type="button"
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
+                tone="danger"
                 disabled={busy}
                 onClick={async () => {
-                  if (await askConfirm({ title: "Delete this report?", body: null, confirmLabel: "Delete report", tone: "destructive" })) {
+                  if (await askConfirm({ title: "Delete this report?", body: "The generated report text is removed. The grant itself stays.", confirmLabel: "Delete report", tone: "destructive" })) {
                     mutate({ action: "delete-report", reportId: report.id });
                   }
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </header>
             {report.outreachByKind.length > 0 ? (
               <small className="app-muted">

@@ -429,18 +429,19 @@ function TierDefinitionsPanel({
                   {tier.benefits.length ? ` · ${tier.benefits.join(", ")}` : ""}
                 </small>
               </div>
-              <button
-                type="button"
-                className="text-button"
+              <Button
+                variant="ghost"
+                size="sm"
+                tone="danger"
                 disabled={busy}
                 onClick={async () => {
-                  if (await askConfirm({ title: `Delete tier “${tier.name}”?`, body: null, confirmLabel: "Delete tier", tone: "destructive" })) {
+                  if (await askConfirm({ title: `Delete tier “${tier.name}”?`, body: "The tier and its benefits list are deleted.", confirmLabel: "Delete tier", tone: "destructive" })) {
                     mutate({ action: "delete-tier", tierId: tier.id });
                   }
                 }}
               >
                 Delete
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
