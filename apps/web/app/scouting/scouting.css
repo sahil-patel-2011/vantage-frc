@@ -332,8 +332,10 @@ button.scout-quality-question-control:hover { background: var(--surface-2); }
 }
 /* These are links to other places: tinted like the app's other text links ("Assign scouts"),
    not the browser's default blue underline or a grey line that read as stray text. */
-.scout-task-row > a,.scout-status-bar .scout-free-link{color:var(--accent);font-weight:600;text-decoration:none}
-.scout-task-row > a:hover,.scout-status-bar .scout-free-link:hover{text-decoration:underline}
+.scout-task-row > a,.scout-status-bar .scout-free-link,.scout-task-link{color:var(--accent);font-weight:600;text-decoration:none}
+.scout-task-row > a:hover,.scout-status-bar .scout-free-link:hover,.scout-task-link:hover{text-decoration:underline}
+.scout-task-link{min-height:44px;display:inline-flex;align-items:center;padding:0;border:0;background:none;font:inherit;font-weight:600;white-space:nowrap;cursor:pointer}
+.scout-task-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 @media (pointer:coarse){
   .scout-status-bar .scout-free-link{min-height:44px}
 }

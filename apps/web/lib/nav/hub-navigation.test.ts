@@ -3,16 +3,20 @@ import { hubBarSections } from "./hub-bar";
 import { hubNavigationSections } from "./hub-navigation";
 import { hubById, PRODUCT_HUBS } from "./hubs";
 describe("task navigation",()=>{
- it("opens competition to collection with six sections; forms and assignments live in More tools",()=>{
+ it("opens competition to collection with three sections; the rest live in More tools",()=>{
    const hub=hubById("competition");expect(hub.defaultTab).toBe("scouting");
-   expect(hubNavigationSections(hub,hub.tabs).map(entry=>entry.id)).toEqual(["scouting","teams","strategy","picks","command","match-checklist"]);
+   expect(hubNavigationSections(hub,hub.tabs).map(entry=>entry.id)).toEqual(["scouting","strategy","command"]);
+   const team=hubById("team");
+   expect(hubNavigationSections(team,team.tabs).map(entry=>entry.label)).toEqual(["Calendar","Chat","People","Tasks"]);
+   const business=hubById("business");
+   expect(hubNavigationSections(business,business.tabs).map(entry=>entry.label)).toEqual(["Overview","Money","Sponsors"]);
  });
  it("doesn't expose strategy or picks when their permission root is unavailable",()=>{
    const hub=hubById("competition");const allowed=hub.tabs.filter(tab=>tab.id!=="strategy"&&tab.group!=="strategy");
    expect(hubNavigationSections(hub,allowed).some(tab=>tab.id==="picks")).toBe(false);
  });
- it("keeps every place to six sections at most",()=>{
-   for(const hub of PRODUCT_HUBS){expect(hubNavigationSections(hub,hub.tabs).length,hub.id).toBeLessThanOrEqual(6);}
+ it("keeps every place to four sections at most",()=>{
+   for(const hub of PRODUCT_HUBS.filter(entry=>!entry.hidden)){expect(hubNavigationSections(hub,hub.tabs).length,hub.id).toBeLessThanOrEqual(4);}
  });
  it("leaves a pinned app off the page bar, and keeps the section you are on", () => {
    const sections = [

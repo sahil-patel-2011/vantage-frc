@@ -1,15 +1,25 @@
 import { hubPrimaryTabs, hubWorkbenchId, type HubTabDef, type ProductHubDef } from "./hubs";
 /**
- * Six sections, like every place. Scouting forms, scout assignments, My Day and Pit TV sit in
- * the place's More tools under Scout, Event day and Our robot.
+ * A place shows the few sections people open every day; everything else is in its More tools
+ * (components/hub-sections.tsx), grouped under the section it belongs to, and in search.
+ *
+ * Competition is the three things a team does at an event: scout, plan the match, run the day.
+ * Teams and the pick list are part of planning (Match plan has its own Pick lists tab); Our
+ * robot, My Day and Pit TV are part of the day.
  */
 const COMPETITION_SECTIONS = [
-  { id: "scouting", label: "Scout" }, { id: "teams", label: "Teams" },
-  // Pick list is its own place at an event (alliance selection), with its own menu entry; the
-  // menu used to light up Match plan while the page said Pick list. Match plan no longer
-  // carries a second way to the same list when it sits inside Competition.
-  { id: "strategy", label: "Match plan" }, { id: "picks", label: "Pick list" },
-  { id: "command", label: "Event day" }, { id: "match-checklist", label: "Our robot" },
+  { id: "scouting", label: "Scout" },
+  { id: "strategy", label: "Match plan" },
+  { id: "command", label: "Event day" },
+];
+/** Playbook and the team's resources are in More tools; these four are the weekly routine. */
+const TEAM_SECTIONS = [
+  { id: "calendar", label: "Calendar" }, { id: "messages", label: "Chat" },
+  { id: "attendance", label: "People" }, { id: "todos", label: "Tasks" },
+];
+/** Grants, Outreach and Awards are seasonal and live in More tools. */
+const BUSINESS_SECTIONS = [
+  { id: "overview", label: "Overview" }, { id: "finance", label: "Money" }, { id: "sponsors", label: "Sponsors" },
 ];
 /**
  * "Robot" opens the robot: the blueprint, with its subsystems and its links to failures,
@@ -23,7 +33,12 @@ const BUILD_SECTIONS = [
 /** Each event task has one home. Permission roots are unchanged. */
 export function hubNavigationSections(hub: ProductHubDef, permitted: readonly HubTabDef[]) {
   const allowed = new Set(permitted.map(entry => entry.id));
-  const sections = hub.id === "competition" ? COMPETITION_SECTIONS : hub.id === "build" ? BUILD_SECTIONS : hubPrimaryTabs(hub);
+  const sections =
+    hub.id === "competition" ? COMPETITION_SECTIONS
+    : hub.id === "build" ? BUILD_SECTIONS
+    : hub.id === "team" ? TEAM_SECTIONS
+    : hub.id === "business" ? BUSINESS_SECTIONS
+    : hubPrimaryTabs(hub);
   return sections.filter(entry => allowed.has(entry.id) && allowed.has(hubWorkbenchId(hub, entry.id)));
 }
 /** A page says what it does; destination selection belongs to the main menu. */

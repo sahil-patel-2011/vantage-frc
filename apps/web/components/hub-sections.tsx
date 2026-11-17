@@ -14,8 +14,8 @@ import { PRODUCT_NAV_GROUPS, withOrgHref } from "../lib/nav/product-nav";
 import { URL_CHANGE_EVENT } from "../lib/nav/url-change";
 
 /**
- * A place's sections, under its title: at most six (Competition is Scout · Teams · Match plan ·
- * Pick list · Event day · Our robot). The same list the sidebar and the phone menu hold, so a
+ * A place's sections, under its title: at most four (Competition is Scout · Match plan · Event
+ * day). The same list the sidebar and the phone menu hold, so a
  * section is one tap from its place on every screen size. Every other tool in the place is one
  * tap further, in More tools, grouped under its section; search finds them too.
  */

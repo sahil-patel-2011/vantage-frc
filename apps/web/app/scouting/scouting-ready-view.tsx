@@ -405,6 +405,11 @@ return (
           Sync now
         </Button>
       ) : null}
+      {/* No signal here, a teammate has some: hand the entries over by QR. It lives beside the
+          queue count because it answers the same question, not as a tab of its own. */}
+      {tab !== "handoff" ? (
+        <button type="button" className="scout-task-link" onClick={() => onTabChange("handoff")}>QR handoff</button>
+      ) : null}
       {syncNote ? (
         <span className="scout-sync-note" role="status">
           {syncNote}

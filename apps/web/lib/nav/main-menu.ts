@@ -49,18 +49,10 @@ export function mainMenuSections(groups: readonly ProductNavGroup[], allowed: (h
   return definitions.flatMap(definition => {
     const hub = hubById(definition.id);
     if (!available.has(hub.href)) return [];
-    const items: { href: string; gate: string; label: string; icon: ProductNavIcon }[] = hubNavigationSections(hub, hub.tabs)
+    const permitted: { href: string; label: string; icon: ProductNavIcon }[] = hubNavigationSections(hub, hub.tabs)
       .filter(section => includeScout || !(hub.id === "competition" && section.id === "scouting"))
-      .map(section => {
-        const gate = `${hub.href}?tab=${section.id}`;
-        return { href: gate, gate, label: section.label, icon: DESTINATION_ICONS[section.id] ?? definition.icon };
-      });
-    if (hub.id === "team") {
-      // The team's own lessons and PDFs (/learn/team): the team's library, so it lives with
-      // the team, not three levels down under Build › CAD.
-      items.push({ href: "/learn/team", gate: "/learn/team", label: "Team resources", icon: "book" });
-    }
-    const permitted = items.filter(item => allowed(item.gate)).map(({ href, label, icon }) => ({ href, label, icon }));
+      .map(section => ({ href: `${hub.href}?tab=${section.id}`, label: section.label, icon: DESTINATION_ICONS[section.id] ?? definition.icon }))
+      .filter(item => allowed(item.href));
     return permitted.length ? [{ ...definition, items: permitted }] : [];
   });
 }

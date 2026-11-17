@@ -19,6 +19,18 @@ describe("hub more tools", () => {
     expect(groups.find((group) => group.id === "scouting")?.label).toBe("Scout");
   });
 
+  it("leads each group with its section when the section is not on the row", () => {
+    const competition = hubMoreTools(hubById("competition"), onRow("competition"), everything);
+    expect(competition.find((group) => group.id === "teams")?.tools[0]).toMatchObject({ id: "teams", label: "Teams" });
+    expect(competition.find((group) => group.id === "match-checklist")?.tools[0]).toMatchObject({ label: "Our robot" });
+    expect(competition.find((group) => group.id === "scouting")?.tools.some((tool) => tool.id === "scouting")).toBe(false);
+    const business = hubMoreTools(hubById("business"), onRow("business"), everything);
+    expect(business.map((group) => group.tools[0]?.label)).toEqual(expect.arrayContaining(["Grants", "Outreach", "Awards"]));
+    // Build's row "Robot" opens the blueprint; the failure log keeps its own page title here.
+    const build = hubMoreTools(hubById("build"), onRow("build"), everything);
+    expect(build.find((group) => group.id === "fmea")?.tools[0]).toMatchObject({ id: "fmea", label: "Failure notes" });
+  });
+
   it("never repeats a section link, a hidden tool, or a second door to the same page", () => {
     for (const hub of PRODUCT_HUBS) {
       const row = onRow(hub.id);

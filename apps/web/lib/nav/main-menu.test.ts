@@ -20,15 +20,14 @@ describe("one main menu", () => {
     expect(mainMenuSearch("/ai", "", href => href.endsWith("tab=budgets"))).toBe("tab=budgets");
     expect(mainMenuSearch("/ai", "", () => false)).toBe("");
   });
-  it("lists every place once, with at most six sections each", () => {
+  it("lists every place once, with at most four sections each", () => {
     const sections = mainMenuSections(PRODUCT_NAV_GROUPS, () => true);
     const items = sections.flatMap(section => section.items);
     expect(new Set(items.map(item => item.href)).size).toBe(items.length);
-    for (const section of sections) expect(section.items.length, section.id).toBeLessThanOrEqual(6);
-    expect(items.some(item => item.href === "/competition?tab=scouting")).toBe(true);
-    // These live in Competition's More tools, under Scout, Event day and Our robot.
-    expect(items.some(item => ["Scouting forms", "Assignments", "My Day", "Pit TV"].includes(item.label))).toBe(false);
-    expect(sections.find(section => section.id === "team")?.items).toContainEqual({ href: "/learn/team", label: "Team resources", icon: "book" });
+    for (const section of sections) expect(section.items.length, section.id).toBeLessThanOrEqual(4);
+    expect(sections.find(section => section.id === "competition")?.items.map(item => item.label)).toEqual(["Scout", "Match plan", "Event day"]);
+    // These live in More tools (and stay pinnable and searchable).
+    expect(items.some(item => ["Teams", "Pick list", "Our robot", "Scouting forms", "My Day", "Pit TV", "Team resources", "Playbook", "Grants"].includes(item.label))).toBe(false);
     // Four workspaces; Ask AI has its own door (sidebar footer, phone top bar), not a section.
     expect(sections.map(section => section.label)).toEqual(["Competition", "Team", "Build", "Business"]);
   });
