@@ -584,7 +584,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
         errorStatus={loadErrorStatus}
         onRetry={() => void load()}
       >
-        <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Scouting forms" fromCache={fromCache} cachedAt={cachedAt} />
       </FormBuilderShell>
     );
   }
@@ -592,7 +592,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
   if (!payload || loadedOrg !== orgId) {
     return (
       <FormBuilderShell embedded={embedded} orgId={orgId} shell="loading" entryType={type}>
-        <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Scouting forms" fromCache={fromCache} cachedAt={cachedAt} />
       </FormBuilderShell>
     );
   }
@@ -630,7 +630,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
   if (shell === "setup") {
     return (
       <FormBuilderShell embedded={embedded} orgId={orgId} shell="setup" entryType={type}>
-        <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
+        <OfflineBanner feature="Scouting forms" fromCache={fromCache} cachedAt={cachedAt} />
         {!payload.canManageSchemas ? (
           <EmptyState
             badge="Needs setup"
@@ -666,7 +666,7 @@ function FormsEditor({ orgId, embedded }: { orgId: string; embedded: boolean }) 
         if (requestedFormulas) { const url = new URL(window.location.href); url.searchParams.delete("formulas"); window.history.replaceState(window.history.state, "", url); }
       }} />
 
-      <OfflineBanner feature="Scout forms" fromCache={fromCache} cachedAt={cachedAt} />
+      <OfflineBanner feature="Scouting forms" fromCache={fromCache} cachedAt={cachedAt} />
 
       {draftError ? <p className="sfb-publish-blocked" role="alert">{draftError}</p> : null}
       {publicationConflict ? <section className="sfb-conflict app-card soft-panel" aria-label="Form version conflict">

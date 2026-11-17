@@ -71,7 +71,7 @@ describe("commandCatalog", () => {
 
   it("gives nested tabs a hub breadcrumb so labels are unambiguous", () => {
     const coverage = catalog.find((entry) => entry.href === "/competition?tab=scout-coverage-live");
-    expect(coverage?.label).toBe("Coverage");
+    expect(coverage?.label).toBe("Assignments");
     expect(coverage?.context).toBe("Competition › Scout");
   });
 

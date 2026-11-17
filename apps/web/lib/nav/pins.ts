@@ -50,7 +50,14 @@ const EVERYDAY: PinDefinition[] = [
 
 /** Places that are not a workspace section but people still want one tap away. */
 const EXTRAS: Record<string, PinDefinition[]> = {
-  competition: [{ href: "/rankings", label: "Stats", icon: "stats" }],
+  // Scouting forms, Assignments and Pit TV left the section row for More tools; the same hrefs
+  // stay pinnable so a pin saved from the old menu still resolves.
+  competition: [
+    { href: "/rankings", label: "Stats", icon: "stats" },
+    { href: "/competition?tab=forms", label: "Scouting forms", icon: "form" },
+    { href: "/scout-coverage-live", label: "Assignments", icon: "assignment" },
+    { href: "/display", label: "Pit TV", icon: "display" },
+  ],
   team: [
     TEAM_RESOURCES_PIN,
     { href: "/files", label: "Files", icon: "grid" },

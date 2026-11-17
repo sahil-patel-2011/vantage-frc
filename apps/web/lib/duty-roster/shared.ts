@@ -59,7 +59,7 @@ export function dutyWorkflowLinks(kind: DutyKind, orgId: string): DutyWorkflowLi
   switch (kind) {
     case "scouting":
       return [
-        { href: withOrgPath("/scouting", orgId), label: "Scout forms" },
+        { href: withOrgPath("/scouting", orgId), label: "Start scouting" },
         { href: withOrgPath("/scouting/lineup", orgId), label: "Lineup & coverage" },
       ];
     case "pit":

@@ -69,7 +69,7 @@ describe("competition-related Soft-UI helpers", () => {
   it("names Competition workbenches the same way the hub tabs do", () => {
     const links = competitionRelatedLinks("org-1");
     expect(links.find((link) => link.id === "command")?.label).toBe("Event day");
-    expect(links.find((link) => link.id === "forms")?.label).toBe("Forms");
+    expect(links.find((link) => link.id === "forms")?.label).toBe("Scouting forms");
     expect(links.find((link) => link.id === "match-checklist")?.label).toBe("Robot check");
   });
 

@@ -20,21 +20,20 @@ describe("one main menu", () => {
     expect(mainMenuSearch("/ai", "", href => href.endsWith("tab=budgets"))).toBe("tab=budgets");
     expect(mainMenuSearch("/ai", "", () => false)).toBe("");
   });
-  it("lists every place once, so un-pinning Scout, My Day or Team resources never hides it", () => {
+  it("lists every place once, with at most six sections each", () => {
     const sections = mainMenuSections(PRODUCT_NAV_GROUPS, () => true);
     const items = sections.flatMap(section => section.items);
     expect(new Set(items.map(item => item.href)).size).toBe(items.length);
-    // Pit TV and Assignments open their own pages directly, not a hub that replaces itself.
-    expect(items).toContainEqual({ href: "/display", label: "Pit TV", icon: "display" });
-    expect(items.some(item => item.href === "/scout-coverage-live" && item.label === "Assignments")).toBe(true);
+    for (const section of sections) expect(section.items.length, section.id).toBeLessThanOrEqual(6);
     expect(items.some(item => item.href === "/competition?tab=scouting")).toBe(true);
-    expect(items.some(item => item.href === "/competition?tab=my-day")).toBe(true);
+    // These live in Competition's More tools, under Scout, Event day and Our robot.
+    expect(items.some(item => ["Scouting forms", "Assignments", "My Day", "Pit TV"].includes(item.label))).toBe(false);
     expect(sections.find(section => section.id === "team")?.items).toContainEqual({ href: "/learn/team", label: "Team resources", icon: "book" });
     // Four workspaces; Ask AI has its own door (sidebar footer, phone top bar), not a section.
     expect(sections.map(section => section.label)).toEqual(["Competition", "Team", "Build", "Business"]);
   });
-  it("marks My Day itself, not Event day, while you are on it", () => {
-    expect(mainMenuSearch("/competition", "tab=my-day")).toBe("tab=my-day");
+  it("marks Event day while you are on My Day, the section it lives under", () => {
+    expect(mainMenuSearch("/competition", "tab=my-day")).toBe("tab=command");
   });
   it("never grants workspace, section, or sponsor access through the menu", () => {
     const access = [{ hubId: "competition" as const, allowedTabIds: ["scouting"] }];

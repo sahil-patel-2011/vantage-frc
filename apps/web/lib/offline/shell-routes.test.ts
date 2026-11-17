@@ -373,7 +373,7 @@ describe("offline shell routes", () => {
     expect(offlineCapableLabel("/media-library")).toBe("Media Library");
     expect(offlineCapableLabel("/hours/kiosk")).toBe("Hours kiosk");
     expect(offlineCapableLabel("/hours")).toBe("Hours");
-    expect(offlineCapableLabel("/scouting/forms")).toBe("Scout forms");
+    expect(offlineCapableLabel("/scouting/forms")).toBe("Scouting forms");
     expect(offlineCapableLabel("/goals-tracker")).toBe("Season Goals");
     expect(offlineCapableLabel("/standup-digest")).toBe("Morning standup");
     expect(offlineCapableLabel("/meeting-autopilot")).toBe("Meeting agenda");

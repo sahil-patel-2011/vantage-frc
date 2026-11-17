@@ -15,7 +15,7 @@ test("form type uses one native selector and keeps the selected editor", async (
   await expect(page.getByRole("navigation",{name:"Tools in Scout",exact:true})).toHaveCount(0);
   await types.selectOption("pit"); await expect(types).toHaveValue("pit");
   await types.selectOption("match"); await expect(types).toHaveValue("match");
-  await expect(page.getByRole("heading",{level:1,name:"Forms",exact:true})).toHaveCount(1);
+  await expect(page.getByRole("heading",{level:1,name:"Scouting forms",exact:true})).toHaveCount(1);
   await expect(page.getByLabel("Form title",{exact:true})).toBeVisible();
   await expect(page.locator("body")).not.toContainText("Application error");
 });

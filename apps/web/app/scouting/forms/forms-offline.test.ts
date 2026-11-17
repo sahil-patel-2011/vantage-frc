@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const DIR = __dirname;
 
-describe("Scout forms last snapshot stays on the phone", () => {
+describe("Scouting forms last snapshot stays on the phone", () => {
   it("reads and writes the scout-forms IndexedDB feature cache", () => {
     const src = readFileSync(join(DIR, "forms-client.tsx"), "utf8");
     expect(src).toMatch(/getFeatureSnapshot/);
@@ -15,7 +15,7 @@ describe("Scout forms last snapshot stays on the phone", () => {
     expect(src).toMatch(/AbortSignal\.timeout\(SCOUTING_LOAD_TIMEOUT_MS\)/);
     expect(src).toMatch(/AbortSignal\.timeout\(PUBLISH_TIMEOUT_MS\)/);
     expect(src).toMatch(/publishOutcomeAfterTimeout/);
-    expect(src).toMatch(/feature="Scout forms"/);
+    expect(src).toMatch(/feature="Scouting forms"/);
     expect(src).toMatch(/AbortSignal\.timeout/);
     // The error shell shows only when this team's load failed with nothing cached; a stale
     // error from the previously selected team must not replace the new team's forms.

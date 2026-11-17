@@ -93,8 +93,8 @@ export const PRODUCT_HUBS: ProductHubDef[] = [
       ]),
       { id: "scouting", label: "Scout", legacyHref: "/scouting" },
       ...nest("scouting", [
-        { id: "forms", label: "Forms", legacyHref: "/scouting/forms" },
-        { id: "scout-coverage-live", label: "Coverage", legacyHref: "/scout-coverage-live" },
+        { id: "forms", label: "Scouting forms", legacyHref: "/scouting/forms" },
+        { id: "scout-coverage-live", label: "Assignments", legacyHref: "/scout-coverage-live" },
         { id: "shift-balancer", label: "Shifts", legacyHref: "/shift-balancer" },
         { id: "scout-p2p-relay", label: "Pit link", legacyHref: "/scout-p2p-relay" },
         { id: "scout-training-mode", label: "Training", legacyHref: "/scout-training-mode" },

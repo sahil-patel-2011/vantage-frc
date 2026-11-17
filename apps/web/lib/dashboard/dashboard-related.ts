@@ -233,7 +233,7 @@ export function dashboardSetupSteps(input: {
     },
     {
       id: "scout",
-      label: "Scout forms",
+      label: "Scouting forms",
       detail: "Match and pit forms",
       href: hubHref("/competition", "forms", orgId),
       state: stateOf("scout", scoutDone),

@@ -264,7 +264,7 @@ export function offlineCapableLabel(pathname: string): string | null {
   const bare = pathname.split("?")[0] ?? pathname;
   if (bare === "/scout" || bare.startsWith("/scout/")) return "Scouting app";
   if (bare.startsWith("/scouting/lineup")) return "Lineup & coverage";
-  if (bare.startsWith("/scouting/forms")) return "Scout forms";
+  if (bare.startsWith("/scouting/forms")) return "Scouting forms";
   if (bare.startsWith("/scouting-heat-signals")) return "Scouting Heat Signals";
   if (bare.startsWith("/scout-schema-negotiate")) return "Schema sync";
   if (bare.startsWith("/scout-p2p-relay")) return "Pit mesh";
