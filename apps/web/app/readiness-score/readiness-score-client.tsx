@@ -41,6 +41,7 @@ import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./readiness-score.css";
+import { pct } from "../../lib/format/percent";
 
 const CATEGORY_LABEL: Record<ReadinessFixCategory, string> = {
   fmea: "Open failure log",
@@ -64,10 +65,6 @@ function tierTone(tier: ReadinessTier): BadgeTone {
   if (tier === "ready") return "good";
   if (tier === "at_risk") return "setup";
   return "danger";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<ReadinessScoreView, { status: "live" }>;

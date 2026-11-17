@@ -25,6 +25,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./sponsor-suite.css";
+import { pct } from "../../lib/format/percent";
 
 function isSponsorSuiteView(value: unknown): value is SponsorSuiteView {
   if (!value || typeof value !== "object") return false;
@@ -55,10 +56,6 @@ async function persistSponsorSuiteSnapshot(
 
 const DECK_KINDS: SponsorSuiteDeckKind[] = ["pitch", "renewal"];
 const REMINDER_KINDS: SponsorSuiteReminderKind[] = ["thank_you", "renewal"];
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<SponsorSuiteView, { status: "live" }>;
 

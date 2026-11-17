@@ -18,15 +18,12 @@ import type { DriverTryoutsView } from "../../lib/driver-tryouts/compute-driver-
 import type { DriverTryoutsReadinessTier, DriverTryoutsRole } from "../../lib/driver-tryouts/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { pct } from "../../lib/format/percent";
 
 function tierTone(tier: DriverTryoutsReadinessTier): string {
   if (tier === "ready") return "good";
   if (tier === "in_progress") return "setup";
   return "demo";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<DriverTryoutsView, { status: "live" }>;

@@ -1,5 +1,5 @@
 "use client";
-import { Button, PageHeader } from "../../../components/ui";
+import { askConfirm, Button, PageHeader } from "../../../components/ui";
 
 import { useEffect, useState } from "react";
 
@@ -36,7 +36,7 @@ export default function ModelsClient() {
         <label>Label<input required value={key.label} onChange={(e) => setKey({ ...key, label: e.target.value })} /></label>
         <label>API key<input required type="password" autoComplete="off" value={key.apiKey} onChange={(e) => setKey({ ...key, apiKey: e.target.value })} /></label>
         <button className="primary-action">Encrypt and save key</button>{message && <p className="auth-message">{message}</p>}
-        {keys.map((item) => <article className="admin-org" key={item.id}><b>KEY</b><div><strong>{item.label}</strong><small>{item.provider} · {item.disabledAt ? "disabled" : "active"}</small>{!item.disabledAt && <div><button type="button" onClick={() => void post({ action:"testKey",id:item.id })}>Test</button><button type="button" onClick={() => confirm(`Disable ${item.label}? Existing managed routes may stop.`) && void post({ action:"disableKey",id:item.id })}>Disable</button></div>}</div></article>)}
+        {keys.map((item) => <article className="admin-org" key={item.id}><b>KEY</b><div><strong>{item.label}</strong><small>{item.provider} · {item.disabledAt ? "disabled" : "active"}</small>{!item.disabledAt && <div><button type="button" onClick={() => void post({ action:"testKey",id:item.id })}>Test</button><button type="button" onClick={async () => { if (await askConfirm({ title: `Disable ${item.label}?`, body: "Existing managed routes may stop.", confirmLabel: "Disable key", tone: "destructive" })) void post({ action:"disableKey",id:item.id }); }}>Disable</button></div>}</div></article>)}
       </form>
       <section className="model-list">{models.map((model, index) => <form className="intel-panel model-config" key={model.id} onSubmit={(e) => { e.preventDefault(); void post({ action: "model", ...model }); }}>
         <div><span className="eyebrow">{model.paygOnly ? "PAY-AS-YOU-GO ONLY" : "INCLUDED ON A PLAN"}</span><h2>{model.displayName}</h2></div>

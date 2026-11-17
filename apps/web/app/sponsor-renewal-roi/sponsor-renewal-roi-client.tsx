@@ -33,6 +33,7 @@ import { hubHref, hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./sponsor-renewal-roi.css";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<SponsorRenewalRoiView, { status: "live" }>;
 type SponsorSummary = LiveView["sponsors"][number];
@@ -68,10 +69,6 @@ function tierTone(tier: SponsorRenewalRiskTier): BadgeTone {
   if (tier === "low") return "good";
   if (tier === "moderate") return "setup";
   return "demo";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 const COMPONENT_LABEL: Record<string, string> = {

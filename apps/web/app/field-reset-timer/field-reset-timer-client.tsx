@@ -32,6 +32,7 @@ import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./field-reset-timer.css";
+import { pct } from "../../lib/format/percent";
 
 function isFieldResetTimerView(value: unknown): value is FieldResetTimerView {
   if (!value || typeof value !== "object") return false;
@@ -60,10 +61,6 @@ function tierTone(tier: FieldResetTimerTier): BadgeTone {
   if (tier === "tight") return "good";
   if (tier === "developing") return "setup";
   return "neutral";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<FieldResetTimerView, { status: "live" }>;

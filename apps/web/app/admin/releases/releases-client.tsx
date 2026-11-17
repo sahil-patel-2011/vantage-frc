@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { askConfirm, EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import "../admin-flow.css";
 
 type Release = {
@@ -140,7 +140,7 @@ export default function AdminReleasesClient() {
   }
 
   async function publishRelease(id: string) {
-    if (!confirm("Publish this release and notify matching users?")) return;
+    if (!(await askConfirm({ title: "Publish this release?", body: "Matching users are notified right away.", confirmLabel: "Publish release", tone: "neutral" }))) return;
     setBusy(true);
     const response = await fetch("/api/admin/releases", {
       method: "PATCH",

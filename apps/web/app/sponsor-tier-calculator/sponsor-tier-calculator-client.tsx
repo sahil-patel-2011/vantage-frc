@@ -12,10 +12,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { assignedTierLabel } from "../../lib/sponsor-tier-calculator";
 import type { SponsorTierCalculatorView } from "../../lib/sponsor-tier-calculator/compute-sponsor-tier-calculator";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+import { pct } from "../../lib/format/percent";
 
 function usd(value: number): string {
   return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;

@@ -1,7 +1,7 @@
 import { auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { headers } from "next/headers";
-import { loadMyDay } from "../../../lib/load-my-day";
+import { loadMyDayView } from "../../../lib/my-day-load";
 import { publicErrorMessage } from "../../../lib/security/public-error";
 
 class HttpError extends Error {
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     const orgId = new URL(request.url).searchParams.get("orgId") ?? undefined;
 
     const view = await withRls({ userId: session.user.id, orgId }, async (client) =>
-      loadMyDay(client, { userId: session.user.id, orgId }),
+      loadMyDayView(client, { userId: session.user.id, requestedOrg: orgId ?? null }),
     );
 
     return Response.json(view);

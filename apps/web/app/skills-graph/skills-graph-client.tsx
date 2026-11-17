@@ -10,6 +10,7 @@ import type { SkillsGraphView } from "../../lib/skills-graph/compute-skills-grap
 import type { ProficiencyLevel, SkillCategory } from "../../lib/skills-graph/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<SkillsGraphView, { status: "live" }>;
 
@@ -41,10 +42,6 @@ async function persistSkillsGraphSnapshot(orgHint: string, data: SkillsGraphView
   } catch {
     // Live Skills & Mentorship already painted; IndexedDB is best-effort.
   }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 export default function SkillsGraphClient() {

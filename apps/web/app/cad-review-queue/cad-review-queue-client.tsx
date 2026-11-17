@@ -17,6 +17,7 @@ import {
 import type { CadReviewItem } from "../../lib/cad-review-queue/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<CadReviewQueueView, { status: "live" }>;
 
@@ -45,10 +46,6 @@ async function persistCadReviewQueueSnapshot(
   } catch {
     // Live CAD Review Queue already painted; IndexedDB is best-effort.
   }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 export default function CadReviewQueueClient() {

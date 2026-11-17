@@ -11,10 +11,7 @@ import { hubHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+import { pct } from "../../lib/format/percent";
 
 function statusTone(status: GoalStatus): string {
   if (status === "completed") return "good";

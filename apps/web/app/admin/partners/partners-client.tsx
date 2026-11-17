@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { askConfirm, EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
 import "../admin-flow.css";
 import "./partners.css";
 
@@ -124,7 +124,7 @@ export default function AdminPartnersClient() {
   }
 
   async function remove(id: string, name: string) {
-    if (!confirm(`Remove ${name}? Their logo disappears from AI surfaces immediately.`)) return;
+    if (!(await askConfirm({ title: `Remove ${name}?`, body: "Their logo disappears from AI surfaces immediately.", confirmLabel: "Remove partner", tone: "destructive" }))) return;
     setBusy(true);
     try {
       const response = await fetch("/api/admin/partners", {

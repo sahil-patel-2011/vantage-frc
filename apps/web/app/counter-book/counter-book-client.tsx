@@ -24,6 +24,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { withOrgHref } from "../../lib/nav/product-nav";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import "./counter-book.css";
+import { pct } from "../../lib/format/percent";
 
 function isCounterBookView(value: unknown): value is CounterBookView {
   if (!value || typeof value !== "object") return false;
@@ -44,10 +45,6 @@ async function persistCounterBookSnapshot(orgHint: string, data: CounterBookView
 }
 
 type LiveView = Extract<CounterBookView, { status: "live" }>;
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 function CounterRelatedStrip({ orgId }: { orgId?: string | null }) {
   const links = counterBookRelatedLinks(orgId, {

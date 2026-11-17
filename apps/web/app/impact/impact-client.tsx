@@ -21,6 +21,7 @@ import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/featur
 import { draftsToPayload, ParticipantNames, PeoplePanel, WhoHelped, type ParticipantDraft } from "./people";
 import "./impact.css";
 import { mentionsWaitlist, withWaitlistLink } from "../../components/waitlist-link";
+import { pct } from "../../lib/format/percent";
 
 const TAG_LABEL: Record<ImpactAwardTag, string> = {
   impact: "Impact",
@@ -40,10 +41,6 @@ function tierTone(tier: ImpactTier): string {
   if (tier === "strong") return "good";
   if (tier === "developing") return "setup";
   return "demo";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<ImpactView, { status: "live" }>;

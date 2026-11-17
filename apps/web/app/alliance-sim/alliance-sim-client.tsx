@@ -10,6 +10,7 @@ import type { AllianceSimView } from "../../lib/alliance-sim/compute-alliance-si
 import type { AllianceSimRole } from "../../lib/alliance-sim/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { pct } from "../../lib/format/percent";
 
 function isAllianceSimView(value: unknown): value is AllianceSimView {
   if (!value || typeof value !== "object") return false;
@@ -37,10 +38,6 @@ async function persistAllianceSimSnapshot(
   } catch {
     // Live simulator already painted; IndexedDB is best-effort.
   }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<AllianceSimView, { status: "live" }>;

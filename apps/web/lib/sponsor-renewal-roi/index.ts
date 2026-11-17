@@ -8,6 +8,7 @@
 // schema yet, so that component always stays null (never fabricated) until one does.
 
 export * from "./types";
+import { escapeHtml } from "../security/escape-html";
 import type {
   SponsorRenewalRiskComponents,
   SponsorRenewalRiskInputs,
@@ -159,13 +160,4 @@ export function renderSponsorRoiHtml(input: {
   return `<article class="sponsor-roi-report"><header><h1>${escapeHtml(
     input.sponsorName,
   )} — ${input.seasonYear} Partnership ROI Report</h1></header>\n${body}\n</article>`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }

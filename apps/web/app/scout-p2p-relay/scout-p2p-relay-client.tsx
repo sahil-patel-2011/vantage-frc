@@ -14,12 +14,9 @@ import type { ScoutP2pRelayView } from "../../lib/scout-p2p-relay/compute-scout-
 import type { RelayDeviceRole } from "../../lib/scout-p2p-relay/types";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
 import { PitMeshPanel } from "./pit-mesh-panel";
+import { pct } from "../../lib/format/percent";
 
 const DEVICE_ROLES: RelayDeviceRole[] = ["scout", "captain"];
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<ScoutP2pRelayView, { status: "live" }>;
 

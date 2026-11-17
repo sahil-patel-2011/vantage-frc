@@ -39,16 +39,13 @@ import { hubWorkbenchHref } from "../../lib/nav/hubs";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./code-deploy-log.css";
+import { pct } from "../../lib/format/percent";
 
 const statusTone: Record<DeployStatus, BadgeTone> = {
   deployed: "good",
   rolled_back: "setup",
   failed: "danger",
 };
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<CodeDeployLogView, { status: "live" }>;
 

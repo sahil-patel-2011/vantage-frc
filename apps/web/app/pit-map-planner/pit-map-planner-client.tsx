@@ -12,6 +12,7 @@ import type { PitMapPlannerView } from "../../lib/pit-map-planner/compute-pit-ma
 import type { PitMapItemCategory } from "../../lib/pit-map-planner/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { pct } from "../../lib/format/percent";
 
 function isPitMapPlannerView(value: unknown): value is PitMapPlannerView {
   if (!value || typeof value !== "object") return false;
@@ -34,10 +35,6 @@ async function persistPitMapSnapshot(
   } catch {
     // Live pit map already painted; IndexedDB is best-effort.
   }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<PitMapPlannerView, { status: "live" }>;

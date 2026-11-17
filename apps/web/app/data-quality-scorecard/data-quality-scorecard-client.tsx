@@ -13,6 +13,7 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { describeMatchKey } from "../../lib/scouting/scout-target";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { pct } from "../../lib/format/percent";
 
 function gradeTone(grade: DataQualityGrade): string {
   if (grade === "excellent") return "good";
@@ -36,10 +37,6 @@ function gradeLabel(grade: DataQualityGrade): string {
       return "At risk";
     }
   }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 function responseError(data: unknown): string {

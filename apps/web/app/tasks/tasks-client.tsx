@@ -23,6 +23,7 @@ import {
   syncOutbox,
   useOnline,
 } from "../../lib/offline";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<TasksView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -30,10 +31,6 @@ type Mutate = (payload: Record<string, unknown>) => void;
 function priorityTone(priority: TaskPriority): string {
   if (priority === "critical" || priority === "high") return "setup";
   return "demo";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 function dueLabel(task: TaskWithFlags): { text: string; tone: string } | null {

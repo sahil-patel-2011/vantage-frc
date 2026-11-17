@@ -15,6 +15,7 @@ import type { DecisionCriticCategory, DecisionCriticVerdict } from "../../lib/de
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { pct } from "../../lib/format/percent";
 
 const VERDICT_TONE: Record<DecisionCriticVerdict, string> = {
   proceed: "good",
@@ -29,10 +30,6 @@ const CATEGORY_LABEL: Record<DecisionCriticCategory, string> = {
   process: "Process",
   other: "Other",
 };
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 type LiveView = Extract<DecisionCriticView, { status: "live" }>;
 

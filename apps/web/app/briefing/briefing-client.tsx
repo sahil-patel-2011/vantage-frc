@@ -27,6 +27,7 @@ import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure"
 import { AddMoreLine, EmptyHint, OpponentCards, Section, withOrg } from "./briefing-parts";
 import { LiveCountdown } from "../dashboard/widgets/live-countdown";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
+import { pct } from "../../lib/format/percent";
 
 function isFullBriefingView(value: unknown): value is FullBriefingView {
   if (!value || typeof value !== "object") return false;
@@ -52,10 +53,6 @@ async function persistBriefingSnapshot(
   } catch {
     // Live briefing already painted; IndexedDB is best-effort.
   }
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 /** Honest win-% input for the hero tile. DEMO / missing prediction → null (blank). */

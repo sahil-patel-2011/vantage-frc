@@ -40,6 +40,7 @@ import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./defense-planner.css";
+import { pct } from "../../lib/format/percent";
 
 function isDefensePlannerView(value: unknown): value is DefensePlannerView {
   if (!value || typeof value !== "object") return false;
@@ -72,10 +73,6 @@ function recommendationTone(recommendation: string): BadgeTone {
   if (recommendation === "play_defense") return "good";
   if (recommendation === "stay_offense") return "setup";
   return "danger";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<DefensePlannerView, { status: "live" }>;

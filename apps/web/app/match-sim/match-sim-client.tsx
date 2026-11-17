@@ -15,6 +15,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { scoutEventLabel } from "../../lib/scouting/scouting-related";
 import { describeMatchKey } from "../../lib/scouting/scout-target";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
+import { pct } from "../../lib/format/percent";
 
 function isMatchSimView(value: unknown): value is MatchSimView {
   if (!value || typeof value !== "object") return false;
@@ -58,10 +59,6 @@ function latestDistinctRuns(runs: MatchSimRun[]): MatchSimRun[] {
     kept.add(run.id);
   }
   return runs.filter((run) => kept.has(run.id));
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<MatchSimView, { status: "live" }>;

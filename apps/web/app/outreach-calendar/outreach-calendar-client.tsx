@@ -30,6 +30,7 @@ import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { withOrgHref } from "../../lib/nav/product-nav";
 import "./outreach-calendar.css";
+import { pct } from "../../lib/format/percent";
 
 function isOutreachCalendarView(value: unknown): value is OutreachCalendarView {
   if (!value || typeof value !== "object") return false;
@@ -82,10 +83,6 @@ function statusTone(status: OutreachStatus): string {
   if (status === "confirmed") return "setup";
   if (status === "canceled") return "setup";
   return "setup";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<OutreachCalendarView, { status: "live" }>;

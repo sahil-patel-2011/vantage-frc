@@ -1,7 +1,7 @@
 /**
  * My Kit loader — read-only fusion over surfaces that already own their data.
  *
- * Design rules (mirrors `lib/roadmap/load-roadmap.ts` and `lib/load-my-day.ts`):
+ * Design rules (mirrors `lib/roadmap/load-roadmap.ts` and `lib/my-day-load.ts`):
  *   - My Kit owns NO tables and performs NO writes. Every query is a SELECT.
  *   - Every optional table is checked with `to_regclass` first, so a database that
  *     never ran a given migration renders "not on this deployment" instead of a 500.

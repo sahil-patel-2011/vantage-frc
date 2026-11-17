@@ -24,6 +24,7 @@ import type {
   ReviewStatus,
 } from "../../lib/reviews/types";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<ReviewsView, { status: "live" }>;
 type Mutate = (payload: Record<string, unknown>) => void;
@@ -36,10 +37,6 @@ const GATE_COLOR: Record<GateDecision, string> = {
 };
 
 const VERDICT_LABEL: Record<ItemVerdict, string> = { pending: "Pending", pass: "Pass", fail: "Fail", na: "N/A" };
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
 
 function isReviewsView(value: unknown): value is ReviewsView {
   if (!value || typeof value !== "object") return false;

@@ -10,10 +10,7 @@ import type { SeasonRolloverCategory } from "../../lib/season-rollover/types";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import { classifyLoadFailure, loadFailureCopy } from "../../lib/ui/load-failure";
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
+import { pct } from "../../lib/format/percent";
 
 type LiveView = Extract<SeasonRolloverView, { status: "live" }>;
 

@@ -28,6 +28,7 @@ import {
 import { driveShareUrl, newDriveShareToken } from "../../../../lib/drive/share-token";
 import { createShare, listShares, revokeShare } from "../../../../lib/drive/store";
 import { parseShareEmails } from "../../../../lib/drive/validation";
+import { escapeHtml } from "../../../../lib/security/escape-html";
 
 export const dynamic = "force-dynamic";
 // A share to a classroom's worth of parents is a bounded set of provider round
@@ -35,14 +36,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const MAX_EMAILS = 25;
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
 
 export async function GET(request: Request) {
   try {

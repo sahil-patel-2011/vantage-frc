@@ -1,4 +1,5 @@
 import { wrapUntrusted } from "@vantage/agent/untrusted";
+import { escapeHtml } from "../security/escape-html";
 import { isEnglish } from "./contacts";
 import type { ParentDigest } from "./digest";
 
@@ -41,14 +42,6 @@ export function parseTranslationResponse(raw: string): TranslatedDigest | null {
 
 export function translationUnavailableNote(language: string): string {
   return `(Translation to "${language}" is unavailable right now — this update is in English.)`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 
 function textFooter(orgName: string, unsubscribeUrl: string): string {

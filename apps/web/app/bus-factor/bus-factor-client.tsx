@@ -36,15 +36,12 @@ import { withOrgHref } from "../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../lib/nav/resolve-org";
 import { getFeatureSnapshot, putFeatureSnapshot } from "../../lib/offline/feature-cache";
 import "./bus-factor.css";
+import { pct } from "../../lib/format/percent";
 
 function riskTone(level: RiskLevel): BadgeTone {
   if (level === "high") return "danger";
   if (level === "watch") return "setup";
   return "good";
-}
-
-function pct(value: number): string {
-  return `${Math.round(value * 100)}%`;
 }
 
 type LiveView = Extract<BusFactorView, { status: "live" }>;

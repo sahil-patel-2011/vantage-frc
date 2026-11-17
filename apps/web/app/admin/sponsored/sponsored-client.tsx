@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { askConfirm } from "../../../components/ui";
 
 type Policy = {
   enabled: boolean;
@@ -75,8 +76,12 @@ export default function SponsoredClient() {
   }, []);
 
   async function setEnabled(enabled: boolean) {
-    if (enabled && !confirm("Enable sponsored/free AI platform-wide?")) return;
-    if (!enabled && !confirm("Disable sponsored AI now? Free-tier orgs will stop getting sponsored calls.")) return;
+    const confirmed = await askConfirm(
+      enabled
+        ? { title: "Turn on sponsored AI for every team?", body: "Free-tier teams start getting sponsored AI calls.", confirmLabel: "Turn on sponsored AI", tone: "neutral" }
+        : { title: "Turn off sponsored AI now?", body: "Free-tier teams stop getting sponsored AI calls.", confirmLabel: "Turn off sponsored AI", tone: "destructive" },
+    );
+    if (!confirmed) return;
     const response = await fetch("/api/admin/sponsored", {
       method: "POST",
       headers: { "content-type": "application/json" },
