@@ -3,7 +3,7 @@ import { syncSponsorContributionMoney } from "../../../../lib/finance/source-mir
 import {
   defaultRenewalDueOn,
   defaultThankYouDueOn,
-} from "../../../../lib/sponsor-pipeline";
+} from "../../../../lib/sponsors/pipeline";
 import {
   FINANCE_MANAGER_REQUIRED,
   TenantHttpError,

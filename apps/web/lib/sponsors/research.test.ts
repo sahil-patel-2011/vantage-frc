@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { suggestProspectCategories } from "./sponsor-research";
+import { suggestProspectCategories } from "./research";
 
 describe("sponsor prospect category suggestions", () => {
   it("returns the requested number of categories with a rationale", () => {

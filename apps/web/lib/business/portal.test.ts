@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateEvidenceDraft, purchaseTotal, rankSponsorFit, sponsorHealth, summarizeBudget } from "./business-portal";
+import { generateEvidenceDraft, purchaseTotal, rankSponsorFit, sponsorHealth, summarizeBudget } from "./portal";
 
 describe("business portal calculations", () => {
   it("keeps requested, committed, and spent money distinct", () => {
@@ -23,7 +23,7 @@ describe("business portal calculations", () => {
   });
 
   it("surfaces orders pulse and finance-AI only when the toggle is on", async () => {
-    const { buildOrdersPulse } = await import("./orders/business-pulse");
+    const { buildOrdersPulse } = await import("../orders/business-pulse");
     const purchases = [
       {
         id: "1",

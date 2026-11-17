@@ -11,16 +11,16 @@ import {
   type SponsorInteraction,
   type SponsorProspect,
   type WritingDraft,
-} from "./business-portal";
-import { buildOrdersPulse } from "./orders/business-pulse";
-import { canManageFinances } from "./finance/finance-managers";
+} from "./portal";
+import { buildOrdersPulse } from "../orders/business-pulse";
+import { canManageFinances } from "../finance/finance-managers";
 import {
   buildSponsorReminders,
   isPipelineStage,
   mapLegacyStatusToPipelineStage,
   summarizeFundraisingProgress,
   type SponsorPipelineStage,
-} from "./sponsor-pipeline";
+} from "../sponsors/pipeline";
 import { currentSeasonYear as sharedCurrentSeasonYear } from "@vantage/game-year";
 
 export function currentBusinessSeason(now = new Date()): number {

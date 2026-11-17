@@ -3,7 +3,7 @@ import {
   SPONSOR_PIPELINE_STAGES,
   type SponsorPipelineStage,
   type SponsorReminder,
-} from "./sponsor-pipeline";
+} from "../sponsors/pipeline";
 
 export const PURCHASE_STATUSES = ["submitted", "approved", "ordered", "received", "rejected"] as const;
 export const SPONSOR_STATUSES = ["prospect", "active", "lapsed", "declined"] as const;

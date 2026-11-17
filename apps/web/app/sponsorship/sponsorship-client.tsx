@@ -15,7 +15,7 @@ import {
   STATUS_LABEL,
   type SponsorshipOnePager,
   type SponsorshipView,
-} from "../../lib/sponsorship-value-prop";
+} from "../../lib/sponsors/value-prop";
 
 type DraftFields = {
   title: string;

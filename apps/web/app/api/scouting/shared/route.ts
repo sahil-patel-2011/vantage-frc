@@ -2,7 +2,7 @@ import {
   intelErrorResponse,
   IntelHttpError,
   withIntelRequest,
-} from "../../../../lib/intel-auth";
+} from "../../../../lib/intel/auth";
 
 export async function GET(request: Request) {
   try {

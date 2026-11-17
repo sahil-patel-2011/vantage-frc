@@ -3,7 +3,7 @@ import {
   LocalSummaryProvider,
 } from "@vantage/intel-research";
 import { IntelResearchRepository } from "@vantage/intel-research/repository";
-import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth";
+import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel/auth";
 
 export async function POST(request: Request) {
   try {

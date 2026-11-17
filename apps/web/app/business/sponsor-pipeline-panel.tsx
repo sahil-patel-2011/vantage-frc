@@ -12,12 +12,12 @@ import {
   type Sponsor,
   type SponsorPipelineStage,
   type SponsorReminder,
-} from "../../lib/business-portal";
+} from "../../lib/business/portal";
 import {
   groupSponsorsByStage,
   nextPipelineStage,
   pipelineStageLabel,
-} from "../../lib/sponsor-pipeline";
+} from "../../lib/sponsors/pipeline";
 import {
   formatSponsorUsd,
   sponsorPageTotals,

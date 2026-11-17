@@ -10,7 +10,7 @@ import {
   statusForPipelineStage,
   summarizeFundraisingProgress,
   type PipelineSponsor,
-} from "./sponsor-pipeline";
+} from "./pipeline";
 
 function sponsor(partial: Partial<PipelineSponsor> & Pick<PipelineSponsor, "id" | "name">): PipelineSponsor {
   return {

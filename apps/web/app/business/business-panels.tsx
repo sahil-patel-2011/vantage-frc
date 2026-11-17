@@ -11,7 +11,7 @@ import {
   type BusinessView,
   type GrantApplication,
   type PurchaseRequest,
-} from "../../lib/business-portal";
+} from "../../lib/business/portal";
 import { describeBudgetLine, type BudgetLine, type BudgetVsActualView } from "../../lib/finance/budget-vs-actual";
 import { FundraisingGlance } from "./fundraising-glance";
 import { dollars, money, moneyWhenRecorded, percent, statusLabel, type Tab } from "./business-helpers";

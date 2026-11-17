@@ -1,5 +1,5 @@
 import { IntelResearchRepository } from "@vantage/intel-research/repository";
-import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth";
+import { intelErrorResponse, withIntelRequest } from "../../../../lib/intel/auth";
 import type { EventRatingRow } from "../../../../lib/intel/lovat-lookup";
 import { canEditLookupNotes, parseLookupNote } from "../../../../lib/intel/lookup-notes";
 import { searchTeamsRef } from "../../../../lib/intel/team-search";

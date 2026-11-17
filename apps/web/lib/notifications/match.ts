@@ -5,9 +5,9 @@ import {
   formatDiscordAnnouncement,
   isValidDiscordWebhook,
   postTeamDiscordMessage,
-} from "./discord";
-import { buildMyDayMatches, matchAlertBody, matchAlertTitle, type MyDayMatch } from "./my-day";
-import type { ScheduleMatch } from "./schedule-board";
+} from "../discord";
+import { buildMyDayMatches, matchAlertBody, matchAlertTitle, type MyDayMatch } from "../my-day";
+import type { ScheduleMatch } from "../schedule-board";
 
 const COOLDOWN_MINUTES = 120;
 

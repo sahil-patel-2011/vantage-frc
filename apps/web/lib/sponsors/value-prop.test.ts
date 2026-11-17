@@ -8,7 +8,7 @@ import {
   parseCreateOnePager,
   parseUpdateOnePager,
   type SponsorshipOnePager,
-} from "./sponsorship-value-prop";
+} from "./value-prop";
 
 const base: SponsorshipOnePager = {
   id: "p1",

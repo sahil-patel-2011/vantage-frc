@@ -1,9 +1,9 @@
 "use client";
 
 import { EmptyState, Button } from "../../components/ui";
-import type { BusinessView } from "../../lib/business-portal";
+import type { BusinessView } from "../../lib/business/portal";
 import { formatUsdCents } from "../../lib/finance/format-usd";
-import { PIPELINE_STAGE_LABELS } from "../../lib/sponsor-pipeline";
+import { PIPELINE_STAGE_LABELS } from "../../lib/sponsors/pipeline";
 
 /** The shared money format (A5-07): cents whenever there are cents. */
 const money = formatUsdCents;

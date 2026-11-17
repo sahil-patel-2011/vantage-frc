@@ -3,7 +3,7 @@ import { withRls } from "@vantage/db";
 import { cookies, headers } from "next/headers";
 import { assertScoutingLead } from "@vantage/scouting/permissions";
 import { classifyDbError } from "../../../lib/db-error";
-import { withIntelRequest, IntelHttpError } from "../../../lib/intel-auth";
+import { withIntelRequest, IntelHttpError } from "../../../lib/intel/auth";
 import { PickListSaveConflict, setEntryNotes } from "../../../lib/picklist";
 import { collabMutationRequest } from "../../../lib/picklist-collab/mutation-request";
 import { parseSecureJson, RequestSecurityError, securityErrorResponse } from "../../../lib/security/request";

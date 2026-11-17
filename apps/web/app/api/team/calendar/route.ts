@@ -23,7 +23,7 @@ import {
   fetchGitHubMilestoneCalendarItems,
   getGitHubAccessToken,
 } from "../../../../lib/github";
-import { notifyCalendarEvent } from "../../../../lib/notify-calendar";
+import { notifyCalendarEvent } from "../../../../lib/notifications/calendar";
 import {
   attendanceDateFromStart,
   CALENDAR_FEED_SCOPES,

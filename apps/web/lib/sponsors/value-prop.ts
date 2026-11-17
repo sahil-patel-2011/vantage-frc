@@ -39,7 +39,7 @@ export type SponsorshipContext = {
 };
 
 /** Re-export for value-prop loaders — never invent or import another team's copy. */
-export { buildWhoWeAreSeed } from "./team-background";
+export { buildWhoWeAreSeed } from "../team-background";
 
 export type SponsorshipView =
   | {

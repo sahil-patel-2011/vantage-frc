@@ -95,7 +95,7 @@ export const AI_SKILLS: readonly AiSkill[] = [
       "Any matching-gift programs we can use?",
     ],
     reads: ["Sponsor records and stages", "Contacts and last contact", "Contributions", "Follow-ups and renewals due", "Saved prospects", "Matching-gift programs"],
-    libModules: ["lib/business-data", "lib/sponsor-pipeline", "lib/sponsor-renewal-roi", "lib/matching-gift-finder", "lib/sponsor-suite"],
+    libModules: ["lib/business/data", "lib/sponsors/pipeline", "lib/sponsor-renewal-roi", "lib/matching-gift-finder", "lib/sponsor-suite"],
     keywords:
       /\b(sponsor(?:s|ship|ships|ed|ing)?|donors?|donat(?:e|ion|ions)|fundrais\w*|pledges?|who (?:should|do|can) we ask|ask next|outreach email|renewal (?:email|letter|ask)|thank[- ]you (?:note|email|letter))\b/i,
     access: { minRole: "viewer", hub: "business" },
@@ -210,7 +210,7 @@ export const AI_SKILLS: readonly AiSkill[] = [
     purpose: "Grant deadlines, what each application still needs, and help answering a funder's question.",
     starters: ["Which grant deadlines are coming up?", "Help me answer a grant question"],
     reads: ["Grant applications and deadlines", "Requirements on file", "Awards on record", "Impact totals"],
-    libModules: ["lib/business-data"],
+    libModules: ["lib/business/data"],
     keywords: /\b(grants?|funders?|foundation application|application deadline)\b/i,
     access: { minRole: "viewer", hub: "business" },
     home: { label: "Open Grants", path: "/business?tab=grants" },

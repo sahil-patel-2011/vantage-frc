@@ -2,7 +2,7 @@ import type { PoolClient } from "@neondatabase/serverless";
 import { assertOrgAuthentication,auth } from "@vantage/core";
 import { withRls } from "@vantage/db";
 import { cookies,headers } from "next/headers";
-import { failMeteredAi } from "./metered-ai-fail";
+import { failMeteredAi } from "../metered-ai-fail";
 
 export class IntelHttpError extends Error {
   constructor(readonly status: number, message: string) {

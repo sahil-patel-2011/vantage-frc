@@ -1,5 +1,5 @@
 import { withRls } from "@vantage/db";
-import { suggestProspectCategories } from "../../../../lib/sponsor-research";
+import { suggestProspectCategories } from "../../../../lib/sponsors/research";
 import {
   requireSponsorsAdmin,
   requireSponsorsMember,
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 /**
  * Generates starter prospect categories from a static playbook, weighted away
  * from industries this org already has sponsors in. No live web search yet —
- * see apps/web/lib/sponsor-research.ts for the upgrade seam.
+ * see apps/web/lib/sponsors/research.ts for the upgrade seam.
  */
 export async function POST(request: Request) {
   try {

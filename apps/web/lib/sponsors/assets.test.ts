@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { internalSponsorAssetUrl, safeSponsorFilename, sponsorImageKind } from "./sponsor-assets";
+import { internalSponsorAssetUrl, safeSponsorFilename, sponsorImageKind } from "./assets";
 
 describe("sponsor artwork safeguards", () => {
   it("recognizes only supported image signatures", () => {

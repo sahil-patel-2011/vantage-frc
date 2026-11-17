@@ -4,7 +4,7 @@ const fake = vi.hoisted(() => ({ query: vi.fn(), request: vi.fn(), session: vi.f
 vi.mock("@vantage/core", () => ({ auth: { api: { getSession: fake.session } }, assertOrgAuthentication: fake.policy }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers(), cookies: async () => ({ get: () => undefined }) }));
 vi.mock("@vantage/db", () => ({ withRls: fake.request }));
-vi.mock("../../../lib/intel-auth", () => ({ withIntelRequest: fake.request, IntelHttpError: class extends Error { constructor(readonly status: number, message: string) { super(message); } } }));
+vi.mock("../../../lib/intel/auth", () => ({ withIntelRequest: fake.request, IntelHttpError: class extends Error { constructor(readonly status: number, message: string) { super(message); } } }));
 vi.mock("@vantage/scouting/permissions", () => ({ assertScoutingLead: fake.lead }));
 vi.mock("../../../lib/picklist", () => ({ PickListSaveConflict: class extends Error { readonly status = 409; }, setEntryNotes: vi.fn() }));
 vi.mock("../../../lib/picklist-collab/compute-picklist-collab", () => ({ computePicklistCollabView: fake.compute, createList: fake.create, currentSeasonYear: () => 2026,

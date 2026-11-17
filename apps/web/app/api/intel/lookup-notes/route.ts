@@ -1,4 +1,4 @@
-import { IntelHttpError, intelErrorResponse, withIntelRequest } from "../../../../lib/intel-auth";
+import { IntelHttpError, intelErrorResponse, withIntelRequest } from "../../../../lib/intel/auth";
 import { canEditLookupNotes, parseLookupNote, sanitizeLookupNote } from "../../../../lib/intel/lookup-notes";
 
 export async function GET(request: Request) {
