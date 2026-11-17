@@ -8,6 +8,6 @@ describe("leftover Rankings sync student copy", () => {
   it("uses student chrome", () => {
     const src = readFileSync(join(WEB, "lib/rankings/tba-cache.ts"), "utf8");
     expect(src).not.toContain("Sync TBA/Statbotics under Team");
-    expect(src).toContain("Sync Team Data under Team");
+    expect(src).toContain("refresh event data in Team → Data");
   });
 });

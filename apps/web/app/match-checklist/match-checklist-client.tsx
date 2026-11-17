@@ -377,7 +377,7 @@ function StartRunForm({
         </FormRow>
       </FormGrid>
       <div className="mcl-start-actions">
-        <Button variant={next ? "secondary" : "primary"} type="submit" disabled={busy || !form.matchLabel.trim()}>
+        <Button variant={next ? "secondary" : "primary"} type="submit" disabled={busy}>
           {busy ? "Working…" : "Start checklist"}
         </Button>
       </div>
@@ -551,18 +551,27 @@ function RunCard({
             })}
           </span>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          tone="danger"
+          size="sm"
           type="button"
-          className="text-button"
           disabled={busy}
           onClick={async () => {
-            if (await askConfirm({ title: `Delete checklist for “${run.matchLabel}”?`, body: null, confirmLabel: "Delete checklist", tone: "destructive" })) {
+            if (
+              await askConfirm({
+                title: `Delete checklist for “${run.matchLabel}”?`,
+                body: "Its ticked items and timing are deleted. This can't be undone.",
+                confirmLabel: "Delete checklist",
+                tone: "destructive",
+              })
+            ) {
               mutate({ action: "delete-run", runId: run.id });
             }
           }}
         >
           Delete
-        </button>
+        </Button>
       </header>
       <ul className="mcl-items">
         {run.items.map((item) => (

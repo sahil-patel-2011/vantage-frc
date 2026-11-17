@@ -3,7 +3,7 @@
 import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState, PageHeader, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Button, askConfirm } from "../../../components/ui";
 import { hubHref } from "../../../lib/nav/hubs";
 import { withOrgHref } from "../../../lib/nav/product-nav";
 import { FEATURE_API_TIMEOUT_MS } from "../../../lib/nav/resolve-org";
@@ -759,7 +759,21 @@ export default function DraftClient() {
           </select>
         </label>
         <div className="strategy-pick-actions">
-          <Button variant="secondary" type="button" disabled={!data.canEdit || saving} onClick={() => void persist(state, "reset")}>
+          <Button
+            variant="secondary"
+            tone="danger"
+            type="button"
+            disabled={!data.canEdit || saving}
+            onClick={async () => {
+              const ok = await askConfirm({
+                title: "Reset the draft board?",
+                body: "Every captain and pick on all 8 alliances is cleared.",
+                confirmLabel: "Reset board",
+                tone: "destructive",
+              });
+              if (ok) void persist(state, "reset");
+            }}
+          >
             Reset board
           </Button>
           <Button variant="secondary" type="button" disabled={!data.canEdit || saving} onClick={() => void createShare()}>
@@ -853,7 +867,7 @@ export default function DraftClient() {
         <section className="app-card">
           <h3>Mentor share history</h3>
           <p className="app-muted draft-share-note">
-            Tokens are hashed and scoped to this org&apos;s board — revoke anytime.
+            Anyone with an active link can view this board. Revoke a link to close it.
           </p>
           <ul className="strategy-share-history">
             {data.shareTokens.map((token) => (
@@ -866,7 +880,14 @@ export default function DraftClient() {
                   <button
                     type="button"
                     className="text-button"
-                    onClick={() => {
+                    onClick={async () => {
+                      const ok = await askConfirm({
+                        title: "Revoke this share link?",
+                        body: "Anyone using this link can no longer view the board.",
+                        confirmLabel: "Revoke link",
+                        tone: "destructive",
+                      });
+                      if (!ok) return;
                       void fetch("/api/strategy/draft", {
                         method: "POST",
                         headers: { "content-type": "application/json" },

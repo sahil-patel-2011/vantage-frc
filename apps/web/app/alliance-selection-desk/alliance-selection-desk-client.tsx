@@ -528,7 +528,7 @@ export default function AllianceSelectionDeskClient() {
           </>
         }
         title="Alliance selection desk"
-        description="Live pick board with shared slots, scout evidence attach, ranking conflict flags, and drive-team export."
+        description="Fill each alliance's picks together, attach scout notes, and print a pack for the drive team."
       >
         <div className="alliance-desk-header-actions">
           {view?.status === "live" ? (
@@ -654,7 +654,6 @@ export default function AllianceSelectionDeskClient() {
             <Panel id="alliance-desk-export" className="alliance-desk-panel">
               <h3 style={{ marginTop: 0 }}>Drive-team export</h3>
               <p className="app-muted">Exported {new Date(exportSnap.exportedAt).toLocaleString()}</p>
-              <pre className="alliance-desk-export-pre">{JSON.stringify(exportSnap, null, 2)}</pre>
               <Button type="button" variant="secondary" size="sm" onClick={() => window.print()}>
                 Print this pack
               </Button>

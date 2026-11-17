@@ -154,8 +154,8 @@ export function classifyRankingsCache(input: {
 
 export function rankingsCacheRequiredCopy(): { title: string; description: string } {
   return {
-    title: "Reference metrics not synced yet",
-    description: "Sync Team Data under Team → Data to populate event rankings — ranks stay blank until cache rows exist.",
+    title: "No rankings for this event yet",
+    description: "Rankings appear once the event posts results. An owner or admin can refresh event data in Team → Data.",
   };
 }
 
@@ -176,7 +176,7 @@ export function rankingsEmptyAction(input: {
   return {
     label: "Open Scouting",
     href: hubHref("/competition", "scouting", input.orgId),
-    description: "Ranks stay blank until an owner or admin syncs this event. You can still scout.",
+    description: "Ranks stay blank until an owner or admin refreshes event data. You can still scout.",
   };
 }
 

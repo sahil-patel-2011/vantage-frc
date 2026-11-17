@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { plainStrategyText, readablePlanChip } from "../../lib/briefing/plain-text";
 import { ourSideRange } from "../../lib/strategy/our-side-range";
 import { OfflineBanner } from "../../components/offline-banner";
-import { Button, EmptyState } from "../../components/ui";
+import { Button, EmptyState, TextBlockSkeleton } from "../../components/ui";
 import { briefingChecklist, matchLabel, type BriefingPrediction } from "../../lib/briefing";
 import { buildOpponentCards } from "../../lib/briefing/opponent-cards";
 import { briefingPartnerSyncHref, briefingSetupAction } from "../../lib/briefing/setup-action";
@@ -221,7 +221,9 @@ export default function BriefingClient() {
               );
             })()
           ) : (
-            <p className="app-muted">Loading pre-match briefing…</p>
+            <div aria-busy="true" aria-label="Loading pre-match briefing">
+              <TextBlockSkeleton lines={4} />
+            </div>
           )}
         </div>
       </main>
@@ -360,7 +362,7 @@ export default function BriefingClient() {
               </select>
             </label>
             <details className="brief-more">
-              <summary aria-label="More briefing actions">⋯</summary>
+              <summary aria-label="More briefing actions">More</summary>
               <div className="brief-more-menu">
                 <button type="button" onClick={() => void load(selectedRef.current)}>
                   Refresh now
@@ -448,11 +450,8 @@ export default function BriefingClient() {
           </div>
         ) : (
           <div className="brief-prob none">
-            <span className="brief-prob-label">No grounded prediction yet</span>
+            <span className="brief-prob-label">No win chance yet</span>
             <a href={withOrg("/strategy", orgId)}>Run Strategy</a>
-            <Button variant="secondary" type="button" onClick={() => void load(selectedRef.current, { refresh: true })}>
-              Recompute prediction
-            </Button>
           </div>
         )}
       </section>

@@ -532,7 +532,7 @@ function MyScouting({ duties, orgId }: { duties: MyDayScoutDuty[]; orgId: string
     <section className="myday-scouting" aria-labelledby="myday-scouting-title">
       <h2 id="myday-scouting-title">You scout</h2>
       <ul>
-        {duties.map((duty, index) => {
+        {duties.map((duty) => {
           const time = duty.scheduledTime ? new Date(duty.scheduledTime) : null;
           const params = new URLSearchParams({ tab: "scouting", matchKey: duty.matchKey, teamKey: duty.teamKey });
           if (orgId) params.set("orgId", orgId);
@@ -545,7 +545,7 @@ function MyScouting({ duties, orgId }: { duties: MyDayScoutDuty[]; orgId: string
                   <small>{time.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</small>
                 ) : null}
               </span>
-              <a className={`myday-link${index === 0 ? " primary" : ""}`} href={`/competition?${params.toString()}`}>
+              <a className="myday-link" href={`/competition?${params.toString()}`}>
                 Scout
               </a>
             </li>

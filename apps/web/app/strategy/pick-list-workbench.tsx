@@ -910,8 +910,8 @@ function EventPickListWorkbench({
           ? "The team is removed when you save. Its pick-list discussion and votes will also be removed. A team on the draft board must first be cleared from its board slot."
           : "Your unsaved ranking will be discarded when you open the selected list. Keep editing to save your changes first."}</p>
         <div className="app-actions">
-          <Button type="button" variant="primary" onClick={() => setConfirmAction(null)}>Keep editing</Button>
-          <Button type="button" variant="secondary" disabled={saving || seating} onClick={() => {
+          <Button type="button" variant="secondary" onClick={() => setConfirmAction(null)}>Keep editing</Button>
+          <Button type="button" variant="danger" disabled={saving || seating} onClick={() => {
             if (!confirmAction || operation.current) return;
             if (confirmAction.kind === "select") openList(confirmAction.id);
             else { removeEntry(confirmAction.teamKey); setConfirmAction(null); }

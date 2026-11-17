@@ -7,7 +7,7 @@ import { MatchActivityRecorder } from "./match-activity-recorder";
 import { SCOUT_IDENTITY_LOCK_COPY } from "@vantage/scouting/identity";
 import { fieldConfidenceHint, type FieldTrustSummary, type SchemaBudget } from "@vantage/scouting/trust";
 import { MEDIA_ENABLED } from "../../lib/media-availability";
-import { ActionMenu, EmptyState, PageHeader, Panel, Button, askConfirm } from "../../components/ui";
+import { ActionMenu, EmptyState, PageHeader, Panel, Button, TextBlockSkeleton, askConfirm } from "../../components/ui";
 import { ScoutingSharing } from "./scouting-sharing";
 import { CopyShareLink } from "../../components/copy-share-link";
 import { OfflineBanner } from "../../components/offline-banner";
@@ -60,7 +60,11 @@ import "./scouting-workspace.css";
 // Tabs most scouts never open load on first visit: team profiles, the trust checks (zod schemas)
 // and the QR handoff (jsQR + qrcode) were most of the scouting page's first-load JavaScript.
 // The handoff is still fetched right after load (useWarmHandoffPanel) so it works offline.
-const tabLoading = () => <p className="app-muted" role="status">Loading…</p>;
+const tabLoading = () => (
+  <div aria-busy="true">
+    <TextBlockSkeleton lines={4} />
+  </div>
+);
 const ScoutingTeamProfiles = dynamic(
   () => import("./scouting-team-profiles").then((mod) => mod.ScoutingTeamProfiles),
   { loading: tabLoading },
@@ -565,7 +569,7 @@ return (
                         <p className="app-muted">Entry candidates load after refresh.</p>
                       ) : null}
                       <div className="scout-conflict-actions">
-                        <Button variant="primary" type="button" disabled={!selected} onClick={() => void reviewConflict(id, "resolved")}>
+                        <Button variant="secondary" type="button" disabled={!selected} onClick={() => void reviewConflict(id, "resolved")}>
                           {selectedCandidate
                             ? `${conflictScoutName(selectedCandidate.scoutName)} was right`
                             : "Pick a scout"}
@@ -801,11 +805,11 @@ return (
                     data-status={flag.status}
                     data-soft={flag.soft ? "true" : "false"}
                   >
-                    <b>{flag.fieldKey}</b>
+                    <b>{conflictFieldLabel(flag.fieldKey, formFields)}</b>
                     <span>{flag.detail}</span>
                     {flag.status === "conflict" ? (
                       <small>
-                        Scout {JSON.stringify(flag.scoutValue)} · Official {JSON.stringify(flag.officialValue)}
+                        Scout {conflictValueLabel(flag.scoutValue)} · Official {conflictValueLabel(flag.officialValue)}
                       </small>
                     ) : null}
                   </li>
