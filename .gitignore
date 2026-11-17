@@ -1,7 +1,7 @@
 node_modules/
 node_modules
 .next/
-.leftover-kit-stash/
+.DS_Store
 dist/
 release/
 !docs/release/
