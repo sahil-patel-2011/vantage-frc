@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "../../components/ui";
+import { useInSettingsLayout } from "../../components/settings-layout";
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchProductSession } from "../../lib/nav/product-session";
@@ -125,6 +126,7 @@ async function downloadBlob(response: Response, fallbackName: string) {
 }
 
 export default function ExportCenter({ orgId }: { orgId: string }) {
+  const inSettings = useInSettingsLayout();
   const [domains, setDomains] = useState<Domain[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -275,7 +277,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       <header className="app-page-header">
         <div>
           <span className="breadcrumbs">Settings › Team data and export</span>
-          <h1>Exports</h1>
+          <h1>Export</h1>
           <p>
             Download your team&apos;s data, including AI chats, as spreadsheets (CSV) or one ZIP. Only your
             team&apos;s rows are included, and never passwords or keys.
@@ -293,13 +295,16 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
         </div>
       </header>
 
-      <nav className="export-cross-nav" aria-label="Related team data">
-        <a href={`/scouting?orgId=${encodeURIComponent(orgId)}`}>Scouting</a>
-        <a href={`/strategy?orgId=${encodeURIComponent(orgId)}`}>Strategy</a>
-        <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
-        <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
-        {canSync ? <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Event data</a> : null}
-      </nav>
+      {/* Inside Settings the frame's back link is the way out; these five links led elsewhere. */}
+      {inSettings ? null : (
+        <nav className="export-cross-nav" aria-label="Related team data">
+          <a href={`/scouting?orgId=${encodeURIComponent(orgId)}`}>Scouting</a>
+          <a href={`/strategy?orgId=${encodeURIComponent(orgId)}`}>Strategy</a>
+          <a href={`/business?orgId=${encodeURIComponent(orgId)}`}>Business</a>
+          <a href={`/team/usage?orgId=${encodeURIComponent(orgId)}`}>AI usage</a>
+          {canSync ? <a href={`/team/data?orgId=${encodeURIComponent(orgId)}`}>Event data</a> : null}
+        </nav>
+      )}
 
       {message ? (
         <p className={`telemetry-status${ok ? " success" : ""}`} role="status">

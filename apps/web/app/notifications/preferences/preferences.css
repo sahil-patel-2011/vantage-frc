@@ -1,0 +1,11 @@
+/* The save result for the switch just changed, under its own label. */
+.notif-prefs-row-status {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.notif-prefs-row-status.success {
+  color: var(--positive);
+  font-weight: 600;
+}

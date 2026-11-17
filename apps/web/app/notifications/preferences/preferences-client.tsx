@@ -3,7 +3,8 @@
 import { staleCopyNotice } from "../../../lib/ui/stale-copy";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { OfflineBanner } from "../../../components/offline-banner";
-import { EmptyState, PageHeader, Panel, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Panel, Button, SoftBlockSkeleton } from "../../../components/ui";
+import { useInSettingsLayout } from "../../../components/settings-layout";
 import { ACCOUNT_EMAIL_COPY, studentEmailDelivery } from "../../../lib/account/account-api-related";
 import { PushDevicePanel } from "../../account/account-push-panel";
 import {
@@ -27,6 +28,7 @@ import {
 import { classifyLoadFailure, loadFailureCopy } from "../../../lib/ui/load-failure";
 import "../../product-hub.css";
 import "../notifications.css";
+import "./preferences.css";
 
 type InAppPrefs = NotificationPrefs;
 
@@ -86,10 +88,13 @@ async function persistPrefsSnapshot(data: PrefsView): Promise<void> {
 }
 
 function PrefsRelated() {
+  const inSettings = useInSettingsLayout();
   const links = notificationRelatedLinks({
     include: [...NOTIFICATION_RELATED_INCLUDE],
     active: "preferences",
   });
+  // Inside Settings the frame's back link is the way out; a second row of links repeated it.
+  if (inSettings) return null;
   return (
     <nav className="product-hub-related notif-related" aria-label="Related account tools">
       <a href="/notifications">Inbox</a>
@@ -108,6 +113,8 @@ export default function NotificationPreferencesClient() {
   const [message, setMessage] = useState("");
   const [messageOk, setMessageOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** The switch last changed, so its save result shows beside it rather than far below. */
+  const [changedKey, setChangedKey] = useState<string | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [fromCache, setFromCache] = useState(false);
@@ -217,7 +224,8 @@ export default function NotificationPreferencesClient() {
     19 switches, and leaving the page without pressing it dropped the change without a word.
     Saves run one after another so a quick second tap never lands before the first.
   */
-  function change(next: { inApp?: InAppPrefs; email?: EmailPrefs }) {
+  function change(next: { inApp?: InAppPrefs; email?: EmailPrefs }, key: string) {
+    setChangedKey(key);
     const current = latest.current ?? { inApp: inAppPrefs, email: emailPrefs };
     const merged = { inApp: next.inApp ?? current.inApp, email: next.email ?? current.email };
     latest.current = merged;
@@ -294,38 +302,43 @@ export default function NotificationPreferencesClient() {
       <main className="module-page notif-prefs-page notif-page">
         <PageHeader
           breadcrumbs="Settings › Notifications"
-          title="Notification preferences"
+          title="Notifications"
           description="Every notification switch in one place: your inbox, this device, and email."
         >
           <PrefsRelated />
         </PageHeader>
         <OfflineBanner feature="Notification preferences" fromCache={fromCache} cachedAt={cachedAt} />
-        <EmptyState
-          soft
-          title={failure ? failure.title : "Loading preferences…"}
-          description={failure ? failure.description : "Loading your inbox and email opt-ins."}
-          aria-busy={!fetchFailed}
-        >
-          {failure?.primary ? (
-            <Button as="a" variant="primary" href={failure.primary.href}>
-              {failure.primary.label}
-            </Button>
-          ) : failure?.showRetry ? (
-            <Button variant="primary" type="button" onClick={() => void load()}>
-              Retry
-            </Button>
-          ) : null}
-        </EmptyState>
+        {failure ? (
+          <EmptyState soft title={failure.title} description={failure.description}>
+            {failure.primary ? (
+              <Button as="a" variant="primary" href={failure.primary.href}>
+                {failure.primary.label}
+              </Button>
+            ) : failure.showRetry ? (
+              <Button variant="primary" type="button" onClick={() => void load()}>
+                Retry
+              </Button>
+            ) : null}
+          </EmptyState>
+        ) : (
+          <div aria-busy="true"><SoftBlockSkeleton lines={3} /></div>
+        )}
       </main>
     );
   }
 
   const emailOn = emailIsOn(delivery);
+  const rowStatus = (key: string) =>
+    changedKey === key && message ? (
+      <small className={`notif-prefs-row-status${messageOk ? " success" : ""}`} role="status" aria-busy={busy || undefined}>
+        {message}
+      </small>
+    ) : null;
   return (
     <main className="module-page notif-prefs-page notif-page">
       <PageHeader
         breadcrumbs="Settings › Notifications"
-        title="Notification preferences"
+        title="Notifications"
         description="Every notification switch in one place: your inbox, this device, and email."
       >
         <PrefsRelated />
@@ -341,6 +354,7 @@ export default function NotificationPreferencesClient() {
               <div>
                 <strong>{item.title}</strong>
                 <small>{item.detail}</small>
+                {rowStatus(`inApp:${item.key}`)}
               </div>
               <label className="account-switch">
                 <span className="sr-only">{item.title}</span>
@@ -348,7 +362,10 @@ export default function NotificationPreferencesClient() {
                   type="checkbox"
                   checked={inAppPrefs[item.key]}
                   onChange={(event) =>
-                    change({ inApp: { ...(latest.current?.inApp ?? inAppPrefs), [item.key]: event.target.checked } })
+                    change(
+                      { inApp: { ...(latest.current?.inApp ?? inAppPrefs), [item.key]: event.target.checked } },
+                      `inApp:${item.key}`,
+                    )
                   }
                 />
               </label>
@@ -378,6 +395,7 @@ export default function NotificationPreferencesClient() {
               <div>
                 <strong>{item.title}</strong>
                 <small>{item.detail}</small>
+                {rowStatus(`email:${item.key}`)}
               </div>
               <label className="account-switch">
                 <span className="sr-only">{item.title}</span>
@@ -385,7 +403,10 @@ export default function NotificationPreferencesClient() {
                   type="checkbox"
                   checked={emailPrefs[item.key]}
                   onChange={(event) =>
-                    change({ email: { ...(latest.current?.email ?? emailPrefs), [item.key]: event.target.checked } })
+                    change(
+                      { email: { ...(latest.current?.email ?? emailPrefs), [item.key]: event.target.checked } },
+                      `email:${item.key}`,
+                    )
                   }
                 />
               </label>
@@ -395,9 +416,13 @@ export default function NotificationPreferencesClient() {
       </Panel>
 
       <div className="notif-prefs-save">
-        <p className={`notif-prefs-message${messageOk ? " success" : ""}`} role="status" aria-busy={busy || undefined}>
-          {message || "Each switch saves as soon as you change it."}
-        </p>
+        {changedKey ? (
+          <p className="notif-prefs-message">Each switch saves as soon as you change it.</p>
+        ) : (
+          <p className={`notif-prefs-message${messageOk ? " success" : ""}`} role="status">
+            {message || "Each switch saves as soon as you change it."}
+          </p>
+        )}
       </div>
     </main>
   );

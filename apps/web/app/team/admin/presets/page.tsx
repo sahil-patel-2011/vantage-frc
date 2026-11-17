@@ -32,12 +32,11 @@ export default async function AccessPresetsPage({
       <PageHeader
         breadcrumbs="Settings › Access and roles"
         title="Access and roles"
-        description="Define access once, like Scouting lead, then give it to someone from their Access panel on Team admin."
-      >
-        <nav className="team-admin-settings-links" aria-label="Team settings">
-          <a href={withOrgHref("/team/admin", orgId)}>‹ Team admin</a>
-        </nav>
-      </PageHeader>
+        description={<>
+          Define access once, like Scouting lead, then give it to someone from their Access panel in{" "}
+          <a href={withOrgHref("/team/admin", orgId)}>Members and invites</a>.
+        </>}
+      />
       <RoleProfilesPanel orgId={orgId} />
     </main>
   );

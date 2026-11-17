@@ -2,7 +2,7 @@ import ExportCenter from "./export-client";
 import "./exports.css";
 
 export const metadata = {
-  title: "Exports",
+  title: "Export",
   description: "Audited CSV, PDF inventory, and ZIP archives of team data showing where each item came from.",
 };
 
@@ -17,7 +17,7 @@ export default async function ExportsPage({
       <main className="soft-gate content">
         <span className="eyebrow">Export</span>
         <h1>Choose your team</h1>
-        <p>Open Export Center from a team so archives stay scoped to the right organization.</p>
+        <p>Open Export from a team so archives stay scoped to the right team.</p>
         <a href="/dashboard">Go to Home</a>
       </main>
     );

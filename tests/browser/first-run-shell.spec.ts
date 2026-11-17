@@ -9,7 +9,7 @@ test.beforeEach(async ({ context }) => {
 const LEAVES = [
   { path: "/start", heading: /Your first week|Set up your team/i },
   { path: "/security", heading: /Security/i },
-  { path: "/notifications/preferences", heading: /Notification preferences/i },
+  { path: "/notifications/preferences", heading: /^Notifications$/i },
   { path: "/cad/connections", heading: /CAD connections|Choose your team/i },
 ] as const;
 

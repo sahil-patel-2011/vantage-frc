@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { EmptyState, PageHeader, Button } from "../../../components/ui";
+import { EmptyState, PageHeader, Button, SoftBlockSkeleton } from "../../../components/ui";
 import { UsageCutoffBanner } from "../../../components/usage-cutoff-banner";
 import {
   aiUsageNextActions,
@@ -14,6 +14,7 @@ import {
 } from "../../../lib/billing/ai-budgets-related";
 import { buildUsageCutoffSnapshot } from "../../../lib/billing/usage-cutoff";
 import { hubHref } from "../../../lib/nav/hubs";
+import { settingsBreadcrumb } from "../../../lib/nav/settings-nav";
 import { aiSkillById } from "../../../lib/ai-skills/catalog";
 import "../budgets/ai-budgets.css";
 
@@ -332,7 +333,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
   return (
     <main className="intel-app ai-budgets-page ai-usage-page">
       <PageHeader
-        breadcrumbs="Ask AI / Usage"
+        breadcrumbs={settingsBreadcrumb("AI usage")}
         title="AI usage"
         description="Every AI call the team made: the model, the feature, who asked, and which key paid for it."
       />
@@ -345,10 +346,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
       ) : null}
 
       {loading ? (
-        <section className="app-card soft-panel product-hub-setup" aria-busy>
-          <h2>{shellCopy.title}</h2>
-          <p className="app-muted">{shellCopy.description}</p>
-        </section>
+        <div aria-busy="true"><SoftBlockSkeleton lines={3} /></div>
       ) : null}
 
       {blocked ? (
@@ -406,7 +404,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
           {usage && !showEmptyBanner ? (
             <section className="admin-grid">
               <section className="intel-panel">
-                <span className="eyebrow">FUNDING SOURCE · LAST {windowDays}D</span>
+                <span className="eyebrow">Which key paid · last {windowDays} days</span>
                 {!activity?.byKeySource.length && (
                   <p className="app-muted">No AI calls in this window.</p>
                 )}
@@ -424,7 +422,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
                 ))}
               </section>
               <section className="intel-panel">
-                <span className="eyebrow">SPEND BY FEATURE · LAST {windowDays}D</span>
+                <span className="eyebrow">Spend by feature · last {windowDays} days</span>
                 {!activity?.byFeature.length && (
                   <p className="app-muted">No AI calls in this window.</p>
                 )}
@@ -447,7 +445,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
           {usage && !showEmptyBanner ? (
             <section className="admin-grid">
               <section className="intel-panel">
-                <span className="eyebrow">BY MEMBER · ALL TIME</span>
+                <span className="eyebrow">By member · all time</span>
                 {!usage.members.length && <p className="app-muted">No members yet.</p>}
                 {usage.members
                   .slice()
@@ -463,7 +461,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
                   ))}
               </section>
               <section className="intel-panel">
-                <span className="eyebrow">BY AI · ALL TIME</span>
+                <span className="eyebrow">By AI · all time</span>
                 {!usage.models.length && (
                   <p className="app-muted">No model usage recorded yet.</p>
                 )}
@@ -486,7 +484,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
           {denials ? (
             <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
               <span className="eyebrow">
-                BLOCKED REQUESTS · {denials.total} IN LAST {denials.windowDays}D
+                Blocked requests · {denials.total} in the last {denials.windowDays} days
               </span>
               <h2>AI calls stopped by policy</h2>
               <p className="app-muted">
@@ -526,7 +524,7 @@ export default function UsageClient({ orgId }: { orgId: string }) {
 
           {activity ? (
             <section className="intel-panel" style={{ marginTop: "1.5rem" }}>
-              <span className="eyebrow">RECENT ACTIVITY · LAST {activity.events.length} CALLS</span>
+              <span className="eyebrow">Recent activity · last {activity.events.length} calls</span>
               {!activity.events.length && (
                 <p className="app-muted">No AI calls yet.</p>
               )}

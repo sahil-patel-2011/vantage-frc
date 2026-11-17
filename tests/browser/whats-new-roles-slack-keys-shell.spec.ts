@@ -39,9 +39,9 @@ const SURFACES = [
   },
   {
     path: "/team/ai-keys",
-    heading: "AI keys",
+    heading: "Team AI keys",
     // One breadcrumb for every team settings page (lib/nav/team-settings-nav.ts).
-    crumb: /Team settings\s*\/\s*AI keys/,
+    crumb: /Settings\s*›\s*Team AI keys/,
     // Personal keys fold behind one line; the line itself is the heading.
     ready: "Just for you: your own key or model",
   },
