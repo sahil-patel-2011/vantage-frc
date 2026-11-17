@@ -3,9 +3,22 @@ import {
   activeSettingsId,
   isSettingsPath,
   SETTINGS_NAV,
+  SETTINGS_SEARCH_ONLY_IDS,
+  settingsNavGroups,
   settingsRoleTier,
   visibleSettingsNav,
 } from "./settings-nav";
+
+describe("settings list groups", () => {
+  it("lists every visible row once, except parts of a page that search alone opens", () => {
+    for (const role of ["scout", "admin", "owner"]) {
+      const items = visibleSettingsNav(role);
+      const listed = settingsNavGroups(items).flatMap((group) => group.items.map((item) => item.id));
+      expect(new Set(listed).size).toBe(listed.length);
+      expect(listed.sort()).toEqual(items.map((item) => item.id).filter((id) => !SETTINGS_SEARCH_ONLY_IDS.includes(id)).sort());
+    }
+  });
+});
 
 describe("settings nav model", () => {
   it("every href starts with / and ids are unique", () => {

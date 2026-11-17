@@ -82,7 +82,7 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     detail: "Review the team's AI usage",
     keywords: ["ai usage", "usage log", "tokens", "ai cost"] },
   { id: "team-admin", label: "Members and invites", href: "/team/admin", icon: "users", scope: "team", requiredRole: "owner-admin",
-    detail: "Invite people and choose what each can do",
+    detail: "Invite people, the join code, and who manages money",
     keywords: ["members", "invite", "invites", "add someone", "add member", "people", "team admin", "remove member", "roles"] },
   { id: "access-roles", label: "Access and roles", href: "/team/admin/presets", icon: "shield", scope: "team", requiredRole: "owner-admin",
     detail: "Custom roles and scouting leads",
@@ -107,16 +107,22 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     keywords: ["delete team", "remove team", "close team", "shut down team"] },
 ];
 
+/**
+ * Ids that stay in SETTINGS_NAV for search ("join code" lands on that part of the page) but
+ * are not rows of their own: both are sections of Members and invites, which is already a row.
+ */
+export const SETTINGS_SEARCH_ONLY_IDS: readonly string[] = ["money-managers", "join-code"];
+
 /** Small, task-based groups shared by the directory and the section selector. */
 export function settingsNavGroups(items: SettingsNavItem[]) {
   const groups = [
     { label: "Your account", ids: ["profile", "security", "teams"] },
     { label: "Preferences", ids: ["appearance", "notifications"] },
     { label: "Connections and your AI", ids: ["connectors", "my-ai-keys"] },
-    { label: "Team · People and access", ids: ["team-admin", "access-roles", "money-managers", "join-code", "member-access", "chat"] },
-    { label: "Team · AI", ids: ["team-ai-keys", "ai-limits", "ai-usage"] },
-    { label: "Team · Data", ids: ["team-data"] },
-    { label: "Account and team removal", ids: ["delete-account", "delete-team"] },
+    { label: "Team members and access", ids: ["team-admin", "access-roles", "member-access", "chat"] },
+    { label: "Team AI", ids: ["team-ai-keys", "ai-limits", "ai-usage"] },
+    { label: "Team data", ids: ["team-data"] },
+    { label: "Delete", ids: ["delete-account", "delete-team"] },
   ];
   return groups.map(group => ({ label: group.label, items: group.ids.flatMap(id => items.filter(item => item.id === id)) }))
     .filter(group => group.items.length > 0);
