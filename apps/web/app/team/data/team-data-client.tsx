@@ -290,8 +290,6 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
   const paintedOrgRef = useRef<string | null>(null);
 
   const exportHref = withOrgHref("/exports", orgId);
-  const exportPdfHref = withOrgHref("/exports?action=pdf", orgId);
-
   const applySnapshot = useCallback((data: TeamDataSnapshot) => {
     setInventory(data.inventory);
     setReference(data.reference);
@@ -606,10 +604,7 @@ export default function TeamDataClient({ orgId }: { orgId: string }) {
             chip row. */}
         <div className="team-data-header-actions">
           <Button as="a" variant="secondary" href={exportHref}>
-            Export Center
-          </Button>
-          <Button as="a" variant="secondary" href={exportPdfHref}>
-            PDF inventory
+            Export
           </Button>
         </div>
       </header>
