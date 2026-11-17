@@ -18,9 +18,7 @@ export default async function TeamsSettings({ searchParams }: { searchParams: Pr
   // Only a short label the page itself put there ("Team 9201 · QA 2 Alpha"), shown as text.
   const leftLabel = left && left.length <= 120 ? left : null;
   return <main className="module-page" style={{ maxWidth: 760 }}>
-    <PageHeader title="Your teams" description="Open a team, or leave one. Your account stays the same." breadcrumbs="Settings › Your teams">
-      <Button as="a" variant="secondary" href={`/settings${orgId ? `?orgId=${encodeURIComponent(orgId)}` : ""}`}>Back to settings</Button>
-    </PageHeader>
+    <PageHeader title="Your teams" description="Open a team, or leave one. Your account stays the same." breadcrumbs="Settings › Your teams" />
     {leftLabel ? <p role="status" className="lifecycle-notice">You left {leftLabel}. Your account and your other teams are unchanged.</p> : null}
     <Panel>
       {teams.length ? <TeamsList teams={teams} currentOrgId={orgId ?? null} /> : <p>No team yet. Join one with an invite or your team&rsquo;s code.</p>}

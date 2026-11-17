@@ -33,6 +33,16 @@ function isAuthPolicy(value: unknown): value is AuthPolicy {
   return typeof row.allowEmailOtp === "boolean" && typeof row.mfaPolicy === "string";
 }
 
+function samePolicy(a: AuthPolicy, b: AuthPolicy): boolean {
+  return (
+    a.allowPassword === b.allowPassword &&
+    a.allowGoogle === b.allowGoogle &&
+    a.allowEmailOtp === b.allowEmailOtp &&
+    a.mfaPolicy === b.mfaPolicy &&
+    a.rememberedDeviceDays === b.rememberedDeviceDays
+  );
+}
+
 async function persistAuthPolicySnapshot(orgId: string, data: AuthPolicy): Promise<void> {
   if (!orgId.trim()) return;
   try {
@@ -44,6 +54,7 @@ async function persistAuthPolicySnapshot(orgId: string, data: AuthPolicy): Promi
 
 export default function AuthPolicyClient({ orgId }: { orgId: string }) {
   const [policy, setPolicy] = useState<AuthPolicy>(DEFAULT_POLICY);
+  const [savedPolicy, setSavedPolicy] = useState<AuthPolicy>(DEFAULT_POLICY);
   const [message, setMessage] = useState("");
   // The save result, shown beside Save: at the top of the page it was above the screen
   // (y = -225), so an error looked like nothing happening.
@@ -65,6 +76,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
       if (cached?.data && isAuthPolicy(cached.data)) {
         if (!loadedRef.current) {
           setPolicy(cached.data);
+          setSavedPolicy(cached.data);
           setFromCache(true);
           setCachedAt(cached.cachedAt);
           setLoaded(true);
@@ -107,6 +119,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
         return;
       }
       setPolicy(next);
+      setSavedPolicy(next);
       setCanEditPolicy(record?.canManage === true);
       setFromCache(false);
       setCachedAt(null);
@@ -157,7 +170,10 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
     });
     const data = (await response.json()) as { error?: string };
     setSaveNote(response.ok ? { ok: true, text: "Saved." } : { ok: false, text: data.error ?? "Could not save." });
-    if (response.ok) await persistAuthPolicySnapshot(orgId, policy);
+    if (response.ok) {
+      setSavedPolicy(policy);
+      await persistAuthPolicySnapshot(orgId, policy);
+    }
   }
 
   return (
@@ -229,6 +245,9 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
             <option value="optional">Optional</option>
             <option value="required">Required for everyone</option>
           </select>
+          {policy.mfaPolicy === "required" ? (
+            <small>Anyone without an authenticator app is asked to set one up before they can open the team.</small>
+          ) : null}
         </label>
         <label>
           Don&apos;t ask again on the same device for
@@ -241,7 +260,7 @@ export default function AuthPolicyClient({ orgId }: { orgId: string }) {
           />
           <small>days (0 means ask every time)</small>
         </label>
-        <Button variant="primary" type="submit">
+        <Button variant="primary" type="submit" disabled={samePolicy(policy, savedPolicy)}>
           Save sign-in rules
         </Button>
         {saveNote ? (

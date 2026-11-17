@@ -24,7 +24,7 @@ export type SettingsNavItem = {
   requiredRole: SettingsRequiredRole;
   /** One plain line under the label in the Settings list. */
   detail: string;
-  /** Only the team's owner (Delete team). */
+  /** Only the team's owner. */
   ownerOnly?: boolean;
   /** Red, at the bottom of its group. */
   danger?: boolean;
@@ -71,10 +71,10 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     detail: "Remove your account for good", danger: true,
     keywords: ["delete account", "delete my account", "remove my account", "close account"] },
 
-  // This team — owners and mentors (owner-admin). Delete team is the owner's alone.
+  // This team — owners and mentors (owner-admin). On Team profile, deleting is the owner's alone.
   { id: "team-ai-keys", label: "Team AI keys", href: "/team/ai-keys", icon: "sparkles", scope: "team", requiredRole: "owner-admin",
     detail: "Keys the whole team uses, and which models to try",
-    keywords: ["ai keys", "team key", "api key", "models", "model routing", "openai", "anthropic", "gemini", "openrouter"] },
+    keywords: ["ai keys", "team key", "api key", "models", "model routing", "openai", "anthropic", "gemini", "openrouter", "model training", "privacy", "train on our data"] },
   { id: "ai-limits", label: "AI limits", href: "/team/budgets", icon: "bolt", scope: "team", requiredRole: "owner-admin",
     detail: "Set the team's AI spending limits and caching",
     keywords: ["ai limits", "chat limits", "spending", "budget", "caching", "pause ai"] },
@@ -102,9 +102,9 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
   { id: "team-data", label: "Team data and export", href: "/team/data", icon: "database", scope: "team", requiredRole: "owner-admin",
     detail: "What the team has recorded; download it",
     keywords: ["team data", "export", "download data", "csv", "zip", "backup", "takeout", "event data"] },
-  { id: "delete-team", label: "Delete team", href: "/team/admin/profile#team-delete-title", icon: "trash", scope: "team", requiredRole: "owner-admin",
-    detail: "Remove this team and its data", danger: true, ownerOnly: true,
-    keywords: ["delete team", "remove team", "close team", "shut down team"] },
+  { id: "team-profile", label: "Team profile", href: "/team/admin/profile", icon: "grid", scope: "team", requiredRole: "owner-admin",
+    detail: "Team name, and deleting the team",
+    keywords: ["team name", "rename team", "delete team", "remove team", "close team"] },
 ];
 
 /**
@@ -116,13 +116,12 @@ export const SETTINGS_SEARCH_ONLY_IDS: readonly string[] = ["money-managers", "j
 /** Small, task-based groups shared by the directory and the section selector. */
 export function settingsNavGroups(items: SettingsNavItem[]) {
   const groups = [
-    { label: "Your account", ids: ["profile", "security", "teams"] },
+    { label: "Your account", ids: ["profile", "security", "teams", "delete-account"] },
     { label: "Preferences", ids: ["appearance", "notifications"] },
-    { label: "Connections and your AI", ids: ["connectors", "my-ai-keys"] },
+    { label: "Connections", ids: ["connectors", "my-ai-keys"] },
     { label: "Team members and access", ids: ["team-admin", "access-roles", "member-access", "chat"] },
     { label: "Team AI", ids: ["team-ai-keys", "ai-limits", "ai-usage"] },
-    { label: "Team data", ids: ["team-data"] },
-    { label: "Delete", ids: ["delete-account", "delete-team"] },
+    { label: "Team", ids: ["team-profile", "team-data"] },
   ];
   return groups.map(group => ({ label: group.label, items: group.ids.flatMap(id => items.filter(item => item.id === id)) }))
     .filter(group => group.items.length > 0);

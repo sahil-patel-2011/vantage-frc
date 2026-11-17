@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageHeader, PageMain, Button, EmptyState, StatRowSkeleton, TextBlockSkeleton } from "../../../components/ui";
+import { PageHeader, PageMain, Button, EmptyState, StatRowSkeleton, TextBlockSkeleton, askConfirm } from "../../../components/ui";
 import {
   aiBudgetsNextActions,
   aiBudgetsShellCopy,
@@ -12,6 +12,7 @@ import {
   type AiBudgetsShellKind,
 } from "../../../lib/billing/ai-budgets-related";
 import { hubHref } from "../../../lib/nav/hubs";
+import { withOrgHref } from "../../../lib/nav/product-nav";
 import "./ai-budgets.css";
 
 const blank = {
@@ -114,6 +115,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   /** Fail closed until the budget read says this account can manage keys. */
   const [canManage, setCanManage] = useState(false);
   const [noKey, setNoKey] = useState(false);
+  const [savedKillSwitch, setSavedKillSwitch] = useState(false);
 
   const chatHref = hubHref("/ai", "chat", orgId);
   async function load() {
@@ -151,6 +153,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
     setLoadError(null);
     setCanManage(data.canManage === true);
     setNoKey(data.aiKeyConfigured === false);
+    setSavedKillSwitch(data.policy?.killSwitch === true);
     if (data.policy) {
       const policy = data.policy;
       setPolicy((prev) => ({
@@ -219,8 +222,18 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
   const shellCopy = aiBudgetsShellCopy(shell);
   const blocked = shell === "forbidden" || shell === "auth_required" || shell === "error";
   const metricsLoaded = !loading && !blocked;
-  const saveOrgPolicy = () =>
-    void save({ scope: "org", ...policy, warningThresholds: policy.warningThresholds.split(",").map(Number) });
+  async function saveOrgPolicy() {
+    if (policy.killSwitch && !savedKillSwitch) {
+      const ok = await askConfirm({
+        title: "Pause AI for everyone?",
+        body: "Nobody on the team can use Ask AI or any AI feature until you turn this off.",
+        confirmLabel: "Pause AI",
+        tone: "destructive",
+      });
+      if (!ok) return;
+    }
+    await save({ scope: "org", ...policy, warningThresholds: policy.warningThresholds.split(",").map(Number) });
+  }
 
   return (
     <PageMain className="module-page budget-page ai-budgets-page">
@@ -299,7 +312,7 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
               className="intel-panel ai-budgets-policy"
               onSubmit={(e) => {
                 e.preventDefault();
-                saveOrgPolicy();
+                void saveOrgPolicy();
               }}
             >
               <h2 style={{ margin: 0, fontSize: 18 }}>Team AI limits</h2>
@@ -362,22 +375,9 @@ export default function BudgetClient({ orgId }: { orgId: string }) {
                   />
                   Count the word limits on personal keys too
                 </label>
-                <label className="check-field">
-                  <input
-                    type="checkbox"
-                    checked={policy.modelAllowlistEnabled}
-                    onChange={(e) => setPolicy({ ...policy, modelAllowlistEnabled: e.target.checked })}
-                  />
-                  Only allow the models I pick
-                </label>
-                <label className="check-field">
-                  <input
-                    type="checkbox"
-                    checked={policy.providerAllowlistEnabled}
-                    onChange={(e) => setPolicy({ ...policy, providerAllowlistEnabled: e.target.checked })}
-                  />
-                  Only allow the providers I pick
-                </label>
+                <p className="app-muted">
+                  Which models people can use is set on <a href={withOrgHref("/team/ai-keys", orgId)}>Team AI keys</a>.
+                </p>
                 <label className="check-field">
                   <input
                     type="checkbox"

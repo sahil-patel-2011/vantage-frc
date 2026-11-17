@@ -668,7 +668,7 @@ export default function AiPolicyClient({ orgId }: { orgId: string }) {
               {budget?.modelAllowlistEnabled || budget?.providerAllowlistEnabled
                 ? "Only the models you picked are allowed."
                 : "Every model on the plan is allowed."}{" "}
-              Edit on <a href={budgetsHref}>Chat limits</a>
+              Edit on <a href={withOrgHref("/team/ai-keys", orgId)}>Team AI keys</a>
               {budget?.killSwitch ? " · Chat is paused for the team." : "."}
             </p>
             {models.length === 0 ? (

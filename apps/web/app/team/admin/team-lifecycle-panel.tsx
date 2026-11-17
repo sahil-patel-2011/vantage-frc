@@ -83,7 +83,6 @@ export function TeamLifecyclePanel({ orgId }: { orgId: string }) {
 
   return (
     <section className="intel-panel" aria-labelledby="team-name-title">
-      <span className="eyebrow">TEAM NAME</span>
       <form className="lifecycle-rename" onSubmit={(event) => void rename(event)}>
         <label htmlFor="team-name-input" id="team-name-title">
           What your team is called in Vantage
@@ -119,7 +118,6 @@ export function TeamDeletePanel({ orgId }: { orgId: string }) {
   const others = Math.max(0, team.memberCount - 1);
   return (
     <section className="intel-panel lifecycle-danger" aria-labelledby="team-delete-title">
-      <span className="eyebrow">DELETE TEAM</span>
       <h2 id="team-delete-title">Delete this team</h2>
       <p className="app-muted">
         Removes the team and everything in it, for you{others ? ` and the ${others} other ${others === 1 ? "person" : "people"} on it` : ""}.

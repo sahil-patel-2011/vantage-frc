@@ -165,6 +165,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
   const [mineEdit, setMineEdit] = useState({ label: "", model: "", apiKey: "" });
   const [mineEditError, setMineEditError] = useState<string | null>(null);
   const [mineEditBusy, setMineEditBusy] = useState(false);
+  const [focusYours, setFocusYours] = useState(false);
   useEffect(() => {
     setModelText(savedModelText);
     setPickedIds(savedIds);
@@ -175,6 +176,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
     const focus = new URLSearchParams(window.location.search).get("focus");
     const id = focus === "yours" ? "settings-your-key" : focus === "team" ? "settings-team-keys" : "";
     if (!id) return;
+    if (focus === "yours") setFocusYours(true);
     const timer = window.setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ block: "start" });
     }, 80);
@@ -227,7 +229,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           {!payload.canManage ? (
             <ShellPanel
               shell="forbidden"
-              detail="You can see configured / missing status. Ask an owner or admin with Manage API keys to paste or remove secrets."
+              detail="You can see which keys the team has. To add or remove one, ask the owner or a mentor."
               orgId={orgId}
             />
           ) : null}
@@ -417,7 +419,7 @@ export function AiKeysReadyView(props: AiKeysReadyViewProps) {
           ) : null}
 
           {/* Personal keys and a personal model are for the few who want them. */}
-          <details className="ai-keys-fold" id="settings-your-key" open={(payload.memberKeys ?? []).length > 0}>
+          <details className="ai-keys-fold" id="settings-your-key" open={focusYours || (payload.memberKeys ?? []).length > 0}>
             <summary>
               <h2 className="ai-keys-fold-title">Your keys and sharing</h2>
             </summary>

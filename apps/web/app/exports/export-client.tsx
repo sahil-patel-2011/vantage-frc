@@ -38,6 +38,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   ops: "Ops & billing",
 };
 
+const JOB_STATUS_LABELS: Record<string, string> = {
+  queued: "Waiting",
+  running: "Preparing",
+  completed: "Ready",
+};
+
 const EXCLUSIONS = [
   "AI keys and sign-in sessions",
   "Passwords and sign-in codes",
@@ -212,38 +218,6 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
       setSelected([]);
       await load();
     }
-    setBusy(false);
-  }
-
-  async function downloadCsv() {
-    if (selected.length !== 1) {
-      setOk(false);
-      setMessage("Select exactly one domain for instant CSV download.");
-      return;
-    }
-    setBusy(true);
-    const response = await fetch("/api/exports", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        action: "csv",
-        orgId,
-        scope: exportScope,
-        domain: selected[0],
-        domains: selected,
-        filters: { eventKey: eventKey || undefined, excelBom },
-      }),
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      setOk(false);
-      setMessage(data.error ?? "CSV export failed");
-      setBusy(false);
-      return;
-    }
-    await downloadBlob(response, `${selected[0]}.csv`);
-    setOk(true);
-    setMessage("CSV downloaded.");
     setBusy(false);
   }
 
@@ -427,9 +401,6 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
             <Button variant="primary" type="button" disabled={busy || !selected.length} onClick={() => void createZip()}>
               ZIP selected
             </Button>
-            <Button variant="secondary" type="button" disabled={busy || selected.length !== 1} onClick={() => void downloadCsv()}>
-              Instant CSV
-            </Button>
             <Button variant="secondary" type="button" disabled={busy} onClick={() => void createZip(true)}>
               ZIP all {exportScope === "team" ? "team" : "private"} data
             </Button>
@@ -455,7 +426,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
           </section>
 
           <section className="app-card soft-panel export-panel">
-            <h2>Recent jobs</h2>
+            <h2>Your downloads</h2>
             {jobs.length === 0 ? (
               <div className="export-empty">
                 <span className="app-badge setup">No exports yet</span>
@@ -473,7 +444,7 @@ export default function ExportCenter({ orgId }: { orgId: string }) {
                   <progress value={job.progress} max={100} aria-label={`${job.progress}% complete`} />
                   <div className="export-job-meta">
                     <span>
-                      {job.status} · {job.progress}%
+                      {JOB_STATUS_LABELS[job.status] ?? job.status} · {job.progress}%
                       {job.sizeBytes ? ` · ${(job.sizeBytes / 1024).toFixed(1)} KB` : ""}
                     </span>
                     {job.status === "completed" ? (

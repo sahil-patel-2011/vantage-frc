@@ -54,7 +54,6 @@ export function TeamsList({ teams, currentOrgId }: { teams: TeamLifecycleView[];
         id: "open",
         label: current ? "Open" : "Switch to this team",
         href: current ? "/dashboard" : `/dashboard?orgId=${encodeURIComponent(team.orgId)}`,
-        intent: "primary",
       },
     ];
     // Leave asks in its own dialog, which says what leaving costs; Delete opens the typed

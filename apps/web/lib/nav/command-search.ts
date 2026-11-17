@@ -471,7 +471,7 @@ const STANDALONE: CommandEntry[] = [
 
 /**
  * Settings, one row per section, named as the Settings list names them ("Members and invites",
- * "Join code", "Delete team"), with the words people type for them ("invite", "dark mode",
+ * "Join code", "Team profile"), with the words people type for them ("invite", "dark mode",
  * "API key"). Added before the other standalone rows, so where one of those covers the same page
  * its words join this row instead of a second name for the place.
  */

@@ -177,19 +177,30 @@ export default function SecurityClient({
   async function revoke(body: Record<string, unknown>) {
     if (
       !(await askConfirm({
-        title: body.revokeAll ? "Disable 2FA and revoke remembered devices?" : "Revoke this remembered device?",
-        body: null,
-        confirmLabel: body.revokeAll ? "Disable 2FA" : "Revoke device",
+        title: body.revokeAll ? "Turn off two-step sign-in?" : "Revoke this remembered device?",
+        body: body.revokeAll
+          ? "Signing in will only need your email code. Every remembered device is forgotten. Your recovery codes stop working."
+          : "That device will need a code next time.",
+        confirmLabel: body.revokeAll ? "Turn off two-step sign-in" : "Revoke device",
         tone: "destructive",
       }))
     ) {
       return;
     }
-    await fetch("/api/security/mfa", {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    try {
+      const response = await fetch("/api/security/mfa", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        setMessage(responseError(await response.json().catch(() => null)) || "Nothing changed. Try again.");
+        return;
+      }
+    } catch {
+      setMessage("Nothing changed. Try again.");
+      return;
+    }
     await load();
   }
 
@@ -363,8 +374,8 @@ export default function SecurityClient({
                   <Button variant="secondary" type="button" onClick={() => void action("regenerate")}>
                     Regenerate recovery codes
                   </Button>
-                  <Button variant="secondary" type="button" onClick={() => void revoke({ revokeAll: true })}>
-                    Disable 2FA
+                  <Button variant="danger" type="button" onClick={() => void revoke({ revokeAll: true })}>
+                    Turn off two-step sign-in
                   </Button>
                 </>
               ) : null}
