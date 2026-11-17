@@ -58,8 +58,8 @@ The full list of screens is in [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md).
 - **Your team's data is yours.** Each team's rows are isolated by Postgres row-level security, and
   everything can be exported.
 - **AI is a helper, not the product.** It answers from your team's own data and public event data,
-  shows what it read, and can run on hardware you own (a Raspberry Pi relay) before it ever touches a
-  paid key.
+  shows what it read, and can run on a member's own Claude Code plan or a team's own keys before it
+  ever touches a hosted key.
 - **It knows the FRC calendar.** Schedules, results and rankings come from The Blue Alliance and
   Statbotics through one shared cache, so no team hammers those APIs.
 
@@ -70,8 +70,8 @@ The full list of screens is in [docs/FEATURE_MAP.md](docs/FEATURE_MAP.md).
   enforced by row-level security, and the schema is a numbered series of append-only SQL migrations.
 - **Desktop:** `apps/desktop`, an Electron shell around the hosted app with Windows (MSI, installer,
   portable) and macOS (DMG) builds.
-- **Optional team hardware:** a storage node for large files, a Raspberry Pi relay for AI, and a
-  Fusion 360 relay — all paired to a team with a code, never exposed to the internet.
+- **Optional team hardware:** a storage node for large files and a Fusion 360 relay — both paired to
+  a team with a code, never exposed to the internet.
 - **Packages:** shared logic lives in `packages/*`. Each of the core ones has a README stating what
   it is for and — more usefully — what it refuses to do:
 

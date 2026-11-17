@@ -620,7 +620,7 @@ function RunDetail({
 
       {ACTIVE.includes(run.status) ? (
         <p className="am-note">
-          {run.progress?.note || "Waiting for a shop Pi to start this book."}
+          {run.progress?.note || "Waiting to start this book."}
           {run.progress?.stepsTotal
             ? ` · ${run.progress.rendersDone ?? 0} of ${run.progress.stepsTotal} steps rendered`
             : ""}

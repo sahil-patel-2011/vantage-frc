@@ -15,7 +15,7 @@ Last reviewed September 2026.*
 - Sign-in by email code, optionally Google
 - A first administrator account, ready to create your team and invite members
 
-Everything else — CAD, GitHub, Discord, Slack, billing, a storage node, a Pi relay — is optional and
+Everything else — CAD, GitHub, Discord, Slack, billing, a storage node — is optional and
 can be added later from the app's **Connectors** page, which tells you exactly what to set for each.
 
 ## What you need
@@ -105,7 +105,7 @@ time:
 - **The Blue Alliance** — a free read key; without it, Competition screens stay empty
 - **Discord**, **Slack** — a webhook pasted from your server
 - **Stripe** — only if you intend to charge for plans
-- **Storage node**, **Pi relay**, **Fusion relay** — devices you pair with a code
+- **Storage node**, **Fusion relay** — devices you pair with a code
 
 ## 6. Keep it up to date
 

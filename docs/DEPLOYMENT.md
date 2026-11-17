@@ -211,7 +211,6 @@ is the most common cause of `redirect_uri_mismatch` an hour later.
 | Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (optional `DATABASE_BILLING_URL`) | Endpoint URL: `https://<your-domain>/api/stripe/webhook` | Secret key: dashboard.stripe.com → Developers → **API keys**. Signing secret: Developers → **Webhooks** → Add endpoint | Events `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed` |
 | Legacy media archive | Existing private configuration only | No new provider callback | New setup and pairing are retired | Preserve existing authorized reads; see [archive maintenance](STORAGE_NODE.md) |
 | Fusion 360 relay | `FUSION_RELAY_SIGNING_SECRET`, `DATABASE_CAD_RELAY_URL` | **none** | Install the Vantage Fusion add-in on the laptop | A pairing code approved by an owner or admin, at `/cad/connections` |
-| Free relay (Pi) | `DATABASE_CAD_RELAY_URL` (pairing pool), plus on the Pi: `FREE_RELAY_BASE_URL`, `FREE_RELAY_API_KEY`, `FREE_RELAY_MODEL` | **none** — the Pi polls `/api/relay/pair/poll` | Pair at `/team/relays`. Do not paste a Freebuff website cookie. | Owner/admin pairing code. Chat / agent / video roles. See `docs/FREEBUFF.md` |
 | Claude Code | **none** — no deployment variable and no API key | **none** — the computer polls `/api/ai-bridge/device/pair/poll` | Install Claude Code, start the Vantage Claude connector, then approve the code | A pairing code approved by the person who signed in on that computer, at `/team/ai-bridge`. See `docs/AI_BRIDGE.md` |
 
 ## 4c. Desktop installers and auto-update

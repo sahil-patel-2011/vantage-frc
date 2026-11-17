@@ -66,8 +66,8 @@ on the way back, and they see the caller's IP. A workspace holding student names
 lists and sponsor contacts should not be opted into that by the absence of an API key.
 
 For a team that wants $0 AI and keeps its data on its own hardware, the better answer is a
-local OpenAI-compatible server (Ollama or LM Studio) pointed at by a base URL — same price,
-no third party. `scripts/pi/install-free-relay.sh` sets one up.
+local OpenAI-compatible server (Ollama or LM Studio) pointed at by a base URL on the team's AI
+keys page — same price, no third party ([LOCAL_AI.md](LOCAL_AI.md)).
 
 ## Legacy plan codes and the 0481 remap
 
